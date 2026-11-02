@@ -242,7 +242,7 @@ function BladenDocument() {
         <span>{onderdeel}</span>
       </div>
       <div className="print-loopvoet">
-        <span>Open Structural Calculation Studio</span>
+        <span>Open CalcSheet Studio</span>
         <span>{datum}</span>
       </div>
 

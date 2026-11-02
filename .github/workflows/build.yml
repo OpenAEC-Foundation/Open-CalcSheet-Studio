@@ -121,7 +121,7 @@ jobs:
       - name: Upload installers
         uses: actions/upload-artifact@v5
         with:
-          name: open-structural-calculation-studio-${{ matrix.target }}
+          name: open-calcsheet-studio-${{ matrix.target }}
           path: |
             packages/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
             packages/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg

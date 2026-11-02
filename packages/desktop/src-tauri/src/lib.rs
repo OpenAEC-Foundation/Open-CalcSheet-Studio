@@ -1,4 +1,4 @@
-//! Tauri-schil van Open Structural Calculation Studio.
+//! Tauri-schil van Open CalcSheet Studio.
 //!
 //! De PDF-commando's hieronder gebruiken de OpenAEC-rapportengine
 //! (`openaec-core`). Die is **optioneel**: standaard wordt hij niet meegebouwd,
@@ -58,7 +58,7 @@ fn engine_save_pdf(report: serde_json::Value, path: String) -> Result<usize, Str
 #[tauri::command]
 fn engine_preview_pdf(report: serde_json::Value) -> Result<String, String> {
     let bytes = rapport::genereer(report)?;
-    let dir = std::env::temp_dir().join("open-structural-calculation-studio");
+    let dir = std::env::temp_dir().join("open-calcsheet-studio");
     std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create temp dir: {}", e))?;
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

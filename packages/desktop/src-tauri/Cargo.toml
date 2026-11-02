@@ -1,12 +1,12 @@
 [package]
-name = "open-structural-calculation-studio"
+name = "open-calcsheet-studio"
 version = "2026.43.0"
-description = "Open Structural Calculation Studio - lightweight CalcPAD alternative for Eurocode verifications"
+description = "Open CalcSheet Studio - lightweight CalcPAD alternative for Eurocode verifications"
 authors = ["OpenAEC Contributors"]
 edition = "2021"
 
 [lib]
-name = "open_structural_calculation_studio_lib"
+name = "open_calcsheet_studio_lib"
 crate-type = ["staticlib", "rlib"]
 
 [features]

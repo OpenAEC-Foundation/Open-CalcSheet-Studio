@@ -42,7 +42,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: version,
-              name: `Open Structural Calculation Studio ${version}`,
+              name: `Open CalcSheet Studio ${version}`,
               body: `## What's New in ${version}\n\nOpen desktop app for structural calculations using CalcPAD syntax, with direct IFC 4x3 / IFCX export.\n\n### Downloads\n- **Windows (System)**: Download the \`*_x64-setup.exe\` installer for system-wide installation (requires admin)\n- **Windows (User)**: Download the \`*_x64_user-setup.exe\` installer for current user only (no admin required)\n- **macOS**: Download the \`.dmg\` file (universal - supports Intel and Apple Silicon)\n- **Linux**: Download the \`.deb\` package or \`.AppImage\``,
               draft: true,
               prerelease: false

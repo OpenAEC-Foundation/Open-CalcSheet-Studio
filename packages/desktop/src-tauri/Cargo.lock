@@ -3003,7 +3003,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "open-structural-calculation-studio"
+name = "open-calcsheet-studio"
 version = "2026.43.0"
 dependencies = [
  "openaec-core",

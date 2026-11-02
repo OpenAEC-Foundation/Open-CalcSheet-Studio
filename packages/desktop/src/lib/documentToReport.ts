@@ -137,7 +137,7 @@ export function documentToReport(
     tenant: options.tenant ?? "openaec_foundation",
     format: "A4",
     orientation: "portrait",
-    author: options.author ?? "Open Structural Calculation Studio",
+    author: options.author ?? "Open CalcSheet Studio",
     date: new Date().toISOString().slice(0, 10),
     version: "0.1",
     status: "CONCEPT",
@@ -214,7 +214,7 @@ export function projectToReport(
     format: "A4",
     orientation: "portrait",
     // Let op: een niet-ingevuld veld is "" en niet undefined, dus || en niet ??.
-    author: options.author || gegevens.constructeur || "Open Structural Calculation Studio",
+    author: options.author || gegevens.constructeur || "Open CalcSheet Studio",
     date: new Date().toISOString().slice(0, 10),
     version: "0.1",
     status: "CONCEPT",

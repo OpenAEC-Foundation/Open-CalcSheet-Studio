@@ -276,7 +276,7 @@ export default function UitgangspuntenSectie() {
               // Een opgeslagen rapport houdt zijn tekst; wijs op de vorige naam van het programma.
               id === "rekenprogrammatuur" && noemtVorigeProductnaam(rapport.teksten[id] ?? "")
                 ? `Deze tekst noemt de vorige naam van het programma (${VORIGE_PRODUCTNAAM}). ` +
-                  "Standaardtekst ▾ heeft de tekst met de huidige naam, Open Structural Calculation Studio."
+                  "Standaardtekst ▾ heeft de tekst met de huidige naam, Open CalcSheet Studio."
                 : undefined
             }
           />

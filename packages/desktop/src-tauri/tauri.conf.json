@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Open Structural Calculation Studio",
+  "productName": "Open CalcSheet Studio",
   "version": "2026.43.0",
   "identifier": "studio.openstructuralcalculation.app",
   "build": {
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Open Structural Calculation Studio",
+        "title": "Open CalcSheet Studio",
         "width": 1280,
         "height": 800,
         "minWidth": 900,
@@ -30,7 +30,7 @@
       "assetProtocol": {
         "enable": true,
         "scope": [
-          "$TEMP/open-structural-calculation-studio/**",
+          "$TEMP/open-calcsheet-studio/**",
           "**/*.pdf"
         ]
       }
@@ -42,8 +42,8 @@
     "fileAssociations": [
       {
         "ext": ["ifccalculation"],
-        "name": "Open Structural Calculation Studio-project",
-        "description": "Open Structural Calculation Studio-project",
+        "name": "Open CalcSheet Studio-project",
+        "description": "Open CalcSheet Studio-project",
         "mimeType": "application/json",
         "role": "Editor"
       }
