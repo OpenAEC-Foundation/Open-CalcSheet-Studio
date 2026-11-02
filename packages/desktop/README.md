@@ -1,6 +1,6 @@
-# @openaec/structural-calculation-studio
+# @openaec/calcsheet-studio
 
-Open Structural Calculation Studio is een React- en TypeScript-app met een Tauri 2
+Open CalcSheet Studio is een React- en TypeScript-app met een Tauri 2
 desktop-shell. De app bevat een modulekiezer, rekenbladen met parametrische
 tekeningen, een constructierapport met standaardteksten en IFC-export.
 
@@ -19,7 +19,7 @@ de desktop-shell:
 
 ```bash
 npm run build --workspace=@ifc-calc/core
-npm run tauri:dev --workspace=@openaec/structural-calculation-studio
+npm run tauri:dev --workspace=@openaec/calcsheet-studio
 ```
 
 ## Bouwen en controleren

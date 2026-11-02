@@ -64,7 +64,7 @@ function TitleBar({ onSettingsClick }: TitleBarProps) {
       <div className="titlebar-drag" data-tauri-drag-region />
 
       <div className="titlebar-left">
-        <div className="titlebar-icon" aria-label="Open Structural Calculation Studio">
+        <div className="titlebar-icon" aria-label="Open CalcSheet Studio">
           <svg width="20" height="20" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <rect x="2" y="2" width="60" height="60" rx="12" fill="var(--theme-bg-lighter, #36363E)" />
             <rect x="2" y="2" width="60" height="3" rx="1.5" fill="var(--theme-accent, #D97706)" />

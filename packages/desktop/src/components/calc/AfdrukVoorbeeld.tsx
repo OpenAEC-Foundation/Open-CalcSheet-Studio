@@ -173,7 +173,7 @@ export default function AfdrukVoorbeeld() {
         const voet = document.createElement("div");
         voet.className = "av-loopvoet";
         voet.innerHTML = "<span></span><span></span><span></span>";
-        (voet.children[0] as HTMLElement).textContent = "Open Structural Calculation Studio";
+        (voet.children[0] as HTMLElement).textContent = "Open CalcSheet Studio";
         (voet.children[1] as HTMLElement).textContent = `Pagina ${i + 1} van ${paginas.length}`;
         (voet.children[2] as HTMLElement).textContent = datum;
 

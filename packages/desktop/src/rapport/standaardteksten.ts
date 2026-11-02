@@ -164,12 +164,12 @@ export const STANDAARD_TEKSTEN: Record<string, readonly Tekstvariant[]> = {
   ],
   rekenprogrammatuur: [
     {
-      label: "Open Structural Calculation Studio",
-      tekst: "De berekeningen in dit rapport zijn opgesteld met Open Structural Calculation Studio.",
+      label: "Open CalcSheet Studio",
+      tekst: "De berekeningen in dit rapport zijn opgesteld met Open CalcSheet Studio.",
     },
     {
-      label: "Open Structural Calculation Studio met bijlagen",
-      tekst: "De berekeningen in dit rapport zijn opgesteld met Open Structural Calculation Studio.\nBerekeningen met andere rekenprogrammatuur staan in de bijlagen; daarin is de gebruikte versie benoemd.",
+      label: "Open CalcSheet Studio met bijlagen",
+      tekst: "De berekeningen in dit rapport zijn opgesteld met Open CalcSheet Studio.\nBerekeningen met andere rekenprogrammatuur staan in de bijlagen; daarin is de gebruikte versie benoemd.",
     },
   ],
   temperatuur: [

@@ -1,5 +1,5 @@
 /**
- * Engineering-specific ribbon icons for Open Structural Calculation Studio.
+ * Engineering-specific ribbon icons for Open CalcSheet Studio.
  *
  * Matches the OpenAEC template's icon style: 24×24 viewBox, stroke="currentColor"
  * (so they inherit ribbon text color), stroke-width 1.6, rounded caps/joins.
