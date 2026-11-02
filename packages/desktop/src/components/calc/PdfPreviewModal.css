@@ -2,7 +2,7 @@
   height: 65vh;
   min-height: 480px;
   display: flex;
-  background: var(--theme-bg-canvas, var(--theme-bg-lighter));
+  background: var(--theme-bg);
   border-radius: 6px;
   overflow: hidden;
   position: relative;

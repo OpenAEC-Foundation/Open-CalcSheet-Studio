@@ -4,19 +4,19 @@
  * Falls back gracefully in browser-dev (no Tauri runtime) by using the
  * File System Access API where available, or a stub <input type=file>.
  *
- * File format
- * -----------
- * `.ifc-calculation` files are IFCX (JSON-LD draft) documents with an extra
- * `source` field holding the raw CalcPAD text. This lets the SAME file act as
- *   • an IFC representation of the calc result (consumable by an IFC viewer)
- *   • the round-trippable calc source (consumable by this app)
+ * Bestandsformaat
+ * ---------------
+ * Een `.ifccalculation` is zuiver IFCX: hetzelfde bestand met de extensie
+ * `.ifcx` is hetzelfde bestand. De vorm staat in `store/projectBestand.ts` en
+ * packages/core/src/ifcx/.
  *
- * Legacy `.cpd`, `.cpdz` and raw-text `.ifc-calculation` files are still
- * accepted on open; `store/projectBestand.ts` beslist wat een bestand voorstelt
- * en maakt er zo nodig een project met één rekenblad van.
+ * Oudere `.ifc-calculation`-, `.cpd`- en `.cpdz`-bestanden openen ook;
+ * `store/projectBestand.ts` beslist wat een bestand voorstelt en maakt er zo
+ * nodig een project met één rekenblad van.
+ *
+ * Geen waarde-imports: de controle (scripts/check-bestand-opslaan.mjs) laadt dit
+ * bestand los.
  */
-
-import type { IfcxDocument } from "@ifc-calc/core";
 
 function isTauri(): boolean {
   try {
@@ -28,9 +28,9 @@ function isTauri(): boolean {
 }
 
 const SUPPORTED_FILTERS = [
-  { name: "Calculations", extensions: ["ifccalculation", "ifc-calculation", "cpd", "cpdz"] },
+  { name: "Calculations", extensions: ["ifccalculation", "ifcx", "ifc-calculation", "cpd", "cpdz"] },
   { name: "CalcPAD bestanden", extensions: ["cpd", "cpdz"] },
-  { name: "OpenAEC Calculations", extensions: ["ifccalculation", "ifc-calculation"] },
+  { name: "OpenAEC Calculations", extensions: ["ifccalculation", "ifcx", "ifc-calculation"] },
   { name: "Alle bestanden", extensions: ["*"] },
 ];
 
@@ -59,21 +59,59 @@ function geannuleerd(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
+/** Staat er een oud formaat in deze tekst? Formaat 2 zet `ifcxVersion` meteen vooraan. */
+export function isOudFormaat(raw: string): boolean {
+  return !raw.slice(0, 1000).includes('"ifcxVersion"');
+}
+
+/** De naam van de kopie van een oud bestand: `<naam>.v1.bak`, in dezelfde map. */
+export function kopieVanOudBestand(path: string): string {
+  return `${path.replace(/\.[^.\\/]+$/, "")}.v1.bak`;
+}
+
+/** Bestanden waarvan we weten dat ze al nieuw zijn; die hoeven niet nog eens gelezen te worden. */
+const alNieuw = new Set<string>();
+
+interface FsVoorKopie {
+  readTextFile(path: string): Promise<string>;
+  writeTextFile(path: string, inhoud: string): Promise<void>;
+}
+
 /**
- * Wrap a CalcPAD source + IFCX representation into the on-disk
- * `.ifc-calculation` JSON-LD format. The result IS a valid IFCX document
- * (an IFC consumer can read it) with one extra `source` field for round-trip.
+ * Vóór het eerste opslaan over een bestand in een oud formaat: een kopie ernaast,
+ * één keer. Een bestaande kopie blijft staan. Lukt de kopie niet, dan gaat het
+ * opslaan door, met een melding in de console: de inhoud zit ook in het nieuwe
+ * bestand.
+ *
+ * Alleen in de app. In de browser kan een pagina niet naast een gekozen bestand
+ * schrijven; daar blijft het bij de nieuwe inhoud.
  */
-export function wrapAsIfcCalculation(source: string, ifcx: IfcxDocument): string {
-  const doc = {
-    ...ifcx,
-    source: {
-      format: "calcpad",
-      language: "ifc-calculation",
-      content: source,
-    },
-  };
-  return JSON.stringify(doc, null, 2);
+export async function bewaarOudeVersie(path: string, fs?: FsVoorKopie): Promise<void> {
+  if (alNieuw.has(path)) return;
+  const bestanden: FsVoorKopie | null = fs ?? (isTauri() ? await import("@tauri-apps/plugin-fs") : null);
+  if (!bestanden) return;
+  let oud: string;
+  try {
+    oud = await bestanden.readTextFile(path);
+  } catch {
+    return; // Nog geen bestand: niets te bewaren.
+  }
+  if (!isOudFormaat(oud)) {
+    alNieuw.add(path);
+    return;
+  }
+  const kopie = kopieVanOudBestand(path);
+  try {
+    await bestanden.readTextFile(kopie);
+    return; // Er is al een kopie, en die is ouder dan dit bestand.
+  } catch {
+    // Geen kopie: maken.
+  }
+  try {
+    await bestanden.writeTextFile(kopie, oud);
+  } catch (err) {
+    console.warn(`Kopie van het oude bestand niet gemaakt (${kopie}):`, err);
+  }
 }
 
 
@@ -103,7 +141,7 @@ export async function openCalculationFile(): Promise<OpenedFile | null> {
   if (kies) {
     try {
       const [handle] = await kies.call(window, {
-        types: [{ description: "Berekeningen", accept: { "application/json": [".ifccalculation", ".ifc-calculation", ".cpd", ".cpdz"] } }],
+        types: [{ description: "Berekeningen", accept: { "application/json": [".ifccalculation", ".ifcx", ".ifc-calculation", ".cpd", ".cpdz"] } }],
         excludeAcceptAllOption: false,
       });
       if (!handle) return null;
@@ -121,7 +159,7 @@ export async function openCalculationFile(): Promise<OpenedFile | null> {
   return new Promise<OpenedFile | null>((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".ifccalculation,.ifc-calculation,.cpd,.cpdz,.txt";
+    input.accept = ".ifccalculation,.ifcx,.ifc-calculation,.cpd,.cpdz,.txt";
     input.onchange = async () => {
       const f = input.files?.[0];
       if (!f) return resolve(null);
@@ -155,7 +193,7 @@ function pathBaseName(p: string): string {
 }
 
 function stripExt(s: string): string {
-  return s.replace(/\.(ifccalculation|ifc-calculation|cpd|cpdz|txt)$/i, "");
+  return s.replace(/\.(ifccalculation|ifcx|ifc-calculation|cpd|cpdz|txt)$/i, "");
 }
 
 function sanitizeFileName(name: string): string {
@@ -183,7 +221,9 @@ export async function schrijfCalculationFile(path: string, payload: string): Pro
     return;
   }
   const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+  await bewaarOudeVersie(path);
   await writeTextFile(path, payload);
+  alNieuw.add(path);
 }
 
 /**
@@ -214,7 +254,9 @@ export async function saveCalculationFile(
       ],
     });
     if (!path) return null;
+    await bewaarOudeVersie(path);
     await writeTextFile(path, payload);
+    alNieuw.add(path);
     return path;
   }
 

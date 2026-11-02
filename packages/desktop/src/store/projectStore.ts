@@ -8,6 +8,7 @@ import { datumTekst } from "../rapport/revisies";
 import { standaardTeksten } from "../rapport/standaardteksten";
 import { rekenversie } from "../components/calc/bladVersie";
 import { normaliseerExemplaren } from "./projectBestand";
+import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
 
 const STORE_KEY = "projectState";
 
@@ -67,6 +68,23 @@ export interface Exemplaar {
    * weet alleen de constructeur.
    */
   elementen?: ElementRef[];
+  /**
+   * Alleen bij een PDF-blad (`templateId` PDF_BLAD, zie store/pdfBijlage.ts):
+   * het PDF-bestand zelf, base64-gecodeerd. Een PDF-blad heeft een lege
+   * `source` en geen invoer; in het rapport komen zijn pagina's op de plek
+   * van het blad.
+   */
+  pdf?: PdfBijlage;
+}
+
+/**
+ * Onderdelen die de gebruiker uit de projectboom heeft gehaald. Alleen de
+ * weergave: de projectgegevens en het rapport blijven bewaard en komen met
+ * hun inhoud terug als je ze weer toevoegt.
+ */
+export interface Verborgen {
+  gegevens?: boolean;
+  rapport?: boolean;
 }
 
 interface Persisted {
@@ -77,6 +95,8 @@ interface Persisted {
   activeId: string;
   /** Ontbreekt in opslag en bestanden van vóór het constructierapport. */
   rapport?: Rapport;
+  /** Ontbreekt als niets verborgen is. */
+  verborgen?: Verborgen;
 }
 
 interface ProjectState {
@@ -88,13 +108,24 @@ interface ProjectState {
   rapport: Rapport;
   /** Wat er in de werkruimte staat: een exemplaar-id, PROJECT_ID of RAPPORT_ID. */
   activeId: string;
+  /** Uit de projectboom gehaald (projectgegevens, rapport). */
+  verborgen: Verborgen;
   dirty: boolean;
   /** Stapels voor ongedaan maken; niet opgeslagen, alleen voor deze sessie. */
   verleden: Momentopname[];
   toekomst: Momentopname[];
 
   selecteer: (id: string) => void;
+  /**
+   * Projectgegevens of rapport uit de projectboom halen of terugzetten. Staat
+   * het onderdeel open als je het verbergt, dan opent het eerste blad.
+   */
+  zetVerborgen: (onderdeel: keyof Verborgen, verborgen: boolean) => void;
   voegToe: (templateId: string, basisNaam: string, source: string) => string;
+  /** Een PDF-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegPdfToe: (naam: string, pdf: PdfBijlage) => string;
+  /** Een ander PDF-bestand voor een PDF-blad; naam en plaats blijven. */
+  zetPdf: (id: string, pdf: PdfBijlage) => void;
   dupliceer: (id: string) => string | null;
   hernoem: (id: string, naam: string) => void;
   verwijder: (id: string) => void;
@@ -232,11 +263,22 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   exemplaren: [],
   rapport: nieuwRapport(),
   activeId: PROJECT_ID,
+  verborgen: {},
   dirty: false,
   verleden: [],
   toekomst: [],
 
   selecteer: (id) => set({ activeId: id }),
+  zetVerborgen: (onderdeel, verborgen) =>
+    set((s) => {
+      const knoop = onderdeel === "gegevens" ? PROJECT_ID : RAPPORT_ID;
+      const weg = verborgen && s.activeId === knoop;
+      return {
+        verborgen: { ...s.verborgen, [onderdeel]: verborgen || undefined },
+        activeId: weg ? (s.exemplaren[0]?.id ?? "") : s.activeId,
+        dirty: true,
+      };
+    }),
 
   voegToe: (templateId, basisNaam, source) => {
     const id = nieuweId();
@@ -259,6 +301,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }));
     return id;
   },
+
+  voegPdfToe: (naam, pdf) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: PDF_BLAD, source: "", waarden: {}, pdf },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetPdf: (id, pdf) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, pdf } : e)),
+        dirty: true,
+      };
+    }),
 
   dupliceer: (id) => {
     const bron = get().exemplaren.find((e) => e.id === id);
@@ -444,6 +510,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   nieuwProject: () =>
     set({
+      verborgen: {},
       projectNaam: "Nieuw project",
       bestandspad: null,
       gegevens: legeGegevens(),
@@ -457,6 +524,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   laadProject: (p) =>
     set({
+      verborgen: p.verborgen ?? {},
       projectNaam: p.projectNaam ?? "Nieuw project",
       bestandspad: p.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(p.gegevens ?? {}) },
@@ -502,6 +570,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       exemplaren: normaliseerExemplaren(saved.exemplaren, projectNaam),
       rapport: rapportUit(saved.rapport),
       activeId: saved.activeId ?? PROJECT_ID,
+      verborgen: saved.verborgen ?? {},
       dirty: false,
     });
   }
@@ -515,6 +584,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       exemplaren: s.exemplaren,
       rapport: s.rapport,
       activeId: s.activeId,
+      verborgen: s.verborgen,
     }),
   );
 });

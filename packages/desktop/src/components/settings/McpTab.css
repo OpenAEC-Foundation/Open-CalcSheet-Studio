@@ -1,0 +1,114 @@
+/* ─── Tab AI-assistent (MCP) (McpTab.tsx) ───────────────────
+   Bouwt op de settings-section/settings-row-klassen van
+   SettingsDialog.css; hier alleen wat die tab extra heeft:
+   statusbolletje, velden met knop en de kopieerbare blokken.
+   ─────────────────────────────────────────────────────────── */
+
+.mcp-tab {
+  --mcp-veld: min(300px, 58%);
+}
+
+.mcp-intro {
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.mcp-waarschuwing {
+  margin: -6px 0 12px 0;
+  color: var(--theme-danger-color);
+}
+
+/* Toelichting onder een regel */
+.mcp-uitleg {
+  margin: -4px 0 8px 0;
+  line-height: 1.4;
+}
+
+.mcp-melding {
+  margin: -4px 0 8px 0;
+  color: var(--theme-danger-color);
+  word-break: break-word;
+}
+
+.mcp-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--oa-size-label);
+}
+
+.mcp-bolletje {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Veld plus knop(pen) rechts in een regel */
+.mcp-rechts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: var(--mcp-veld);
+  justify-content: flex-end;
+}
+
+.settings-input.mcp-veld {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  font-family: var(--oa-font-mono, monospace);
+}
+
+.settings-input.mcp-poort {
+  width: 80px;
+}
+
+/* Kleinere knop dan de voetknoppen van het venster */
+.settings-btn.mcp-knop {
+  padding: 3px 10px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.settings-btn.mcp-knop:disabled {
+  opacity: 0.5;
+}
+
+.settings-btn.mcp-knop:disabled:hover {
+  background: var(--theme-btn-secondary-bg);
+  border-color: var(--theme-dialog-input-border);
+}
+
+/* Kop boven een kopieerbaar blok: titel links, knop rechts */
+.mcp-blokkop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0 4px 0;
+}
+
+.mcp-code {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  margin: 0 0 8px 0;
+  padding: 4px 6px;
+  border: 1px solid var(--theme-dialog-input-border);
+  border-radius: 0;
+  background: var(--theme-dialog-input-bg);
+  color: var(--theme-dialog-input-text);
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre;
+  overflow: auto;
+}
+
+/* De opdrachtregel is één lange regel: afbreken waar het moet. */
+.mcp-code.mcp-code-regel {
+  white-space: pre-wrap;
+  word-break: break-all;
+}

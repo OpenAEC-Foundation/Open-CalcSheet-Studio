@@ -3,7 +3,7 @@
   overflow: auto;
   padding: 20px 24px 60px;
   color: var(--theme-text);
-  background: var(--theme-bg);
+  background: var(--theme-content-bg);
   font-family: var(--font-sans, system-ui);
   line-height: 1.5;
   /* Verticale scrollbar verbergen — consistent met preview. */

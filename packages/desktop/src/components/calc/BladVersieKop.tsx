@@ -26,7 +26,7 @@ export function BladVersieKop({ ex }: { ex: Exemplaar }) {
     <span className="bv-kop">
       {status && (
         <span className="bv-status" title={t(`bladVersie.statusUitleg.${status}`)}>
-          <span className={`tree-item-icon tree-status-${status}`}>{status === "concept" ? "○" : "●"}</span>
+          <span className={`pb-stip pb-status-${status}`} aria-hidden="true" />
           <span className="bv-status-tekst">{t(`bladVersie.status.${status}`)}</span>
         </span>
       )}

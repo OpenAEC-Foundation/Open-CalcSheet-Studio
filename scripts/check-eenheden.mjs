@@ -155,6 +155,15 @@ console.log("\nOverige eenheden ongewijzigd:");
   meld(r.M_R?.substitution === "(12 N / mm^2)*(200000 mm^3)", "ingevulde formule σ·W", r.M_R?.substitution);
   meld(ongeveer(r.M_R?.waarde, 2.4), "M_R = 2,4 kN m", r.M_R?.result);
 }
+{
+  // Eigen gewicht uit b·h in mm maal 25 kN/m³ is intern mm²·kN/m³; een som
+  // houdt de eenheid van het eerste deel. Maal L² in m wordt dat mm²·m²/m³:
+  // het moment hoort in kN m, niet als 16730 mm kN of 16,73 m kN.
+  const r = doorreken("b = 350 mm\nh = 400 mm\nL = 4.60 m\ng = b*h*25 kN/m^3\nq = 1.1*(g+2.25 kN/m)\nM = q*L^2/8");
+  meld(r.g?.unit === "kN / m", "g = b·h·25 kN/m³ in kN/m", r.g?.result);
+  // 1,1 · (3,5 + 2,25) · 4,6² / 8 = 16,7296; in beeld op vier cijfers.
+  meld(r.M?.result === "16.73 kN m", "M = q·L²/8 = 16,73 kN m", r.M?.result);
+}
 
 console.log(fouten === 0 ? "\nEenheden met alleen een noemer: akkoord." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

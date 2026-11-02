@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 /**
  * Tekenbouwstenen voor het parametrische beeld van de balklaag.
@@ -153,32 +154,53 @@ export function KrachtenLijn(props: {
     }
   }
 
-  // plus- en mintekens halverwege elk vak tussen de breekpunten
+  // Plus- en mintekens: één per aaneengesloten stuk met hetzelfde teken binnen
+  // een vak, in het midden van dat stuk en halverwege de as en de lijn. Waar
+  // het vlak te laag of te smal is voor een teken, blijft het weg.
   const tekenLabels: ReactNode[] = [];
   if (tekens) {
     const grenzen = [0, ...breekpunten.filter((b) => b > eps && b < tot - eps), tot].sort((a, b) => a - b);
     const piek = Math.max(...rij.map((x) => Math.abs(f(x))), 1e-9);
+    const plaats = (stuk: number[], sleutel: string) => {
+      if (stuk.length < 2 || Math.abs(X(stuk[stuk.length - 1]) - X(stuk[0])) < 16) return;
+      const x = stuk[Math.floor(stuk.length / 2)];
+      const v = f(x);
+      if (Math.abs(v * schaal) < 13) return;
+      tekenLabels.push(
+        <text key={sleutel} x={X(x)} y={(asY + Y(v)) / 2 + 4.5} textAnchor="middle" fontSize={13} fontWeight={700}
+          fill={kleur.lijn} stroke="#ffffff" strokeWidth={3} strokeLinejoin="round" paintOrder="stroke">
+          {v > 0 ? "+" : "−"}
+        </text>,
+      );
+    };
     for (let i = 0; i < grenzen.length - 1; i++) {
-      const a = grenzen[i], b = grenzen[i + 1];
-      for (const t of [0.22, 0.78]) {
-        const x = a + (b - a) * t;
+      const a = grenzen[i] + eps, b = grenzen[i + 1] - eps;
+      let stuk: number[] = [];
+      let teken = 0;
+      for (let k = 0; k <= 80; k++) {
+        const x = a + ((b - a) * k) / 80;
         const v = f(x);
-        if (Math.abs(v) > 0.18 * piek && Math.abs(v * schaal) > 12) {
-          tekenLabels.push(
-            <text key={`${i}-${t}`} x={X(x)} y={(asY + Y(v)) / 2 + 4} textAnchor="middle" fontSize={12} fontWeight={700}
-              fill={kleur.lijn}>{v > 0 ? "+" : "−"}</text>,
-          );
-          break;
+        const s = Math.abs(v) > 0.05 * piek ? Math.sign(v) : 0;
+        if (s !== teken) {
+          if (teken !== 0) plaats(stuk, `${i}-${k}`);
+          stuk = [];
+          teken = s;
         }
+        if (s !== 0) stuk.push(x);
       }
+      if (teken !== 0) plaats(stuk, `${i}-eind`);
     }
   }
+
+  // De lijn loopt aan beide uiteinden terug naar de as: een dwarskrachtenlijn
+  // begint en eindigt met een sprong bij de oplegging.
+  const omtrek = `${X(0)},${asY} ${punten.join(" ")} ${X(tot)},${asY}`;
 
   return (
     <g>
       <polygon points={vlak} fill={kleur.vlak} stroke="none" />
       {arceerLijnen}
-      <polyline points={punten.join(" ")} fill="none" stroke={kleur.lijn} strokeWidth={2} strokeLinejoin="round" />
+      <polyline points={omtrek} fill="none" stroke={kleur.lijn} strokeWidth={2.5} strokeLinejoin="round" />
       <line x1={x1 - 8} y1={asY} x2={x2 + 8} y2={asY} stroke="#374151" strokeWidth={1.4} />
       {tekenLabels}
       {labels.map((l, i) => {
@@ -239,9 +261,13 @@ export function randwaarden(f: (x: number) => number, grenzen: number[]): { x: n
   return alle.filter((p) => Math.abs(p.v) > 0.03 * piek);
 }
 
-/** Maten van de plattegrond in mm; het profiel alleen voor het label. */
+/**
+ * Maten van de plattegrond in mm, en het label van de raveelbalk (met het
+ * profiel). Het label komt vertaald van de designer: de labelkolom groeit mee
+ * met de lengte ervan, dus de maten en de tekening moeten hetzelfde label zien.
+ */
 export interface RaveelInvoer {
-  bSparing: number; lStaart: number; hoh: number; bBalk: number; profiel?: string;
+  bSparing: number; lStaart: number; hoh: number; bBalk: number; label?: string;
 }
 
 /*
@@ -253,8 +279,6 @@ const ZONE = { zij: 12, links: 80, rechts: 135, boven: 12, onder: 26 };
 const LEGENDA = 5 * 14 + 8;
 const MAAT_KLEUR = "#2563eb", MAAT_TEKST = "#1d4ed8";
 
-const raveelLabel = (profiel?: string) => `raveelbalk ${profiel ?? ""}`.trim();
-
 /** Getekende lengte van de sparing: een stomp van een kwart staart, 300 tot 600 mm. */
 const stomp = (lStaart: number) => Math.min(600, Math.max(300, 0.25 * lStaart));
 
@@ -264,7 +288,7 @@ const stomp = (lStaart: number) => Math.min(600, Math.max(300, 0.25 * lStaart));
  * verklaring onder de tekening.
  */
 function indeling(W: number, p: RaveelInvoer) {
-  const kolom = Math.max(ZONE.rechts, 18 + raveelLabel(p.profiel).length * 11 * 0.62 + 6);
+  const kolom = Math.max(ZONE.rechts, 18 + (p.label ?? "").length * 11 * 0.62 + 6);
   const smal = W - 2 * ZONE.zij - ZONE.links - kolom < 150;
   const rechts = smal ? 0 : kolom;
   return {
@@ -355,7 +379,8 @@ function MaatLijn({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number; y2: 
  * `getallen`: op het scherm zet de designer er klikbare maten neer.
  */
 export function RaveelPlattegrond(props: RaveelInvoer & { W: number; H: number; getallen?: boolean }) {
-  const { W, H, bSparing, lStaart, hoh, profiel, getallen } = props;
+  const { W, H, bSparing, lStaart, hoh, label, getallen } = props;
+  const { t } = useTranslation("beelden");
   const m = raveelMaten(W, H, props);
   const { s, x0, x1, xm, wl, wr, y0, yRav, yOnd, yStrook, balkB, stap, nStaart, nDoor } = m;
   const houtVul = "#E3C08A", houtLijn = "#8B6F47", rood = "#b91c1c";
@@ -375,24 +400,24 @@ export function RaveelPlattegrond(props: RaveelInvoer & { W: number; H: number; 
   }[] = [
     {
       doel: [staarten[staarten.length - 1], y0 + 0.3 * (yStrook - y0)], kleur: houtLijn,
-      tekst: `staartbalken (${nStaart}×)`, vlak: { vul: houtVul, lijn: houtLijn },
+      tekst: t("raveel.staartbalken", { n: nStaart }), vlak: { vul: houtVul, lijn: houtLijn },
     },
     {
       doel: [wr + balkB, y0 + 0.75 * (yStrook - y0)], kleur: houtLijn,
-      tekst: "wisselbalk (dubbel)", vlak: { vul: "#D9A866", lijn: houtLijn },
+      tekst: t("raveel.wisselbalk"), vlak: { vul: "#D9A866", lijn: houtLijn },
     },
     {
       doel: [wr - stap / 2, (yStrook + yRav) / 2], kleur: "#dc2626",
-      tekst: <>belaste strook l<tspan baselineShift="sub" fontSize={8}>staart</tspan>/2</>,
+      tekst: <>{t("raveel.belasteStrook")} l<tspan baselineShift="sub" fontSize={8}>staart</tspan>/2</>,
       vlak: { vul: "rgba(239, 68, 68, 0.13)", lijn: "#ef4444", streep: "3 2" },
     },
     {
       doel: [wr - stap / 2, yRav], kleur: rood, vet: true,
-      tekst: raveelLabel(profiel), vlak: { vul: "#fca5a5", lijn: rood },
+      tekst: label ?? "", vlak: { vul: "#fca5a5", lijn: rood },
     },
     {
       doel: [wr - 0.2 * (wr - wl), yRav + 0.5 * stompH], kleur: "#64748b",
-      tekst: "sparing", vlak: { vul: "#f8fafc", lijn: "#94a3b8", streep: "3 2" },
+      tekst: t("raveel.sparing"), vlak: { vul: "#f8fafc", lijn: "#94a3b8", streep: "3 2" },
     },
   ];
   const labelY = m.smal

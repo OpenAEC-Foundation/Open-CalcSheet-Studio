@@ -1,4 +1,4 @@
-# Open Structural Calculation Studio
+# Open CalcSheet Studio
 
 Open desktop-applicatie voor constructieve berekeningen op basis van CalcPAD-syntax, met directe export naar IFC (4x3 STEP) en IFCX (JSON-LD). Werkt zowel als standalone Tauri-app als embedded library voor FEM-applicaties en normtoetsingen.
 
@@ -32,6 +32,8 @@ Compatibiliteit met voorbeeldbestanden voor de ondersteunde rekensyntax.
 - **`@svg … @end`** blocks voor handgeschreven SVG
 - **`@img(file.svg)`** — externe SVG-tekeningen worden inline ge-embed (incl. `<polygon fill="…">`, hatch patterns, gradients) via dezelfde include-resolver als `#include`
 - **`@img(file.png|jpg|…)`** — raster afbeeldingen via `<img src>`
+- **`@iframe https://… hoogte=120mm`** — een externe pagina, laadt pas na bevestiging, in een sandbox
+- **`@js hoogte=90mm titel="…" bibliotheek=three … @end`** — JavaScript met de waarden van het blad als `calc`, pas na bevestiging, afgeschermd en zonder netwerk; een draaibaar model kan met `calc.wereld3d()`
 
 ### IFC export
 Live IFCX (JSON-LD draft) en IFC4x3 STEP-SPF generatie. Opslaan schrijft het
@@ -51,7 +53,7 @@ per blad. Zie [docs/ifc-export.md](docs/ifc-export.md).
 ## Projectstructuur
 
 ```
-Open-Structural-Calculation-Studio/
+Open-CalcSheet-Studio/
 ├── packages/
 │   ├── core/                          # @ifc-calc/core — rekenengine (TS library)
 │   │   ├── src/
@@ -67,7 +69,7 @@ Open-Structural-Calculation-Studio/
 │   │   │   ├── types.ts               # Public types
 │   │   │   └── index.ts               # Public API
 │   │   └── package.json
-│   └── desktop/                       # @openaec/structural-calculation-studio — Tauri app
+│   └── desktop/                       # @openaec/calcsheet-studio — Tauri app
 │       ├── src/                       # React UI (ribbon, panels, preview)
 │       │   ├── templates/             # Rekenbladen (balklaag, ligger) en registratie
 │       │   └── store/projectStore.ts  # Project: exemplaren + projectgegevens
@@ -129,7 +131,7 @@ npm run build
 npm run build:debug
 
 # Desktop (Tauri) starten
-npm run tauri:dev --workspace=@openaec/structural-calculation-studio
+npm run tauri:dev --workspace=@openaec/calcsheet-studio
 
 # Rekenkern automatisch herbouwen tijdens wijzigingen
 npm run dev --workspace=@ifc-calc/core
@@ -157,7 +159,7 @@ een pagina, mét tekeningen). De Rust-rapportengine van OpenAEC is optioneel en
 wordt níét meegebouwd, zodat dit project op zichzelf bouwt:
 
 ```bash
-npm run tauri build --workspace=@openaec/structural-calculation-studio -- --features rapportengine
+npm run tauri build --workspace=@openaec/calcsheet-studio -- --features rapportengine
 ```
 
 Zonder die vlag bestaan de engine-commando's wel, maar geven ze een melding dat

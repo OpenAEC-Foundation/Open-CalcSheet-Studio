@@ -286,3 +286,89 @@
   font-size: 10.5px;
   color: var(--theme-text-secondary);
 }
+
+/* ─── Online modulebibliotheek ───────────────────────────────── */
+
+.mk-online {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mk-online-rij {
+  display: grid;
+  grid-template-columns: 172px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--theme-dialog-input-border);
+  border-radius: 6px;
+  background: var(--theme-dialog-content-bg);
+}
+
+.mk-online-rij .mk-afbeelding {
+  height: 96px;
+}
+
+.mk-online-tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.mk-online-tekst strong {
+  font-size: var(--oa-size-panel-heading);
+}
+
+.mk-online-tekst > span {
+  color: var(--theme-text-secondary);
+}
+
+.mk-online-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--oa-size-label);
+}
+
+.mk-online-acties {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 132px;
+}
+
+.mk-online-klaar {
+  font-size: var(--oa-size-label);
+  color: var(--oa-success);
+  text-align: center;
+}
+
+.mk-online-fout {
+  color: var(--oa-error);
+}
+
+.mk-versie {
+  margin-left: auto;
+  font-family: var(--oa-font-numbers);
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
+}
+
+.mk-bijdragen {
+  margin-right: auto;
+}
+
+.mk-online-status {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.mk-online-status .pb-stip {
+  margin: 0 4px 0 0;
+}

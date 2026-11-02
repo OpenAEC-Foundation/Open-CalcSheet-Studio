@@ -1,14 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { usePrintStore } from "../../store/printStore";
 import { useProjectStore } from "../../store/projectStore";
 import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import { meetBlokken, verdeelPerSectie, pxPerMm, MATEN, SPELING, type Maten } from "./paginering";
+import { usePdfVersie } from "./pdfBlad";
+import { useDrieDVersie } from "./drieDBlok";
+import { useIfcxVersie } from "./ifcxBlok";
+import { useIframeVersie, vulIframesIn } from "./iframeBlok";
+import { useJsVersie, vulJsIn } from "./jsBlok";
 import "./PrintDocument.css";
 import "./AfdrukVoorbeeld.css";
 
-const ZOOMSTANDEN = [0.5, 0.75, 1, 1.25, 1.5];
+const ZOOMSTANDEN = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3];
 
 /**
  * De voet van een vel van het rapport: de voetafbeelding van het bureau over
@@ -59,8 +65,13 @@ function rapportVoet(nummer: number, voetafbeelding: string, bureaunaam: string,
  * constructierapport (de voet van het bureau en een paginanummer, geen
  * loopkop). Het verdelen is voor beide hetzelfde; de maten en de omlijsting
  * van een vel verschillen.
+ *
+ * De balk erboven en het nummer onder elk vel horen bij de app en volgen de
+ * taal van het scherm. Wat óp het vel staat is de uitdraai, en die is
+ * Nederlands — ook de loopvoet hieronder.
  */
 export default function AfdrukVoorbeeld() {
+  const { t } = useTranslation("beelden");
   const uitdraai = useUitdraai();
   const { bladen, alleBladen, onderdeel, datum } = uitdraai;
   const soort = usePrintStore((s) => s.soort);
@@ -82,10 +93,28 @@ export default function AfdrukVoorbeeld() {
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const voetafbeelding = bureau.voetafbeelding;
   const bureaunaam = bureau.naam;
+  // Een getekende PDF-pagina verandert de hoogte niet (de maat staat vooraf
+  // vast), maar moet wel op de vellen komen: dan opnieuw verdelen.
+  const pdfVersie = usePdfVersie();
+  // Idem voor een 3D-blok: zijn afbeelding komt in de plaats van de projectie
+  // (drieDBlok.ts), vaak zonder dat de hoogte verandert.
+  const drieDVersie = useDrieDVersie();
+  const ifcxVersie = useIfcxVersie();
+  // Een bevestigde externe pagina komt op de vellen (iframeBlok.ts).
+  const iframeVersie = useIframeVersie();
+  // En een uitgevoerd `@js`-blok: zijn afbeelding of zijn venster (jsBlok.ts).
+  const jsVersie = useJsVersie();
+  const scriptsWeg = useRef<(() => void) | null>(null);
+  const iframesWeg = useRef<(() => void) | null>(null);
 
   const meetRef = useRef<HTMLDivElement>(null);
   const vellenRef = useRef<HTMLDivElement>(null);
+  const schuifRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.75);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  // Het punt onder de muis bij Ctrl+scrollen, om na het zoomen terug te zetten.
+  const anker = useRef<{ cx: number; cy: number; x: number; y: number; van: number } | null>(null);
   const [aantal, setAantal] = useState(0);
   const [bezig, setBezig] = useState(true);
 
@@ -114,6 +143,8 @@ export default function AfdrukVoorbeeld() {
     // meetopstelling. Een vel staat los van die wortel, dus krijgt hij ze mee.
     const huisstijl = rapport ? bron.querySelector<HTMLElement>(".rpa-wortel")?.style.cssText ?? "" : "";
 
+    iframesWeg.current?.();
+    scriptsWeg.current?.();
     host.replaceChildren();
     paginas.forEach((pagina, i) => {
       const vel = document.createElement("div");
@@ -173,7 +204,7 @@ export default function AfdrukVoorbeeld() {
         const voet = document.createElement("div");
         voet.className = "av-loopvoet";
         voet.innerHTML = "<span></span><span></span><span></span>";
-        (voet.children[0] as HTMLElement).textContent = "Open Structural Calculation Studio";
+        (voet.children[0] as HTMLElement).textContent = "Open CalcSheet Studio";
         (voet.children[1] as HTMLElement).textContent = `Pagina ${i + 1} van ${paginas.length}`;
         (voet.children[2] as HTMLElement).textContent = datum;
 
@@ -184,17 +215,21 @@ export default function AfdrukVoorbeeld() {
       // een bijschrift binnen die rand zou daar in meegaan.
       const nummer = document.createElement("div");
       nummer.className = "av-nummer";
-      nummer.textContent = `Pagina ${i + 1} van ${paginas.length}`;
+      nummer.textContent = t("afdruk.paginaVan", { nummer: i + 1, totaal: paginas.length });
 
       const omhulsel = document.createElement("div");
       omhulsel.className = "av-vel";
       omhulsel.append(vel, nummer);
       host.appendChild(omhulsel);
     });
+    // Op de vellen en niet in de meetopstelling: de hoogte staat vast, en een
+    // iframe in de meetopstelling zou elke pagina dubbel laden.
+    iframesWeg.current = vulIframesIn(host);
+    scriptsWeg.current = vulJsIn(host);
 
     setAantal(paginas.length);
     setBezig(false);
-  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam]);
+  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, t]);
 
   /*
    * Opnieuw verdelen zodra de opmaak verandert.
@@ -229,34 +264,83 @@ export default function AfdrukVoorbeeld() {
       ro.disconnect();
       window.clearTimeout(timer);
     };
-  }, [bouwPaginas, bladen, rapportGegevens, gegevens, exemplaren, bureau]);
+  }, [bouwPaginas, bladen, rapportGegevens, gegevens, exemplaren, bureau, pdfVersie, drieDVersie, ifcxVersie, iframeVersie, jsVersie]);
+
+  useEffect(() => () => {
+    iframesWeg.current?.();
+    scriptsWeg.current?.();
+  }, []);
+
+  /*
+   * Ctrl+scrollen zoomt door de zoomstanden, rond het punt onder de muis.
+   * Niet via onWheel: React luistert passief, en dan houdt preventDefault het
+   * gewone scrollen niet tegen. Een muiswiel geeft ±100 per tik, knijpen op
+   * een touchpad veel kleine stapjes met ctrlKey; die tellen op tot een stand.
+   */
+  useEffect(() => {
+    const el = schuifRef.current;
+    if (!el) return;
+    let opgeteld = 0;
+    const wiel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      if (Math.sign(e.deltaY) !== Math.sign(opgeteld)) opgeteld = 0;
+      opgeteld += e.deltaY;
+      if (Math.abs(opgeteld) < 50) return;
+      const inzoomen = opgeteld < 0;
+      opgeteld = 0;
+      const huidig = zoomRef.current;
+      const nieuw = inzoomen
+        ? ZOOMSTANDEN.find((z) => z > huidig + 1e-6)
+        : [...ZOOMSTANDEN].reverse().find((z) => z < huidig - 1e-6);
+      if (nieuw === undefined) return;
+      const r = el.getBoundingClientRect();
+      anker.current = { cx: e.clientX - r.left, cy: e.clientY - r.top, x: el.scrollLeft, y: el.scrollTop, van: huidig };
+      setZoom(nieuw);
+    };
+    el.addEventListener("wheel", wiel, { passive: false });
+    return () => el.removeEventListener("wheel", wiel);
+  }, []);
+
+  // Na een zoomstap het punt onder de muis op zijn plek houden. De vellen
+  // schalen vanaf de bovenrand van de inhoud, onder de bovenpadding.
+  useLayoutEffect(() => {
+    const el = schuifRef.current;
+    const a = anker.current;
+    if (!el || !a) return;
+    anker.current = null;
+    const f = zoom / a.van;
+    const boven = parseFloat(getComputedStyle(el).paddingTop) || 0;
+    el.scrollLeft = (a.x + a.cx) * f - a.cx;
+    el.scrollTop = (a.y + a.cy - boven) * f + boven - a.cy;
+  }, [zoom]);
 
   return (
     <div className="av-paneel">
       <div className="av-balk">
-        <span className="av-titel">{rapport ? "Afdrukvoorbeeld rapport" : "Afdrukvoorbeeld"}</span>
+        <span className="av-titel">{rapport ? t("afdruk.titelRapport") : t("afdruk.titel")}</span>
         <span className="av-tel">
-          {bezig ? "pagina's opmaken…" : `${aantal} pagina${aantal === 1 ? "" : "'s"}`}
+          {bezig ? t("afdruk.opmaken") : t("afdruk.paginas", { count: aantal })}
         </span>
         {/* Het rapport kent geen bereik: het bevat altijd alle bladen. */}
         {!rapport && (
           <span className="av-bereik">
-            <label htmlFor="av-bereik">Bereik</label>
+            <label htmlFor="av-bereik">{t("afdruk.bereik")}</label>
             <select
               id="av-bereik"
               value={bereik}
               onChange={(e) => kiesSelectie(e.target.value === "project" ? null : [e.target.value])}
             >
-              <option value="project">Hele project ({alleBladen.length} {alleBladen.length === 1 ? "blad" : "bladen"})</option>
+              <option value="project">{t("afdruk.heleProject", { count: alleBladen.length })}</option>
               {alleBladen.map((ex) => (
-                <option key={ex.id} value={ex.id}>Alleen: {ex.naam}</option>
+                <option key={ex.id} value={ex.id}>{t("afdruk.alleen", { naam: ex.naam })}</option>
               ))}
             </select>
           </span>
         )}
         <span className="av-rek" />
         <span className="av-zoom">
-          <label htmlFor="av-zoom">Zoom</label>
+          <label htmlFor="av-zoom">{t("afdruk.zoom")}</label>
           <select
             id="av-zoom"
             value={zoom}
@@ -267,11 +351,11 @@ export default function AfdrukVoorbeeld() {
             ))}
           </select>
         </span>
-        <button className="av-primair" onClick={() => afdrukken()}>PDF / afdrukken…</button>
-        <button onClick={sluitVoorbeeld}>Sluiten</button>
+        <button className="av-primair" onClick={() => afdrukken()}>{t("afdruk.afdrukken")}</button>
+        <button onClick={sluitVoorbeeld}>{t("afdruk.sluiten")}</button>
       </div>
 
-      <div className="av-vellen">
+      <div className="av-vellen" ref={schuifRef}>
         <div className="av-vellen-binnen" ref={vellenRef} style={{ zoom }} />
       </div>
 

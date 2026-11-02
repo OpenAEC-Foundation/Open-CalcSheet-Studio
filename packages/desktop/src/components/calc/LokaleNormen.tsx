@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   lijstLokaleNormen,
   leesLokaleNorm,
@@ -11,6 +12,7 @@ type NormGegevens = Omit<LokaleNorm, "pdf">;
 
 /** Persoonlijke PDF-catalogus; documenten verlaten de lokale opslag niet. */
 export default function LokaleNormen({ zoek }: { zoek: string }) {
+  const { t } = useTranslation("werkruimte");
   const [items, setItems] = useState<NormGegevens[]>([]);
   const [nummer, setNummer] = useState("");
   const [editie, setEditie] = useState("");
@@ -55,7 +57,7 @@ export default function LokaleNormen({ zoek }: { zoek: string }) {
     setFout("");
     try {
       const pdf = await leesLokaleNorm(item.id);
-      if (!pdf) throw new Error("PDF is niet meer beschikbaar");
+      if (!pdf) throw new Error(t("normen.nietBeschikbaar"));
       setWeergave({ url: URL.createObjectURL(pdf), titel: `${item.nummer} — ${item.editie}`, bestandsnaam: item.bestandsnaam });
     } catch (error) {
       setFout((error as Error).message);
@@ -63,7 +65,7 @@ export default function LokaleNormen({ zoek }: { zoek: string }) {
   };
 
   const verwijderen = async (item: NormGegevens) => {
-    if (!confirm(`${item.nummer} (${item.editie}) uit de lokale bibliotheek verwijderen?`)) return;
+    if (!confirm(t("normen.verwijderVraag", { nummer: item.nummer, editie: item.editie }))) return;
     setFout("");
     try {
       await verwijderLokaleNorm(item.id);
@@ -77,12 +79,12 @@ export default function LokaleNormen({ zoek }: { zoek: string }) {
   if (weergave) {
     return (
       <div className="mk-normen mk-normen-lezer">
-        <button type="button" className="mk-norm-terug" onClick={() => setWeergave(null)}>← Normbestanden</button>
+        <button type="button" className="mk-norm-terug" onClick={() => setWeergave(null)}>{t("normen.terug")}</button>
         <strong>{weergave.titel}</strong>
-        <p>Open de lokale PDF in een nieuw tabblad. Als de browser geen PDF-weergave heeft, kun je het bestand downloaden.</p>
+        <p>{t("normen.lezerUitleg")}</p>
         <div className="mk-norm-acties">
-          <a href={weergave.url} target="_blank" rel="noopener noreferrer">PDF openen ↗</a>
-          <a href={weergave.url} download={weergave.bestandsnaam}>PDF downloaden</a>
+          <a href={weergave.url} target="_blank" rel="noopener noreferrer">{t("normen.pdfOpenen")}</a>
+          <a href={weergave.url} download={weergave.bestandsnaam}>{t("normen.pdfDownloaden")}</a>
         </div>
       </div>
     );
@@ -90,21 +92,21 @@ export default function LokaleNormen({ zoek }: { zoek: string }) {
 
   return (
     <div className="mk-normen">
-      <p className="mk-norm-uitleg">Koppel je eigen norm-PDF's aan nummer en editie. De bestanden blijven in de lokale opslag van deze app en komen niet in het projectbestand.</p>
+      <p className="mk-norm-uitleg">{t("normen.uitleg")}</p>
       <form className="mk-norm-formulier" onSubmit={(event) => void toevoegen(event)}>
-        <label>Normnummer<input value={nummer} onChange={(event) => setNummer(event.target.value)} placeholder="Bijv. NEN-EN 1990" required /></label>
-        <label>Editie<input value={editie} onChange={(event) => setEditie(event.target.value)} placeholder="Jaar en bijlage" required /></label>
-        <label>PDF-bestand<input ref={bestandVeld} type="file" accept=".pdf,application/pdf" onChange={(event) => setBestand(event.target.files?.[0] ?? null)} required /></label>
-        <button type="submit" className="settings-btn settings-btn-primary" disabled={bezig || !bestand}>Toevoegen</button>
+        <label>{t("normen.normnummer")}<input value={nummer} onChange={(event) => setNummer(event.target.value)} placeholder={t("normen.normnummerVoorbeeld")} required /></label>
+        <label>{t("normen.editie")}<input value={editie} onChange={(event) => setEditie(event.target.value)} placeholder={t("normen.editieVoorbeeld")} required /></label>
+        <label>{t("normen.pdfBestand")}<input ref={bestandVeld} type="file" accept=".pdf,application/pdf" onChange={(event) => setBestand(event.target.files?.[0] ?? null)} required /></label>
+        <button type="submit" className="settings-btn settings-btn-primary" disabled={bezig || !bestand}>{t("normen.toevoegen")}</button>
       </form>
       {fout && <p className="mk-norm-fout" role="alert">{fout}</p>}
       <div className="mk-norm-lijst">
-        {gefilterd.length === 0 && <p className="mk-leeg">{items.length ? "Geen normbestand gevonden." : "Nog geen lokale normbestanden gekoppeld."}</p>}
+        {gefilterd.length === 0 && <p className="mk-leeg">{items.length ? t("normen.geenGevonden") : t("normen.nogGeen")}</p>}
         {gefilterd.map((item) => (
           <div className="mk-norm-regel" key={item.id}>
             <div><strong>{item.nummer}</strong><span>{item.editie} · {item.bestandsnaam}</span></div>
-            <button type="button" onClick={() => void tonen(item)}>Open PDF</button>
-            <button type="button" onClick={() => void verwijderen(item)} aria-label={`${item.nummer} verwijderen`}>Verwijder</button>
+            <button type="button" onClick={() => void tonen(item)}>{t("normen.openPdf")}</button>
+            <button type="button" onClick={() => void verwijderen(item)} aria-label={t("normen.verwijderLabel", { nummer: item.nummer })}>{t("normen.verwijder")}</button>
           </div>
         ))}
       </div>

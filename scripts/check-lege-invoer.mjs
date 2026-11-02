@@ -11,8 +11,10 @@
  * veld zelf blijft leeg. Dit script bewaakt dat op twee niveaus:
  *   1. een klein blad met velden met, zonder en met samengestelde eenheid,
  *      en met een eenheid met alleen een noemer (1/K);
- *   2. elk rekenblad: alle velden leeg rekent precies als alle velden 0, en
- *      de slotregel zegt dan nooit 'voldoet' (maar 'niet getoetst').
+ *   2. elk rekenblad: alle velden leeg rekent precies als alle velden op hun
+ *      standaardwaarde (`naam = ?{5}…`) of, zonder standaardwaarde, op 0; en
+ *      een blad met velden zonder standaardwaarde zegt bij lege invoer nooit
+ *      'voldoet' (maar 'niet getoetst').
  *
  * Draaien:  node scripts/check-lege-invoer.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -126,8 +128,8 @@ meld(
   JSON.stringify(ingevuld.uitkomsten),
 );
 
-// ── 2. Elk rekenblad: leeg ≡ 0 ───────────────────────────────────────────────
-console.log("\nElk rekenblad — alle invoervelden leeg rekent als alle velden 0:");
+// ── 2. Elk rekenblad: leeg ≡ standaardwaarde (of 0) ─────────────────────────
+console.log("\nElk rekenblad — alle invoervelden leeg rekent als hun standaardwaarde (of 0):");
 const GEEN_BLAD = new Set(["index.ts", "calcpad-includes.ts", "calcpad-samples.ts", "nl-windgebieden.ts"]);
 
 /** Projectgegevens zoals de app ze vóór de eerste regel in de scope zet (als check-renders). */
@@ -162,12 +164,17 @@ let onterecht = 0;
 for (const bestand of readdirSync(TPL_DIR).filter((f) => f.endsWith(".ts") && !GEEN_BLAD.has(f)).sort()) {
   const src = readFileSync(join(TPL_DIR, bestand), "utf8");
   for (const [, naam, tpl] of src.matchAll(/export const (\w+) = `([\s\S]*?)`;/g)) {
-    const velden = new Set();
-    for (const m of tpl.matchAll(/^\s*([^\s='#]+)\s*=\s*\?/gmu)) velden.add(m[1].replace(/,/g, "_"));
+    // Per veld de standaardwaarde uit `naam = ?{…}`, of "0" zonder standaardwaarde.
+    const velden = new Map();
+    for (const m of tpl.matchAll(/^\s*([^\s='#]+)\s*=\s*\?(?:\s*\{([^}]*)\})?/gmu)) {
+      velden.set(m[1].replace(/,/g, "_"), m[2] === undefined ? "0" : m[2].trim());
+    }
     if (velden.size === 0) continue;
     bladen++;
+    const metStandaard = [...tpl.matchAll(/^\s*[^\s='#]+\s*=\s*\?\s*\{/gmu)].length;
+    const allemaalStandaard = metStandaard === velden.size;
     const opNul = {}, opLeeg = {};
-    for (const v of velden) { opNul[v] = "0"; opLeeg[v] = ""; }
+    for (const [v, standaard] of velden) { opNul[v] = standaard; opLeeg[v] = ""; }
     let d;
     let oordeel;
     try {
@@ -181,18 +188,20 @@ for (const bestand of readdirSync(TPL_DIR).filter((f) => f.endsWith(".ts") && !G
       afwijkend++;
       meld(false, `${bestand} :: ${naam}`, d);
     }
-    if (oordeel && !VOORBEELD.has(`${bestand} :: ${naam}`)) {
+    // Hebben alle velden een standaardwaarde, dan is 'voldoet' bij lege invoer
+    // gewoon de uitkomst van die voorbeeldwaarden.
+    if (oordeel && !allemaalStandaard && !VOORBEELD.has(`${bestand} :: ${naam}`)) {
       onterecht++;
       meld(false, `${bestand} :: ${naam} zegt 'voldoet' bij lege invoer`, oordeel.slice(0, 120));
     }
   }
 }
-meld(afwijkend === 0, `${bladen} rekenbladen met invoervelden: leeg en 0 geven dezelfde uitkomsten en tekst`);
+meld(afwijkend === 0, `${bladen} rekenbladen met invoervelden: leeg en standaardwaarde (of 0) geven dezelfde uitkomsten en tekst`);
 meld(onterecht === 0, `geen van de ${bladen} rekenbladen zegt 'voldoet' bij lege invoer`);
 
 console.log(
   fouten === 0
-    ? "\nEen leeg invoerveld rekent overal als 0 in zijn eenheid."
+    ? "\nEen leeg invoerveld rekent overal als zijn standaardwaarde, of als 0 in zijn eenheid."
     : `\n${fouten} controle(s) gezakt.`,
 );
 process.exit(fouten === 0 ? 0 : 1);

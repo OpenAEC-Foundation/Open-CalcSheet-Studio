@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { leesPad, zetOpPad } from "../../../rapport/pad";
 import { useProjectStore } from "../../../store/projectStore";
 import { opPad, verplaatst } from "./hulp";
@@ -43,14 +44,14 @@ export interface RijenTabelProps<T> {
   kolommen: readonly Kolom<T>[];
   /** De rij die "toevoegen" maakt; krijgt de huidige lijst mee, voor een volgende revisiecode. */
   nieuweRij: (rijen: readonly T[]) => T;
-  /** Tekst op de toevoegknop. */
+  /** Tekst op de toevoegknop; zonder: "Rij toevoegen" in de taal van de app. */
   toevoegen?: string;
   extra?: readonly Extrakolom<T>[];
   /** Onder de tabel, bijvoorbeeld een som. */
   voet?: ReactNode;
   /** Naast de toevoegknop, bijvoorbeeld een keuzemenu met lagen uit de bibliotheek. */
   knoppen?: ReactNode;
-  /** Tekst in een lege tabel. */
+  /** Tekst in een lege tabel; zonder: "Nog geen regels." in de taal van de app. */
   leeg?: string;
   /** Knoppen om rijen te verplaatsen; uit voor een lijst met een vaste volgorde. */
   verplaatsbaar?: boolean;
@@ -63,14 +64,15 @@ export default function RijenTabel<T extends object>({
   rijen,
   kolommen,
   nieuweRij,
-  toevoegen = "Rij toevoegen",
+  toevoegen,
   extra = [],
   voet,
   knoppen,
-  leeg = "Nog geen regels.",
+  leeg,
   verplaatsbaar = true,
   minimaal = 0,
 }: RijenTabelProps<T>) {
+  const { t } = useTranslation("rapport");
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
 
@@ -83,7 +85,7 @@ export default function RijenTabel<T extends object>({
 
   const toevoegKnop = (
     <button type="button" className="rapport-knop" onClick={() => wijzig((l) => [...l, nieuweRij(l)])}>
-      + {toevoegen}
+      + {toevoegen ?? t("rijen.toevoegen")}
     </button>
   );
 
@@ -106,14 +108,14 @@ export default function RijenTabel<T extends object>({
                 {x.kop}
               </th>
             ))}
-            <th style={{ width: verplaatsbaar ? "74px" : "30px" }} aria-label="Bewerken" />
+            <th style={{ width: verplaatsbaar ? "74px" : "30px" }} aria-label={t("rijen.bewerken")} />
           </tr>
         </thead>
         <tbody>
           {rijen.length === 0 && (
             <tr>
               <td colSpan={kolommen.length + extra.length + 1} className="rapport-tabel-leeg">
-                {leeg}
+                {leeg ?? t("rijen.leeg")}
               </td>
             </tr>
           )}
@@ -159,7 +161,7 @@ export default function RijenTabel<T extends object>({
                     <button
                       type="button"
                       className="rapport-icoon"
-                      title="Omhoog"
+                      title={t("algemeen.omhoog")}
                       disabled={i === 0}
                       onClick={() => wijzig((l) => verplaatst(l, i, -1))}
                     >
@@ -168,7 +170,7 @@ export default function RijenTabel<T extends object>({
                     <button
                       type="button"
                       className="rapport-icoon"
-                      title="Omlaag"
+                      title={t("algemeen.omlaag")}
                       disabled={i === rijen.length - 1}
                       onClick={() => wijzig((l) => verplaatst(l, i, 1))}
                     >
@@ -179,7 +181,7 @@ export default function RijenTabel<T extends object>({
                 <button
                   type="button"
                   className="rapport-icoon"
-                  title="Rij verwijderen"
+                  title={t("rijen.verwijderen")}
                   disabled={rijen.length <= minimaal}
                   onClick={() => wijzig((l) => l.filter((_, j) => j !== i))}
                 >

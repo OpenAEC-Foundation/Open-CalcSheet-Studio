@@ -1,12 +1,12 @@
 [package]
-name = "open-structural-calculation-studio"
-version = "2026.43.0"
-description = "Open Structural Calculation Studio - lightweight CalcPAD alternative for Eurocode verifications"
+name = "open-calcsheet-studio"
+version = "2026.44.0"
+description = "Open CalcSheet Studio - lightweight CalcPAD alternative for Eurocode verifications"
 authors = ["OpenAEC Contributors"]
 edition = "2021"
 
 [lib]
-name = "open_structural_calculation_studio_lib"
+name = "open_calcsheet_studio_lib"
 crate-type = ["staticlib", "rlib"]
 
 [features]
@@ -28,6 +28,9 @@ tauri-plugin-store = "2.4.2"
 tauri-plugin-os = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+# MCP-brug (src/mcp_bridge.rs): een klein HTTP-doorgeefluik op 127.0.0.1 voor
+# een AI-assistent. Pure Rust, zonder TLS (alleen loopback).
+tiny_http = "0.12"
 
 # OpenAEC-rapportengine — optioneel, standaard uit.
 #

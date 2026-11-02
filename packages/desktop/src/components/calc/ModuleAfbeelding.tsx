@@ -30,17 +30,23 @@ const beelden: Record<string, ReactNode> = {
   balklaag: <>{[0, 1, 2, 3].map((i) => <path key={i} d={`M${24 + i * 23} 62l28-35 9 3-28 35v10l-9-3Z`} fill={vlak} />)}{p("m24 62 81 11 31-37M24 72l81 11 31-37")}</>,
 };
 
-export default function ModuleAfbeelding({ templateId }: { templateId: string }) {
+export default function ModuleAfbeelding({ templateId, beeldUrl }: { templateId: string; beeldUrl?: string | null }) {
   const beeld = beelden[templateId];
-  if (!beeld) return null;
-  const foto = eigenBeelden[`../../assets/module-beelden/${templateId}.webp`];
+  // Een module uit de online bibliotheek brengt zijn eigen beeld mee.
+  const foto = beeldUrl || eigenBeelden[`../../assets/module-beelden/${templateId}.webp`];
+  if (!beeld && !foto) return null;
   return (
     <span className="mk-afbeelding" aria-hidden="true">
-      {foto && <img src={foto} alt="" loading="lazy" />}
-      <svg viewBox="0 -10 160 110" fill="none" stroke="currentColor" strokeWidth="1.8"
-        strokeLinecap="round" strokeLinejoin="round" focusable="false">
-        {beeld}
-      </svg>
+      {/* Een eigen beeld is al een tekening van de module; het symbooltje
+          erover zou dubbelop zijn. Alleen zonder eigen beeld het symbool. */}
+      {foto ? (
+        <img src={foto} alt="" loading="lazy" />
+      ) : (
+        <svg viewBox="0 -10 160 110" fill="none" stroke="currentColor" strokeWidth="1.8"
+          strokeLinecap="round" strokeLinejoin="round" focusable="false">
+          {beeld}
+        </svg>
+      )}
     </span>
   );
 }

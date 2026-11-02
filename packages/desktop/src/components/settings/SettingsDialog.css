@@ -28,7 +28,7 @@
 
 .settings-tab {
   padding: 8px 12px;
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   background: transparent;
   border: none;
   color: var(--theme-dialog-tab-text);
@@ -67,7 +67,7 @@
 }
 
 .settings-section h3 {
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-weight: 600;
   color: var(--theme-dialog-content-text);
   margin: 0 0 8px 0;
@@ -88,20 +88,20 @@
 }
 
 .settings-label {
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   color: var(--theme-dialog-content-text);
   flex-shrink: 0;
 }
 
 .settings-description {
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   color: var(--theme-dialog-content-secondary);
   margin-top: 2px;
 }
 
 .settings-select {
   padding: 3px 6px;
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-family: inherit;
   border: 1px solid var(--theme-dialog-input-border);
   border-radius: 0;
@@ -123,7 +123,7 @@
 
 .settings-input {
   padding: 3px 6px;
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-family: inherit;
   border: 1px solid var(--theme-dialog-input-border);
   border-radius: 0;
@@ -156,7 +156,7 @@
 }
 
 .settings-checkbox-row label {
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   color: var(--theme-dialog-content-text);
   cursor: default;
 }
@@ -170,7 +170,7 @@
   padding: 5px 20px;
   border: 1px solid var(--theme-dialog-input-border);
   border-radius: 2px;
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-weight: 400;
   font-family: inherit;
   cursor: default;
@@ -219,7 +219,7 @@
   border-radius: 0;
   background: var(--theme-dialog-input-bg);
   color: var(--theme-dialog-content-text);
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-family: inherit;
   cursor: default;
   transition: border-color 0.1s;
@@ -262,7 +262,7 @@
   border: none;
   background: transparent;
   color: var(--theme-dialog-content-text);
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-family: inherit;
   cursor: default;
   text-align: left;
@@ -287,7 +287,7 @@
   display: block;
   width: 14px;
   height: 14px;
-  border: 1px solid rgba(128, 128, 128, 0.3);
+  border: 1px solid var(--theme-border);
 }
 
 .theme-dropdown-label {
@@ -314,9 +314,11 @@
 }
 
 .settings-placeholder p {
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   margin: 0;
 }
+
+/* ── Open CalcSheet Studio ── */
 
 /* ─── Tab Bureau (components/rapport/BureauTab.tsx) ─────────
    Het bureauprofiel is een langer formulier dan de andere tabs:

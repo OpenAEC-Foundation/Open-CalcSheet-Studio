@@ -1,0 +1,671 @@
+/* Tabblad Tekenen: de editor als venster over de uitwerking, en de velden in
+   het lint. Kleuren en maten uit de Blueprint-schil (themes.css,
+   openaec-tokens.css); het papier is licht in elk thema, net als de
+   uitwerking. */
+
+.tk-venster {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  container-type: inline-size;
+  background: var(--theme-bg);
+  border: 1px solid var(--theme-border);
+  box-shadow: var(--oa-shadow-panel);
+  color: var(--theme-text);
+  font-size: var(--oa-size-body);
+  box-sizing: border-box;
+}
+
+/* ─── Kop ─────────────────────────────────────────────────────────── */
+
+.tk-kop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--oa-shell-panel-header);
+  padding: 0 4px 0 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-bg-lighter);
+  user-select: none;
+}
+
+.tk-titel {
+  font-size: var(--oa-size-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--theme-accent-tint);
+  white-space: nowrap;
+}
+
+.tk-doel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
+}
+
+.tk-gewijzigd {
+  color: var(--theme-accent);
+  font-weight: 700;
+}
+
+.tk-kop-knoppen {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.tk-knop {
+  height: 22px;
+  padding: 0 12px;
+  border: 1px solid var(--theme-dialog-input-border);
+  border-radius: 2px;
+  background: var(--theme-btn-secondary-bg);
+  color: var(--theme-btn-secondary-text);
+  font: inherit;
+  font-size: var(--oa-size-label);
+  cursor: default;
+  white-space: nowrap;
+}
+
+.tk-knop:hover {
+  background: var(--theme-btn-secondary-hover-bg);
+  border-color: var(--theme-btn-secondary-hover-border);
+}
+
+.tk-knop.actief {
+  border-color: var(--theme-accent);
+  color: var(--theme-accent);
+}
+
+.tk-knop.primair {
+  background: var(--theme-btn-primary-bg);
+  color: var(--theme-btn-primary-text);
+  border-color: var(--theme-btn-primary-border);
+}
+
+.tk-knop.primair:hover {
+  background: var(--theme-btn-primary-hover-bg);
+  color: var(--theme-btn-primary-hover-text);
+}
+
+.tk-sluit {
+  width: 26px;
+  height: 22px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--theme-text-secondary);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: default;
+}
+
+.tk-sluit:hover {
+  background: var(--theme-hover);
+  color: var(--theme-text);
+}
+
+.tk-melding {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px 2px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-accent-soft);
+  color: var(--theme-text);
+  font-size: var(--oa-size-label);
+}
+
+.tk-melding > span {
+  flex: 1;
+}
+
+.tk-melding.fout {
+  background: color-mix(in srgb, var(--oa-error) 14%, var(--theme-bg));
+}
+
+/* ─── Tekenvlak ───────────────────────────────────────────────────── */
+
+.tk-lichaam {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.tk-vlak {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--oa-workspace);
+  outline: none;
+}
+
+.tk-vlak:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--theme-focus-color);
+}
+
+.tk-svg {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.tk-papier {
+  fill: var(--theme-content-bg);
+  stroke: var(--theme-border);
+}
+
+.tk-raster-lijn {
+  fill: none;
+  stroke: var(--theme-border-subtle);
+}
+
+.tk-raster-lijn.grof {
+  stroke: var(--theme-border);
+}
+
+.tk-raak {
+  stroke: transparent;
+}
+
+/* Tekst en onbekende elementen: raak ergens binnen hun kader. */
+.tk-el-vlak > .tk-beeld {
+  pointer-events: bounding-box;
+}
+
+.tk-concept {
+  opacity: 0.55;
+}
+
+.tk-kader {
+  fill: none;
+  stroke: var(--theme-accent);
+}
+
+.tk-greep {
+  fill: #ffffff;
+  stroke: var(--theme-accent);
+  cursor: move;
+}
+
+/* Een greep waarvan de maten aan het blad gekoppeld zijn, schuift niet. */
+.tk-greep.vast {
+  fill: var(--theme-accent);
+  cursor: not-allowed;
+}
+
+.tk-vlak-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 20px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--theme-border);
+  background: var(--theme-bg-lighter);
+  color: var(--theme-text-secondary);
+  font-size: var(--oa-size-label);
+  white-space: nowrap;
+}
+
+.tk-coord {
+  min-width: 130px;
+  font-family: var(--oa-font-numbers);
+}
+
+.tk-hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tk-code-uit {
+  flex-shrink: 0;
+  height: 32%;
+  min-height: 90px;
+  padding: 6px 10px;
+  border: 0;
+  border-top: 1px solid var(--theme-border);
+  background: var(--theme-content-bg);
+  color: var(--theme-text);
+  font-family: var(--oa-font-mono);
+  font-size: 11px;
+  white-space: pre;
+  resize: none;
+  outline: none;
+}
+
+/* ─── Eigenschappen ───────────────────────────────────────────────── */
+
+.tk-paneel {
+  width: 250px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding-bottom: 12px;
+  border-left: 1px solid var(--theme-border);
+  background: var(--theme-bg);
+}
+
+.tk-sectie {
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.tk-sectie-kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2px 0 6px;
+  color: var(--theme-accent);
+  font-size: var(--oa-size-label);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tk-knop-klein {
+  padding: 1px 6px;
+  border: 1px solid var(--theme-dialog-input-border);
+  border-radius: 2px;
+  background: var(--theme-btn-secondary-bg);
+  color: var(--theme-btn-secondary-text);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: default;
+}
+
+.tk-knop-klein:hover {
+  border-color: var(--oa-error);
+  color: var(--oa-error);
+}
+
+.tk-rij {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: var(--oa-size-label);
+}
+
+.tk-rij-hoog {
+  align-items: start;
+}
+
+.tk-rij > label {
+  color: var(--theme-text-secondary);
+}
+
+.tk-rij input[type="checkbox"],
+.tk-lint-rij input[type="checkbox"] {
+  margin: 0;
+  accent-color: var(--theme-accent);
+}
+
+.tk-kleur {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tk-paneel input[type="color"],
+.tk-lint-rij input[type="color"] {
+  width: 26px;
+  height: 20px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--theme-dialog-input-border);
+  border-radius: 2px;
+  background: none;
+}
+
+.tk-veld {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--theme-dialog-input-border);
+  border-radius: 2px;
+  background: var(--theme-dialog-input-bg);
+  color: var(--theme-dialog-input-text);
+  font: inherit;
+  font-size: var(--oa-size-label);
+}
+
+.tk-veld:focus {
+  outline: none;
+  border-color: var(--theme-accent);
+}
+
+.tk-veld:disabled {
+  opacity: 0.5;
+}
+
+textarea.tk-veld {
+  resize: vertical;
+}
+
+.tk-veld.tk-kort {
+  flex: 1;
+  width: 70px;
+  font-family: var(--oa-font-mono);
+}
+
+.tk-getal {
+  font-family: var(--oa-font-numbers);
+}
+
+.tk-getal[readonly] {
+  border-style: dashed;
+  background: transparent;
+  color: var(--theme-text-secondary);
+}
+
+.tk-maten {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tk-maten-kop,
+.tk-maat {
+  display: grid;
+  grid-template-columns: 58px 64px 1fr;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--oa-size-label);
+}
+
+.tk-maten-kop {
+  color: var(--theme-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tk-maat > label {
+  overflow: hidden;
+  color: var(--theme-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tk-maat.gekoppeld > label {
+  color: var(--theme-accent);
+  font-weight: 600;
+}
+
+.tk-koppel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.tk-koppel .tk-veld {
+  padding-right: 20px;
+  font-family: var(--oa-font-mono);
+}
+
+.tk-status {
+  position: absolute;
+  right: 6px;
+  color: var(--theme-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tk-status.goed {
+  color: var(--oa-success);
+}
+
+.tk-status.fout {
+  color: var(--oa-error);
+}
+
+.tk-status.let-op {
+  color: var(--oa-warning);
+}
+
+.tk-uitleg {
+  margin: 4px 0;
+  color: var(--theme-text);
+  font-size: var(--oa-size-label);
+  line-height: 1.45;
+}
+
+.tk-uitleg.tk-zacht {
+  color: var(--theme-text-secondary);
+}
+
+.tk-uitleg code,
+.tk-code {
+  font-family: var(--oa-font-mono);
+}
+
+.tk-code {
+  font-size: 11px;
+}
+
+/* Een smal venster: de eigenschappen onder het tekenvlak. */
+@container (max-width: 560px) {
+  .tk-lichaam {
+    flex-direction: column;
+  }
+
+  .tk-paneel {
+    width: auto;
+    max-height: 42%;
+    border-top: 1px solid var(--theme-border);
+    border-left: 0;
+  }
+}
+
+/* ─── Velden in het lint ──────────────────────────────────────────── */
+
+.tk-lint-stapel {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  height: 100%;
+  padding: 0 2px;
+}
+
+.tk-lint-rij {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 4px;
+  color: var(--theme-text);
+  font-size: var(--oa-size-label);
+  white-space: nowrap;
+}
+
+.tk-lint-rij select {
+  height: 18px;
+  padding: 0 2px;
+  border: 1px solid var(--theme-dialog-input-border);
+  border-radius: 2px;
+  background: var(--theme-dialog-input-bg);
+  color: var(--theme-dialog-input-text);
+  font: inherit;
+  font-size: var(--oa-size-label);
+}
+
+.tk-lint-rij :disabled {
+  opacity: 0.45;
+}
+
+.tk-lint-rij.uit > span {
+  color: var(--theme-text-disabled, var(--theme-text-secondary));
+}
+
+/* ─── Snappen, boog, symbolen ─────────────────────────────────────── */
+
+/* Het teken van een snappunt: eindpunt, midden, middelpunt of op de lijn. */
+.tk-snap {
+  fill: none;
+  stroke: var(--theme-accent);
+}
+
+.tk-snapnaam {
+  color: var(--theme-accent);
+  font-weight: 600;
+}
+
+/* De geklikte punten van een boog in wording. */
+.tk-boogpunt {
+  fill: var(--theme-accent);
+  stroke: #ffffff;
+}
+
+.tk-knoppen {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* De uitklaplijst van een lintknop (staalprofiel, oplegging). */
+.tk-menu .calcpad-menu-sectie {
+  min-width: 150px;
+}
+
+.tk-menu .calcpad-menu-glyph {
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ─── Commandoregel, selectiekader, voorbeelden ───────────────────── */
+
+.tk-cmd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 22px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--theme-border);
+  background: var(--theme-content-bg);
+  color: var(--theme-text-secondary);
+  font-family: var(--oa-font-mono);
+  font-size: var(--oa-size-label);
+  white-space: nowrap;
+}
+
+.tk-cmd.bezig .tk-cmd-vraag {
+  color: var(--theme-accent);
+  font-weight: 600;
+}
+
+.tk-cmd.fout .tk-cmd-vraag {
+  color: var(--oa-error);
+}
+
+.tk-cmd-regel {
+  color: var(--theme-text);
+}
+
+.tk-cmd-cursor {
+  display: inline-block;
+  width: 1px;
+  height: 12px;
+  margin-left: 1px;
+  vertical-align: -2px;
+  background: var(--theme-text);
+}
+
+.tk-vlak:not(:focus):not(:focus-within) .tk-cmd-cursor {
+  opacity: 0.35;
+}
+
+.tk-selkader {
+  fill: color-mix(in srgb, var(--theme-accent) 10%, transparent);
+  stroke: var(--theme-accent);
+}
+
+/* Van rechts naar links: ook wat het kader alleen raakt. */
+.tk-selkader.raakt {
+  fill: color-mix(in srgb, var(--oa-success) 10%, transparent);
+  stroke: var(--oa-success);
+  stroke-dasharray: 4 3;
+}
+
+.tk-hulplijn {
+  stroke: var(--theme-accent);
+}
+
+/* Een klein voorbeeld van een profiel: op papier, ook in een donker thema. */
+.tk-keuze-duim {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.tk-keuze-velden {
+  flex: 1;
+  min-width: 0;
+}
+
+.tk-duim {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  box-sizing: border-box;
+  border: 1px solid var(--theme-dialog-input-border);
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+.tk-duim svg,
+.tk-menu-duim svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tk-menu .tk-menu-duim {
+  flex-shrink: 0;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+.tk-alle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding: 3px 6px;
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 2px;
+  font-size: var(--oa-size-label);
+}
+
+.tk-alle input {
+  margin: 0;
+  accent-color: var(--theme-accent);
+}

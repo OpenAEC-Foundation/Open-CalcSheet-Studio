@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
 import { useActiefExemplaar, useAlleenLezen, useProjectGetal } from "../../store/actiefBlad";
 import { ucTekst, type BladUitkomst } from "./bladResultaat";
@@ -116,6 +117,7 @@ export function Dim(props: {
   step?: number; label?: string; dec?: number; title?: string;
 }) {
   const { ctx, name, value, x, y, step = 10, label, dec = 0, title } = props;
+  const { t } = useTranslation("beelden");
   const isEd = ctx.editing === name;
   const commit = (raw: string) => {
     const n = parseFloat(raw.replace(",", "."));
@@ -134,7 +136,7 @@ export function Dim(props: {
           }} />
       ) : (
         <button className="vd-dim-num" style={{ whiteSpace: "nowrap" }}
-          title={title ?? `${label ?? name} — klik om te wijzigen`}
+          title={title ?? t("kit.klikWijzig", { naam: label ?? name })}
           onClick={() => ctx.setEditing(name)}>
           {label ? `${label}=` : ""}{fmt(value, dec)}
         </button>
@@ -149,6 +151,7 @@ export function Force(props: {
   unit: string; label: string; step?: number; dec?: number;
 }) {
   const { ctx, name, value, x, y, unit, label, step = 10, dec = 0 } = props;
+  const { t } = useTranslation("beelden");
   const isEd = ctx.editing === name;
   const commit = (raw: string) => {
     const n = parseFloat(raw.replace(",", "."));
@@ -167,7 +170,7 @@ export function Force(props: {
           }} />
       ) : (
         <button className="vd-force-num" style={{ whiteSpace: "nowrap" }}
-          title={`${name} — klik om te wijzigen`} onClick={() => ctx.setEditing(name)}>
+          title={t("kit.klikWijzig", { naam: name })} onClick={() => ctx.setEditing(name)}>
           {label}={fmt(value, dec)}<small>{unit}</small>
         </button>
       )}
@@ -316,6 +319,7 @@ export function Kop({ titel, badge, staat }: { titel: string; badge: ReactNode; 
  * dus niet na, en kan het blad niet tegenspreken.
  */
 export function UitkomstKop({ titel, uitkomst }: { titel: string; uitkomst: BladUitkomst | null }) {
+  const { t } = useTranslation("beelden");
   const r = uitkomst?.resultaat;
   if (!r || (r.uc === null && r.voldoet === null)) return <Kop titel={titel} badge="—" />;
   return (
@@ -325,7 +329,7 @@ export function UitkomstKop({ titel, uitkomst }: { titel: string; uitkomst: Blad
       badge={
         <>
           {r.uc !== null && <>UC<sub>max</sub> = {ucTekst(r.uc)} </>}
-          {r.voldoet === null ? null : r.voldoet ? "✓ voldoet" : "✗ voldoet niet"}
+          {r.voldoet === null ? null : r.voldoet ? t("kit.voldoet") : t("kit.voldoetNiet")}
         </>
       }
     />
@@ -349,6 +353,7 @@ export function JaNee({
   waarde: boolean;
   onChange: (v: boolean) => void;
 }) {
+  const { t } = useTranslation("beelden");
   return (
     <label className="vd-toggle-row">
       <span className="vd-toggle-label">{label}</span>
@@ -362,7 +367,7 @@ export function JaNee({
         >
           <span className="vd-toggle-knop" />
         </button>
-        <span className="vd-toggle-stand">{waarde ? "Ja" : "Nee"}</span>
+        <span className="vd-toggle-stand">{waarde ? t("kit.ja") : t("kit.nee")}</span>
       </span>
     </label>
   );

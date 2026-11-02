@@ -53,9 +53,9 @@
 
 .wind-area-error {
   padding: 6px 10px;
-  background: #fef2f2;
-  border-left: 3px solid #dc2626;
-  color: #991b1b;
+  background: var(--oa-error-tint);
+  border-left: 3px solid var(--oa-error);
+  color: var(--oa-error);
   font-size: 12px;
   border-radius: 4px;
 }
@@ -69,9 +69,9 @@
 }
 
 .wind-area-result-warn {
-  background: #fffbeb;
-  border-left-color: #d97706;
-  color: #92400e;
+  background: var(--oa-warning-tint);
+  border-left-color: var(--oa-warning);
+  color: var(--oa-warning);
 }
 
 .wind-area-mapwrap {
@@ -119,6 +119,32 @@
   filter: grayscale(1) contrast(0.9) brightness(1.05);
 }
 
+/* Een klik op een gebiedsvlak geeft dat SVG-pad de focus, en Chrome tekent
+ * dan een rechthoek om het hele vlak. De vlakken zijn niet met Tab te
+ * bereiken; de keuze laat de contour hieronder zien. */
+.wind-area-leaflet path.leaflet-interactive:focus {
+  outline: none;
+}
+
+/* Het gekozen windgebied: één omtrek om het hele gebied, met een lichte
+ * vulling; halo en lijn zijn elk een eigen kaartlaag (pane). De lagen vangen
+ * geen muis; tooltips en klikken gaan naar de vlakken eronder. Lijndiktes en
+ * dekking staan in WindAreaMap.tsx. */
+.wind-area-selectie-halo,
+.wind-area-selectie {
+  pointer-events: none;
+}
+
+.wind-area-selectie-halo path {
+  stroke: var(--oa-raised);
+  stroke-opacity: 0.85;
+}
+
+.wind-area-selectie path {
+  stroke: var(--theme-accent);
+  fill: var(--theme-accent);
+}
+
 /* Romeinse gebied-nummers óp de kaart. */
 .wind-area-gebiedlabel {
   display: flex;
@@ -127,9 +153,9 @@
   font-family: var(--font-heading, system-ui);
   font-size: 13px;
   font-weight: 700;
-  color: #4b5563;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(75, 85, 99, 0.35);
+  color: var(--oa-text-secondary);
+  background: color-mix(in srgb, var(--oa-raised) 75%, transparent);
+  border: 1px solid color-mix(in srgb, var(--oa-text-secondary) 35%, transparent);
   border-radius: 4px;
   pointer-events: none;
 }

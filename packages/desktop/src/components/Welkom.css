@@ -1,0 +1,284 @@
+/* Welkomstpaneel onderin de werkruimte. Blueprint-tokens, net als de schil. */
+
+.welkom-paneel {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(300px, 1.2fr) minmax(320px, 1.2fr) minmax(240px, 1fr);
+  align-items: start;
+  gap: var(--oa-space-xl);
+  flex-shrink: 0;
+  padding: var(--oa-space-lg) 48px var(--oa-space-lg) var(--oa-space-xl);
+  border-top: 2px solid var(--theme-accent);
+  background: var(--theme-bg);
+  color: var(--theme-text);
+  font-size: var(--oa-size-body);
+  animation: welkom-in 0.22s ease-out;
+}
+
+@keyframes welkom-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* ── Links: wat de app doet ── */
+
+.welkom-uitleg h2 {
+  margin: 0 0 4px;
+  font-family: var(--oa-font-heading);
+  font-size: var(--oa-size-dialog-heading);
+  font-weight: 500;
+  letter-spacing: var(--oa-letter-spacing-heading);
+}
+
+.welkom-uitleg p {
+  margin: 0 0 10px;
+  line-height: 1.5;
+  color: var(--theme-text-secondary);
+}
+
+.welkom-stroom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  counter-reset: stap;
+}
+
+.welkom-stroom li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  cursor: help;
+  counter-increment: stap;
+}
+
+.welkom-stroom li::before {
+  content: counter(stap);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--theme-accent);
+  color: var(--oa-text-on-accent);
+  font-family: var(--oa-font-numbers);
+  font-size: var(--oa-size-label);
+  line-height: 18px;
+  text-align: center;
+}
+
+.welkom-stroom li + li::after {
+  content: none;
+}
+
+.welkom-stroom li:not(:last-child)::after {
+  content: "→";
+  margin-left: 2px;
+  color: var(--theme-text-muted);
+}
+
+/* Code → uitkomst, zoals de uitwerking het toont. */
+.welkom-demo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-medium);
+  background: var(--oa-field);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.welkom-demo code {
+  font-family: var(--oa-font-mono);
+  color: var(--theme-text);
+}
+
+.welkom-pijl {
+  color: var(--theme-accent-tint);
+  font-weight: 600;
+}
+
+.welkom-uitkomst {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "Times New Roman", serif;
+  font-size: 14px;
+}
+
+.welkom-uitkomst sub {
+  font-size: 10px;
+}
+
+.welkom-breuk {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.welkom-breuk span:first-child {
+  border-bottom: 1px solid currentColor;
+  padding: 0 2px;
+}
+
+.welkom-uitkomst b {
+  color: var(--oa-success);
+}
+
+/* ── Midden: snel beginnen ── */
+
+.welkom-acties {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.welkom-tegel {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-medium);
+  background: var(--oa-field);
+  color: var(--theme-text);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  transition: border-color 0.12s, background 0.12s, transform 0.12s;
+}
+
+.welkom-tegel:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-hover);
+  transform: translateY(-1px);
+}
+
+.welkom-tegel .oa-icon {
+  grid-row: 1 / 3;
+  color: var(--theme-accent-tint);
+}
+
+.welkom-tegel strong {
+  font-size: var(--oa-size-panel-heading);
+  font-weight: 600;
+}
+
+.welkom-tegel span {
+  color: var(--theme-text-secondary);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Het voorbeeldblad is de beste eerste stap: in accentkleur. */
+.welkom-tegel.welkom-hoofd {
+  border-color: var(--theme-accent);
+  background: var(--oa-selected);
+}
+
+/* ── Rechts: de rekentaal ── */
+
+.welkom-taal h3 {
+  margin: 0 0 6px;
+  font-family: var(--oa-font-body);
+  font-size: var(--oa-size-label);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--theme-accent-tint);
+}
+
+.welkom-taal dl {
+  margin: 0 0 10px;
+}
+
+.welkom-taal dl div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.welkom-taal dt {
+  flex-shrink: 0;
+}
+
+.welkom-taal dt code {
+  font-family: var(--oa-font-mono);
+  font-size: var(--oa-size-label);
+  padding: 1px 6px;
+  border-radius: var(--oa-radius-small);
+  background: var(--oa-field);
+  border: 1px solid var(--theme-border);
+  white-space: nowrap;
+}
+
+.welkom-taal dd {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--theme-text-secondary);
+}
+
+.welkom-bijstart {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--theme-text-secondary);
+}
+
+.welkom-sluit {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--oa-radius-small);
+  background: transparent;
+  color: var(--theme-text-secondary);
+  cursor: default;
+}
+
+.welkom-sluit:hover {
+  background: var(--theme-ribbon-btn-hover);
+  border-color: var(--theme-ribbon-btn-hover-border);
+  color: var(--theme-text);
+}
+
+/* Smal venster: de taalregels vallen weg, de rest blijft. */
+@media (max-width: 1100px) {
+  .welkom-paneel {
+    grid-template-columns: minmax(260px, 1fr) minmax(300px, 1fr);
+  }
+  .welkom-taal {
+    display: none;
+  }
+}
+
+/* Nooit mee op papier. */
+html.afdrukmodus .welkom-paneel {
+  display: none;
+}
+
+@media print {
+  .welkom-paneel {
+    display: none;
+  }
+}

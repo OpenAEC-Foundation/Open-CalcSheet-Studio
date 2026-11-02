@@ -1,22 +1,31 @@
 import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import { LANGUAGES, changeLanguage } from "../../i18n/config";
+import { LANGUAGES, STANDAARD_TAAL, changeLanguage } from "../../i18n/config";
 import { getSetting, setSetting } from "../../store";
 import Modal from "../Modal";
 import ThemedSelect from "../ThemedSelect";
 import BureauTab from "../rapport/BureauTab";
+import McpTab from "./McpTab";
 import { useBureauStore } from "../../store/bureauProfiel";
 import { leegBureau, type BureauProfiel } from "../../rapport/model";
+import { version as pakketVersie } from "../../../package.json";
 import "../ThemedSelect.css";
 import "./SettingsDialog.css";
 
 const THEME_OPTIONS = [
-  { value: "light",     labelKey: "appearance.light",     swatches: ["#FAFAF9", "#FFFFFF", "#D97706", "#36363E"] },
-  { value: "forge",     labelKey: "appearance.forge",     swatches: ["#36363E", "#44444C", "#D97706", "#FAFAF9"] },
-  { value: "openaec",   labelKey: "appearance.dark",      swatches: ["#27272A", "#1C1917", "#D97706", "#FAFAF9"] },
-  { value: "blueprint", labelKey: "appearance.blueprint", swatches: ["#0F1B2D", "#1A2C45", "#60A5FA", "#E0E7FF"] },
-  { value: "contrast",  labelKey: "appearance.contrast",  swatches: ["#000000", "#0A0A0A", "#FFD700", "#FFFFFF"] },
+  { value: "light",               labelKey: "appearance.light",             swatches: ["#F1EEEA", "#FFFFFF", "#D97706", "#2A2A32"] },
+  { value: "dark",                labelKey: "appearance.dark",              swatches: ["#2A2A32", "#33333C", "#D97706", "#EDEBE8"] },
+  { value: "blueprint",           labelKey: "appearance.blueprint",         swatches: ["#0A1320", "#0F1B2D", "#60A5FA", "#E0E7FF"] },
+  { value: "high-contrast-dark",  labelKey: "appearance.highContrastDark",  swatches: ["#000000", "#000000", "#F59E0B", "#FFFFFF"] },
+  { value: "high-contrast-light", labelKey: "appearance.highContrastLight", swatches: ["#FFFFFF", "#FFFFFF", "#92400E", "#000000"] },
 ];
+
+/** Het 0.4-thema bij een opgeslagen waarde, ook voor de namen van eerdere versies. */
+export function themeId(theme?: string): string {
+  const eerder: Record<string, string> = { forge: "dark", openaec: "dark", contrast: "high-contrast-dark" };
+  const id = eerder[theme ?? ""] ?? theme ?? "light";
+  return THEME_OPTIONS.some((o) => o.value === id) ? id : "light";
+}
 
 /* ─── Tab configuratie ──────────────────────────────────────
    Pas deze array aan voor jouw project.
@@ -25,7 +34,8 @@ const THEME_OPTIONS = [
    Voorbeeld met domein-tab:
      const TAB_IDS = ["general", "appearance", "calculation", "about"] as const;
    ─────────────────────────────────────────────────────────── */
-const TAB_IDS = ["general", "appearance", "units", "bureau", "about"] as const;
+// "mcp": API en AI-assistent (McpTab.tsx). Die tab werkt direct, niet via Opslaan.
+const TAB_IDS = ["general", "appearance", "units", "bureau", "mcp", "about"] as const;
 
 /** Persisted under the "units" settings key. Defaults match CalcPAD's. */
 export interface UnitsSettings {
@@ -45,7 +55,16 @@ export const UNITS_DEFAULTS: UnitsSettings = {
 };
 
 export function applyTheme(theme?: string) {
-  document.documentElement.setAttribute("data-theme", theme || "light");
+  document.documentElement.setAttribute("data-oa-theme", themeId(theme));
+}
+
+/** Tekstgrootte van de Blueprint (`data-oa-text`): compact, standaard of groot. */
+const TEXT_SIZES = ["compact", "standard", "large"] as const;
+
+export function applyTextSize(size?: string) {
+  const el = document.documentElement;
+  if (size === "compact" || size === "large") el.setAttribute("data-oa-text", size);
+  else el.removeAttribute("data-oa-text");
 }
 
 interface SettingsDialogProps {
@@ -53,6 +72,8 @@ interface SettingsDialogProps {
   onClose: () => void;
   theme: string;
   onThemeChange: (theme: string) => void;
+  /** De tab die bij openen voorop staat; standaard "general". */
+  startTab?: string;
 }
 
 export default function SettingsDialog({
@@ -60,6 +81,7 @@ export default function SettingsDialog({
   onClose,
   theme,
   onThemeChange,
+  startTab,
 }: SettingsDialogProps) {
   const { t } = useTranslation("settings");
   const { t: tCommon } = useTranslation("common");
@@ -67,7 +89,8 @@ export default function SettingsDialog({
 
   // Draft state — only committed on Save
   const [draftTheme, setDraftTheme] = useState(theme);
-  const [draftLang, setDraftLang] = useState("auto");
+  const [draftLang, setDraftLang] = useState(STANDAARD_TAAL);
+  const [draftText, setDraftText] = useState("standard");
   const [draftUnits, setDraftUnits] = useState<UnitsSettings>(UNITS_DEFAULTS);
   const [draftBureau, setDraftBureau] = useState<BureauProfiel>(leegBureau);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
@@ -75,17 +98,23 @@ export default function SettingsDialog({
   // Snapshot of original values when dialog opens, for reverting on Cancel
   const originalTheme = useRef(theme);
   const originalLang = useRef("");
+  const originalText = useRef("standard");
   const originalUnits = useRef<UnitsSettings>(UNITS_DEFAULTS);
   const originalBureau = useRef<BureauProfiel>(leegBureau());
 
   // Reset draft to current values when dialog opens
   useEffect(() => {
     if (open) {
+      setActiveTab(startTab ?? "general");
       originalTheme.current = theme;
       setDraftTheme(theme);
-      getSetting("language", "auto").then((lang) => {
+      getSetting("language", STANDAARD_TAAL).then((lang) => {
         originalLang.current = lang;
         setDraftLang(lang);
+      });
+      getSetting("textSize", "standard").then((size) => {
+        originalText.current = size;
+        setDraftText(size);
       });
       getSetting<UnitsSettings>("units", UNITS_DEFAULTS).then((u) => {
         originalUnits.current = u;
@@ -97,13 +126,19 @@ export default function SettingsDialog({
       originalBureau.current = profiel;
       setDraftBureau(profiel);
     }
-  }, [open, theme]);
+  }, [open, theme, startTab]);
 
   // Live theme preview — apply immediately when the user picks one in the dropdown.
   // Saved only on Save; reverted on Cancel.
   const handleThemePreview = (value: string) => {
     setDraftTheme(value);
     applyTheme(value);
+  };
+
+  // Tekstgrootte direct zichtbaar, net als het thema.
+  const handleTextPreview = (value: string) => {
+    setDraftText(value);
+    applyTextSize(value);
   };
 
   // Live language preview — switch i18n immediately on selection.
@@ -118,6 +153,8 @@ export default function SettingsDialog({
     applyTheme(originalTheme.current);
     setDraftLang(originalLang.current);
     changeLanguage(originalLang.current);
+    setDraftText(originalText.current);
+    applyTextSize(originalText.current);
     setDraftUnits(originalUnits.current);
     setDraftBureau(originalBureau.current);
     onClose();
@@ -128,6 +165,9 @@ export default function SettingsDialog({
     onThemeChange(draftTheme);
     applyTheme(draftTheme);
     setSetting("theme", draftTheme);
+
+    applyTextSize(draftText);
+    setSetting("textSize", draftText);
 
     setSetting("language", draftLang);
     changeLanguage(draftLang);
@@ -155,8 +195,10 @@ export default function SettingsDialog({
   const handleConfirmReset = () => {
     setDraftTheme("light");
     applyTheme("light");
-    setDraftLang("auto");
+    setDraftLang(STANDAARD_TAAL);
     changeLanguage("auto");
+    setDraftText("standard");
+    applyTextSize("standard");
     setDraftUnits(UNITS_DEFAULTS);
     // Het bureauprofiel blijft staan: dat zijn bureaugegevens, geen voorkeur.
     // Voor de huisstijl heeft de tab Bureau een eigen knop "Standaard huisstijl".
@@ -200,7 +242,12 @@ export default function SettingsDialog({
             <GeneralTabContent lang={draftLang} onLangChange={handleLangPreview} />
           )}
           {activeTab === "appearance" && (
-            <AppearanceTabContent theme={draftTheme} onThemeSelect={handleThemePreview} />
+            <AppearanceTabContent
+              theme={draftTheme}
+              onThemeSelect={handleThemePreview}
+              textSize={draftText}
+              onTextSizeSelect={handleTextPreview}
+            />
           )}
           {activeTab === "units" && (
             <UnitsTabContent units={draftUnits} onChange={setDraftUnits} />
@@ -208,6 +255,7 @@ export default function SettingsDialog({
           {activeTab === "bureau" && (
             <BureauTab profiel={draftBureau} onChange={setDraftBureau} />
           )}
+          {activeTab === "mcp" && <McpTab />}
           {activeTab === "about" && <AboutTabContent />}
         </div>
       </div>
@@ -270,16 +318,34 @@ function GeneralTabContent({
 function AppearanceTabContent({
   theme,
   onThemeSelect,
+  textSize,
+  onTextSizeSelect,
 }: {
   theme: string;
   onThemeSelect: (value: string) => void;
+  textSize: string;
+  onTextSizeSelect: (value: string) => void;
 }) {
   const { t } = useTranslation("settings");
   return (
-    <div className="settings-section">
-      <h3>{t("appearance.theme")}</h3>
-      <ThemeDropdown theme={theme} onThemeSelect={onThemeSelect} />
-    </div>
+    <>
+      <div className="settings-section">
+        <h3>{t("appearance.theme")}</h3>
+        <ThemeDropdown theme={theme} onThemeSelect={onThemeSelect} />
+      </div>
+      <div className="settings-section">
+        <h3>{t("appearance.uiFontSize")}</h3>
+        <div className="settings-row">
+          <span className="settings-label">{t("appearance.textSize")}</span>
+          <ThemedSelect
+            value={textSize}
+            options={TEXT_SIZES.map((v) => ({ value: v, label: t(`appearance.text.${v}`) }))}
+            onChange={onTextSizeSelect}
+            style={{ width: 180 }}
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -431,13 +497,20 @@ function UnitsTabContent({
 // ─────────────────────────────────────────────────────────────
 function AboutTabContent() {
   const { t } = useTranslation("settings");
+  const [versie, setVersie] = useState(pakketVersie);
+  useEffect(() => {
+    import("@tauri-apps/api/app")
+      .then(({ getVersion }) => getVersion())
+      .then(setVersie)
+      .catch(() => {});
+  }, []);
   return (
     <div className="settings-section">
       <h3>{t("about.appName")}</h3>
-      <div style={{ fontSize: 11, lineHeight: 1.8 }}>
-        <p><strong>{t("about.version")}:</strong> 0.1.0</p>
+      <div style={{ fontSize: "var(--oa-size-body)", lineHeight: 1.8 }}>
+        <p><strong>{t("about.version")}:</strong> {versie}</p>
         <p><strong>{t("about.framework")}:</strong> Tauri + React + TypeScript</p>
-        <p><strong>{t("about.license")}:</strong> MIT</p>
+        <p><strong>{t("about.license")}:</strong> LGPL-3.0</p>
         <p style={{ marginTop: 8, color: "var(--theme-dialog-content-secondary)" }}>
           {t("about.description")}
         </p>

@@ -1,4 +1,5 @@
 import { parse, type MathNode } from 'mathjs';
+import type { MatrixUitkomst } from './types.js';
 
 // ─── Greek letters ──────────────────────────────────────────────────
 
@@ -145,6 +146,9 @@ function nodeToLatex(node: MathNode): string {
 
   switch (nd.type) {
     case 'ConstantNode':
+      // Een tekstconstante (`concat("ab"; u)`) als tekst; Number() maakte er
+      // "NaN" van.
+      if (typeof nd.value === 'string') return `\\text{“${escapeText(nd.value)}”}`;
       return numberToLatex(Number(nd.value));
 
     case 'SymbolNode': {
@@ -164,12 +168,40 @@ function nodeToLatex(node: MathNode): string {
       return `\\left(${nodeToLatex(nd.content!)}\\right)`;
 
     case 'ArrayNode':
+      return arrayToLatex(node);
+
+    case 'AccessorNode':
+      return accessorToLatex(node);
+
     case 'BlockNode':
       return nd.args ? nd.args.map(a => nodeToLatex(a)).join(', ') : '';
 
     default:
       return String(node);
   }
+}
+
+/**
+ * Een vector of matrix als literaal. Een matrix (rijen) staat als blok tussen
+ * rechte haken; een vector liggend, zoals CalcPAD hem toont: [1 2 3].
+ */
+function arrayToLatex(node: MathNode): string {
+  const items = (node as unknown as { items?: MathNode[] }).items ?? [];
+  const isRij = (x: MathNode) => n(x).type === 'ArrayNode';
+  if (items.length > 0 && items.every(isRij)) {
+    const rijen = items.map((r) => ((r as unknown as { items?: MathNode[] }).items ?? []).map(nodeToLatex));
+    return `\\begin{bmatrix}${rijen.map((r) => r.join(' & ')).join(' \\\\ ')}\\end{bmatrix}`;
+  }
+  return `\\begin{bmatrix}${items.map(nodeToLatex).join(' & ')}\\end{bmatrix}`;
+}
+
+/** `A[i, j]` (in het blad `A.(i; j)`) als A met de index als subscript. */
+function accessorToLatex(node: MathNode): string {
+  const nd = node as unknown as { object?: MathNode; index?: { dimensions?: MathNode[] } };
+  const object = nd.object ? nodeToLatex(nd.object) : '';
+  const dims = nd.index?.dimensions ?? [];
+  if (dims.length === 0) return String(node);
+  return `{${object}}_{${dims.map(nodeToLatex).join(',\\,')}}`;
 }
 
 function operatorToLatex(nd: AnyNode): string {
@@ -244,6 +276,9 @@ function functionToLatex(nd: AnyNode): string {
   const fnName = typeof nd.fn === 'string' ? nd.fn : nd.fn?.name || nd.name || 'f';
 
   switch (fnName) {
+    case '_cp_los':
+      return losblokToLatex(args);
+
     case 'sqrt':
       return `\\sqrt{${args.map(a => nodeToLatex(a)).join(', ')}}`;
 
@@ -280,6 +315,57 @@ function functionToLatex(nd: AnyNode): string {
   return `${symbolToLatex(fnName)}\\left(${args.map(a => nodeToLatex(a)).join(', ')}\\right)`;
 }
 
+/**
+ * Een $Root-, $Find-, $Solve-, $Sup-, $Inf-, $Sum-, $Product-, $Area-,
+ * $Integral- of $Slope-blok zoals het in het blad staat. De parser zet het om
+ * naar `_cp_los("Root", "x", "links", "rechts", _find_root(__solver_N, a, b))`
+ * (rewriteSolverDirectives); de hulpfunctie __solver_N en de rekenfunctie
+ * komen zo nooit in beeld:
+ *   Root{f(x) = 0; x ∈ [a; b]}   Sup{f(x); x ∈ [a; b]}   ∑ₖ₌ₐᵇ f(k)
+ *   ∫ₐᵇ f(x) dx                   d/dx f(x) bij x = a
+ */
+function losblokToLatex(args: MathNode[]): string {
+  const tekst = (a?: MathNode): string => {
+    const k = a ? n(a) : undefined;
+    return k && k.type === 'ConstantNode' && typeof k.value === 'string' ? k.value : '';
+  };
+  const blok = tekst(args[0]);
+  const v = symbolToLatex(tekst(args[1]) || 'x');
+  const lichaam = tekst(args[2]);
+  const links = exprToLatex(lichaam);
+  const rechts = tekst(args[3]) ? exprToLatex(tekst(args[3])) : '0';
+  const aanroep = args[4] ? n(args[4]).args ?? [] : [];
+  const grens = (i: number): string => (aanroep[i] ? nodeToLatex(aanroep[i]) : '');
+  // Een som of verschil achter ∑, ∏, ∫ of d/dx tussen haakjes.
+  let somVorm = false;
+  try {
+    const p = n(parse(lichaam));
+    somVorm = p.type === 'OperatorNode' && (p.op === '+' || p.op === '-') && (p.args?.length ?? 0) > 1;
+  } catch { /* laat zonder haakjes */ }
+  const term = somVorm ? `\\left(${links}\\right)` : links;
+  const bereik = `${v} \\in \\left[${grens(1)};\\, ${grens(2)}\\right]`;
+  switch (blok) {
+    case 'Find':
+    case 'Root':
+      return `\\operatorname{${blok}}\\left\\{${links} = ${rechts};\\; ${bereik}\\right\\}`;
+    case 'Solve':
+      return `\\operatorname{Solve}\\left\\{${links} = ${rechts};\\; ${v}_{0} = ${grens(1)}\\right\\}`;
+    case 'Sup':
+    case 'Inf':
+      return `\\operatorname{${blok}}\\left\\{${links};\\; ${bereik}\\right\\}`;
+    case 'Sum':
+      return `\\sum_{${v} = ${grens(1)}}^{${grens(2)}} ${term}`;
+    case 'Product':
+      return `\\prod_{${v} = ${grens(1)}}^{${grens(2)}} ${term}`;
+    case 'Area':
+    case 'Integral':
+      return `\\int_{${grens(1)}}^{${grens(2)}} ${term} \\, \\mathrm{d}${v}`;
+    case 'Slope':
+      return `\\left.\\frac{\\mathrm{d}}{\\mathrm{d}${v}} ${term}\\right|_{${v} = ${grens(1)}}`;
+  }
+  return `\\operatorname{${escapeText(blok)}}\\left\\{${links}\\right\\}`;
+}
+
 // ─── Result formatting ──────────────────────────────────────────────
 
 /**
@@ -295,6 +381,11 @@ function resultNumberToLatex(numStr: string): string {
 
 /** Format a result value (number + unit) as LaTeX */
 export function resultToLatex(numStr: string, unitStr: string): string {
+  // Een tekst als uitkomst (`concat(…)`) als tekst, niet als losse letters in
+  // wiskundemodus.
+  if (!unitStr && numStr !== '' && !/^[+-]?(?:\d|\.\d|∞|NaN$)/.test(numStr)) {
+    return `\\text{${escapeText(numStr)}}`;
+  }
   const num = numStr.includes('∞') ? numStr.replace(/∞/g, '\\infty') : resultNumberToLatex(numStr);
   if (!unitStr) return num;
   return `${num} \\; ${unitPartToLatex(unitStr)}`;
@@ -318,6 +409,8 @@ export function unitPartToLatex(unitStr: string): string {
   // hard to strip reliably). Tokens are identifiers optionally followed by
   // `^exp`. `/` introduces a denominator; space is implicit multiplication.
   const fmtToken = (tok: string): string => {
+    // Procent (opmaak `:P`): een kale % is in LaTeX het begin van commentaar.
+    if (tok === '%') return '\\%';
     const m = tok.match(/^([\p{L}_][\p{L}\p{N}_]*)(?:\^(-?\d+))?$/u);
     if (!m) return `\\mathrm{${tok}}`;
     const naam = eenheidsnaam(m[1], (s) => `\\mathrm{${s}}`);
@@ -337,7 +430,34 @@ export function unitPartToLatex(unitStr: string): string {
   return `\\frac{${fmtGroup(parts[0])}}{${parts.slice(1).map(fmtGroup).join('\\,')}}`;
 }
 
-/** Format a variable name as LaTeX */
+/**
+ * Format a variable name as LaTeX. Een element van een vector of matrix
+ * (`v.(3)`, `K.(1; 2)`, de naam van een toekenning aan één element) krijgt
+ * de index als subscript.
+ */
 export function nameToLatex(name: string): string {
+  const element = name.match(/^(.+)\.\((.+)\)$/);
+  if (element) {
+    const index = element[2].split(';').map((d) => escapeLatex(d.trim())).join(',\\,');
+    return `{${symbolToLatex(element[1])}}_{${index}}`;
+  }
   return symbolToLatex(name);
+}
+
+/**
+ * Een vector of matrix als uitkomst (zie MatrixUitkomst in types.ts): elk
+ * element als getal met eenheid, een gedeelde eenheid achter de haak, en de
+ * stippen van een ingekorte matrix.
+ */
+export function matrixResultToLatex(mat: MatrixUitkomst): string {
+  const element = (e: string): string => {
+    if (e === '⋯') return '\\cdots';
+    if (e === '⋮') return '\\vdots';
+    if (e === '⋱') return '\\ddots';
+    const m = e.match(/^([+-]?(?:\d+\.?\d*(?:e[+-]?\d+)?|∞|NaN))(?:\s+(.+))?$/i);
+    if (!m) return `\\text{${escapeText(e)}}`;
+    return resultToLatex(m[1], m[2] ?? '');
+  };
+  const blok = `\\begin{bmatrix}${mat.rijen.map((r) => r.map(element).join(' & ')).join(' \\\\ ')}\\end{bmatrix}`;
+  return mat.eenheid ? `${blok} \\; ${unitPartToLatex(mat.eenheid)}` : blok;
 }

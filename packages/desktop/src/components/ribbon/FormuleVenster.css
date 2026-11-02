@@ -1,0 +1,106 @@
+/* Formulebibliotheek: zelfde opbouw als de instellingen en Module toevoegen. */
+
+.formule-venster .settings-content.fv-inhoud {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.fv-zoek {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  background: var(--oa-field);
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.fv-zoek:focus {
+  outline: none;
+  border-color: var(--oa-focus);
+}
+
+.fv-lijst {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+}
+
+.fv-rij {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-medium);
+  background: var(--theme-bg-lighter);
+  color: var(--theme-text);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.fv-rij:hover {
+  background: var(--theme-hover);
+}
+
+.fv-rij.gekozen {
+  border-color: var(--theme-accent);
+  background: var(--oa-selected);
+}
+
+.fv-kop {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.fv-kop strong {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.fv-bron {
+  flex-shrink: 0;
+  font-size: var(--oa-size-label);
+  color: var(--theme-accent-tint);
+}
+
+.fv-uitleg {
+  font-size: var(--oa-size-body);
+  color: var(--theme-text-secondary);
+  line-height: 1.45;
+}
+
+.fv-code {
+  margin: 4px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  background: var(--oa-field);
+  font-family: var(--oa-font-mono);
+  font-size: var(--oa-size-label);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--theme-text);
+}
+
+.fv-leeg {
+  color: var(--theme-text-secondary);
+}
+
+.fv-aantal {
+  margin-right: auto;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
+}

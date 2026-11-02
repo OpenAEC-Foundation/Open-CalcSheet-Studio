@@ -18,14 +18,26 @@
  * `scripts/windgebieden/genereer.py`, uit de CBS-provinciegrenzen en de
  * CBS-gemeentegrenzen van 2015. De meren en de Waddenzee zijn aparte vlakken
  * (soort "water"). Het rekenwerk staat in `lib/windgebieden.ts`.
+ *
+ * `nl-windgebieden-contour.geojson` heeft per gebied één vlak, de vereniging
+ * van die vlakken (`scripts/windgebieden/contour.py`). De kaart tekent daarmee
+ * het gebied van een gekozen plek als één omtrek.
  */
 
 import windgebiedenRaw from "./nl-windgebieden.geojson?raw";
-import { maakWindKaart, type WindGebied, type WindGebiedenKaart } from "../lib/windgebieden";
+import windContourRaw from "./nl-windgebieden-contour.geojson?raw";
+import {
+  maakContouren,
+  maakWindKaart,
+  type WindContourKaart,
+  type WindGebied,
+  type WindGebiedenKaart,
+} from "../lib/windgebieden";
 
 export { VB0, OVERGANG_KM, type WindGebied, type WindLocatie } from "../lib/windgebieden";
 
 const kaart = maakWindKaart(JSON.parse(windgebiedenRaw) as WindGebiedenKaart);
+const contouren = maakContouren(JSON.parse(windContourRaw) as WindContourKaart);
 
 /** Voor Leaflet, het water onder het land. */
 export const windGebiedenGeoJSON = kaart.tekenVolgorde;
@@ -33,6 +45,8 @@ export const windGebiedenGeoJSON = kaart.tekenVolgorde;
 export const windGebiedForLatLng = kaart.gebiedVoor;
 /** Windgebied en v_b,0 van een punt, met de overgangszone van figuur NB.2. */
 export const windLocatie = kaart.locatie;
+/** Het hele windgebied als één vlak, voor de selectie op de kaart. */
+export const windGebiedContour = contouren.contour;
 
 /** Kleuren per gebied — laag-opacity overlay op de basiskaart. */
 export const GEBIED_COLORS: Record<WindGebied, string> = {

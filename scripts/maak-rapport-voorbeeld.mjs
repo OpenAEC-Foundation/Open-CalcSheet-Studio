@@ -29,7 +29,6 @@ import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { balklaag } from "../packages/desktop/src/templates/balklaag.ts";
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
-import { PROJECT_FORMAAT_VERSIE } from "../packages/desktop/src/store/projectBestand.ts";
 import { leegBureau, normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 import { standaardTeksten } from "../packages/desktop/src/rapport/standaardteksten.ts";
 import { gevelOpbouw, vlakOpbouw } from "../packages/desktop/src/rapport/opbouw.ts";
@@ -152,10 +151,9 @@ function bouwProject() {
     ],
   };
 
-  // Zelfde vorm als bouwProjectBestand() in store/projectBestand.ts, zonder
-  // IFCX-inhoud en zonder `source` (de rekentekst van het eerste blad voor
-  // lezers die één blad verwachten): bij het openen telt alleen `project`.
-  return { project: { versie: PROJECT_FORMAAT_VERSIE, naam: gegevens.project_naam, gegevens, exemplaren, rapport } };
+  // Bewust het oude formaat (versie 1, alleen `project`): de controle op het
+  // openen van oude bestanden (check-ifcx.mjs) gebruikt dit voorbeeld ook.
+  return { project: { versie: 1, naam: gegevens.project_naam, gegevens, exemplaren, rapport } };
 }
 
 /** Paden waarop twee waarden verschillen, als leesbare regels. */

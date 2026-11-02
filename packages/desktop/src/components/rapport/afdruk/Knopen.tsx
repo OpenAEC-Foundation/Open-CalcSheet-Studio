@@ -2,6 +2,10 @@ import type { ReactNode } from "react";
 import type { Rapportknoop } from "../../../rapport/opzet";
 import { vulIn } from "../../../rapport/invullen";
 import { samenvatting } from "../../calc/bladResultaat";
+import { MATEN } from "../../calc/paginering";
+import { PdfPaginas } from "../../calc/PdfBladWeergave";
+import { UitwerkingHtml } from "../../calc/PrintBlad";
+import { isPdfBlad } from "../../../store/pdfBijlage";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { Cel, Leeg, Rij, Tekst, Vlak } from "./raster";
 import { Bestaand, Bouwwerk, Brand, Conservering, Factoren, Materialen, Vervormingen } from "./Uitgangspunten";
@@ -102,7 +106,8 @@ function BerekeningenInhoud({ knoop }: { knoop: Rapportknoop }) {
  * Eén blad in hoofdstuk Berekeningen: de automatische samenvatting uit de
  * bladkop, daaronder de eigen toelichting als die er is; dan de verwijzing
  * naar bijlage A, of — als het blad in het hoofdstuk zelf hoort — de
- * uitwerking hier.
+ * uitwerking hier. Bij een PDF-blad is die uitwerking de PDF: elke pagina op
+ * een eigen vel, onder de paragraafkop.
  */
 function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
   const b = w.bladen.find((x) => x.ex.id === blad.id);
@@ -115,11 +120,13 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
         <p className="rpa-tekst">{samenvatting(b.resultaat)}</p>
       )}
       {toelichting.trim() && <Tekst tekst={toelichting} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />}
-      {inHoofdstuk && b ? (
+      {inHoofdstuk && b && isPdfBlad(b.ex) ? (
+        <PdfPaginas ex={b.ex} maten={MATEN.rapport} />
+      ) : inHoofdstuk && b ? (
         // `print-blad` geeft de uitwerking dezelfde compacte opmaak als een
         // los blad; `rpa-inline` haalt de paginasprong van een los blad weg.
         <Vlak klasse="print-blad rpa-inline">
-          <div className="ifc-calc" dangerouslySetInnerHTML={{ __html: b.html }} />
+          <UitwerkingHtml html={b.html} bladId={b.ex.id} />
         </Vlak>
       ) : (
         blad.bijlage && <p className="rpa-tekst">Zie bijlage {blad.bijlage}.</p>

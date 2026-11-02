@@ -1,0 +1,121 @@
+/*
+ * PDF-bladen (PdfBladWeergave.tsx): de werkruimte met de pagina's onder elkaar,
+ * en de pagina's op papier.
+ */
+
+/* ─── Werkruimte ──────────────────────────────────────────────── */
+
+/* Het werkvlak volgt het thema, net als het afdrukvoorbeeld; de pagina's zelf
+   zijn altijd wit papier. */
+.pdf-weergave {
+  overflow: auto;
+  padding: 20px 16px 32px;
+  background: var(--oa-workspace);
+}
+
+.pdf-weergave-paginas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.pdf-weergave-pagina {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex: none;
+  background: #fff;
+  color: #6b6b73;
+  font-size: var(--oa-size-label);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.pdf-weergave-pagina img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+.pdf-melding {
+  max-width: 480px;
+  margin: 40px auto;
+  text-align: center;
+  font-size: var(--oa-size-body);
+  color: var(--theme-text-secondary);
+}
+
+.pdf-melding.fout {
+  color: var(--oa-error);
+}
+
+/* Kop van het paneel: bestand, pagina's en grootte, met de knop Vervangen. */
+.pdf-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pdf-info-tekst {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-vervang {
+  flex: none;
+  height: 20px;
+  padding: 0 8px;
+  font: inherit;
+  color: var(--theme-text);
+  background: var(--theme-bg-lighter);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  cursor: default;
+}
+
+.pdf-vervang:hover {
+  background: var(--theme-hover);
+}
+
+/* ─── Op papier ───────────────────────────────────────────────── */
+
+/* Eén PDF-pagina: maat en schaal zet PdfPaginas uit de bladspiegel. De rand
+   valt binnen die maat (border-box), zodat het vel er niet om afknipt. */
+.print-opmaak .print-pdf-pagina {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin: 0 auto;
+  border: 0.5pt solid #d4d4d8;
+  background: #fff;
+  font-size: 8.5pt;
+  color: #6b6b73;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-opmaak figure.print-pdf-pagina img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+/* Elke volgende pagina op een eigen vel: bij het printen via de browser, en in
+   het afdrukvoorbeeld via paginering.ts. */
+.print-opmaak .print-nieuw-vel {
+  break-before: page;
+  page-break-before: always;
+}
+
+.print-opmaak .print-pdf-melding {
+  margin: 0 0 6pt;
+  font-size: 9pt;
+  color: #6b6b73;
+}

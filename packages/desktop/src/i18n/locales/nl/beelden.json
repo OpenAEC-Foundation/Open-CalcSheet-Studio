@@ -1,0 +1,259 @@
+{
+  "kit": {
+    "klikWijzig": "{{naam}} — klik om te wijzigen",
+    "voldoet": "✓ voldoet",
+    "voldoetNiet": "✗ voldoet niet",
+    "ja": "Ja",
+    "nee": "Nee"
+  },
+  "ligger": {
+    "titel": "Parametrisch beeld — ligger",
+    "kop": "Ligger",
+    "materiaal": "Materiaal",
+    "hout": "Hout",
+    "staal": "Staal",
+    "systeem": "Systeem",
+    "systemen": {
+      "twee": "Twee steunpunten",
+      "drie": "Drie steunpunten",
+      "vier": "Vier steunpunten",
+      "uitkraging": "Uitkraging"
+    },
+    "inklemming": "Inklemming",
+    "inklemmingen": {
+      "geen": "Geen",
+      "links": "Links",
+      "rechts": "Rechts",
+      "beide": "Beide einden"
+    },
+    "gerberscharnieren": "Gerberscharnieren",
+    "aantalScharnieren": {
+      "geen": "Geen",
+      "een": "Eén",
+      "twee": "Twee"
+    },
+    "scharnierX": "Scharnier {{n}}, x (m)",
+    "noot": "De lasten, de doorsnede en de toetsen staan in het rekenblad; posities vanaf het linkereind.",
+    "aanzicht": "Aanzicht met de karakteristieke lasten en de momentenlijn (G + Q, alle lasten)",
+    "beweeglijk": "beweeglijk: te weinig steunpunten of een scharnier te veel",
+    "klik": "Klik op een blauwe maat of een last om die te wijzigen — stroomt direct terug in het rekenblad.",
+    "inBlad": "De combinaties, de omhullende en de toetsen staan in het rekenblad.",
+    "lengte": "lengte {{l}} m",
+    "lasten_one": "{{count}} last",
+    "lasten_other": "{{count}} lasten",
+    "scharnieren_one": "{{count}} scharnier",
+    "scharnieren_other": "{{count}} scharnieren"
+  },
+  "balklaag": {
+    "titel": "Parametrisch beeld — balklaag",
+    "nietAangetoond": "✗ niet aangetoond (f₁ ≤ 8 Hz)",
+    "algemeen": "Algemeen",
+    "statischSchema": "Statisch schema",
+    "schema": "Schema",
+    "schemas": {
+      "enkelvoudig": {
+        "label": "Enkelvoudig, op twee steunpunten",
+        "kort": "Enkelvoudig"
+      },
+      "overstek": {
+        "label": "Met overstek aan één zijde",
+        "kort": "Overstek"
+      },
+      "tweeveld": {
+        "label": "Op drie steunpunten (twee velden)",
+        "kort": "Twee velden"
+      },
+      "raveel": {
+        "label": "Raveelbalk langs een sparing",
+        "kort": "Raveelbalk"
+      }
+    },
+    "soortLigger": "Soort ligger",
+    "liggers": {
+      "balk": "Balk in een balklaag",
+      "onderslag": "Onderslag (belaste breedte)"
+    },
+    "oudBlad": "Dit blad is met een oudere versie gemaakt; voeg de balklaag opnieuw in voor onderslag en vrije maat.",
+    "belasteBreedte": "Belaste breedte (m)",
+    "belasteBreedteUitleg": "Bij balken die over twee gelijke velden doorlopen 1,25 × L, bij losse balken aan weerszijden de som van de halve overspanningen.",
+    "overstek": "Overstek a (mm)",
+    "tweedeOverspanning": "Tweede overspanning (mm)",
+    "opleglengteSteun": "Opleglengte tussensteunpunt (mm)",
+    "opleglengteSteunUitleg": "Opleglengte op het tussensteunpunt; bij balken op een onderslag de breedte van de onderslag. Telt mee in de oplegdruk (§6.1.5).",
+    "breedteSparing": "Breedte sparing (mm)",
+    "staartlengte": "Staartlengte (mm)",
+    "geometrie": "Geometrie",
+    "profiel": "Profiel (b×h)",
+    "zelfInvullen": "Zelf invullen",
+    "slsDubbel": "SLS dubbel {{maat}}",
+    "breedteB": "Breedte b (mm)",
+    "hoogteH": "Hoogte h (mm)",
+    "doorsnedeVorm": "Doorsnede",
+    "vormen": {
+      "rechthoek": {
+        "label": "Rechthoekige balk",
+        "kort": "Rechthoekig"
+      },
+      "tbalk": {
+        "label": "T-balk: balk met meewerkende vloerplaat (EN 1995-1-1 §9.1.2)",
+        "kort": "T-balk"
+      }
+    },
+    "tbalk": {
+      "kop": "Doorsnede — T-balk, plaat verlijmd",
+      "inHetVeld": "in het veld",
+      "bijHetSteunpunt": "bij het steunpunt",
+      "plaat": "Vloerplaat (tabel 9.1)",
+      "platen": {
+        "multiplexEvenwijdig": "Multiplex, buitenfineer ∥ balken",
+        "multiplexLoodrecht": "Multiplex, buitenfineer ⊥ balken",
+        "osbEvenwijdig": "OSB/3, hoofdas ∥ balken",
+        "osbLoodrecht": "OSB/3, hoofdas ⊥ balken",
+        "spaanplaat": "Spaanplaat of vezelplaat"
+      },
+      "nogTeControleren": "Nog te controleren: de T-balktoetsing is nog niet nagerekend op referentiebladen.",
+      "verlijmd": "De plaat is over de volle lengte op de balken gelijmd aangenomen. Een gespijkerde of geschroefde plaat valt onder bijlage B (γ-methode) en niet onder dit blad.",
+      "fabrikantMultiplex": "Multiplex: vul de fabrikantgegevens in, in de richting van de balken (EN 636, EN 12369-2).",
+      "fabrikantSpaanplaat": "Spaan- of vezelplaat: vul de fabrikantgegevens in, in de richting van de balken, en k_mod en k_def uit tabel 3.1 en 3.2 voor de soort.",
+      "fabrikantgegeven": "fabrikantgegeven",
+      "invoer": {
+        "druk": "druk (N/mm²)",
+        "trek": "trek (N/mm²)",
+        "rolschuif": "rolschuif (N/mm²)",
+        "emodulus": "in balkrichting (N/mm²)",
+        "kmod": "tabel 3.1",
+        "kmodG": "blijvend",
+        "kdef": "tabel 3.2"
+      },
+      "onvolledig": "Plaatgegevens onvolledig of buiten het bereik (OSB/3: 6 < t ≤ 25 mm, klimaatklasse 1 of 2): de T-balk is niet getoetst.",
+      "nietGetoetst": "✗ T-balk niet getoetst (plaatgegevens)",
+      "nvt": "De T-balk geldt voor een balk in een balklaag; bij een onderslag of raveelbalk rekent het blad met de rechthoekige balk."
+    },
+    "ontwerp": {
+      "knop": "Ontwerp",
+      "zoekt": "Zoekt…",
+      "uitleg": "kiest het eerste profiel uit de lijst waarop het blad voldoet",
+      "geen": "Geen enkel profiel uit de lijst voldoet. Verklein de h.o.h. afstand of de overspanning, kies een hogere sterkteklasse, of vul zelf een maat in.",
+      "al": "{{profiel}} voldoet al — lichter kan niet binnen deze lijst.",
+      "gekozen": "{{profiel}} gekozen: het eerste profiel waarop het blad voldoet."
+    },
+    "dagmaat": "Dagmaat (mm)",
+    "opleglengte": "Opleglengte (mm)",
+    "hoh": "H.o.h. afstand (mm)",
+    "dikteBeschot": "Dikte beschot (mm)",
+    "eBeschot": "E-modulus beschot (N/mm²)",
+    "breedteVloer": "Breedte vloerveld (m)",
+    "materiaal": "Materiaal",
+    "sterkteklasse": "Sterkteklasse",
+    "klimaatklasse": "Klimaatklasse",
+    "klimaat": {
+      "binnen": {
+        "label": "1 — verwarmd binnen",
+        "uitleg": "Klimaatklasse 1 — houtvochtgehalte horend bij 20 °C en een relatieve luchtvochtigheid die slechts enkele weken per jaar boven 65 % komt. Gemiddeld vochtgehalte ten hoogste 12 %. Typisch: verwarmde, gesloten binnenruimten."
+      },
+      "overdekt": {
+        "label": "2 — overdekt, onverwarmd",
+        "uitleg": "Klimaatklasse 2 — 20 °C met een relatieve luchtvochtigheid die slechts enkele weken per jaar boven 85 % komt. Gemiddeld vochtgehalte ten hoogste 20 %. Typisch: overdekt maar open of onverwarmd — carport, geventileerde kruipruimte, onverwarmde zolder."
+      },
+      "buiten": {
+        "label": "3 — buiten / vochtig",
+        "uitleg": "Klimaatklasse 3 — omstandigheden die tot een hoger vochtgehalte leiden dan klasse 2. Typisch: onbeschermd buiten of blijvend vochtige ruimten. Geeft de laagste k_mod en de hoogste kruipfactor."
+      }
+    },
+    "duurklasse": "Belastingduurklasse",
+    "duur": {
+      "kort": "Kort",
+      "middellang": "Middellang",
+      "lang": "Lang",
+      "blijvend": "Blijvend"
+    },
+    "belasting": "Belasting",
+    "gedragen": "gedragen balken (kN/m²)",
+    "gedragenUitleg": "Eigen gewicht van de balken die op deze ligger rusten, per m² vloer; het blad telt het op bij G_k. Bijvoorbeeld 71×221 h.o.h. 600 in C24: ongeveer 0,11 kN/m².",
+    "categorie": "Categorie (Tabel NB.2 — A1.1)",
+    "categorieen": {
+      "a": "A — woon- en verblijfsruimtes",
+      "b": "B — kantoorruimtes",
+      "c": "C — bijeenkomstruimtes",
+      "d": "D — winkelruimtes",
+      "e": "E — opslagruimtes",
+      "f": "F — verkeersruimte, voertuig ≤ 25 kN",
+      "g": "G — verkeersruimte, 25 < voertuig ≤ 160 kN",
+      "h": "H — daken",
+      "sneeuw": "Sneeuwbelasting",
+      "wind": "Windbelasting",
+      "zelf": "Zelf invullen"
+    },
+    "doorbuiging": "Doorbuiging",
+    "controleerDoorbuiging": "Controleer doorbuiging",
+    "grensFin": "Grens eindstand",
+    "grensBij": "Grens bijkomende doorbuiging",
+    "brosseAfwerking": "{{grens}} (brosse afwerking)",
+    "trilling": "Trilling (§7.3.3)",
+    "controleerTrilling": "Controleer trilling",
+    "drieDKop": "3D-beeld",
+    "drieDTonen": "Toon het 3D-beeld",
+    "drieDAfdrukken": "Op de uitdraai",
+    "drieDAfdrukkenUitleg": "Een kleine afbeelding aan het eind van het blad. Staat standaard uit: zo blijft de uitdraai kort.",
+    "onderslagTrilling": "Bij een onderslag vervalt de trillingstoets; die hoort bij de balklaag erop.",
+    "demping": "ζ — demping",
+    "plattegrond": "Plattegrond van de sparing",
+    "doorsnedeOnderslag": "Doorsnede van de onderslag",
+    "belasteBreedteMaat": "belaste breedte {{b}} m",
+    "doorsnede": "Doorsnede",
+    "schemaKop": "Statisch schema — karakteristieke lasten per balk",
+    "veranderlijk": "veranderlijk",
+    "permanent": "permanent",
+    "mLijn": "M-lijn (UGT, omhullende)",
+    "mLijnOnder": "puntlast ongunstigst geplaatst",
+    "omhullendNoot": "Veilige omhullende: maxima van permanente last en puntlast opgeteld,",
+    "vLijn": "V-lijn (UGT, omhullende)",
+    "vLijnOnder": "puntlast ongunstigst geplaatst",
+    "doorbuigingKop": "Doorbuiging (BGT)",
+    "grens": "grens",
+    "uiteinde": "uiteinde",
+    "veld2": "veld 2",
+    "stippel": "stippel:",
+    "lijn": "lijn:",
+    "metKruip": "(met kruip); waarden uit het blad",
+    "klik": "Klik op een blauwe maat om hem te wijzigen.",
+    "uc": {
+      "doorbuiging": "doorbuiging",
+      "doorbuigingNvt": "doorbuiging n.v.t.",
+      "buiging": "buiging",
+      "afschuiving": "afschuiving",
+      "oplegdruk": "oplegdruk",
+      "kip": "kip",
+      "alleenG": "alleen G",
+      "trilling": "trilling",
+      "nietAangetoond": "niet aangetoond",
+      "trillingNvt": "trilling n.v.t.",
+      "trekOplegging": "trek oplegging {{kn}} kN",
+      "plaat": "plaat",
+      "lijmnaad": "lijmnaad",
+      "flensbreedte": "flensbreedte"
+    }
+  },
+  "raveel": {
+    "raveelbalk": "raveelbalk {{profiel}}",
+    "staartbalken": "staartbalken ({{n}}×)",
+    "wisselbalk": "wisselbalk (dubbel)",
+    "belasteStrook": "belaste strook",
+    "sparing": "sparing"
+  },
+  "afdruk": {
+    "titel": "Afdrukvoorbeeld",
+    "titelRapport": "Afdrukvoorbeeld rapport",
+    "opmaken": "pagina's opmaken…",
+    "paginas_one": "{{count}} pagina",
+    "paginas_other": "{{count}} pagina's",
+    "bereik": "Bereik",
+    "heleProject_one": "Hele project ({{count}} blad)",
+    "heleProject_other": "Hele project ({{count}} bladen)",
+    "alleen": "Alleen: {{naam}}",
+    "zoom": "Zoom",
+    "afdrukken": "PDF / afdrukken…",
+    "sluiten": "Sluiten",
+    "paginaVan": "Pagina {{nummer}} van {{totaal}}"
+  }
+}

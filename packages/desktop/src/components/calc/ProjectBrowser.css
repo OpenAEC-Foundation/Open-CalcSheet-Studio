@@ -1,71 +1,3 @@
-.project-browser {
-  width: 240px;
-  min-width: 240px;
-  height: 100%;
-  background: var(--theme-bg);
-  border-right: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.15));
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: width 0.18s ease, min-width 0.18s ease;
-  flex-shrink: 0;
-  user-select: none;
-  font-family: var(--font-body);
-}
-
-.project-browser.collapsed {
-  width: 36px;
-  min-width: 36px;
-}
-
-.project-browser-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 30px;
-  padding: 0 10px;
-  background: var(--theme-bg-lighter);
-  border-bottom: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.15));
-  flex-shrink: 0;
-}
-
-.project-browser-title {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--theme-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-
-.project-browser-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  background: transparent;
-  border: none;
-  color: var(--theme-text-secondary);
-  font-size: 10px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: background 0.15s, color 0.15s;
-}
-
-.project-browser-toggle:hover {
-  background: var(--theme-hover, rgba(217, 119, 6, 0.08));
-  color: var(--theme-accent);
-}
-
-.project-browser-tree {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 4px 0;
-}
-
 /* Tree category */
 .tree-category {
   display: block;
@@ -223,142 +155,6 @@
   text-overflow: ellipsis;
 }
 
-/* Scrollbar */
-.project-browser-tree::-webkit-scrollbar {
-  width: 8px;
-}
-
-.project-browser-tree::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.project-browser-tree::-webkit-scrollbar-thumb {
-  background: var(--theme-border-subtle, rgba(217, 119, 6, 0.15));
-  border-radius: 4px;
-}
-
-.project-browser-tree::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-accent, #D97706);
-}
-
-/* ─── Sections (Project / Library) ───────────────────────────── */
-
-.tree-section {
-  margin: 8px 0 4px;
-}
-
-.tree-section + .tree-section {
-  margin-top: 16px;
-  border-top: 1px solid var(--theme-border-subtle);
-  padding-top: 8px;
-}
-
-.tree-section-header {
-  display: flex;
-  align-items: center;
-  padding: 4px 10px 6px;
-}
-
-.tree-section-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: var(--theme-accent, #D97706);
-  opacity: 0.85;
-}
-
-.tree-section-children {
-  display: flex;
-  flex-direction: column;
-}
-
-.tree-item-emphasis {
-  font-weight: 600;
-  color: var(--theme-text);
-  background: var(--theme-accent-soft);
-  border-radius: 4px;
-  margin: 2px 6px;
-}
-
-.tree-item-emphasis:hover {
-  background: var(--theme-hover);
-}
-
-/* ─── Exemplaren (de rekenbladen in dit project) ─────────────── */
-
-/* Een rij is een container: de naam opent het blad, de knopjes rechts
-   verschijnen pas bij hover zodat de lijst rustig blijft. */
-.tree-item.exemplaar-rij {
-  padding: 0 4px 0 0;
-  gap: 0;
-}
-
-.exemplaar-open {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-  padding: 3px 4px 3px 8px;
-  background: transparent;
-  border: none;
-  text-align: left;
-  font-family: inherit;
-  font-size: 11px;
-  color: inherit;
-  cursor: pointer;
-}
-
-.exemplaar-acties {
-  display: none;
-  align-items: center;
-  gap: 1px;
-  flex-shrink: 0;
-}
-
-.tree-item.exemplaar-rij:hover .exemplaar-acties {
-  display: flex;
-}
-
-.exemplaar-acties button {
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 3px;
-  color: var(--theme-text-secondary);
-  font-size: 10px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.exemplaar-acties button:hover {
-  background: var(--theme-hover-strong, rgba(217, 119, 6, 0.15));
-  color: var(--theme-accent);
-}
-
-.exemplaar-naam-input {
-  flex: 1;
-  min-width: 0;
-  margin: 1px 4px 1px 0;
-  padding: 1px 4px;
-  font-family: inherit;
-  font-size: 11px;
-  color: var(--theme-text);
-  background: var(--theme-bg-lighter);
-  border: 1px solid var(--theme-accent);
-  border-radius: 3px;
-}
-
-.project-leeg {
-  margin: 4px 10px 8px;
-  font-size: 10.5px;
-  line-height: 1.45;
-  color: var(--theme-text-secondary);
-}
-
 /* Plusje in de catalogus — laat zien dat klikken toevoegt, niet opent. */
 .tree-item-plus {
   flex-shrink: 0;
@@ -410,14 +206,211 @@
   opacity: 0.6;
 }
 
-/* Knop naar het scherm "Module toevoegen", onder de projectbladen. */
-.tree-item-toevoegen {
-  margin-top: 6px;
-  color: var(--theme-accent);
-  font-weight: 500;
+/* ─── Zijpaneel: het project en zijn bladen ──────────────────── */
+
+/* Breedte en kleuren komen van .left-panel in App.css (Blueprint-schil). */
+.project-browser {
+  width: var(--oa-shell-panel-width);
+  user-select: none;
 }
 
-.tree-item-toevoegen .tree-item-icon {
-  color: var(--theme-accent);
-  font-weight: 700;
+.project-browser.ingeklapt {
+  width: 28px;
+}
+
+.panel-section-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Rijen lopen tot de rand; de sectie zelf heeft geen binnenmarge nodig. */
+.panel-section-body.pb-lijst {
+  padding: 2px 0 6px;
+}
+
+.pb-teller {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-family: var(--oa-font-numbers);
+  font-size: var(--oa-size-label);
+  font-weight: 400;
+  color: var(--theme-text-secondary);
+}
+
+/* Eén regel in het paneel: een knoop (Projectgegevens, Rapport), een blad of
+   een actie. Rijhoogte, selectiekleur en -balk uit de Blueprint-tokens. */
+.pb-rij {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--oa-row);
+  padding: 0 8px 0 12px;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--theme-text);
+  font-family: inherit;
+  font-size: var(--oa-size-body);
+  text-align: left;
+  cursor: default;
+}
+
+.pb-rij:hover {
+  background: var(--theme-hover);
+}
+
+.pb-rij.gekozen {
+  background: var(--oa-selected);
+  border-left-color: var(--oa-selected-bar);
+}
+
+.pb-rij .oa-icon {
+  flex-shrink: 0;
+  color: var(--theme-text-secondary);
+}
+
+.pb-rij.gekozen .oa-icon {
+  color: var(--theme-accent-tint);
+}
+
+.pb-naam {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Een blad: de naam opent het, de knopjes rechts verschijnen pas bij hover. */
+.pb-rij.pb-blad {
+  padding-right: 4px;
+}
+
+.pb-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.pb-acties {
+  display: none;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.pb-rij.pb-blad:hover .pb-acties {
+  display: flex;
+}
+
+/* Bij hover maken de knopjes plaats: het UC-label wijkt. */
+.pb-rij.pb-blad:hover .pb-uc {
+  display: none;
+}
+
+.pb-acties button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--oa-radius-small);
+  color: var(--theme-text-secondary);
+  cursor: default;
+}
+
+.pb-acties button:hover {
+  background: var(--theme-ribbon-btn-hover);
+  border-color: var(--theme-ribbon-btn-hover-border);
+  color: var(--theme-accent-tint);
+}
+
+.pb-acties .oa-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Status van de module: gevulde stip = toetsing uitgewerkt, open = concept.
+   De kleur onderscheidt gecalibreerd, nog te controleren en een raming. */
+.pb-stip {
+  width: 8px;
+  height: 8px;
+  margin: 0 4px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--theme-text-muted);
+}
+
+.pb-stip.pb-status-gereed { background: var(--oa-success); }
+.pb-stip.pb-status-controleren { background: var(--oa-warning); }
+.pb-stip.pb-status-raming { background: var(--oa-info); }
+.pb-stip.pb-status-concept {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--theme-text-muted);
+}
+
+/* Maatgevende UC, zodra het blad is doorgerekend. */
+.pb-uc {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: var(--oa-radius-small);
+  font-family: var(--oa-font-numbers);
+  font-size: var(--oa-size-label);
+  line-height: 16px;
+}
+
+.pb-uc.voldoet {
+  color: var(--oa-success);
+  background: var(--oa-success-tint);
+}
+
+.pb-uc.voldoet-niet {
+  color: var(--oa-error);
+  background: var(--oa-error-tint);
+}
+
+.pb-naam-invoer {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 6px;
+  background: var(--oa-field);
+  border: 1px solid var(--oa-focus);
+  border-radius: var(--oa-radius-small);
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.pb-toevoegen {
+  color: var(--theme-accent-tint);
+}
+
+.pb-toevoegen .oa-icon,
+.pb-rij.pb-toevoegen:hover .oa-icon {
+  color: var(--theme-accent-tint);
+}
+
+.pb-leeg {
+  margin: 4px 12px 6px 14px;
+  font-size: var(--oa-size-label);
+  line-height: 1.5;
+  color: var(--theme-text-secondary);
 }

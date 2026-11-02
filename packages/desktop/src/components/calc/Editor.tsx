@@ -1,5 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import CodeMirror from "@uiw/react-codemirror";
+import type { EditorView } from "@codemirror/view";
+import { useEditorViewStore } from "../../store/editorViewStore";
 import { useActieveBron, useZetActieveBron } from "../../store/actiefBlad";
 import { useZoom } from "../../hooks/useZoom";
 import { ifcCalcLang } from "./ifcCalcLanguage";
@@ -11,6 +13,18 @@ export default function Editor() {
   const source = useActieveBron();
   const setSource = useZetActieveBron();
   const { ref, zoom } = useZoom();
+
+  // Het lint voegt in op de cursor; daarvoor moet het deze editor kennen.
+  const eigenView = useRef<EditorView | null>(null);
+  const onCreateEditor = useCallback((view: EditorView) => {
+    eigenView.current = view;
+    useEditorViewStore.getState().setView(view);
+  }, []);
+  useEffect(() => () => {
+    if (useEditorViewStore.getState().view === eigenView.current) {
+      useEditorViewStore.getState().setView(null);
+    }
+  }, []);
 
   const onChange = useCallback(
     (value: string) => {
@@ -29,6 +43,7 @@ export default function Editor() {
         value={source}
         extensions={[ifcCalcLang()]}
         onChange={onChange}
+        onCreateEditor={onCreateEditor}
         basicSetup={{
           // Geen eigen geschiedenis: ongedaan maken loopt via de projectstore,
           // zodat Ctrl+Z hetzelfde doet of je nu in de tekst typt, een maat in

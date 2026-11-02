@@ -3,3 +3,4 @@ dist/
 .vite/
 *.tsbuildinfo
 src-tauri/target/
+PROMPTS.md

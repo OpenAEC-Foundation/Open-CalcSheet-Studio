@@ -1,7 +1,6 @@
 :root {
-  /* OpenAEC brandbook §2.2 — body */
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 14px;
+  font-family: var(--oa-font-body);
+  font-size: var(--oa-size-body);
   line-height: 1.5;
   font-weight: 400;
   color: var(--theme-text);
@@ -10,91 +9,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  /* OpenAEC brandbook §2.2 — font stacks */
-  --font-heading: "Space Grotesk", system-ui, sans-serif;
-  --font-body: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
-}
-
-/* Brandbook §2.2 — headings: Space Grotesk 700 */
-h1, h2, h3 {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-}
-
-h4, h5, h6 {
-  font-family: var(--font-heading);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
-}
-
-/* Brandbook §2.2 — code: JetBrains Mono 400 */
-code, kbd, samp, pre {
-  font-family: var(--font-mono);
-  font-weight: 400;
-}
-
-/* Browser default for button/input is Arial — force brand body font everywhere */
-button, input, select, textarea {
-  font-family: inherit;
-}
-
-/* ── Ribbon design adjustments (Ifc-Calc) ──────────────────────────── */
-
-/* Slimmer ribbon for more editor real estate */
-.ribbon-content-wrapper {
-  height: 76px !important;
-}
-
-/* Tabs use Space Grotesk (heading font) for stronger character */
-.ribbon-tab {
-  font-family: var(--font-heading);
-  font-size: 11.5px !important;
-  letter-spacing: 0.01em;
-  padding: 6px 14px !important;
-}
-
-/* Active tab gets the brand voice: bold + slight underline accent */
-.ribbon-tab.active {
-  font-weight: 600 !important;
-}
-
-/* Section labels in ribbon (BESTAND, BEWERKEN…) use mono brand font */
-.ribbon-group-label,
-.ribbon-section-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-}
-
-/* Subtle elevation below the ribbon so it visually anchors above content */
-.ribbon-container {
-  box-shadow: 0 1px 0 0 var(--theme-border-subtle, rgba(217, 119, 6, 0.15));
-}
-
-/* Active tab indicator gets brand amber underline (replaces template's animated border for clarity) */
-.ribbon-tab.active::after {
-  content: "";
-  position: absolute;
-  left: 14%;
-  right: 14%;
-  bottom: -1px;
-  height: 2px;
-  background: var(--theme-accent, #D97706);
-  border-radius: 1px;
-}
-.ribbon-tab { position: relative; }
-
-/* ── Main view layout override for calc workspace (ProjectBrowser + Editor + Preview) ── */
-.main-view {
-  /* Template defaults to centered placeholder — we use a left-to-right split */
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  overflow: hidden !important;
 }
 
 * {
@@ -166,13 +80,13 @@ body,
 }
 
 .left-panel-collapsed-tab:hover {
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .left-panel-collapsed-tab span {
   writing-mode: vertical-lr;
   transform: rotate(180deg);
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-weight: 600;
   text-transform: uppercase;
   white-space: nowrap;
@@ -189,15 +103,15 @@ body,
   flex-shrink: 0;
   border-bottom: 1px solid var(--theme-border);
   background: var(--theme-bg-lighter);
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .left-panel-title {
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .left-panel-close-btn {
@@ -208,7 +122,7 @@ body,
   height: 20px;
   border: none;
   background: transparent;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
   cursor: default;
   border-radius: 3px;
   padding: 0;
@@ -217,7 +131,7 @@ body,
 
 .left-panel-close-btn:hover {
   background: var(--theme-ribbon-btn-hover);
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
   opacity: 1;
 }
 
@@ -265,7 +179,7 @@ body,
   color: var(--theme-accent-tint);
   cursor: default;
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-weight: 600;
   text-align: left;
   transition: background 0.1s;
@@ -273,7 +187,7 @@ body,
 
 .panel-section-header:hover {
   background: var(--theme-hover);
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .panel-section-chevron {
@@ -292,8 +206,8 @@ body,
 }
 
 .panel-placeholder {
-  font-size: 11px;
-  color: var(--theme-text-faint);
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
 }
 
 /* Right panel */
@@ -325,12 +239,12 @@ body,
 }
 
 .right-panel-collapsed-tab:hover {
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .right-panel-collapsed-tab span {
   writing-mode: vertical-lr;
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-weight: 600;
   text-transform: uppercase;
   white-space: nowrap;
@@ -347,15 +261,15 @@ body,
   flex-shrink: 0;
   border-bottom: 1px solid var(--theme-border);
   background: var(--theme-bg-lighter);
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .right-panel-title {
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .right-panel-close-btn {
@@ -366,7 +280,7 @@ body,
   height: 20px;
   border: none;
   background: transparent;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
   cursor: default;
   border-radius: 3px;
   padding: 0;
@@ -375,7 +289,7 @@ body,
 
 .right-panel-close-btn:hover {
   background: var(--theme-ribbon-btn-hover);
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
   opacity: 1;
 }
 
@@ -430,13 +344,13 @@ body,
 }
 
 .placeholder h2 {
-  font-size: 18px;
+  font-size: var(--oa-size-dialog-heading);
   font-weight: 500;
   color: var(--theme-placeholder-heading);
 }
 
 .placeholder p {
-  font-size: 13px;
+  font-size: var(--oa-size-panel-heading);
   color: var(--theme-placeholder-text);
 }
 
@@ -446,9 +360,9 @@ body,
   align-items: center;
   justify-content: space-between;
   padding: 4px 12px;
-  background: var(--theme-accent, #D97706);
-  color: #fff;
-  font-size: 12px;
+  background: var(--theme-accent);
+  color: var(--theme-accent-text);
+  font-size: var(--oa-size-body);
   gap: 8px;
 }
 
@@ -463,20 +377,62 @@ body,
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.3);
+  background: color-mix(in srgb, var(--theme-accent-text) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-accent-text) 35%, transparent);
   border-radius: 4px;
-  color: #fff;
+  color: var(--theme-accent-text);
   padding: 3px 10px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-weight: 600;
   transition: background 0.15s;
   flex-shrink: 0;
 }
 
 .detached-dock-btn:hover {
-  background: rgba(255,255,255,0.35);
+  background: color-mix(in srgb, var(--theme-accent-text) 20%, transparent);
+}
+
+/* Full-width views (3D, IFC, report) fill the main view; it centres its
+   content, which left the 3D canvas without height. */
+.main-view > .three-viewer-container,
+.main-view > .ifc-viewer-panel,
+.main-view > .report-preview {
+  align-self: stretch;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Open CalcSheet Studio — alleen wat bij deze app hoort.
+   De schil hierboven komt ongewijzigd uit de Tauri+React-sjabloon van
+   de OpenAEC Blueprint (ontwerp 0.4); pas die daar aan, niet hier.
+   ════════════════════════════════════════════════════════════════ */
+
+/* Lettertypen voor de rekenbladen, de editor en het rapport. */
+:root {
+  --font-heading: var(--oa-font-heading);
+  --font-body: var(--oa-font-body);
+  --font-mono: var(--oa-font-mono);
+}
+
+/* Koppen in Space Grotesk Medium, zoals de Blueprint voorschrijft. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+}
+
+code, kbd, samp, pre {
+  font-family: var(--font-mono);
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+/* De werkruimte: projectlijst, editor en uitwerking naast elkaar. */
+.main-view {
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  overflow: hidden !important;
 }
 
 /* Werkruimte zonder geopend rekenblad — wegwijzer in plaats van leegte. */
@@ -504,4 +460,133 @@ body,
   margin: 0;
   font-size: 12.5px;
   line-height: 1.6;
+}
+
+/* ─── Werkruimte van een blad ───────────────────────────────── */
+
+/* De weergaven van een blad (code + visueel, …, afdrukvoorbeeld), ook die van
+   het rapport: tabs met een accentlijn, zoals de tabs van de Blueprint-schil.
+   Rechts in de balk de modulestatus en rekenversie (BladVersie.css). */
+.split-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 30px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-content-bg);
+  flex: 0 0 auto;
+}
+
+.split-tab {
+  display: flex;
+  align-items: center;
+  margin-bottom: -1px;
+  padding: 0 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--theme-text-secondary);
+  font-family: inherit;
+  font-size: var(--oa-size-body);
+  white-space: nowrap;
+  cursor: default;
+  transition: color 0.1s, background 0.1s;
+}
+
+.split-tab:hover {
+  background: var(--theme-hover);
+  color: var(--theme-text);
+}
+
+.split-tab.active {
+  border-bottom-color: var(--theme-accent);
+  color: var(--theme-text);
+  font-weight: 500;
+}
+
+/* Eén paneel van de werkruimte: kopregel en inhoud. */
+.werk-paneel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+.werk-paneel-kop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--oa-shell-panel-header);
+  padding: 0 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-bg-lighter);
+  user-select: none;
+}
+
+.werk-paneel-titel {
+  font-size: var(--oa-size-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--theme-accent-tint);
+}
+
+.werk-paneel-info {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
+}
+
+.werk-paneel-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.werk-paneel-body > * {
+  flex: 1;
+  min-height: 0;
+}
+
+.werk-uc.voldoet { color: var(--oa-success); }
+.werk-uc.voldoet-niet { color: var(--oa-error); }
+
+/* De hulp bij de rekentaal als venster vanuit het lint. */
+.help-dialoog .modal-body {
+  padding: 0;
+  overflow: auto;
+}
+
+/* ─── Hoogcontrast licht, rustiger ───────────────────────────── */
+
+/* De Blueprint-waarden maken hier elke rand zwart en geven geen hover- of
+   selectiekleur; dat oogt erg fel. Hetzelfde tekstcontrast, maar randen in
+   donkergrijs, een lichtgrijze hover en een lichte selectie. */
+:root[data-oa-theme="high-contrast-light"] {
+  --oa-frame: #F7F7F7;
+  --oa-panel: #FFFFFF;
+  --oa-docbar: #F7F7F7;
+  --oa-statusbar: #F7F7F7;
+  --oa-workspace: #EFEFEF;
+  --oa-text-secondary: #262626;
+  --oa-text-muted: #404040;
+  --oa-border: #525252;
+  --oa-border-strong: #000000;
+  --oa-border-subtle: #A3A3A3;
+  --oa-hover: #EDEDED;
+  --oa-pressed: #E0E0E0;
+  --oa-selected: #FDF0E1;
+  --oa-error-tint: #FBEAEA;
+  --oa-success-tint: #E7F3EA;
+  --oa-warning-tint: #FBF1E3;
+  --oa-info-tint: #E8EEF9;
+  --oa-shadow-popup: 0 0 0 1px #525252, 0 4px 12px rgba(0, 0, 0, 0.12);
+  --oa-shadow-dialog: 0 0 0 1px #262626, 0 12px 32px rgba(0, 0, 0, 0.18);
 }

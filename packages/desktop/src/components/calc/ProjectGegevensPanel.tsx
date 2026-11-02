@@ -1,8 +1,23 @@
 import { Fragment, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
-import { PROJECT_VELDEN, kFiVoor, keuzesVoor, vervallenKeuze, type VeldDef } from "../../store/projectGegevens";
+import { PROJECT_VELDEN, kFiVoor, keuzesVoor, vervallenKeuze, type Keuze, type VeldDef } from "../../store/projectGegevens";
 import WindAreaMap from "./WindAreaMap";
 import "./ProjectGegevensPanel.css";
+
+/**
+ * De koppen van PROJECT_VELDEN, naar hun sleutel onder gegevens.groepen in
+ * werkruimte.json. De velden zelf staan daar onder gegevens.velden.<naam>.
+ * Labels, toelichtingen en keuzes in de store blijven Nederlands; de
+ * vertaling gebeurt hier, bij het tonen. Een kop of veld zonder vertaling
+ * toont de tekst uit de store.
+ */
+const GROEP_SLEUTELS: Record<string, string> = {
+  "Rekenwijze": "rekenwijze",
+  "Project": "project",
+  "Grondslagen (NEN-EN 1990 + NB)": "grondslagen",
+  "Wind (NEN-EN 1991-1-4 + NB)": "wind",
+};
 
 /**
  * Formulier met de gegevens die voor het héle project gelden.
@@ -13,6 +28,7 @@ import "./ProjectGegevensPanel.css";
  * exemplaren van dezelfde module elkaar nooit in de weg zitten.
  */
 export default function ProjectGegevensPanel() {
+  const { t } = useTranslation("werkruimte");
   const gegevens = useProjectStore((s) => s.gegevens);
   const zetGegeven = useProjectStore((s) => s.zetGegeven);
   const projectNaam = useProjectStore((s) => s.projectNaam);
@@ -38,39 +54,62 @@ export default function ProjectGegevensPanel() {
   const cc = parseFloat(gegevens.CC ?? "2");
   const kFi = kFiVoor(Number.isFinite(cc) ? cc : 2);
 
+  const groepNaam = (naam: string) => {
+    const sleutel = GROEP_SLEUTELS[naam];
+    return sleutel ? t(`gegevens.groepen.${sleutel}`, { defaultValue: naam }) : naam;
+  };
+  const veldTekst = (veld: VeldDef, deel: "label" | "hint") =>
+    t(`gegevens.velden.${veld.naam}.${deel}`, { defaultValue: veld[deel] ?? "" });
+  // Dezelfde keuzes als keuzesVoor, met vertaalde labels. Een vervallen of
+  // onbekende keuze krijgt hier opnieuw zijn tekst, op dezelfde manier als in
+  // de store: "10 jaar — vervallen keuze, gerekend als 15 jaar".
+  const keuzeLabel = (veld: VeldDef, keuze: Keuze): string => {
+    if (veld.opties?.some((o) => o.waarde === keuze.waarde)) {
+      return t(`gegevens.velden.${veld.naam}.opties.${keuze.waarde}`, { defaultValue: keuze.label });
+    }
+    const oud = vervallenKeuze(veld, keuze.waarde);
+    if (!oud) return t("gegevens.onbekendeKeuze", { waarde: keuze.waarde });
+    const naar = veld.opties?.find((o) => o.waarde === oud.naar);
+    return t("gegevens.vervallenKeuze", {
+      label: t(`gegevens.velden.${veld.naam}.vervallen.${oud.waarde}`, { defaultValue: oud.label }),
+      // Van de vervanger alleen het deel vóór de toelichting: "50 jaar".
+      vervanger: naar ? keuzeLabel(veld, naar).split(" — ")[0] : oud.naar,
+    });
+  };
+
   return (
     <div className="pg-panel">
       <div className="pg-kop">
-        <h1>Projectgegevens</h1>
+        <h1>{t("algemeen.projectgegevens")}</h1>
         <p>
           {exemplaren.length === 0
-            ? "Deze waarden gelden voor elk rekenblad dat je aan dit project toevoegt. Elk blad kan ze gebruiken zonder ze opnieuw te vragen."
-            : `Deze waarden gelden voor ${exemplaren.length === 1 ? "het rekenblad" : `alle ${exemplaren.length} rekenbladen`} in dit project. Elk blad kan ze gebruiken zonder ze opnieuw te vragen.`}
+            ? t("gegevens.introGeen")
+            : t("gegevens.intro", { count: exemplaren.length })}
         </p>
       </div>
 
       <div className="pg-groep">
-        <h2>Bestand</h2>
+        <h2>{t("gegevens.bestand")}</h2>
         <label className="pg-veld">
-          <span className="pg-label">Projectnaam (bestand)</span>
+          <span className="pg-label">{t("gegevens.projectnaam")}</span>
           <input
             type="text"
             value={projectNaam}
-            placeholder="Nieuw project"
+            placeholder={t("gegevens.projectnaamPlaceholder")}
             onChange={(e) => zetProjectNaam(e.target.value)}
           />
-          <span className="pg-hint">Naam van het projectbestand en de kop van de PDF-uitdraai.</span>
+          <span className="pg-hint">{t("gegevens.projectnaamHint")}</span>
         </label>
       </div>
 
       {groepen.map((groep) => (
         <div className="pg-groep" key={groep.naam}>
-          <h2>{groep.naam}</h2>
+          <h2>{groepNaam(groep.naam)}</h2>
           {groep.velden.map((veld) => (
             <Fragment key={veld.naam}>
             <label className="pg-veld">
               <span className="pg-label">
-                {veld.label}
+                {veldTekst(veld, "label")}
                 <code className="pg-var">{veld.naam}</code>
               </span>
               {veld.type === "keuze" ? (
@@ -82,7 +121,7 @@ export default function ProjectGegevensPanel() {
                 >
                   {keuzesVoor(veld, gegevens[veld.naam] ?? veld.standaard).map((o) => (
                     <option key={o.waarde} value={o.waarde}>
-                      {o.label}
+                      {keuzeLabel(veld, o)}
                     </option>
                   ))}
                 </select>
@@ -93,16 +132,13 @@ export default function ProjectGegevensPanel() {
                   onChange={(e) => zetGegeven(veld.naam, e.target.value)}
                 />
               )}
-              {veld.hint && <span className="pg-hint">{veld.hint}</span>}
+              {veld.hint && <span className="pg-hint">{veldTekst(veld, "hint")}</span>}
               {vervallenKeuze(veld, gegevens[veld.naam] ?? "") && (
-                <span className="pg-afgeleid">
-                  Deze keuze bestaat niet meer; de bladen rekenen met de waarde die erachter staat.
-                  Kies er een uit de lijst om dat vast te leggen.
-                </span>
+                <span className="pg-afgeleid">{t("gegevens.vervallen")}</span>
               )}
               {veld.naam === "CC" && (
                 <span className="pg-afgeleid">
-                  Afgeleid: K<sub>FI</sub> = {kFi.toFixed(2).replace(".", ",")}
+                  {t("gegevens.afgeleid")} K<sub>FI</sub> = {kFi.toFixed(2).replace(".", ",")}
                 </span>
               )}
             </label>
@@ -113,8 +149,11 @@ export default function ProjectGegevensPanel() {
                   className="pg-windkaart-toggle"
                   onClick={() => setKaartOpen((o) => !o)}
                 >
-                  {kaartOpen ? "▾" : "▸"} Kaart — zoek een adres of klik op de
-                  locatie; het windgebied wordt dan vanzelf ingevuld
+                  <svg className={`panel-section-chevron${kaartOpen ? " open" : ""}`} width="10" height="10" viewBox="0 0 10 10"
+                    fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="2,3 5,6 8,3" />
+                  </svg>
+                  {t("gegevens.kaart")}
                 </button>
                 {kaartOpen && (
                   <WindAreaMap
@@ -132,9 +171,12 @@ export default function ProjectGegevensPanel() {
       ))}
 
       <p className="pg-voet">
-        In een rekenblad zijn deze namen direct te gebruiken, bijvoorbeeld{" "}
-        <code>γ_G = 1,2·K_FI</code> of <code>#if CC ≡ 3</code>. Een blad dat de naam zelf opnieuw
-        toekent, overschrijft de projectwaarde alleen voor dat blad.
+        <Trans
+          t={t}
+          i18nKey="gegevens.voet"
+          values={{ voorbeeld1: "γ_G = 1,2·K_FI", voorbeeld2: "#if CC ≡ 3" }}
+          components={{ code: <code /> }}
+        />
       </p>
     </div>
   );

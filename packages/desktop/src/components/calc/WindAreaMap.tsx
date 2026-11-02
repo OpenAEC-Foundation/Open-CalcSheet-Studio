@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import { Trans, useTranslation } from "react-i18next";
+import { MapContainer, TileLayer, GeoJSON, Marker, Pane, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+// De gebiedsnamen (GEBIED_NAMES daar) staan vertaald in werkruimte.json onder
+// windkaart.gebiedNaam; de Nederlandse tekst is daar gelijk aan die in de module.
 import {
   windGebiedenGeoJSON,
+  windGebiedContour,
   windLocatie,
   GEBIED_COLORS,
-  GEBIED_NAMES,
   type WindGebied,
   type WindLocatie,
 } from "../../templates/nl-windgebieden";
@@ -14,6 +17,15 @@ import "./WindAreaMap.css";
 
 const ROMEINS: Record<WindGebied, string> = { 1: "I", 2: "II", 3: "III" };
 const komma = (v: number, dec: number) => v.toFixed(dec).replace(".", ",");
+
+/**
+ * Het gekozen windgebied: één omtrek om al het land en water van dat gebied,
+ * boven de gebiedsvlakken. Eerst een brede lichte rand als halo, dan de lijn
+ * met de lichte vulling. De kleuren staan in WindAreaMap.css (thema-tokens);
+ * hier alleen lijndikte en dekking.
+ */
+const SELECTIE_HALO: L.PathOptions = { weight: 6, fill: false, lineJoin: "round" };
+const SELECTIE_RAND: L.PathOptions = { weight: 2.5, fillOpacity: 0.16, lineJoin: "round" };
 
 // Leaflet default-icon images don't resolve under bundlers without a hack —
 // pin the marker icon to a public CDN-shipped PNG.
@@ -92,6 +104,7 @@ export interface WindAreaMapProps {
 }
 
 export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }: WindAreaMapProps) {
+  const { t, i18n } = useTranslation("werkruimte");
   const [address, setAddress] = useState(initialAddress);
   const [location, setLocation] = useState<GeocodeResult | null>(null);
   const [loc, setLoc] = useState<WindLocatie | null>(null);
@@ -108,7 +121,7 @@ export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }:
     try {
       const result = await geocodeAddress(address);
       if (!result) {
-        setError("Adres niet gevonden in Nederland.");
+        setError(t("windkaart.nietGevonden"));
         setLocation(null);
         setLoc(null);
         onWindGebiedChange?.(null, null);
@@ -120,18 +133,18 @@ export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }:
       setVliegNaar([result.lat, result.lng]);
       onWindGebiedChange?.(l?.gebied ?? null, result);
     } catch (err) {
-      setError(`Geocoding fout: ${(err as Error).message}`);
+      setError(t("windkaart.geocodeFout", { fout: (err as Error).message }));
     } finally {
       setLoading(false);
     }
-  }, [address, onWindGebiedChange]);
+  }, [address, onWindGebiedChange, t]);
 
   const kiesPunt = useCallback(
     (lat: number, lng: number) => {
       const plek: GeocodeResult = {
         lat,
         lng,
-        displayName: `punt op de kaart, ${komma(lat, 4)}° NB ${komma(lng, 4)}° OL`,
+        displayName: t("windkaart.puntOpKaart", { lat: komma(lat, 4), lng: komma(lng, 4) }),
       };
       const l = windLocatie(lat, lng);
       setError(null);
@@ -139,7 +152,7 @@ export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }:
       setLoc(l);
       onWindGebiedChange?.(l?.gebied ?? null, plek);
     },
-    [onWindGebiedChange],
+    [onWindGebiedChange, t],
   );
 
   const geoJsonStyle = useCallback(
@@ -171,10 +184,10 @@ export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }:
           type="text"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder="Adres of plaats in Nederland — bv. 'Rokin 100, Amsterdam'"
+          placeholder={t("windkaart.placeholder")}
         />
         <button type="submit" className="wind-area-search-btn" disabled={loading}>
-          {loading ? "Bezig…" : "Zoek"}
+          {loading ? t("windkaart.bezig") : t("windkaart.zoek")}
         </button>
       </form>
       {error && <div className="wind-area-error">{error}</div>}
@@ -184,38 +197,71 @@ export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }:
           style={{ borderLeftColor: GEBIED_COLORS[loc.gebied] }}
         >
           <strong>
-            Windgebied {ROMEINS[loc.gebied]} · v<sub>b,0</sub> = {komma(loc.vb0Gebied, 1)} m/s
+            {t("windkaart.windgebied", { gebied: ROMEINS[loc.gebied] })} · v<sub>b,0</sub> = {komma(loc.vb0Gebied, 1)} m/s
           </strong>
           <span> · {location.displayName}</span>
           {loc.overgang && (
             <div className="wind-area-overgang">
-              {komma(loc.overgang.afstandKm, 1)} km van de grens met gebied{" "}
-              {ROMEINS[loc.overgang.naarGebied]}: in de overgangszone van figuur NB.2 mag
-              v<sub>b,0</sub> = {komma(loc.overgang.vb0, 1)} m/s. De bladen rekenen met de
-              gebiedswaarde, aan de veilige kant.
+              <Trans
+                t={t}
+                i18nKey="windkaart.overgang"
+                values={{
+                  afstand: komma(loc.overgang.afstandKm, 1),
+                  gebied: ROMEINS[loc.overgang.naarGebied],
+                  vb0: komma(loc.overgang.vb0, 1),
+                }}
+                components={{ sub: <sub /> }}
+              />
             </div>
           )}
         </div>
       )}
       {!loc && location && (
         <div className="wind-area-result wind-area-result-warn">
-          Locatie gevonden maar valt buiten de gedefinieerde polygons — kies handmatig in de Projectgegevens.
+          {t("windkaart.buitenGebieden")}
         </div>
       )}
-      <div className="wind-area-mapwrap">
+      {/* De kaarttegels zijn in elk thema licht; wat erop ligt (labels, halo
+          van de selectie) volgt daarom het lichte thema, net als het rekenblad. */}
+      <div className="wind-area-mapwrap" data-oa-theme="light">
         <MapContainer center={center} zoom={7} className="wind-area-leaflet">
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
           />
+          {/* De tooltips worden één keer gebonden; bij een andere taal een nieuwe laag. */}
           <GeoJSON
+            key={i18n.language}
             data={windGebiedenGeoJSON}
             style={geoJsonStyle as never}
             onEachFeature={(feature, layer) => {
               const { naam, gebied } = feature.properties as { naam: string; gebied: WindGebied };
-              layer.bindTooltip(`${naam} — gebied ${ROMEINS[gebied]}`, { sticky: true });
+              layer.bindTooltip(t("windkaart.gebiedTooltip", { naam, gebied: ROMEINS[gebied] }), { sticky: true });
             }}
           />
+          {/* Het gebied van de gekozen plek, als contour: halo en lijn elk in
+              een eigen laag boven de vlakken. De lagen vangen geen muis, zodat
+              de tooltips en klikken van de vlakken eronder blijven werken. */}
+          <Pane name="windgebied-halo" className="wind-area-selectie-halo" style={{ zIndex: "450" }}>
+            {loc && (
+              <GeoJSON
+                key={loc.gebied}
+                data={windGebiedContour(loc.gebied)}
+                interactive={false}
+                style={SELECTIE_HALO}
+              />
+            )}
+          </Pane>
+          <Pane name="windgebied-selectie" className="wind-area-selectie" style={{ zIndex: "451" }}>
+            {loc && (
+              <GeoJSON
+                key={loc.gebied}
+                data={windGebiedContour(loc.gebied)}
+                interactive={false}
+                style={SELECTIE_RAND}
+              />
+            )}
+          </Pane>
           {GEBIED_LABELS.map((l, i) => (
             <Marker
               key={i}
@@ -229,7 +275,7 @@ export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }:
               <Popup>
                 <strong>{location?.displayName}</strong>
                 <br />
-                {loc ? GEBIED_NAMES[loc.gebied] : "Geen gebied bepaald"}
+                {loc ? t(`windkaart.gebiedNaam.${loc.gebied}`) : t("windkaart.geenGebied")}
               </Popup>
             </Marker>
           )}
@@ -240,22 +286,18 @@ export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }:
       <div className="wind-area-legend">
         <span className="wind-area-legend-item">
           <i className="wind-area-legend-dot" style={{ background: GEBIED_COLORS[1] }} />
-          I — noordkust en meren
+          {t("windkaart.legenda.1")}
         </span>
         <span className="wind-area-legend-item">
           <i className="wind-area-legend-dot" style={{ background: GEBIED_COLORS[2] }} />
-          II — overige kust
+          {t("windkaart.legenda.2")}
         </span>
         <span className="wind-area-legend-item">
           <i className="wind-area-legend-dot" style={{ background: GEBIED_COLORS[3] }} />
-          III — binnenland
+          {t("windkaart.legenda.3")}
         </span>
       </div>
-      <p className="wind-area-note">
-        Indeling volgens NEN-EN 1991-1-4, nationale bijlage, figuur NB.1: provinciegrenzen, en in
-        Noord-Holland de noordgrens van Heemskerk, Uitgeest, Wormerland, Purmerend en
-        Edam-Volendam (gemeentegrenzen van 2015). Klik op de kaart om een plek te kiezen.
-      </p>
+      <p className="wind-area-note">{t("windkaart.bron")}</p>
     </div>
   );
 }

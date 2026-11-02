@@ -4,6 +4,7 @@ import {
   syntaxHighlighting,
   foldService,
   type StreamParser,
+  type StringStream,
 } from "@codemirror/language";
 import type { EditorState } from "@codemirror/state";
 import {
@@ -14,6 +15,7 @@ import {
 } from "@codemirror/autocomplete";
 import { tags as t } from "@lezer/highlight";
 import type { Extension } from "@codemirror/state";
+import i18next from "../../i18n/config";
 
 // ── Block folding ──────────────────────────────────────────────────────
 //
@@ -24,9 +26,13 @@ type FoldRule = { open: RegExp; close: RegExp };
 
 const FOLD_RULES: FoldRule[] = [
   { open: /^\s*@svg\b/, close: /^\s*@end\b/ },
+  { open: /^\s*@3d\b/, close: /^\s*@end\b/ },
+  { open: /^\s*@js\b/, close: /^\s*@end\s*$/ },
   { open: /^\s*@select\b/, close: /^\s*@end\b/ },
   { open: /^\s*#if\b/, close: /^\s*#end\s+if\b/ },
-  { open: /^\s*#repeat\b/, close: /^\s*#end\s+repeat\b/ },
+  // CalcPAD sluit #repeat en #while met #loop; `#end repeat` blijft werken.
+  { open: /^\s*#repeat\b/, close: /^\s*(#end\s+repeat|#loop)\b/ },
+  { open: /^\s*#while\b/, close: /^\s*#loop\b/ },
   { open: /^\s*#for\b/, close: /^\s*#loop\b/ },
   // `#def name(...)` (multi-line; the inline `#def name = ...` form is skipped
   // because the opener regex below also rejects lines containing `=`).
@@ -110,12 +116,63 @@ const UNIT_KEYWORDS = new Set([
   "mol", "K",
 ]);
 
-const parser: StreamParser<{ inPlot: boolean }> = {
-  startState: () => ({ inPlot: false }),
+/** De woorden die in een `@js`-blok opvallen. */
+const JS_WOORDEN = /^(?:const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|new|class|extends|this|typeof|instanceof|in|of|await|async|try|catch|finally|throw|import|export|default|true|false|null|undefined|void|delete)\b/;
+
+/** Eenvoudige kleuring van JavaScript: commentaar, tekst, getallen en woorden. */
+function jsToken(stream: StringStream, state: { inJsCommentaar: boolean }): string | null {
+  if (state.inJsCommentaar) {
+    if (stream.match(/^.*?\*\//)) state.inJsCommentaar = false;
+    else stream.skipToEnd();
+    return "lineComment";
+  }
+  if (stream.eatSpace()) return null;
+  if (stream.match("//")) {
+    stream.skipToEnd();
+    return "lineComment";
+  }
+  if (stream.match("/*")) {
+    state.inJsCommentaar = true;
+    return "lineComment";
+  }
+  const q = stream.peek();
+  if (q === '"' || q === "'" || q === "`") {
+    stream.next();
+    while (!stream.eol()) {
+      const c = stream.next();
+      if (c === "\\") stream.next();
+      else if (c === q) break;
+    }
+    return "string";
+  }
+  if (stream.match(/^\d+(?:\.\d+)?(?:e[-+]?\d+)?/i)) return "number";
+  if (stream.match(JS_WOORDEN)) return "keyword";
+  if (stream.match(/^[\p{L}_$][\p{L}\p{N}_$]*/u)) return "variableName";
+  stream.next();
+  return null;
+}
+
+const parser: StreamParser<{ inPlot: boolean; inJs: boolean; inJsCommentaar: boolean }> = {
+  startState: () => ({ inPlot: false, inJs: false, inJsCommentaar: false }),
 
   token(stream, state) {
     // EOL
     if (stream.eol()) return null;
+
+    // De code van een `@js`-blok is geen rekentaal; alleen een regel die precies
+    // `@end` is, sluit hem.
+    if (state.inJs) {
+      if (stream.sol() && stream.match(/^\s*@end\s*$/)) {
+        state.inJs = false;
+        state.inJsCommentaar = false;
+        return "meta";
+      }
+      return jsToken(stream, state);
+    }
+    if (stream.sol() && stream.match(/^\s*@js\b.*$/i)) {
+      state.inJs = true;
+      return "meta";
+    }
 
     // CalcPAD title line `"Title …` — only at column 0
     if (stream.sol() && stream.peek() === '"') {
@@ -173,9 +230,9 @@ const parser: StreamParser<{ inPlot: boolean }> = {
     }
 
     // Block markers
-    if (stream.match(/^@(svg|end|select|gef|img)\b/)) {
-      // For @img() also consume the rest
-      if (stream.current() === "@img") {
+    if (stream.match(/^@(svg|3d|end|select|gef|img|iframe|ifcx)\b/)) {
+      // For @img(), @iframe and @ifcx also consume the rest
+      if (/^@(img|iframe|ifcx)$/.test(stream.current())) {
         stream.eatWhile(/[^\n]/);
       }
       return "meta";
@@ -254,63 +311,83 @@ const ifcCalcHighlight = HighlightStyle.define([
 
 // ── Autocomplete (IntelliSense) ────────────────────────────────────────
 
+/**
+ * Statische aanvulling. `sleutel` is de omschrijving als i18n-sleutel
+ * (calcpad:editor.…); die wordt pas bij het tonen vertaald, zodat de taal
+ * volgt wat de gebruiker op dat moment gekozen heeft.
+ */
+type Aanvulling = Completion & { sleutel?: string };
+
 /** Static keyword/snippet completions — directives, functions, units. */
-const STATIC_COMPLETIONS: Completion[] = [
+const STATIC_COMPLETIONS: Aanvulling[] = [
   // Directives
-  { label: "#if", type: "keyword", detail: "conditional", apply: "#if " },
-  { label: "#else", type: "keyword", detail: "conditional" },
-  { label: "#else if", type: "keyword", detail: "conditional", apply: "#else if " },
-  { label: "#end if", type: "keyword", detail: "conditional" },
-  { label: "#hide", type: "keyword", detail: "visibility" },
-  { label: "#show", type: "keyword", detail: "visibility" },
-  { label: "#pre", type: "keyword", detail: "calcpad marker" },
-  { label: "#post", type: "keyword", detail: "calcpad marker" },
-  { label: "#repeat", type: "keyword", detail: "loop", apply: "#repeat " },
-  { label: "#end repeat", type: "keyword", detail: "loop" },
-  { label: "#rad", type: "keyword", detail: "angle mode" },
-  { label: "#deg", type: "keyword", detail: "angle mode" },
+  { label: "#if", type: "keyword", sleutel: "voorwaarde", apply: "#if " },
+  { label: "#else", type: "keyword", sleutel: "voorwaarde" },
+  { label: "#else if", type: "keyword", sleutel: "voorwaarde", apply: "#else if " },
+  { label: "#end if", type: "keyword", sleutel: "voorwaarde" },
+  { label: "#hide", type: "keyword", sleutel: "zichtbaarheid" },
+  { label: "#show", type: "keyword", sleutel: "zichtbaarheid" },
+  { label: "#pre", type: "keyword", sleutel: "markering" },
+  { label: "#post", type: "keyword", sleutel: "markering" },
+  { label: "#repeat", type: "keyword", sleutel: "lus", apply: "#repeat " },
+  { label: "#while", type: "keyword", sleutel: "lus", apply: "#while " },
+  { label: "#loop", type: "keyword", sleutel: "lus" },
+  { label: "#continue", type: "keyword", sleutel: "lus" },
+  { label: "#end repeat", type: "keyword", sleutel: "lus" },
+  { label: "#rad", type: "keyword", sleutel: "hoekeenheid" },
+  { label: "#deg", type: "keyword", sleutel: "hoekeenheid" },
 
   // Blocks
-  { label: "@svg", type: "namespace", detail: "drawing block", apply: "@svg\n\n@end" },
-  { label: "@select", type: "namespace", detail: "dropdown block", apply: '@select var "label"\n  optie = 1\n@end' },
-  { label: "@gef", type: "namespace", detail: "sondering upload", apply: "@gef sondering1" },
-  { label: "@img", type: "namespace", detail: "image", apply: "@img(pad/naar.png)" },
-  { label: "@end", type: "namespace", detail: "block end" },
+  { label: "@svg", type: "namespace", sleutel: "tekenblok", apply: "@svg\n\n@end" },
+  { label: "@3d", type: "namespace", sleutel: "drieDBlok", apply: "@3d\neenheid mm\ncamera iso\n\n@end" },
+  { label: "@iframe", type: "namespace", sleutel: "iframeBlok", apply: "@iframe https:// hoogte=120mm" },
+  { label: "@js", type: "namespace", sleutel: "jsBlok", apply: "@js hoogte=80mm titel=\"\"\n\n@end" },
+  { label: "@select", type: "namespace", sleutel: "keuzelijst", apply: '@select var "label"\n  optie = 1\n@end' },
+  { label: "@gef", type: "namespace", sleutel: "sondering", apply: "@gef sondering1" },
+  { label: "@img", type: "namespace", sleutel: "afbeelding", apply: "@img(pad/naar.png)" },
+  { label: "@end", type: "namespace", sleutel: "eindeBlok" },
 
   // Plot operators
-  { label: "$Plot", type: "namespace", detail: "line plot", apply: "$Plot{f(x) @ x = -10 : 10}" },
-  { label: "$Map", type: "namespace", detail: "2D contour" },
-  { label: "$Sum", type: "namespace", detail: "summation", apply: "$Sum{f(n) @ n = 1 : N}" },
-  { label: "$Prod", type: "namespace", detail: "product" },
-  { label: "$Integral", type: "namespace", detail: "integral" },
+  { label: "$Plot", type: "namespace", sleutel: "grafiek", apply: "$Plot{f(x) @ x = -10 : 10}" },
+  { label: "$Map", type: "namespace", sleutel: "contour" },
+  { label: "$Sum", type: "namespace", sleutel: "som", apply: "$Sum{f(n) @ n = 1 : N}" },
+  { label: "$Prod", type: "namespace", sleutel: "product" },
+  { label: "$Integral", type: "namespace", sleutel: "integraal" },
 
-  // Math functions (mathjs)
+  // Math functions (mathjs); het tweede veld is de sleutel van de omschrijving.
   ...[
-    ["sin", "trig"], ["cos", "trig"], ["tan", "trig"],
-    ["asin", "trig"], ["acos", "trig"], ["atan", "trig"], ["atan2", "trig"],
-    ["sqrt", "math"], ["sqr", "math (=sqrt)"], ["abs", "math"],
-    ["log", "math (natural)"], ["log10", "math"], ["lg", "math (=log10)"],
-    ["exp", "math"], ["pow", "math"],
-    ["floor", "math"], ["ceil", "math"], ["round", "math"],
-    ["min", "math"], ["max", "math"], ["sign", "math"],
-    ["if", "calcpad ternary"],
+    ["sin", "goniometrie"], ["cos", "goniometrie"], ["tan", "goniometrie"],
+    ["asin", "goniometrie"], ["acos", "goniometrie"], ["atan", "goniometrie"], ["atan2", "goniometrie"],
+    ["sqrt", "wiskunde"], ["sqr", "wiskundeSqrt"], ["abs", "wiskunde"],
+    ["log", "wiskundeNatuurlijk"], ["log10", "wiskunde"], ["lg", "wiskundeLog10"],
+    ["exp", "wiskunde"], ["pow", "wiskunde"],
+    ["floor", "wiskunde"], ["ceil", "wiskunde"], ["round", "wiskunde"],
+    ["min", "wiskunde"], ["max", "wiskunde"], ["sign", "wiskunde"],
+    ["if", "keuzefunctie"],
     ["det", "matrix"], ["inv", "matrix"], ["transpose", "matrix"],
-  ].map(([label, detail]) => ({ label, type: "function" as const, detail, apply: `${label}(` })),
+  ].map(([label, sleutel]) => ({ label, type: "function" as const, sleutel, apply: `${label}(` })),
 
-  // Constants
+  // Constants (omschrijving zonder woorden; in elke taal gelijk)
   { label: "pi", type: "constant", detail: "π = 3.14159…" },
   { label: "e", type: "constant", detail: "Euler ≈ 2.71828" },
 
   // Unit-conversion operators
-  { label: "to", type: "keyword", detail: "convert unit", apply: "to " },
-  { label: "in", type: "keyword", detail: "convert unit", apply: "in " },
+  { label: "to", type: "keyword", sleutel: "omrekenen", apply: "to " },
+  { label: "in", type: "keyword", sleutel: "omrekenen", apply: "in " },
 
   // Common units
   ...["mm", "cm", "m", "km", "g", "kg", "ton", "N", "kN", "MN",
       "Pa", "kPa", "MPa", "GPa", "Nm", "kNm", "deg", "rad", "s"].map((u) => ({
-    label: u, type: "type" as const, detail: "unit",
+    label: u, type: "type" as const, sleutel: "eenheid",
   })),
 ];
+
+/** De omschrijving in de gekozen taal; aangeroepen bij elke aanvulling, nooit bij het laden. */
+const omschrijving = (sleutel: string) => i18next.t(`editor.${sleutel}`, { ns: "calcpad" });
+
+function vertaald({ sleutel, ...c }: Aanvulling): Completion {
+  return sleutel ? { ...c, detail: omschrijving(sleutel) } : c;
+}
 
 /**
  * Build completions by scanning the document for user-defined variables and
@@ -347,7 +424,7 @@ function dynamicCompletions(source: string): Completion[] {
       out.push({
         label: assignMatch[1],
         type: "variable",
-        detail: isPrompt ? "input prompt" : "variable",
+        detail: omschrijving(isPrompt ? "invoerveld" : "variabele"),
       });
     }
   }
@@ -367,7 +444,7 @@ function calcpadCompletionSource(ctx: CompletionContext): CompletionResult | nul
 
   return {
     from: word.from,
-    options: [...STATIC_COMPLETIONS, ...dynamic],
+    options: [...STATIC_COMPLETIONS.map(vertaald), ...dynamic],
     validFor: /^[#@$]?[\p{L}\p{N}_]*$/u,
   };
 }

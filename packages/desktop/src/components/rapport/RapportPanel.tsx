@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 import DocumentSectie from "./paneel/DocumentSectie";
 import HoofdstukTeksten from "./paneel/HoofdstukTeksten";
 import UitgangspuntenSectie from "./paneel/UitgangspuntenSectie";
@@ -22,19 +23,20 @@ import "./RapportPanel.css";
  * ernaast toont het hele rapport.
  */
 
-/** De secties in volgorde, voor de sprongbalk bovenaan. */
-const SECTIES: readonly [id: string, label: string][] = [
-  ["document", "Document"],
-  ["revisies", "Revisies"],
-  ["teksten", "Hoofdstukken 1–3"],
-  ["uitgangspunten", "Uitgangspunten"],
-  ["belastingen", "Belastingen"],
-  ["berekeningen", "Berekeningen"],
-  ["bijlagen", "Bijlagen"],
-  ["bureau", "Bureau"],
+/** De secties in volgorde, voor de sprongbalk bovenaan: id en sleutel van het label. */
+const SECTIES: readonly [id: string, sleutel: string][] = [
+  ["document", "secties.document"],
+  ["revisies", "secties.revisies"],
+  ["teksten", "secties.tekstenKort"],
+  ["uitgangspunten", "secties.uitgangspunten"],
+  ["belastingen", "secties.belastingen"],
+  ["berekeningen", "secties.berekeningen"],
+  ["bijlagen", "secties.bijlagen"],
+  ["bureau", "secties.bureau"],
 ];
 
 export default function RapportPanel() {
+  const { t } = useTranslation("rapport");
   const paneelRef = useRef<HTMLDivElement>(null);
 
   const naarSectie = (id: string) =>
@@ -45,18 +47,14 @@ export default function RapportPanel() {
   return (
     <div className="rapport-panel" ref={paneelRef}>
       <div className="rapport-kop">
-        <h1>Rapport</h1>
-        <p>
-          Documentgegevens, teksten, uitgangspunten en belastingen van het constructierapport. Alles
-          hier hoort bij het project en gaat mee in opslaan en ongedaan maken. Grijze waarden komen uit
-          de projectgegevens of de norm.
-        </p>
+        <h1>{t("paneel.titel")}</h1>
+        <p>{t("paneel.intro")}</p>
       </div>
 
-      <nav className="rapport-nav" aria-label="Secties van het rapport">
-        {SECTIES.map(([id, label]) => (
+      <nav className="rapport-nav" aria-label={t("paneel.navLabel")}>
+        {SECTIES.map(([id, sleutel]) => (
           <button key={id} type="button" onClick={() => naarSectie(id)}>
-            {label}
+            {t(sleutel)}
           </button>
         ))}
       </nav>
@@ -72,10 +70,7 @@ export default function RapportPanel() {
         <BureauSectie />
       </OpzetBron>
 
-      <p className="rapport-voet">
-        Het bureauprofiel — naam, logo, huisstijl en constructeurs — staat bij Instellingen → Bureau.
-        Rapport (PDF) in het lint drukt het hele rapport af; PDF blad blijft één losse berekening.
-      </p>
+      <p className="rapport-voet">{t("paneel.voet")}</p>
     </div>
   );
 }

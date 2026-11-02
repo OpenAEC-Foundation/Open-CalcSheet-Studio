@@ -1,14 +1,21 @@
-import { useEffect, useRef, useMemo } from "react";
-import { parse, evaluate, render, defaultStyles } from "@ifc-calc/core";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { defaultStyles } from "@ifc-calc/core";
 import {
+  useActiefExemplaar,
   useActieveBron,
   useActieveWaarden,
   useProjectScope,
   useZetActieveWaarde,
 } from "../../store/actiefBlad";
 import { useZoom } from "../../hooks/useZoom";
-import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-includes";
+import { useDoorrekening } from "../../rekenen/doorrekening";
 import HelpPanel from "./HelpPanel";
+import { DrieDBeelden } from "./drieDBlok";
+import { IfcxBeelden } from "./ifcxBlok";
+import { IframeBeelden } from "./iframeBlok";
+import { JsBeelden } from "./jsBlok";
+import { schoonUitwerking } from "./uitwerkingOpschonen";
 import "katex/dist/katex.min.css";
 import "./Preview.css";
 
@@ -32,6 +39,9 @@ export default function Preview() {
   // klaar voordat de eerste regel van het blad draait.
   const projectScope = useProjectScope();
   const containerRef = useRef<HTMLDivElement>(null);
+  // De laag met de iframes: buiten de html van de uitwerking, anders begint een
+  // iframe opnieuw bij elke herberekening (iframeBlok.ts).
+  const laagRef = useRef<HTMLDivElement>(null);
   // Het invoerveld waarin getypt wordt, met de cursorpositie. Elke toetsaanslag
   // rekent het blad opnieuw door en vervangt de hele uitwerking, dus ook dit
   // veld; zonder deze administratie verloor het na één teken de focus en kwam
@@ -42,25 +52,121 @@ export default function Preview() {
     ensureCoreStyles();
   }, []);
 
-  // Invoerwaarden veranderen tijdens het typen, de bladtekst niet. De
-  // syntaxisboom hoeft dan niet bij iedere toetsaanslag opnieuw opgebouwd.
-  const ast = useMemo(() => {
-    try {
-      return parse(source, { includes: calcpadIncludes, imageUrls: calcpadImageUrls });
-    } catch (err) {
-      return err as Error;
-    }
-  }, [source]);
+  // Het doorrekenen gebeurt in een worker (rekenen/doorrekening.ts), samen met
+  // het parametrische beeld; zo blijft het venster bedienbaar bij een groot
+  // blad. Tot de nieuwe uitkomst er is, blijft de vorige staan.
+  const exemplaar = useActiefExemplaar();
+  const { doorrekening, bezig } = useDoorrekening(
+    exemplaar?.id, source, selectValues, projectScope, exemplaar?.naam ?? "",
+  );
+  const html = doorrekening?.html ?? "";
+  // Hetzelfde object zolang de html gelijk blijft. React 19 zet de html bij
+  // elk nieuw object opnieuw neer, ook als de tekst niet veranderde; dan
+  // verdween bij elke andere aanleiding (zoomen, de rekenstand) het
+  // draaibare 3D-beeld uit de uitwerking.
+  const inhoud = useMemo(() => ({ __html: schoonUitwerking(html) }), [html]);
 
-  const html = useMemo(() => {
-    try {
-      if (ast instanceof Error) throw ast;
-      return render(evaluate(ast, selectValues, projectScope));
-    } catch (err) {
-      const msg = (err as Error).message;
-      return `<div class="ifc-calc"><p class="calc-text" style="color:#dc2626;">Render error: ${msg}</p></div>`;
-    }
-  }, [ast, selectValues, projectScope]);
+  // Een `@3d`-blok krijgt een draaibaar beeld (drieDBlok.ts). De beelden
+  // blijven bestaan over herberekeningen heen en verhuizen mee naar de nieuwe
+  // uitwerking; vóór het tekenen (layout-effect), zodat de stilstaande
+  // projectie niet even oplicht. Weg pas als de uitwerking sluit.
+  const { t } = useTranslation("calcpad");
+  const tRef = useRef(t);
+  tRef.current = t;
+  const beelden = useRef<DrieDBeelden | null>(null);
+  useLayoutEffect(() => {
+    const b = new DrieDBeelden(() => {
+      const vt = tRef.current;
+      return {
+        hint: vt("drieD.hint"),
+        passend: vt("drieD.passend"),
+        standpunt: {
+          iso: vt("drieD.standpunt.iso"),
+          voor: vt("drieD.standpunt.voor"),
+          boven: vt("drieD.standpunt.boven"),
+          zij: vt("drieD.standpunt.zij"),
+        },
+      };
+    });
+    beelden.current = b;
+    return () => {
+      b.sluit();
+      if (beelden.current === b) beelden.current = null;
+    };
+  }, []);
+
+  // Een `@ifcx`-blok: hetzelfde, maar het beeld leest een IFCX-document (ifcxBlok.ts).
+  const ifcxBeelden = useRef<IfcxBeelden | null>(null);
+  useLayoutEffect(() => {
+    const b = new IfcxBeelden(() => {
+      const vt = tRef.current;
+      return {
+        hint: vt("drieD.hint"),
+        passend: vt("drieD.passend"),
+        standpunt: {
+          iso: vt("drieD.standpunt.iso"),
+          voor: vt("drieD.standpunt.voor"),
+          boven: vt("drieD.standpunt.boven"),
+          zij: vt("drieD.standpunt.zij"),
+        },
+        opslaan: vt("ifcx.opslaan"),
+        sluiten: vt("ifcx.sluiten"),
+        attribuut: (kort) => vt(`ifcx.attribuut.${kort}`, { defaultValue: kort }),
+      };
+    });
+    ifcxBeelden.current = b;
+    return () => {
+      b.sluit();
+      if (ifcxBeelden.current === b) ifcxBeelden.current = null;
+    };
+  }, []);
+
+  // Een `@iframe`-regel: een kader met een knop, en na bevestiging de pagina (iframeBlok.ts).
+  const iframes = useRef<IframeBeelden | null>(null);
+  useLayoutEffect(() => {
+    const b = new IframeBeelden(() => {
+      const vt = tRef.current;
+      return { laden: vt("iframe.laden"), uitleg: vt("iframe.uitleg"), scripts: vt("iframe.scripts") };
+    });
+    iframes.current = b;
+    return () => {
+      b.sluit();
+      if (iframes.current === b) iframes.current = null;
+    };
+  }, []);
+
+  // Een `@js`-blok: een knop, en na bevestiging een afgeschermd venster (jsBlok.ts).
+  const scripts = useRef<JsBeelden | null>(null);
+  useLayoutEffect(() => {
+    const b = new JsBeelden(() => {
+      const vt = tRef.current;
+      return {
+        uitvoeren: vt("js.uitvoeren"),
+        uitleg: vt("js.uitleg"),
+        geenNetwerk: vt("js.geenNetwerk"),
+        netwerk: (hosts) => vt("js.netwerk", { hosts }),
+        bibliotheek: (naam) => vt("js.bibliotheek", { naam }),
+        vast: vt("js.vast"),
+        weg: vt("js.weg"),
+      };
+    });
+    scripts.current = b;
+    return () => {
+      b.sluit();
+      if (scripts.current === b) scripts.current = null;
+    };
+  }, []);
+
+  const isEmpty = source.trim().length === 0;
+  const bladId = exemplaar?.id;
+  const bladNaam = exemplaar?.naam ?? "";
+  useLayoutEffect(() => {
+    const wortel = isEmpty ? null : containerRef.current;
+    beelden.current?.koppel(wortel, bladId);
+    ifcxBeelden.current?.koppel(wortel, bladId, bladNaam);
+    iframes.current?.koppel(wortel, laagRef.current);
+    scripts.current?.koppel(wortel, laagRef.current, bladId);
+  }, [html, isEmpty, bladId, bladNaam]);
 
   useEffect(() => {
     const root = containerRef.current;
@@ -136,22 +242,20 @@ export default function Preview() {
   }, [html, selectValues, setSelectValue]);
 
   const { ref: zoomRef, zoom } = useZoom();
-  const isEmpty = source.trim().length === 0;
 
   return (
     <div
-      className="calc-preview"
+      className={`calc-preview${bezig ? " rekent" : ""}`}
       ref={zoomRef}
       style={{ fontSize: `${zoom * 100}%` }}
     >
       {isEmpty ? (
         <HelpPanel />
       ) : (
-        <div
-          ref={containerRef}
-          className="calc-preview-content"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <div className="calc-preview-content">
+          <div ref={containerRef} dangerouslySetInnerHTML={inhoud} />
+          <div ref={laagRef} className="calc-iframe-laag" />
+        </div>
       )}
     </div>
   );

@@ -333,7 +333,7 @@ console.log("Bronversie in het projectbestand:");
   const terug = leesProjectBestand(tekst, "proef").exemplaren;
   gelijk(terug[0].bronVersie, bron, "opslaan en openen: bronVersie blijft");
   meld(!("bronVersie" in terug[1]), "een blad zonder bronversie krijgt er bij openen geen");
-  gelijk(JSON.parse(tekst).project.exemplaren.map((e) => e.bronVersie ?? null), [bron, null], "de bronversie staat in het bestand");
+  gelijk(JSON.parse(tekst).data.filter((k) => k.attributes?.["ocss::blad"]).map((k) => k.attributes["ocss::blad"].bronVersie ?? null), [bron, null], "de bronversie staat in het bestand");
 
   // Een met de hand aangepast of verminkt bestand.
   const rauw = JSON.stringify({ project: { naam: "Proef", exemplaren: [

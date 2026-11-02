@@ -11,11 +11,16 @@ import { useProjectStore } from "./projectStore";
  * "Verdiepingsvloer" dan "Balklaag 1". Typ je niets, dan blijft de voorgestelde
  * naam staan.
  */
+/** De tabbladen van het scherm; zie ModuleKiezer.tsx. */
+export type KiezerTab = "modules" | "bibliotheek" | "online" | "normbestanden";
+
 interface ModuleKiezerState {
   open: boolean;
+  /** Het tabblad waarop het scherm opent. */
+  tab: KiezerTab;
   /** Het blad dat net is ingevoegd; de projectlijst zet het in de naamgeefstand. */
   nieuwId: string | null;
-  openen: () => void;
+  openen: (tab?: KiezerTab) => void;
   sluiten: () => void;
   naamKlaar: () => void;
   /** Voegt een blad uit de catalogus toe, selecteert het en sluit het scherm. */
@@ -24,8 +29,9 @@ interface ModuleKiezerState {
 
 export const useModuleKiezer = create<ModuleKiezerState>((set) => ({
   open: false,
+  tab: "modules",
   nieuwId: null,
-  openen: () => set({ open: true }),
+  openen: (tab = "modules") => set({ open: true, tab }),
   sluiten: () => set({ open: false }),
   naamKlaar: () => set({ nieuwId: null }),
   voegToe: (templateId, label) => {

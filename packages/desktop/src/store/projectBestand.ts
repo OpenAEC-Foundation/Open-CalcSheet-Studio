@@ -1,46 +1,66 @@
-import type { IfcxDocument } from "@ifc-calc/core";
+import { bouwProjectIfcx, isIfcxBestand, isProjectIfcx, leesProjectIfcx, type IfcCalcSheet } from "@ifc-calc/core";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens.ts";
-import type { Exemplaar } from "./projectStore";
+import type { Exemplaar, Verborgen } from "./projectStore";
 import { normaliseerRapport, type Rapport } from "../rapport/model.ts";
 import { datumTekst } from "../rapport/revisies.ts";
 import { standaardTeksten } from "../rapport/standaardteksten.ts";
 import { leesRekenversie } from "../components/calc/bladVersie.ts";
+import { isPdfBlad, leesPdfBijlage } from "./pdfBijlage.ts";
 
 /**
- * Het projectbestand: één `.ifc-calculation` met de héle berekening erin.
+ * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
  *
- * Formaat
- * -------
- * Het bestand blijft een geldig IFCX JSON-LD document — een IFC-lezer kan het
- * openen — met twee extra velden:
+ * Formaat (versie 2)
+ * ------------------
+ * Het bestand is zuiver IFCX: alleen `header`, `imports`, `schemas` en `data`
+ * op het hoogste niveau, en alles staat als attribuut op een knoop. Dezelfde
+ * inhoud met de extensie `.ifcx` is hetzelfde bestand. De opbouw staat in
+ * packages/core/src/ifcx/document.ts en docs/projectmodel.md, de namespace in
+ * packages/core/src/ifcx/namespace.ts.
  *
- *   `source`  — de rekentekst van het eerste blad. Alleen voor lezers die één
- *               blad verwachten; wij gebruiken hem niet bij het openen zodra
- *               `project` aanwezig is.
- *   `project` — de eigenlijke inhoud: projectgegevens plus alle exemplaren,
- *               elk met eigen tekst en eigen invoerwaarden, en het
- *               constructierapport (`project.rapport`).
+ * Wat telt bij het openen: projectnaam, gegevens, verborgen onderdelen, rapport
+ * en per blad naam, id, templateId, bronVersie, rekentekst, invoer, elementen
+ * en PDF. De uitkomsten, figuren en elementen in het bestand zijn afgeleid, voor
+ * andere lezers: de app rekent ze opnieuw uit de tekst en de invoer.
  *
- * `project.rapport` is optioneel: een bestand van vóór het constructierapport
- * krijgt bij openen een nieuw rapport met de standaardwaarden. De
- * formaatversie blijft daarom 1 (lezen controleert hem ook niet). Een oudere
- * versie van de app kent het veld niet en laat het bij opnieuw opslaan weg.
- * Het rapport heeft een eigen `versie` (RAPPORT_VERSIE in rapport/model.ts):
- * een rapport van een oudere opbouw houdt bij het openen zijn opmaak.
+ * Eerdere vormen blijven openen; bij opnieuw opslaan worden ze versie 2:
  *
- * Een exemplaar heeft `id`, `naam`, `templateId`, `source`, `waarden`,
- * `elementen` en, sinds de rekenversie per blad, `bronVersie`: de rekenversie
- * van de module bij invoegen of het laatste bijwerken
- * (components/calc/bladVersie.ts). Ook die is optioneel. Een blad zonder
- * vergelijkt zijn tekst met de module, zoals voorheen; een oudere versie van
- * de app laat het veld bij opnieuw opslaan weg, en dan gebeurt dat ook.
+ *   1. versie 1 — een los IFCX-achtig document met daarnaast de eigen velden
+ *      `source` en `project`. Soms alleen `project`.
+ *   2. een los blad — JSON met `source.content`.
+ *   3. kale rekentekst — een `.cpd`.
  *
- * Een bestand zonder `project` is een los rekenblad uit een oudere versie (of
- * een `.cpd`). Dat wordt geopend als een project met één exemplaar erin, zodat
- * er nooit werk verloren gaat.
+ * Een bestand zonder `project` (vorm 2 en 3) wordt geopend als een project met
+ * één exemplaar, zodat er nooit werk verloren gaat. Het eerste opslaan over een
+ * oud bestand heen laat een kopie achter: zie `bewaarOudeVersie` in
+ * tauri/fileOps.ts.
+ *
+ * `rapport` is optioneel: een bestand van vóór het constructierapport krijgt bij
+ * openen een nieuw rapport met de standaardwaarden. Het rapport heeft een eigen
+ * `versie` (RAPPORT_VERSIE in rapport/model.ts): een rapport van een oudere
+ * opbouw houdt bij het openen zijn opmaak.
+ *
+ * `bronVersie` is de rekenversie van de module bij invoegen of het laatste
+ * bijwerken (components/calc/bladVersie.ts). Ook die is optioneel: een blad
+ * zonder vergelijkt zijn tekst met de module.
+ *
+ * Een PDF-blad (store/pdfBijlage.ts) is een exemplaar met `templateId` "pdf", een
+ * lege `source` en daarnaast `pdf`: `{ bestandsnaam, data }`, met in `data` het
+ * hele PDF-bestand als base64. Zo zit de PDF in het projectbestand en blijft het
+ * project overdraagbaar.
  */
 
-export const PROJECT_FORMAAT_VERSIE = 1;
+export const PROJECT_FORMAAT_VERSIE = 2;
+
+/** Alleen de bekende onderdelen, en alleen als ze echt verborgen zijn. */
+function leesVerborgen(v: unknown): Verborgen | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as Record<string, unknown>;
+  const uit: Verborgen = {};
+  if (o.gegevens === true) uit.gegevens = true;
+  if (o.rapport === true) uit.rapport = true;
+  return Object.keys(uit).length ? uit : undefined;
+}
 
 export interface ProjectPayload {
   versie: number;
@@ -49,6 +69,8 @@ export interface ProjectPayload {
   exemplaren: Exemplaar[];
   /** Ontbreekt in bestanden van vóór het constructierapport. */
   rapport?: Rapport;
+  /** Uit de projectboom gehaalde onderdelen; ontbreekt als niets verborgen is. */
+  verborgen?: Verborgen;
 }
 
 export interface GelezenProject {
@@ -57,22 +79,36 @@ export interface GelezenProject {
   exemplaren: Exemplaar[];
   /** Afwezig bij een oud bestand of een los blad; laadProject maakt dan een nieuw rapport. */
   rapport?: Rapport;
+  verborgen?: Verborgen;
 }
 
-/** Bouwt de tekst die naar schijf gaat. */
-export function bouwProjectBestand(
-  payload: ProjectPayload,
-  ifcx: IfcxDocument | null,
-): string {
-  const doc = {
-    ...(ifcx ?? {}),
-    source: {
-      format: "calcpad",
-      language: "ifc-calculation",
-      content: payload.exemplaren[0]?.source ?? "",
-    },
-    project: payload,
-  };
+/**
+ * Bouwt de tekst die naar schijf gaat. `bladen` zijn de doorgerekende bladen
+ * (store/projectIfcx.ts `bladenVoorIfc`), voor de uitkomsten in het bestand;
+ * zonder staan de bladen er zonder uitkomst in. De inhoud van een blad komt altijd
+ * uit `payload`.
+ */
+export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet[] | null): string {
+  const uitkomsten = new Map((bladen ?? []).map((b) => [b.id, b]));
+  const doc = bouwProjectIfcx({
+    naam: payload.naam,
+    formaatversie: PROJECT_FORMAAT_VERSIE,
+    gegevens: payload.gegevens,
+    rapport: payload.rapport,
+    verborgen: payload.verborgen,
+    bladen: payload.exemplaren.map((ex): IfcCalcSheet => ({
+      nodes: [],
+      ...uitkomsten.get(ex.id),
+      id: ex.id,
+      naam: ex.naam,
+      templateId: ex.templateId,
+      source: ex.source,
+      waarden: ex.waarden,
+      bronVersie: ex.bronVersie,
+      elementen: ex.elementen,
+      pdf: ex.pdf,
+    })),
+  });
   return JSON.stringify(doc, null, 2);
 }
 
@@ -83,41 +119,49 @@ function losseId(): string {
 }
 
 /**
- * Leest een bestand terug. Accepteert drie vormen:
- *   1. nieuw  — JSON met `project`
- *   2. oud    — JSON met `source.content` (één rekenblad)
- *   3. kaal   — losse CalcPAD-tekst (`.cpd`)
+ * Leest een bestand terug. Accepteert vier vormen:
+ *   1. versie 2 — IFCX met een `ocss::project`
+ *   2. versie 1 — JSON met `project`
+ *   3. oud      — JSON met `source.content` (één rekenblad)
+ *   4. kaal     — losse rekentekst (`.cpd`)
+ *
+ * IFCX van een ander programma is geen rekentekst: dat geeft een fout.
  */
 export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenProject {
   const trimmed = raw.trimStart();
 
+  let parsed: { project?: Partial<ProjectPayload>; source?: { content?: unknown } } | null = null;
   if (trimmed.startsWith("{")) {
     try {
-      const parsed = JSON.parse(trimmed) as {
-        project?: Partial<ProjectPayload>;
-        source?: { content?: unknown };
-      };
-
-      const p = parsed.project;
-      if (p && Array.isArray(p.exemplaren)) {
-        return {
-          projectNaam: p.naam || bestandsnaam,
-          gegevens: { ...legeGegevens(), ...(p.gegevens ?? {}) },
-          exemplaren: normaliseerExemplaren(p.exemplaren, bestandsnaam),
-          // Per veld gecontroleerd: het bestand kan van een andere versie van
-          // de app komen of met de hand zijn aangepast. Onbekende velden
-          // vallen weg, ontbrekende krijgen hun standaardwaarde.
-          rapport: p.rapport
-            ? normaliseerRapport(p.rapport, datumTekst(new Date()), standaardTeksten())
-            : undefined,
-        };
-      }
-
-      if (typeof parsed.source?.content === "string") {
-        return losBlad(parsed.source.content, bestandsnaam);
-      }
+      parsed = JSON.parse(trimmed);
     } catch {
-      // Geen geldige JSON — behandel de inhoud als kale CalcPAD-tekst.
+      // Geen geldige JSON — behandel de inhoud als kale rekentekst.
+    }
+  }
+  if (parsed && isIfcxBestand(parsed) && !isProjectIfcx(parsed)) {
+    throw new Error("Dit IFCX-bestand bevat geen project van deze app.");
+  }
+
+  if (parsed) {
+    const p: { naam?: unknown; gegevens?: unknown; exemplaren?: unknown; rapport?: unknown; verborgen?: unknown } | undefined =
+      isProjectIfcx(parsed) ? leesProjectIfcx(parsed) : parsed.project;
+    if (p && Array.isArray(p.exemplaren)) {
+      return {
+        projectNaam: (typeof p.naam === "string" && p.naam) || bestandsnaam,
+        gegevens: { ...legeGegevens(), ...((p.gegevens as ProjectGegevens | undefined) ?? {}) },
+        exemplaren: normaliseerExemplaren(p.exemplaren, bestandsnaam),
+        // Per veld gecontroleerd: het bestand kan van een andere versie van
+        // de app komen of met de hand zijn aangepast. Onbekende velden
+        // vallen weg, ontbrekende krijgen hun standaardwaarde.
+        rapport: p.rapport
+          ? normaliseerRapport(p.rapport, datumTekst(new Date()), standaardTeksten())
+          : undefined,
+        verborgen: leesVerborgen(p.verborgen),
+      };
+    }
+
+    if (typeof parsed.source?.content === "string") {
+      return losBlad(parsed.source.content, bestandsnaam);
     }
   }
 
@@ -150,6 +194,9 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   // Alleen als hij er is: een blad zonder bronversie schrijft ook geen leeg veld weg.
   const bronVersie = leesRekenversie(e.bronVersie);
   if (bronVersie) ex.bronVersie = bronVersie;
+  // Idem het PDF-bestand: alleen een PDF-blad met een bruikbaar bestand krijgt het veld.
+  const pdf = isPdfBlad(ex) ? leesPdfBijlage(e.pdf) : undefined;
+  if (pdf) ex.pdf = pdf;
   return ex;
 }
 

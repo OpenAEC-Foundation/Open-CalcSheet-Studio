@@ -1,10 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import i18next from "./i18n/config";
 import TitleBar from "./components/TitleBar";
 import Ribbon from "./components/ribbon/Ribbon";
 import DocumentBar from "./components/DocumentBar";
 import StatusBar from "./components/StatusBar";
 import Backstage from "./components/backstage/Backstage";
-import SettingsDialog, { applyTheme } from "./components/settings/SettingsDialog";
+import SettingsDialog, { applyTheme, applyTextSize } from "./components/settings/SettingsDialog";
+import Modal from "./components/Modal";
+import HelpPanel from "./components/calc/HelpPanel";
+import Welkom, { welkomBijStart } from "./components/Welkom";
 import Editor from "./components/calc/Editor";
 import Preview from "./components/calc/Preview";
 import SplitPane from "./components/calc/SplitPane";
@@ -13,28 +18,81 @@ import { designerVoor } from "./components/calc/designerKeuze";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
 import PrintDocument from "./components/calc/PrintDocument";
-import { wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { wachtOpVellen, wachtTotGetekend, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
 import BladBijwerken from "./components/calc/BladBijwerken";
+import TekenEditor from "./components/tekenen/TekenEditor";
 import { BladVersieKop, BladVersieMelding } from "./components/calc/BladVersieKop";
 import IfcViewerPanel from "./components/calc/IfcViewerPanel";
+import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
+import { isPdfBlad } from "./store/pdfBijlage";
 import { getSetting } from "./store";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
 import { usePrintStore } from "./store/printStore";
+import { useCodeVerzoek } from "./store/codeVerzoek";
 import { useRecentFiles } from "./hooks/useRecentFiles";
 import { useSneltoetsen } from "./hooks/useSneltoetsen";
+import { useMcpBrug } from "./mcp/useMcpBrug";
 import { useBestandActies } from "./hooks/useBestandActies";
 import { leesProjectBestand } from "./store/projectBestand";
 import { startbestand } from "./tauri/fileOps";
-import { setAngleMode, type AngleMode } from "@ifc-calc/core";
+import type { AngleMode } from "@ifc-calc/core";
+import { zetHoekmodus, useBladResultaat } from "./rekenen/doorrekening";
 import { UNITS_DEFAULTS, type UnitsSettings } from "./components/settings/SettingsDialog";
+
+/**
+ * Een paneel van de werkruimte met een kopregel (CODE, VISUEEL, UITWERKING),
+ * zoals de panelen van de Blueprint-schil. Rechts in de kop wat je van dat
+ * paneel wilt weten zonder te zoeken.
+ */
+function WerkPaneel({ titel, info, papier, children }: { titel: string; info?: ReactNode; papier?: boolean; children: ReactNode }) {
+  return (
+    <section className="werk-paneel">
+      <div className="werk-paneel-kop">
+        <span className="werk-paneel-titel">{titel}</span>
+        {info && <span className="werk-paneel-info">{info}</span>}
+      </div>
+      {/* Het beeld en de uitwerking zijn papier: in elk thema licht, net als
+          het afdrukvoorbeeld (themes.css). De code volgt het thema. */}
+      <div className="werk-paneel-body" data-oa-theme={papier ? "light" : undefined}>{children}</div>
+    </section>
+  );
+}
+
+/** De maatgevende UC van het blad, rechts in de kop van de uitwerking. */
+function UcInfo({ blad }: { blad: string }) {
+  const { t, i18n } = useTranslation("werkruimte");
+  const r = useBladResultaat(blad);
+  if (!r || r.uc === null) return null;
+  const voldoet = r.voldoet ?? r.uc <= 1;
+  const getal = Number.isFinite(r.uc)
+    ? r.uc.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : "∞";
+  return (
+    <span className={voldoet ? "werk-uc voldoet" : "werk-uc voldoet-niet"}>
+      {t(voldoet ? "browser.ucVoldoet" : "browser.ucVoldoetNiet", { uc: getal })}
+    </span>
+  );
+}
 
 /** Het startbestand is geopend; een later effect opent het niet nog eens. */
 let startbestandGeopend = false;
 
 export default function App() {
+  const { t } = useTranslation("werkruimte");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("general");
+  const [helpOpen, setHelpOpen] = useState(false);
+  // Het welkomstvenster bij het opstarten, tot je het uitzet (Welkom.tsx).
+  const [welkomOpen, setWelkomOpen] = useState(false);
+  useEffect(() => {
+    welkomBijStart().then((tonen) => { if (tonen) setWelkomOpen(true); });
+  }, []);
+  const openSettings = useCallback((tab = "general") => {
+    setSettingsTab(tab);
+    setSettingsOpen(true);
+  }, []);
   const [backstageOpen, setBackstageOpen] = useState(false);
   const [activeView, setActiveView] = useState("default");
   const [theme, setTheme] = useState("light");
@@ -46,12 +104,13 @@ export default function App() {
       setTheme(saved);
       applyTheme(saved);
     });
+    getSetting<string>("textSize", "standard").then(applyTextSize);
     getSetting<UnitsSettings>("units", UNITS_DEFAULTS).then((u) => {
-      setAngleMode(u.angleMode as AngleMode);
+      zetHoekmodus(u.angleMode as AngleMode);
     });
     const onUnits = (e: Event) => {
       const detail = (e as CustomEvent<UnitsSettings>).detail;
-      if (detail) setAngleMode(detail.angleMode as AngleMode);
+      if (detail) zetHoekmodus(detail.angleMode as AngleMode);
     };
     window.addEventListener("units-changed", onUnits);
     // Show window once theme is applied (avoids flash of unstyled chrome)
@@ -79,6 +138,7 @@ export default function App() {
   const { addRecentFile } = useRecentFiles();
   const { openen } = useBestandActies();
   useSneltoetsen();
+  useMcpBrug({ splitMode, setSplitMode, activeView, setActiveView, setTheme });
 
   // De afdrukweergave bestaat alleen tijdens het printen. Even wachten voordat
   // de printdialoog opent: de parametrische beelden meten hun tekengebied met
@@ -132,16 +192,25 @@ export default function App() {
     };
   }, [printBezig, printSoort, printKlaar, toonVoorbeeld]);
 
+  // Een PDF-blad tekent zijn pagina's eerst; tot die er zijn, wacht het printen.
   useEffect(() => {
     if (!printBezig || printSoort === "rapport") return;
     let afgebroken = false;
     const id = window.setTimeout(() => {
-      if (afgebroken) return;
-      try {
-        window.print();
-      } finally {
-        printKlaar();
-      }
+      wachtTotGetekend(".print-root")
+        .then(() => {
+          if (afgebroken) return;
+          try {
+            window.print();
+          } finally {
+            printKlaar();
+          }
+        })
+        .catch((err) => {
+          if (afgebroken) return;
+          alert((err as Error).message);
+          printKlaar();
+        });
     }, 250);
     return () => {
       afgebroken = true;
@@ -181,9 +250,23 @@ export default function App() {
   const rapportVoorbeeld = printVoorbeeld && printSoort === "rapport";
   const rapportWerkruimte = toontRapport && (rapportVoorbeeld || activeView !== "ifc");
   const hasDesigner = designerPane !== null && !toontProjectGegevens;
+  // Een PDF-blad heeft geen code, beeld of uitwerking: alleen zijn pagina's.
+  const pdfBlad = actief !== null && isPdfBlad(actief);
   const mode = hasDesigner ? splitMode : "cu";
-  const leftPane = mode === "vu" ? designerPane : <Editor />;
-  const rightPane = mode === "cv" ? designerPane : <Preview />;
+  const regels = source.split("\n").length;
+  const codePaneel = (
+    <WerkPaneel titel={t("paneel.code")} info={t("paneel.regels", { count: regels })}>
+      <Editor />
+    </WerkPaneel>
+  );
+  const beeldPaneel = <WerkPaneel titel={t("paneel.visueel")} papier>{designerPane}</WerkPaneel>;
+  const uitwerkingPaneel = (
+    <WerkPaneel titel={t("paneel.uitwerking")} info={actief ? <UcInfo blad={actief.id} /> : null} papier>
+      <Preview />
+    </WerkPaneel>
+  );
+  const leftPane = mode === "vu" ? beeldPaneel : codePaneel;
+  const rightPane = mode === "cv" ? beeldPaneel : uitwerkingPaneel;
 
   // De weergaven van een geopend blad, met het afdrukvoorbeeld als laatste tab.
   // Dat voorbeeld toont de bladen, ook als er eerder een rapport is afgedrukt.
@@ -193,17 +276,32 @@ export default function App() {
     sluitVoorbeeld();
     setSplitMode(m);
   };
-  const tabBalk = actief && !toontProjectGegevens ? (
+
+  // Het lint (tab CalcPAD) vraagt om de code: weg uit de IFC-weergave en het
+  // afdrukvoorbeeld, en een weergave mét editor.
+  const codeVerzoek = useCodeVerzoek((s) => s.teller);
+  useEffect(() => {
+    if (codeVerzoek === 0) return;
+    setActiveView("default");
+    sluitVoorbeeld();
+    setSplitMode((m) => (m === "vu" ? "cv" : m));
+  }, [codeVerzoek, sluitVoorbeeld]);
+  const tabBalk = actief && !toontProjectGegevens && pdfBlad ? (
+    <div className="split-tabs">
+      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t("pdf.tab")}</button>
+      <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
+    </div>
+  ) : actief && !toontProjectGegevens ? (
     <>
       <div className="split-tabs">
         {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>Code + Visueel</button>
+          <button className={`split-tab${!printVoorbeeld && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>{t("weergave.codeVisueel")}</button>
         )}
-        <button className={`split-tab${!printVoorbeeld && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>Code + Uitwerking</button>
+        <button className={`split-tab${!printVoorbeeld && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
         {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>Visueel + Uitwerking</button>
+          <button className={`split-tab${!printVoorbeeld && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
         )}
-        <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>Afdrukvoorbeeld</button>
+        <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
         <BladVersieKop ex={actief} />
       </div>
       <BladVersieMelding ex={actief} />
@@ -213,17 +311,20 @@ export default function App() {
   // De knoop Rapport: het invulpaneel, of het hele rapport zoals het op papier komt.
   const rapportTabs = (
     <div className="split-tabs">
-      <button className={`split-tab${rapportVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>Rapport</button>
-      <button className={`split-tab${rapportVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld(null, "rapport")}>Afdrukvoorbeeld</button>
+      <button className={`split-tab${rapportVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t("algemeen.rapport")}</button>
+      <button className={`split-tab${rapportVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld(null, "rapport")}>{t("algemeen.afdrukvoorbeeld")}</button>
     </div>
   );
 
+  // De meldingen via i18next.t op het moment zelf, niet via de `t` van de
+  // hook: zo blijft deze callback dezelfde bij een taalwissel, en leest het
+  // effect hieronder het startbestand niet opnieuw.
   const handleOpenRecent = useCallback(async (path: string) => {
     try {
       // Only Tauri runtime can read by absolute path; browser fallback cannot.
       const win = window as unknown as { __TAURI_INTERNALS__?: unknown };
       if (!win.__TAURI_INTERNALS__) {
-        alert("Recente bestanden openen vereist de desktop-app.");
+        alert(i18next.t("werkruimte:bestand.recentAlleenDesktop"));
         return;
       }
       const { readTextFile } = await import("@tauri-apps/plugin-fs");
@@ -233,7 +334,7 @@ export default function App() {
       markeerOpgeslagen(path);
       await addRecentFile(path);
     } catch (err) {
-      alert(`Bestand openen mislukt: ${(err as Error).message}`);
+      alert(i18next.t("werkruimte:bestand.openenMislukt", { fout: (err as Error).message }));
     }
   }, [laadProject, markeerOpgeslagen, addRecentFile]);
 
@@ -252,10 +353,12 @@ export default function App() {
 
   return (
     <>
-      <TitleBar onSettingsClick={() => setSettingsOpen(true)} />
+      <TitleBar onSettingsClick={() => openSettings()} />
       <Ribbon
         onFileTabClick={() => setBackstageOpen(true)}
-        onSettingsClick={() => setSettingsOpen(true)}
+        onSettingsClick={openSettings}
+        onHelpClick={() => setHelpOpen(true)}
+        onWelkomClick={() => setWelkomOpen(true)}
         activeView={activeView}
         onViewChange={setActiveView}
       />
@@ -285,13 +388,20 @@ export default function App() {
             <ProjectGegevensPanel />
           ) : !actief ? (
             <div className="werkruimte-leeg">
-              <h2>Nog geen rekenblad geopend</h2>
+              <h2>{t("leeg.titel")}</h2>
               <p>
-                Voeg een module toe met <b>Module</b> in het lint (tab Start). Elk blad dat je
-                toevoegt heeft zijn eigen invoer — je kunt dezelfde module meerdere keren
-                gebruiken zonder dat de bladen elkaar beïnvloeden.
+                <Trans t={t} i18nKey="leeg.uitleg" components={{ b: <b /> }} />
               </p>
             </div>
+          ) : pdfBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("pdf.paneel")} info={<PdfBladInfo ex={actief} />}>
+                  <PdfBladWeergave ex={actief} />
+                </WerkPaneel>
+              </div>
+            </>
           ) : (
             <>
               {tabBalk}
@@ -302,6 +412,7 @@ export default function App() {
           )}
         </div>
       </main>
+      {welkomOpen && <Welkom onSluit={() => setWelkomOpen(false)} />}
       <StatusBar />
       {afdrukmodus && <PrintDocument />}
       <Backstage
@@ -309,7 +420,7 @@ export default function App() {
         onClose={() => setBackstageOpen(false)}
         onOpenSettings={() => {
           setBackstageOpen(false);
-          setSettingsOpen(true);
+          openSettings();
         }}
         onBrowse={openen}
         onOpenFile={handleOpenRecent}
@@ -319,9 +430,15 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
         theme={theme}
         onThemeChange={handleThemeChange}
+        startTab={settingsTab}
       />
+      {/* De rekentaal in het kort; een fragment aanklikken voegt het in op de cursor. */}
+      <Modal open={helpOpen} onClose={() => setHelpOpen(false)} title={t("ribbon:calc.helpButton")} width={760} height="80vh" className="help-dialoog">
+        <HelpPanel />
+      </Modal>
       <ModuleKiezer />
       <BladBijwerken />
+      <TekenEditor />
     </>
   );
 }

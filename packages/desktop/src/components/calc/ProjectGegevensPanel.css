@@ -1,141 +1,171 @@
+/* Projectgegevens: één kolom in het midden van de werkruimte, elke groep als
+   kaart. Maten, kleuren en hoeken uit de Blueprint-tokens, zodat de keuze
+   voor de tekstgrootte (Instellingen › Weergave) hier ook doorwerkt. De tekst
+   is een stap groter dan in de panelen: dit is een formulier om te lezen. */
+
 .pg-panel {
   height: 100%;
   overflow-y: auto;
-  padding: 24px 32px 48px;
-  background: var(--theme-bg);
+  padding: var(--oa-space-xl) var(--oa-space-2xl) 48px;
+  background: var(--theme-content-bg);
   color: var(--theme-text);
   font-family: var(--font-body);
 }
 
+.pg-kop,
+.pg-groep,
+.pg-voet {
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .pg-kop {
-  max-width: 620px;
-  margin-bottom: 24px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.15));
+  margin-bottom: var(--oa-space-lg);
 }
 
 .pg-kop h1 {
   margin: 0 0 6px;
-  font-size: 20px;
-  font-weight: 600;
+  font-family: var(--oa-font-heading);
+  font-size: var(--oa-size-page-heading);
+  font-weight: 500;
+  letter-spacing: var(--oa-letter-spacing-heading);
 }
 
 .pg-kop p {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--oa-size-panel-heading);
+  line-height: 1.55;
   color: var(--theme-text-secondary);
 }
 
 .pg-groep {
-  max-width: 620px;
-  margin-bottom: 22px;
+  margin-bottom: var(--oa-space-md);
+  padding: 0 var(--oa-space-lg) 2px;
+  background: var(--theme-bg-lighter);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-medium);
 }
 
 .pg-groep h2 {
-  margin: 0 0 10px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  margin: 0 calc(-1 * var(--oa-space-lg)) var(--oa-space-md);
+  padding: 8px var(--oa-space-lg);
+  border-bottom: 1px solid var(--theme-border);
+  font-family: var(--oa-font-body);
+  font-size: var(--oa-size-label);
+  font-weight: 600;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: var(--theme-accent, #d97706);
+  color: var(--theme-accent-tint);
 }
 
 .pg-veld {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: var(--oa-space-md);
 }
 
 .pg-label {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-bottom: 3px;
-  font-size: 12px;
+  margin-bottom: 4px;
+  font-size: var(--oa-size-panel-heading);
   font-weight: 500;
 }
 
 .pg-var {
-  font-family: var(--font-mono);
-  font-size: 10px;
+  margin-left: auto;
+  font-family: var(--oa-font-mono);
+  font-size: var(--oa-size-label);
+  font-weight: 400;
   color: var(--theme-text-secondary);
-  background: var(--theme-bg-lighter);
-  padding: 1px 5px;
-  border-radius: 3px;
 }
 
 .pg-veld input,
 .pg-veld select {
   width: 100%;
-  padding: 5px 8px;
+  height: 32px;
+  padding: 0 10px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--oa-size-panel-heading);
   color: var(--theme-text);
-  background: var(--theme-bg-lighter);
-  border: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.2));
-  border-radius: 4px;
+  background: var(--oa-field);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-small);
+  transition: border-color 0.1s, box-shadow 0.1s;
+}
+
+.pg-veld input:hover,
+.pg-veld select:hover {
+  border-color: var(--oa-border-strong);
 }
 
 .pg-veld input:focus,
 .pg-veld select:focus {
   outline: none;
-  border-color: var(--theme-accent, #d97706);
+  border-color: var(--oa-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--oa-focus) 20%, transparent);
+}
+
+.pg-veld input::placeholder {
+  color: var(--oa-text-disabled);
 }
 
 .pg-hint,
 .pg-afgeleid {
   display: block;
-  margin-top: 3px;
-  font-size: 10.5px;
-  line-height: 1.45;
+  margin-top: 4px;
+  font-size: var(--oa-size-body);
+  line-height: 1.5;
   color: var(--theme-text-secondary);
 }
 
 .pg-afgeleid {
-  color: var(--theme-accent, #d97706);
-  font-family: var(--font-mono);
+  color: var(--theme-accent-tint);
+  font-family: var(--oa-font-numbers);
 }
 
 .pg-voet {
-  max-width: 620px;
-  margin: 28px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.15));
-  font-size: 11px;
+  margin-top: var(--oa-space-xl);
+  font-size: var(--oa-size-body);
   line-height: 1.6;
   color: var(--theme-text-secondary);
 }
 
 .pg-voet code {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-family: var(--oa-font-mono);
+  font-size: var(--oa-size-label);
   background: var(--theme-bg-lighter);
-  padding: 1px 5px;
-  border-radius: 3px;
+  border: 1px solid var(--theme-border);
+  padding: 0 5px;
+  border-radius: var(--oa-radius-small);
 }
 
 /* ── Windgebied-kaart onder het windgebied-veld ───────────────────── */
 
 .pg-windkaart {
-  margin: 4px 0 14px;
+  margin: 0 0 var(--oa-space-md);
 }
 
 .pg-windkaart-toggle {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
-  padding: 6px 10px;
+  height: 30px;
+  padding: 0 10px;
   margin-bottom: 8px;
   background: transparent;
-  border: 1px solid var(--theme-border-subtle, rgba(0, 0, 0, 0.12));
-  border-radius: 4px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--oa-size-body);
   text-align: left;
-  color: var(--theme-text-secondary, var(--theme-text-muted, #666));
-  cursor: pointer;
+  color: var(--theme-text-secondary);
+  cursor: default;
 }
 
 .pg-windkaart-toggle:hover {
-  border-color: var(--theme-accent, #d97706);
-  color: var(--theme-accent, #d97706);
+  background: var(--theme-hover);
+  color: var(--theme-text);
 }

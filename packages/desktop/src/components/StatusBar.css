@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: space-between;
   height: 22px;
-  font-size: 12px;
+  font-size: var(--oa-size-body);
   color: var(--theme-status-text);
   flex-shrink: 0;
   user-select: none;
@@ -58,11 +58,11 @@
 
 .status-item-label {
   color: var(--theme-status-text-label);
-  font-size: 12px;
+  font-size: var(--oa-size-body);
 }
 
 .status-item-value {
   color: var(--theme-status-text);
   font-weight: 500;
-  font-size: 12px;
+  font-size: var(--oa-size-body);
 }

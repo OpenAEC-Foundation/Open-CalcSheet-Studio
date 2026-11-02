@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { INVULVELDEN, SUBKOP_WOORDEN, type Invulwaarden } from "../../../rapport/invullen";
 import { STANDAARD_TEKSTEN, type Tekstvariant } from "../../../rapport/standaardteksten";
 import { useBureauStore } from "../../../store/bureauProfiel";
@@ -26,6 +27,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
   hint?: ReactNode;
   placeholder?: string;
 }) {
+  const { t } = useTranslation("rapport");
   const tekst = useProjectStore((s) => s.rapport.teksten[id] ?? "");
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
@@ -71,7 +73,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
     if (label === "" || tekst.trim() === "") return;
     voegTekstToe(id, { label, tekst });
     setVariantNaam(null);
-    setMelding(`Bewaard als eigen variant "${label}"; te kiezen onder Standaardtekst.`);
+    setMelding(t("tekstveld.bewaard", { label }));
   };
 
   const variant = (v: Tekstvariant, sleutel: string) => (
@@ -81,7 +83,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
       role="menuitem"
       className="rapport-menu-item"
       title={v.tekst}
-      onClick={() => vervang(v.tekst, `De huidige tekst vervangen door "${v.label}"?`)}
+      onClick={() => vervang(v.tekst, t("tekstveld.vervangVraag", { label: v.label }))}
     >
       <span className="rapport-menu-label">{v.label}</span>
       <span className="rapport-menu-uittreksel">{uittreksel(v.tekst)}</span>
@@ -103,35 +105,35 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
               setMelding("");
             }}
           >
-            Standaardtekst ▾
+            {t("tekstveld.standaardtekst")}
           </button>
           <button
             type="button"
             className="rapport-knop"
             disabled={tekst.trim() === ""}
-            title="Deze tekst bewaren in de instellingen, om hem in elk rapport te kunnen kiezen"
+            title={t("tekstveld.bewaarTitel")}
             onClick={() => {
-              setVariantNaam(`Eigen variant ${eigen.length + 1}`);
+              setVariantNaam(t("tekstveld.eigenVariantNummer", { nummer: eigen.length + 1 }));
               setMenuOpen(false);
               setMelding("");
             }}
           >
-            Bewaar als eigen variant
+            {t("tekstveld.bewaarAlsEigen")}
           </button>
           {menuOpen && (
             <div className="rapport-menu" role="menu">
-              {meegeleverd.length > 0 && <div className="rapport-menu-groep">Meegeleverd</div>}
+              {meegeleverd.length > 0 && <div className="rapport-menu-groep">{t("tekstveld.meegeleverd")}</div>}
               {meegeleverd.map((v, i) => variant(v, `m${i}`))}
-              {eigen.length > 0 && <div className="rapport-menu-groep">Eigen varianten</div>}
+              {eigen.length > 0 && <div className="rapport-menu-groep">{t("tekstveld.eigenVarianten")}</div>}
               {eigen.map((v, i) => (
                 <div className="rapport-menu-regel" key={`e${i}`}>
                   {variant(v, `e${i}`)}
                   <button
                     type="button"
                     className="rapport-icoon"
-                    title="Eigen variant verwijderen"
+                    title={t("tekstveld.verwijderTitel")}
                     onClick={() => {
-                      if (confirm(`Eigen variant "${v.label}" verwijderen?`)) verwijderTekst(id, i);
+                      if (confirm(t("tekstveld.verwijderVraag", { label: v.label }))) verwijderTekst(id, i);
                     }}
                   >
                     ✕
@@ -139,7 +141,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
                 </div>
               ))}
               {meegeleverd.length === 0 && eigen.length === 0 && (
-                <div className="rapport-menu-leeg">Nog geen varianten voor dit onderdeel.</div>
+                <div className="rapport-menu-leeg">{t("tekstveld.geenVarianten")}</div>
               )}
               <div className="rapport-menu-scheiding" />
               <button
@@ -147,12 +149,10 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
                 role="menuitem"
                 className="rapport-menu-item"
                 disabled={tekst === ""}
-                onClick={() => vervang("", "De tekst van dit onderdeel leegmaken?")}
+                onClick={() => vervang("", t("tekstveld.leegmakenVraag"))}
               >
-                <span className="rapport-menu-label">Leegmaken</span>
-                <span className="rapport-menu-uittreksel">
-                  Een leeg optioneel onderdeel valt weg uit het rapport.
-                </span>
+                <span className="rapport-menu-label">{t("tekstveld.leegmaken")}</span>
+                <span className="rapport-menu-uittreksel">{t("tekstveld.leegmakenUitleg")}</span>
               </button>
             </div>
           )}
@@ -166,7 +166,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
             autoFocus
             onFocus={(e) => e.currentTarget.select()}
             value={variantNaam}
-            placeholder="Naam van de variant"
+            placeholder={t("tekstveld.variantNaam")}
             onChange={(e) => setVariantNaam(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") bewaar();
@@ -179,10 +179,10 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
             disabled={variantNaam.trim() === ""}
             onClick={bewaar}
           >
-            Bewaar
+            {t("algemeen.bewaar")}
           </button>
           <button type="button" className="rapport-knop" onClick={() => setVariantNaam(null)}>
-            Annuleer
+            {t("algemeen.annuleer")}
           </button>
         </div>
       )}
@@ -199,6 +199,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
  * je wat er nu in het rapport komt te staan.
  */
 export function Invulvelden() {
+  const { t } = useTranslation("rapport");
   const gegevens = useProjectStore((s) => s.gegevens);
   const rapport = useProjectStore((s) => s.rapport);
   const projectNaam = useProjectStore((s) => s.projectNaam);
@@ -216,28 +217,23 @@ export function Invulvelden() {
   };
   return (
     <div className="rapport-invulvelden">
-      <span className="rapport-label">Invulvelden</span>
+      <span className="rapport-label">{t("invulvelden.label")}</span>
       <span className="rapport-invulvelden-lijst">
         {INVULVELDEN.map((v) => (
-          <code key={v} title={waarden[v] ? `Nu: ${waarden[v]}` : 'Nu leeg: in het rapport komt "—"'}>
+          <code key={v} title={waarden[v] ? t("invulvelden.nu", { waarde: waarden[v] }) : t("invulvelden.nuLeeg")}>
             {`{${v}}`}
           </code>
         ))}
       </span>
-      <span className="rapport-hint">
-        Een invulveld wordt in het rapport vervangen door zijn waarde; een leeg veld wordt "—". Een regel
-        die met "-" begint is een opsommingsregel, een lege regel begint een nieuwe alinea.
-      </span>
+      <span className="rapport-hint">{t("invulvelden.uitleg")}</span>
       <Vink
-        label="Subkoppen in de teksten"
+        label={t("invulvelden.subkoppen")}
         pad="opmaak.subkoppen"
         aan={rapport.opmaak.subkoppen}
         hint={
           <>
-            Een korte regel (hoogstens {SUBKOP_WOORDEN} woorden) die op ":" eindigt, zoals "Fundering:", komt
-            vet in het rapport, in alle teksten en de toelichting bij de bladen.
-            {!rapport.opmaak.subkoppen &&
-              " Staat uit: zulke regels blijven gewone tekst. Een rapport van een eerdere versie opent zo, zodat de afdruk niet verandert."}
+            {t("invulvelden.subkoppenUitleg", { aantal: SUBKOP_WOORDEN })}
+            {!rapport.opmaak.subkoppen && ` ${t("invulvelden.subkoppenUit")}`}
           </>
         }
       />

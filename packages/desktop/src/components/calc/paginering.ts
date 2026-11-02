@@ -98,6 +98,21 @@ export function pxPerMm(doc: Document = document): number {
   return px || 96 / 25.4;
 }
 
+/**
+ * Een blok met deze klasse begint op een vers vel, ook midden in een sectie:
+ * elke volgende pagina van een PDF-blad (PdfBladWeergave.tsx). Bij het printen
+ * via de browser doet `break-before: page` hetzelfde (PdfBladWeergave.css).
+ */
+export const NIEUW_VEL = "print-nieuw-vel";
+
+/**
+ * Na een blok met deze klasse begint een vers vel: niets loopt door op het
+ * vel van een PDF-pagina, ook niet de volgende paragraaf in hoofdstuk
+ * Berekeningen. Alleen voor deze verdeling; bij de losse bladen volgt er
+ * binnen de sectie toch niets meer.
+ */
+export const VEL_AF = "print-vel-af";
+
 /** Elementen die geen inhoud zijn maar bediening, loopkop of voet. */
 const OVERSLAAN = ["print-loopkop", "print-loopvoet", "rpa-voet"];
 
@@ -155,14 +170,17 @@ export function meetBlokken(bron: HTMLElement): Blok[] {
   for (const sectie of secties) {
     if (OVERSLAAN.some((k) => sectie.classList.contains(k))) continue;
     let eerste = true;
+    let naVolVel = false;
     for (const kind of Array.from(sectie.children) as HTMLElement[]) {
       for (const item of vlakUit(kind)) {
         // Wat niet op papier komt (`display: none`) heeft geen vak. Het neemt
         // geen plaats in en hoort niet op een vel; gemeten zou het als bovenkant
         // de rand van het venster krijgen en een hoogte van een halve uitdraai.
         if (item.el.getClientRects().length === 0) continue;
-        rijen.push({ el: item.el, nieuwePagina: eerste, sectie: sectie.className, wikkels: item.wikkels });
+        const nieuwVel = eerste || naVolVel || item.el.classList.contains(NIEUW_VEL);
+        rijen.push({ el: item.el, nieuwePagina: nieuwVel, sectie: sectie.className, wikkels: item.wikkels });
         eerste = false;
+        naVolVel = item.el.classList.contains(VEL_AF);
       }
     }
   }

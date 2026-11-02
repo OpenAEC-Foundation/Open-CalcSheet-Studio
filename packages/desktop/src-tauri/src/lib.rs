@@ -1,4 +1,4 @@
-//! Tauri-schil van Open Structural Calculation Studio.
+//! Tauri-schil van Open CalcSheet Studio.
 //!
 //! De PDF-commando's hieronder gebruiken de OpenAEC-rapportengine
 //! (`openaec-core`). Die is **optioneel**: standaard wordt hij niet meegebouwd,
@@ -9,6 +9,11 @@
 //! Afdrukken loopt in de app zelf via de browser
 //! (`src/components/calc/PrintDocument.tsx`); die weg neemt ook de tekeningen
 //! mee, wat de rapportengine niet doet. Zie `docs/backlog.md`.
+//!
+//! De MCP-brug (`mcp_bridge`) is het lokale doorgeefluik voor een
+//! AI-assistent; zie `docs/mcp.md`.
+
+mod mcp_bridge;
 
 #[cfg(feature = "rapportengine")]
 mod rapport {
@@ -58,7 +63,7 @@ fn engine_save_pdf(report: serde_json::Value, path: String) -> Result<usize, Str
 #[tauri::command]
 fn engine_preview_pdf(report: serde_json::Value) -> Result<String, String> {
     let bytes = rapport::genereer(report)?;
-    let dir = std::env::temp_dir().join("open-structural-calculation-studio");
+    let dir = std::env::temp_dir().join("open-calcsheet-studio");
     std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create temp dir: {}", e))?;
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -81,19 +86,44 @@ fn startbestand() -> Option<String> {
     })
 }
 
+/// Het hoofdvenster blijft op de app zelf: een link in de uitwerking mag het
+/// niet wegsturen, want op een andere pagina is de hele app weg.
+///
+/// Alleen op Windows, omdat WebView2 hier alleen navigatie van het hoofdvenster
+/// meldt en een `@iframe` dus gewoon blijft werken. Op de andere platformen is
+/// dat niet getest.
+#[cfg(windows)]
+fn navigatie_bewaker() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::new("navigatie")
+        .on_navigation(|_, url| match url.scheme() {
+            "tauri" | "about" | "blob" | "data" => true,
+            "http" | "https" => matches!(url.host_str(), Some("localhost" | "127.0.0.1" | "tauri.localhost")),
+            _ => false,
+        })
+        .build()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let bouwer = tauri::Builder::default();
+    #[cfg(windows)]
+    let bouwer = bouwer.plugin(navigatie_bewaker());
+    bouwer
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_store::Builder::new().build())
+        // MCP-brug: één actieve brug of geen. Starten en stoppen doet de
+        // frontend (src/mcp/brug.ts) met de twee commando's hieronder.
+        .manage(mcp_bridge::BridgeState::default())
         .invoke_handler(tauri::generate_handler![
             engine_generate_pdf,
             engine_save_pdf,
             engine_preview_pdf,
             startbestand,
+            mcp_bridge::mcp_bridge_start,
+            mcp_bridge::mcp_bridge_stop,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

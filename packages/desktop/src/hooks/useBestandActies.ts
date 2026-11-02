@@ -1,62 +1,35 @@
 import { useCallback } from "react";
-import {
-  parse,
-  evaluate,
-  generateProjectIfcx,
-  type EvaluatedNode,
-  type IfcCalcSheet,
-} from "@ifc-calc/core";
 import { useProjectStore } from "../store/projectStore";
-import { projectScope } from "../store/projectGegevens";
 import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../store/projectBestand";
+import { bladenVoorIfc } from "../store/projectIfcx";
 import {
   openCalculationFile,
   saveCalculationFile,
   schrijfCalculationFile,
   kanDirectOpslaan,
 } from "../tauri/fileOps";
-import { calcpadIncludes, calcpadImageUrls } from "../templates/calcpad-includes";
+import i18next from "../i18n/config";
 import { useRecentFiles } from "./useRecentFiles";
 
 /**
- * Elk blad apart doorrekenen voor de IFC-kant van het bestand: met de
- * projectgegevens als startwaarden en de eigen invoer van dát exemplaar.
- * Twee bladen van dezelfde module lopen hier dus langs elkaar heen.
- *
- * Een blad dat omvalt levert lege knopen op en dus geen elementen; de fout
- * gaat naar de console. In de afdruk zie je hem wél, daar staat de melding
- * op de plek van het blad zelf.
+ * Meldingen in de taal van de app, opgezocht op het moment van melden. Geen
+ * useTranslation: App roept deze hook aan, en een extra hook hierin verandert
+ * de hookvolgorde van App.
  */
-function evalueerAlles(): IfcCalcSheet[] {
-  const { exemplaren, gegevens } = useProjectStore.getState();
-  const scope = projectScope(gegevens);
-  return exemplaren.map((ex) => {
-    let nodes: EvaluatedNode[] = [];
-    try {
-      const ast = parse(ex.source, { includes: calcpadIncludes, imageUrls: calcpadImageUrls });
-      nodes = evaluate(ast, ex.waarden, scope);
-    } catch (err) {
-      console.error(`Blad "${ex.naam}" kon niet worden doorgerekend:`, err);
-    }
-    return { naam: ex.naam, nodes, elementen: ex.elementen };
-  });
-}
+const melding = (sleutel: string, fout?: unknown) =>
+  i18next.t(`werkruimte:bestand.${sleutel}`, { fout: (fout as Error | undefined)?.message });
 
 /**
- * Het project zoals het op schijf komt. Het bestand blijft een geldig
- * IFCX-document. De IFC-kant beschrijft het héle project — alle bladen in één
- * ruimtelijke boom — want binnen het OpenAEC-ecosysteem is IFCX de drager
- * waarmee de gereedschappen data uitwisselen. Eén blad exporteren zou de rest
- * van de keten de andere bladen onthouden.
+ * Het project zoals het op schijf komt: zuiver IFCX, met het héle project in één
+ * document, want binnen het OpenAEC-ecosysteem is IFCX de drager waarmee de
+ * gereedschappen data uitwisselen. Elk blad wordt doorgerekend voor de uitkomsten
+ * in het bestand (store/projectIfcx.ts); een blad dat omvalt blijft erin staan.
  */
-function projectInhoud(): string {
-  const { projectNaam, gegevens, exemplaren, rapport } = useProjectStore.getState();
-  const ifcBladen = evalueerAlles();
-  const ifcx =
-    ifcBladen.length > 0 ? generateProjectIfcx(ifcBladen, { projectName: projectNaam }) : null;
+export function projectInhoud(): string {
+  const { projectNaam, gegevens, exemplaren, rapport, verborgen } = useProjectStore.getState();
   return bouwProjectBestand(
-    { versie: PROJECT_FORMAAT_VERSIE, naam: projectNaam, gegevens, exemplaren, rapport },
-    ifcx,
+    { versie: PROJECT_FORMAAT_VERSIE, naam: projectNaam, gegevens, exemplaren, rapport, verborgen: Object.keys(verborgen).length ? verborgen : undefined },
+    bladenVoorIfc({ exemplaren, gegevens }),
   );
 }
 
@@ -79,7 +52,7 @@ export function useBestandActies() {
 
   const nieuw = useCallback(() => {
     if (useProjectStore.getState().dirty) {
-      const ok = confirm("Niet-opgeslagen wijzigingen worden weggegooid. Doorgaan?");
+      const ok = confirm(melding("wijzigingenWeggooien"));
       if (!ok) return;
     }
     useProjectStore.getState().nieuwProject();
@@ -95,7 +68,7 @@ export function useBestandActies() {
       await onthoud(file.path);
     } catch (err) {
       console.error("Open file failed:", err);
-      alert(`Bestand openen mislukt: ${(err as Error).message}`);
+      alert(melding("openenMislukt", err));
     }
   }, [onthoud]);
 
@@ -109,7 +82,7 @@ export function useBestandActies() {
       await onthoud(pad);
     } catch (err) {
       console.error("Save file failed:", err);
-      alert(`Bestand opslaan mislukt: ${(err as Error).message}`);
+      alert(melding("opslaanMislukt", err));
     }
   }, [onthoud]);
 
@@ -126,7 +99,7 @@ export function useBestandActies() {
       useProjectStore.getState().markeerOpgeslagen(pad);
     } catch (err) {
       console.error("Save file failed:", err);
-      alert(`Bestand opslaan mislukt: ${(err as Error).message}`);
+      alert(melding("opslaanMislukt", err));
     }
   }, [opslaanAls]);
 

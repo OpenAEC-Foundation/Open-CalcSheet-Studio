@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useRecentFiles, type RecentFile } from "../../hooks/useRecentFiles";
 import { useBestandActies } from "../../hooks/useBestandActies";
 import { useAfdrukken } from "../../store/printStore";
+import { useModuleKiezer } from "../../store/moduleKiezer";
+import { sprite } from "../ribbon/calcIcons";
 import "./Backstage.css";
 
 const ICONS = {
@@ -15,6 +17,8 @@ const ICONS = {
   import: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   preferences: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
   about: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  // Uitbreidingen: het B2-icoon uit de Blueprint-sprite.
+  extensions: `<svg class="oa-icon" width="20" height="20" aria-hidden="true"><use href="${sprite("standard")}#i24-extensions.manage"/></svg>`,
   exit: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
 };
 
@@ -159,6 +163,12 @@ export default function Backstage({ open, onClose, onOpenSettings, onOpenFile, o
             label={t("preferences")}
             shortcut="Ctrl+,"
             onClick={() => actionAndClose(onOpenSettings)}
+          />
+          {/* De online modulebibliotheek: installeren, bijwerken, verwijderen. */}
+          <MenuItem
+            icon={ICONS.extensions}
+            label={t("extensions")}
+            onClick={() => actionAndClose(() => useModuleKiezer.getState().openen("online"))}
           />
           <Divider />
           <MenuItem
@@ -320,11 +330,11 @@ function OpenPanel({
     const diffMs = now.getTime() - d.getTime();
     const diffMin = Math.floor(diffMs / 60000);
     if (diffMin < 1) return t("openPanel.justNow", "Just now");
-    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffMin < 60) return t("werkruimte:recent.minuten", { aantal: diffMin });
     const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
+    if (diffHr < 24) return t("werkruimte:recent.uren", { aantal: diffHr });
     const diffDay = Math.floor(diffHr / 24);
-    if (diffDay < 7) return `${diffDay}d ago`;
+    if (diffDay < 7) return t("werkruimte:recent.dagen", { aantal: diffDay });
     return d.toLocaleDateString();
   };
 

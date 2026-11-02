@@ -1,3 +1,5 @@
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import type { Belastingklasse, Windcoefficient } from "../../../rapport/model";
 import {
   CATEGORIEEN,
@@ -20,14 +22,20 @@ import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
 import { Afgeleid, Kop, Sectie, Veld, useRapport } from "./velden";
 
-const WIND_KOLOMMEN: Kolom<Windcoefficient>[] = [
-  { sleutel: "omschrijving", kop: "Omschrijving", placeholder: "bijv. gevel, druk" },
-  { sleutel: "c", kop: "c", breedte: "6em", getal: true },
-];
+function windKolommen(t: TFunction<"rapport">): Kolom<Windcoefficient>[] {
+  return [
+    { sleutel: "omschrijving", kop: t("algemeen.omschrijving"), placeholder: t("belastingen.windVoorbeeld") },
+    { sleutel: "c", kop: "c", breedte: "6em", getal: true },
+  ];
+}
 
-/** Codes uit de projectgegevens → hoe de norm ze noemt. */
+/** Codes uit de projectgegevens → hoe de norm ze noemt (de terreincategorie als sleutel van het label). */
 const GEBIED = { 1: "I", 2: "II", 3: "III" } as const;
-const TERREIN = { 1: "0 (zee of kust)", 2: "II (onbebouwd)", 3: "III (bebouwd)" } as const;
+const TERREIN = {
+  1: "belastingen.terrein.zee",
+  2: "belastingen.terrein.onbebouwd",
+  3: "belastingen.terrein.bebouwd",
+} as const;
 
 const PSI = <>ψ<sub>0</sub> / ψ<sub>1</sub> / ψ<sub>2</sub></>;
 
@@ -49,6 +57,7 @@ const NIEUWE_KLASSE: Belastingklasse = {
  * volgen uit de projectgegevens en worden hier alleen getoond.
  */
 export default function BelastingenSectie() {
+  const { t } = useTranslation("rapport");
   const b = useRapport().belastingen;
   const gegevens = useProjectStore((s) => s.gegevens);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
@@ -68,16 +77,16 @@ export default function BelastingenSectie() {
   return (
     <Sectie
       id="belastingen"
-      titel="Belastingen"
+      titel={t("secties.belastingen")}
       hoofdstuk="belastingen"
-      intro="Grijze waarden volgen uit de projectgegevens en de norm. De opbouwen in 5.5 staan alleen in het rapport; ze werken (nog) niet door in de rekenbladen."
+      intro={t("belastingen.intro")}
     >
       <div className="rapport-knoop">
         <Kop id="sneeuw" />
         <Afgeleid
           regels={[
             {
-              label: "Plat dak",
+              label: t("belastingen.platDak"),
               waarde: (
                 <>
                   s = μ<sub>1</sub>·C<sub>e</sub>·C<sub>t</sub>·s<sub>k</sub> = {fmt(SNEEUW.mu1, 1)} ×{" "}
@@ -89,7 +98,7 @@ export default function BelastingenSectie() {
             },
           ]}
         />
-        <TekstVeld id="sneeuw" hint="Tekst onder de sneeuwbelasting." />
+        <TekstVeld id="sneeuw" hint={t("belastingen.sneeuwHint")} />
       </div>
 
       <div className="rapport-knoop">
@@ -98,27 +107,32 @@ export default function BelastingenSectie() {
           uitProjectgegevens
           regels={[
             {
-              label: "Windgebied",
+              label: t("belastingen.windgebied"),
               waarde: <>{GEBIED[wg]} — v<sub>b,0</sub> = {fmt(wind.vb0, 1)} m/s</>,
-              bron: "tabel NB.1",
+              bron: t("algemeen.tabel", { nummer: "NB.1" }),
             },
-            { label: "Terreincategorie", waarde: TERREIN[tc], bron: "tabel NB.3–4.1" },
-            { label: "Omschrijving in 5.2", waarde: windLabel(wg, tc) },
+            {
+              label: t("belastingen.terreincategorie"),
+              waarde: t(TERREIN[tc]),
+              bron: t("algemeen.tabel", { nummer: "NB.3–4.1" }),
+            },
+            // Zoals het in het rapport staat, dus Nederlands.
+            { label: t("belastingen.omschrijving52"), waarde: windLabel(wg, tc) },
           ]}
         />
         <div className="rapport-rij">
           <Veld
-            label="Gebouwhoogte"
+            label={t("belastingen.gebouwhoogte")}
             pad="belastingen.wind.gebouwhoogte"
             waarde={b.wind.gebouwhoogte}
             eenheid="m"
-            placeholder="bijv. 9"
+            placeholder={t("belastingen.gebouwhoogteVoorbeeld")}
           />
           <Veld
             label={<>c<sub>s</sub>c<sub>d</sub></>}
             pad="belastingen.wind.cscd"
             waarde={b.wind.cscd}
-            hint="1 bij gebouwen lager dan 15 m, zie 6.2(1)."
+            hint={t("belastingen.cscdHint")}
           />
         </div>
         <Afgeleid
@@ -128,23 +142,23 @@ export default function BelastingenSectie() {
             {
               label: <>z<sub>e</sub></>,
               waarde: hoogteBekend ? `${fmt(wind.ze, 2, true)} m` : "—",
-              bron: "gebouwhoogte, ten minste z_min",
+              bron: t("belastingen.zeBron"),
             },
             {
               label: <>q<sub>p</sub>(z<sub>e</sub>)</>,
-              waarde: hoogteBekend ? `${fmt(qp, 2)} kN/m²` : "— (vul de gebouwhoogte in)",
+              waarde: hoogteBekend ? `${fmt(qp, 2)} kN/m²` : t("belastingen.hoogteInvullen"),
               bron: "(4.8)",
             },
-            { label: PSI, waarde: psiTekst(PSI_WIND), bron: "tabel NB.2–A1.1" },
+            { label: PSI, waarde: psiTekst(PSI_WIND), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
           ]}
         />
-        <h6 className="rapport-subkop">Coëfficiënten</h6>
+        <h6 className="rapport-subkop">{t("belastingen.coefficienten")}</h6>
         <RijenTabel<Windcoefficient>
           pad="belastingen.wind.coefficienten"
           rijen={b.wind.coefficienten}
-          kolommen={WIND_KOLOMMEN}
+          kolommen={windKolommen(t)}
           nieuweRij={() => ({ omschrijving: "", c: "" })}
-          toevoegen="Coëfficiënt toevoegen"
+          toevoegen={t("belastingen.coefficientToevoegen")}
           extra={[
             {
               kop: <>P<sub>rep</sub> [kN/m²]</>,
@@ -154,7 +168,7 @@ export default function BelastingenSectie() {
           ]}
         />
         <p className="rapport-hint">
-          P<sub>rep</sub> = c · q<sub>p</sub>; zonder gebouwhoogte blijft de kolom leeg.
+          P<sub>rep</sub> = c · q<sub>p</sub>; {t("belastingen.prepLeeg")}
         </p>
       </div>
 
@@ -164,7 +178,7 @@ export default function BelastingenSectie() {
 
       <div className="rapport-knoop">
         <Kop id="veranderlijk" />
-        {b.klassen.length === 0 && <p className="rapport-hint">Nog geen belastingklassen.</p>}
+        {b.klassen.length === 0 && <p className="rapport-hint">{t("belastingen.geenKlassen")}</p>}
         {b.klassen.map((k, i) => (
           <KlasseKaart key={i} regel={k} index={i} aantal={b.klassen.length} wijzig={wijzigKlassen} />
         ))}
@@ -173,14 +187,14 @@ export default function BelastingenSectie() {
           className="rapport-knop"
           onClick={() => wijzigKlassen((l) => [...l, { ...NIEUWE_KLASSE }])}
         >
-          + Belastingklasse toevoegen
+          + {t("belastingen.klasseToevoegen")}
         </button>
       </div>
 
       <div className="rapport-knoop">
         <Kop id="blijvend" />
-        <OpbouwEditor groep="vloerenDaken" titel="Vloeren, daken" />
-        <OpbouwEditor groep="wanden" titel="Wanden" />
+        <OpbouwEditor groep="vloerenDaken" titel={t("belastingen.vloerenDaken")} />
+        <OpbouwEditor groep="wanden" titel={t("belastingen.wanden")} />
       </div>
     </Sectie>
   );
@@ -196,6 +210,7 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
   aantal: number;
   wijzig: (fn: (lijst: Belastingklasse[]) => Belastingklasse[]) => void;
 }) {
+  const { t } = useTranslation("rapport");
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const pad = `belastingen.klassen.${index}`;
   const cat = categorie(regel.categorie);
@@ -207,18 +222,21 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
       <div className="rapport-kaart-kop">
         <select
           value={regel.categorie}
-          aria-label="Categorie"
+          aria-label={t("belastingen.categorie")}
           onChange={(e) => zet(`${pad}.categorie`, e.target.value)}
         >
-          {!cat && <option value={regel.categorie}>{regel.categorie || "—"} (onbekend)</option>}
-          <optgroup label="Vloeren">
+          {!cat && (
+            <option value={regel.categorie}>{t("belastingen.onbekend", { waarde: regel.categorie || "—" })}</option>
+          )}
+          {/* De namen van de categorieën komen uit de norm (normwaarden.ts) en blijven Nederlands. */}
+          <optgroup label={t("belastingen.vloeren")}>
             {CATEGORIEEN.filter((c) => c.soort === "vloer").map((c) => (
               <option key={c.id} value={c.id}>
                 {c.label}
               </option>
             ))}
           </optgroup>
-          <optgroup label="Daken">
+          <optgroup label={t("belastingen.daken")}>
             {CATEGORIEEN.filter((c) => c.soort === "dak").map((c) => (
               <option key={c.id} value={c.id}>
                 {c.label}
@@ -229,7 +247,7 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
         <button
           type="button"
           className="rapport-icoon"
-          title="Omhoog"
+          title={t("algemeen.omhoog")}
           disabled={index === 0}
           onClick={() => wijzig((l) => verplaatst(l, index, -1))}
         >
@@ -238,7 +256,7 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
         <button
           type="button"
           className="rapport-icoon"
-          title="Omlaag"
+          title={t("algemeen.omlaag")}
           disabled={index === aantal - 1}
           onClick={() => wijzig((l) => verplaatst(l, index, 1))}
         >
@@ -247,34 +265,38 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
         <button
           type="button"
           className="rapport-icoon"
-          title="Belastingklasse verwijderen"
+          title={t("belastingen.klasseVerwijderen")}
           onClick={() => wijzig((l) => l.filter((_, j) => j !== index))}
         >
           ✕
         </button>
       </div>
 
-      {!cat && <p className="rapport-hint">Onbekende categorie: kies er een uit de lijst.</p>}
+      {!cat && <p className="rapport-hint">{t("belastingen.onbekendeCategorie")}</p>}
 
       {cat?.soort === "vloer" && (
         <>
           <Veld
-            label="Lichte scheidingswanden (L.S.)"
+            label={t("belastingen.lichteScheidingswanden")}
             pad={`${pad}.lichteScheidingswanden`}
             waarde={regel.lichteScheidingswanden}
             eenheid="kN/m²"
-            placeholder="leeg = geen"
-            hint="0,5 / 0,8 / 1,2 kN/m² bij een wandgewicht tot 1,0 / 2,0 / 3,0 kN/m, zie 6.3.1.2(8)."
+            placeholder={t("belastingen.leegIsGeen")}
+            hint={t("belastingen.lsHint")}
           />
           <Afgeleid
             regels={[
-              { label: <>q<sub>k</sub></>, waarde: `${fmt(cat.qk, 2)} kN/m²`, bron: "tabel NB.1–6.2" },
+              {
+                label: <>q<sub>k</sub></>,
+                waarde: `${fmt(cat.qk, 2)} kN/m²`,
+                bron: t("algemeen.tabel", { nummer: "NB.1–6.2" }),
+              },
               {
                 label: <>q<sub>k</sub> + L.S.</>,
                 waarde: `${fmt(cat.qk + (Number.isFinite(ls) ? ls : 0), 2)} kN/m²`,
               },
               { label: <>Q<sub>k</sub></>, waarde: `${fmt(cat.Qk, 1)} kN` },
-              { label: PSI, waarde: psiTekst(cat.psi), bron: "tabel NB.2–A1.1" },
+              { label: PSI, waarde: psiTekst(cat.psi), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
             ]}
           />
         </>
@@ -283,25 +305,25 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
       {cat?.soort === "dak" && (
         <>
           <div className="rapport-rij">
-            <Veld label="Dakhelling α" pad={`${pad}.dakhelling`} waarde={regel.dakhelling} eenheid="°" />
-            <Veld label="q-last" pad={`${pad}.qlast`} waarde={regel.qlast} eenheid="kN/m¹" />
+            <Veld label={t("belastingen.dakhelling")} pad={`${pad}.dakhelling`} waarde={regel.dakhelling} eenheid="°" />
+            <Veld label={t("belastingen.qlast")} pad={`${pad}.qlast`} waarde={regel.qlast} eenheid="kN/m¹" />
           </div>
           <Afgeleid
             regels={[
               {
-                label: <>q<sub>k</sub> plat dak</>,
+                label: <>q<sub>k</sub> {t("belastingen.platDakKlein")}</>,
                 waarde: `${fmt(cat.qk, 2)} kN/m²`,
-                bron: "tabel NB.4–6.10",
+                bron: t("algemeen.tabel", { nummer: "NB.4–6.10" }),
               },
               {
-                label: <>q<sub>k</sub> bij α</>,
-                waarde: Number.isFinite(alfa) ? `${fmt(dakQk(alfa), 2)} kN/m²` : "— (vul de dakhelling in)",
+                label: <>q<sub>k</sub> {t("belastingen.bijAlfa")}</>,
+                waarde: Number.isFinite(alfa) ? `${fmt(dakQk(alfa), 2)} kN/m²` : t("belastingen.dakhellingInvullen"),
               },
               {
                 label: <>Q<sub>k</sub></>,
-                waarde: `${fmt(cat.Qk, 1)} kN; direct onder het dakbeschot ${fmt(DAK_QK_DIRECT, 1)} kN`,
+                waarde: t("belastingen.qkDirect", { qk: fmt(cat.Qk, 1), direct: fmt(DAK_QK_DIRECT, 1) }),
               },
-              { label: PSI, waarde: psiTekst(cat.psi), bron: "tabel NB.2–A1.1" },
+              { label: PSI, waarde: psiTekst(cat.psi), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
             ]}
           />
         </>

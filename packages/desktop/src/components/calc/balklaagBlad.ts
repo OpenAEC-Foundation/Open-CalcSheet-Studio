@@ -20,6 +20,8 @@ export interface BalklaagKent {
   gedragen: boolean;
   /** De grens voor de bijkomende doorbuiging, naast die voor de eindstand. */
   bijkomend: boolean;
+  /** Het 3D-beeld met zijn twee keuzes (toon_3d en druk_3d). */
+  drieD: boolean;
 }
 
 export function balklaagKent(source: string): BalklaagKent {
@@ -29,6 +31,7 @@ export function balklaagKent(source: string): BalklaagKent {
     steun: /^\s*a_steun = \?/m.test(source),
     gedragen: /^\s*g_bl = \?/m.test(source),
     bijkomend: /@select grens_bij\b/.test(source),
+    drieD: /^\s*@ifcx balklaag\b/m.test(source),
   };
 }
 

@@ -7,7 +7,9 @@
     "report": "Report",
     "calc": "Home",
     "insert": "Insert",
-    "view": "View"
+    "view": "View",
+    "calcpad": "CalcPAD syntax",
+    "tekenen": "Drawing"
   },
   "calc": {
     "file": "File",
@@ -25,7 +27,24 @@
     "pdfSave": "Report (PDF)",
     "ifcExport": "IFC",
     "insert": "Insert",
-    "module": "Module"
+    "module": "Module",
+    "clipboard": "Clipboard",
+    "paste": "Paste",
+    "cut": "Cut",
+    "copy": "Copy",
+    "find": "Find",
+    "sheets": "Sheets",
+    "blankSheet": "Blank sheet",
+    "output": "Output",
+    "general": "General",
+    "project": "Project",
+    "settings": "Settings",
+    "help": "Help",
+    "helpButton": "Help",
+    "about": "About",
+    "report": "Report",
+    "start": "Getting started",
+    "extensions": "Extensions"
   },
   "insert": {
     "elements": "Elements",

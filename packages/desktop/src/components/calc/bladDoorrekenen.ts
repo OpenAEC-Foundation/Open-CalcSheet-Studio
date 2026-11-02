@@ -2,6 +2,8 @@ import { parse, evaluate, render, defaultStyles } from "@ifc-calc/core";
 import type { Exemplaar } from "../../store/projectStore";
 import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-includes";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
+import { isPdfBlad } from "../../store/pdfBijlage";
+import { papier } from "./pdfBlad";
 
 /*
  * Een rekenblad doorrekenen voor op papier.
@@ -37,6 +39,11 @@ export interface DoorgerekendBlad {
  * krijgt een rode regel met de fout, en de andere bladen komen gewoon op papier.
  */
 export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): DoorgerekendBlad {
+  // Een PDF-blad rekent niets: geen uitwerking, geen UC. "PDF-bijlage" staat
+  // in de kolom grondslag van het overzicht; de pagina's tekent PdfBladWeergave.tsx.
+  if (isPdfBlad(ex)) {
+    return { html: "", resultaat: { titel: ex.naam, norm: papier()("pdfBlad.soort"), uc: null, voldoet: null } };
+  }
   let html: string;
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
   try {

@@ -1,6 +1,10 @@
 import katex from 'katex';
-import type { EvaluatedNode } from './types.js';
-import { exprToLatex, nameToLatex, resultToLatex } from './latex.js';
+import type { EvaluatedNode, MatrixUitkomst } from './types.js';
+import { exprToLatex, matrixResultToLatex, nameToLatex, resultToLatex } from './latex.js';
+import { renderDrieD } from './drieD.js';
+import { renderIframe } from './iframeBlok.js';
+import { renderIfcxBlok } from './ifcxBlok.js';
+import { renderJsBlok } from './jsBlok.js';
 
 // ─── KaTeX rendering ────────────────────────────────────────────────
 
@@ -71,7 +75,7 @@ function coalesceSvg(nodes: EvaluatedNode[]): EvaluatedNode[] {
                - (m.text.match(/<\/svg>/gi)?.length ?? 0);
         i++;
       }
-      out.push({ type: 'svg', content: buf.join('\n') });
+      out.push({ type: 'svg', content: buf.join('\n'), ...(n.scherm ? { scherm: true } : {}) });
       continue;
     }
     out.push(n);
@@ -141,12 +145,32 @@ function isUitleg(html: string): boolean {
   return cursief;
 }
 
+/** Is de knoop alleen voor het scherm (CalcPAD `#pre`)? */
+function alleenScherm(node: EvaluatedNode): boolean {
+  return 'scherm' in node && node.scherm === true;
+}
+
+/**
+ * Zet een klasse achteraan op het buitenste element van een stuk html. Achteraan,
+ * zodat herkenning op de eerste klasse (`<div class="calc-line`) blijft werken.
+ */
+function metKlasse(html: string, klasse: string): string {
+  return html.replace(/^(\s*<[A-Za-z][\w-]*)([^>]*?)(\/?>)/, (_m, open: string, attrs: string, sluit: string) =>
+    /\sclass="/.test(attrs)
+      ? `${open}${attrs.replace(/\sclass="([^"]*)"/, (_k, k: string) => ` class="${k} ${klasse}"`)}${sluit}`
+      : `${open} class="${klasse}"${attrs}${sluit}`,
+  );
+}
+
 export function render(nodes: EvaluatedNode[]): string {
   const coalesced = coalesceSvg(nodes);
   const parts: string[] = ['<div class="ifc-calc">'];
   let open: OpenTag[] = [];
 
   for (const node of coalesced) {
+    // `#pre`: alleen op het scherm. De klasse alleen-scherm laat de afdruk de
+    // regel weglaten (PrintDocument.css).
+    const scherm = alleenScherm(node);
     // Een prozaregel die binnen een doorlopende alinea valt: de nog openstaande
     // opmaak van de vorige regel ervoor zetten en aan het eind weer sluiten.
     if (node.type === 'text' && node.html && !node.inline) {
@@ -154,7 +178,7 @@ export function render(nodes: EvaluatedNode[]): string {
       open = openOpmaakNa(open, node.text);
       const na = [...open].reverse().map((t) => `</${t.tag}>`).join('');
       const regel = `${voor}${node.text}${na}`;
-      const klasse = isUitleg(regel) ? 'calc-text calc-uitleg' : 'calc-text';
+      const klasse = (isUitleg(regel) ? 'calc-text calc-uitleg' : 'calc-text') + (scherm ? ' alleen-scherm' : '');
       parts.push(`<p class="${klasse}">${regel}</p>`);
       continue;
     }
@@ -174,11 +198,12 @@ export function render(nodes: EvaluatedNode[]): string {
         .replace(/<span class="alleen-scherm">[\s\S]*?<\/span>/g, '')
         .replace(/<[^>]+>/g, '')
         .trim();
-      const klasse = zichtbaar.length > LANGE_TOELICHTING ? 'calc-comment calc-uitleg' : 'calc-comment';
+      const klasse = (zichtbaar.length > LANGE_TOELICHTING ? 'calc-comment calc-uitleg' : 'calc-comment')
+        + (scherm && !/^<div class="[^"]*\balleen-scherm\b/.test(vorige) ? ' alleen-scherm' : '');
       parts[parts.length - 1] = vorige.replace(/<\/div>\s*$/, `<span class="${klasse}">${inhoud}</span></div>`);
       continue;
     }
-    parts.push(renderNode(node));
+    parts.push(scherm ? metKlasse(renderNode(node), 'alleen-scherm') : renderNode(node));
   }
 
   parts.push('</div>');
@@ -209,6 +234,18 @@ function renderNode(node: EvaluatedNode): string {
     case 'svg':
       return `<div class="calc-svg">${node.content}</div>`;
 
+    case '3d':
+      return renderDrieD(node);
+
+    case 'iframe':
+      return renderIframe(node);
+
+    case 'ifcx':
+      return renderIfcxBlok(node);
+
+    case 'js':
+      return renderJsBlok(node);
+
     case 'image':
       return `<div class="calc-image"><img src="${escapeHtml(node.src)}" alt="" /></div>`;
 
@@ -237,13 +274,14 @@ function renderUserFunction(node: { name: string; params: string[]; expression: 
   return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
 }
 
-function renderVarDisplay(node: { name: string; result: string; unit: string }): string {
+function renderVarDisplay(node: { name: string; result: string; unit: string; matrix?: MatrixUitkomst; getoond?: string }): string {
   const nameLatex = nameToLatex(node.name);
   // node.result already includes the unit ("2.91 m"); pass num + unit to
   // resultToLatex separately so we don't double-print the unit suffix.
-  const { numStr, unitStr } = splitResult(node.result);
+  // Met een opmaak (`x:F2`, `#round n`) de getoonde vorm.
+  const { numStr, unitStr } = splitResult(node.getoond ?? node.result);
   const effectiveUnit = node.unit || unitStr;
-  const valueLatex = resultToLatex(numStr, effectiveUnit);
+  const valueLatex = node.matrix ? matrixResultToLatex(node.matrix) : resultToLatex(numStr, effectiveUnit);
   const latex = `${nameLatex} = ${valueLatex}`;
   return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
 }
@@ -253,7 +291,11 @@ function renderInputPrompt(node: {
   label: string;
   unit: string;
   currentValue: string;
+  standaard?: string;
 }): string {
+  // Een leeggemaakt veld rekent met de standaardwaarde (`?{5000}`, anders 0)
+  // en toont hem grijs als placeholder.
+  const placeholder = node.standaard !== undefined ? `\n    placeholder="${escapeHtml(node.standaard)}"` : '';
   const unitSuffix = node.unit
     ? `<span class="calc-input-unit">${escapeHtml(node.unit)}</span>`
     : '';
@@ -266,7 +308,7 @@ function renderInputPrompt(node: {
   <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false"
     class="calc-input-value"
     data-prompt="${escapeHtml(node.name)}"
-    value="${escapeHtml(node.currentValue)}" />
+    value="${escapeHtml(node.currentValue)}"${placeholder} />
   ${unitSuffix}
 </div>`;
 }
@@ -313,6 +355,9 @@ function renderAssignment(node: {
   substitution: string;
   result: string;
   unit: string;
+  matrix?: MatrixUitkomst;
+  getoond?: string;
+  weergave?: 'val' | 'noc' | 'nosub' | 'novar';
 }): string {
   // Error case
   if (node.result.startsWith('Error:')) {
@@ -323,9 +368,13 @@ function renderAssignment(node: {
   }
 
   // Build the LaTeX chain: name = expr [= substitution] = result
-  // Split numeric value and unit from result
-  const { numStr, unitStr } = splitResult(node.result);
-  const resultLatex = resultToLatex(numStr, unitStr);
+  // Split numeric value and unit from result. Met een opmaak (`:F2`,
+  // `#round n`) de getoonde vorm.
+  const { numStr, unitStr } = splitResult(node.getoond ?? node.result);
+  // Een vector of matrix krijgt de matrixopmaak, elk element afgerond als een
+  // gewone uitkomst.
+  const resultLatex = node.matrix ? matrixResultToLatex(node.matrix) : resultToLatex(numStr, unitStr);
+  const uitkomst = `\\textcolor{#059669}{\\boldsymbol{${resultLatex}}}`;
 
   // Name
   const nameTex = nameToLatex(node.name);
@@ -335,23 +384,40 @@ function renderAssignment(node: {
 
   // Check if expression is just a direct value (no variables to substitute)
   const isDirectValue = !node.substitution || node.substitution === node.expression;
+  const subTex = (): string => {
+    try {
+      // Een ingevulde ∞ leest mathjs alleen als `Infinity`.
+      return exprToLatex(node.substitution.replace(/∞/g, 'Infinity'));
+    } catch {
+      return escapeLatexStr(node.substitution);
+    }
+  };
 
   let fullLatex: string;
 
-  if (isDirectValue) {
+  if (node.weergave === 'val') {
+    // CalcPAD #val: alleen de uitkomst.
+    fullLatex = `${nameTex} = ${uitkomst}`;
+  } else if (node.weergave === 'noc') {
+    // CalcPAD #noc: alleen de formule, zonder uitkomst.
+    fullLatex = `${nameTex} = ${exprTex}`;
+  } else if (node.weergave === 'nosub') {
+    // CalcPAD #nosub: formule en uitkomst, zonder invulling (een losse waarde
+    // zonder namen blijft `naam = waarde`).
+    fullLatex = node.substitution ? `${nameTex} = ${exprTex} = ${uitkomst}` : `${nameTex} = ${uitkomst}`;
+  } else if (node.weergave === 'novar' && !isDirectValue) {
+    // CalcPAD #novar: de ingevulde formule en de uitkomst, zonder de namen.
+    fullLatex = `${nameTex} = ${subTex()} = ${uitkomst}`;
+  } else if (node.matrix && node.substitution && node.substitution === node.expression) {
+    // Een matrixuitkomst uit namen die niet ingevuld worden (C = A·B,
+    // u = lsolve(K; F)): de formule en dan de uitkomst.
+    fullLatex = `${nameTex} = ${exprTex} = ${uitkomst}`;
+  } else if (isDirectValue) {
     // Simple: name = value (e.g., b = 300 mm)
-    fullLatex = `${nameTex} = \\textcolor{#059669}{\\boldsymbol{${resultLatex}}}`;
+    fullLatex = `${nameTex} = ${uitkomst}`;
   } else {
     // Full chain: name = expr = substitution = result
-    let subTex: string;
-    try {
-      // Een ingevulde ∞ leest mathjs alleen als `Infinity`.
-      subTex = exprToLatex(node.substitution.replace(/∞/g, 'Infinity'));
-    } catch {
-      subTex = escapeLatexStr(node.substitution);
-    }
-
-    fullLatex = `${nameTex} = ${exprTex} = ${subTex} = \\textcolor{#059669}{\\boldsymbol{${resultLatex}}}`;
+    fullLatex = `${nameTex} = ${exprTex} = ${subTex()} = ${uitkomst}`;
   }
 
   return `<div class="calc-line">${renderLatex(fullLatex, true)}</div>`;
@@ -487,6 +553,115 @@ export const defaultStyles = `
   max-width: 100%;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
+}
+
+/* @3d: het beeld op "papier", de meldingen erboven. De app zet een draaibaar
+   beeld (canvas) of een afbeelding op de plaats van de projectie. */
+.calc-3d {
+  margin: 1em 0;
+}
+.calc-3d-beeld {
+  position: relative;
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.calc-3d-beeld > svg,
+.calc-3d-beeld > canvas,
+.calc-3d-beeld > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.calc-3d-melding {
+  margin: 0.15em 0;
+  color: #b91c1c;
+  font-size: 0.85em;
+}
+
+/* @ifcx: een 3D-beeld uit een IFCX-document, met dezelfde opmaak als @3d. */
+.calc-ifcx {
+  margin: 1em 0;
+}
+.calc-ifcx-beeld {
+  position: relative;
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.calc-ifcx-beeld > svg,
+.calc-ifcx-beeld > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.calc-ifcx-bijschrift {
+  margin: 0.3em 0 0;
+  color: #57534e;
+  font-size: 0.85em;
+}
+
+/* @iframe: een kader met het adres. De app zet er een iframe in als de gebruiker
+   het heeft bevestigd; de maat staat vast, geladen of niet. */
+.calc-iframe {
+  margin: 1em 0;
+}
+.calc-iframe-vak {
+  position: relative;
+  background: #fafaf9;
+  border: 1px solid #a8a29e;
+  overflow: hidden;
+}
+.calc-iframe-kader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  padding: 0.75em;
+  text-align: center;
+  color: #44403c;
+}
+.calc-iframe-kop {
+  font-weight: 600;
+}
+.calc-iframe-url {
+  max-width: 100%;
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+.calc-iframe-bron {
+  margin: 0.3em 0 0;
+  color: #57534e;
+  font-size: 0.8em;
+  overflow-wrap: anywhere;
+  visibility: hidden;
+}
+.calc-iframe.geladen .calc-iframe-bron,
+.calc-js.geladen .calc-iframe-bron {
+  visibility: visible;
+}
+/* @js: dezelfde opzet als @iframe. Op papier eventueel een afbeelding in het vak. */
+.calc-js {
+  margin: 1em 0;
+}
+.calc-js-afbeelding {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #ffffff;
+}
+.calc-iframe-melding {
+  margin: 0.15em 0;
+  color: #b91c1c;
+  font-size: 0.85em;
 }
 
 .calc-select {

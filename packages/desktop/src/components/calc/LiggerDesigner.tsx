@@ -1,4 +1,5 @@
 import { liggerOplossing, liggerStatus } from "@ifc-calc/core";
+import { useTranslation } from "react-i18next";
 import { useDesigner, Dim, Force, Ro, Defs, HDim, fmt, clamp, UitkomstKop } from "./designerKit";
 import { useBladUitkomst } from "./bladResultaat";
 import "./VoetplaatDesigner.css";
@@ -31,14 +32,16 @@ const DEFAULTS: Record<string, number> = {
   toepassing: 2, uiterlijk: 1,
 };
 
+// De omschrijvingen staan in locales/{nl,en}/beelden.json, onder ligger.systemen en
+// ligger.inklemmingen; hier alleen de waarde voor het blad en de sleutel.
 const SYSTEMEN = [
-  { v: 2, label: "Twee steunpunten" },
-  { v: 3, label: "Drie steunpunten" },
-  { v: 4, label: "Vier steunpunten" },
-  { v: 1, label: "Uitkraging" },
+  { v: 2, sleutel: "twee" },
+  { v: 3, sleutel: "drie" },
+  { v: 4, sleutel: "vier" },
+  { v: 1, sleutel: "uitkraging" },
 ];
 const INKLEMMING = [
-  { v: 0, label: "Geen" }, { v: 1, label: "Links" }, { v: 2, label: "Rechts" }, { v: 3, label: "Beide einden" },
+  { v: 0, sleutel: "geen" }, { v: 1, sleutel: "links" }, { v: 2, sleutel: "rechts" }, { v: 3, sleutel: "beide" },
 ];
 const LASTEN = [1, 2, 3, 4, 5, 6];
 const PERM = "#475569";
@@ -58,6 +61,7 @@ export default function LiggerDesigner() {
   const ctx = useDesigner(MARKER, DEFAULTS);
   // Vóór de vroege return: de volgorde van de hooks moet vast liggen.
   const uitkomst = useBladUitkomst();
+  const { t } = useTranslation("beelden");
   if (!ctx.actief) return null;
   const { d, set, box, wrapRef } = ctx;
   const num = (e: { target: { value: string } }) => parseFloat(e.target.value.replace(",", "."));
@@ -133,52 +137,52 @@ export default function LiggerDesigner() {
 
   return (
     <div className="vd-panel">
-      <UitkomstKop titel="Parametrisch beeld — ligger" uitkomst={uitkomst} />
+      <UitkomstKop titel={t("ligger.titel")} uitkomst={uitkomst} />
 
       <div className="vd-body" style={{ flex: 1, minHeight: 0, alignItems: "stretch" }}>
         <div className="vd-controls vd-compact" style={{ alignSelf: "flex-start" }}>
-          <span className="vd-ctrl-h">Ligger</span>
-          <label>Materiaal
+          <span className="vd-ctrl-h">{t("ligger.kop")}</span>
+          <label>{t("ligger.materiaal")}
             <select value={Math.round(d("materiaal"))} onChange={(e) => set("materiaal", parseInt(e.target.value))}>
-              <option value={1}>Hout</option>
-              <option value={2}>Staal</option>
+              <option value={1}>{t("ligger.hout")}</option>
+              <option value={2}>{t("ligger.staal")}</option>
             </select>
           </label>
-          <label>Systeem
+          <label>{t("ligger.systeem")}
             <select value={systeem} onChange={(e) => set("systeem", parseInt(e.target.value))}>
-              {SYSTEMEN.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
+              {SYSTEMEN.map((o) => <option key={o.v} value={o.v}>{t(`ligger.systemen.${o.sleutel}`)}</option>)}
             </select>
           </label>
           {systeem >= 2 && (
-            <label>Inklemming
+            <label>{t("ligger.inklemming")}
               <select value={klem} onChange={(e) => set("inklemming", parseInt(e.target.value))}>
-                {INKLEMMING.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
+                {INKLEMMING.map((o) => <option key={o.v} value={o.v}>{t(`ligger.inklemmingen.${o.sleutel}`)}</option>)}
               </select>
             </label>
           )}
-          <label>Gerberscharnieren
+          <label>{t("ligger.gerberscharnieren")}
             <select value={nScharnier} onChange={(e) => set("scharnieren", parseInt(e.target.value))}>
-              <option value={0}>Geen</option>
-              <option value={1}>Eén</option>
-              <option value={2}>Twee</option>
+              <option value={0}>{t("ligger.aantalScharnieren.geen")}</option>
+              <option value={1}>{t("ligger.aantalScharnieren.een")}</option>
+              <option value={2}>{t("ligger.aantalScharnieren.twee")}</option>
             </select>
           </label>
           {nScharnier >= 1 && (
-            <label>Scharnier 1, x (m)
+            <label>{t("ligger.scharnierX", { n: 1 })}
               <input type="number" step={0.1} value={d("x_h1")} onChange={(e) => set("x_h1", num(e))} />
             </label>
           )}
           {nScharnier >= 2 && (
-            <label>Scharnier 2, x (m)
+            <label>{t("ligger.scharnierX", { n: 2 })}
               <input type="number" step={0.1} value={d("x_h2")} onChange={(e) => set("x_h2", num(e))} />
             </label>
           )}
-          <span className="gd-note">De lasten, de doorsnede en de toetsen staan in het rekenblad; posities vanaf het linkereind.</span>
+          <span className="gd-note">{t("ligger.noot")}</span>
         </div>
 
         <div ref={wrapRef} className="vd-canvases" style={{ flex: 1, minWidth: 0, borderLeft: "1px solid var(--theme-border-subtle, #d1d5db)", paddingLeft: 18 }}>
           <div className="vd-canvas">
-            <div className="vd-caption">Aanzicht met de karakteristieke lasten en de momentenlijn (G + Q, alle lasten)</div>
+            <div className="vd-caption">{t("ligger.aanzicht")}</div>
             <div className="vd-stage" style={{ width: W, height: H, background: "transparent", border: "none", borderRadius: 0 }}>
               <svg width={W} height={H} className="vd-svg">
                 <Defs k="lg" />
@@ -246,18 +250,21 @@ export default function LiggerDesigner() {
               {lijn.length > 0 && Mmin < -1e-6 && (
                 <Ro text={`${fmt(Mmin, 2)} kNm`} x={X(lijn.find((r) => r[2] === Mmin)?.[0] ?? 0)} y={yM + Mmin * mS - 22} kleur="#dc2626" />
               )}
-              {status === -1 && <Ro text="beweeglijk: te weinig steunpunten of een scharnier te veel" x={W / 2} y={yM} kleur="#b91c1c" />}
+              {status === -1 && <Ro text={t("ligger.beweeglijk")} x={W / 2} y={yM} kleur="#b91c1c" />}
             </div>
           </div>
         </div>
       </div>
 
       <div className="vd-foot">
-        <span>Klik op een blauwe maat of een last om die te wijzigen — stroomt direct terug in het rekenblad.
-          <br />De combinaties, de omhullende en de toetsen staan in het rekenblad.</span>
+        <span>{t("ligger.klik")}
+          <br />{t("ligger.inBlad")}</span>
         <span className="vd-live">
-          {SYSTEMEN.find((o) => o.v === systeem)?.label ?? ""} · lengte {fmt(xEind, 2)} m · {lasten.length} {lasten.length === 1 ? "last" : "lasten"}
-          {scharnieren.length ? ` · ${scharnieren.length} scharnier${scharnieren.length > 1 ? "en" : ""}` : ""}
+          {(() => {
+            const s = SYSTEMEN.find((o) => o.v === systeem);
+            return s ? t(`ligger.systemen.${s.sleutel}`) : "";
+          })()} · {t("ligger.lengte", { l: fmt(xEind, 2) })} · {t("ligger.lasten", { count: lasten.length })}
+          {scharnieren.length ? ` · ${t("ligger.scharnieren", { count: scharnieren.length })}` : ""}
         </span>
       </div>
     </div>

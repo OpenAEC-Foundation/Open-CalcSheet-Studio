@@ -1,4 +1,9 @@
-import type { AstNode, ConditionalNode, PlotNode, TextNode } from './types.js';
+import { Unit } from 'mathjs';
+import type { AstNode, ConditionalNode, OpdrachtNode, PlotNode, TextNode } from './types.js';
+import { DRIE_D_START_RE, leesDrieD } from './drieD.js';
+import { IFRAME_RE, leesIframe } from './iframeBlok.js';
+import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
+import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.js';
 
 /**
  * Line-based parser with CalcPAD-compatible syntax.
@@ -16,23 +21,43 @@ import type { AstNode, ConditionalNode, PlotNode, TextNode } from './types.js';
  *                       `f(x) = x^2 + 1`        → user-defined function (mathjs lambda)
  *
  *   Input prompts:      `F = ? kN`              → interactive numeric input
+ *                       `L = ?{5000}mm`         → met standaardwaarde (CalcPAD)
  *
  *   Bare display:       `UC`                    → show "UC = <current value>"
  *
  *   Directives:         `#hide` … `#show`       → execute but skip render
- *                       `#pre`                  → standalone marker (no-op for us)
- *                       `#post`                 → standalone marker (no-op for us)
- *                       `#rad` / `#deg`         → angle mode hints (no-op; mathjs handles)
+ *                       `#pre`                  → alleen op het scherm (bij de invoer), niet op papier
+ *                       `#post`                 → in de uitwerking en op papier (beëindigt #hide/#pre)
+ *                       `#deg` / `#rad` / `#gra` → hoekeenheid voor de rest van het blad
+ *                       `#equ` / `#val` / `#noc` → formule en uitkomst / alleen uitkomst / alleen formule
+ *                       `#varsub` / `#nosub` / `#novar` → met / zonder / alleen invulling
+ *                       `#round n`              → uitkomsten op n decimalen (`#round default`)
+ *                       `expr:F2`               → deze uitkomst met 2 decimalen (ook N, E, G, P)
+ *
+ *   Omrekenen:          `x|kN*m`, `x to kN*m`, `x in kN*m` (`in` is ook de inch;
+ *                       zie zetInOmNaarTo)
  *
  *   Conditionals:       `#if cond` / `#else if` / `#else` / `#end if`
  *                       HTML-wrapped conditions `#if '<!--cond-->'` are unwrapped.
  *
- *   Loops:              `#repeat n` … `#end repeat`  (iteration index = _i)
+ *   Loops:              `#repeat n` … `#loop` (of `#end repeat`)  (iteration index = _i)
+ *                       `#for i = a : b` … `#loop`, `#while cond` … `#loop`,
+ *                       `#break`, `#continue`
+ *
+ *   Matrices:           `[a; b | c; d]` — `|` scheidt de rijen, `;` de
+ *                       elementen binnen een rij. `A.(i; j)`, `v.(i)`, `v.i`
+ *                       lezen een element en kunnen ook links van `=` staan.
  *
  *   Plots:              `$Plot{c1 & c2 @ x = lo : hi}`
  *                       Each curve: `yExpr` or `xExpr|yExpr`. Samples 100 points.
  *
  *   Blocks (ours):      `@svg …@end`, `@select … @end`, `@gef name`, `@img(src)`
+ *                       `@3d … @end` — ruimtelijk beeld, één element per regel
+ *                       (`balk x1 y1 z1 x2 y2 z2 b h`, maten als getal of
+ *                       `{{formule}}`); zie drieD.ts
+ *                       `@iframe url hoogte=120mm` — externe pagina; zie iframeBlok.ts
+ *                       `@ifcx balklaag` — 3D-beeld uit een IFCX-document; zie ifcxBlok.ts
+ *                       `@js … @end` — JavaScript, letterlijk en afgeschermd; zie jsBlok.ts
  *
  *   Statement separator: `,'` (single comma + single-quote) splits one line into
  *                        multiple statements. Used heavily in CalcPAD files like
@@ -56,6 +81,8 @@ const USER_FUNC_RE = new RegExp(
   'u',
 );
 const VAR_DISPLAY_RE = new RegExp(`^(${IDENT})\\s*$`, 'u');
+// `M|kN*m`, `M to kN*m`, `M in kN*m` als losse regel (zie isDoeleenheid).
+const OMREKEN_WEERGAVE_RE = new RegExp(`^(${IDENT})\\s*(?:\\||\\s+(?:to|in)\\s+)\\s*(\\S.*)$`, 'u');
 
 const TITLE_RE = /^"(.*)$/;           // CalcPAD title: "Quadratic Equation
 const PROSE_RE = /^'(.*)$/;           // CalcPAD prose: 'free text with <i>HTML</i>
@@ -76,31 +103,41 @@ const SELECT_OPTION_RE = /^(.+)\s*=\s*(.+)$/;
 const GEF_RE = /^@gef\s+([a-zA-Z_]\w*)\s*$/;
 // Directive recognizers. All allow trailing characters after the keyword because
 // CalcPAD frequently packs persisted-input values onto the same line as the
-// closing directive (e.g. `#end if 2\t3\t-5`).
-const IF_RE = /^#if\s+(.+)$/;
-const ELSE_IF_RE = /^#else\s*if\s+(.+)$/;
-const ELSE_RE = /^#else\b/;
-const ENDIF_RE = /^#end\s+if\b/;
-const HIDE_RE = /^#hide\b/;
-const SHOW_RE = /^#show\b/;
-const PRE_RE = /^#pre\b/;
-const POST_RE = /^#post\b/;
-const ANGLE_MODE_RE = /^#(rad|deg|gra|equ)\b/;
-// CalcPAD `#def Name$ = "string"` constant definitions, `#include filename`,
-// `#novar` (hide variable substitution), `#varsub` (variable substitution
-// control), `#val` (force value-only substitution — no symbolic expansion).
-// All silently ignored — they don't change calculation values.
-const NO_OP_DIRECTIVE_RE = /^#(def|include|novar|varsub|val|noc)\b/;
-const REPEAT_RE = /^#repeat\s+(.+)$/;
-const ENDREPEAT_RE = /^#end\s+repeat\b/;
+// closing directive (e.g. `#end if 2\t3\t-5`). Hoofdletterongevoelig, zoals in
+// CalcPAD (`#If`, `#Else if`, `#End if`, `#Hide`).
+const IF_RE = /^#if\s+(.+)$/i;
+const ELSE_IF_RE = /^#else\s*if\s+(.+)$/i;
+const ELSE_RE = /^#else\b/i;
+const ENDIF_RE = /^#end\s+if\b/i;
+const HIDE_RE = /^#hide\b/i;
+const SHOW_RE = /^#show\b/i;
+const PRE_RE = /^#pre\b/i;
+const POST_RE = /^#post\b/i;
+// Opdrachten die vanaf hun regel gelden (zie OpdrachtNode in types.ts). Ze
+// worden tijdens het rekenen uitgevoerd, niet bij het inlezen: een #deg in een
+// #if-tak geldt alleen als die tak loopt, zoals in CalcPAD.
+const OPDRACHT_RE = /^#(deg|rad|gra|equ|val|noc|varsub|nosub|novar)\b/i;
+const ROUND_RE = /^#round\b\s*(.*)$/i;
+// CalcPAD `#def Name$ = "string"` constant definitions and `#include filename`
+// (both handled before line parsing), plus `#split` / `#wrap` (hoe een lange
+// formule afbreekt; de uitwerking breekt zelf af). Silently ignored.
+const NO_OP_DIRECTIVE_RE = /^#(def|include|split|wrap)\b/i;
+// CalcPAD `#repeat n … #loop` (ook zonder n: tot een #break), plus onze eigen
+// afsluiting `#end repeat`. Lusopdrachten zijn in CalcPAD hoofdletterongevoelig
+// (`#Repeat`, `#Loop`).
+const REPEAT_RE = /^#repeat\b\s*(.*)$/i;
+const ENDREPEAT_RE = /^#end\s+repeat\b/i;
 // CalcPAD `#for var = lo : hi … #loop` (#break supported as early exit)
-const FOR_RE = /^#for\s+([\p{L}_][\p{L}\p{N}_]*)\s*=\s*(.+?)\s*:\s*(.+)$/u;
-const LOOP_RE = /^#loop\b/;
-const BREAK_RE = /^#break\b/;
+const FOR_RE = /^#for\s+([\p{L}_][\p{L}\p{N}_]*)\s*=\s*(.+?)\s*:\s*(.+)$/iu;
+// CalcPAD `#while voorwaarde … #loop`
+const WHILE_RE = /^#while\s+(.+)$/i;
+const LOOP_RE = /^#loop\b/i;
+const BREAK_RE = /^#break\b/i;
+const CONTINUE_RE = /^#continue\b/i;
 // Match `$Plot{...}` even when CalcPAD has appended trailing persisted-input
 // data after the closing brace (e.g. `}\v2\t3`).
 const PLOT_RE = /^\$Plot\s*\{([^}]+)\}/;
-const SOLVER_RE = /\$(Find|Root|Solve|Sup|Inf)\s*\{([^}]+)\}/g;
+const SOLVER_RE = /\$(Find|Root|Solve|Sup|Inf|Sum|Product|Area|Integral|Slope)\s*\{([^}]+)\}/g;
 const TRAILING_DATA_RE = /^[\s\d.eE+\-,;]+$/;  // pure numeric/whitespace line
 
 // HTML wrappers CalcPAD uses around conditions / equation fragments.
@@ -109,6 +146,33 @@ const HTML_COMMENT_WRAPPER_RE = /^\s*'?<!--\s*'?(.+?)'?\s*-->\s*'?\s*$/;
 // ── State ──────────────────────────────────────────────────────────────
 interface ParserState {
   hidden: boolean;
+  /**
+   * Na `#pre`: alleen op het scherm. In CalcPAD toont `#pre` iets alleen in het
+   * invoerformulier, vóór het doorrekenen, en `#post` alleen in de uitkomst.
+   * Deze app heeft geen apart formulier: de uitwerking op het scherm is
+   * invoer en uitkomst tegelijk, het papier is de uitkomst. Dus `#pre` →
+   * alleen op het scherm (klasse alleen-scherm), `#post` → overal, zoals
+   * gewone tekst. Beide beëindigen een `#hide`; `#show` en `#hide` een `#pre`.
+   */
+  scherm: boolean;
+  /** De code van de `@js`-blokken; in de bron staat alleen hun nummer (jsBlok.ts). */
+  jsBlokken: JsCode[];
+}
+
+/**
+ * Merkteken voor een formaataanduiding aan het eind van een rekendeel
+ * (`x = 3.14159:F2`). stripFormatSpecs zet het neer, parseLines haalt het eraf
+ * en geeft het formaat aan de knoop. Een stuurteken: het staat nooit in een
+ * blad en de herschrijvingen voor namen raken het niet.
+ */
+const FORMAAT_MARK = '\u0002';
+
+/** Haalt een formaataanduiding (merkteken + `F2`) van het eind af; een losse elders vervalt. */
+function knipFormaat(code: string): { tekst: string; formaat?: string } {
+  if (code.indexOf(FORMAAT_MARK) === -1) return { tekst: code };
+  const m = code.match(/\s*\u0002([A-Za-z]\d*)\s*$/);
+  const tekst = (m ? code.slice(0, m.index) : code).replace(/\u0002[A-Za-z]\d*/g, '');
+  return m ? { tekst, formaat: m[1].toUpperCase() } : { tekst };
 }
 
 /**
@@ -155,6 +219,7 @@ function foldSubscriptCommas(source: string): string {
  */
 function alleenInCode(source: string, fn: (code: string) => string): string {
   let inSelect = false;
+  let in3d = false;
   return source
     .split('\n')
     .map((regel) => {
@@ -163,12 +228,29 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
         if (/^@end\b/.test(t)) inSelect = false;
         return regel;
       }
+      // Een `@3d`-blok gaat ongemoeid door: zijn teksten blijven letterlijk, en
+      // de expressies in `{{…}}`, `#for` en `#if` krijgen dezelfde
+      // herschrijvingen pas bij het inlezen van het blok (normaliseer3d).
+      if (in3d) {
+        if (/^@end\b/.test(t)) in3d = false;
+        return regel;
+      }
+      if (DRIE_D_START_RE.test(t)) {
+        in3d = true;
+        return regel;
+      }
       if (/^@select\b/.test(t)) {
         inSelect = true;
         const label = regel.indexOf('"');
         return label === -1 ? fn(regel) : fn(regel.slice(0, label)) + regel.slice(label);
       }
       if (/^#+(\s|$)/.test(t)) return regel;
+      // `@img(…)` draagt een bestandsnaam, URL of data-URL, geen rekenwerk:
+      // `detail.png` werd anders `detail_png` en `example.com` `example_com`.
+      if (/^@img\(/.test(t)) return regel;
+      // Idem voor een adres in `@iframe`, en de opties van `@ifcx`; hun `{{…}}`
+      // krijgt dezelfde herschrijvingen bij het inlezen (normaliseer3d).
+      if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t)) return regel;
       let uit = '';
       let stuk = '';
       let code = true;
@@ -206,7 +288,35 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
  * preceding word char.
  */
 function stripDollarSuffix(source: string): string {
-  return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
+  if (!/^\s*@(?:3d\s*$|iframe\b|ifcx\b|js\u0003)/im.test(source)) return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
+  // De teksten in een `@3d`-blok blijven letterlijk (zie alleenInCode).
+  let in3d = false;
+  return source
+    .split('\n')
+    .map((regel) => {
+      const t = regel.trim();
+      if (in3d) {
+        if (/^@end\b/.test(t)) in3d = false;
+        return regel;
+      }
+      if (DRIE_D_START_RE.test(t)) in3d = true;
+      // Een dollarteken in een adres is geen achtervoegsel van een naam.
+      if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t)) return regel;
+      return regel.replace(/([\p{L}\p{N}_])\$/gu, '$1');
+    })
+    .join('\n');
+}
+
+/**
+ * Een expressie uit een `@3d`-blok (`{{…}}`, de grenzen van `#for`, de
+ * voorwaarde van `#if`) met dezelfde herschrijvingen als elke andere
+ * expressie in het blad, zodat `{{V_b,0}}` en `{{Cs.Cd}}` dezelfde naam
+ * vinden als in een formule.
+ */
+function normaliseer3d(expr: string): string {
+  return normalizeExpression(
+    rewriteMatrixLiterals(stripDollarSuffix(foldIdentifierDots(foldSubscriptCommas(expr)))).trim(),
+  );
 }
 
 /**
@@ -482,12 +592,15 @@ function foldIdentifierDots(source: string): string {
 /**
  * CalcPAD lets every expression carry a trailing display-format hint
  * (`:F2` = fixed-point 2 decimals, `:N0`, `:G`, `:E3`, `:P`). It's a
- * display directive, not part of the math — strip it from expressions.
+ * display directive, not part of the math. Staat hij aan het eind van een
+ * rekendeel, dan blijft hij als merkteken (FORMAAT_MARK + `F2`) staan; de
+ * knoop krijgt hem als `formaat` en de rekenkern toont de uitkomst zo (zie
+ * formatGetal in evaluator.ts). Midden in een expressie wordt hij geknipt.
  *
- *   `Z_0:F2`         →  `Z_0`           (bare display)
- *   `Cs.Cd = 1:F2`   →  `Cs.Cd = 1`     (assignment value)
- *   `ψ_0,wind = 0.0:F2`  →  `ψ_0,wind = 0.0`
- *   `'b = 'x:F2' mm` →  `'b = 'x' mm`   (ingevoegde expressie in tekst)
+ *   `Z_0:F2`         →  `Z_0` + F2      (bare display)
+ *   `Cs.Cd = 1:F2`   →  `Cs.Cd = 1` + F2 (assignment value)
+ *   `ψ_0,wind = 0.0:F2`  →  `ψ_0,wind = 0.0` + F2
+ *   `'b = 'x:F2' mm` →  `'b = 'x' mm` + F2 (ingevoegde expressie in tekst)
  *
  * Alleen in rekendelen. Liep het knippen over de hele regel, dan verdween in
  * tekst elke dubbele punt met een losse F, N, G, E of P erachter:
@@ -508,14 +621,23 @@ function stripFormatSpecs(source: string): string {
   // Staat de dubbele punt in het bereik `var = van : tot` van een #for of
   // van een `@` in een $-blok, dan is het geen formaataanduiding.
   const IN_BEREIK = /(?:^\s*#for|@)\s*[\p{L}_][\p{L}\p{N}_]*\s*=[^{}@]*$/u;
-  const knip = (code: string): string =>
-    code.replace(FORMAAT, (spec: string, plek: number, geheel: string) =>
-      IN_BEREIK.test(geheel.slice(0, plek)) ? spec : '',
-    );
-  const buitenTekenreeksen = (code: string): string =>
-    code.indexOf('"') === -1
-      ? knip(code)
-      : code.split('"').map((stuk, i) => (i % 2 === 1 ? stuk : knip(stuk))).join('"');
+  // `einde`: dit stuk sluit het rekendeel af, dus een aanduiding aan zijn
+  // eind hoort bij de hele expressie en blijft als merkteken staan.
+  const knip = (code: string, einde: boolean): string =>
+    code.replace(FORMAAT, (spec: string, plek: number, geheel: string) => {
+      if (IN_BEREIK.test(geheel.slice(0, plek))) return spec;
+      if (einde && geheel.slice(plek + spec.length).trim() === '') {
+        return FORMAAT_MARK + spec.replace(/^[^:]*:\s*/, '');
+      }
+      return '';
+    });
+  const buitenTekenreeksen = (code: string): string => {
+    if (code.indexOf('"') === -1) return knip(code, true);
+    const stukken = code.split('"');
+    return stukken
+      .map((stuk, i) => (i % 2 === 1 ? stuk : knip(stuk, i === stukken.length - 1)))
+      .join('"');
+  };
 
   // Een `@svg`-blok gaat in zijn geheel ongemoeid door; de rest per aaneengesloten
   // stuk door alleenInCode, zodat die zijn eigen `@select`-toestand houdt.
@@ -544,29 +666,112 @@ function stripFormatSpecs(source: string): string {
 }
 
 /**
- * Rewrite CalcPAD multi-column matrix literals `[a;b;c|d;e;f]` into mathjs
- * nested-array form `[[a,d],[b,e],[c,f]]`. CalcPAD uses `|` as the column
- * separator and `;` between rows within a column. mathjs has no `|` operator
- * for matrices and needs explicit row-of-row form.
+ * CalcPAD-matrixliteralen naar de geneste vorm van mathjs, rij voor rij.
  *
- * Pattern matches a `[…]` block that contains at least one `|`. Inside, each
- * `|`-delimited column is split on `;` into row values. The result is a
- * mathjs nested array transposed so the rows iterate properly.
+ * In CalcPAD scheidt `|` de RIJEN en `;` de elementen binnen een rij:
+ * `[1; 2 | 3; 4]` is de matrix met rijen [1, 2] en [3, 4], en wordt hier
+ * `[[1, 2], [3, 4]]`. Eerder werden de `|`-delen als kolommen
+ * gelezen; daardoor stond elke matrix gekanteld in het geheugen, gaven A*B en
+ * een niet-symmetrisch stelsel een fout antwoord, en waren n_rows, n_cols,
+ * A.(i; j) en de opzoekfuncties op die kanteling gebouwd.
+ *
+ * Een rij mag korter zijn dan de andere; de rekenkern vult hem met nullen aan,
+ * en een vector als element wordt in de rij uitgevouwen (`[a | 2*a]`), zoals in
+ * CalcPAD. Dat gebeurt bij het rekenen (`_cp_matrix_lit`), want hier is nog
+ * niet bekend of een naam een getal of een vector is.
+ *
+ * Alleen in rekendelen: tekst als "'Profielmatrix: [id | b | h]" blijft staan.
+ * Haken binnen een element (`v[2]`, `f(a; b)`) tellen mee bij het zoeken naar
+ * het sluitende haakje en bij het splitsen, zodat `[v.1; f(a; b) | 3; 4]` heel
+ * blijft.
  */
 function rewriteMatrixLiterals(source: string): string {
-  return source.replace(/\[([^\[\]]*\|[^\[\]]+)\]/g, (full, inner: string) => {
-    const columns = inner.split('|').map((col) =>
-      col.split(';').map((s) => s.trim()).filter(Boolean),
-    );
-    if (columns.length < 2) return full;
-    const rowCount = Math.max(...columns.map((c) => c.length));
-    const rows: string[] = [];
-    for (let r = 0; r < rowCount; r++) {
-      const cells = columns.map((c) => c[r] ?? '0');
-      rows.push(`[${cells.join(', ')}]`);
+  return alleenInCode(source, (code) =>
+    code.indexOf('"') === -1
+      ? herschrijfMatrices(code)
+      : code.split('"').map((stuk, i) => (i % 2 === 1 ? stuk : herschrijfMatrices(stuk))).join('"'),
+  );
+}
+
+/** Index van het haakje dat dat op `open` sluit, met geneste haken; -1 als het ontbreekt. */
+function sluitendHaakje(s: string, open: number): number {
+  let diepte = 0;
+  for (let i = open; i < s.length; i++) {
+    const ch = s[i];
+    if (ch === '(' || ch === '[' || ch === '{') diepte++;
+    else if (ch === ')' || ch === ']' || ch === '}') {
+      diepte--;
+      if (diepte === 0) return i;
     }
-    return `[${rows.join(', ')}]`;
-  });
+  }
+  return -1;
+}
+
+/** Splitst op `teken` buiten haken. */
+function splitsBuitenHaken(s: string, teken: string): string[] {
+  const uit: string[] = [];
+  let diepte = 0;
+  let begin = 0;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (ch === '(' || ch === '[' || ch === '{') diepte++;
+    else if (ch === ')' || ch === ']' || ch === '}') diepte--;
+    else if (ch === teken && diepte === 0) {
+      uit.push(s.slice(begin, i));
+      begin = i + 1;
+    }
+  }
+  uit.push(s.slice(begin));
+  return uit;
+}
+
+function herschrijfMatrices(code: string): string {
+  if (code.indexOf('|') === -1 || code.indexOf('[') === -1) return code;
+  let uit = '';
+  let i = 0;
+  while (i < code.length) {
+    if (code[i] !== '[') {
+      uit += code[i];
+      i++;
+      continue;
+    }
+    const sluit = sluitendHaakje(code, i);
+    if (sluit === -1) {
+      uit += code.slice(i);
+      break;
+    }
+    // Eerst wat erin staat: een matrix kan een andere bevatten.
+    const binnen = herschrijfMatrices(code.slice(i + 1, sluit));
+    const rijen = splitsBuitenHaken(binnen, '|');
+    if (rijen.length < 2) {
+      uit += `[${binnen}]`;
+    } else {
+      const cellen = rijen.map((rij) =>
+        splitsBuitenHaken(rij, ';').map((c) => c.trim()).filter((c) => c !== ''),
+      );
+      uit += `[${cellen.map((c) => `[${c.join(', ')}]`).join(', ')}]`;
+    }
+    i = sluit + 1;
+  }
+  return uit;
+}
+
+/**
+ * Toekenning aan één element: `A.(i; j) = …`, `v.(i) = …`, `v.i = …` en
+ * `v.2 = …`. foldIdentifierDots heeft de index dan al als `naam[…]`
+ * geschreven. Geeft naam, index en waarde, of null als de regel iets anders is.
+ */
+function leesElementToekenning(regel: string): { naam: string; index: string; waarde: string } | null {
+  const m = regel.match(new RegExp(`^(${IDENT})\\s*\\[`, 'u'));
+  if (!m) return null;
+  const open = m[0].length - 1;
+  const sluit = sluitendHaakje(regel, open);
+  if (sluit === -1) return null;
+  const rest = regel.slice(sluit + 1).match(/^\s*=(?!=)\s*(.+)$/);
+  if (!rest) return null;
+  const index = regel.slice(open + 1, sluit).trim();
+  if (index === '') return null;
+  return { naam: m[1], index, waarde: rest[1].trim() };
 }
 
 /**
@@ -628,18 +833,41 @@ function rewriteImageSrc(source: string, imageUrls: ReadonlyMap<string, string>)
   // Build a case-insensitive basename → URL map.
   const lookup = new Map<string, string>();
   for (const [k, v] of imageUrls) lookup.set(k.toLowerCase(), v);
-  return source.replace(/src\s*=\s*(["'])([^"']+)\1/g, (full, quote: string, path: string) => {
-    const base = path.split(/[\\/]/).pop()?.toLowerCase() ?? "";
-    const url = lookup.get(base);
-    return url ? `src=${quote}${url}${quote}` : full;
-  });
+  const zoek = (path: string): string | undefined => lookup.get(path.split(/[\\/]/).pop()?.toLowerCase() ?? "");
+  // Ook `@img(Picture0.png)` buiten de include-tabel: een bekende naam krijgt
+  // het adres uit de tabel, elke andere bestandsnaam, URL of data-URL blijft.
+  return source
+    .replace(/src\s*=\s*(["'])([^"']+)\1/g, (full, quote: string, path: string) => {
+      const url = zoek(path);
+      return url ? `src=${quote}${url}${quote}` : full;
+    })
+    .replace(/^([ \t]*@img\()(.+)(\)[ \t]*)$/gm, (full, voor: string, path: string, na: string) => {
+      const url = zoek(path.trim().replace(/^(["'])(.*)\1$/, '$2'));
+      return url ? `${voor}${url}${na}` : full;
+    });
+}
+
+/**
+ * Een rekendeel dat een eigen regel is en geen ingevoegde waarde: een
+ * toekenning (ook aan een functie of een element), een invoerveld, een
+ * opdracht of een blok. Zie de regelsplitsing in parse().
+ */
+function isOpdrachtRegel(code: string): boolean {
+  const t = code.trim();
+  if (/^[#$@"]/.test(t)) return true;
+  return /^[\p{L}_][\p{L}\p{N}_,]*\s*(?:\([^()]*\)|\[[^\]]*\])?\s*=(?!=)/u.test(t);
 }
 
 // ── Entry point ────────────────────────────────────────────────────────
 export function parse(source: string, options: ParseOptions = {}): AstNode[] {
+  // De code van een `@js`-blok is geen rekentaal: vóór alle bewerkingen eruit,
+  // en nog een keer na het invoegen, voor een blok uit een `#include`.
+  const jsBlokken: JsCode[] = [];
+  source = haalJsBlokkenUit(source, jsBlokken);
   if (options.includes && options.includes.size > 0) {
     source = inlineIncludes(source, options.includes);
     source = inlineSvgImages(source, options.includes);
+    source = haalJsBlokkenUit(source, jsBlokken);
   }
   if (options.imageUrls && options.imageUrls.size > 0) {
     source = rewriteImageSrc(source, options.imageUrls);
@@ -665,8 +893,21 @@ export function parse(source: string, options: ParseOptions = {}): AstNode[] {
   // can stay single-statement-per-line.
   const rawLines = source.split('\n');
   const lines: string[] = [];
+  let in3d = false;
   for (const raw of rawLines) {
     const trimmed = raw.trim();
+    // De regels van een `@3d`-blok heel laten: een apostrof in een tekst
+    // (`tekst 0 0 0 "ligger's"`) is daar geen wissel naar tekst.
+    if (in3d) {
+      lines.push(raw);
+      if (BLOCK_END_RE.test(trimmed)) in3d = false;
+      continue;
+    }
+    if (DRIE_D_START_RE.test(trimmed)) {
+      in3d = true;
+      lines.push(raw);
+      continue;
+    }
     // Directive / title / block / plot lines: do NOT toggle-split — single-line
     // statements that contain inline apostrophes (e.g. `#if '<!--cond-->'`).
     if (
@@ -702,21 +943,41 @@ export function parse(source: string, options: ParseOptions = {}): AstNode[] {
       }
     }
     // Toggle split — alternating code / prose fragments (`a = ?', 'b = ?`)
+    //
+    // Tekst die op dezelfde regel achter een rekendeel staat, is de
+    // toelichting daarbij (`x = a*b', uitleg'`). Die krijgt een merkteken,
+    // zodat hij naast de formule komt en niet als losse alinea eronder. Een
+    // rekendeel binnen die toelichting dat zelf geen opdracht is
+    // (`x = a', waarde 'a*3' mm'`), is een ingevoegde waarde, zoals in een
+    // tekstregel: het hoort in de toelichting en werd anders een losse regel
+    // die op tekst terugviel. Een toekenning (`a = ?', 'b = ?`) blijft een
+    // eigen regel.
     const parts = raw.split("'");
-    let naCode = false;
+    let toelichting: string | null = null;
+    const spoel = (): void => {
+      if (toelichting !== null && toelichting.trim() !== '') lines.push("'" + INLINE_MARK + toelichting);
+      toelichting = null;
+    };
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
-      const isCode = i % 2 === 0;
+      if (i % 2 === 1) {
+        if (toelichting !== null) toelichting += part;
+        else if (part.trim() !== '') lines.push("'" + part);
+        continue;
+      }
       if (part.trim() === '') continue;
-      // Tekst die op dezelfde regel achter een rekendeel staat, is de
-      // toelichting daarbij (`x = a*b', uitleg'`). Die krijgt een merkteken,
-      // zodat hij naast de formule komt en niet als losse alinea eronder.
-      lines.push(isCode ? part : "'" + (naCode ? INLINE_MARK : '') + part);
-      naCode = isCode;
+      if (toelichting !== null && !isOpdrachtRegel(part)) {
+        toelichting += "'" + part + "'";
+        continue;
+      }
+      spoel();
+      lines.push(part);
+      toelichting = '';
     }
+    spoel();
   }
 
-  const state: ParserState = { hidden: false };
+  const state: ParserState = { hidden: false, scherm: false, jsBlokken };
   return parseLines(lines, 0, lines.length, state).nodes;
 }
 
@@ -737,7 +998,7 @@ function parseLines(
 
   while (i < end) {
     const line = lines[i];
-    const trimmed = line.trim();
+    let trimmed = line.trim();
 
     if (stopOn && stopOn(trimmed)) break;
 
@@ -780,11 +1041,13 @@ function parseLines(
               // expressie letterlijk in de uitdraai terecht. Alleen de
               // expressie-delen gaan hier langs; de letterlijke stukken — met
               // hun CSS en &nbsp; — blijven ongemoeid.
-              const expr = normalizeExpression(seg.trim());
-              if (expr !== '') parts.push({ kind: 'expr', value: expr });
+              // Een formaataanduiding (`'x:F2'`) gaat met de expressie mee.
+              const { tekst, formaat } = knipFormaat(seg.trim());
+              const expr = normalizeExpression(tekst.trim());
+              if (expr !== '') parts.push(formaat ? { kind: 'expr', value: expr, formaat } : { kind: 'expr', value: expr });
             }
           }
-          nodes.push(markHidden({ type: 'text', text: textTrim, html: true, parts, ...extra }, state));
+          nodes.push(markHidden({ type: 'text', text: knipFormaat(textTrim).tekst, html: true, parts, ...extra }, state));
         } else {
           nodes.push(markHidden({ type: 'text', text: textTrim, html: true, ...extra }, state));
         }
@@ -792,6 +1055,16 @@ function parseLines(
       i++;
       continue;
     }
+
+    // Formaataanduiding aan het eind van het rekendeel (zie stripFormatSpecs);
+    // alleen een toekenning en een losse weergave gebruiken hem.
+    let formaat: string | undefined;
+    if (trimmed.indexOf(FORMAAT_MARK) !== -1) {
+      const k = knipFormaat(trimmed);
+      trimmed = k.tekst.trim();
+      formaat = k.formaat;
+    }
+    const metFormaat = formaat ? { formaat } : {};
 
     // CalcPAD title line: "Title text → emit as H1
     const titleMatch = trimmed.match(TITLE_RE);
@@ -818,35 +1091,66 @@ function parseLines(
       continue;
     }
 
-    // Visibility directives
-    if (HIDE_RE.test(trimmed)) { state.hidden = true; i++; continue; }
-    if (SHOW_RE.test(trimmed)) { state.hidden = false; i++; continue; }
+    // Visibility directives. `#hide`, `#show`, `#pre` en `#post` sluiten elkaar
+    // uit, zoals in CalcPAD: elk zet de stand voor de regels die volgen.
+    if (HIDE_RE.test(trimmed)) { state.hidden = true; state.scherm = false; i++; continue; }
+    if (SHOW_RE.test(trimmed)) { state.hidden = false; state.scherm = false; i++; continue; }
 
-    // `#pre` / `#post` are CalcPAD visibility markers (no paired end). Real
-    // CalcPAD files often use `#hide` followed by `#post` to "begin showing
-    // results again" — so `#post` effectively un-hides. `#pre` is left as a
-    // no-op (would mark the start of the pre-calc input section).
-    if (POST_RE.test(trimmed)) { state.hidden = false; i++; continue; }
-    if (PRE_RE.test(trimmed)) { i++; continue; }
+    // `#pre` / `#post` (zie ParserState.scherm). Real CalcPAD files often use
+    // `#hide` followed by `#post` to "begin showing results again" — so
+    // `#post` un-hides. `#pre`: alleen op het scherm, bij de invoer.
+    if (POST_RE.test(trimmed)) { state.hidden = false; state.scherm = false; i++; continue; }
+    if (PRE_RE.test(trimmed)) { state.hidden = false; state.scherm = true; i++; continue; }
 
-    // #rad / #deg / #gra — angle mode hint. We rely on mathjs unit handling.
-    // #equ — CalcPAD equation-mode marker, same no-op for us.
-    if (ANGLE_MODE_RE.test(trimmed)) { i++; continue; }
+    // #deg / #rad / #gra, #equ / #val / #noc, #varsub / #nosub / #novar: zie
+    // OpdrachtNode. Ook in een verborgen deel: ze tonen zelf niets.
+    const opdrachtMatch = trimmed.match(OPDRACHT_RE);
+    if (opdrachtMatch) {
+      nodes.push({ type: 'opdracht', opdracht: opdrachtMatch[1].toLowerCase() as OpdrachtNode['opdracht'] });
+      i++;
+      continue;
+    }
+    // `#round n`: n decimalen (0 … 15); `#round default` (of zonder getal):
+    // weer de opmaak van de app.
+    const roundMatch = trimmed.match(ROUND_RE);
+    if (roundMatch) {
+      const n = roundMatch[1].match(/^\d+/);
+      nodes.push({ type: 'opdracht', opdracht: 'round', decimalen: n ? Math.min(15, parseInt(n[0], 10)) : null });
+      i++;
+      continue;
+    }
 
     // #def / #include — currently skipped (string-constant definitions and
     // file inclusion are out of scope for this engine).
     if (NO_OP_DIRECTIVE_RE.test(trimmed)) { i++; continue; }
 
-    // #repeat N … #end repeat
+    // #repeat N … #loop (CalcPAD) of … #end repeat. Zonder N herhaalt de lus
+    // tot een #break, met een bovengrens in de rekenkern. N wordt afgerond op
+    // het dichtstbijzijnde gehele getal, zoals in CalcPAD.
     const repeatMatch = trimmed.match(REPEAT_RE);
     if (repeatMatch) {
       const wasHidden = state.hidden;
-      const count = repeatMatch[1];
+      const n = repeatMatch[1].trim();
+      const count = n === '' ? '' : `round(${normalizeExpression(n)})`;
       i++;
-      const bodyResult = parseLines(lines, i, end, state, (t) => ENDREPEAT_RE.test(t));
+      const bodyResult = parseLines(lines, i, end, state, (t) => ENDREPEAT_RE.test(t) || LOOP_RE.test(t));
       i = bodyResult.endIndex;
       if (i < end) i++;
       const repeatNode = { type: 'repeat' as const, count, body: bodyResult.nodes };
+      nodes.push(wasHidden ? { ...repeatNode, hidden: true } : repeatNode);
+      continue;
+    }
+
+    // CalcPAD `#while voorwaarde … #loop`: zolang de voorwaarde waar is.
+    const whileMatch = trimmed.match(WHILE_RE);
+    if (whileMatch) {
+      const wasHidden = state.hidden;
+      const conditie = stripCondWrapping(whileMatch[1]);
+      i++;
+      const bodyResult = parseLines(lines, i, end, state, (t) => LOOP_RE.test(t));
+      i = bodyResult.endIndex;
+      if (i < end) i++;
+      const repeatNode = { type: 'repeat' as const, count: '', conditie, body: bodyResult.nodes };
       nodes.push(wasHidden ? { ...repeatNode, hidden: true } : repeatNode);
       continue;
     }
@@ -859,8 +1163,9 @@ function parseLines(
     if (forMatch) {
       const wasHidden = state.hidden;
       const varName = forMatch[1];
-      const lo = forMatch[2].trim();
-      const hi = forMatch[3].trim();
+      // Genormaliseerd zoals elke expressie: `#for i = 1 : max(a; b)`.
+      const lo = normalizeExpression(forMatch[2].trim());
+      const hi = normalizeExpression(forMatch[3].trim());
       i++;
       const bodyResult = parseLines(lines, i, end, state, (t) => LOOP_RE.test(t));
       i = bodyResult.endIndex;
@@ -892,6 +1197,12 @@ function parseLines(
       i++;
       continue;
     }
+    // `#continue`: de rest van deze ronde overslaan, door met de volgende.
+    if (CONTINUE_RE.test(trimmed)) {
+      nodes.push(markHidden({ type: 'break', doorgaan: true }, state));
+      i++;
+      continue;
+    }
 
     // SVG block
     if (SVG_START_RE.test(trimmed)) {
@@ -902,6 +1213,21 @@ function parseLines(
         i++;
       }
       nodes.push(markHidden({ type: 'svg', content: svgLines.join('\n') }, state));
+      if (i < end) i++;
+      continue;
+    }
+
+    // 3D-blok (`@3d … @end`): de regels tot `@end` vormen de scène (drieD.ts).
+    if (DRIE_D_START_RE.test(trimmed)) {
+      const blokRegels: string[] = [];
+      i++;
+      while (i < end && !BLOCK_END_RE.test(lines[i].trim())) {
+        blokRegels.push(lines[i]);
+        i++;
+      }
+      const blok = leesDrieD(blokRegels, normaliseer3d);
+      if (i >= end) blok.fouten.push('3D-blok zonder @end: alles tot het eind van het blad is als 3D gelezen');
+      nodes.push(markHidden({ type: '3d', ...blok }, state));
       if (i < end) i++;
       continue;
     }
@@ -929,9 +1255,35 @@ function parseLines(
     }
 
     // @img(...)
+    // De bestandsnaam, URL of data-URL gaat ongewijzigd door (alleenInCode
+    // slaat deze regel over); aanhalingstekens eromheen vallen weg.
     const imgMatch = trimmed.match(IMG_RE);
     if (imgMatch) {
-      nodes.push(markHidden({ type: 'image', src: imgMatch[1].trim() }, state));
+      nodes.push(markHidden({ type: 'image', src: imgMatch[1].trim().replace(/^(["'])(.*)\1$/, '$2') }, state));
+      i++;
+      continue;
+    }
+
+    // @js … @end (jsBlok.ts): de code staat apart, zie parse().
+    const jsMatch = trimmed.match(JS_PLEK_RE);
+    if (jsMatch) {
+      nodes.push(markHidden({ type: 'js', ...leesJsBlok(jsMatch[2], state.jsBlokken[Number(jsMatch[1])], normaliseer3d) }, state));
+      i++;
+      continue;
+    }
+
+    // @iframe url hoogte=120mm (iframeBlok.ts)
+    const iframeMatch = trimmed.match(IFRAME_RE);
+    if (iframeMatch) {
+      nodes.push(markHidden({ type: 'iframe', ...leesIframe(iframeMatch[1] ?? '', normaliseer3d) }, state));
+      i++;
+      continue;
+    }
+
+    // @ifcx balklaag hoogte=340 (ifcxBlok.ts)
+    const ifcxMatch = trimmed.match(IFCX_RE);
+    if (ifcxMatch) {
+      nodes.push(markHidden({ type: 'ifcx', ...leesIfcxBlok(ifcxMatch[1] ?? '', normaliseer3d) }, state));
       i++;
       continue;
     }
@@ -970,9 +1322,21 @@ function parseLines(
     // Input prompt — check BEFORE generic assignment
     const promptMatch = trimmed.match(INPUT_PROMPT_RE);
     if (promptMatch) {
+      let unit = promptMatch[2].trim();
+      // CalcPAD: de standaardwaarde staat tussen accolades achter het
+      // vraagteken, de eenheid daarna: `L = ?{5000}mm`, `F = ? {3} kN`,
+      // `q = ?{2.5}*(kN/m)`. Zonder accolades is hij 0.
+      let defaultValue = '0';
+      if (unit.startsWith('{')) {
+        const sluit = unit.indexOf('}');
+        if (sluit !== -1) {
+          const w = unit.slice(1, sluit).trim();
+          if (w !== '') defaultValue = w;
+          unit = unit.slice(sluit + 1).trim();
+        }
+      }
       // CalcPAD allows `?*(unit)` for prompts that imply multiplication by the
       // unit (e.g. `q = ?*(kN/m)`). Strip the leading `*` plus optional parens.
-      let unit = promptMatch[2].trim();
       if (unit.startsWith('*')) unit = unit.slice(1).trim();
       if (unit.startsWith('(') && unit.endsWith(')')) {
         unit = unit.slice(1, -1).trim();
@@ -982,7 +1346,7 @@ function parseLines(
           type: 'input-prompt',
           name: promptMatch[1],
           label: promptMatch[1],
-          defaultValue: '0',
+          defaultValue,
           unit,
         }, state),
       );
@@ -994,8 +1358,12 @@ function parseLines(
     const fnMatch = trimmed.match(USER_FUNC_RE);
     if (fnMatch) {
       const params = fnMatch[2].split(/[,;]/).map((p) => p.trim());
+      // De hulpfunctie van een $Root-, $Sum-, $Area-blok enz. (zie
+      // rewriteSolverDirectives) is een detail van de vertaling: niet tonen.
+      const hulp = fnMatch[1].startsWith('__solver_');
       nodes.push(
         markHidden({
+          ...(hulp ? { hidden: true } : {}),
           type: 'user-function',
           name: fnMatch[1],
           params,
@@ -1012,6 +1380,25 @@ function parseLines(
       continue;
     }
 
+    // Toekenning aan een element: `A.(i; j) = …`, `v.(i) = …`, `v.i = …`.
+    // Zonder deze stap viel zo'n regel stil terug op tekst, zodat een
+    // stijfheidsmatrix niet in een lus op te bouwen was.
+    const element = leesElementToekenning(trimmed);
+    if (element) {
+      nodes.push(
+        markHidden({
+          type: 'assignment',
+          name: element.naam,
+          index: normalizeExpression(element.index),
+          expression: normalizeExpression(element.waarde),
+          raw: trimmed,
+          ...metFormaat,
+        }, state),
+      );
+      i++;
+      continue;
+    }
+
     // Generic assignment
     const assignMatch = trimmed.match(ASSIGNMENT_RE);
     if (assignMatch) {
@@ -1021,8 +1408,19 @@ function parseLines(
           name: assignMatch[1],
           expression: normalizeExpression(assignMatch[2].trim()),
           raw: trimmed,
+          ...metFormaat,
         }, state),
       );
+      i++;
+      continue;
+    }
+
+    // Losse weergave met omrekening: `M|kN*m`, `M to kN*m` of `M in kN*m` op
+    // een eigen regel. Alleen als er achter de naam echt een eenheid staat,
+    // zodat een tekstregel als "Fundering in beton" tekst blijft.
+    const omrekenMatch = trimmed.match(OMREKEN_WEERGAVE_RE);
+    if (omrekenMatch && isDoeleenheid(omrekenMatch[2])) {
+      nodes.push(markHidden({ type: 'var-display', name: omrekenMatch[1], omrekening: inchInDoel(omrekenMatch[2].trim()), ...metFormaat }, state));
       i++;
       continue;
     }
@@ -1030,7 +1428,7 @@ function parseLines(
     // Bare variable display
     const varDisplayMatch = trimmed.match(VAR_DISPLAY_RE);
     if (varDisplayMatch) {
-      nodes.push(markHidden({ type: 'var-display', name: varDisplayMatch[1] }, state));
+      nodes.push(markHidden({ type: 'var-display', name: varDisplayMatch[1], ...metFormaat }, state));
       i++;
       continue;
     }
@@ -1052,6 +1450,9 @@ function parseLines(
 function markHidden<T extends AstNode>(node: T, state: ParserState): T {
   if (state.hidden) {
     return { ...node, hidden: true };
+  }
+  if (state.scherm) {
+    return { ...node, scherm: true };
   }
   return node;
 }
@@ -1103,7 +1504,9 @@ function rewriteSolverDirectives(source: string): string {
   let counter = 0;
   for (const line of lines) {
     const defs: string[] = [];
-    const newLine = line.replace(SOLVER_RE, (match, op: string, inner: string) => {
+    // Alleen in rekendelen: een blok dat in de tekst van een prozaregel staat
+    // (`'Gebruik $Sum{…} voor een som`) is uitleg en blijft staan.
+    const newLine = alleenInCode(line, (code) => code.replace(SOLVER_RE, (match, op: string, inner: string) => {
       const atIdx = inner.lastIndexOf('@');
       if (atIdx === -1) return match;
       const body = inner.slice(0, atIdx).trim();
@@ -1114,39 +1517,192 @@ function rewriteSolverDirectives(source: string): string {
       const range = param.slice(eqIdx + 1).trim();
       counter += 1;
       const fnName = `__solver_${counter}`;
-      defs.push(`${fnName}(${varName}) = ${body}`);
+      // `$Root{x^3 = 5 @ …}`: een vergelijking wordt links − rechts = 0.
+      const delen = (op === 'Find' || op === 'Root' || op === 'Solve') ? body.split(/(?<![=<>!≤≥≠])=(?!=)/) : [body];
+      const lichaam = delen.length === 2 ? `(${delen[0].trim()}) - (${delen[1].trim()})` : body;
+      defs.push(`${fnName}(${varName}) = ${lichaam}`);
+      // De aanroep staat in `_cp_los(blok, variabele, links, rechts, aanroep)`:
+      // die rekent als de aanroep zelf, en latex.ts toont het blok zoals het
+      // er staat (Root{f(x) = 0; x ∈ [a; b]}, ∑, ∫) in plaats van de
+      // hulpfunctie __solver_N en _find_root, die nooit in beeld horen.
+      const toon = (aanroep: string): string => {
+        const links = normalizeExpression((delen.length === 2 ? delen[0] : body).trim());
+        const rechts = delen.length === 2 ? normalizeExpression(delen[1].trim()) : '';
+        return `_cp_los(${JSON.stringify(op)}, ${JSON.stringify(varName)}, ${JSON.stringify(links)}, ${JSON.stringify(rechts)}, ${aanroep})`;
+      };
       if (op === 'Solve') {
-        return `_solve_newton(${fnName}, ${range})`;
+        return toon(`_solve_newton(${fnName}, ${range})`);
+      }
+      if (op === 'Slope') {
+        return toon(`_helling(${fnName}, ${range})`);
       }
       const colonIdx = range.indexOf(':');
       if (colonIdx === -1) return match;
       const lo = range.slice(0, colonIdx).trim();
       const hi = range.slice(colonIdx + 1).trim();
-      if (op === 'Find' || op === 'Root') return `_find_root(${fnName}, ${lo}, ${hi})`;
-      if (op === 'Sup') return `_extremum(${fnName}, ${lo}, ${hi}, 1)`;
-      if (op === 'Inf') return `_extremum(${fnName}, ${lo}, ${hi}, -1)`;
+      if (op === 'Find' || op === 'Root') return toon(`_find_root(${fnName}, ${lo}, ${hi})`);
+      if (op === 'Sup') return toon(`_extremum(${fnName}, ${lo}, ${hi}, 1)`);
+      if (op === 'Inf') return toon(`_extremum(${fnName}, ${lo}, ${hi}, -1)`);
+      if (op === 'Sum') return toon(`_reeks_som(${fnName}, ${lo}, ${hi})`);
+      if (op === 'Product') return toon(`_reeks_product(${fnName}, ${lo}, ${hi})`);
+      if (op === 'Area' || op === 'Integral') return toon(`_integraal(${fnName}, ${lo}, ${hi})`);
       return match;
-    });
+    }));
     for (const d of defs) out.push(d);
     out.push(newLine);
   }
   return out.join('\n');
 }
 
+/**
+ * Een tekenreeks tussen dubbele aanhalingstekens blijft letterlijk: alle
+ * omzettingen gelden alleen voor de stukken ertussen. Eerder werd elke `;`
+ * een `,`, ook in `concat("a;b"; c)` en in een stijl als "fill:red;stroke:blue".
+ */
 function normalizeExpression(expr: string): string {
-  return expr
+  const stukken = expr.split('"');
+  return stukken
+    .map((stuk, i) => (i % 2 === 1 ? stuk : normaliseerCode(stuk, i === stukken.length - 1)))
+    .join('"');
+}
+
+function normaliseerCode(code: string, einde: boolean): string {
+  let uit = code
     .replace(/\bsqr\b/g, 'sqrt')
     .replace(/\blg\b/g, 'log10')
     .replace(/π/g, 'pi')
     .replace(/≡/g, '==')
     .replace(/≠/g, '!=')
     .replace(/≥/g, '>=')
-    .replace(/≤/g, '<=')
+    .replace(/≤/g, '<=');
+  if (einde) {
     // CalcPAD `expr|unit` = target-unit conversion → mathjs `expr to unit`.
     // Runs after matrix-rewrite so `[a;b|c;d]` matrices are already
     // converted to nested arrays before this point.
-    .replace(/\|(\s*[\p{L}\p{N}_/\s^*-]+)$/u, ' to $1')
-    .replace(/;/g, ',');
+    uit = uit.replace(/\|(\s*[\p{L}\p{N}_/\s^*()-]+)$/u, (_m, doel: string) => ` to ${inchInDoel(doel)}`);
+    uit = zetInOmNaarTo(uit);
+  }
+  return bindEenheidAanGetal(uit).replace(/;/g, ',');
+}
+
+/**
+ * Omrekenen met `in`. In CalcPAD is `in` de inch en omrekenen `|`; mathjs kent
+ * `in` als omrekening (`x in mm`) én als inch, en leest `2 in` (een getal
+ * ervoor) als 2 inch. `F*a/2 in kN*m` werd zo (F·a)/(2 inch)·kN·m.
+ *
+ * De veilige weg: alleen een `in` waarachter tot het eind uitsluitend een
+ * eenheid staat (`x in kN*m`, `F*a/2 in N/mm^2`) is een omrekening; die wordt
+ * hier `to`, zodat mathjs hem niet meer kan verwarren met de inch. Elke andere
+ * `in` blijft de inch: `w = 3 in`, `3 in + 2 mm`, `F*1 in`. Een inch in de
+ * doeleenheid zelf wordt `inch` (`x in in` → `x to inch`).
+ */
+function zetInOmNaarTo(code: string): string {
+  const m = code.match(/^([\s\S]*\S)\s+in\s+([\p{L}°(][\p{L}\p{N}_°\s*/^().-]*)$/u);
+  if (!m || !isDoeleenheid(m[2])) return code;
+  return `${m[1]} to ${inchInDoel(m[2].trim())}`;
+}
+
+/** Alleen eenheden (en getallen als macht of teller): `kN*m`, `N/mm^2`, `1/K`, `in`. */
+function isDoeleenheid(doel: string): boolean {
+  const t = doel.trim();
+  if (t === '' || !/^[\p{L}\p{N}_°\s*/^().-]+$/u.test(t)) return false;
+  const namen = t.match(/[\p{L}_°][\p{L}\p{N}_°]*/gu) ?? [];
+  if (namen.length === 0) return false;
+  return namen.every((n) => {
+    if (n === 'in' || n === 'inch') return true;
+    if (GEEN_EENHEID.has(n)) return false;
+    try {
+      return Unit.isValuelessUnit(n);
+    } catch {
+      return false;
+    }
+  });
+}
+
+/** De inch als doeleenheid: na `to` leest mathjs `in` niet als eenheid. */
+function inchInDoel(doel: string): string {
+  return doel.replace(/(?<![\p{L}\p{N}_])in(?![\p{L}\p{N}_])/gu, 'inch');
+}
+
+/** Eenheden van één letter die na een getal als eenheid gelden; andere letters zijn meestal variabelen (h, b, t, L, A, K, d). */
+const EENHEID_EEN_LETTER = new Set(['m', 'N', 'J', 'W', 'V']);
+/** Woorden die mathjs als eenheid kent maar hier een bewerking zijn (`x to mm`, `x in mm`). */
+const GEEN_EENHEID = new Set(['to', 'in', 'and', 'or', 'xor', 'not', 'mod']);
+
+function isEenheid(naam: string): boolean {
+  if (GEEN_EENHEID.has(naam)) return false;
+  if (naam.length === 1 && !EENHEID_EEN_LETTER.has(naam)) return false;
+  try {
+    return Unit.isValuelessUnit(naam);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * In CalcPAD hoort een eenheid bij het getal ervoor: `5 kN/m` is één
+ * grootheid. Na een deelstreep maakt dat verschil. mathjs leest
+ * `20 kN/5 kN/m` als (20 kN / 5 kN) / m = 4 m⁻¹, waar CalcPAD
+ * 20 kN / (5 kN/m) = 4 m bedoelt, en `3/4 mm` als (3/4) mm in plaats van
+ * 3 / (4 mm). Daarom komen een getal en zijn eenheid direct na een `/` tussen
+ * haken: `/ 5 kN/m` → `/(5 kN/m)`. De eenheid loopt door over `/eenheid` en
+ * `^macht`, niet over `*` (`/2 m*h` met h een hoogte blijft `/(2 m)*h`), en
+ * stopt bij een naam die geen eenheid is. Elders verandert er niets: `5 kN/m`
+ * aan het begin of na `*`, `+` of `(` rekent mathjs al als één grootheid.
+ */
+function bindEenheidAanGetal(expr: string): string {
+  if (expr.indexOf('/') === -1) return expr;
+  const begin = /\/(\s*)(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)(\s*)/y;
+  const naamRe = /([\p{L}_°][\p{L}\p{N}_]*)/uy;
+  const machtRe = /\s*\^\s*-?\d+(?![\d.])/y;
+  const deelRe = /\s*\/\s*/y;
+  let uit = '';
+  let i = 0;
+  while (i < expr.length) {
+    const ch = expr[i];
+    if (ch !== '/') {
+      uit += ch;
+      i++;
+      continue;
+    }
+    begin.lastIndex = i;
+    const g = begin.exec(expr);
+    if (!g) {
+      uit += ch;
+      i++;
+      continue;
+    }
+    // Het getal moet een eenheid achter zich hebben.
+    const naNummer = i + g[0].length;
+    const leesEenheid = (vanaf: number): number => {
+      naamRe.lastIndex = vanaf;
+      const n = naamRe.exec(expr);
+      if (!n || !isEenheid(n[1])) return -1;
+      let eind = vanaf + n[0].length;
+      if (expr[eind] === '(') return -1; // een functie, geen eenheid
+      machtRe.lastIndex = eind;
+      const p = machtRe.exec(expr);
+      if (p) eind += p[0].length;
+      return eind;
+    };
+    let eind = leesEenheid(naNummer);
+    if (eind === -1) {
+      uit += ch;
+      i++;
+      continue;
+    }
+    for (;;) {
+      deelRe.lastIndex = eind;
+      const d = deelRe.exec(expr);
+      if (!d) break;
+      const verder = leesEenheid(eind + d[0].length);
+      if (verder === -1) break;
+      eind = verder;
+    }
+    uit += `/${g[1]}(${expr.slice(i + 1 + g[1].length, eind).trim()})`;
+    i = eind;
+  }
+  return uit;
 }
 
 /**

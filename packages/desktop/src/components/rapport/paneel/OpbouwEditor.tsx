@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import {
   alsGevellaag,
   alsLaag,
@@ -26,21 +28,30 @@ const BOUWDELEN: Record<Opbouwgroep, readonly Bouwdeel[]> = {
   wanden: ["wand"],
 };
 
-const BOUWDEEL_KOP: Record<Bouwdeel, string> = { vloer: "Vloeren", dak: "Daken", wand: "Wanden" };
+/** Sleutel van de kop boven de bouwdelen in het bibliotheekmenu. */
+const BOUWDEEL_KOP: Record<Bouwdeel, string> = {
+  vloer: "belastingen.vloeren",
+  dak: "belastingen.daken",
+  wand: "belastingen.wanden",
+};
 
-const VLAK_KOLOMMEN: Kolom<Laag>[] = [
-  { sleutel: "naam", kop: "Laag" },
-  { sleutel: "d", kop: "d [m]", breedte: "5.5em", getal: true },
-  { sleutel: "rho", kop: "ρ [kN/m³]", breedte: "6.5em", getal: true },
-  { sleutel: "p", kop: "p [kN/m²]", breedte: "6.5em", getal: true, placeholder: "d × ρ" },
-];
+function vlakKolommen(t: TFunction<"rapport">): Kolom<Laag>[] {
+  return [
+    { sleutel: "naam", kop: t("opbouw.laag") },
+    { sleutel: "d", kop: "d [m]", breedte: "5.5em", getal: true },
+    { sleutel: "rho", kop: "ρ [kN/m³]", breedte: "6.5em", getal: true },
+    { sleutel: "p", kop: "p [kN/m²]", breedte: "6.5em", getal: true, placeholder: "d × ρ" },
+  ];
+}
 
-const GEVEL_KOLOMMEN: Kolom<Gevellaag>[] = [
-  { sleutel: "naam", kop: "Laag" },
-  { sleutel: "p", kop: <>p<sub>rep</sub> [kN/m²]</>, breedte: "7em", getal: true },
-  { sleutel: "h", kop: "h [m]", breedte: "5.5em", getal: true },
-  { sleutel: "vulling", kop: "vulling", breedte: "5.5em", getal: true, placeholder: "90%" },
-];
+function gevelKolommen(t: TFunction<"rapport">): Kolom<Gevellaag>[] {
+  return [
+    { sleutel: "naam", kop: t("opbouw.laag") },
+    { sleutel: "p", kop: <>p<sub>rep</sub> [kN/m²]</>, breedte: "7em", getal: true },
+    { sleutel: "h", kop: "h [m]", breedte: "5.5em", getal: true },
+    { sleutel: "vulling", kop: t("opbouw.vulling"), breedte: "5.5em", getal: true, placeholder: "90%" },
+  ];
+}
 
 function nieuweOpbouw(soort: Opbouw["soort"]): Opbouw {
   return soort === "vlak"
@@ -56,8 +67,10 @@ function nieuweOpbouw(soort: Opbouw["soort"]): Opbouw {
  *
  * "Uit bibliotheek" voegt een complete opbouw of een losse laag uit
  * rapport/gewichten.ts in; daarna is het gewone invoer die je kunt aanpassen.
+ * De namen in de bibliotheek komen zo in het rapport en blijven Nederlands.
  */
 export default function OpbouwEditor({ groep, titel }: { groep: Opbouwgroep; titel: string }) {
+  const { t } = useTranslation("rapport");
   const opbouwen = useProjectStore((s) => s.rapport.belastingen[groep]);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
 
@@ -73,10 +86,10 @@ export default function OpbouwEditor({ groep, titel }: { groep: Opbouwgroep; tit
 
   const bouwdelen = BOUWDELEN[groep];
   const bibliotheek: Menugroep[] = bouwdelen.map((deel) => ({
-    naam: BOUWDEEL_KOP[deel],
+    naam: t(BOUWDEEL_KOP[deel]),
     regels: opbouwenVoor([deel]).map((o) => ({
       label: o.naam,
-      uittreksel: opbouwTekst(o),
+      uittreksel: opbouwTekst(o, t),
       kies: () => wijzig((l) => [...l, alsOpbouw(o)]),
     })),
   }));
@@ -84,7 +97,7 @@ export default function OpbouwEditor({ groep, titel }: { groep: Opbouwgroep; tit
   return (
     <div className="rapport-opbouwgroep">
       <h5 className="rapport-subkop">{titel}</h5>
-      {opbouwen.length === 0 && <p className="rapport-hint">Nog geen opbouwen in deze groep.</p>}
+      {opbouwen.length === 0 && <p className="rapport-hint">{t("opbouw.geen")}</p>}
       {opbouwen.map((o, i) => (
         <OpbouwKaart
           key={i}
@@ -98,14 +111,14 @@ export default function OpbouwEditor({ groep, titel }: { groep: Opbouwgroep; tit
       ))}
       <div className="rapport-knoppen">
         <button type="button" className="rapport-knop" onClick={() => wijzig((l) => [...l, nieuweOpbouw("vlak")])}>
-          + Vlakopbouw (kN/m²)
+          + {t("opbouw.vlakopbouw")}
         </button>
         <button type="button" className="rapport-knop" onClick={() => wijzig((l) => [...l, nieuweOpbouw("gevel")])}>
-          + Gevelopbouw (kN/m¹)
+          + {t("opbouw.gevelopbouw")}
         </button>
         <BibliotheekMenu
-          knop="+ Opbouw uit bibliotheek"
-          titel="Een complete opbouw uit de bibliotheek toevoegen als vlakopbouw"
+          knop={t("opbouw.opbouwUitBibliotheek")}
+          titel={t("opbouw.opbouwUitBibliotheekTitel")}
           groepen={bibliotheek}
         />
       </div>
@@ -121,6 +134,7 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
   bouwdelen: readonly Bouwdeel[];
   wijzig: (fn: (lijst: Opbouw[]) => Opbouw[]) => void;
 }) {
+  const { t } = useTranslation("rapport");
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const vlak = opbouw.soort === "vlak";
 
@@ -144,18 +158,18 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
       }))
     : [
         {
-          naam: BOUWDEEL_KOP.wand,
+          naam: t(BOUWDEEL_KOP.wand),
           regels: opbouwenVoor(["wand"]).map((o) => ({
             label: o.naam,
-            uittreksel: opbouwTekst(o),
+            uittreksel: opbouwTekst(o, t),
             kies: () => voegGevellaagToe(alsGevellaag(o)),
           })),
         },
       ];
   const menu = (
     <BibliotheekMenu
-      knop="+ Laag uit bibliotheek"
-      titel={vlak ? "Een laag uit de bibliotheek toevoegen" : "Een wand uit de bibliotheek toevoegen als laag"}
+      knop={t("opbouw.laagUitBibliotheek")}
+      titel={t(vlak ? "opbouw.laagUitBibliotheekTitel" : "opbouw.wandUitBibliotheekTitel")}
       groepen={bibliotheek}
     />
   );
@@ -166,15 +180,15 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
         <input
           type="text"
           value={opbouw.naam}
-          aria-label="Naam van de opbouw"
-          placeholder={vlak ? "Naam, bijv. Begane grondvloer" : "Naam, bijv. Voorgevel"}
+          aria-label={t("opbouw.naamLabel")}
+          placeholder={t(vlak ? "opbouw.naamVlak" : "opbouw.naamGevel")}
           onChange={(e) => zet(`${pad}.naam`, e.target.value)}
         />
-        <span className="rapport-soort">{vlak ? "vlakopbouw · kN/m²" : "gevelopbouw · kN/m¹"}</span>
+        <span className="rapport-soort">{t(vlak ? "opbouw.soortVlak" : "opbouw.soortGevel")}</span>
         <button
           type="button"
           className="rapport-icoon"
-          title="Omhoog"
+          title={t("algemeen.omhoog")}
           disabled={index === 0}
           onClick={() => wijzig((l) => verplaatst(l, index, -1))}
         >
@@ -183,7 +197,7 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
         <button
           type="button"
           className="rapport-icoon"
-          title="Omlaag"
+          title={t("algemeen.omlaag")}
           disabled={index === aantal - 1}
           onClick={() => wijzig((l) => verplaatst(l, index, 1))}
         >
@@ -192,10 +206,10 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
         <button
           type="button"
           className="rapport-icoon"
-          title="Opbouw verwijderen"
+          title={t("opbouw.verwijderen")}
           onClick={() => {
-            const naam = opbouw.naam.trim() || "zonder naam";
-            if (confirm(`Opbouw "${naam}" met al zijn lagen verwijderen?`)) {
+            const naam = opbouw.naam.trim() || t("opbouw.zonderNaam");
+            if (confirm(t("opbouw.verwijderVraag", { naam }))) {
               wijzig((l) => l.filter((_, j) => j !== index));
             }
           }}
@@ -213,19 +227,20 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
 }
 
 function VlakLagen({ pad, lagen, knoppen }: { pad: string; lagen: Laag[]; knoppen: ReactNode }) {
+  const { t } = useTranslation("rapport");
   const { regels, som } = useMemo(() => vlakOpbouw(lagen), [lagen]);
   return (
     <RijenTabel<Laag>
       pad={pad}
       rijen={lagen}
-      kolommen={VLAK_KOLOMMEN}
+      kolommen={vlakKolommen(t)}
       nieuweRij={() => ({ naam: "", d: "", rho: "", p: "" })}
-      toevoegen="Laag toevoegen"
+      toevoegen={t("opbouw.laagToevoegen")}
       knoppen={knoppen}
-      extra={[{ kop: "berekend", breedte: "6em", waarde: (_rij, i) => getalTekst(regels[i]?.p, 2) }]}
+      extra={[{ kop: t("opbouw.berekend"), breedte: "6em", waarde: (_rij, i) => getalTekst(regels[i]?.p, 2) }]}
       voet={
         <p className="rapport-som">
-          <span>Totaal</span>
+          <span>{t("opbouw.totaal")}</span>
           <strong>{getalTekst(som, 2)} kN/m²</strong>
         </p>
       }
@@ -234,19 +249,20 @@ function VlakLagen({ pad, lagen, knoppen }: { pad: string; lagen: Laag[]; knoppe
 }
 
 function GevelLagen({ pad, lagen, knoppen }: { pad: string; lagen: Gevellaag[]; knoppen: ReactNode }) {
+  const { t } = useTranslation("rapport");
   const { regels, som } = useMemo(() => gevelOpbouw(lagen), [lagen]);
   return (
     <RijenTabel<Gevellaag>
       pad={pad}
       rijen={lagen}
-      kolommen={GEVEL_KOLOMMEN}
+      kolommen={gevelKolommen(t)}
       nieuweRij={() => ({ naam: "", p: "", h: "", vulling: "" })}
-      toevoegen="Laag toevoegen"
+      toevoegen={t("opbouw.laagToevoegen")}
       knoppen={knoppen}
       extra={[{ kop: "q [kN/m¹]", breedte: "6em", waarde: (_rij, i) => getalTekst(regels[i]?.q, 2) }]}
       voet={
         <p className="rapport-som">
-          <span>Totaal</span>
+          <span>{t("opbouw.totaal")}</span>
           <strong>{getalTekst(som, 2)} kN/m¹</strong>
         </p>
       }
@@ -256,12 +272,13 @@ function GevelLagen({ pad, lagen, knoppen }: { pad: string; lagen: Gevellaag[]; 
 
 /**
  * "6 lagen · 0,43 kN/m²" onder de naam van een opbouw in het menu; bij één
- * laag met een toelichting komt die erachter.
+ * laag met een toelichting komt die erachter (die toelichting komt uit de
+ * bibliotheek en blijft Nederlands).
  */
-function opbouwTekst(o: Bibliotheekopbouw): string {
+function opbouwTekst(o: Bibliotheekopbouw, t: TFunction<"rapport">): string {
   const n = o.lagen.length;
   const toe = n === 1 && o.lagen[0].opmerking ? ` · ${o.lagen[0].opmerking}` : "";
-  return `${n} ${n === 1 ? "laag" : "lagen"} · ${getalTekst(somVan(o), 2)} kN/m²${toe}`;
+  return `${t("opbouw.aantalLagen", { count: n })} · ${getalTekst(somVan(o), 2)} kN/m²${toe}`;
 }
 
 interface Menuregel {

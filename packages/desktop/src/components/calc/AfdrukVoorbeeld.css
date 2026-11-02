@@ -8,7 +8,9 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  background: var(--theme-bg-canvas, #f1f3f5);
+  /* Het werkvlak rond de vellen volgt het thema; het papier zelf is altijd wit
+     met zwarte tekst (.av-pagina), ook in een donker thema. */
+  background: var(--theme-bg);
 }
 
 /* ─── Werkbalk ────────────────────────────────────────────────── */
@@ -17,10 +19,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--theme-border-subtle, #d5d9de);
-  background: var(--theme-bg-surface, #fff);
-  font-size: 12px;
+  height: 32px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-content-bg);
+  color: var(--theme-text);
+  font-size: var(--oa-size-body);
 }
 
 .av-balk .av-titel {
@@ -28,7 +32,7 @@
 }
 
 .av-balk .av-tel {
-  color: var(--theme-text-muted, #6b7280);
+  color: var(--theme-text-secondary);
 }
 
 .av-balk .av-rek {
@@ -36,24 +40,29 @@
 }
 
 .av-balk button {
-  padding: 3px 10px;
+  height: 24px;
+  padding: 0 10px;
   font: inherit;
-  color: var(--theme-text, #1f2328);
-  background: var(--theme-bg-surface, #fff);
-  border: 1px solid var(--theme-border-subtle, #d5d9de);
-  border-radius: 4px;
-  cursor: pointer;
+  color: var(--theme-text);
+  background: var(--theme-bg-lighter);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  cursor: default;
 }
 
 .av-balk button:hover {
-  background: var(--theme-surface-hover, #f3f4f6);
+  background: var(--theme-hover);
 }
 
 .av-balk button.av-primair {
-  color: #fff;
-  background: var(--theme-accent, #d97706);
+  color: var(--oa-text-on-accent);
+  background: var(--theme-accent);
   border-color: transparent;
   font-weight: 600;
+}
+
+.av-balk button.av-primair:hover {
+  background: var(--oa-accent-hover);
 }
 
 .av-zoom {
@@ -63,12 +72,13 @@
 }
 
 .av-zoom select {
-  padding: 2px 4px;
+  height: 24px;
+  padding: 0 4px;
   font: inherit;
-  border: 1px solid var(--theme-border-subtle, #d5d9de);
-  border-radius: 4px;
-  background: var(--theme-bg-surface, #fff);
-  color: inherit;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  background: var(--oa-field);
+  color: var(--theme-text);
 }
 
 /* ─── De vellen ───────────────────────────────────────────────── */
@@ -87,7 +97,9 @@
 .av-vellen-binnen {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* `safe`: een vel breder dan het paneel (ingezoomd) begint links, anders
+     steekt het aan beide kanten uit en is de linkerkant niet te bereiken. */
+  align-items: safe center;
   gap: 20px;
 }
 
@@ -154,12 +166,13 @@
 
 .av-bereik select {
   max-width: 260px;
-  padding: 2px 4px;
+  height: 24px;
+  padding: 0 4px;
   font: inherit;
-  border: 1px solid var(--theme-border-subtle, #d5d9de);
-  border-radius: 4px;
-  background: var(--theme-bg-surface, #fff);
-  color: inherit;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  background: var(--oa-field);
+  color: var(--theme-text);
 }
 
 /* Vel plus bijschrift. Het nummer staat bewust búiten het papier: het hoort
@@ -174,8 +187,8 @@
 .av-nummer {
   margin-top: 6px;
   text-align: center;
-  font-size: 11px;
-  color: var(--theme-text-muted, #6b7280);
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
 }
 
 /* ─── De verborgen meetopstelling ─────────────────────────────── */

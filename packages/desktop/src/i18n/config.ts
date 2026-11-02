@@ -9,12 +9,22 @@ import enRibbon from "./locales/en/ribbon.json";
 import enBackstage from "./locales/en/backstage.json";
 import enSettings from "./locales/en/settings.json";
 import enFeedback from "./locales/en/feedback.json";
+import enWerkruimte from "./locales/en/werkruimte.json";
+import enRapport from "./locales/en/rapport.json";
+import enCalcpad from "./locales/en/calcpad.json";
+import enBeelden from "./locales/en/beelden.json";
+import enTekenen from "./locales/en/tekenen.json";
 // Dutch
 import nlCommon from "./locales/nl/common.json";
 import nlRibbon from "./locales/nl/ribbon.json";
 import nlBackstage from "./locales/nl/backstage.json";
 import nlSettings from "./locales/nl/settings.json";
 import nlFeedback from "./locales/nl/feedback.json";
+import nlWerkruimte from "./locales/nl/werkruimte.json";
+import nlRapport from "./locales/nl/rapport.json";
+import nlCalcpad from "./locales/nl/calcpad.json";
+import nlBeelden from "./locales/nl/beelden.json";
+import nlTekenen from "./locales/nl/tekenen.json";
 
 export const LANGUAGES = [
   { code: "auto", name: "Auto-detect" },
@@ -22,17 +32,35 @@ export const LANGUAGES = [
   { code: "nl", name: "Nederlands" },
 ];
 
-const ns = ["common", "ribbon", "backstage", "settings", "feedback"];
+/**
+ * De taal waarin de app start zolang de gebruiker niets kiest: Engels. Met
+ * "auto" in de instellingen volgt de app de taal van het systeem.
+ */
+export const STANDAARD_TAAL = "en";
+
+// Van de sjabloon: common, ribbon, backstage, settings, feedback. Van deze app:
+// werkruimte (project, panelen, modulekiezer), rapport (het rapportpaneel),
+// calcpad (tab CalcPAD, taalreferentie, editor), beelden (parametrische beelden)
+// en tekenen (tab Tekenen, de tekeneditor).
+const ns = ["common", "ribbon", "backstage", "settings", "feedback", "werkruimte", "rapport", "calcpad", "beelden", "tekenen"];
 
 i18next
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
-      en: { common: enCommon, ribbon: enRibbon, backstage: enBackstage, settings: enSettings, feedback: enFeedback },
-      nl: { common: nlCommon, ribbon: nlRibbon, backstage: nlBackstage, settings: nlSettings, feedback: nlFeedback },
+      en: {
+        common: enCommon, ribbon: enRibbon, backstage: enBackstage, settings: enSettings, feedback: enFeedback,
+        werkruimte: enWerkruimte, rapport: enRapport, calcpad: enCalcpad, beelden: enBeelden, tekenen: enTekenen,
+      },
+      nl: {
+        common: nlCommon, ribbon: nlRibbon, backstage: nlBackstage, settings: nlSettings, feedback: nlFeedback,
+        werkruimte: nlWerkruimte, rapport: nlRapport, calcpad: nlCalcpad, beelden: nlBeelden, tekenen: nlTekenen,
+      },
     },
     ns,
+    // Meteen in de standaardtaal beginnen; de bewaarde keuze volgt hieronder.
+    lng: STANDAARD_TAAL,
     defaultNS: "common",
     fallbackLng: "en",
     interpolation: { escapeValue: false },
@@ -47,7 +75,7 @@ i18next.on("languageChanged", (lng) => {
 });
 
 // Load saved language from Tauri store on startup
-getSetting("language", "auto").then((lang) => {
+getSetting("language", STANDAARD_TAAL).then((lang) => {
   changeLanguage(lang);
 });
 

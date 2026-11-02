@@ -652,8 +652,8 @@ kop("standaardteksten.ts");
   gelijk("nieuw rapport: eerste variant", nieuw.trillingen, STANDAARD_TEKSTEN.trillingen[0].tekst);
   gelijk("rol: openingszin van 2.2", nieuw.rol, "{adviseur} heeft opdracht voor het constructieadvies voor dit project.");
   gelijk("regenwater: standaard", nieuw.regenwater, "Niet van toepassing");
-  toets("rekenprogrammatuur noemt Open Structural Calculation Studio",
-    STANDAARD_TEKSTEN.rekenprogrammatuur.every((v) => v.tekst.includes("opgesteld met Open Structural Calculation Studio.")));
+  toets("rekenprogrammatuur noemt Open CalcSheet Studio",
+    STANDAARD_TEKSTEN.rekenprogrammatuur.every((v) => v.tekst.includes("opgesteld met Open CalcSheet Studio.")));
   gelijk("vorige productnaam nergens meer in de meegeleverde teksten",
     Object.values(STANDAARD_TEKSTEN).flat().filter((v) => (v.label + v.tekst).includes(VORIGE_PRODUCTNAAM)).map((v) => v.label), []);
   // De melding in het paneel: de vorige naam als losse woorden, niet als begin van een langere naam.
@@ -661,7 +661,7 @@ kop("standaardteksten.ts");
     [VORIGE_PRODUCTNAAM, "Opgesteld met OpenAEC Calc.", "met OpenAEC Calc, versie 1", "met OpenAEC\nCalc", "(OpenAEC Calc)"]
       .map(noemtVorigeProductnaam), [true, true, true, true, true]);
   gelijk("geen melding bij een andere naam",
-    ["Opgesteld met OpenAEC Calculations Studio.", "Open Structural Calculation Studio", "OpenAEC Calculator", "MijnOpenAEC Calc", ""]
+    ["Opgesteld met OpenAEC Calculations Studio.", "Open CalcSheet Studio", "OpenAEC Calculator", "MijnOpenAEC Calc", ""]
       .map(noemtVorigeProductnaam), [false, false, false, false, false]);
 
   // Alleen bekende invulvelden: een tikfout in een meegeleverde tekst zou

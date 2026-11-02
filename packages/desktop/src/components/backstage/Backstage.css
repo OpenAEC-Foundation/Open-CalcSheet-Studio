@@ -33,7 +33,7 @@
   background: var(--theme-accent);
   border: none;
   color: var(--theme-accent-text);
-  font-size: 15px;
+  font-size: var(--oa-size-panel-heading);
   font-weight: 600;
   cursor: default;
   transition: background 0.15s;
@@ -64,7 +64,7 @@
   background: transparent;
   border: none;
   color: var(--theme-text);
-  font-size: 13px;
+  font-size: var(--oa-size-panel-heading);
   cursor: default;
   transition: background 0.1s;
   text-align: left;
@@ -74,14 +74,14 @@
 
 .backstage-item:hover {
   background: var(--theme-hover);
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .backstage-item.active {
   background: var(--theme-hover-strong);
   border-left-color: var(--theme-accent);
   padding-left: 17px;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .backstage-item-icon {
@@ -107,7 +107,7 @@
 }
 
 .backstage-item-shortcut {
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   color: var(--theme-backstage-item-shortcut);
   margin-left: auto;
 }
@@ -150,9 +150,9 @@
 }
 
 .bs-about-title {
-  font-size: 22px;
+  font-size: var(--oa-size-page-heading);
   font-weight: 300;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
   margin: 0 0 24px 0;
 }
 
@@ -183,27 +183,27 @@
 }
 
 .bs-about-app-name {
-  font-size: 20px;
+  font-size: var(--oa-size-page-heading);
   font-weight: 600;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
   margin: 0 0 2px 0;
 }
 
 .bs-about-version {
-  font-size: 12px;
+  font-size: var(--oa-size-body);
   color: var(--theme-text);
   margin: 0;
 }
 
 .bs-about-tagline {
-  font-size: 13px;
+  font-size: var(--oa-size-panel-heading);
   color: var(--theme-text);
   margin: 0 0 12px 0;
   font-style: italic;
 }
 
 .bs-about-description {
-  font-size: 12px;
+  font-size: var(--oa-size-body);
   line-height: 1.6;
   color: var(--theme-text);
   margin: 0 0 20px 0;
@@ -217,9 +217,9 @@
 }
 
 .bs-about-company-name {
-  font-size: 14px;
+  font-size: var(--oa-size-panel-heading);
   font-weight: 600;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
   margin: 0 0 6px 0;
   display: flex;
   align-items: center;
@@ -234,14 +234,14 @@
 }
 
 .bs-about-company-desc {
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   color: var(--theme-text);
   margin: 0;
   line-height: 1.5;
 }
 
 .bs-about-company-meta {
-  font-size: 10px;
+  font-size: var(--oa-size-label);
   color: var(--theme-text-secondary);
   margin: 8px 0 0;
   font-style: italic;
@@ -259,7 +259,7 @@
   border: 1px solid var(--theme-border);
   color: var(--theme-text);
   padding: 8px 16px;
-  font-size: 12px;
+  font-size: var(--oa-size-body);
   cursor: default;
   transition: background 0.1s, border-color 0.1s, color 0.1s;
   text-decoration: none;
@@ -271,7 +271,7 @@
 .bs-about-link:hover {
   background: var(--theme-hover-strong);
   border-color: var(--theme-accent);
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .bs-about-link svg {
@@ -285,7 +285,7 @@
 }
 
 .bs-about-copyright {
-  font-size: 10px;
+  font-size: var(--oa-size-label);
   color: var(--theme-text-secondary);
   margin: 0;
 }
@@ -296,9 +296,9 @@
 }
 
 .bs-export-title {
-  font-size: 22px;
+  font-size: var(--oa-size-page-heading);
   font-weight: 300;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
   margin: 0 0 24px 0;
 }
 
@@ -350,16 +350,18 @@
 
 .bs-export-card-info h3 {
   margin: 0 0 4px 0;
-  font-size: 13px;
+  font-size: var(--oa-size-panel-heading);
   font-weight: 600;
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 .bs-export-card-info p {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   color: var(--theme-text);
 }
+
+/* ── Open CalcSheet Studio ── */
 
 /* Browse… card (Open panel) */
 .bs-browse-card {

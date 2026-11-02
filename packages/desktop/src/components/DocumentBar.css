@@ -3,7 +3,7 @@
   align-items: flex-end;
   height: 30px;
   background: var(--theme-docbar-bg);
-  border-top: 1px solid rgba(217, 119, 6, 0.15);
+  border-top: 1px solid var(--theme-border);
   border-bottom: 1px solid var(--theme-border);
   flex-shrink: 0;
   padding: 0 4px;
@@ -29,7 +29,7 @@
   border-bottom: 2px solid transparent;
   border-radius: 3px 3px 0 0;
   color: var(--theme-text-muted);
-  font-size: 11px;
+  font-size: var(--oa-size-label);
   font-family: inherit;
   cursor: default;
   transition: background 0.1s, color 0.1s, border-color 0.1s;
@@ -43,7 +43,7 @@
 }
 
 .document-tab.active {
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
   border-color: var(--theme-accent);
   border-bottom-color: transparent;
   background: var(--theme-accent-soft);
@@ -94,7 +94,7 @@
 
 .document-tab-close:hover {
   background: var(--theme-ribbon-btn-hover);
-  color: var(--theme-accent);
+  color: var(--theme-accent-tint);
 }
 
 /* Dock-back flash animation */
@@ -104,13 +104,18 @@
 
 @keyframes dock-flash {
   0%   { background: var(--theme-docbar-bg); }
-  30%  { background: rgba(217, 119, 6, 0.15); }
+  30%  { background: var(--theme-accent-soft); }
   100% { background: var(--theme-docbar-bg); }
 }
 
-/* Naam van het rekenblad binnen het project, na het bestandsnaampje. */
+/* ── Open CalcSheet Studio ── */
+
+/* Eén tab per projectbestand: het open blad staat achter de bestandsnaam. */
+.document-tab {
+  padding-right: 10px;
+}
+
 .document-tab-blad {
-  margin-left: 6px;
   color: var(--theme-text-secondary);
   font-weight: 400;
 }

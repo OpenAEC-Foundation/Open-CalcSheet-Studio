@@ -28,6 +28,12 @@
  * een merkteken `kolom-2`, `kolom-3` of `kolom-4`, en waar een formule op
  * papier te breed is staat daar de kale waarde met `alleen-afdruk`. De knopen
  * blijven gelijk; wat het beeld en de controles lezen, verandert niet.
+ *
+ * Paragraaf 10 is het 3D-beeld: `@ifcx balklaag` maakt uit de waarden op die plek
+ * een IFCX-document (packages/core/src/balklaagIfcx.ts), en het beeld leest alleen
+ * dat document. Het staat achteraan omdat het de unity checks nodig heeft. Standaard
+ * alleen op het scherm: met druk_3d komt er een kleine afbeelding op papier. Zie
+ * scripts/check-balklaag-ifcx.mjs.
  */
 
 export const balklaag = `"Balklaag — houten vloerbalken volgens EN 1995-1-1
@@ -96,6 +102,11 @@ export const balklaag = `"Balklaag — houten vloerbalken volgens EN 1995-1-1
   Middellang = 2
   Lang = 3
   Blijvend = 4
+@end
+
+@select doorsnede "Doorsnede"
+  Rechthoekige balk = 1
+  T-balk: balk met meewerkende vloerplaat (EN 1995-1-1 9.1.2) = 2
 @end
 
 #hide
@@ -253,6 +264,194 @@ E_beschot = ?*(N/mm^2)', beschot<span class="alleen-scherm"> (E<sub>0,ser,rep</s
 #end if
 
 #hide
+'T-balk volgens §9.1.2: alleen bij een balk in een balklaag. Een onderslag en een
+'raveelbalk dragen andere balken; daar werkt geen vloerplaat als flens mee.
+tb = bool(doorsnede ≡ 2)*(1 - ond)*(1 - bool(schema ≡ 4))
+'De maatgevende UC van de T-balktoetsen (§8); 0 bij een rechthoekige balk.
+UC_tb = 0
+#show
+#if tb ≡ 1
+    '<h6>T-balk: meewerkende vloerplaat — §9.1.2</h6>
+    '<span style="color:#b45309"><b>Nog te controleren:</b> de toetsing van de T-balk is nog niet nagerekend op referentiebladen.</span>
+    '<i>De vloerplaat is over de volle lengte op de balk gelijmd: een verlijmde verbinding zonder slip, met een lineaire rekverdeling over de hoogte (§9.1.2(1)). Een gespijkerde of geschroefde plaat werkt maar ten dele mee (bijlage B, γ-methode); die valt buiten dit blad. Gerekend is een tussenbalk met de plaat aan weerszijden (I-vorm in figuur 9.2); bij een randbalk met de plaat aan één kant gelden (9.11) en 4h<sub>f</sub> in (9.12).</i><span class="alleen-scherm"></span>
+    @select plaat "Vloerplaat (kolom van tabel 9.1)"
+      Multiplex, buitenfineer evenwijdig aan de balken = 1
+      Multiplex, buitenfineer loodrecht op de balken = 2
+      OSB/3, hoofdas evenwijdig aan de balken = 3
+      OSB/3, hoofdas loodrecht op de balken = 4
+      Spaanplaat of vezelplaat, vezels willekeurig gericht = 5
+    @end
+    #hide
+    pl_mp = bool(plaat ≤ 2)
+    pl_osb = bool(plaat ≡ 3) + bool(plaat ≡ 4)
+    pl_sv = bool(plaat ≡ 5)
+    #show
+    h_f = t_vloer'<span class="alleen-scherm">, dikte van de plaat: het beschot uit §2</span><span class="alleen-scherm"></span>'
+    #if pl_osb ≡ 1
+        '<i>OSB/3 (EN 300): sterkte en stijfheid uit EN 12369-1, in de richting van de balken. Ligt de hoofdas loodrecht op de balken, zoals bij een vloerplaat gebruikelijk, dan gelden de waarden dwars op de hoofdas. k<sub>mod</sub> en k<sub>def</sub> uit tabel 3.1 en 3.2; OSB/3 is daar niet opgenomen voor klimaatklasse 3.</i><span class="alleen-scherm"></span>
+        #hide
+        'EN 12369-1, OSB/2 en OSB/3, karakteristiek in N/mm²:
+        '   [bereik | f_c,0 | f_c,90 | f_t,0 | f_t,90]
+        'bereik 1: 6 < t ≤ 10 mm, 2: 10 < t ≤ 18 mm, 3: 18 < t ≤ 25 mm; f_r = 1,0
+        'N/mm² en E_t = E_c (gemiddeld) 3800 N/mm² langs en 3000 N/mm² dwars op de
+        'hoofdas, in alle drie de bereiken. Index 0 is langs de hoofdas.
+        osb_tab = [1; 2; 3 |15.9; 15.4; 14.8 |12.9; 12.7; 12.4 |9.9; 9.4; 9.0 |7.2; 7.0; 6.8]
+        r_osb = if(h_f ≤ 10 mm; 1; if(h_f ≤ 18 mm; 2; 3))
+        osb_ev = bool(plaat ≡ 3)
+        f_f,c,k = hlookup(osb_tab; r_osb; 1; 3 - osb_ev)*N/mm^2
+        f_f,t,k = hlookup(osb_tab; r_osb; 1; 5 - osb_ev)*N/mm^2
+        f_r,k = 1.0 N/mm^2
+        E_f = if(osb_ev ≡ 1; 3800; 3000)*N/mm^2
+        'k_mod (tabel 3.1) voor OSB/3: klimaatklasse 1 en 2; k_def (tabel 3.2) 1,50 en 2,25.
+        k_mod,f = if(klimaat ≡ 1; if(duurklasse ≡ 1; 0.90; if(duurklasse ≡ 2; 0.70; if(duurklasse ≡ 3; 0.50; 0.40))); if(duurklasse ≡ 1; 0.70; if(duurklasse ≡ 2; 0.55; if(duurklasse ≡ 3; 0.40; 0.30))))
+        k_mod,G,f = if(klimaat ≡ 1; 0.40; 0.30)
+        k_def,f = if(klimaat ≡ 1; 1.50; 2.25)
+        γ_M,f = 1.2
+        pl_ok = bool(h_f > 6 mm)*bool(h_f ≤ 25 mm)*bool(klimaat ≤ 2)
+        #show
+        f_f,c,k'<span class="alleen-scherm">, druk in de balkrichting</span><span class="kolom-4"></span>'
+        f_f,t,k'<span class="alleen-scherm">, trek in de balkrichting</span><span class="kolom-4"></span>'
+        f_r,k'<span class="alleen-scherm">, rolschuif</span><span class="kolom-4"></span>'
+        E_f'<span class="alleen-scherm">, gemiddeld, in de balkrichting</span><span class="kolom-4"></span>'
+        k_mod,f', tabel 3.1<span class="kolom-4"></span>'
+        k_mod,G,f', blijvend<span class="kolom-4"></span>'
+        k_def,f', tabel 3.2<span class="kolom-4"></span>'
+        γ_M,f', tabel 2.3<span class="kolom-4"></span>'
+        #if pl_ok ≡ 0
+            '<span style="color:#b91c1c"><b>Geen tabelwaarde:</b> EN 12369-1 geeft OSB/3 alleen voor 6 &lt; t ≤ 25 mm, en tabel 3.1 kent OSB/3 niet in klimaatklasse 3. Kies een andere dikte of plaat.</span>
+        #end if
+    #else
+        #if pl_mp ≡ 1
+            '<i>De sterkte en stijfheid van multiplex hangen af van de opbouw en de fabrikant (EN 636 en EN 12369-2): vul ze in volgens de fabrikant of de prestatieverklaring, in de richting van de balken — karakteristieke sterkten en een gemiddelde E-modulus.</i><span class="alleen-scherm"></span>
+        #else
+            '<i>De sterkte en stijfheid van spaan- en vezelplaat hangen af van de soort (EN 312 en EN 622, met EN 12369-1): vul ze in volgens de fabrikant of de prestatieverklaring, in de richting van de balken — karakteristieke sterkten en een gemiddelde E-modulus.</i><span class="alleen-scherm"></span>
+        #end if
+        f_f,c,k = ?*(N/mm^2)'<span class="alleen-scherm">, druk in de balkrichting — <b>fabrikantgegeven invullen</b></span><span class="alleen-afdruk">, fabrikant</span><span class="kolom-4"></span>'
+        f_f,t,k = ?*(N/mm^2)'<span class="alleen-scherm">, trek in de balkrichting — <b>fabrikantgegeven invullen</b></span><span class="alleen-afdruk">, fabrikant</span><span class="kolom-4"></span>'
+        f_r,k = ?*(N/mm^2)'<span class="alleen-scherm">, rolschuif (f<sub>v,90</sub>) — <b>fabrikantgegeven invullen</b></span><span class="alleen-afdruk">, fabrikant</span><span class="kolom-4"></span>'
+        E_f = ?*(N/mm^2)'<span class="alleen-scherm">, E<sub>mean</sub> in de balkrichting — <b>fabrikantgegeven invullen</b></span><span class="alleen-afdruk">, fabrikant</span><span class="kolom-4"></span>'
+        #if pl_sv ≡ 1
+            '<i>k<sub>mod</sub> en k<sub>def</sub> van spaan- en vezelplaat hangen af van de soort (P4 t/m P7, HB, MBH, MDF): lees ze af in tabel 3.1 en 3.2 bij de klimaatklasse en de duurklasse uit §1.</i><span class="alleen-scherm"></span>
+            k_mod,f = ?'<span class="alleen-scherm">, tabel 3.1, duurklasse uit §1 — <b>invullen</b></span><span class="alleen-afdruk">, tabel 3.1</span><span class="kolom-4"></span>'
+            k_mod,G,f = ?'<span class="alleen-scherm">, tabel 3.1, blijvend — <b>invullen</b></span><span class="alleen-afdruk">, blijvend</span><span class="kolom-4"></span>'
+            k_def,f = ?'<span class="alleen-scherm">, tabel 3.2 — <b>invullen</b></span><span class="alleen-afdruk">, tabel 3.2</span><span class="kolom-4"></span>'
+            #hide
+            γ_M,f = 1.3
+            pl_ok = bool(k_mod,f > 0)*bool(k_mod,G,f > 0)*bool(k_def,f > 0)
+            #show
+            γ_M,f', tabel 2.3<span class="kolom-4"></span>'
+        #else
+            '<i>Multiplex: k<sub>mod</sub> als massief hout (tabel 3.1), k<sub>def</sub> uit tabel 3.2; in klimaatklasse 2 multiplex volgens EN 636-2, in klasse 3 volgens EN 636-3.</i><span class="alleen-scherm"></span>
+            #hide
+            k_mod,f = k_mod
+            k_mod,G,f = k_mod,G
+            k_def,f = if(klimaat ≡ 1; 0.80; if(klimaat ≡ 2; 1.00; 2.50))
+            γ_M,f = 1.2
+            pl_ok = 1
+            #show
+            k_mod,f', tabel 3.1<span class="kolom-4"></span>'
+            k_mod,G,f', blijvend<span class="kolom-4"></span>'
+            k_def,f', tabel 3.2<span class="kolom-4"></span>'
+            γ_M,f', tabel 2.3<span class="kolom-4"></span>'
+        #end if
+        #hide
+        pl_ok = pl_ok*bool(f_f,c,k > 0 N/mm^2)*bool(f_f,t,k > 0 N/mm^2)*bool(f_r,k > 0 N/mm^2)*bool(E_f > 0 N/mm^2)
+        #show
+        #if pl_ok ≡ 0
+            '<span style="color:#b91c1c"><b>Gegevens van de plaat onvolledig:</b> vul de fabrikantgegevens in (alle groter dan 0); zonder die gegevens toetst het blad de T-balk niet.</span>
+        #end if
+    #end if
+    #hide
+    pl_ok = pl_ok*bool(h_f > 0 mm)
+    tb_onv = 1 - pl_ok
+    #show
+
+    '<i>Meewerkende breedte (§9.1.2(3), tabel 9.1): de vrije afstand b<sub>f</sub> tussen de balken, begrensd door de schuifvertraging (k<sub>sv</sub>·l) en, alleen bij een gedrukte flens, door plaatplooi (k<sub>pl</sub>·h<sub>f</sub>). l is bij een ligger op twee steunpunten de overspanning; bij een overstek of twee velden de afstand tussen de momentennulpunten, benaderd zoals in EN 1993-1-5 figuur 3.1: 0,85·L in een eindveld, 0,25·(L<sub>1</sub> + L<sub>2</sub>) bij het tussensteunpunt en 2·a bij een overstek. In het veld is de plaat gedrukt; bij het steunpunt van twee velden of een overstek is hij getrokken, en daar telt plaatplooi niet.</i><span class="alleen-scherm"></span>
+    #hide
+    k_sv = if(pl_mp ≡ 1; 0.1; if(pl_osb ≡ 1; 0.15; 0.2))
+    k_pl = if(plaat ≡ 1; 20; if(pl_sv ≡ 1; 30; 25))
+    l_v = if(schema ≡ 1; L_th; if(schema ≡ 2; 0.85*L_th; 0.85*min(L_th; L_veld2)))
+    #show
+    b_f = max(hoh - b_balk; 0 mm)'<span class="alleen-scherm">, vrije afstand tussen de balken</span><span class="alleen-scherm"></span>'
+    l_v'<span class="alleen-scherm">, l in het veld</span><span class="alleen-scherm"></span>'
+    k_sv'<span class="alleen-scherm">, schuifvertraging, tabel 9.1</span><span class="alleen-scherm"></span>'
+    k_pl'<span class="alleen-scherm">, plaatplooi, tabel 9.1</span><span class="alleen-scherm"></span>'
+    b_c,ef = min(b_f; k_sv*l_v; k_pl*h_f)'<span class="alleen-scherm">, gedrukte flens, in het veld</span><span class="alleen-scherm"></span>'
+    b_ef = b_c,ef + b_balk'<span class="alleen-scherm">, (9.10)</span><span class="alleen-scherm"></span>'
+    b_f'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    l_v'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    k_sv'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    k_pl'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    b_c,ef'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    b_ef', (9.10)<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    #if s23 ≥ 1
+        #hide
+        l_s = if(schema ≡ 2; 2*a_over; 0.25*(L_th + L_veld2))
+        #show
+        l_s'<span class="alleen-scherm">, l bij het steunpunt</span><span class="alleen-scherm"></span>'
+        b_t,ef = min(b_f; k_sv*l_s)'<span class="alleen-scherm">, getrokken flens, bij het steunpunt</span><span class="alleen-scherm"></span>'
+        b_ef,s = b_t,ef + b_balk'<span class="alleen-scherm">, (9.10)</span><span class="alleen-scherm"></span>'
+        l_s'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        b_ef,s', steunpunt<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    #else
+        #hide
+        b_t,ef = b_c,ef
+        b_ef,s = b_ef
+        #show
+    #end if
+    UC_bf = b_f/(2*k_pl*h_f)'<span class="alleen-scherm">, §9.1.2(5): de vrije flensbreedte is ten hoogste tweemaal de plooibreedte uit tabel 9.1</span><span class="alleen-afdruk">, b<sub>f</sub> ≤ 2·k<sub>pl</sub>·h<sub>f</sub> (§9.1.2(5))</span>'
+    #if UC_bf > 1.0
+        '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b>: nader onderzoek naar plaatplooi nodig</span>
+    #end if
+
+    '<i>Getransformeerde doorsnede: de plaat telt mee met n<sub>E</sub> = E<sub>f</sub>/E<sub>mean</sub> maal zijn breedte; z<sub>c</sub> is de neutrale lijn vanaf de bovenkant van de plaat, I<sub>ef</sub> het traagheidsmoment in hout. Doorbuiging en trillingen rekenen met EI<sub>ef</sub> van de doorsnede in het veld. De plaat kruipt meer dan het hout (k<sub>def,f</sub> tegen k<sub>def</sub>); na volle kruip telt hij mee met n<sub>fin</sub>, uit de eindmoduli E/(1 + k<sub>def</sub>) per materiaal (2.7).</i><span class="alleen-scherm"></span>
+    n_E = E_f/E_mean'<span class="alleen-scherm">, verhouding E-moduli plaat/balk</span><span class="alleen-scherm"></span>'
+    n_fin = n_E*(1 + k_def)/(1 + k_def,f)'<span class="alleen-scherm">, na volle kruip</span><span class="alleen-scherm"></span>'
+    z_c = (n_E*b_ef*h_f^2/2 + A*(h_f + h_balk/2))/(n_E*b_ef*h_f + A) to mm'<span class="alleen-scherm">, neutrale lijn</span><span class="alleen-scherm"></span>'
+    e_w = h_f + h_balk/2 - z_c'<span class="alleen-scherm">, zwaartepunt balk tot de neutrale lijn</span><span class="alleen-scherm"></span>'
+    e_f = z_c - h_f/2'<span class="alleen-scherm">, zwaartepunt plaat tot de neutrale lijn</span><span class="alleen-scherm"></span>'
+    I_ef = I_y + A*e_w^2 + n_E*b_ef*h_f*(h_f^2/12 + e_f^2) to mm^4'<span class="alleen-scherm">, T-doorsnede in hout</span><span class="alleen-scherm"></span>'
+    EI_ef = E_mean*I_ef to kN*m^2'<span class="alleen-scherm">, momentaan</span><span class="alleen-scherm"></span>'
+    n_E'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    n_fin'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    z_c'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    I_ef'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    EI_ef'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    #if z_c < h_f
+        '<span style="color:#b91c1c"><b>De neutrale lijn ligt in de plaat:</b> buiten de opzet van dit blad (balk in trek en buiging, plaat gedrukt); de T-balk is zo niet getoetst.</span>
+        #hide
+        tb_onv = 1
+        #show
+    #end if
+    #hide
+    'De doorsnede bij een andere breedte b_e of verhouding n_e: neutrale lijn
+    'vanaf de bovenkant van de plaat en I in hout, als z_c en I_ef hierboven.
+    zT(b_e; n_e) = (n_e*b_e*h_f^2/2 + A*(h_f + h_balk/2))/(n_e*b_e*h_f + A)
+    IT(b_e; n_e) = I_y + A*(h_f + h_balk/2 - zT(b_e; n_e))^2 + n_e*b_e*h_f*(h_f^2/12 + (zT(b_e; n_e) - h_f/2)^2)
+    'Het lijf (de balk) rekent met de plaat in zijn slapste stand, de flens en de
+    'lijmnaad met de plaat in zijn stijfste: elk aan de veilige kant.
+    n_lijf = min(n_E; n_fin)
+    n_flens = max(n_E; n_fin)
+    'Rekent het blad verder als T-balk? Niet zolang de plaatgegevens ontbreken:
+    'dan rekent het verder met de balk alleen en is het eindoordeel "niet getoetst".
+    tbr = 1 - tb_onv
+    #show
+    #if tb_onv ≡ 1
+        '<span style="color:#b91c1c">Zonder volledige plaatgegevens rekent het blad hieronder verder met de balk alleen; de T-balk is niet getoetst.</span>
+    #end if
+#else
+    #if doorsnede ≡ 2
+        '<span style="color:#b45309">De T-balk (§9.1.2) geldt voor een balk in een balklaag. Een onderslag of een raveelbalk rekent het blad als rechthoekige balk.</span>
+    #end if
+    #hide
+    tb_onv = 0
+    tbr = 0
+    'Alleen zodat if(tbr ≡ 1; EI_ef; …) hieronder iets te lezen heeft.
+    EI_ef = E_mean*I_y
+    #show
+#end if
+
+#hide
 'Lengtes in m, verdeelde lasten in kN/m en puntlasten in kN, als kaal getal:
 'momenten komen dan in kNm en dwarskrachten in kN. Ondergrens op het eerste
 'veld: bij het allereerste renderen staan de invoervelden nog op nul, en zonder
@@ -261,7 +460,8 @@ r_L1 = max(L_th/(1 m); 0.001)', eerste veld'
 r_a = if(schema ≡ 2; a_over/(1 m); 0)', overstek'
 r_L2 = if(schema ≡ 3; L_veld2/(1 m); 0)', tweede veld'
 r_tot = r_L1 + r_a + r_L2', totale lengte'
-EI_n = max(E_mean*I_y/(1 kN*m^2); 0.001)', buigstijfheid in kNm²'
+'Bij een T-balk de samengestelde buigstijfheid (§2), anders E_mean·I_y.
+EI_n = max(if(tbr ≡ 1; EI_ef; E_mean*I_y)/(1 kN*m^2); 0.001)', buigstijfheid in kNm²'
 
 'Steunmoment M_B, positief bij trek aan de bovenzijde.
 Mb(w1; w2; P1; P2) = if(schema ≡ 3; (w1*r_L1^3 + w2*r_L2^3)/(8*(r_L1 + r_L2)) + 3*(P1*r_L1^2 + P2*r_L2^2)/(16*(r_L1 + r_L2)); if(schema ≡ 2; w2*r_a^2/2 + P2*r_a; 0))
@@ -453,6 +653,11 @@ svgH = by + bh + 46
 '  <text x="'x0 + gap/2 + bw/2'" y="'by + bh + 13'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">hoh = 'hoh'</text>
 '  <text x="26" y="'vy - 5'" style="fill:#8B6F47">beschot t = 't_vloer'</text>
 '  <text x="456" y="'by + bh + 13'" text-anchor="end" style="fill:#8B6F47">balk 'b_balk' × 'h_balk'</text>
+#if tbr ≡ 1
+    '  <!-- T-balk: de meewerkende breedte b_ef boven de derde balk, vrij van het label van het beschot -->
+    '  <rect x="'x0 + 2*gap + bw/2 - sc*b_ef/mm_ruw/2'" y="'vy'" width="'sc*b_ef/mm_ruw'" height="'vt'" style="fill:#2563EB; fill-opacity:0.30; stroke:#1E40AF; stroke-width:1"/>
+    '  <text x="'x0 + 2*gap + bw/2'" y="'vy - 5'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">b<tspan dy="2.5" font-size="8">ef</tspan><tspan dy="-2.5"> = 'b_ef'</tspan></text>
+#end if
 '</svg>'
 #else
 '<i>Een onderslag: één ligger die de balken draagt, met een strook vloer van b<sub>ond</sub> = 'b_ond' m per strekkende meter. De doorsnede staat op schaal.</i><span class="alleen-scherm"></span>
@@ -944,11 +1149,34 @@ vet_b(x; y) = if(x ≥ y; 700; 400)
 
 '<h6>5.1 Zakking per veld, in het punt met de grootste eindstand w<sub>fin</sub> (x vanaf de eerste oplegging)</h6>
 '<i>Dat punt is langs de hele lijn van het veld gezocht, in 49 punten en daarna verfijnd met een parabool door het hoogste punt en zijn buren. Bij een inklemmend eindmoment (schema 2 en 3) ligt het naast het midden; komt een veld over de hele lengte omhoog, dan ligt het op de oplegging en is de zakking daar nul.</i><span class="alleen-scherm"></span>
+#if tbr ≡ 1
+    '<i>Kruip van de T-balk: plaat en balk kruipen verschillend. Met de eindmoduli E/(1 + k<sub>def</sub>) per materiaal (2.7) volgt de eindstijfheid EI<sub>ef,fin</sub> van de doorsnede, en daaruit één kruipfactor voor de hele T-balk: EI<sub>ef</sub>/EI<sub>ef,fin</sub> − 1. Voor het quasi-blijvende deel van de veranderlijke last kruipt elk materiaal met ψ<sub>2</sub>·k<sub>def</sub>; die factor, gedeeld door ψ<sub>2</sub>, valt iets hoger uit. Het blad neemt de grootste van de twee: de veranderlijke last kruipt dan exact mee, de permanente iets te veel (veilige kant). IT(b; n) is I<sub>ef</sub> uit §2 bij breedte b en verhouding n.</i><span class="alleen-scherm"></span>
+    #hide
+    'Buigstijfheid van de T-doorsnede met de E-moduli gedeeld door (1 + c_k·k_def).
+    EIk(c_k) = E_mean/(1 + c_k*k_def)*IT(b_ef; n_E*(1 + c_k*k_def)/(1 + c_k*k_def,f))
+    #show
+    EI_ef,fin = E_mean/(1 + k_def)*IT(b_ef; n_fin) to kN*m^2'<span class="alleen-scherm">, eindstijfheid na volle kruip (2.7)</span><span class="alleen-scherm"></span>'
+    #hide
+    k_def,1 = EI_ef/EI_ef,fin - 1
+    k_def,ψ = (EI_ef/EIk(ψ_2) - 1)/max(ψ_2; 10^-9)
+    #show
+    k_def,ef = max(k_def,1; k_def,ψ)'<span class="alleen-scherm">, kruipfactor van de T-balk</span><span class="alleen-scherm"></span>'
+    EI_ef,fin'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    k_def,ef', T-balk<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    #hide
+    k_def,w = k_def,ef
+    #show
+#else
+    #hide
+    k_def,w = k_def
+    #show
+#end if
 #hide
 'Zakking van geval k op afstand x van het begin, en de eindstand onder BG1
-'plus het veranderlijke geval k: (1 + k_def)·u_g + (1 + ψ_2·k_def)·u_var.
+'plus het veranderlijke geval k: (1 + k_def)·u_g + (1 + ψ_2·k_def)·u_var. Bij
+'een T-balk is k_def,w de kruipfactor van de samengestelde doorsnede.
 Ubg(x; k) = Ux(x; bw1(k); bw2(k); bP1(k); bP2(k); mB_bg(k))
-Ufk(x; k) = (1 + k_def)*Ubg(x; 1) + (1 + ψ_2*k_def)*Ubg(x; k)
+Ufk(x; k) = (1 + k_def,w)*Ubg(x; 1) + (1 + ψ_2*k_def,w)*Ubg(x; k)
 'Top van een parabool door drie punten op onderlinge afstand 1, als
 'verschuiving vanaf het middelste; alleen bij een bolle top, anders nul.
 dpar(fm; f0; fp) = if(fm - 2*f0 + fp < 0; max(-0.5; min(0.5; (fm - fp)/(2*min(fm - 2*f0 + fp; -10^-12)))); 0)
@@ -1574,9 +1802,16 @@ V_z,Ed'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
     #if s23 ≥ 1
         w_qp,2 = 1.0*u_g,k,2 + ψ_2*u_var,2 to mm', 6.16b, tweede deel<span class="alleen-scherm"></span>'
     #end if
-    w_kruip = k_def*w_qp to mm', kruip, veld 1'
-    #if s23 ≥ 1
-        w_kruip,2 = k_def*w_qp,2 to mm', kruip, tweede deel<span class="alleen-scherm"></span>'
+    #if tbr ≡ 1
+        w_kruip = k_def,ef*w_qp to mm', kruip, veld 1<span class="alleen-scherm">, met k<sub>def,ef</sub> van de T-balk (5.1)</span>'
+        #if s23 ≥ 1
+            w_kruip,2 = k_def,ef*w_qp,2 to mm', kruip, tweede deel<span class="alleen-scherm"></span>'
+        #end if
+    #else
+        w_kruip = k_def*w_qp to mm', kruip, veld 1'
+        #if s23 ≥ 1
+            w_kruip,2 = k_def*w_qp,2 to mm', kruip, tweede deel<span class="alleen-scherm"></span>'
+        #end if
     #end if
     w_fin = w_inst + w_kruip to mm', veld 1'
     #if s23 ≥ 1
@@ -1647,7 +1882,7 @@ V_z,Ed'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
     kv2 = if(pv2 ≡ 1; 5; 3)
     kvx(x) = if(s23*bool(x > r_L1) ≡ 1; kv2; kv1)
     ui_x(x) = Ubg(x; 1) + Ubg(x; kvx(x))
-    uf_x(x) = (1 + k_def)*Ubg(x; 1) + (1 + ψ_2*k_def)*Ubg(x; kvx(x))
+    uf_x(x) = (1 + k_def,w)*Ubg(x; 1) + (1 + ψ_2*k_def,w)*Ubg(x; kvx(x))
     sw(i) = r_L1*i/24
     sz(i) = r_L1 + (r_tot - r_L1)*i/24
     'Schaal: het deel onder en boven de as past samen in 70 px.
@@ -1758,7 +1993,11 @@ tril_aan = controleer_trilling*(1 - ond)
         '<h6>7.1 Stijfheden en eigenfrequentie (7.5)<span class="alleen-scherm"></span></h6>
         '<i>Per meter vloerbreedte: (EI)<sub>l</sub> in de overspanningsrichting, dus de balken, en (EI)<sub>b</sub> dwars daarop, het beschot (§7.3.3). De eigenfrequentie (7.5) hangt af van (EI)<sub>l</sub>, het aantal eigenmodi (7.7) van de verhouding (EI)<sub>l</sub>/(EI)<sub>b</sub>. De trillende massa is alleen het permanente gewicht (§7.3.3): de vloer trilt in de staat waarin hij normaal wordt gebruikt.</i><span class="alleen-scherm"></span>
         I_beschot = 1 m*t_vloer^3/12 to m^4'<span class="alleen-scherm"></span>'
-        EI_l = E_mean*I_y/hoh to N*m^2/m', balken, in de overspanningsrichting<span class="alleen-scherm"></span>'
+        #if tbr ≡ 1
+            EI_l = EI_ef/hoh to N*m^2/m', T-balken (§2), in de overspanningsrichting<span class="alleen-scherm"></span>'
+        #else
+            EI_l = E_mean*I_y/hoh to N*m^2/m', balken, in de overspanningsrichting<span class="alleen-scherm"></span>'
+        #end if
         EI_b = E_beschot*I_beschot/(1 m) to N*m^2/m', beschot, dwars op de balken<span class="alleen-scherm"></span>'
         m_opp = (G_k + g_balk/hoh)/(9.81 m/s^2) to kg/m^2', trillende massa<span class="alleen-scherm"></span>'
         #if schema ≡ 3
@@ -1788,7 +2027,13 @@ tril_aan = controleer_trilling*(1 - ond)
         #if s3 ≡ 1
             '<i>De eenheidslast staat midden in het langste veld. Het andere veld houdt de ligger boven de tussenoplegging in: het steunmoment uit de drie-momentenvergelijking verkleint de zakking.</i><span class="alleen-scherm"></span>
             M_B,tril = 3*F_tril*L_tril^2/(16*(L_th + L_veld2)) to kN*m', steunmoment onder de eenheidslast<span class="alleen-scherm"></span>'
-            w_1kN = F_tril*L_tril^3/(48*E_mean*I_y) - M_B,tril*L_tril^2/(16*E_mean*I_y) to mm'<span class="alleen-scherm"></span>'
+            #if tbr ≡ 1
+                w_1kN = F_tril*L_tril^3/(48*EI_ef) - M_B,tril*L_tril^2/(16*EI_ef) to mm'<span class="alleen-scherm">, met EI<sub>ef</sub> van de T-balk</span><span class="alleen-scherm"></span>'
+            #else
+                w_1kN = F_tril*L_tril^3/(48*E_mean*I_y) - M_B,tril*L_tril^2/(16*E_mean*I_y) to mm'<span class="alleen-scherm"></span>'
+            #end if
+        #else if tbr ≡ 1
+            w_1kN = F_tril*L_tril^3/(48*EI_ef) to mm'<span class="alleen-scherm">, met EI<sub>ef</sub> van de T-balk</span><span class="alleen-scherm"></span>'
         #else
             w_1kN = F_tril*L_tril^3/(48*E_mean*I_y) to mm'<span class="alleen-scherm"></span>'
         #end if
@@ -1860,6 +2105,130 @@ tril_aan = controleer_trilling*(1 - ond)
 
 # 8. Toetsing UGT
 
+#if tbr ≡ 1
+'<h6>8.1 Buiging — T-balk: balk §6.2.3, §6.2.4 en plaat §9.1.2 (9.13), (9.14)</h6>
+'<i>Balk en plaat krijgen elk hun ongunstigste stand (§2): de balk rekent met de plaat na volle kruip (n<sub>lijf</sub>), de plaat en de lijmnaad momentaan (n<sub>flens</sub>). De balk heeft in de T-doorsnede een normaalkracht naast zijn moment: in het veld trek (6.17), bij het steunpunt druk (6.19). De uiterste vezel staat ernaast tegen f<sub>m,d</sub>, zoals bij de rechthoekige balk. f<sub>t,0,k</sub> en f<sub>c,0,k</sub> komen uit EN 338 en EN 14080, zonder hoogtefactor op de trek (veilige kant). Het veldmoment en het steunmoment komen uit 5.2 en de omhullende in 5.3, elk met hun eigen meewerkende breedte.</i><span class="alleen-scherm"></span>
+#hide
+'Trek- en druksterkte evenwijdig aan de vezel, EN 338 (C18, C24, C30) en
+'EN 14080 (GL24h, GL28h): [id | f_t,0,k | f_c,0,k] in N/mm².
+hout_tc = [1; 2; 3; 4; 5 |10; 14.5; 19; 19.2; 22.3 |18; 21; 24; 24; 28]
+f_t,0,k = hlookup(hout_tc; sterkteklasse; 1; 2)*N/mm^2
+f_c,0,k = hlookup(hout_tc; sterkteklasse; 1; 3)*N/mm^2
+'Neutrale lijn en I per stand: v in het veld, s bij het steunpunt; l voor de
+'balk (lijf), f voor de plaat (flens) en de lijmnaad.
+z_vl = zT(b_ef; n_lijf)
+I_vl = IT(b_ef; n_lijf)
+z_vf = zT(b_ef; n_flens)
+I_vf = IT(b_ef; n_flens)
+z_sl = zT(b_ef,s; n_lijf)
+I_sl = IT(b_ef,s; n_lijf)
+z_sf = zT(b_ef,s; n_flens)
+I_sf = IT(b_ef,s; n_flens)
+'Het grootste veldmoment en het grootste steunmoment, elk met hun teken: uit de
+'tabel in 5.2 (de verdeelde last) en uit de omhullende (5.3, met de puntlast op
+'de ongunstigste plaats). Bij een overstek is rij 3 het steunmoment.
+M_Ed,v = if(s23 ≥ 1; max(M_Ed,veld1; s3*M_Ed,veld2; o_M1*kN*m; o_M2*kN*m); M_y,Ed)
+M_Ed,s = if(s23 ≥ 1; max(M_Ed,steun; s2*M_Ed,veld2; o_Mh*kN*m); 0 kN*m)
+#show
+M_Ed,v'<span class="alleen-scherm">, grootste veldmoment: de plaat is gedrukt</span><span class="alleen-scherm"></span>'
+z_vl'<span class="alleen-scherm">, neutrale lijn, balk (n<sub>lijf</sub>)</span><span class="alleen-scherm"></span>'
+I_vl'<span class="alleen-scherm">, idem I in hout</span><span class="alleen-scherm"></span>'
+σ_t,0,d = M_Ed,v*(h_f + h_balk/2 - z_vl)/I_vl to N/mm^2'<span class="alleen-scherm">, normaalspanning in de balk (trek)</span><span class="alleen-scherm"></span>'
+σ_m,d = M_Ed,v*h_balk/(2*I_vl) to N/mm^2'<span class="alleen-scherm">, buigspanning in de balk</span><span class="alleen-scherm"></span>'
+f_t,0,d = k_mod*f_t,0,k/γ_M'<span class="alleen-scherm"></span>'
+UC_lijf,v = σ_t,0,d/f_t,0,d + σ_m,d/f_m,d'<span class="alleen-scherm">, (6.17)</span><span class="alleen-scherm"></span>'
+σ_m,o = σ_t,0,d + σ_m,d'<span class="alleen-scherm">, uiterste vezel, onderrand</span><span class="alleen-scherm"></span>'
+UC_m,v = σ_m,o/f_m,d'<span class="alleen-scherm">, uiterste vezel tegen f<sub>m,d</sub></span><span class="alleen-scherm"></span>'
+σ_f,c,d = n_flens*M_Ed,v*(z_vf - h_f/2)/I_vf to N/mm^2'<span class="alleen-scherm">, gemiddelde drukspanning in de plaat</span><span class="alleen-scherm"></span>'
+f_f,c,d = k_mod,f*f_f,c,k/γ_M,f'<span class="alleen-scherm"></span>'
+UC_f,c = σ_f,c,d/f_f,c,d'<span class="alleen-scherm">, (9.13)</span><span class="alleen-scherm"></span>'
+M_Ed,v', veld<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+I_vl'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+σ_t,0,d'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+σ_m,d'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+f_t,0,d'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+UC_lijf,v', (6.17)<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+σ_f,c,d'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+UC_f,c', (9.13)<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+#if s23 ≥ 1
+    M_Ed,s'<span class="alleen-scherm">, grootste steunmoment: de plaat is getrokken</span><span class="alleen-scherm"></span>'
+    z_sl'<span class="alleen-scherm">, neutrale lijn, balk (n<sub>lijf</sub>, b<sub>ef,s</sub>)</span><span class="alleen-scherm"></span>'
+    I_sl'<span class="alleen-scherm">, idem I in hout</span><span class="alleen-scherm"></span>'
+    σ_c,0,d = M_Ed,s*(h_f + h_balk/2 - z_sl)/I_sl to N/mm^2'<span class="alleen-scherm">, normaalspanning in de balk (druk)</span><span class="alleen-scherm"></span>'
+    σ_m,d,s = M_Ed,s*h_balk/(2*I_sl) to N/mm^2'<span class="alleen-scherm">, buigspanning in de balk</span><span class="alleen-scherm"></span>'
+    f_c,0,d = k_mod*f_c,0,k/γ_M'<span class="alleen-scherm"></span>'
+    UC_lijf,s = (σ_c,0,d/f_c,0,d)^2 + σ_m,d,s/f_m,d'<span class="alleen-scherm">, (6.19)</span><span class="alleen-scherm"></span>'
+    σ_m,o,s = σ_c,0,d + σ_m,d,s'<span class="alleen-scherm">, uiterste vezel, onderrand</span><span class="alleen-scherm"></span>'
+    UC_m,s = σ_m,o,s/f_m,d'<span class="alleen-scherm">, uiterste vezel tegen f<sub>m,d</sub></span><span class="alleen-scherm"></span>'
+    σ_f,t,d = n_flens*M_Ed,s*(z_sf - h_f/2)/I_sf to N/mm^2'<span class="alleen-scherm">, gemiddelde trekspanning in de plaat</span><span class="alleen-scherm"></span>'
+    f_f,t,d = k_mod,f*f_f,t,k/γ_M,f'<span class="alleen-scherm"></span>'
+    UC_f,t = σ_f,t,d/f_f,t,d'<span class="alleen-scherm">, (9.14)</span><span class="alleen-scherm"></span>'
+    M_Ed,s', steunpunt<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    I_sl'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    σ_c,0,d'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    σ_m,d,s'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    f_c,0,d'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    UC_lijf,s', (6.19)<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    σ_f,t,d'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    UC_f,t', (9.14)<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+#else
+    #hide
+    UC_lijf,s = 0
+    UC_m,s = 0
+    UC_f,t = 0
+    #show
+#end if
+UC_buiging = max(UC_lijf,v; UC_m,v; UC_lijf,s; UC_m,s)', balk'
+#if UC_buiging ≤ 1.0
+    '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+#else
+    '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+#end if
+UC_flens = max(UC_f,c; UC_f,t)', plaat'
+#if UC_flens ≤ 1.0
+    '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+#else
+    '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+#end if
+
+'<h6>8.2 Afschuiving — balk §6.1.7 (6.13) en lijmnaad §9.1.2 (9.12)</h6>
+'<i>In de balk de grootste schuifspanning van de T-doorsnede, met de plaat na volle kruip, bij de breedte in het veld en bij het steunpunt; k<sub>cr</sub> = 1,0 zoals bij de rechthoekige balk. In de lijmnaad tussen plaat en balk (doorsnede 1-1 in figuur 9.2) de schuifkracht per lengte V·S<sub>f</sub>/I over de balkbreedte b<sub>w</sub>, met de plaat momentaan, getoetst aan de rolschuifsterkte van de plaat; bij b<sub>w</sub> > 8h<sub>f</sub> verminderd met (8h<sub>f</sub>/b<sub>w</sub>)<sup>0,8</sup>.</i><span class="alleen-scherm"></span>
+#hide
+'Statisch moment om de neutrale lijn: van het deel van de balk eronder (ligt de
+'neutrale lijn in de plaat: de hele balk), en van de plaat.
+S_lijf(z_n) = if(z_n ≥ h_f; b_balk*(h_f + h_balk - z_n)^2/2; b_balk*h_balk*(h_f + h_balk/2 - z_n))
+S_fl(b_e; n_e) = n_e*b_e*h_f*(zT(b_e; n_e) - h_f/2)
+'v in het veld, s bij het steunpunt (bij één veld gelijk aan v).
+S_w,v = S_lijf(z_vl) to mm^3
+S_w,s = S_lijf(z_sl) to mm^3
+S_f,v = S_fl(b_ef; n_flens) to mm^3
+S_f,s = S_fl(b_ef,s; n_flens) to mm^3
+#show
+S_w,v'<span class="alleen-scherm">, balk onder de neutrale lijn, in het veld</span><span class="alleen-scherm"></span>'
+τ_d = V_z,Ed*max(S_w,v/I_vl; S_w,s/I_sl)/b_balk to N/mm^2'<span class="alleen-scherm">, k<sub>cr</sub> = 1,0 (NB art. 6.1.7(2))</span><span class="alleen-scherm"></span>'
+τ_d', k<sub>cr</sub> = 1,0<span class="alleen-afdruk"></span><span class="kolom-2"></span>'
+UC_afsch = τ_d/f_v,d'<span class="alleen-scherm"></span>'
+UC_afsch' (τ<sub>d</sub>/f<sub>v,d</sub>)<span class="alleen-afdruk"></span>'
+#if UC_afsch ≤ 1.0
+    '<span class="alleen-scherm">UC<sub>afschuiving</sub> = τ<sub>d</sub>/f<sub>v,d</sub> = 'UC_afsch'</span><span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+#else
+    '<span class="alleen-scherm">UC<sub>afschuiving</sub> = τ<sub>d</sub>/f<sub>v,d</sub> = 'UC_afsch'</span><span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+#end if
+S_f,v'<span class="alleen-scherm">, plaat, in het veld</span><span class="alleen-scherm"></span>'
+τ_r,d = V_z,Ed*max(S_f,v/I_vf; S_f,s/I_sf)/b_balk to N/mm^2'<span class="alleen-scherm">, rolschuif in de lijmnaad</span><span class="alleen-scherm"></span>'
+f_r,d = k_mod,f*f_r,k/γ_M,f'<span class="alleen-scherm"></span>'
+k_bw = min(1; (8*h_f/b_balk)^0.8)'<span class="alleen-scherm">, 1 bij b<sub>w</sub> ≤ 8h<sub>f</sub></span><span class="alleen-scherm"></span>'
+τ_r,d', lijmnaad<span class="alleen-afdruk"></span><span class="kolom-3"></span>'
+f_r,d'<span class="alleen-afdruk"></span><span class="kolom-3"></span>'
+k_bw'<span class="alleen-afdruk"></span><span class="kolom-3"></span>'
+UC_lijm = τ_r,d/(k_bw*f_r,d)'<span class="alleen-scherm">, (9.12)</span><span class="alleen-scherm"></span>'
+UC_lijm' (τ<sub>r,d</sub>/(k<sub>bw</sub>·f<sub>r,d</sub>), 9.12)<span class="alleen-afdruk"></span>'
+#if UC_lijm ≤ 1.0
+    '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+#else
+    '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+#end if
+#else
 '<h6>8.1 Buiging — §6.1.6 (6.11)</h6>
 σ_m,y,d = M_y,Ed/W_y to N/mm^2'<span class="kolom-2"></span>'
 UC_buiging = σ_m,y,d/f_m,d'<span class="alleen-scherm"></span>'
@@ -1883,6 +2252,7 @@ UC_afsch' (τ<sub>d</sub>/f<sub>v,d</sub>)<span class="alleen-afdruk"></span>'
     '<span class="alleen-scherm">UC<sub>afschuiving</sub> = τ<sub>d</sub>/f<sub>v,d</sub> = 'UC_afsch'</span><span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
 #else
     '<span class="alleen-scherm">UC<sub>afschuiving</sub> = τ<sub>d</sub>/f<sub>v,d</sub> = 'UC_afsch'</span><span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+#end if
 #end if
 
 '<h6>8.3 Oplegdruk — §6.1.5 (6.3), k<sub>c,90</sub> volgens 6.1.5(4)</h6>
@@ -1996,6 +2366,9 @@ l_ef,e'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
 #if s23 ≥ 1
     '<h6>8.4 Kip bij het steunmoment — §6.3.3 (6.30 t/m 6.34), l<sub>ef</sub> volgens tabel 6.1</h6>
     '<i>Bij een positief moment is de gedrukte bovenrand gesteund door het beschot, of bij een onderslag door de balken erop: daar geen kip. Bij het steunmoment is de onderrand gedrukt. l<sub>ef</sub> is de langste zone met een negatief moment naast het steunpunt, over alle UGT-combinaties, gerekend als een constant moment (tabel 6.1: 1,0·l) en zonder de aftrek van 0,5h voor een last op de getrokken rand; het steunpunt houdt de ligger tegen kantelen. Bij een overstek is dat de hele kraag.</i><span class="alleen-scherm"></span>
+    #if tbr ≡ 1
+        '<i>Bij de T-balk rekent de kiptoets met de balk alleen (W<sub>y</sub>, b en h): de getrokken plaat op de bovenrand verlaagt de drukspanning in de onderrand, dus dat ligt aan de veilige kant.</i><span class="alleen-scherm"></span>
+    #end if
     #hide
     'Zone met een negatief moment: vanaf het steunpunt tot het laatste punt waar
     'de omhullende Mh_min niet onder nul komt, in 48 stappen per deel.
@@ -2055,10 +2428,36 @@ R_G,e = max(Rg(1); if(s3 ≡ 1; Rg(3); if(s2 ≡ 1; Rg(1); Rg(2))))*kN
 R_G,s = s23*Rg(2)*kN
 σ_c,90,G = max(R_G,e/(b_balk*l_ef,e); R_G,s/(b_balk*l_ef,s)) to N/mm^2
 #show
+#if tbr ≡ 1
+    '<i>T-balk: de balk zoals in 8.1 en 8.2 met k<sub>mod,G</sub>, de kip bij het steunmoment met de balk alleen (8.4); de plaat en de lijmnaad met k<sub>mod,G,f</sub> = 'k_mod,G,f' van de plaat.</i><span class="alleen-scherm"></span>
+    #hide
+    'Spanningen bij een moment M in de stand (z, I): normaalspanning en
+    'buigspanning in de balk, gemiddelde spanning in de plaat.
+    sN(M; z_n; I_n) = M*(h_f + h_balk/2 - z_n)/I_n
+    sMb(M; I_n) = M*h_balk/(2*I_n)
+    sFl(M; z_n; I_n) = n_flens*M*(z_n - h_f/2)/I_n
+    f_t,0,d,G = k_mod,G*f_t,0,k/γ_M
+    f_c,0,d,G = k_mod,G*f_c,0,k/γ_M
+    τ_G = V_Ed,G*max(S_w,v/I_vl; S_w,s/I_sl)/b_balk to N/mm^2
+    τ_r,G = V_Ed,G*max(S_f,v/I_vf; S_f,s/I_sf)/b_balk to N/mm^2
+    UC_G,mv = sN(M_Ed,G,veld; z_vl; I_vl)/f_t,0,d,G + sMb(M_Ed,G,veld; I_vl)/f_m,d,G
+    UC_G,ms = s23*((sN(M_Ed,G,steun; z_sl; I_sl)/f_c,0,d,G)^2 + sMb(M_Ed,G,steun; I_sl)/f_m,d,G)
+    UC_G,kip = s23*bool(k_crit < 1)*M_Ed,G,steun/(W_y*k_crit*f_m,d,G)
+    UC_G,fc = sFl(M_Ed,G,veld; z_vf; I_vf)/(k_mod,G,f*f_f,c,k/γ_M,f)
+    UC_G,ft = s23*sFl(M_Ed,G,steun; z_sf; I_sf)/(k_mod,G,f*f_f,t,k/γ_M,f)
+    #show
+    UC_G,m = max(UC_G,mv; UC_G,ms; UC_G,kip)'<span class="alleen-scherm">, balk: (6.17) in het veld, (6.19) bij het steunpunt, kip zoals 8.4</span><span class="alleen-scherm"></span>'
+    UC_G,v = τ_G/f_v,d,G'<span class="alleen-scherm">, afschuiving balk</span><span class="alleen-scherm"></span>'
+    UC_G,c90 = σ_c,90,G/(k_c,90*f_c,90,d,G)'<span class="alleen-scherm">, oplegdruk</span><span class="alleen-scherm"></span>'
+    UC_G,f = max(UC_G,fc; UC_G,ft)'<span class="alleen-scherm">, plaat (9.13), (9.14)</span><span class="alleen-scherm"></span>'
+    UC_G,r = τ_r,G/(k_bw*k_mod,G,f*f_r,k/γ_M,f)'<span class="alleen-scherm">, lijmnaad (9.12)</span><span class="alleen-scherm"></span>'
+    UC_G = max(UC_G,m; UC_G,v; UC_G,c90; UC_G,f; UC_G,r)
+#else
 UC_G,m = max(M_Ed,G,veld; M_Ed,G,steun/k_crit)/(W_y*f_m,d,G)'<span class="alleen-scherm">, buiging</span><span class="alleen-scherm"></span>'
 UC_G,v = τ_G/f_v,d,G'<span class="alleen-scherm">, afschuiving</span><span class="alleen-scherm"></span>'
 UC_G,c90 = σ_c,90,G/(k_c,90*f_c,90,d,G)'<span class="alleen-scherm">, oplegdruk</span><span class="alleen-scherm"></span>'
 UC_G = max(UC_G,m; UC_G,v; UC_G,c90)
+#end if
 #if UC_G ≤ 1.0
     '<span class="alleen-scherm">UC<sub>G</sub> = 'UC_G'</span><span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
 #else
@@ -2098,6 +2497,18 @@ oordeel_door = if(UC_doorbuiging ≤ 1; "voldoet"; "voldoet niet")
 oordeel_bij = if(UC_bij ≤ 1; "voldoet"; "voldoet niet")
 oordeel_tril = if(tril_onv ≡ 1; "invoer onvolledig"; if(tril_na ≡ 1; "niet aangetoond: f₁ ≤ 8 Hz"; if(UC_trilling ≤ 1; "voldoet"; "voldoet niet")))
 #show
+#if tbr ≡ 1
+    #hide
+    'De toetsen van de T-balk: de plaat (flens), de lijmnaad en de vrije flensbreedte.
+    UC_tb = max(UC_flens; UC_lijm; UC_bf)
+    kleur_fl = if(UC_flens > 1; c_1; if(UC_flens > 0.9; c_2; c_3))
+    kleur_lijm = if(UC_lijm > 1; c_1; if(UC_lijm > 0.9; c_2; c_3))
+    kleur_bf = if(UC_bf > 1; c_1; if(UC_bf > 0.9; c_2; c_3))
+    oordeel_fl = if(UC_flens ≤ 1; "voldoet"; "voldoet niet")
+    oordeel_lijm = if(UC_lijm ≤ 1; "voldoet"; "voldoet niet")
+    oordeel_bf = if(UC_bf ≤ 1; "voldoet"; "voldoet niet: nader plooionderzoek")
+    #show
+#end if
 
 '<table class="alleen-scherm" style="width:100%; border-collapse:collapse; font-size:0.95em;">
 '<tr style="border-bottom:2px solid #374151;">
@@ -2105,11 +2516,34 @@ oordeel_tril = if(tril_onv ≡ 1; "invoer onvolledig"; if(tril_na ≡ 1; "niet a
 '<th style="text-align:left; padding:2px 8px;">Norm</th>
 '<th style="text-align:right; padding:2px 8px;">UC</th>
 '<th style="text-align:left; padding:2px 8px;">Oordeel</th></tr>
+#if tbr ≡ 1
+'<tr style="border-bottom:1px solid #e5e7eb;">
+'<td style="padding:2px 8px;">Buiging, balk van de T-balk</td>
+'<td style="padding:2px 8px;">§6.2.3 (6.17), §6.2.4 (6.19)</td>
+'<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_buig'">'UC_buiging'</td>
+'<td style="padding:2px 8px; color:'kleur_buig'">'oordeel_buig'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;">
+'<td style="padding:2px 8px;">Plaat (flens), druk en trek</td>
+'<td style="padding:2px 8px;">§9.1.2 (9.13), (9.14)</td>
+'<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_fl'">'UC_flens'</td>
+'<td style="padding:2px 8px; color:'kleur_fl'">'oordeel_fl'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;">
+'<td style="padding:2px 8px;">Lijmnaad, rolschuif</td>
+'<td style="padding:2px 8px;">§9.1.2 (9.12)</td>
+'<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_lijm'">'UC_lijm'</td>
+'<td style="padding:2px 8px; color:'kleur_lijm'">'oordeel_lijm'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;">
+'<td style="padding:2px 8px;">Vrije flensbreedte (plaatplooi)</td>
+'<td style="padding:2px 8px;">§9.1.2(5)</td>
+'<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_bf'">'UC_bf'</td>
+'<td style="padding:2px 8px; color:'kleur_bf'">'oordeel_bf'</td></tr>
+#else
 '<tr style="border-bottom:1px solid #e5e7eb;">
 '<td style="padding:2px 8px;">Buiging</td>
 '<td style="padding:2px 8px;">§6.1.6 (6.11)</td>
 '<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_buig'">'UC_buiging'</td>
 '<td style="padding:2px 8px; color:'kleur_buig'">'oordeel_buig'</td></tr>
+#end if
 '<tr style="border-bottom:1px solid #e5e7eb;">
 '<td style="padding:2px 8px;">Afschuiving</td>
 '<td style="padding:2px 8px;">§6.1.7 (6.13)</td>
@@ -2165,15 +2599,24 @@ oordeel_tril = if(tril_onv ≡ 1; "invoer onvolledig"; if(tril_na ≡ 1; "niet a
 #end if
 '</table>
 
+#if tbr ≡ 1
+    '<span style="color:#b45309"><b>T-balk:</b> de toetsing volgens §9.1.2 is nog niet nagerekend op referentiebladen.</span>
+    UC_max = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G; UC_trilling; UC_tb)'<span class="alleen-scherm"></span>'
+#else
 UC_max = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G; UC_trilling)'<span class="alleen-scherm"></span>'
+#end if
 UC_max'<span class="alleen-afdruk"></span>'
 #hide
 'Alles behalve de voorwaarde f_1 > 8 Hz. Voldoet de rest, dan is de balklaag bij
 'f_1 ≤ 8 Hz niet afgekeurd maar niet aangetoond: er is een nader onderzoek nodig.
-UC_rest = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G; UC_tril_av)
+'UC_tb: de toetsen van de T-balk (plaat, lijmnaad, flensbreedte); 0 bij een
+'rechthoekige balk.
+UC_rest = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G; UC_tril_av; UC_tb)
 #show
 #if tril_onv ≡ 1
     '<span class="alleen-scherm"><b>Maatgevende UC</b></span><span class="oordeel" style="color: red"> niet bepaald → <b>Balklaag niet getoetst: invoer onvolledig</b></span>
+#else if tb_onv ≡ 1
+    '<span class="alleen-scherm"><b>Maatgevende UC</b></span><span class="oordeel" style="color: red"> niet bepaald → <b>Balklaag niet getoetst: gegevens van de vloerplaat onvolledig of buiten het bereik (T-balk, §2)</b></span>
 #else if tril_na*bool(UC_rest ≤ 1) ≡ 1
     '<span class="alleen-scherm"><b>Maatgevende UC = 'UC_max'</b></span><span class="oordeel" style="color: red"> → <b>Balklaag niet aangetoond</b>: f<sub>1</sub> ≤ 8 Hz, nader onderzoek naar de trillingen (§7.3.3(1))</span>
 #else if UC_max ≤ 1.0
@@ -2185,5 +2628,26 @@ UC_rest = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G
     '<span style="color: #b91c1c"><b>Trek in een eindoplegging:</b> verankering per 'if(ond ≡ 1; "onderslag"; "balk")' van ten minste '-R_min' kN (8.3).</span>
 #end if
 
+#if tbr ≡ 1
+    'Aangenomen bij de T-balk: de vloerplaat is over de volle lengte op de balk gelijmd (geen slip)<span class="alleen-scherm">; een gespijkerde of geschroefde plaat valt onder bijlage B en niet onder dit blad</span>. Naden in de plaat dwars op de balken dragen de normaalkracht in de plaat over<span class="alleen-scherm"> (verlijmd; in een getrokken zone bij het steunpunt een gelijmde las)</span>.
+#end if
 'Aangenomen: bovenrand gesteund door beschot of balken ('if(s23 ≥ 1; "kip alleen bij het steunmoment"; "geen kip")'). Buiten dit blad: ondersteuning'if(ond ≡ 1; ", verbindingen en de druk onder de balken op de bovenzijde van de onderslag"; " en verbindingen")'.
+
+'<h1>10. Model in 3D<span class="alleen-scherm"></span></h1>
+#pre
+@select toon_3d "3D-beeld van de balklaag"
+  Tonen = 1
+  Niet tonen = 0
+@end
+@select druk_3d "3D-beeld op de uitdraai"
+  Niet afdrukken = 0
+  Afdrukken = 1
+@end
+#post
+#if toon_3d ≡ 1
+    #if druk_3d ≡ 1
+        '<h1>10. Model in 3D<span class="alleen-afdruk"></span></h1>
+    #end if
+    @ifcx balklaag hoogte=340 papier={{druk_3d}}
+#end if
 `;

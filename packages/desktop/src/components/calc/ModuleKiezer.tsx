@@ -1,14 +1,23 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18next from "../../i18n/config";
 import Modal from "../Modal";
 import {
   moduleCatalogus,
   bibliotheek,
-  PUBLICATIE_UITLEG,
   type TreeNode,
 } from "./projectTree";
 import { templates } from "../../templates";
-import { useModuleKiezer } from "../../store/moduleKiezer";
+import { useModuleKiezer, type KiezerTab } from "../../store/moduleKiezer";
+import {
+  useModuleBibliotheek,
+  vergelijkVersie,
+  bibliotheekBeeld,
+  BIBLIOTHEEK_REPO,
+  type CatalogusModule,
+  type GeinstalleerdeModule,
+  type Tweetalig,
+} from "../../store/moduleBibliotheek";
 import ModuleAfbeelding from "./ModuleAfbeelding";
 import LokaleNormen from "./LokaleNormen";
 import "../settings/SettingsDialog.css";
@@ -18,11 +27,15 @@ import "./ModuleKiezer.css";
 /**
  * Het scherm "Module toevoegen", geopend vanuit het lint.
  *
- * Twee tabbladen: de rekenmodules per materiaal, met hun status, en de
- * bibliotheek met naslagbladen (normuitwerkingen, boeken, voorbeelden). Een
- * klik kiest, een dubbelklik of Toevoegen zet het blad in het project; het
- * scherm sluit dan en de projectlijst vraagt meteen om een naam.
+ * Tabbladen: de rekenmodules per materiaal, met hun status; de bibliotheek
+ * met naslagbladen (normuitwerkingen, boeken, voorbeelden); de online
+ * modulebibliotheek om modules te installeren of bij te werken; en de lokale
+ * normbestanden. Een klik kiest, een dubbelklik of Toevoegen zet het blad in
+ * het project; het scherm sluit dan en de projectlijst vraagt meteen om een naam.
  */
+
+/** Tekst in de taal van de app, uit een tweetalig veld. */
+const inTaal = (w: Tweetalig) => (i18next.language?.startsWith("en") ? w.en : w.nl) || w.nl;
 
 type Item = Extract<TreeNode, { kind: "item" }>;
 interface Groep {
@@ -33,19 +46,38 @@ interface Groep {
   bronUrl?: string;
 }
 
-/** Een categorie uit de catalogus als groep: eigen items plus subcategorieën. */
-function naarGroep(node: TreeNode): Groep | null {
-  if (node.kind === "item") return null;
-  const items = node.children.filter((c): c is Item => c.kind === "item");
-  const subgroepen = node.children.map(naarGroep).filter((g): g is Groep => g !== null);
-  return { id: node.id, label: node.label, items, subgroepen, bronUrl: node.kind === "category" ? node.bronUrl : undefined };
+/** De `t` van de werkruimte-vertalingen, met het catalogus-label als terugval. */
+type Vertaler = (sleutel: string, opties: { defaultValue: string }) => string;
+
+/**
+ * De naam van een module of groep in de taal van de app. Een module heeft zijn
+ * sleutel op sjabloon-id (net als in de projectboom), een groep op id. Zonder
+ * vertaling blijft het Nederlandse label uit de catalogus staan. Een nieuw
+ * blad krijgt nog altijd dat catalogus-label als naam (store/moduleKiezer.ts).
+ */
+function catalogusNaam(tw: Vertaler, node: TreeNode): string {
+  if (node.kind === "item" && node.namen) return inTaal(node.namen);
+  return node.kind === "item"
+    ? tw(`catalogus.modules.${node.templateId ?? node.id}`, { defaultValue: node.label })
+    : tw(`catalogus.groepen.${node.id}`, { defaultValue: node.label });
 }
 
-/** Zoek ook op de groepsnaam, zodat bijvoorbeeld "staal" alle staalmodules toont. */
-function filter(groep: Groep, zoek: string): Groep | null {
+/** Een categorie uit de catalogus als groep: eigen items plus subcategorieën. */
+function naarGroep(node: TreeNode, tw: Vertaler): Groep | null {
+  if (node.kind === "item") return null;
+  const items = node.children.filter((c): c is Item => c.kind === "item");
+  const subgroepen = node.children.map((c) => naarGroep(c, tw)).filter((g): g is Groep => g !== null);
+  return { id: node.id, label: catalogusNaam(tw, node), items, subgroepen, bronUrl: node.kind === "category" ? node.bronUrl : undefined };
+}
+
+/**
+ * Zoek ook op de groepsnaam, zodat bijvoorbeeld "staal" alle staalmodules toont.
+ * Gezocht wordt in de namen zoals ze in beeld staan, dus in de taal van de app.
+ */
+function filter(groep: Groep, zoek: string, tw: Vertaler): Groep | null {
   if (!zoek || groep.label.toLowerCase().includes(zoek)) return groep;
-  const items = groep.items.filter((i) => i.label.toLowerCase().includes(zoek));
-  const subgroepen = groep.subgroepen.map((g) => filter(g, zoek)).filter((g): g is Groep => g !== null);
+  const items = groep.items.filter((i) => catalogusNaam(tw, i).toLowerCase().includes(zoek));
+  const subgroepen = groep.subgroepen.map((g) => filter(g, zoek, tw)).filter((g): g is Groep => g !== null);
   return items.length || subgroepen.length ? { ...groep, items, subgroepen } : null;
 }
 
@@ -60,12 +92,43 @@ async function openNormBron(url: string) {
   }
 }
 
-const TABS = [
-  { id: "modules", label: "Modules" },
-  { id: "bibliotheek", label: "Bibliotheek" },
-  { id: "normbestanden", label: "Normbestanden" },
-] as const;
-type TabId = (typeof TABS)[number]["id"];
+/** De tabbladen; hun namen staan in werkruimte.json onder kiezer.tabs. */
+const TABS: readonly KiezerTab[] = ["modules", "bibliotheek", "online", "normbestanden"];
+type TabId = KiezerTab;
+
+/**
+ * De catalogus met de geïnstalleerde modules uit de online bibliotheek erbij.
+ * Heeft een ingebouwde module hetzelfde id, dan krijgt die tegel de versie en
+ * het beeld uit de bibliotheek; een nieuwe module komt in zijn categorie, of
+ * in een nieuwe groep als die categorie er nog niet is.
+ */
+function metBibliotheek(catalogus: TreeNode[], geinstalleerd: Record<string, GeinstalleerdeModule>): TreeNode[] {
+  const lijst = Object.values(geinstalleerd);
+  if (lijst.length === 0) return catalogus;
+  const kopie: TreeNode[] = catalogus.map((n) =>
+    n.kind === "item" ? n : { ...n, children: n.children.map((c) => (c.kind === "item" ? { ...c } : c)) },
+  );
+  const items = (nodes: TreeNode[]): Item[] =>
+    nodes.flatMap((n) => (n.kind === "item" ? [n] : items(n.children)));
+  for (const m of lijst) {
+    const extra = { namen: m.naam, beeldUrl: m.beeldData, versie: m.versie, status: m.status, gepubliceerd: m.gepubliceerd };
+    const bestaand = items(kopie).find((i) => i.templateId === m.id);
+    if (bestaand) {
+      Object.assign(bestaand, extra);
+      continue;
+    }
+    const groepId = `cat-${m.categorie}`;
+    let groep = kopie.find((n) => n.kind === "category" && n.id === groepId);
+    if (!groep) {
+      groep = { kind: "category", id: groepId, label: m.categorie.charAt(0).toUpperCase() + m.categorie.slice(1), children: [] };
+      kopie.push(groep);
+    }
+    if (groep.kind === "category") {
+      groep.children.push({ kind: "item", id: `bib-${m.id}`, label: m.naam.nl, templateId: m.id, ...extra });
+    }
+  }
+  return kopie;
+}
 
 function Tegel({ item, gekozen, onKies, onVoegToe }: {
   item: Item;
@@ -76,13 +139,16 @@ function Tegel({ item, gekozen, onKies, onVoegToe }: {
   // De teksten van de modulestatus staan in de vertalingen (bladVersie.status
   // en .statusUitleg), dezelfde als in de kop van een geopend blad.
   const { t } = useTranslation();
+  const { t: tw } = useTranslation("werkruimte");
   const beschikbaar = !!item.templateId && !!templates[item.templateId];
   const status = item.status;
+  const naam = catalogusNaam(tw, item);
+  // Publicatie staat los van de status: zie `gepubliceerd` in projectTree.ts.
   const uitleg = !beschikbaar
-    ? `${item.label} — nog niet beschikbaar`
+    ? tw("kiezer.nietBeschikbaar", { naam })
     : status
-      ? `${item.label}\n${t(`bladVersie.statusUitleg.${status}`)}\n${item.gepubliceerd ? PUBLICATIE_UITLEG.gepubliceerd : PUBLICATIE_UITLEG.onuitgegeven}`
-      : item.label;
+      ? `${naam}\n${t(`bladVersie.statusUitleg.${status}`)}\n${tw(item.gepubliceerd ? "kiezer.publicatie.gepubliceerd" : "kiezer.publicatie.onuitgegeven")}`
+      : naam;
   return (
     <button
       type="button"
@@ -99,17 +165,18 @@ function Tegel({ item, gekozen, onKies, onVoegToe }: {
       }}
       title={uitleg}
     >
-      {status && item.templateId && <ModuleAfbeelding templateId={item.templateId} />}
+      {status && item.templateId && <ModuleAfbeelding templateId={item.templateId} beeldUrl={item.beeldUrl} />}
       <span className="mk-kop">
         {status && (
           <span className={`tree-item-icon tree-status-${status}`}>{status === "concept" ? "○" : "●"}</span>
         )}
-        <span className="mk-naam">{item.label}</span>
+        <span className="mk-naam">{naam}</span>
       </span>
       {(status || item.gepubliceerd) && (
         <span className="mk-onder">
           {status && <span className="mk-status">{t(`bladVersie.status.${status}`)}</span>}
-          {item.gepubliceerd && <span className="tree-vlag">gepubliceerd</span>}
+          {item.gepubliceerd && <span className="tree-vlag">{tw("kiezer.gepubliceerd")}</span>}
+          {item.versie && <span className="mk-versie" title={tw("kiezer.online.uitBibliotheek")}>v{item.versie}</span>}
         </span>
       )}
     </button>
@@ -123,6 +190,7 @@ function GroepBlok({ groep, niveau, gekozen, onKies, onVoegToe }: {
   onKies: (item: Item) => void;
   onVoegToe: (item: Item) => void;
 }) {
+  const { t: tw } = useTranslation("werkruimte");
   const Kop = niveau === 0 ? "h3" : "h4";
   return (
     <section className={`mk-groep mk-niveau-${Math.min(niveau, 2)}`}>
@@ -130,12 +198,12 @@ function GroepBlok({ groep, niveau, gekozen, onKies, onVoegToe }: {
         {groep.label} <span className="mk-aantal">{aantal(groep)}</span>
         {groep.bronUrl && (
           <button type="button" className="mk-bron" onClick={() => void openNormBron(groep.bronUrl!)}>
-            NEN-overzicht ↗
+            {tw("kiezer.nenOverzicht")}
           </button>
         )}
       </Kop>
       {groep.id === "standards" && (
-        <p className="mk-norm-uitleg">Rekenuitwerkingen en bronverwijzingen; controleer de geldende editie en nationale bijlage.</p>
+        <p className="mk-norm-uitleg">{tw("kiezer.normUitleg")}</p>
       )}
       {groep.items.length > 0 && (
         <div className="mk-tegels">
@@ -160,6 +228,7 @@ function GroepBlok({ groep, niveau, gekozen, onKies, onVoegToe }: {
 /** De betekenis van de statusbolletjes en van "gepubliceerd", onder in het scherm. */
 function Legenda() {
   const { t } = useTranslation();
+  const { t: tw } = useTranslation("werkruimte");
   return (
     <span className="mk-legenda">
       {(["gereed", "controleren", "raming", "concept"] as const).map((status) => (
@@ -168,8 +237,8 @@ function Legenda() {
           {t(`bladVersie.status.${status}`)}
         </span>
       ))}
-      <span title={PUBLICATIE_UITLEG.gepubliceerd}>
-        <span className="tree-vlag">gepubliceerd</span> nagekeken en vrijgegeven
+      <span title={tw("kiezer.publicatie.gepubliceerd")}>
+        <span className="tree-vlag">{tw("kiezer.gepubliceerd")}</span> {tw("kiezer.gepubliceerdLegenda")}
       </span>
     </span>
   );
@@ -179,22 +248,33 @@ export default function ModuleKiezer() {
   const open = useModuleKiezer((s) => s.open);
   const sluiten = useModuleKiezer((s) => s.sluiten);
   const voegToe = useModuleKiezer((s) => s.voegToe);
+  const startTab = useModuleKiezer((s) => s.tab);
+  const geinstalleerd = useModuleBibliotheek((s) => s.geinstalleerd);
+  const { t: tw } = useTranslation("werkruimte");
   const [tab, setTab] = useState<TabId>("modules");
+  // Het lint kan het scherm op een bepaald tabblad openen (Uitbreidingen).
+  useEffect(() => {
+    if (open) setTab(startTab);
+  }, [open, startTab]);
   const [zoek, setZoek] = useState("");
   const [gekozen, setGekozen] = useState<Item | null>(null);
 
-  const bron = tab === "modules" ? moduleCatalogus : bibliotheek;
+  const catalogus = useMemo(() => metBibliotheek(moduleCatalogus, geinstalleerd), [geinstalleerd]);
+  const bron = tab === "modules" ? catalogus : bibliotheek;
+  // `tw` hoort erbij: bij een taalwissel krijgen de groepen hun nieuwe namen.
   const groepen = useMemo(() => {
     const z = zoek.trim().toLowerCase();
     return bron
-      .map(naarGroep)
+      .map((node) => naarGroep(node, tw))
       .filter((g): g is Groep => g !== null)
-      .map((g) => filter(g, z))
+      .map((g) => filter(g, z, tw))
       .filter((g): g is Groep => g !== null);
-  }, [bron, zoek]);
+  }, [bron, zoek, tw]);
 
   const toevoegen = (item: Item | null) => {
     if (!item?.templateId || !templates[item.templateId]) return;
+    // Het catalogus-label, niet de vertaalde naam: de naamgeving van nieuwe
+    // bladen blijft zoals hij was.
     voegToe(item.templateId, item.label);
     setGekozen(null);
     setZoek("");
@@ -205,17 +285,23 @@ export default function ModuleKiezer() {
     sluiten();
   };
 
+  const kiest = tab === "modules" || tab === "bibliotheek";
   const footer = (
     <>
-      {tab !== "normbestanden" && <Legenda />}
-      <button className="settings-btn settings-btn-secondary" onClick={afbreken}>{tab === "normbestanden" ? "Sluiten" : "Annuleren"}</button>
-      {tab !== "normbestanden" && (
+      {kiest && <Legenda />}
+      {tab === "online" && (
+        <button className="mk-bron mk-bijdragen" onClick={() => void openNormBron(`${BIBLIOTHEEK_REPO}/blob/main/CONTRIBUTING.md`)}>
+          {tw("kiezer.online.bijdragen")}
+        </button>
+      )}
+      <button className="settings-btn settings-btn-secondary" onClick={afbreken}>{tw(kiest ? "common:cancel" : "common:close")}</button>
+      {kiest && (
         <button
           className="settings-btn settings-btn-primary"
           disabled={!gekozen}
           onClick={() => toevoegen(gekozen)}
         >
-          Toevoegen
+          {tw("kiezer.toevoegen")}
         </button>
       )}
     </>
@@ -225,7 +311,7 @@ export default function ModuleKiezer() {
     <Modal
       open={open}
       onClose={afbreken}
-      title={tab === "normbestanden" ? "Normbestanden" : "Module toevoegen"}
+      title={kiest ? tw("kiezer.titel") : tw(`kiezer.tabs.${tab}`)}
       width={Math.min(960, window.innerWidth - 32)}
       height={Math.min(720, window.innerHeight - 64)}
       className="module-kiezer"
@@ -233,13 +319,13 @@ export default function ModuleKiezer() {
     >
       <div className="settings-body">
         <div className="settings-sidebar">
-          {TABS.map((t) => (
+          {TABS.map((id) => (
             <button
-              key={t.id}
-              className={`settings-tab${tab === t.id ? " active" : ""}`}
-              onClick={() => { setTab(t.id); setGekozen(null); setZoek(""); }}
+              key={id}
+              className={`settings-tab${tab === id ? " active" : ""}`}
+              onClick={() => { setTab(id); setGekozen(null); setZoek(""); }}
             >
-              {t.label}
+              {tw(`kiezer.tabs.${id}`)}
             </button>
           ))}
         </div>
@@ -247,15 +333,15 @@ export default function ModuleKiezer() {
           <input
             className="mk-zoek"
             type="search"
-            aria-label={tab === "modules" ? "Zoek een module" : tab === "bibliotheek" ? "Zoek in de bibliotheek" : "Zoek een lokaal normbestand"}
-            placeholder={tab === "modules" ? "Zoek een module…" : tab === "bibliotheek" ? "Zoek in de bibliotheek…" : "Zoek een lokaal normbestand…"}
+            aria-label={tw(`kiezer.zoekLabel.${tab}`)}
+            placeholder={tw(`kiezer.zoekPlaceholder.${tab}`)}
             value={zoek}
             autoFocus
             onChange={(e) => { setZoek(e.target.value); setGekozen(null); }}
           />
-          {tab === "normbestanden" ? <LokaleNormen zoek={zoek} /> : (
+          {tab === "normbestanden" ? <LokaleNormen zoek={zoek} /> : tab === "online" ? <OnlineBibliotheek zoek={zoek} /> : (
             <div className="mk-lijst">
-              {groepen.length === 0 && <p className="mk-leeg">Niets gevonden voor "{zoek}".</p>}
+              {groepen.length === 0 && <p className="mk-leeg">{tw("kiezer.nietsGevonden", { zoek })}</p>}
               {groepen.map((g) => (
                 <GroepBlok
                   key={g.id}
@@ -271,5 +357,76 @@ export default function ModuleKiezer() {
         </div>
       </div>
     </Modal>
+  );
+}
+
+
+/**
+ * De online modulebibliotheek: de catalogus uit de openbare repository, met
+ * per module installeren, bijwerken of verwijderen. Een geïnstalleerde module
+ * staat daarna gewoon onder Modules.
+ */
+function OnlineBibliotheek({ zoek }: { zoek: string }) {
+  const { t } = useTranslation();
+  const { t: tw } = useTranslation("werkruimte");
+  const { catalogus, geinstalleerd, laden, fout, bezig, haalCatalogus, installeer, verwijder } = useModuleBibliotheek();
+
+  useEffect(() => {
+    if (catalogus === null && !laden && !fout) void haalCatalogus();
+  }, [catalogus, laden, fout, haalCatalogus]);
+
+  const z = zoek.trim().toLowerCase();
+  const lijst = (catalogus ?? []).filter((m: CatalogusModule) =>
+    !z || [inTaal(m.naam), inTaal(m.omschrijving), m.categorie, ...m.normen].some((x) => x.toLowerCase().includes(z)));
+
+  return (
+    <div className="mk-online">
+      <p className="mk-norm-uitleg">{tw("kiezer.online.uitleg")}</p>
+      {laden && <p className="mk-leeg">{tw("kiezer.online.laden")}</p>}
+      {fout && (
+        <p className="mk-online-fout">
+          {tw("kiezer.online.fout", { fout })}{" "}
+          <button className="mk-bron" onClick={() => void haalCatalogus()}>{tw("kiezer.online.opnieuw")}</button>
+        </p>
+      )}
+      {!laden && catalogus && lijst.length === 0 && <p className="mk-leeg">{tw("kiezer.nietsGevonden", { zoek })}</p>}
+      {lijst.map((m) => {
+        const eigen = geinstalleerd[m.id];
+        const nieuwer = !!eigen && vergelijkVersie(eigen.versie, m.versie) < 0;
+        return (
+          <div key={m.id} className="mk-online-rij">
+            <ModuleAfbeelding templateId={m.id} beeldUrl={eigen?.beeldData ?? bibliotheekBeeld(m)} />
+            <div className="mk-online-tekst">
+              <strong>{inTaal(m.naam)}</strong>
+              <span>{inTaal(m.omschrijving)}</span>
+              <span className="mk-online-meta">
+                <span className="mk-online-status">
+                  <span className={`pb-stip pb-status-${m.status}`} aria-hidden="true" />
+                  {t(`bladVersie.status.${m.status}`)}
+                </span>
+                <span>· v{m.versie}</span>
+                {m.normen.length > 0 && <span>· {m.normen.join(", ")}</span>}
+                {m.gepubliceerd && <span className="tree-vlag">{tw("kiezer.gepubliceerd")}</span>}
+              </span>
+            </div>
+            <div className="mk-online-acties">
+              {(!eigen || nieuwer) && (
+                <button className="settings-btn settings-btn-primary" disabled={bezig === m.id} onClick={() => void installeer(m)}>
+                  {bezig === m.id
+                    ? tw("kiezer.online.bezig")
+                    : eigen ? tw("kiezer.online.bijwerken", { versie: m.versie }) : tw("kiezer.online.installeren")}
+                </button>
+              )}
+              {eigen && !nieuwer && <span className="mk-online-klaar">{tw("kiezer.online.geinstalleerd", { versie: eigen.versie })}</span>}
+              {eigen && (
+                <button className="settings-btn settings-btn-secondary" onClick={() => verwijder(m.id)}>
+                  {tw("kiezer.online.verwijderen")}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }

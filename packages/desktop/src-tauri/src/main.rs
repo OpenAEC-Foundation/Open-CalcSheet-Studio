@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    open_structural_calculation_studio_lib::run()
+    open_calcsheet_studio_lib::run()
 }

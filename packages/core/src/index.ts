@@ -3,6 +3,17 @@ export { evaluate, extractScope, setAngleMode } from './evaluator.js';
 export type { SelectValues, AngleMode, Scope } from './evaluator.js';
 export { render, defaultStyles } from './renderer.js';
 export { exprToLatex, nameToLatex } from './latex.js';
+export {
+  drieDVlakken, drieDBeeldvlak, drieDGrenzen, drieDGrootte, drieDSvg, DRIE_D_KLEUREN, type DrieDVlak,
+} from './drieD.js';
+export { iframeAdres, IFRAME_MIN_MM, IFRAME_MAX_MM, IFRAME_STANDAARD_MM } from './iframeBlok.js';
+export { jsHost, JS_BIBLIOTHEKEN } from './jsBlok.js';
+export { leesIfcx, ifcxNaarScene, type IfcxElement, type IfcxGelezen } from './ifcxLezen.js';
+export {
+  balklaagIfcxDocument, balklaagIfcxKnopen, balklaagIfcxKnopenUitScope, balklaagInvoerUitScope, balklaagAantalBalken,
+  ifcxVoorBlad, BALKLAAG_IFCX_IMPORTS, BALKLAAG_IFCX_SCHEMAS, BALKLAAG_MAX_BALKEN,
+  type BalklaagInvoer, type BalklaagDocumentOpties,
+} from './balklaagIfcx.js';
 export { parseGef, type GefData } from './gef-parser.js';
 export {
   liggerOplossing, liggerReacties, liggerOmhullende, liggerOmhullendeReacties, liggerExtremen,
@@ -28,9 +39,39 @@ export {
   type IfcGenerationOptions,
   type IfcGenerationResult,
   type IfcxDocument,
-  type IfcxHeader,
-  type IfcxEntry,
 } from './ifc-generator.js';
+export type {
+  IfcxBestand,
+  IfcxDataType,
+  IfcxGrootheid,
+  IfcxImport,
+  IfcxKnoop,
+  IfcxKop,
+  IfcxSchema,
+  IfcxWaarde,
+} from './ifcx/typen.js';
+export {
+  bouwProjectIfcx,
+  isIfcxBestand,
+  isProjectIfcx,
+  leesProjectIfcx,
+  platteKnopen,
+  type IfcxGelezenBlad,
+  type IfcxGelezenProject,
+  type IfcxProjectInvoer,
+} from './ifcx/document.js';
+export { bouwProjectStep, type StepOpties } from './ifcx/step.js';
+export { ATTR as IFCX_ATTR, OCSS_SCHEMAS } from './ifcx/namespace.js';
+export { ifcGuid, uuidUitIfcGuid } from './ifcx/identiteit.js';
+export type {
+  BladFiguur,
+  BladOordeel,
+  BladUitkomstGegevens,
+  UitkomstInvoerveld,
+  UitkomstStatus,
+  UitkomstUnityCheck,
+  UitkomstVariabele,
+} from './ifcx/uitkomst.js';
 export type * from './types.js';
 
 import { parse, type ParseOptions } from './parser.js';

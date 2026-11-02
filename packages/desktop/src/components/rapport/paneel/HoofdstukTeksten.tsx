@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Knoop } from "../../../rapport/opzet";
 import { vindKnoop } from "./hulp";
 import TekstVeld, { Invulvelden } from "./TekstVeld";
@@ -10,7 +11,7 @@ import { Kop, Sectie, Veld, Vink, useRapport } from "./velden";
  */
 const HOOFDSTUKKEN = ["inleiding", "projectgegevens", "constructie"];
 
-/** Suggesties voor de rol in 2.2; eigen tekst kan altijd. */
+/** Suggesties voor de rol in 2.2; eigen tekst kan altijd. Komt zo in het rapport, dus Nederlands. */
 const ROLLEN = ["Hoofdconstructeur", "Constructeur", "Constructief adviseur", "Controlerend constructeur"];
 
 /**
@@ -18,12 +19,9 @@ const ROLLEN = ["Hoofdconstructeur", "Constructeur", "Constructief adviseur", "C
  * met standaardteksten, in de volgorde en met de koppen van het rapport.
  */
 export default function HoofdstukTeksten() {
+  const { t } = useTranslation("rapport");
   return (
-    <Sectie
-      id="teksten"
-      titel="Hoofdstukken 1 t/m 3"
-      intro="Per onderdeel een tekst. Standaardtekst ▾ kiest een meegeleverde of eigen variant. Een optioneel blok dat leeg blijft, valt weg uit het rapport."
-    >
+    <Sectie id="teksten" titel={t("secties.teksten")} intro={t("teksten.intro")}>
       {HOOFDSTUKKEN.map((id) => {
         const knoop = vindKnoop(id);
         return knoop ? <KnoopInvoer key={id} knoop={knoop} /> : null;
@@ -35,6 +33,7 @@ export default function HoofdstukTeksten() {
 
 /** Eén knoop uit de opzet met zijn invoer; zonder eigen inhoud de kop met de kinderen eronder. */
 function KnoopInvoer({ knoop }: { knoop: Knoop }) {
+  const { t } = useTranslation("rapport");
   const klasse = `rapport-knoop rapport-niveau-${knoop.niveau}`;
   if (knoop.inhoud === "tekst") {
     return (
@@ -42,7 +41,7 @@ function KnoopInvoer({ knoop }: { knoop: Knoop }) {
         <TekstVeld
           id={knoop.id}
           kop={<Kop id={knoop.id} />}
-          placeholder={knoop.optioneel ? "Leeg laten: dan valt dit onderdeel weg." : undefined}
+          placeholder={knoop.optioneel ? t("teksten.optioneelLeeg") : undefined}
         />
         {knoop.titelNieuwbouw && <KopNieuwbouw knoop={knoop} titelNieuwbouw={knoop.titelNieuwbouw} />}
       </div>
@@ -54,7 +53,7 @@ function KnoopInvoer({ knoop }: { knoop: Knoop }) {
         <TekstVeld
           id={knoop.id}
           kop={<Kop id={knoop.id} />}
-          hint="De openingszin van de paragraaf; de drie gegevens hieronder staan er als tabel onder."
+          hint={t("teksten.rolHint")}
         />
         <RolVelden />
       </div>
@@ -74,35 +73,32 @@ function KnoopInvoer({ knoop }: { knoop: Knoop }) {
  * opent met de keuze uit, zodat zijn afdruk niet verandert.
  */
 function KopNieuwbouw({ knoop, titelNieuwbouw }: { knoop: Knoop; titelNieuwbouw: string }) {
+  const { t } = useTranslation("rapport");
   const aan = useRapport().opmaak.constructieprincipe;
+  // De koppen zelf komen uit de opzet en blijven Nederlands, net als op papier.
   return (
     <Vink
-      label={`Bij nieuwbouw de kop "${titelNieuwbouw}"`}
+      label={t("teksten.nieuwbouwKop", { titel: titelNieuwbouw })}
       pad="opmaak.constructieprincipe"
       aan={aan}
-      hint={
-        aan
-          ? `Nieuwbouw: "Bestaande situatie opnemen" bij Uitgangspunten staat uit en het blok Bestaande ` +
-            `situatie hierboven is leeg. Anders heet het blok "${knoop.titel}".`
-          : `Staat uit: het blok heet altijd "${knoop.titel}". Een rapport van een eerdere versie opent zo, ` +
-            "zodat de afdruk niet verandert."
-      }
+      hint={t(aan ? "teksten.nieuwbouwAan" : "teksten.nieuwbouwUit", { titel: knoop.titel })}
     />
   );
 }
 
 /** 2.2: rol, bouwkundig adviseur of architect, datum van de bouwkundige onderlegger. */
 function RolVelden() {
+  const { t } = useTranslation("rapport");
   const rol = useRapport().rol;
   return (
     <div className="rapport-rij">
-      <Veld label="Rol" pad="rol.rol" waarde={rol.rol} lijst="rapport-rollen" />
-      <Veld label="Bouwkundig adviseur / architect" pad="rol.architect" waarde={rol.architect} />
+      <Veld label={t("teksten.rol")} pad="rol.rol" waarde={rol.rol} lijst="rapport-rollen" />
+      <Veld label={t("teksten.architect")} pad="rol.architect" waarde={rol.architect} />
       <Veld
-        label="Datum bouwkundige onderlegger"
+        label={t("teksten.datumOnderlegger")}
         pad="rol.datumOnderlegger"
         waarde={rol.datumOnderlegger}
-        placeholder="dd-mm-jjjj"
+        placeholder={t("algemeen.datumVoorbeeld")}
       />
       <datalist id="rapport-rollen">
         {ROLLEN.map((r) => (

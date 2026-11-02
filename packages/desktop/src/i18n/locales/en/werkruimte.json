@@ -1,0 +1,338 @@
+{
+  "algemeen": {
+    "project": "Project",
+    "projectgegevens": "Project data",
+    "rapport": "Report",
+    "afdrukvoorbeeld": "Print preview"
+  },
+  "weergave": {
+    "codeVisueel": "Code + visual",
+    "codeUitwerking": "Code + output",
+    "visueelUitwerking": "Visual + output"
+  },
+  "leeg": {
+    "titel": "No sheet open yet",
+    "uitleg": "Add a module with <b>Module</b> on the ribbon (Home tab). Each sheet you add has its own input — you can use the same module several times without the sheets affecting each other."
+  },
+  "bestand": {
+    "naamloos": "Untitled",
+    "nietOpgeslagen": "Unsaved changes",
+    "wijzigingenWeggooien": "Unsaved changes will be discarded. Continue?",
+    "openenMislukt": "Could not open the file: {{fout}}",
+    "opslaanMislukt": "Could not save the file: {{fout}}",
+    "recentAlleenDesktop": "Opening recent files requires the desktop app.",
+    "eerstBladOpenen": "First open the sheet you want to save as PDF."
+  },
+  "recent": {
+    "minuten": "{{aantal}}m ago",
+    "uren": "{{aantal}}h ago",
+    "dagen": "{{aantal}}d ago"
+  },
+  "browser": {
+    "uitklappen": "Expand side panel",
+    "inklappen": "Collapse side panel",
+    "projectgegevensUitleg": "Project data — applies to all sheets in this project",
+    "rapportUitleg": "Report — the structural report of this project, with the sheets as an appendix",
+    "geenBladen": "No sheets yet. Add one with <b>Module</b> on the ribbon.",
+    "moduleToevoegen": "Add module…",
+    "moduleToevoegenUitleg": "Add a module or a reference sheet to this project",
+    "dubbelklik": "Double-click to rename",
+    "omhoog": "Move up",
+    "omlaag": "Move down",
+    "hernoemen": "Rename",
+    "dupliceren": "Duplicate (copy with the same input)",
+    "verwijderen": "Remove",
+    "verwijderenVraag": "Remove \"{{naam}}\" from the project?",
+    "bladen": "Sheets",
+    "ucVoldoet": "Governing UC {{uc}} — passes",
+    "ucVoldoetNiet": "Governing UC {{uc}} — does not pass",
+    "gegevensToevoegen": "Add project data",
+    "rapportToevoegen": "Add report",
+    "uitProjectHalen": "Remove {{naam}} from the project tree (the content is kept)"
+  },
+  "catalogus": {
+    "groepen": {
+      "cat-algemeen": "General",
+      "cat-hout": "Timber",
+      "calcpad-samples": "Examples"
+    },
+    "modules": {
+      "ligger": "Beam (timber or steel)",
+      "balklaag": "Timber joist floor",
+      "calcpad-demo": "Open CalcSheet Studio demo"
+    }
+  },
+  "kiezer": {
+    "titel": "Add module",
+    "tabs": {
+      "modules": "Modules",
+      "bibliotheek": "Library",
+      "normbestanden": "Standard files",
+      "online": "Online library"
+    },
+    "zoekLabel": {
+      "modules": "Search for a module",
+      "bibliotheek": "Search the library",
+      "normbestanden": "Search for a local standard file",
+      "online": "Search the online library"
+    },
+    "zoekPlaceholder": {
+      "modules": "Search for a module…",
+      "bibliotheek": "Search the library…",
+      "normbestanden": "Search for a local standard file…",
+      "online": "Search modules, standards…"
+    },
+    "nietsGevonden": "Nothing found for \"{{zoek}}\".",
+    "nietBeschikbaar": "{{naam}} — not available yet",
+    "gepubliceerd": "published",
+    "gepubliceerdLegenda": "reviewed and released",
+    "publicatie": {
+      "gepubliceerd": "Published — reviewed and released",
+      "onuitgegeven": "Not published yet — not reviewed yet"
+    },
+    "nenOverzicht": "NEN overview ↗",
+    "normUitleg": "Worked calculations and source references; check the applicable edition and national annex.",
+    "toevoegen": "Add",
+    "online": {
+      "uitleg": "Calculation modules from the open module library. An installed module appears under Modules and also works offline.",
+      "laden": "Loading the library…",
+      "fout": "Could not load the library ({{fout}}). Check the internet connection.",
+      "opnieuw": "Try again",
+      "installeren": "Install",
+      "bijwerken": "Update to v{{versie}}",
+      "bezig": "Installing…",
+      "geinstalleerd": "Installed · v{{versie}}",
+      "verwijderen": "Remove",
+      "bijdragen": "Contribute a module…",
+      "uitBibliotheek": "From the online module library"
+    }
+  },
+  "normen": {
+    "terug": "← Standard files",
+    "lezerUitleg": "Open the local PDF in a new tab. If the browser cannot display PDFs, you can download the file.",
+    "pdfOpenen": "Open PDF ↗",
+    "pdfDownloaden": "Download PDF",
+    "uitleg": "Link your own standard PDFs to a number and edition. The files stay in this app's local storage and are not included in the project file.",
+    "normnummer": "Standard number",
+    "normnummerVoorbeeld": "E.g. NEN-EN 1990",
+    "editie": "Edition",
+    "editieVoorbeeld": "Year and annex",
+    "pdfBestand": "PDF file",
+    "toevoegen": "Add",
+    "geenGevonden": "No standard file found.",
+    "nogGeen": "No local standard files linked yet.",
+    "openPdf": "Open PDF",
+    "verwijder": "Remove",
+    "verwijderLabel": "Remove {{nummer}}",
+    "verwijderVraag": "Remove {{nummer}} ({{editie}}) from the local library?",
+    "nietBeschikbaar": "The PDF is no longer available"
+  },
+  "gegevens": {
+    "introGeen": "These values apply to every sheet you add to this project. Each sheet can use them without asking for them again.",
+    "intro_one": "These values apply to the sheet in this project. Each sheet can use them without asking for them again.",
+    "intro_other": "These values apply to all {{count}} sheets in this project. Each sheet can use them without asking for them again.",
+    "bestand": "File",
+    "projectnaam": "Project name (file)",
+    "projectnaamPlaceholder": "New project",
+    "projectnaamHint": "Name of the project file and the heading of the PDF printout.",
+    "vervallen": "This option no longer exists; the sheets calculate with the value shown after it. Choose one from the list to make that permanent.",
+    "afgeleid": "Derived:",
+    "kaart": "Map — search for an address or click the location; the wind zone is then filled in automatically",
+    "voet": "In a sheet you can use these names directly, for example <code>{{voorbeeld1}}</code> or <code>{{voorbeeld2}}</code>. A sheet that assigns the name itself overrides the project value for that sheet only.",
+    "vervallenKeuze": "{{label}} — discontinued option, calculated as {{vervanger}}",
+    "onbekendeKeuze": "{{waarde}} — unknown option",
+    "groepen": {
+      "rekenwijze": "Calculation method",
+      "project": "Project",
+      "grondslagen": "Basis of design (NEN-EN 1990 + NB)",
+      "wind": "Wind (NEN-EN 1991-1-4 + NB)"
+    },
+    "velden": {
+      "rekenwijze": {
+        "label": "Calculation method where the reference program differs",
+        "hint": "The reference calculation is the calculation program we use today and is therefore the default; every result can be checked against reference sheets. The standard mode follows the Eurocode itself at the marked points — that branch cannot be checked against a reference and is there for the moment this program stands on its own. The chosen answer is always shown on the printout.",
+        "opties": {
+          "0": "Follow the standard",
+          "1": "Follow the reference calculation (current practice)"
+        }
+      },
+      "project_nummer": {
+        "label": "Project number"
+      },
+      "project_naam": {
+        "label": "Project name"
+      },
+      "opdrachtgever": {
+        "label": "Client"
+      },
+      "constructeur": {
+        "label": "Structural engineer"
+      },
+      "locatie": {
+        "label": "Location"
+      },
+      "onderdeel": {
+        "label": "Part"
+      },
+      "CC": {
+        "label": "Consequence class",
+        "hint": "Determines K_FI (table B3, with the note to table NB.4 – A1.2(B)): CC1 → 0,90 · CC2 → 1,00 · CC3 → 1,10. Every sheet receives both CC and K_FI.",
+        "opties": {
+          "1": "CC1 — low consequences",
+          "2": "CC2 — medium consequences",
+          "3": "CC3 — high consequences"
+        }
+      },
+      "RC": {
+        "label": "Reliability class",
+        "opties": {
+          "1": "RC1",
+          "2": "RC2",
+          "3": "RC3"
+        }
+      },
+      "DesignLife": {
+        "label": "Design working life",
+        "hint": "Minimum values according to table NB.1 – 2.1. A temporary structure falls in class 3, unless it is in use for at most 5 years (class 1) or has a use from class 2. The loads are calculated with a reference period of at least 15 years.",
+        "opties": {
+          "5": "5 years — class 1: temporary, in use for at most 5 years",
+          "15": "15 years — class 2: agricultural, industrial with 1 or 2 storeys",
+          "50": "50 years — class 3: buildings and common structures (default)",
+          "100": "100 years — class 4: monumental buildings"
+        },
+        "vervallen": {
+          "10": "10 years",
+          "25": "25 years"
+        }
+      },
+      "windgebied": {
+        "label": "Wind zone",
+        "hint": "Zoning according to 4.2(1) note 2 of the NB, v_b0 from table NB.1: provincial boundaries, and in Noord-Holland a horizontal line at 52½° north; zone I is Noord-Holland above it (including Den Helder, Alkmaar, Hoorn, Heemskerk, Purmerend). Within 5 km of a boundary, v_b0 changes gradually (figure NB.1); the zone in which the location lies is then on the safe side. A sheet with wind load calculates q_p from this, using the reference height from the sheet.",
+        "opties": {
+          "1": "I — Wadden Islands, Wadden Sea, IJsselmeer, Markermeer and northern Noord-Holland (v_b0 = 29,5 m/s)",
+          "2": "II — rest of Noord-Holland, mainland Groningen and Friesland, Flevoland, Zuid-Holland, Zeeland (27,0)",
+          "3": "III — rest of the Netherlands (24,5)"
+        }
+      },
+      "terreincategorie": {
+        "label": "Terrain category",
+        "hint": "Follows from the surroundings of the building (Table NB.3-4.1).",
+        "opties": {
+          "1": "0 — Sea or coastal area (z₀ = 0,005 · z_min = 1)",
+          "2": "II — Undeveloped area (z₀ = 0,2 · z_min = 4)",
+          "3": "III — Built-up area (z₀ = 0,5 · z_min = 7)"
+        }
+      }
+    }
+  },
+  "windkaart": {
+    "nietGevonden": "Address not found in the Netherlands.",
+    "geocodeFout": "Geocoding error: {{fout}}",
+    "puntOpKaart": "point on the map, {{lat}}° N {{lng}}° E",
+    "placeholder": "Address or place in the Netherlands — e.g. 'Rokin 100, Amsterdam'",
+    "bezig": "Searching…",
+    "zoek": "Search",
+    "windgebied": "Wind zone {{gebied}}",
+    "overgang": "{{afstand}} km from the boundary with zone {{gebied}}: in the transition zone of figure NB.2, v<sub>b,0</sub> = {{vb0}} m/s is allowed. The sheets calculate with the zone value, on the safe side.",
+    "buitenGebieden": "Location found, but it lies outside the defined polygons — choose manually in the project data.",
+    "gebiedTooltip": "{{naam}} — zone {{gebied}}",
+    "geenGebied": "No zone determined",
+    "gebiedNaam": {
+      "1": "Zone I — Wadden Islands, Wadden Sea, IJsselmeer, Markermeer and northern Noord-Holland",
+      "2": "Zone II — rest of Noord-Holland, mainland Groningen and Friesland, Flevoland, Zuid-Holland, Zeeland",
+      "3": "Zone III — rest of the Netherlands"
+    },
+    "legenda": {
+      "1": "I — northern coast and lakes",
+      "2": "II — rest of the coast",
+      "3": "III — inland"
+    },
+    "bron": "Zoning according to NEN-EN 1991-1-4, national annex, figure NB.1: provincial boundaries, and in Noord-Holland a horizontal line at 52½° north. Click the map to choose a location."
+  },
+  "ifc": {
+    "kopieer": "Copy",
+    "exporteer": "Export",
+    "docs": "{{type}} — buildingSMART documentation",
+    "bezig": "Building the IFC document…",
+    "mislukt": "The IFC document could not be built. See the console.",
+    "attributen": "Attributes",
+    "ingekort": "Long texts are shortened here; the export and the project file contain everything.",
+    "variabele": "Variable",
+    "waarde": "Value",
+    "formule": "Formula",
+    "status": {
+      "voldoet": "passes",
+      "voldoet_niet": "fails",
+      "geen_oordeel": "no verdict",
+      "niet_doorgerekend": "not calculated"
+    }
+  },
+  "paneel": {
+    "code": "Code",
+    "visueel": "Visual",
+    "uitwerking": "Output",
+    "regels_one": "{{count}} line",
+    "regels_other": "{{count}} lines"
+  },
+  "pdf": {
+    "toevoegen": "Add PDF…",
+    "toevoegenUitleg": "Add a PDF file to the project as a sheet; it takes its place in the Calculations chapter of the report. For an FEM model: export the report as PDF in Open FEM Studio and add that.",
+    "kiesTitel": "Add PDF — for an FEM model: the report PDF from Open FEM Studio",
+    "filter": "PDF files",
+    "geenPdf": "\"{{naam}}\" is not a PDF file.",
+    "groot": "\"{{naam}}\" is {{grootte}}. The PDF is stored in the project file, which becomes at least as large and slower to open and save. Add it anyway?",
+    "lezenMislukt": "Reading the PDF failed: {{fout}}",
+    "tab": "PDF",
+    "paneel": "PDF",
+    "rij": "PDF attachment — {{bestand}}",
+    "paginas_one": "{{count}} page",
+    "paginas_other": "{{count}} pages",
+    "pagina": "Page {{nummer}}",
+    "laden": "Loading PDF…",
+    "paginaLaden": "Loading page {{nummer}}…",
+    "paginaMislukt": "Page {{nummer}} could not be drawn.",
+    "fout": "The PDF file could not be read: {{fout}}",
+    "ontbreekt": "This PDF sheet has no file. Choose one with Replace…",
+    "vervangen": "Replace…",
+    "vervangenUitleg": "Choose a different PDF file for this sheet, for example a new export of the FEM report. Name, position and notes in the report stay as they are.",
+    "nietOpTijd": "The PDF sheets were not drawn in time; printing was cancelled."
+  },
+  "welkom": {
+    "titel": "Welcome to Open CalcSheet Studio",
+    "intro": "Structural calculations as readable sheets: you write the calculation, the app works it out, draws it and assembles the structural report.",
+    "stap": {
+      "project": {
+        "titel": "Project data",
+        "uitleg": "Consequence class, wind zone and project details: fill them in once, every sheet uses them."
+      },
+      "bladen": {
+        "titel": "Sheets",
+        "uitleg": "Add a module or a blank sheet. Code, parametric view and worked output sit side by side."
+      },
+      "rapport": {
+        "titel": "Report",
+        "uitleg": "Chapters, sheets and appendices together in one structural report, printed or as PDF."
+      }
+    },
+    "syntaxKop": "The calculation language in brief",
+    "syntax": {
+      "titel": "Title of the sheet",
+      "kop": "Chapter heading",
+      "tekst": "Text line, with HTML formatting",
+      "waarde": "Value with a unit",
+      "formule": "Formula: the output shows the formula, the filled-in values and the result; units are simplified",
+      "voorwaarde": "Condition: only one branch appears in the output",
+      "grafiek": "Graph of a function",
+      "tekening": "Drawing (SVG), also parametric"
+    },
+    "syntaxNoot": "Every element is on the CalcPAD ribbon tab; Help explains them all.",
+    "voorbeeld": "Open the example sheet",
+    "voorbeeldUitleg": "A worked sheet that shows the whole language, with explanation.",
+    "module": "Add a module",
+    "moduleUitleg": "A ready-made check, such as the timber joist floor.",
+    "leegBlad": "Blank sheet",
+    "leegBladUitleg": "Write your own calculation from scratch.",
+    "bijStart": "Show at startup",
+    "beginnen": "Start"
+  }
+}

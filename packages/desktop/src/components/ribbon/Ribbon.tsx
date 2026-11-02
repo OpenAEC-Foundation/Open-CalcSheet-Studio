@@ -3,20 +3,32 @@ import { useTranslation } from "react-i18next";
 import RibbonTab from "./RibbonTab";
 import CalcTab from "./CalcTab";
 import IfcTab from "./IfcTab";
+import CalcPadTab from "./CalcPadTab";
+import TekenenTab from "../tekenen/TekenenTab";
+import { toonTekenen, verbergTekenen } from "../tekenen/tekenStore";
+import { useEditorViewStore } from "../../store/editorViewStore";
+import { vraagCode } from "../../store/codeVerzoek";
 import "./Ribbon.css";
 
 interface RibbonProps {
   onFileTabClick?: () => void;
-  onSettingsClick?: () => void;
+  /** Opent de instellingen, eventueel op een bepaalde tab ("about"). */
+  onSettingsClick?: (tab?: string) => void;
+  onHelpClick?: () => void;
+  onWelkomClick?: () => void;
   activeView: string;
   onViewChange: (view: string) => void;
 }
 
-const TABS = ["calc", "ifc"] as const;
+const TABS = ["calc", "calcpad", "tekenen", "ifc"] as const;
 type TabId = (typeof TABS)[number];
 
-export default function Ribbon({ onFileTabClick, onSettingsClick, onViewChange }: RibbonProps) {
+export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, onWelkomClick, onViewChange }: RibbonProps) {
   const { t, i18n } = useTranslation("ribbon");
+  // De tab CalcPAD staat er altijd; zijn knoppen voegen in op de cursor in de
+  // editor. Wie de tab kiest, wil code schrijven: staat die niet in beeld, dan
+  // zet de werkruimte hem erbij (store/codeVerzoek.ts).
+  const tabs: readonly TabId[] = TABS;
   const [activeTab, setActiveTab] = useState<TabId>("calc");
   const [prevTab, setPrevTab] = useState<TabId | null>(null);
   const [animating, setAnimating] = useState(false);
@@ -58,8 +70,8 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onViewChange }
 
   const switchTab = useCallback((newTab: TabId) => {
     if (newTab === activeTab) return;
-    const oldIndex = TABS.indexOf(activeTab);
-    const newIndex = TABS.indexOf(newTab);
+    const oldIndex = tabs.indexOf(activeTab);
+    const newIndex = tabs.indexOf(newTab);
     setDirection(newIndex > oldIndex ? "right" : "left");
     setPrevTab(activeTab);
     setActiveTab(newTab);
@@ -67,7 +79,11 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onViewChange }
 
     // IFC tab → switch main view to IFC code panel
     onViewChange(newTab === "ifc" ? "ifc" : "default");
-  }, [activeTab, onViewChange]);
+    if (newTab === "calcpad" && !useEditorViewStore.getState().view) vraagCode();
+    // Tekenen: de tekeneditor komt over de uitwerking; weg van de tab gaat hij uit beeld.
+    if (newTab === "tekenen") toonTekenen();
+    else if (activeTab === "tekenen") verbergTekenen();
+  }, [activeTab, onViewChange, tabs]);
 
   useEffect(() => {
     updateHighlight();
@@ -76,6 +92,8 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onViewChange }
 
   useEffect(() => {
     window.addEventListener("resize", updateHighlight);
+    // Opnieuw meten zodra de lettertypen er zijn: daarvoor zijn de tabs smaller.
+    void document.fonts?.ready.then(updateHighlight);
     return () => window.removeEventListener("resize", updateHighlight);
   }, [updateHighlight]);
 
@@ -90,8 +108,10 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onViewChange }
 
   const renderContent = (tab: TabId) => {
     switch (tab) {
-      case "calc": return <CalcTab onSettingsClick={onSettingsClick} />;
+      case "calc": return <CalcTab onSettingsClick={onSettingsClick} onHelpClick={onHelpClick} onWelkomClick={onWelkomClick} />;
       case "ifc": return <IfcTab />;
+      case "calcpad": return <CalcPadTab />;
+      case "tekenen": return <TekenenTab />;
     }
   };
 
@@ -99,10 +119,10 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onViewChange }
     <div className="ribbon-container">
       <div className="ribbon-tabs" ref={tabsRef}>
         <RibbonTab label={t("tabs.file")} isFileTab onClick={() => onFileTabClick?.()} />
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <RibbonTab
             key={tab}
-            label={t(`tabs.${tab}`)}
+            label={t(`tabs.${tab}`, tab === "calcpad" ? "CalcPAD" : tab)}
             isActive={activeTab === tab}
             onClick={() => switchTab(tab)}
           />
@@ -111,7 +131,16 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onViewChange }
         <div className="ribbon-tab-gap" ref={gapRef} />
       </div>
 
-      <div className="ribbon-content-wrapper">
+      <div
+        className="ribbon-content-wrapper"
+        // Een lint dat breder is dan het venster schuift met het muiswiel.
+        onWheel={(e) => {
+          const paneel = (e.target as HTMLElement).closest(".ribbon-content-panel");
+          if (paneel && paneel.scrollWidth > paneel.clientWidth && e.deltaY !== 0) {
+            paneel.scrollLeft += e.deltaY;
+          }
+        }}
+      >
         {animating && prevTab && (
           <div
             className={`ribbon-content-panel ribbon-panel-exit-${direction}`}

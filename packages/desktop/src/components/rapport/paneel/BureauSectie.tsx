@@ -1,15 +1,17 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { Huisstijl } from "../../../rapport/model";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { useProjectStore } from "../../../store/projectStore";
 import { adresRegel, lettertypeNaam, zelfdeBureau } from "./hulp";
 import { Sectie } from "./velden";
 
-const KLEUREN: readonly [sleutel: Exclude<keyof Huisstijl, "lettertype">, label: string][] = [
-  ["hoofdkleur", "hoofdkleur"],
-  ["accentkleur", "accent"],
-  ["tabeltekst", "tabeltekst"],
-  ["invoerkleur", "invoer"],
+/** De vier kleuren van de huisstijl; het label staat in rapport.json onder bureau.kleuren. */
+const KLEUREN: readonly Exclude<keyof Huisstijl, "lettertype">[] = [
+  "hoofdkleur",
+  "accentkleur",
+  "tabeltekst",
+  "invoerkleur",
 ];
 
 /**
@@ -22,6 +24,7 @@ const KLEUREN: readonly [sleutel: Exclude<keyof Huisstijl, "lettertype">, label:
  * maken.
  */
 export default function BureauSectie() {
+  const { t } = useTranslation("rapport");
   const bureau = useProjectStore((s) => s.rapport.bureau);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
   const profiel = useBureauStore((s) => s.profiel);
@@ -31,7 +34,7 @@ export default function BureauSectie() {
   const profielIngevuld = profiel.naam.trim() !== "";
 
   const bijwerken = () => {
-    if (vastgelegd && !confirm("De bureaugegevens van dit rapport bijwerken uit het huidige bureauprofiel?")) {
+    if (vastgelegd && !confirm(t("bureau.bijwerkenVraag"))) {
       return;
     }
     werkBij((r) => ({ ...r, bureau: structuredClone(profiel) }));
@@ -39,39 +42,37 @@ export default function BureauSectie() {
 
   let melding: string;
   if (!vastgelegd && !profielIngevuld) {
-    melding = "Er is nog geen bureauprofiel. Vul het in bij Instellingen → Bureau en werk dit rapport hier bij.";
+    melding = t("bureau.geenProfiel");
   } else if (!vastgelegd) {
-    melding =
-      "Dit rapport heeft nog geen vastgelegde bureaugegevens; de afdruk gebruikt zolang het bureauprofiel uit de instellingen.";
+    melding = t("bureau.nietVastgelegd");
   } else if (!profielIngevuld) {
-    melding = "Het bureauprofiel in de instellingen is leeg; dit rapport houdt zijn vastgelegde gegevens.";
+    melding = t("bureau.profielLeeg");
   } else if (gelijk) {
-    melding = "Gelijk aan het bureauprofiel in de instellingen.";
+    melding = t("bureau.gelijk");
   } else {
-    melding =
-      "Het bureauprofiel in de instellingen wijkt af van wat in dit rapport is vastgelegd. Bijwerken werkt alleen dit rapport bij.";
+    melding = t("bureau.wijktAf");
   }
 
   return (
     <Sectie
       id="bureau"
-      titel="Bureau"
-      intro="De bureaugegevens en huisstijl zoals ze in dit rapport zijn vastgelegd."
+      titel={t("secties.bureau")}
+      intro={t("bureau.intro")}
     >
       <p className={`rapport-melding-blok${vastgelegd && gelijk ? " rustig" : ""}`}>{melding}</p>
 
       {vastgelegd && (
         <div className="rapport-bureau">
           <dl>
-            <dt>Naam</dt>
+            <dt>{t("bureau.naam")}</dt>
             <dd>{bureau.naam}</dd>
-            <dt>Adres</dt>
+            <dt>{t("bureau.adres")}</dt>
             <dd>{adresRegel(bureau) || "—"}</dd>
-            <dt>Telefoon</dt>
+            <dt>{t("bureau.telefoon")}</dt>
             <dd>{bureau.telefoon || "—"}</dd>
-            <dt>E-mail</dt>
+            <dt>{t("bureau.email")}</dt>
             <dd>{bureau.email || "—"}</dd>
-            <dt>Constructeurs</dt>
+            <dt>{t("bureau.constructeurs")}</dt>
             <dd>
               {bureau.constructeurs.length === 0 ? (
                 "—"
@@ -83,13 +84,13 @@ export default function BureauSectie() {
                 </ul>
               )}
             </dd>
-            <dt>Huisstijl</dt>
+            <dt>{t("bureau.huisstijl")}</dt>
             <dd>
               <span className="rapport-kleuren">
-                {KLEUREN.map(([sleutel, label]) => (
-                  <span className="rapport-kleur" key={sleutel}>
-                    <span className="rapport-staal" style={{ background: bureau.huisstijl[sleutel] }} />
-                    {label}
+                {KLEUREN.map((veld) => (
+                  <span className="rapport-kleur" key={veld}>
+                    <span className="rapport-staal" style={{ background: bureau.huisstijl[veld] }} />
+                    {t(`bureau.kleuren.${veld}`)}
                   </span>
                 ))}
               </span>
@@ -99,14 +100,14 @@ export default function BureauSectie() {
             </dd>
           </dl>
           {bureau.logo ? (
-            <img className="rapport-beeld" src={bureau.logo} alt="Logo" />
+            <img className="rapport-beeld" src={bureau.logo} alt={t("bureau.logo")} />
           ) : (
-            <span className="rapport-hint">geen logo</span>
+            <span className="rapport-hint">{t("bureau.geenLogo")}</span>
           )}
         </div>
       )}
       {vastgelegd && bureau.voetafbeelding && (
-        <img className="rapport-voetbeeld" src={bureau.voetafbeelding} alt="Voetafbeelding" />
+        <img className="rapport-voetbeeld" src={bureau.voetafbeelding} alt={t("bureau.voetafbeelding")} />
       )}
 
       <button
@@ -115,7 +116,7 @@ export default function BureauSectie() {
         disabled={!profielIngevuld || gelijk}
         onClick={bijwerken}
       >
-        Bijwerken uit bureauprofiel
+        {t("bureau.bijwerken")}
       </button>
     </Sectie>
   );

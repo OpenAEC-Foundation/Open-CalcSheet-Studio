@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { evaluate, parse } from "@ifc-calc/core";
 import { calcpadImageUrls, calcpadIncludes } from "../../../templates/calcpad-includes";
 import { projectScope } from "../../../store/projectGegevens";
@@ -45,6 +46,7 @@ function useUitkomsten(): Map<string, Uitkomst> {
  * uitwerking in het hoofdstuk zelf staat of in bijlage A.
  */
 export default function BerekeningenSectie() {
+  const { t } = useTranslation("rapport");
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const rapport = useRapport();
@@ -54,17 +56,11 @@ export default function BerekeningenSectie() {
   return (
     <Sectie
       id="berekeningen"
-      titel="Berekeningen"
+      titel={t("secties.berekeningen")}
       hoofdstuk="berekeningen"
-      intro="Elk rekenblad van het project krijgt een paragraaf met een samenvatting en je eigen toelichting. De volledige uitwerking staat in bijlage A, tenzij je hem in het hoofdstuk zelf opneemt."
+      intro={t("berekeningen.intro")}
     >
-      {exemplaren.length === 0 && (
-        <p className="rapport-hint">
-          Dit project heeft nog geen rekenbladen, dus het rapport heeft geen hoofdstuk Berekeningen (een
-          uitgangspuntendocument). Voeg bladen toe in de projectboom; dan komt het hoofdstuk terug en
-          krijgt elk blad hier vanzelf een paragraaf.
-        </p>
-      )}
+      {exemplaren.length === 0 && <p className="rapport-hint">{t("berekeningen.geenBladen")}</p>}
       {exemplaren.map((ex) => {
         const uitkomst = uitkomsten.get(ex.id);
         const r = uitkomst?.resultaat;
@@ -82,18 +78,19 @@ export default function BerekeningenSectie() {
               <span className="rapport-kaart-titel">{ex.naam}</span>
               {r && r.voldoet !== null && (
                 <span className={`rapport-oordeel ${r.voldoet ? "goed" : "fout"}`}>
-                  {r.voldoet ? "voldoet" : "voldoet niet"}
+                  {t(r.voldoet ? "berekeningen.voldoet" : "berekeningen.voldoetNiet")}
                 </span>
               )}
             </div>
+            {/* De samenvatting is de tekst zoals hij in het rapport komt. */}
             {r && zegtIets && <p className="rapport-samenvatting">{samenvatting(r)}</p>}
             {uitkomst?.fout && (
-              <p className="rapport-hint">Dit blad kon niet worden doorgerekend: {uitkomst.fout}</p>
+              <p className="rapport-hint">{t("berekeningen.nietDoorgerekend", { fout: uitkomst.fout })}</p>
             )}
             <GroeiVeld
               waarde={toelichting}
               onChange={(v) => zet(`toelichting.${ex.id}`, v)}
-              placeholder="Eigen toelichting bij deze berekening (optioneel)."
+              placeholder={t("berekeningen.toelichtingVoorbeeld")}
             />
             {/* De afdruk maakt de toelichting op zoals de andere teksten, met subkoppen. */}
             <SubkopMelding tekst={toelichting} />
@@ -104,12 +101,12 @@ export default function BerekeningenSectie() {
                   checked={inHoofdstuk}
                   onChange={(e) => zet(`inHoofdstuk.${ex.id}`, e.target.checked)}
                 />
-                Uitwerking in dit hoofdstuk
+                {t("berekeningen.inHoofdstuk")}
               </label>
               <span className="rapport-hint">
                 {inHoofdstuk
-                  ? "De volledige uitwerking staat direct onder de toelichting."
-                  : `De volledige uitwerking staat in bijlage ${plaats?.bijlage || "A"}.`}
+                  ? t("berekeningen.staatInHoofdstuk")
+                  : t("berekeningen.staatInBijlage", { letter: plaats?.bijlage || "A" })}
               </span>
             </div>
           </div>

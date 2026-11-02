@@ -6,7 +6,7 @@
  * dezelfde kaartdata kan draaien. De kaartdata zelf en de omschrijving van de
  * gebieden staan in `templates/nl-windgebieden.ts`.
  */
-import type { FeatureCollection, MultiPolygon, Polygon, Position } from "geojson";
+import type { Feature, FeatureCollection, MultiPolygon, Polygon, Position } from "geojson";
 
 export type WindGebied = 1 | 2 | 3;
 
@@ -17,6 +17,15 @@ export interface WindGebiedProperties {
 }
 
 export type WindGebiedenKaart = FeatureCollection<Polygon | MultiPolygon, WindGebiedProperties>;
+
+export interface WindContourProperties {
+  gebied: WindGebied;
+  naam: string;
+}
+
+/** Per gebied één vlak: al het land en water van dat gebied samen, zonder de grenzen ertussen. */
+export type WindContour = Feature<Polygon | MultiPolygon, WindContourProperties>;
+export type WindContourKaart = FeatureCollection<Polygon | MultiPolygon, WindContourProperties>;
 
 /** Fundamentele waarde van de basiswindsnelheid v_b,0 in m/s — tabel NB.1. */
 export const VB0: Record<WindGebied, number> = { 1: 29.5, 2: 27.0, 3: 24.5 };
@@ -121,4 +130,30 @@ export function maakWindKaart(kaart: WindGebiedenKaart) {
   const tekenVolgorde: WindGebiedenKaart = { type: "FeatureCollection", features: [...water, ...land] };
 
   return { gebiedVoor, locatie, tekenVolgorde };
+}
+
+/**
+ * De contouren van de drie gebieden, uit `nl-windgebieden-contour.geojson`
+ * (`scripts/windgebieden/contour.py` maakt die uit de kaartdata). De kaart
+ * tekent er het gebied van een gekozen plek mee als één omtrek.
+ */
+export function maakContouren(kaart: WindContourKaart) {
+  const perGebied = new Map<WindGebied, WindContour>();
+  for (const f of kaart.features) perGebied.set(f.properties.gebied, f);
+  for (const g of [1, 2, 3] as const) {
+    if (!perGebied.has(g)) throw new Error(`Contour van windgebied ${g} ontbreekt.`);
+  }
+
+  /** De contour van een gebied. */
+  function contour(gebied: WindGebied): WindContour {
+    return perGebied.get(gebied)!;
+  }
+
+  /** Het gebied waarvan de contour het punt omvat, of null. Voor de controle. */
+  function gebiedVoor(lat: number, lng: number): WindGebied | null {
+    for (const [g, f] of perGebied) if (inGeometrie(lng, lat, f.geometry)) return g;
+    return null;
+  }
+
+  return { contour, gebiedVoor };
 }

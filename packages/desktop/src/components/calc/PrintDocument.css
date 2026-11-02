@@ -724,6 +724,125 @@ html.afdrukmodus .print-loopvoet {
   max-height: 150px !important;
 }
 
+/* Een ingevoegde tekening (DXF, class "dxf") is een plattegrond of detail:
+   met maximaal 150 px blijven maten en teksten onleesbaar. Op de
+   bladbreedte, tot ruim een halve bladzijde hoog. */
+.print-opmaak .print-blad .calc-svg svg.dxf {
+  max-height: 140mm !important;
+}
+
+/* Een tekening uit de tab Tekenen staat op schaal (staalprofiel 1:10): op
+   papier op zijn eigen maat, alleen begrensd door de bladspiegel. */
+.print-opmaak .print-blad .calc-svg svg[data-tekening] {
+  max-height: 230mm !important;
+}
+
+/* Een 3D-blok (@3d) op papier: de afbeelding die de app er tekent
+   (drieDBlok.ts) of, zonder WebGL, de projectie van de kern. Op de
+   bladbreedte, niet hoger dan 70 mm, wit met een dunne rand. Het draaibare
+   beeld en zijn knoppen horen bij het scherm. */
+.print-opmaak .calc-3d-beeld {
+  height: auto !important;
+  background: #ffffff;
+  border-color: #d6d3d1;
+  border-radius: 0;
+}
+
+.print-opmaak .calc-3d-beeld > img,
+.print-opmaak .calc-3d-beeld > svg {
+  width: 100%;
+  height: auto;
+  max-height: 70mm;
+  object-fit: contain;
+}
+
+.print-opmaak .calc-3d-beeld > canvas,
+.print-opmaak .calc-3d-knoppen,
+.print-opmaak .calc-3d-hint {
+  display: none !important;
+}
+
+/* Een IFCX-beeld (@ifcx) op papier: de afbeelding uit ifcxBlok.ts of, zonder WebGL,
+   de projectie van de kern. Compact: de uitdraai van een balklaag blijft kort. */
+.print-opmaak .calc-ifcx {
+  break-inside: avoid;
+}
+
+.print-opmaak .calc-ifcx-beeld {
+  height: auto !important;
+  background: #ffffff;
+  border-color: #d6d3d1;
+  border-radius: 0;
+}
+
+.print-opmaak .calc-ifcx-beeld > img,
+.print-opmaak .calc-ifcx-beeld > svg {
+  width: 100%;
+  height: auto;
+  max-height: 60mm;
+  object-fit: contain;
+}
+
+.print-opmaak .calc-ifcx-houder,
+.print-opmaak .calc-ifcx-paneel,
+.print-opmaak .calc-ifcx-beeld .calc-3d-knoppen,
+.print-opmaak .calc-ifcx-beeld .calc-3d-hint {
+  display: none !important;
+}
+
+.print-opmaak .calc-ifcx-bijschrift {
+  color: #000000;
+}
+
+/* Een externe pagina (@iframe) op papier: op de vaste hoogte, in een dun kader. Het
+   kader met het adres staat eronder en blijft zichtbaar tot de pagina geladen is;
+   niet bevestigd of niet op tijd: dan is dat wat er op papier komt, geen lege plek. */
+.print-opmaak .calc-iframe {
+  break-inside: avoid;
+}
+
+.print-opmaak .calc-iframe-vak {
+  background: #ffffff;
+  border-color: #57534e;
+}
+
+.print-opmaak .calc-iframe-kader,
+.print-opmaak .calc-iframe-bron {
+  color: #000000;
+}
+
+.print-opmaak .calc-iframe-inhoud {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #ffffff;
+  visibility: hidden;
+}
+
+.print-opmaak .calc-iframe.geladen .calc-iframe-inhoud,
+.print-opmaak .calc-js.geladen .calc-iframe-inhoud {
+  visibility: visible;
+}
+
+/* Een script (@js) op papier: zijn afbeelding, of zijn venster als het html toont.
+   Niet uitgevoerd of mislukt: het kader met de titel eronder. */
+.print-opmaak .calc-js {
+  break-inside: avoid;
+}
+
+/* Wat over het kader heen ligt, laat het kader ook uit de tekst van de PDF. */
+.print-opmaak .calc-iframe.geladen .calc-iframe-kader,
+.print-opmaak .calc-js.geladen .calc-iframe-kader {
+  visibility: hidden;
+}
+
+.print-opmaak .calc-iframe-laden,
+.print-opmaak .calc-iframe-uitleg {
+  display: none;
+}
+
 /* Een beeld waarvan op papier geen tekening op de gemeten hoogte schaalt, mag
    zo hoog worden als zijn inhoud: dan kan de meting niet op zichzelf
    teruggrijpen. De balklaag tekent daar alleen het statisch schema, bij een

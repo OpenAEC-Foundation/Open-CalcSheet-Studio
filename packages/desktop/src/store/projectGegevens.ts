@@ -125,7 +125,7 @@ export const PROJECT_VELDEN: VeldDef[] = [
       { label: "II — rest van Noord-Holland, vasteland Groningen en Friesland, Flevoland, Zuid-Holland, Zeeland (27,0)", waarde: "2" },
       { label: "III — rest van Nederland (24,5)", waarde: "3" },
     ],
-    hint: "Indeling volgens 4.2(1) opmerking 2 van de NB, v_b0 uit tabel NB.1. Noord-Holland-noord: ten noorden van Heemskerk, Uitgeest, Wormerland, Purmerend en Edam-Volendam (o.a. Den Helder, Alkmaar, Hoorn). Binnen 5 km van een grens gaat v_b0 geleidelijk over (figuur NB.1); het gebied waarin de locatie ligt, zit dan aan de veilige kant. Een blad met windbelasting rekent q_p hieruit, met de referentiehoogte uit het blad.",
+    hint: "Indeling volgens 4.2(1) opmerking 2 van de NB, v_b0 uit tabel NB.1. Provinciegrenzen, en in Noord-Holland een horizontale lijn op 52½° noorderbreedte; gebied I is Noord-Holland daarboven (o.a. Den Helder, Alkmaar, Hoorn, Heemskerk, Purmerend). Binnen 5 km van een grens gaat v_b0 geleidelijk over (figuur NB.1); het gebied waarin de locatie ligt, zit dan aan de veilige kant. Een blad met windbelasting rekent q_p hieruit, met de referentiehoogte uit het blad.",
   },
   {
     groep: "Wind (NEN-EN 1991-1-4 + NB)",

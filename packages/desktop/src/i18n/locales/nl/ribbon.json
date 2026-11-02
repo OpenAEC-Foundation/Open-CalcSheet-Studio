@@ -7,7 +7,9 @@
     "report": "Rapport",
     "calc": "Start",
     "insert": "Invoegen",
-    "view": "Weergave"
+    "view": "Weergave",
+    "calcpad": "CalcPAD syntax",
+    "tekenen": "Tekenen"
   },
   "calc": {
     "file": "Bestand",
@@ -25,7 +27,24 @@
     "pdfSave": "Rapport (PDF)",
     "ifcExport": "IFC",
     "insert": "Invoegen",
-    "module": "Module"
+    "module": "Module",
+    "clipboard": "Klembord",
+    "paste": "Plakken",
+    "cut": "Knippen",
+    "copy": "Kopiëren",
+    "find": "Zoeken",
+    "sheets": "Bladen",
+    "blankSheet": "Leeg blad",
+    "output": "Uitvoer",
+    "general": "Algemeen",
+    "project": "Project",
+    "settings": "Instellingen",
+    "help": "Help",
+    "helpButton": "Help",
+    "about": "Over",
+    "report": "Rapport",
+    "start": "Aan de slag",
+    "extensions": "Uitbreidingen"
   },
   "insert": {
     "elements": "Elementen",

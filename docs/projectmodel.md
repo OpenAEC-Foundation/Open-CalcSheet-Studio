@@ -92,28 +92,50 @@ volgende module zo weer in.
 
 ## Het bestand
 
-Eén project is één `.ifc-calculation`-bestand (`store/projectBestand.ts`). Het
-blijft een geldig IFCX JSON-LD document, met twee extra velden:
+Eén project is één `.ifccalculation`-bestand (`store/projectBestand.ts`). Het is
+zuiver IFCX: alleen `header`, `imports`, `schemas` en `data`, en alles staat als
+attribuut op een knoop. Dezelfde inhoud met de extensie `.ifcx` is hetzelfde
+bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 
-- `source` — de rekentekst van het eerste blad, voor lezers die één blad
-  verwachten;
-- `project` — de eigenlijke inhoud: projectgegevens plus alle exemplaren.
+| wat | waar in het bestand | |
+|---|---|---|
+| Projectnaam | `bsi::ifc::prop::Name` op het project | bron |
+| Projectgegevens, verborgen onderdelen | `ocss::project` | bron |
+| Constructierapport | `ocss::rapport` | bron |
+| Naam van een blad | `bsi::ifc::prop::Name` op het blad | bron |
+| Id, volgorde, `templateId`, `bronVersie` | `ocss::blad` | bron |
+| Rekentekst | `ocss::blad::rekentekst` | bron |
+| Invoer | `ocss::blad::invoer` | bron |
+| Elementen uit een bronmodel | `ocss::blad::elementen` | bron |
+| PDF | `ocss::blad::pdf` | bron |
+| Uitkomsten, oordeel, unity checks | `ocss::blad::uitkomst` | afgeleid |
+| Tekeningen en 3D-beelden | `ocss::figuur` op een kind van het blad | afgeleid |
+| Elementen in de ruimtelijke boom | `ocss::element` | afgeleid |
 
-Een bestand zonder `project` (een oudere versie, of een `.cpd`) wordt geopend
-als een project met één exemplaar, zodat er nooit werk verloren gaat.
+Wat afgeleid is, rekent de app bij het openen opnieuw uit de tekst en de invoer;
+het staat er voor andere lezers. Opslaan, openen en opslaan geeft dezelfde inhoud,
+afgezien van het tijdstempel.
+
+De formaatversie (`PROJECT_FORMAAT_VERSIE`, nu 2) staat in `header.dataVersion`.
+Oudere vormen blijven openen en worden bij opnieuw opslaan versie 2: een bestand
+met `project` als eigen veld, een los blad, of een `.cpd`. Een bestand zonder
+`project` wordt geopend als een project met één exemplaar, zodat er nooit werk
+verloren gaat. Het eerste opslaan over een oud bestand laat in de app een kopie
+`<naam>.v1.bak` achter.
 
 ## Koppeling met een model
 
 `elementen` legt vast over welke elementen in een bronmodel dit blad gaat. Leeg
-is de normale toestand: een losstaande berekening, precies zoals CalcPAD het
-deed. Zie [ifc-export.md](ifc-export.md) — daar staat waarom die koppeling
-wordt aangewezen en niet geraden, en wat er nog voor nodig is.
+is de normale toestand: een losstaande berekening. Zie
+[ifc-export.md](ifc-export.md) — daar staat waarom die koppeling wordt aangewezen
+en niet geraden, en wat er nog voor nodig is.
 
 ## Exporteren
 
-`Opslaan` schrijft het hele project als één IFCX-document — alle bladen in één
-ruimtelijke boom, want dat is wat de rest van het OpenAEC-ecosysteem van dit
-programma verwacht. Details in [ifc-export.md](ifc-export.md).
+`Opslaan` schrijft het hele project als één IFCX-document, want dat is wat de
+rest van het OpenAEC-ecosysteem van dit programma verwacht. De tab IFC toont dat
+document en de STEP die eruit volgt, en exporteert ze. Details in
+[ifc-export.md](ifc-export.md).
 
 `PDF opslaan` (en de Print-knop, en Ctrl+P) bouwt het hele project op als één
 afdrukbaar document: een voorblad uit de projectgegevens, een inhoudsopgave,

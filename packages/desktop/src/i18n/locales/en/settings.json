@@ -7,6 +7,7 @@
     "appearance": "Appearance",
     "units": "Units",
     "bureau": "Office",
+    "mcp": "API and AI assistant",
     "editor": "Editor",
     "files": "Files",
     "shortcuts": "Shortcuts",
@@ -38,12 +39,18 @@
     "theme": "Theme",
     "themeDescription": "Choose a color theme for the application.",
     "light": "Light",
-    "forge": "Forge (dark)",
-    "dark": "OpenAEC (dark)",
+    "dark": "Dark",
     "blueprint": "Blueprint",
-    "contrast": "High contrast",
     "font": "Font",
-    "uiFontSize": "UI Font Size"
+    "uiFontSize": "UI Font Size",
+    "highContrastDark": "High contrast dark",
+    "highContrastLight": "High contrast light",
+    "textSize": "Text size",
+    "text": {
+      "compact": "Compact",
+      "standard": "Standard",
+      "large": "Large"
+    }
   },
   "editor": {
     "general": "General",
@@ -74,7 +81,7 @@
     "placeholder": "Plugin management will appear here."
   },
   "bureau": {
-    "intro": "These details and the house style appear on the cover page and in the footer of every report. A report uses this profile until you store it in the report with Bijwerken uit bureauprofiel (update from office profile); after that, changes here no longer affect that report.",
+    "intro": "These details and the house style appear on the cover page and in the footer of every report. A report uses this profile until you store it in the report with Update from office profile; after that, changes here no longer affect that report.",
     "alleenSessie": "Outside the desktop app the profile is not saved: it is kept until the app reloads.",
     "gegevens": "Office details",
     "naam": "Name",
@@ -117,11 +124,55 @@
     "constructeurVerwijderen": "Remove engineer",
     "geenConstructeurs": "No engineers yet. In the report you pick the responsible and the executing engineer from this list."
   },
+  "mcp": {
+    "intro": "An AI assistant (such as Claude Code, through MCP) or another program (through the REST API) can work with this app: everything you can do in the app, from opening and saving a project to adding sheets, setting inputs, computing and exporting. The server only listens on this computer (127.0.0.1) and requires a token. Changes on this tab apply immediately.",
+    "alleenDesktop": "The server (MCP and REST) only exists in the desktop app; in the browser there is no server.",
+    "server": "Server",
+    "aan": "Server on (MCP and REST API)",
+    "aanUitleg": "Starts automatically with the app.",
+    "status": "Status",
+    "statusLive": "Live on port {{poort}}",
+    "statusUit": "Off",
+    "statusStart": "Starting…",
+    "statusPoortBezet": "Port {{poort}} is in use",
+    "statusFout": "Error",
+    "statusNietBeschikbaar": "Not available",
+    "opnieuw": "Try again",
+    "poort": "Port",
+    "poortUitleg": "Default {{poort}}. After a change, set up the client again.",
+    "poortOngeldig": "Choose a port between 1024 and 65535.",
+    "toepassen": "Apply",
+    "adres": "Address",
+    "kopieer": "Copy",
+    "gekopieerd": "Copied",
+    "toegang": "Access",
+    "token": "Token",
+    "tonen": "Show",
+    "verbergen": "Hide",
+    "nieuwToken": "New token",
+    "nieuwTokenBevestig": "Sure? Click again",
+    "nieuwTokenUitleg": "A new token breaks every existing connection; set up the client again afterwards.",
+    "alleenLezen": "Read only",
+    "alleenLezenUitleg": "Reading and computing is allowed; the project, the settings and files are not changed.",
+    "pauzeren": "Pause",
+    "pauzerenUitleg": "Temporary: every call gets a message instead of an answer. Lasts until you close the app.",
+    "verbinden": "Connect an AI assistant (MCP)",
+    "verbindenUitleg": "Paste one of these into your AI client. The app must be running for the assistant to reach it.",
+    "claudeCode": "Claude Code (command line)",
+    "json": "Configuration (JSON)",
+    "geheim": "These lines contain the token: do not share them.",
+    "rest": "REST API",
+    "restUitleg": "The same functions as JSON over HTTP, with the same token as a header. Every route is in the OpenAPI document; that is the only thing readable without a token.",
+    "restBasis": "Base address",
+    "openapi": "OpenAPI",
+    "curl": "Example (curl)",
+    "curlUitleg": "Reads the open project. In Windows PowerShell: curl.exe instead of curl."
+  },
   "about": {
-    "appName": "Open Template",
+    "appName": "Open CalcSheet Studio",
     "version": "Version",
     "framework": "Framework",
     "license": "License",
-    "description": "A template application for building cross-platform desktop apps with Tauri."
+    "description": "Structural calculation sheets with live output, parametric views and a structural report. Part of the OpenAEC family."
   }
 }

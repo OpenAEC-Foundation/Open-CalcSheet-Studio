@@ -11,6 +11,12 @@
  *   - `bibliotheek` — naslag, zoals de CalcPAD-voorbeelden. Ook invoegbaar.
  *
  * `templateId` matcht een sleutel in `src/templates/index.ts`.
+ *
+ * De labels hier zijn Nederlands en geven een nieuw blad zijn naam. Wat de
+ * gebruiker in de modulekiezer en de projectboom ziet, komt uit de
+ * vertalingen: `catalogus.modules.<templateId>` en `catalogus.groepen.<id>`
+ * in i18n/locales/{nl,en}/werkruimte.json. Voeg je hier een module of groep
+ * toe, zet hem daar dan ook bij; anders staat het Nederlandse label in beeld.
  */
 
 /**
@@ -28,19 +34,6 @@ export type ModuleStatus =
   /** Alleen invoer en parametrisch beeld — de toetsing moet nog worden gemaakt. */
   | "concept";
 
-/**
- * Publicatie staat los van de status hierboven.
- *
- * De status zegt hoe ver de tóétsing is; publicatie zegt of de module is
- * nagekeken en vrijgegeven om mee te werken. Een module kan gecalibreerd zijn
- * en toch nog niet zijn nagekeken — dan is hij wel bruikbaar maar niet
- * vrijgegeven, en dat hoort de gebruiker te zien.
- */
-export const PUBLICATIE_UITLEG = {
-  gepubliceerd: "Gepubliceerd — nagekeken en vrijgegeven",
-  onuitgegeven: "Nog niet gepubliceerd — nog niet nagekeken",
-} as const;
-
 export type TreeNode =
   | { kind: "section"; id: string; label: string; children: TreeNode[] }
   | { kind: "category"; id: string; label: string; defaultExpanded?: boolean; children: TreeNode[]; count?: number; bronUrl?: string }
@@ -51,8 +44,21 @@ export type TreeNode =
       templateId?: string;
       emphasis?: boolean;
       status?: ModuleStatus;
-      /** Nagekeken en vrijgegeven. Ontbreekt of `false` = nog niet. */
+      /**
+       * Nagekeken en vrijgegeven. Ontbreekt of `false` = nog niet.
+       *
+       * Publicatie staat los van `status`: de status zegt hoe ver de tóétsing
+       * is, publicatie zegt of de module is nagekeken en vrijgegeven om mee te
+       * werken. Een module kan gecalibreerd zijn en toch nog niet zijn
+       * nagekeken — dan is hij wel bruikbaar maar niet vrijgegeven, en dat
+       * hoort de gebruiker te zien. De teksten daarvoor staan in
+       * werkruimte.json onder `kiezer.publicatie`.
+       */
       gepubliceerd?: boolean;
+      /** Uit de online modulebibliotheek (store/moduleBibliotheek.ts): naam per taal, beeld en versie. */
+      namen?: { nl: string; en: string };
+      beeldUrl?: string | null;
+      versie?: string;
     };
 
 /**
@@ -88,11 +94,11 @@ export const bibliotheek: TreeNode[] = [
   {
     kind: "category",
     id: "calcpad-samples",
-    label: "CalcPAD voorbeelden",
+    label: "Voorbeelden",
     defaultExpanded: false,
     count: 1,
     children: [
-      { kind: "item", id: "cpd-calcpad-demo", label: "CalcPAD syntax demo", templateId: "calcpad-demo" },
+      { kind: "item", id: "cpd-calcpad-demo", label: "Open CalcSheet Studio demo", templateId: "calcpad-demo" },
     ],
   },
 ];

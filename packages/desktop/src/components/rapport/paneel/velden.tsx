@@ -8,6 +8,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { tekstRegels } from "../../../rapport/invullen";
 import { bouwOpzet, titelVan, type Rapportknoop } from "../../../rapport/opzet";
 import { PROJECT_ID, useProjectStore } from "../../../store/projectStore";
@@ -107,6 +108,7 @@ export function Sectie({ id, titel, hoofdstuk, intro, children }: {
   intro?: ReactNode;
   children: ReactNode;
 }) {
+  const { t } = useTranslation("rapport");
   const stand = useOpzetStand();
   const nummer = hoofdstuk ? stand.nummer(hoofdstuk) : "";
   return (
@@ -117,8 +119,8 @@ export function Sectie({ id, titel, hoofdstuk, intro, children }: {
           {titel}
         </h2>
         {hoofdstuk && stand.valtWeg(hoofdstuk) && (
-          <span className="rapport-weg" title="Leeg: dit hoofdstuk komt niet in het rapport.">
-            valt weg
+          <span className="rapport-weg" title={t("velden.hoofdstukValtWeg")}>
+            {t("velden.valtWeg")}
           </span>
         )}
         {hoofdstuk && <NieuwePagina id={hoofdstuk} />}
@@ -138,6 +140,7 @@ const KOPTAGS = ["h3", "h4", "h5", "h6"] as const;
  * verspringt.
  */
 export function Kop({ id }: { id: string }) {
+  const { t } = useTranslation("rapport");
   const stand = useOpzetStand();
   const rapport = useRapport();
   const knoop = vindKnoop(id);
@@ -151,8 +154,8 @@ export function Kop({ id }: { id: string }) {
         {knoop ? titelVan(knoop, rapport) : id}
       </Tag>
       {stand.valtWeg(id) && (
-        <span className="rapport-weg" title="Leeg of uitgezet: dit onderdeel komt niet in het rapport.">
-          valt weg
+        <span className="rapport-weg" title={t("velden.onderdeelValtWeg")}>
+          {t("velden.valtWeg")}
         </span>
       )}
       {niveau <= 2 && <NieuwePagina id={id} />}
@@ -166,6 +169,7 @@ export function Kop({ id }: { id: string }) {
  * rapport.
  */
 export function NieuwePagina({ id }: { id: string }) {
+  const { t } = useTranslation("rapport");
   const eigen = useProjectStore((s) => s.rapport.nieuwePagina[id]);
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const aan = eigen ?? vindKnoop(id)?.nieuwePagina ?? false;
@@ -176,7 +180,7 @@ export function NieuwePagina({ id }: { id: string }) {
         checked={aan}
         onChange={(e) => zet(`nieuwePagina.${id}`, e.target.checked)}
       />
-      begint op nieuwe pagina
+      {t("velden.nieuwePagina")}
     </label>
   );
 }
@@ -225,13 +229,14 @@ export function Keuze({ label, pad, waarde, opties, hint }: {
   opties: readonly Optie[];
   hint?: ReactNode;
 }) {
+  const { t } = useTranslation("rapport");
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const bekend = opties.some((o) => o.waarde === waarde);
   return (
     <label className="rapport-veld">
       <span className="rapport-label">{label}</span>
       <select value={waarde} onChange={(e) => zet(pad, e.target.value)}>
-        {!bekend && <option value={waarde}>{waarde} (niet in de lijst)</option>}
+        {!bekend && <option value={waarde}>{t("velden.nietInLijst", { waarde })}</option>}
         {opties.map((o) => (
           <option key={o.waarde} value={o.waarde}>
             {o.label}
@@ -332,6 +337,7 @@ export function GroeiVeld({ waarde, onChange, placeholder, rijen = 2 }: {
  * zetten.
  */
 export function SubkopMelding({ tekst }: { tekst: string }) {
+  const { t } = useTranslation("rapport");
   const aan = useProjectStore((s) => s.rapport.opmaak.subkoppen);
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const koppen = tekstRegels(tekst, true).filter((r) => r.kop).map((r) => r.tekst);
@@ -342,12 +348,12 @@ export function SubkopMelding({ tekst }: { tekst: string }) {
       <b>{k}</b>
     </Fragment>
   ));
-  if (aan) return <span className="rapport-hint">Vet als subkop in het rapport: {lijst}</span>;
+  if (aan) return <span className="rapport-hint">{t("velden.subkopVet")} {lijst}</span>;
   return (
     <span className="rapport-hint">
-      Dit rapport heeft geen subkoppen: {lijst} {koppen.length === 1 ? "blijft" : "blijven"} gewone tekst.{" "}
+      {t("velden.geenSubkoppen")} {lijst} {t("velden.gewoneTekst", { count: koppen.length })}{" "}
       <button type="button" className="rapport-link" onClick={() => zet("opmaak.subkoppen", true)}>
-        Subkoppen aanzetten voor dit rapport
+        {t("velden.subkoppenAanzetten")}
       </button>
     </span>
   );
@@ -405,10 +411,11 @@ export function Afgeleid({ regels, uitProjectgegevens = false }: {
 
 /** Springt naar het formulier Projectgegevens in de projectboom. */
 export function NaarProjectgegevens() {
+  const { t } = useTranslation("rapport");
   const selecteer = useProjectStore((s) => s.selecteer);
   return (
     <button type="button" className="rapport-link" onClick={() => selecteer(PROJECT_ID)}>
-      Wijzigen in Projectgegevens →
+      {t("velden.naarProjectgegevens")}
     </button>
   );
 }

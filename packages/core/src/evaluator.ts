@@ -1,5 +1,10 @@
 import { create, all, type MathJsInstance, type MathNode } from 'mathjs';
-import type { AstNode, ConditionalNode, EvaluatedNode } from './types.js';
+import type { AstNode, ConditionalNode, EvaluatedNode, MatrixUitkomst, OpdrachtNode } from './types.js';
+import { losStelselOp, rangVan, eigenSymmetrisch } from './matrixrekening.js';
+import { bouwDrieDScene } from './drieD.js';
+import { bouwIframe } from './iframeBlok.js';
+import { bouwIfcxBlok } from './ifcxBlok.js';
+import { bouwJsBlok } from './jsBlok.js';
 import {
   liggerOplossing, liggerReacties, liggerOmhullende, liggerOmhullendeReacties, liggerExtremen,
   liggerInterpoleer, liggerNulpunt, liggerStatus, liggerDelen, liggerVelden, liggerSvgPunten, liggerSamen,
@@ -19,6 +24,11 @@ const math: MathJsInstance = create(all, {});
  * `deg` or `gra`, the wrappers below scale every unit-less input. Inputs
  * already carrying a unit (e.g. `45 deg`) pass through unchanged because
  * mathjs handles the conversion itself.
+ *
+ * setAngleMode zet de stand van de app. Een blad kan hem met `#deg`, `#rad`
+ * of `#gra` vanaf die regel veranderen, zoals in CalcPAD; aan het eind van
+ * evaluate() staat de stand van de app weer terug, zodat het volgende blad
+ * er niet door geraakt wordt.
  */
 export type AngleMode = 'rad' | 'deg' | 'gra';
 let currentAngleMode: AngleMode = 'rad';
@@ -45,13 +55,26 @@ function fromRadians(v: unknown): unknown {
 // units (45 deg, π rad) bypass the wrapper.
 const nativeSin = math.sin, nativeCos = math.cos, nativeTan = math.tan;
 const nativeAsin = math.asin, nativeAcos = math.acos, nativeAtan = math.atan;
+// Ook de overige hoekfuncties van het lint: mathjs rekent cot, sec, csc en
+// hun inversen en atan2 zelf uit, buiten de wrappers hierboven om.
+const nativeCot = math.cot, nativeSec = math.sec, nativeCsc = math.csc;
+const nativeAcot = math.acot, nativeAsec = math.asec, nativeAcsc = math.acsc, nativeAtan2 = math.atan2;
+/** mathjs' eigen round, vóór de vervanging hieronder (zie `round` in de CalcPAD-functies). */
+const nativeRound = math.round;
 math.import({
   sin: (v: unknown) => nativeSin(toRadians(v) as number),
   cos: (v: unknown) => nativeCos(toRadians(v) as number),
   tan: (v: unknown) => nativeTan(toRadians(v) as number),
+  cot: (v: unknown) => nativeCot(toRadians(v) as number),
+  sec: (v: unknown) => nativeSec(toRadians(v) as number),
+  csc: (v: unknown) => nativeCsc(toRadians(v) as number),
   asin: (v: unknown) => fromRadians(nativeAsin(v as number)),
   acos: (v: unknown) => fromRadians(nativeAcos(v as number)),
   atan: (v: unknown) => fromRadians(nativeAtan(v as number)),
+  acot: (v: unknown) => fromRadians(nativeAcot(v as number)),
+  asec: (v: unknown) => fromRadians(nativeAsec(v as number)),
+  acsc: (v: unknown) => fromRadians(nativeAcsc(v as number)),
+  atan2: (y: unknown, x: unknown) => fromRadians(nativeAtan2(y as number, x as number)),
   // CalcPAD schrijft `ln` voor de natuurlijke logaritme; mathjs kent alleen
   // `log` (dat zonder base-argument al natural log is).
   ln: (v: unknown) => math.log(v as number),
@@ -82,45 +105,104 @@ function asNumber(v: unknown): number {
   return Number(v);
 }
 
-/**
- * CalcPAD `hlookup` family, executed against a 2D matrix.
- *
- *   hlookup(M; search; lookupCol; returnCol)      — exact match
- *   hlookup_ge(M; search; lookupCol; returnCol)   — smallest M[i][lookupCol-1] ≥ search
- *   hlookup_le(M; search; lookupCol; returnCol)   — largest  M[i][lookupCol-1] ≤ search
- *
- * `returnCol` defaults to `lookupCol` (returns the matched value itself).
- * When `M` is a flat vector (1D), the lookup operates on it directly.
- */
-function lookupHelper(args: unknown[], mode: 'eq' | 'ge' | 'le'): unknown {
-  if (args.length === 0) return 0;
-  const matrix = toArrayLike(args[0]);
-  if (!matrix) return 0;
-  const target = asNumber(args[1] ?? 0);
-  const lookupCol = Math.max(1, Math.trunc(asNumber(args[2] ?? 1)));
-  const returnCol = Math.max(1, Math.trunc(asNumber(args[3] ?? lookupCol)));
+/** Vergelijking van een opzoekfunctie: `hlookup` is eq, `hlookup_ge` is ge, enz. */
+type Vergelijking = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge';
 
-  // Detect 1D vs 2D
-  const first = matrix[0];
-  const firstRow = toArrayLike(first);
-  const is2D = firstRow !== null;
+/**
+ * De CalcPAD-opzoekfuncties op een matrix in CalcPAD-oriëntatie (rij i is
+ * rij i, zie rewriteMatrixLiterals in parser.ts).
+ *
+ *   hlookup(M; x; i₁; i₂)  zoekt x in RIJ i₁ en geeft het element uit rij i₂
+ *                          in dezelfde kolom — horizontaal zoeken
+ *   vlookup(M; x; j₁; j₂)  zoekt x in KOLOM j₁ en geeft het element uit
+ *                          kolom j₂ in dezelfde rij — verticaal zoeken
+ *   …_ge, _le, _gt, _lt, _ne  met een andere vergelijking dan "gelijk"
+ *
+ * Afwijking van CalcPAD, bewust en ongewijzigd: CalcPAD geeft een vector met
+ * alle treffers; deze functies geven één waarde — bij `eq` de eerste treffer,
+ * anders de treffer die het dichtst bij x ligt (`hlookup_ge`: de kleinste
+ * waarde ≥ x). De bladen rekenen daarmee als met een getal
+ * (`hlookup(profielen; profiel; 1; 2)*mm`). Niets gevonden: 0.
+ *
+ * `i₂` is standaard `i₁` (de gevonden waarde zelf). Een vector (1D) wordt
+ * rechtstreeks doorzocht.
+ */
+function zoekOp(args: unknown[], richting: 'h' | 'v', mode: Vergelijking): unknown {
+  if (args.length === 0) return 0;
+  const tabel = toArrayLike(args[0]);
+  if (!tabel) return 0;
+  const target = asNumber(args[1] ?? 0);
+  const zoekNr = Math.max(1, Math.trunc(asNumber(args[2] ?? 1)));
+  const terugNr = Math.max(1, Math.trunc(asNumber(args[3] ?? zoekNr)));
+
+  const paren: [unknown, unknown][] = [];
+  if (toArrayLike(tabel[0]) === null) {
+    for (const el of tabel) paren.push([el, el]);
+  } else if (richting === 'h') {
+    const zoekRij = toArrayLike(tabel[zoekNr - 1]);
+    const terugRij = toArrayLike(tabel[terugNr - 1]);
+    if (!zoekRij) return 0;
+    zoekRij.forEach((k, j) => paren.push([k, terugRij?.[j]]));
+  } else {
+    for (const rij of tabel) {
+      const r = toArrayLike(rij);
+      paren.push([r?.[zoekNr - 1], r?.[terugNr - 1]]);
+    }
+  }
 
   let best: unknown = null;
   let bestDelta = Infinity;
-  for (const row of matrix) {
-    const r = is2D ? toArrayLike(row) : null;
-    const key = is2D ? asNumber(r?.[lookupCol - 1]) : asNumber(row);
+  for (const [k, terug] of paren) {
+    const key = asNumber(k);
     if (!Number.isFinite(key)) continue;
     if (mode === 'eq' && key !== target) continue;
+    if (mode === 'ne' && key === target) continue;
     if (mode === 'ge' && key < target) continue;
+    if (mode === 'gt' && key <= target) continue;
     if (mode === 'le' && key > target) continue;
+    if (mode === 'lt' && key >= target) continue;
     const delta = Math.abs(key - target);
     if (delta < bestDelta) {
       bestDelta = delta;
-      best = is2D ? r?.[returnCol - 1] : row;
+      best = terug;
     }
   }
   return best ?? 0;
+}
+
+/** Afmetingen van een vector of matrix: [n] of [m, n]; null voor een scalar. */
+function afmetingen(v: unknown): number[] | null {
+  if (math.isMatrix(v)) return (v as unknown as { size: () => number[] }).size();
+  if (Array.isArray(v)) return math.size(v) as unknown as number[];
+  return null;
+}
+
+/** De elementen van scalars, vectoren en matrices achter elkaar; een matrix rij voor rij. */
+function plat(args: unknown[]): unknown[] {
+  const uit: unknown[] = [];
+  const voeg = (v: unknown): void => {
+    const a = toArrayLike(v);
+    if (a) for (const e of a) voeg(e);
+    else uit.push(v);
+  };
+  for (const a of args) voeg(a);
+  return uit;
+}
+
+/** Een matrix (2D) als rijen; een vector wordt één kolom, een scalar 1 × 1. */
+function alsRijen(v: unknown): unknown[][] {
+  const a = toArrayLike(v);
+  if (!a) return [[v]];
+  if (a.length === 0) return [];
+  if (toArrayLike(a[0]) === null) return a.map((e) => [e]);
+  return a.map((r) => toArrayLike(r) ?? [r]);
+}
+
+/** Index (1-gebaseerd, afgerond) als getal; een fout bij iets anders. */
+function indexGetal(v: unknown, functie: string): number {
+  const n = asNumber(v);
+  if (!Number.isFinite(n)) throw new Error(`${functie}: de index is geen getal`);
+  return Math.round(n);
 }
 
 math.import(
@@ -129,42 +211,59 @@ math.import(
     if: function (cond: unknown, t: unknown, f: unknown) {
       return Boolean(cond) ? t : f;
     },
-    // 1-based vector index: `take(2, [10, 20, 30])` → 20
-    // Also tolerates 1-arg form `take(vec)` → first element.
+    // CalcPAD `take(n; a; b; c…)`: het n-de element van de lijst, waarin
+    // vectoren en matrices (rij voor rij) zijn uitgevouwen: `take(2; [10; 20;
+    // 30])` → 20. `take(x; y; M)` met een matrix M: het element in rij x,
+    // kolom y. Een index wordt afgerond op een geheel getal.
     //
-    // CalcPAD chains like `take(1; hlookup_ge(M; h; 1; 1))` may pass a scalar
-    // as the "vector" (when hlookup_* returns a single matched value); in
-    // that case treat the scalar as a 1-element vector and return it.
+    // Ruimer dan CalcPAD, voor oudere bladen: `take(vec)` geeft het eerste
+    // element, `take(vec; n)` mag ook, en een index buiten de lijst valt op
+    // het eerste of laatste element. `take(1; hlookup_ge(M; h; 1; 1))` werkt
+    // ook als de opzoekfunctie één getal teruggeeft.
     take: function (...args: unknown[]) {
+      if (args.length === 0) return 0;
       if (args.length === 1) {
         const v = toArrayLike(args[0]);
-        return v ? v[0] : args[0];
+        return v ? plat([v])[0] : args[0];
       }
-      const [a, b] = args;
-      const idx = typeof a === 'number' ? a : typeof b === 'number' ? b : NaN;
-      const vec = toArrayLike(a) ?? toArrayLike(b);
-      if (!vec) {
-        // No array on either side — treat the non-index arg as the scalar
-        // "vector" and return it as-is (idx is effectively 1).
-        return typeof a === 'number' ? b : a;
+      if (args.length === 2 && toArrayLike(args[0]) && !toArrayLike(args[1])) {
+        args = [args[1], args[0]];
       }
-      const i = Math.max(1, Math.trunc(idx)) - 1;
-      return vec[Math.min(i, vec.length - 1)];
+      if (args.length === 3 && !toArrayLike(args[0]) && !toArrayLike(args[1])) {
+        const dims = afmetingen(args[2]);
+        if (dims && dims.length === 2) {
+          const rijen = alsRijen(args[2]);
+          const i = Math.min(Math.max(indexGetal(args[0], 'take'), 1), rijen.length) - 1;
+          const j = Math.min(Math.max(indexGetal(args[1], 'take'), 1), rijen[i].length) - 1;
+          return rijen[i][j];
+        }
+      }
+      const lijst = plat(args.slice(1));
+      if (lijst.length === 0) return 0;
+      const i = Math.min(Math.max(indexGetal(args[0], 'take'), 1), lijst.length) - 1;
+      return lijst[i];
     },
     // Boolean → 0/1 (CalcPAD uses `(cond) * value` patterns)
     bool: function (cond: unknown) {
       return Boolean(cond) ? 1 : 0;
     },
-    // CalcPAD Excel-like lookups. Real semantics:
-    //   hlookup(value, lookup_row, return_row_index[, exact])
-    //   vlookup(value, lookup_col, return_col_index[, exact])
-    // Stubbed: search for the closest match in the first array argument and
-    // return the matching value (or 0 on miss). Far from a faithful Excel
-    // impl but prevents whole-conditional cascades from failing.
-    hlookup: function (...args: unknown[]) { return lookupHelper(args, 'eq'); },
-    vlookup: function (...args: unknown[]) { return lookupHelper(args, 'eq'); },
-    hlookup_ge: function (...args: unknown[]) { return lookupHelper(args, 'ge'); },
-    hlookup_le: function (...args: unknown[]) { return lookupHelper(args, 'le'); },
+    // CalcPAD-opzoekfuncties; zie zoekOp.
+    hlookup: function (...args: unknown[]) { return zoekOp(args, 'h', 'eq'); },
+    hlookup_eq: function (...args: unknown[]) { return zoekOp(args, 'h', 'eq'); },
+    hlookup_ne: function (...args: unknown[]) { return zoekOp(args, 'h', 'ne'); },
+    hlookup_lt: function (...args: unknown[]) { return zoekOp(args, 'h', 'lt'); },
+    hlookup_le: function (...args: unknown[]) { return zoekOp(args, 'h', 'le'); },
+    hlookup_gt: function (...args: unknown[]) { return zoekOp(args, 'h', 'gt'); },
+    hlookup_ge: function (...args: unknown[]) { return zoekOp(args, 'h', 'ge'); },
+    vlookup: function (...args: unknown[]) { return zoekOp(args, 'v', 'eq'); },
+    vlookup_eq: function (...args: unknown[]) { return zoekOp(args, 'v', 'eq'); },
+    vlookup_ne: function (...args: unknown[]) { return zoekOp(args, 'v', 'ne'); },
+    vlookup_lt: function (...args: unknown[]) { return zoekOp(args, 'v', 'lt'); },
+    vlookup_le: function (...args: unknown[]) { return zoekOp(args, 'v', 'le'); },
+    vlookup_gt: function (...args: unknown[]) { return zoekOp(args, 'v', 'gt'); },
+    vlookup_ge: function (...args: unknown[]) { return zoekOp(args, 'v', 'ge'); },
+    // Aantal rijen en kolommen. Een vector telt als één kolom (n_rows is zijn
+    // lengte), een scalar als 1 × 1.
     n_rows: function (v: unknown) {
       const a = toArrayLike(v);
       return a ? a.length : 1;
@@ -175,11 +274,11 @@ math.import(
       const row0 = toArrayLike(a[0]);
       return row0 ? row0.length : 1;
     },
-    // CalcPAD `get(row, col, matrix)` — fetch matrix element (1-based)
+    // `get(M; i; j)` (of `get(i; j; M)`): het element in rij i, kolom j (1-based).
     get: function (...args: unknown[]) {
       const mat = args.map(toArrayLike).find((a) => a !== null);
       if (!mat) return 0;
-      const nums = args.filter((a) => typeof a === 'number') as number[];
+      const nums = args.filter((a) => !toArrayLike(a)).map(asNumber);
       const row = nums[0] ? Math.max(1, Math.trunc(nums[0])) - 1 : 0;
       const col = nums[1] ? Math.max(1, Math.trunc(nums[1])) - 1 : 0;
       const rowVal = mat[Math.min(row, mat.length - 1)];
@@ -189,32 +288,27 @@ math.import(
       }
       return rowVal;
     },
-    // CalcPAD `row(M; i)` / `col(M; j)` — pluk één rij/kolom als PLATTE
-    // vector (1-based). Let op de representatie: CalcPAD schrijft een matrix
-    // als `[rij1 | rij2 | …]`, maar onze rewriteMatrixLiterals transponeert
-    // de `|`-secties naar mathjs-KOLOMMEN (daar bouwen de hlookup-sheets op).
-    // CalcPAD's `row(M; i)` komt in die representatie dus overeen met het
-    // plukken van kolom i — en `col(M; j)` met het plukken van rij j.
-    // mathjs' eigen row() geeft bovendien een 1×N-matrix terug, waarna
-    // vector-indexering (`r.3` → r[3]) stukloopt op "Dimension mismatch";
-    // deze wrappers geven altijd een platte vector.
+    // CalcPAD `row(M; i)` / `col(M; j)`: rij i of kolom j als PLATTE vector
+    // (1-based). mathjs' eigen row() geeft een 1×N-matrix, waarna
+    // vector-indexering (`r.3` → r[3]) stukloopt op "Dimension mismatch".
+    // Bij een vector geven ze het element op die plaats.
     row: function (m: unknown, i: unknown) {
       const a = toArrayLike(m);
       if (!a) return m;
       const idx = Math.max(1, Math.trunc(asNumber(i))) - 1;
-      const first = toArrayLike(a[0]);
-      if (!first) return a[Math.min(idx, a.length - 1)];
-      return a.map((r) => {
-        const rr = toArrayLike(r);
-        return rr ? rr[Math.min(idx, rr.length - 1)] : r;
-      });
+      const picked = a[Math.min(idx, a.length - 1)];
+      const rij = toArrayLike(picked);
+      return rij ? math.matrix(rij.slice() as number[]) : picked;
     },
     col: function (m: unknown, j: unknown) {
       const a = toArrayLike(m);
       if (!a) return m;
       const idx = Math.max(1, Math.trunc(asNumber(j))) - 1;
-      const picked = a[Math.min(idx, a.length - 1)];
-      return toArrayLike(picked) ?? picked;
+      if (!toArrayLike(a[0])) return a[Math.min(idx, a.length - 1)];
+      return math.matrix(a.map((r) => {
+        const rr = toArrayLike(r);
+        return rr ? rr[Math.min(idx, rr.length - 1)] : r;
+      }) as number[]);
     },
     // CalcPAD logische functies — hoofdletter-varianten met variadische
     // argumenten (`#if Or(uc_1 > 1; uc_2 > 1; …)`).
@@ -230,59 +324,149 @@ math.import(
     Xor: function (...args: unknown[]) {
       return args.filter((a) => Boolean(a)).length % 2 === 1 ? 1 : 0;
     },
+    // `round(x; n)` met een grootheid: afronden in de eenheid waarin de
+    // uitkomst getoond wordt (round(1234.5678 mm; 1) = 1234.6 mm). mathjs
+    // wil daar een derde argument met de eenheid bij en gaf zonder een fout.
+    // Een getal, een matrix en de vorm met drie argumenten gaan ongewijzigd
+    // naar mathjs.
+    round: function (x: unknown, n?: unknown, eenheid?: unknown) {
+      if (eenheid !== undefined) return (nativeRound as (...a: unknown[]) => unknown)(x, n, eenheid);
+      if (isUnit(x)) return rondAfInEenheid(x, n === undefined ? 0 : asNumber(n));
+      return n === undefined ? nativeRound(x as number) : nativeRound(x as number, n as number);
+    },
+    // Weergave van een $Root-, $Sum-, $Area-blok enz. (zie
+    // rewriteSolverDirectives in parser.ts): rekent als de laatste parameter,
+    // de aanroep zelf; de andere zijn er voor latex.ts.
+    _cp_los: function (...args: unknown[]) {
+      return args[args.length - 1];
+    },
   },
   { override: true },
 );
 
+/** Grootheid afgerond op n decimalen in de eenheid waarin hij getoond wordt. */
+function rondAfInEenheid(x: MathUnit, n: number): unknown {
+  const e = unitExpression(x);
+  const w = x.toNumber(e);
+  const r = nativeRound(w, n) as number;
+  try {
+    return math.unit(r, e);
+  } catch {
+    return w === 0 ? x : math.multiply(x as unknown as number, r / w);
+  }
+}
+
 // ── Iterative numerical solvers (used by parser's $Find/$Solve/$Sup/$Inf
-//    rewrite). The `fn` argument is a mathjs user-defined function in scope;
-//    we call it via `Number(fn(x))` and run a robust scalar algorithm.
+//    rewrite, en $Sum/$Product/$Area/$Integral/$Slope). The `fn` argument is
+//    a mathjs user-defined function in scope; we run a robust scalar
+//    algorithm on plain numbers (zie opGetallen voor de eenheden).
+
+/**
+ * Een functie van één variabele als functie op kale getallen. Heeft een grens
+ * een eenheid (`x = 0 mm : 20 mm`), dan krijgt de variabele die eenheid en
+ * rekent het algoritme in getallen van die eenheid; een uitkomst met eenheid
+ * telt in de eenheid van de eerste uitkomst. `metX` en `metF` zetten een
+ * getal weer om naar een grootheid met die eenheid.
+ */
+function opGetallen(fn: unknown, grenzen: unknown[]): {
+  f: (t: number) => number;
+  x: number[];
+  arg: (t: number) => unknown;
+  metX: (t: number) => unknown;
+  metF: (w: number) => unknown;
+} {
+  const g = grenzen.find(isUnit) as MathUnit | undefined;
+  const xEenheid = g ? unitExpression(g) : '';
+  const x = grenzen.map((v) => (isUnit(v) && xEenheid ? v.toNumber(xEenheid) : asNumber(v)));
+  const arg = (t: number): unknown => (xEenheid ? math.unit(t, xEenheid) : t);
+  let fEenheid: string | null = null;
+  const f = (t: number): number => {
+    const y = (fn as (a: unknown) => unknown)(arg(t));
+    if (isUnit(y)) {
+      if (fEenheid === null) fEenheid = unitExpression(y);
+      try { return y.toNumber(fEenheid); } catch { return Number.NaN; }
+    }
+    if (fEenheid === null) fEenheid = '';
+    return Number(asNumber(y));
+  };
+  return {
+    f,
+    x,
+    arg,
+    metX: (t) => arg(t),
+    metF: (w) => (fEenheid ? math.unit(w, fEenheid) : w),
+  };
+}
+
+/** Adaptieve Simpson-integratie van f over [a, b]. */
+function simpson(f: (t: number) => number, a: number, b: number): number {
+  const stap = (lo: number, hi: number, flo: number, fm: number, fhi: number, heel: number, diepte: number): number => {
+    const m = (lo + hi) / 2;
+    const lm = (lo + m) / 2;
+    const rm = (m + hi) / 2;
+    const flm = f(lm);
+    const frm = f(rm);
+    const links = ((m - lo) / 6) * (flo + 4 * flm + fm);
+    const rechts = ((hi - m) / 6) * (fm + 4 * frm + fhi);
+    const som = links + rechts;
+    if (diepte <= 0 || Math.abs(som - heel) <= 1e-12 * Math.max(1, Math.abs(som))) return som + (som - heel) / 15;
+    return stap(lo, m, flo, flm, fm, links, diepte - 1) + stap(m, hi, fm, frm, fhi, rechts, diepte - 1);
+  };
+  if (a === b) return 0;
+  const fa = f(a);
+  const fb = f(b);
+  const fm = f((a + b) / 2);
+  return stap(a, b, fa, fm, fb, ((b - a) / 6) * (fa + 4 * fm + fb), 40);
+}
+
 math.import(
   {
     /** Bisection root-finder for f(x) = 0 in [lo, hi]. */
     _find_root: function (fn: unknown, lo: unknown, hi: unknown) {
       if (typeof fn !== 'function') return Number.NaN;
-      const evalAt = (x: number): number => Number((fn as (n: number) => unknown)(x));
-      let a = Number(lo); let b = Number(hi);
+      const { f: evalAt, x: [a0, b0], metX } = opGetallen(fn, [lo, hi]);
+      let a = a0; let b = b0;
       if (a > b) [a, b] = [b, a];
-      let fa = evalAt(a); let fb = evalAt(b);
+      let fa = evalAt(a); const fb = evalAt(b);
       if (!isFinite(fa) || !isFinite(fb)) return Number.NaN;
-      if (fa === 0) return a;
-      if (fb === 0) return b;
+      if (fa === 0) return metX(a);
+      if (fb === 0) return metX(b);
       if (fa * fb > 0) return Number.NaN;
       for (let i = 0; i < 80; i++) {
         const c = (a + b) / 2;
         const fc = evalAt(c);
-        if (Math.abs(fc) < 1e-12 || (b - a) < 1e-14) return c;
-        if (fa * fc < 0) { b = c; fb = fc; } else { a = c; fa = fc; }
+        if (Math.abs(fc) < 1e-12 || (b - a) < 1e-14) return metX(c);
+        if (fa * fc < 0) { b = c; } else { a = c; fa = fc; }
       }
-      return (a + b) / 2;
+      return metX((a + b) / 2);
     },
     /** Newton-Raphson root-finder for f(x) = 0 starting from `guess`. */
     _solve_newton: function (fn: unknown, guess: unknown) {
       if (typeof fn !== 'function') return Number.NaN;
-      const evalAt = (x: number): number => Number((fn as (n: number) => unknown)(x));
-      let x = Number(guess);
+      const { f: evalAt, x: [x0], metX } = opGetallen(fn, [guess]);
+      const klaar = (t: number): unknown => metX(t);
+      let x = x0;
       const h = 1e-7;
       for (let i = 0; i < 60; i++) {
         const f = evalAt(x);
         if (!isFinite(f)) return Number.NaN;
-        if (Math.abs(f) < 1e-12) return x;
+        if (Math.abs(f) < 1e-12) return klaar(x);
         const fp = (evalAt(x + h) - f) / h;
         if (!isFinite(fp) || Math.abs(fp) < 1e-15) break;
         const dx = f / fp;
         x = x - dx;
-        if (Math.abs(dx) < 1e-12) return x;
+        if (Math.abs(dx) < 1e-12) return klaar(x);
       }
-      return x;
+      return klaar(x);
     },
     /** Golden-section extremum over [lo, hi]; sign=+1 → sup, -1 → inf. */
     _extremum: function (fn: unknown, lo: unknown, hi: unknown, sign: unknown) {
       if (typeof fn !== 'function') return Number.NaN;
       const s = Number(sign) >= 0 ? 1 : -1;
-      const evalAt = (x: number): number => s * Number((fn as (n: number) => unknown)(x));
+      const { f: getal, x: [a0, b0], arg } = opGetallen(fn, [lo, hi]);
+      const evalAt = (x: number): number => s * getal(x);
       const phi = (Math.sqrt(5) - 1) / 2;
-      let a = Number(lo); let b = Number(hi);
+      let a = a0; let b = b0;
       if (a > b) [a, b] = [b, a];
       let c = b - (b - a) * phi;
       let d = a + (b - a) * phi;
@@ -293,7 +477,66 @@ math.import(
         if ((b - a) < 1e-14) break;
       }
       const xOpt = (a + b) / 2;
-      return Number((fn as (n: number) => unknown)(xOpt));
+      const y = (fn as (n: unknown) => unknown)(arg(xOpt));
+      return isUnit(y) ? y : Number(y);
+    },
+    /** `$Sum{f(k) @ k = a : b}`: f(a) + f(a + 1) + … + f(b), met eenheden. */
+    _reeks_som: function (fn: unknown, lo: unknown, hi: unknown) {
+      if (typeof fn !== 'function') return Number.NaN;
+      const a = Math.round(asNumber(lo));
+      const b = Math.round(asNumber(hi));
+      if (b - a > 1e6) throw new Error('$Sum: te veel termen');
+      let s: unknown = 0;
+      for (let k = a; k <= b; k++) {
+        const t = (fn as (n: number) => unknown)(k);
+        s = k === a ? t : math.add(s as number, t as number);
+      }
+      return s;
+    },
+    /** `$Product{f(k) @ k = a : b}`: f(a)·f(a + 1)·…·f(b). */
+    _reeks_product: function (fn: unknown, lo: unknown, hi: unknown) {
+      if (typeof fn !== 'function') return Number.NaN;
+      const a = Math.round(asNumber(lo));
+      const b = Math.round(asNumber(hi));
+      if (b - a > 1e6) throw new Error('$Product: te veel factoren');
+      let p: unknown = 1;
+      for (let k = a; k <= b; k++) {
+        const t = (fn as (n: number) => unknown)(k);
+        p = k === a ? t : math.multiply(p as number, t as number);
+      }
+      return p;
+    },
+    /** `$Area{f(x) @ x = a : b}` en `$Integral{…}`: ∫ f dx over [a, b] (adaptieve Simpson), met eenheden. */
+    _integraal: function (fn: unknown, lo: unknown, hi: unknown) {
+      if (typeof fn !== 'function') return Number.NaN;
+      const { f, x: [a, b], metF, metX } = opGetallen(fn, [lo, hi]);
+      const w = simpson(f, a, b);
+      // De eenheid: die van f maal die van x.
+      const fE = metF(1);
+      const xE = metX(1);
+      let r: unknown = w;
+      if (isUnit(fE)) r = math.multiply(r as number, fE as unknown as number);
+      if (isUnit(xE)) r = math.multiply(r as number, xE as unknown as number);
+      return r;
+    },
+    /** `$Slope{f(x) @ x = a}`: df/dx in a (centrale differentie met Richardson-extrapolatie). */
+    _helling: function (fn: unknown, plaats: unknown) {
+      if (typeof fn !== 'function') return Number.NaN;
+      const { f, x: [a], metF, metX } = opGetallen(fn, [plaats]);
+      const D = (h: number): number => (f(a + h) - f(a - h)) / (2 * h);
+      const h = 1e-3 * Math.max(1, Math.abs(a));
+      const d1 = D(h);
+      const d2 = D(h / 2);
+      const d3 = D(h / 4);
+      const r1 = (4 * d2 - d1) / 3;
+      const r2 = (4 * d3 - d2) / 3;
+      const w = (16 * r2 - r1) / 15;
+      const fE = metF(1);
+      const xE = metX(1);
+      let r: unknown = w;
+      if (isUnit(fE)) r = math.multiply(r as number, fE as unknown as number);
+      if (isUnit(xE)) r = math.divide(r as number, xE as unknown as number);
+      return r;
     },
   },
   { override: true },
@@ -303,8 +546,10 @@ math.import(
 // Een ligger op steunpunten, met overstekken, inklemmingen en scharnieren,
 // opgelost met de verplaatsingsmethode. In het blad met kale getallen in m, kN,
 // kN/m, kNm en kNm²; een grootheid met eenheid wordt daarnaar omgerekend (EI
-// bijvoorbeeld als E*I_y). De uitkomsten zijn matrices: rijen [x, V, M, w] langs
-// de ligger, of [x, R, M] per steunpunt. Zie ligger.ts voor de afspraken.
+// bijvoorbeeld als E*I_y). De invoertabellen geo en last staan in het blad met
+// per `|` een grootheid en per kolom een steunpunt of last (zie invoerTabel).
+// De uitkomsten zijn matrices: rijen [x, V, M, w] langs de ligger, of [x, R, M]
+// per steunpunt (`R.(i; 2)`). Zie ligger.ts voor de afspraken.
 
 /** Getal in m, kN, kN/m, kNm of kNm², afhankelijk van de eenheid; een kaal getal blijft. */
 function liggerGetal(v: unknown): number {
@@ -327,6 +572,24 @@ function liggerRijen(v: unknown): number[][] {
     return rr ? rr.map(liggerGetal) : [liggerGetal(r)];
   });
 }
+
+/**
+ * Invoertabel van de ligger-, raamwerk- en doorsnedefuncties (geo, last, kn,
+ * st, op, D): in het blad staat per `|` één grootheid, dus één RIJ, en per
+ * kolom één steunpunt, last, knoop of deel — `geo = [x₁; x₂ | soort₁; soort₂]`.
+ * De rekenkern wil per object een rij; daarom gekanteld. Een vector blijft
+ * zoals liggerRijen hem leest. De uitkomsten van deze functies staan al per
+ * punt of per object in een rij (`R.(i; 2)`) en gaan via liggerRijen.
+ */
+function invoerTabel(v: unknown, getal: (x: unknown) => number): number[][] {
+  const a = toArrayLike(v);
+  if (!a) return [[getal(v)]];
+  if (a.length === 0 || toArrayLike(a[0]) === null) return a.map((e) => [getal(e)]);
+  const rijen = a.map((r) => toArrayLike(r) ?? [r]);
+  const n = Math.max(...rijen.map((r) => r.length));
+  return Array.from({ length: n }, (_, j) => rijen.map((r) => getal(r[j] ?? 0)));
+}
+const liggerTabel = (v: unknown): number[][] => invoerTabel(v, liggerGetal);
 /** Vector als platte lijst getallen (ook een kolom- of rijmatrix). */
 function liggerVector(v: unknown): number[] | undefined {
   if (v === undefined) return undefined;
@@ -348,25 +611,25 @@ math.import(
     /** ligger(geo; last; EI[; f[; deel[; xs]]]) → [x, V, M, w] langs de ligger, met de punten xs erbij. */
     ligger: function (geo: unknown, last: unknown, EI: unknown, f?: unknown, deel?: unknown, xs?: unknown) {
       return liggerMatrix(liggerOplossing(
-        liggerRijen(geo), liggerRijen(last), liggerStijf(EI), liggerVector(f), deel === undefined ? 0 : liggerGetal(deel),
+        liggerTabel(geo), liggerTabel(last), liggerStijf(EI), liggerVector(f), deel === undefined ? 0 : liggerGetal(deel),
         liggerVector(xs) ?? [],
       ));
     },
     /** ligger_R(geo; last; EI[; f[; deel]]) → [x, R, M] per steunpunt. */
     ligger_R: function (geo: unknown, last: unknown, EI: unknown, f?: unknown, deel?: unknown) {
-      return liggerMatrix(liggerReacties(liggerRijen(geo), liggerRijen(last), liggerStijf(EI), liggerVector(f), deel === undefined ? 0 : liggerGetal(deel)));
+      return liggerMatrix(liggerReacties(liggerTabel(geo), liggerTabel(last), liggerStijf(EI), liggerVector(f), deel === undefined ? 0 : liggerGetal(deel)));
     },
     /** ligger_omh(geo; last; EI; groep; f1; f2; teken[; lead]) → omhullende [x, V, M, w]. */
     ligger_omh: function (geo: unknown, last: unknown, EI: unknown, groep: unknown, f1: unknown, f2: unknown, teken?: unknown, lead?: unknown) {
       return liggerMatrix(liggerOmhullende(
-        liggerRijen(geo), liggerRijen(last), liggerStijf(EI), liggerVector(groep) ?? [], liggerVector(f1) ?? [], liggerVector(f2) ?? [],
+        liggerTabel(geo), liggerTabel(last), liggerStijf(EI), liggerVector(groep) ?? [], liggerVector(f1) ?? [], liggerVector(f2) ?? [],
         teken === undefined ? 1 : liggerGetal(teken), lead === undefined ? 0 : liggerGetal(lead),
       ));
     },
     /** ligger_omhR(…) → omhullende [x, R, M] per steunpunt, argumenten als ligger_omh. */
     ligger_omhR: function (geo: unknown, last: unknown, EI: unknown, groep: unknown, f1: unknown, f2: unknown, teken?: unknown, lead?: unknown) {
       return liggerMatrix(liggerOmhullendeReacties(
-        liggerRijen(geo), liggerRijen(last), liggerStijf(EI), liggerVector(groep) ?? [], liggerVector(f1) ?? [], liggerVector(f2) ?? [],
+        liggerTabel(geo), liggerTabel(last), liggerStijf(EI), liggerVector(groep) ?? [], liggerVector(f1) ?? [], liggerVector(f2) ?? [],
         teken === undefined ? 1 : liggerGetal(teken), lead === undefined ? 0 : liggerGetal(lead),
       ));
     },
@@ -393,15 +656,15 @@ math.import(
     },
     /** ligger_status(geo[; EI]) → 1 stabiel, -1 beweeglijk, 0 ongeldig. */
     ligger_status: function (geo: unknown, EI?: unknown) {
-      return liggerStatus(liggerRijen(geo), EI === undefined ? 1 : liggerStijf(EI));
+      return liggerStatus(liggerTabel(geo), EI === undefined ? 1 : liggerStijf(EI));
     },
     /** ligger_delen(geo) → [x_begin, x_eind] per deel voor de schaakbordbelasting. */
     ligger_delen: function (geo: unknown) {
-      return liggerMatrix(liggerDelen(liggerRijen(geo)));
+      return liggerMatrix(liggerDelen(liggerTabel(geo)));
     },
     /** ligger_velden(geo) → [x_begin, x_eind, overstek] per veld tussen de steunpunten. */
     ligger_velden: function (geo: unknown) {
-      return liggerMatrix(liggerVelden(liggerRijen(geo)));
+      return liggerMatrix(liggerVelden(liggerTabel(geo)));
     },
     /** ligger_svg(R; k; x0; sx; y0; sy[; kant]) → "X,Y X,Y …" voor een polyline of polygon; kant 1 of −1 houdt alleen het positieve of het negatieve deel. */
     ligger_svg: function (R: unknown, k: unknown, x0: unknown, sx: unknown, y0: unknown, sy: unknown, kant?: unknown) {
@@ -431,31 +694,33 @@ function raamwerkRijen(v: unknown): number[][] {
   }
   return liggerRijen(v);
 }
+/** Invoertabel kn, st, op of last: per `|` een grootheid, per kolom een knoop, staaf, oplegging of last (zie invoerTabel). */
+const raamwerkTabel = (v: unknown): number[][] => invoerTabel(v, liggerGetal);
 
 math.import(
   {
     /** raamwerk(kn; st; op; last[; f[; toppen]]) → [staaf, s, x, y, N, V, M, u_x, u_y, w] langs de staven. */
     raamwerk: function (kn: unknown, st: unknown, op: unknown, last: unknown, f?: unknown, toppen?: unknown) {
       return liggerMatrix(raamwerkOplossing(
-        raamwerkRijen(kn), raamwerkRijen(st), raamwerkRijen(op), raamwerkRijen(last), liggerVector(f),
+        raamwerkTabel(kn), raamwerkTabel(st), raamwerkTabel(op), raamwerkTabel(last), liggerVector(f),
         toppen === undefined ? 0 : liggerGetal(toppen),
       ));
     },
     /** raamwerk_R(kn; st; op; last[; f]) → [knoop, R_x, R_y, M] per oplegging. */
     raamwerk_R: function (kn: unknown, st: unknown, op: unknown, last: unknown, f?: unknown) {
-      return liggerMatrix(raamwerkReacties(raamwerkRijen(kn), raamwerkRijen(st), raamwerkRijen(op), raamwerkRijen(last), liggerVector(f)));
+      return liggerMatrix(raamwerkReacties(raamwerkTabel(kn), raamwerkTabel(st), raamwerkTabel(op), raamwerkTabel(last), liggerVector(f)));
     },
     /** raamwerk_u(kn; st; op; last[; f]) → [knoop, u_x, u_y, φ] per knoop. */
     raamwerk_u: function (kn: unknown, st: unknown, op: unknown, last: unknown, f?: unknown) {
-      return liggerMatrix(raamwerkVerplaatsingen(raamwerkRijen(kn), raamwerkRijen(st), raamwerkRijen(op), raamwerkRijen(last), liggerVector(f)));
+      return liggerMatrix(raamwerkVerplaatsingen(raamwerkTabel(kn), raamwerkTabel(st), raamwerkTabel(op), raamwerkTabel(last), liggerVector(f)));
     },
     /** raamwerk_acr(kn; st; op; last[; f]) → kritieke belastingsfactor α_cr van de combinatie. */
     raamwerk_acr: function (kn: unknown, st: unknown, op: unknown, last: unknown, f?: unknown) {
-      return raamwerkKnik(raamwerkRijen(kn), raamwerkRijen(st), raamwerkRijen(op), raamwerkRijen(last), liggerVector(f));
+      return raamwerkKnik(raamwerkTabel(kn), raamwerkTabel(st), raamwerkTabel(op), raamwerkTabel(last), liggerVector(f));
     },
     /** raamwerk_status(kn; st; op) → 1 stabiel, -1 beweeglijk, 0 ongeldig. */
     raamwerk_status: function (kn: unknown, st: unknown, op: unknown) {
-      return raamwerkStatus(raamwerkRijen(kn), raamwerkRijen(st), raamwerkRijen(op));
+      return raamwerkStatus(raamwerkTabel(kn), raamwerkTabel(st), raamwerkTabel(op));
     },
     /** raamwerk_ext(R; staaf; k) → [max; s bij max; min; s bij min] van kolom k (staaf 0: alle staven). */
     raamwerk_ext: function (R: unknown, staaf: unknown, k: unknown) {
@@ -494,8 +759,8 @@ math.import(
 );
 
 // ── Doorsnede (packages/core/src/doorsnede.ts) ──────────────────────────────
-// Grootheden van een samengestelde doorsnede: rijen [soort, p1 … p5, y, z, n,
-// draai] per deel, kale getallen in mm (een lengte met eenheid wordt naar mm
+// Grootheden van een samengestelde doorsnede: in het blad per `|` een rij
+// [soort; p1 … p5; y; z; n; draai] met per kolom een deel, kale getallen in mm (een lengte met eenheid wordt naar mm
 // omgerekend). Zie doorsnede.ts voor de afspraken.
 
 /** Getal in mm; een kaal getal blijft. */
@@ -507,40 +772,533 @@ function doorsnedeGetal(v: unknown): number {
   }
   return asNumber(v);
 }
-function doorsnedeRijen(v: unknown): number[][] {
-  const a = toArrayLike(v);
-  if (!a) return [[doorsnedeGetal(v)]];
-  return a.map((r) => {
-    const rr = toArrayLike(r);
-    return rr ? rr.map(doorsnedeGetal) : [doorsnedeGetal(r)];
-  });
-}
+/** Invoertabel D: per `|` een grootheid (soort, p1 … p5, y, z, n, draai), per kolom een deel (zie invoerTabel). */
+const doorsnedeTabel = (v: unknown): number[][] => invoerTabel(v, doorsnedeGetal);
 
 math.import(
   {
     /** doorsnede(D) → [A; y_c; z_c; I_y; I_z; I_yz; y_min; y_max; z_min; z_max] van de ideële doorsnede. */
     doorsnede: function (D: unknown) {
-      return math.matrix(doorsnedeGrootheden(doorsnedeRijen(D)));
+      return math.matrix(doorsnedeGrootheden(doorsnedeTabel(D)));
     },
     /** doorsnede_deel(D; i) → [A; I_y; I_z; y_min; y_max; z_min; z_max] van deel i, om zijn eigen hart, zonder n. */
     doorsnede_deel: function (D: unknown, i: unknown) {
-      return math.matrix(doorsnedeDeel(doorsnedeRijen(D), doorsnedeGetal(i)));
+      return math.matrix(doorsnedeDeel(doorsnedeTabel(D), doorsnedeGetal(i)));
     },
     /** doorsnede_pl(D; as) → [W_pl; plaats van de plastische neutrale lijn], as 1 = om de y-as, 2 = om de z-as. */
     doorsnede_pl: function (D: unknown, as: unknown) {
-      return math.matrix(doorsnedePlastisch(doorsnedeRijen(D), doorsnedeGetal(as)));
+      return math.matrix(doorsnedePlastisch(doorsnedeTabel(D), doorsnedeGetal(as)));
     },
     /** doorsnede_S(D; as; s) → [S; b]: statisch moment voorbij de lijn s om de zwaartelijn, en de breedte daar. */
     doorsnede_S: function (D: unknown, as: unknown, s: unknown) {
-      return math.matrix(doorsnedeStatisch(doorsnedeRijen(D), doorsnedeGetal(as), doorsnedeGetal(s)));
+      return math.matrix(doorsnedeStatisch(doorsnedeTabel(D), doorsnedeGetal(as), doorsnedeGetal(s)));
     },
     /** doorsnede_svg(D; i; x0; y0; schaal) → "X,Y …" voor een polygoon met de omtrek van deel i. */
     doorsnede_svg: function (D: unknown, i: unknown, x0: unknown, y0: unknown, schaal: unknown) {
-      return doorsnedeSvgPunten(doorsnedeRijen(D), doorsnedeGetal(i), doorsnedeGetal(x0), doorsnedeGetal(y0), doorsnedeGetal(schaal));
+      return doorsnedeSvgPunten(doorsnedeTabel(D), doorsnedeGetal(i), doorsnedeGetal(x0), doorsnedeGetal(y0), doorsnedeGetal(schaal));
     },
   },
   { override: true },
 );
+
+// ── CalcPAD: vectoren en matrices ───────────────────────────────────────────
+// Een matrix staat in mathjs zoals in CalcPAD: rij i is rij i. Een vector is
+// eendimensionaal; in een product met een matrix telt hij als kolom.
+//
+// Functienamen die mathjs zelf ook kent maar anders bedoelt (lsolve, matrix,
+// sum, count), krijgen hun CalcPAD-betekenis via vertaalCalcpad: die zet ze in
+// de expressie om naar de functies hieronder met `_cp_` ervoor. Zo blijft de
+// mathjs-functie zelf ongemoeid; lusolve bijvoorbeeld rekent intern met
+// mathjs' lsolve voor een onderdriehoeksmatrix.
+
+/** De eenheid van een grootheid als grootheid met waarde 1 (`1 kN/m`); null bij een kaal getal. */
+function eenheidEen(v: unknown): unknown | null {
+  if (!isUnit(v)) return null;
+  const naam = v.formatUnits();
+  if (naam.trim() === '') return null;
+  try {
+    return math.unit(1, naam);
+  } catch {
+    return null;
+  }
+}
+
+/** Niet nul: een element dat telt bij het afleiden van de eenheden. */
+function nietNul(v: unknown): boolean {
+  if (isUnit(v)) return v.value !== null && v.value !== 0;
+  const n = asNumber(v);
+  return Number.isFinite(n) ? n !== 0 : true;
+}
+
+/** Een uitkomst die dimensieloos moet zijn, als getal; anders een foutmelding. */
+function dimensieloos(v: unknown, functie: string): number {
+  if (typeof v === 'number') return v;
+  if (isUnit(v)) {
+    throw new Error(`${functie}: de eenheden passen niet bij elkaar`);
+  }
+  const n = asNumber(v);
+  if (!Number.isFinite(n)) throw new Error(`${functie}: een element is geen getal`);
+  return n;
+}
+
+/** Bevat de lijst een grootheid met eenheid? */
+const metEenheid = (lijst: unknown[]): boolean => lijst.some(isUnit);
+
+/** Een vierkante matrix als rijen; een foutmelding bij iets anders. */
+function vierkant(A: unknown, functie: string): unknown[][] {
+  const d = afmetingen(A);
+  if (!d || d.length !== 2) throw new Error(`${functie}: verwacht een matrix`);
+  if (d[0] !== d[1]) throw new Error(`${functie}: de matrix moet vierkant zijn (${d[0]} × ${d[1]})`);
+  return alsRijen(A);
+}
+
+/**
+ * Lost A·x = b op voor één rechterlid, met eenheden. Gerekend wordt op
+ * getalwaarden; de eenheden volgen per element uit b en A: als rij i van b de
+ * eenheid r_i heeft en element A_ij de eenheid a_ij, dan krijgt x_j de eenheid
+ * r_i / a_ij. Bij een stijfheidsmatrix met kN/m, kN en kNm en een lastvector
+ * met kN en kNm komt de verplaatsing zo in m en de rotatie dimensieloos (rad).
+ * Een rij van b zonder eenheid en met waarde 0 krijgt haar eenheid uit A.
+ */
+function losEenOp(a: unknown[][], b: unknown[], functie: string): unknown[] {
+  const n = a.length;
+  if (b.length !== n) throw new Error(`${functie}: het rechterlid heeft ${b.length} elementen, de matrix ${n} rijen`);
+  const alles = [...b, ...a.flat()];
+  if (!metEenheid(alles)) {
+    const x = losStelselOp(a.map((r) => r.map((v) => dimensieloos(v, functie))), b.map((v) => [dimensieloos(v, functie)]), functie);
+    return x.map((r) => r[0]);
+  }
+
+  const eenheidA = a.map((r) => r.map(eenheidEen));
+  const rij: unknown[] = b.map((v) => (isUnit(v) ? eenheidEen(v) ?? 1 : nietNul(v) ? 1 : undefined));
+  const kol: unknown[] = new Array(n).fill(undefined);
+  const verspreid = (): void => {
+    let veranderd = true;
+    while (veranderd) {
+      veranderd = false;
+      for (let j = 0; j < n; j++) {
+        if (kol[j] !== undefined) continue;
+        for (let i = 0; i < n; i++) {
+          if (rij[i] !== undefined && nietNul(a[i][j])) {
+            kol[j] = math.divide(rij[i] as number, (eenheidA[i][j] ?? 1) as number);
+            veranderd = true;
+            break;
+          }
+        }
+      }
+      for (let i = 0; i < n; i++) {
+        if (rij[i] !== undefined) continue;
+        for (let j = 0; j < n; j++) {
+          if (kol[j] !== undefined && nietNul(a[i][j])) {
+            rij[i] = math.multiply((eenheidA[i][j] ?? 1) as number, kol[j] as number);
+            veranderd = true;
+            break;
+          }
+        }
+      }
+    }
+  };
+  verspreid();
+  if (rij.includes(undefined)) {
+    for (let i = 0; i < n; i++) if (rij[i] === undefined) rij[i] = 1;
+    verspreid();
+  }
+  for (let j = 0; j < n; j++) if (kol[j] === undefined) kol[j] = 1;
+
+  const An = a.map((r, i) => r.map((v, j) =>
+    nietNul(v) ? dimensieloos(math.divide(math.multiply(v as number, kol[j] as number), rij[i] as number), functie) : 0,
+  ));
+  const bn = b.map((v, i) => (nietNul(v) ? dimensieloos(math.divide(v as number, rij[i] as number), functie) : 0));
+  const x = losStelselOp(An, bn.map((v) => [v]), functie);
+  return x.map((r, j) => (typeof kol[j] === 'number' ? (r[0] * (kol[j] as number)) : math.multiply(r[0], kol[j] as number)));
+}
+
+/**
+ * CalcPAD lsolve, clsolve en slsolve (één rechterlid, uitkomst een platte
+ * vector) en msolve, cmsolve en smsolve (de kolommen van B zijn de
+ * rechterleden, uitkomst een matrix met per kolom de oplossing). Alle zes met
+ * dezelfde algemene oplosser (LU met rijpivotering): die werkt voor elke
+ * niet-singuliere matrix, ook als hij niet symmetrisch of niet
+ * positief-definiet is.
+ */
+function losOp(A: unknown, B: unknown, functie: string, meerdere: boolean): unknown {
+  const a = vierkant(A, functie);
+  const d = afmetingen(B);
+  let kolommen: unknown[][];
+  let vectorUit = !meerdere;
+  if (!d) {
+    kolommen = [[B]];
+  } else if (d.length === 1) {
+    kolommen = [toArrayLike(B) ?? []];
+    vectorUit = true;
+  } else {
+    const rb = alsRijen(B);
+    kolommen = Array.from({ length: d[1] }, (_, j) => rb.map((r) => r[j]));
+    if (!meerdere && d[1] !== 1) {
+      throw new Error(`${functie}: het rechterlid moet een vector zijn; gebruik msolve voor meerdere rechterleden`);
+    }
+  }
+  const oplossingen = kolommen.map((b) => losEenOp(a, b, functie));
+  if (vectorUit) return math.matrix(oplossingen[0] as number[]);
+  return math.matrix(Array.from({ length: a.length }, (_, i) => oplossingen.map((x) => x[i])) as number[][]);
+}
+
+/** Een matrix als getallen in één eenheid (die van het eerste element met eenheid). */
+function getallenMatrix(M: unknown, functie: string): { getallen: number[][]; eenheid: unknown | null } {
+  const rijen = alsRijen(M);
+  const eerste = rijen.flat().find((v) => isUnit(v) && nietNul(v));
+  const eenheid = eerste === undefined ? null : eenheidEen(eerste);
+  const getallen = rijen.map((r) => r.map((v) => {
+    if (!nietNul(v)) return 0;
+    return eenheid ? dimensieloos(math.divide(v as number, eenheid as number), functie) : dimensieloos(v, functie);
+  }));
+  return { getallen, eenheid };
+}
+
+/** Eigenwaarden van een symmetrische matrix, met het aantal n_e zoals in CalcPAD. */
+function eigenKeuze(M: unknown, ne: unknown, functie: string): { waarden: unknown[]; vectoren: number[][] } {
+  vierkant(M, functie);
+  const { getallen, eenheid } = getallenMatrix(M, functie);
+  const { waarden, vectoren } = eigenSymmetrisch(getallen, functie);
+  let k = ne === undefined ? 0 : Math.round(asNumber(ne));
+  let w = waarden;
+  let v = vectoren;
+  if (k < 0) {
+    w = [...waarden].reverse();
+    v = [...vectoren].reverse();
+    k = -k;
+  }
+  if (k > 0) {
+    w = w.slice(0, k);
+    v = v.slice(0, k);
+  }
+  return { waarden: w.map((x) => (eenheid ? math.multiply(x, eenheid as number) : x)), vectoren: v };
+}
+
+/** Vector of matrix van dezelfde vorm, gevuld met x. */
+function gevuld(v: unknown, x: unknown): unknown {
+  const d = afmetingen(v);
+  if (!d) return x;
+  if (d.length === 1) return math.matrix(new Array(d[0]).fill(x));
+  return math.matrix(Array.from({ length: d[0] }, () => new Array(d[1]).fill(x)));
+}
+
+/** Som van een lijst met eenheden (mathjs add), 0 bij een lege lijst. */
+function somVan(lijst: unknown[]): unknown {
+  if (lijst.length === 0) return 0;
+  return lijst.reduce((s, v) => math.add(s as number, v as number));
+}
+
+/** Een vector (1D) uit een vector of een matrix met één rij of kolom. */
+function alsVector(v: unknown, functie: string): unknown[] {
+  const d = afmetingen(v);
+  if (!d) return [v];
+  if (d.length === 1) return (toArrayLike(v) ?? []).slice();
+  if (d[0] === 1 || d[1] === 1) return plat([v]);
+  throw new Error(`${functie}: verwacht een vector`);
+}
+
+math.import(
+  {
+    // Bouwstenen van een literaal (zie vertaalCalcpad): `[a; b; c]` vouwt een
+    // vector of matrix als element uit, zoals in CalcPAD (`[0; a; 6]`); een
+    // matrix `[r1 | r2]` vult kortere rijen met nullen aan.
+    _cp_vector_lit: function (...items: unknown[]) {
+      return math.matrix(plat(items) as number[]);
+    },
+    _cp_rij: function (...items: unknown[]) {
+      return plat(items);
+    },
+    _cp_matrix_lit: function (...rijen: unknown[]) {
+      const r = rijen.map((x) => (Array.isArray(x) ? x : plat([x])));
+      const n = Math.max(0, ...r.map((x) => x.length));
+      return math.matrix(r.map((x) => (x.length < n ? [...x, ...new Array(n - x.length).fill(0)] : x)) as number[][]);
+    },
+
+    // Stelsels oplossen; zie losOp.
+    _cp_lsolve: function (A: unknown, b: unknown) { return losOp(A, b, 'lsolve', false); },
+    clsolve: function (A: unknown, b: unknown) { return losOp(A, b, 'clsolve', false); },
+    slsolve: function (A: unknown, b: unknown) { return losOp(A, b, 'slsolve', false); },
+    msolve: function (A: unknown, B: unknown) { return losOp(A, B, 'msolve', true); },
+    cmsolve: function (A: unknown, B: unknown) { return losOp(A, B, 'cmsolve', true); },
+    smsolve: function (A: unknown, B: unknown) { return losOp(A, B, 'smsolve', true); },
+
+    // Aanmaken. `matrix(m; n)` en `vector(n)` zijn nulmatrices; matrix() met
+    // een lijst blijft de mathjs-functie.
+    _cp_matrix: function (m: unknown, n: unknown) {
+      if (toArrayLike(m) || typeof m === 'string') return math.matrix(m as number[], n as 'dense');
+      return math.zeros(indexGetal(m, 'matrix'), indexGetal(n, 'matrix'));
+    },
+    vector: function (n: unknown) {
+      return math.zeros(indexGetal(n, 'vector'));
+    },
+    diagonal: function (n: unknown, d: unknown) {
+      return math.multiply(math.identity(indexGetal(n, 'diagonal')), d as number);
+    },
+    vec2diag: function (v: unknown) { return math.diag(math.matrix(alsVector(v, 'vec2diag') as number[])); },
+    diag2vec: function (M: unknown) { return math.matrix(math.diag(vierkant(M, 'diag2vec') as unknown as number[][])); },
+    vec2row: function (v: unknown) { return math.matrix([alsVector(v, 'vec2row')] as number[][]); },
+    vec2col: function (v: unknown) { return math.matrix(alsVector(v, 'vec2col').map((x) => [x]) as number[][]); },
+    join_cols: function (...vs: unknown[]) {
+      const kolommen = vs.map((v) => alsVector(v, 'join_cols'));
+      const m = Math.max(0, ...kolommen.map((k) => k.length));
+      return math.matrix(Array.from({ length: m }, (_, i) => kolommen.map((k) => k[i] ?? 0)) as number[][]);
+    },
+    join_rows: function (...vs: unknown[]) {
+      const rijen = vs.map((v) => alsVector(v, 'join_rows'));
+      const n = Math.max(0, ...rijen.map((r) => r.length));
+      return math.matrix(rijen.map((r) => [...r, ...new Array(n - r.length).fill(0)]) as number[][]);
+    },
+    augment: function (...ms: unknown[]) {
+      const delen = ms.map(alsRijen);
+      const m = Math.max(0, ...delen.map((d) => d.length));
+      return math.matrix(Array.from({ length: m }, (_, i) => delen.flatMap((d) => {
+        const breed = Math.max(0, ...d.map((r) => r.length));
+        const r = d[i] ?? [];
+        return [...r, ...new Array(breed - r.length).fill(0)];
+      })) as number[][]);
+    },
+    stack: function (...ms: unknown[]) {
+      const rijen = ms.flatMap(alsRijen);
+      const n = Math.max(0, ...rijen.map((r) => r.length));
+      return math.matrix(rijen.map((r) => [...r, ...new Array(n - r.length).fill(0)]) as number[][]);
+    },
+    submatrix: function (M: unknown, i1: unknown, i2: unknown, j1: unknown, j2: unknown) {
+      const r = alsRijen(M);
+      const [a, b] = [indexGetal(i1, 'submatrix'), indexGetal(i2, 'submatrix')];
+      const [c, d] = [indexGetal(j1, 'submatrix'), indexGetal(j2, 'submatrix')];
+      if (a < 1 || b > r.length || a > b || c < 1 || d > (r[0]?.length ?? 0) || c > d) {
+        throw new Error('submatrix: index buiten de matrix');
+      }
+      return math.matrix(r.slice(a - 1, b).map((rij) => rij.slice(c - 1, d)) as number[][]);
+    },
+
+    // Structuur
+    len: function (v: unknown) {
+      const d = afmetingen(v);
+      if (!d) return 1;
+      if (d.length === 1) return d[0];
+      if (d[0] === 1 || d[1] === 1) return d[0] * d[1];
+      throw new Error('len: verwacht een vector; gebruik n_rows en n_cols voor een matrix');
+    },
+    fill: function (v: unknown, x: unknown) { return gevuld(v, x); },
+    mfill: function (M: unknown, x: unknown) { return gevuld(M, x); },
+    first: function (v: unknown, n: unknown) {
+      const a = alsVector(v, 'first');
+      return math.matrix(a.slice(0, Math.max(0, indexGetal(n ?? 1, 'first'))) as number[]);
+    },
+    last: function (v: unknown, n: unknown) {
+      const a = alsVector(v, 'last');
+      const k = Math.max(0, indexGetal(n ?? 1, 'last'));
+      return math.matrix(a.slice(Math.max(0, a.length - k)) as number[]);
+    },
+    slice: function (v: unknown, i1: unknown, i2: unknown) {
+      const a = alsVector(v, 'slice');
+      const van = Math.max(1, indexGetal(i1, 'slice'));
+      const tot = Math.min(a.length, indexGetal(i2 ?? a.length, 'slice'));
+      return math.matrix(a.slice(van - 1, Math.max(van - 1, tot)) as number[]);
+    },
+    join: function (...items: unknown[]) {
+      return math.matrix(plat(items) as number[]);
+    },
+    extract: function (v: unknown, idx: unknown) {
+      const a = alsVector(v, 'extract');
+      return math.matrix(plat([idx]).map((i) => {
+        const k = indexGetal(i, 'extract');
+        if (k < 1 || k > a.length) throw new Error('extract: index buiten de vector');
+        return a[k - 1];
+      }) as number[]);
+    },
+    reverse: function (v: unknown) { return math.matrix(alsVector(v, 'reverse').reverse() as number[]); },
+    rsort: function (v: unknown) {
+      return math.matrix([...alsVector(v, 'rsort')].sort((p, q) => asNumber(q) - asNumber(p)) as number[]);
+    },
+    order: function (v: unknown) {
+      const a = alsVector(v, 'order');
+      return math.matrix(a.map((_, i) => i).sort((p, q) => asNumber(a[p]) - asNumber(a[q])).map((i) => i + 1));
+    },
+    revorder: function (v: unknown) {
+      const a = alsVector(v, 'revorder');
+      return math.matrix(a.map((_, i) => i).sort((p, q) => asNumber(a[q]) - asNumber(a[p])).map((i) => i + 1));
+    },
+    // `search(v; x; i)`: de index van het eerste element vanaf plaats i dat
+    // gelijk is aan x, 0 als het er niet is. `_cp_count(v; x; i)`: het aantal
+    // (count met één parameter blijft de mathjs-functie).
+    search: function (v: unknown, x: unknown, i: unknown) {
+      const a = alsVector(v, 'search');
+      const doel = asNumber(x);
+      for (let k = Math.max(1, indexGetal(i ?? 1, 'search')); k <= a.length; k++) {
+        if (asNumber(a[k - 1]) === doel) return k;
+      }
+      return 0;
+    },
+    _cp_count: function (v: unknown, x: unknown, i: unknown) {
+      const a = alsVector(v, 'count');
+      const doel = asNumber(x);
+      let n = 0;
+      for (let k = Math.max(1, indexGetal(i ?? 1, 'count')); k <= a.length; k++) {
+        if (asNumber(a[k - 1]) === doel) n++;
+      }
+      return n;
+    },
+    lookup: function (a: unknown, b: unknown, x: unknown) {
+      const ref = alsVector(a, 'lookup');
+      const terug = alsVector(b, 'lookup');
+      const doel = asNumber(x);
+      return math.matrix(ref.flatMap((r, i) => (asNumber(r) === doel && i < terug.length ? [terug[i]] : [])) as number[]);
+    },
+
+    // Rekenen
+    transp: function (M: unknown) { return math.transpose(M as number[][]); },
+    inverse: function (M: unknown) { return math.inv(M as number[][]); },
+    rank: function (M: unknown) {
+      if (!afmetingen(M)) return nietNul(M) ? 1 : 0;
+      return rangVan(alsRijen(M).map((r) => r.map((v) => (isUnit(v) ? (v.value ?? 0) : asNumber(v)))));
+    },
+    eigenvals: function (M: unknown, ne?: unknown) {
+      return math.matrix(eigenKeuze(M, ne, 'eigenvals').waarden as number[]);
+    },
+    eigenvecs: function (M: unknown, ne?: unknown) {
+      return math.matrix(eigenKeuze(M, ne, 'eigenvecs').vectoren);
+    },
+    eigen: function (M: unknown, ne?: unknown) {
+      const { waarden, vectoren } = eigenKeuze(M, ne, 'eigen');
+      return math.matrix(vectoren.map((v, i) => [waarden[i], ...v]) as number[][]);
+    },
+    hprod: function (A: unknown, B: unknown) { return math.dotMultiply(A as number[][], B as number[][]); },
+    kprod: function (A: unknown, B: unknown) { return math.kron(A as number[][], B as number[][]); },
+    fprod: function (A: unknown, B: unknown) { return somVan(plat([math.dotMultiply(A as number[][], B as number[][])])); },
+
+    // Samenvattend: een lijst van getallen, vectoren en matrices door elkaar.
+    _cp_sum: function (...args: unknown[]) { return somVan(plat(args)); },
+    sumsq: function (...args: unknown[]) { return somVan(plat(args).map((v) => math.multiply(v as number, v as number))); },
+    srss: function (...args: unknown[]) {
+      return math.sqrt(somVan(plat(args).map((v) => math.multiply(v as number, v as number))) as number);
+    },
+    average: function (...args: unknown[]) {
+      const lijst = plat(args);
+      if (lijst.length === 0) throw new Error('average: geen waarden');
+      return math.divide(somVan(lijst) as number, lijst.length);
+    },
+    product: function (...args: unknown[]) {
+      const lijst = plat(args);
+      return lijst.length === 0 ? 1 : lijst.reduce((p, v) => math.multiply(p as number, v as number));
+    },
+    // `line(x; a; b; c…)`: lineaire interpolatie in de lijst, x is de
+    // (1-gebaseerde) plaats; `line(x; y; M)` dubbel lineair in een matrix.
+    line: function (...args: unknown[]) {
+      if (args.length === 3 && afmetingen(args[2])?.length === 2) {
+        const r = alsRijen(args[2]);
+        const x = asNumber(args[0]);
+        const y = asNumber(args[1]);
+        const tussen = (rij: unknown[], t: number): unknown => lineairIn(rij, t);
+        const kol = r.map((rij) => tussen(rij, y));
+        return lineairIn(kol, x);
+      }
+      return lineairIn(plat(args.slice(1)), asNumber(args[0]));
+    },
+
+    // Getallen
+    ceiling: function (x: unknown) { return math.ceil(x as number); },
+    trunc: function (x: unknown) { return math.fix(x as number); },
+    root: function (x: unknown, n: unknown) {
+      const k = asNumber(n);
+      if (typeof x === 'number') return math.nthRoot(x, k);
+      return math.pow(x as number, 1 / k);
+    },
+    // `switch(c1; w1; c2; w2; …; anders)`: de waarde bij de eerste voorwaarde
+    // die waar is, anders de laatste.
+    switch: function (...args: unknown[]) {
+      for (let i = 0; i + 1 < args.length; i += 2) {
+        if (Boolean(asNumber(args[i]))) return args[i + 1];
+      }
+      return args.length % 2 === 1 ? args[args.length - 1] : Number.NaN;
+    },
+  },
+  { override: true },
+);
+
+/** Lineaire interpolatie in een lijst op plaats t (1 = het eerste element). */
+function lineairIn(lijst: unknown[], t: number): unknown {
+  if (lijst.length === 0) return Number.NaN;
+  if (!Number.isFinite(t)) return Number.NaN;
+  if (t <= 1) return lijst[0];
+  if (t >= lijst.length) return lijst[lijst.length - 1];
+  const i = Math.floor(t);
+  const f = t - i;
+  if (f === 0) return lijst[i - 1];
+  return math.add(math.multiply(1 - f, lijst[i - 1] as number), math.multiply(f, lijst[i] as number));
+}
+
+/**
+ * CalcPAD-namen die mathjs zelf ook kent maar anders bedoelt. Een aanroep
+ * met dit aantal parameters gaat naar de `_cp_`-functie; de rest blijft mathjs.
+ */
+const CALCPAD_NAMEN: Record<string, (aantal: number) => string | null> = {
+  lsolve: () => '_cp_lsolve',
+  matrix: (n) => (n === 2 ? '_cp_matrix' : null),
+  sum: (n) => (n >= 2 ? '_cp_sum' : null),
+  count: (n) => (n >= 2 ? '_cp_count' : null),
+};
+
+/**
+ * Zet een mathjs-boom om naar CalcPAD-betekenis voordat hij wordt berekend:
+ *   • een literaal `[[a, b], [c, d]]` wordt `_cp_matrix_lit(_cp_rij(a, b), …)`
+ *     en `[a, b]` wordt `_cp_vector_lit(a, b)`, zodat een vector als element
+ *     wordt uitgevouwen en kortere rijen met nullen worden aangevuld;
+ *   • de namen uit CALCPAD_NAMEN gaan naar hun `_cp_`-functie.
+ * De weergave van de formule (latex.ts) gebruikt de boom zonder deze stap.
+ */
+function vertaalCalcpad(boom: MathNode): MathNode {
+  return boom.transform((nd: MathNode) => {
+    if (math.isArrayNode(nd)) {
+      const items = (nd as unknown as { items: MathNode[] }).items;
+      if (items.length > 0 && items.every((it) => math.isArrayNode(it))) {
+        return new math.FunctionNode('_cp_matrix_lit', items.map((rij) =>
+          new math.FunctionNode('_cp_rij', (rij as unknown as { items: MathNode[] }).items.map(vertaalCalcpad)),
+        ));
+      }
+      return new math.FunctionNode('_cp_vector_lit', items.map(vertaalCalcpad));
+    }
+    if (math.isFunctionNode(nd)) {
+      const f = nd as unknown as { fn: MathNode; args: MathNode[] };
+      if (math.isSymbolNode(f.fn)) {
+        const naam = (f.fn as unknown as { name: string }).name;
+        const nieuw = Object.prototype.hasOwnProperty.call(CALCPAD_NAMEN, naam) ? CALCPAD_NAMEN[naam](f.args.length) : null;
+        if (nieuw) return new math.FunctionNode(nieuw, f.args.map(vertaalCalcpad));
+      }
+    }
+    return nd;
+  });
+}
+
+/** Vertaalde en gecompileerde expressies, per brontekst. */
+const gecompileerd = new Map<string, { evaluate: (scope?: unknown) => unknown }>();
+/** Ontlede expressies voor de weergave, per brontekst. */
+const ontleed = new Map<string, MathNode>();
+const CACHE_MAX = 20000;
+
+/** De mathjs-boom van een expressie (zonder vertaalCalcpad), uit de cache. */
+function ontleedExpr(expr: string): MathNode {
+  let boom = ontleed.get(expr);
+  if (!boom) {
+    boom = math.parse(expr);
+    if (ontleed.size >= CACHE_MAX) ontleed.clear();
+    ontleed.set(expr, boom);
+  }
+  return boom;
+}
+
+/** Berekent een expressie met CalcPAD-betekenis (zie vertaalCalcpad). */
+function reken(expr: string, scope: Scope): unknown {
+  let c = gecompileerd.get(expr);
+  if (!c) {
+    c = vertaalCalcpad(ontleedExpr(expr)).compile();
+    if (gecompileerd.size >= CACHE_MAX) gecompileerd.clear();
+    gecompileerd.set(expr, c);
+  }
+  return c.evaluate(scope);
+}
 
 export interface Scope {
   [key: string]: unknown;
@@ -570,7 +1328,64 @@ export function evaluate(
   initialScope?: Scope,
 ): EvaluatedNode[] {
   const scope: Scope = { ...(initialScope ?? {}) };
-  return evaluateNodes(nodes, scope, selectValues || {});
+  const appModus = currentAngleMode;
+  try {
+    return evaluateNodes(nodes, scope, selectValues || {}, nieuweStand());
+  } finally {
+    // `#deg`, `#rad`, `#gra` gelden alleen in dit blad.
+    currentAngleMode = appModus;
+  }
+}
+
+/**
+ * De stand van de afdrukopdrachten tijdens het doorrekenen. Een opdracht geldt
+ * vanaf zijn regel tot het eind van het blad of tot een andere opdracht van
+ * dezelfde soort, zoals in CalcPAD:
+ *   weergave  `#equ` formule, invulling en uitkomst (standaard)
+ *             `#val` alleen de uitkomst: `x = 5`
+ *             `#noc` alleen de formule, zonder uitkomst: `x = a + b` (er wordt
+ *                    wel gerekend; CalcPAD "no calculation" in de weergave)
+ *   invullen  `#varsub` formule en invulling (standaard)
+ *             `#nosub` zonder invulling: `x = a + b = 5`
+ *             `#novar` alleen de invulling: `x = 2 + 3 = 5`
+ *   decimalen `#round n`: uitkomsten (en de ingevulde en ingevoegde waarden)
+ *             afgerond op n decimalen, zonder nullen achteraan; null = de
+ *             opmaak van de app (vier significante cijfers). `#round default`
+ *             zet hem terug.
+ * Alleen de weergave verandert; er wordt altijd met de volle waarde gerekend.
+ */
+interface Stand {
+  weergave: 'equ' | 'val' | 'noc';
+  invullen: 'varsub' | 'nosub' | 'novar';
+  decimalen: number | null;
+}
+
+function nieuweStand(): Stand {
+  return { weergave: 'equ', invullen: 'varsub', decimalen: null };
+}
+
+/** Voert een opdracht uit (zie OpdrachtNode en Stand). */
+function voerOpdrachtUit(node: OpdrachtNode, stand: Stand): void {
+  switch (node.opdracht) {
+    case 'deg':
+    case 'rad':
+    case 'gra':
+      currentAngleMode = node.opdracht;
+      break;
+    case 'equ':
+    case 'val':
+    case 'noc':
+      stand.weergave = node.opdracht;
+      break;
+    case 'varsub':
+    case 'nosub':
+    case 'novar':
+      stand.invullen = node.opdracht;
+      break;
+    case 'round':
+      stand.decimalen = node.decimalen ?? null;
+      break;
+  }
 }
 
 /**
@@ -579,30 +1394,47 @@ export function evaluate(
  * from a parent sheet without rendering its output. Errors are silently
  * ignored — partial scope is still returned.
  */
-export function extractScope(nodes: AstNode[], selectValues?: SelectValues): Scope {
-  const scope: Scope = {};
+export function extractScope(nodes: AstNode[], selectValues?: SelectValues, initialScope?: Scope): Scope {
+  const scope: Scope = { ...(initialScope ?? {}) };
+  const appModus = currentAngleMode;
   try {
-    evaluateNodes(nodes, scope, selectValues || {});
+    evaluateNodes(nodes, scope, selectValues || {}, nieuweStand());
   } catch {
     /* swallow — best-effort scope extraction */
+  } finally {
+    currentAngleMode = appModus;
   }
   // Strip internal flags.
   delete scope[BREAK_FLAG];
+  delete scope[CONTINUE_FLAG];
   delete scope['_i'];
   return scope;
 }
 
 /** Sentinel key on `scope` used by `#break` to short-circuit out of a loop. */
 const BREAK_FLAG = '__break__';
+/** Vlag voor `#continue`: de rest van de lopende ronde overslaan. */
+const CONTINUE_FLAG = '__continue__';
+/** Bovengrens van een lus met een aantal (`#repeat n`, `#for`). */
+const MAX_RONDES = 10000;
+/** Bovengrens van een lus zonder aantal (`#while`, `#repeat` zonder n), tegen een oneindige lus. */
+const MAX_RONDES_OPEN = 100000;
 
-function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValues): EvaluatedNode[] {
+function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValues, stand: Stand): EvaluatedNode[] {
   const result: EvaluatedNode[] = [];
 
   for (const node of nodes) {
     // `#break` raised by a deeper node — stop evaluating siblings. The
-    // enclosing `repeat` case picks up the flag and exits the loop.
-    if (scope[BREAK_FLAG]) break;
+    // enclosing `repeat` case picks up the flag and exits the loop. Zo ook
+    // `#continue`, waarna de lus aan de volgende ronde begint.
+    if (scope[BREAK_FLAG] || scope[CONTINUE_FLAG]) break;
+    // Wat deze knoop oplevert, krijgt na de switch zijn `scherm` mee (#pre).
+    const begin = result.length;
     switch (node.type) {
+      case 'opdracht':
+        voerOpdrachtUit(node, stand);
+        break;
+
       case 'heading':
         if (node.hidden) break;
         result.push({ type: 'heading', level: node.level, text: node.text });
@@ -619,8 +1451,8 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
               out.push(p.value);
             } else {
               try {
-                const v = math.evaluate(p.value, scope);
-                out.push(stringifyInterpolated(v));
+                const v = reken(p.value, scope);
+                out.push(stringifyInterpolated(v, p.formaat, stand.decimalen));
               } catch {
                 out.push(p.value);
               }
@@ -639,7 +1471,7 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
       case 'assignment': {
         // Always evaluate so subsequent formulas see the binding — but only emit
         // the rendered node when not hidden.
-        const evaluated = evaluateAssignment(node.name, node.expression, scope);
+        const evaluated = evaluateAssignment(node.name, node.expression, scope, !node.hidden, node.index, stand, node.formaat);
         if (!node.hidden) result.push(evaluated);
         break;
       }
@@ -648,13 +1480,18 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         // CalcPAD `?` prompt — pick the user-supplied value or fall back to the default.
         // Het veld toont wat er is ingetypt; gerekend wordt met een punt. Een
         // komma is hier altijd een decimaalteken: "0,42" is 0,42.
-        const invoer = String(selectValues[node.name] ?? node.defaultValue);
-        // Een leeg veld telt als 0 in de eenheid van het veld, net als een
-        // nieuw '?'-veld. Zonder deze stap werd "" met eenheid " kN": een
-        // eenheid zonder getal, die als 1 kN rekende of verderop NaN en
-        // "unit with undefined value" gaf; zonder eenheid bleef de naam
-        // ongedefinieerd. Het veld zelf blijft leeg (currentValue).
-        const raw = invoer.trim().replace(',', '.') || '0';
+        //
+        // Zonder invoer van de gebruiker staat de standaardwaarde in het veld
+        // (`L = ?{5000}mm`, anders 0) en wordt daarmee gerekend.
+        const standaard = node.defaultValue;
+        const invoer = String(selectValues[node.name] ?? standaard);
+        // Een leeg veld telt als de standaardwaarde in de eenheid van het veld:
+        // 0 bij een veld zonder `{…}`, net als een nieuw '?'-veld. Zonder deze
+        // stap werd "" met eenheid " kN": een eenheid zonder getal, die als
+        // 1 kN rekende of verderop NaN en "unit with undefined value" gaf;
+        // zonder eenheid bleef de naam ongedefinieerd. Het veld zelf blijft
+        // leeg (currentValue) en toont de standaardwaarde als placeholder.
+        const raw = invoer.trim().replace(',', '.') || standaard.trim().replace(',', '.') || '0';
         try {
           // Wat geen getal oplevert (alleen een eenheid of een teken, zoals
           // "kN" of "-"), gaat naar de afhandeling van een halve invoer. Dat
@@ -684,6 +1521,7 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             label: node.label,
             unit: node.unit,
             currentValue: invoer,
+            standaard,
           });
         }
         break;
@@ -698,7 +1536,7 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         // wordt ingeslikt bleef de aanroep verderop stilzwijgend als tekst in
         // de uitdraai staan.
         try {
-          math.evaluate(`${node.name}(${node.params.join(', ')}) = ${node.expression}`, scope);
+          reken(`${node.name}(${node.params.join(', ')}) = ${node.expression}`, scope);
         } catch (err) {
           // Surface error as a hidden text — function won't be callable later.
           if (!node.hidden) {
@@ -720,42 +1558,67 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
       }
 
       case 'var-display': {
-        const value = scope[node.name];
+        let value = scope[node.name];
         if (value === undefined) {
           if (!node.hidden) {
             result.push({ type: 'text', text: `(${node.name} is niet gedefinieerd)` });
           }
           break;
         }
-        if (!node.hidden) {
-          const resultStr = formatResult(value);
-          const unit = isUnit(value) ? simplifyUnitString(value) : '';
-          result.push({ type: 'var-display', name: node.name, result: resultStr, waarde: numeriek(value), unit });
+        if (node.hidden) break;
+        // `M|kN*m` op een eigen regel: de waarde omgerekend (zie doeleenheid).
+        if (node.omrekening) {
+          try {
+            const doel = doeleenheid(node.omrekening);
+            value = reken(doel ? `${node.name} to (${doel})` : `${node.name} to ${node.omrekening}`, scope);
+          } catch (err) {
+            result.push({ type: 'text', text: `${node.name} | ${node.omrekening}: ${(err as Error).message}` });
+            break;
+          }
         }
+        result.push({ type: 'var-display', name: node.name, ...uitkomstVelden(value, opmaakVan(stand, node.formaat)) });
         break;
       }
 
       case 'break': {
         // Set the break flag — the enclosing repeat case consumes it.
-        scope[BREAK_FLAG] = true;
+        // `#continue` zet een eigen vlag: alleen de rest van deze ronde valt weg.
+        scope[node.doorgaan ? CONTINUE_FLAG : BREAK_FLAG] = true;
         break;
       }
 
       case 'repeat': {
+        // `#repeat n`, `#for` (count) en `#while` (conditie). Zonder aantal en
+        // zonder voorwaarde herhaalt de lus tot een #break, tot de bovengrens.
         let count = 0;
-        try {
-          const v = math.evaluate(node.count, scope);
-          count = Math.trunc(Number(v));
-        } catch {
-          count = parseInt(node.count, 10) || 0;
-        }
-        if (count < 0 || count > 10000) {
-          count = Math.min(Math.max(count, 0), 10000);
+        if (node.conditie !== undefined || node.count.trim() === '') {
+          count = MAX_RONDES_OPEN;
+        } else {
+          try {
+            const v = reken(node.count, scope);
+            count = Math.trunc(asNumber(v));
+          } catch {
+            count = parseInt(node.count, 10) || 0;
+          }
+          if (!Number.isFinite(count)) count = 0;
+          if (count < 0 || count > MAX_RONDES) {
+            count = Math.min(Math.max(count, 0), MAX_RONDES);
+          }
         }
         for (let iter = 1; iter <= count; iter++) {
+          if (node.conditie !== undefined) {
+            let door = false;
+            try {
+              door = Boolean(asNumber(reken(node.conditie, scope)));
+            } catch {
+              if (!node.hidden) result.push({ type: 'text', text: `Error evaluating condition: ${node.conditie}` });
+            }
+            if (!door) break;
+          }
           scope['_i'] = iter;
-          const children = evaluateNodes(node.body, scope, selectValues);
+          const children = evaluateNodes(node.body, scope, selectValues, stand);
           if (!node.hidden) result.push(...children);
+          delete scope[CONTINUE_FLAG];
           if (scope[BREAK_FLAG]) {
             // Iteration stopped — consume the flag so outer loops aren't
             // also broken out of.
@@ -781,7 +1644,7 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
       }
 
       case 'conditional': {
-        const condResult = evaluateConditional(node, scope, selectValues);
+        const condResult = evaluateConditional(node, scope, selectValues, stand);
         if (condResult && !node.hidden) result.push(condResult);
         break;
       }
@@ -792,6 +1655,59 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         result.push({ type: 'svg', content: interpolated });
         break;
       }
+
+      case '3d': {
+        if (node.hidden) break;
+        // In `{{…}}` mag een lengte ook als getal in de eenheid van de scène
+        // meedoen (`{{H + 800}}` in een scène in mm): de scène vraagt eerst met
+        // de lengtes als getal en anders met de eenheden zoals ze zijn
+        // (drieD.ts, rekenGetal). De teller van een #for in het blok staat even
+        // in de scope en daarna weer zoals hij was; het blok verandert verder
+        // niets aan het blad.
+        const eenheid = node.instellingen.eenheid ?? 'mm';
+        const lengtesAlsGetal = new Proxy(scope, {
+          get(doel, naam) {
+            const v = Reflect.get(doel, naam);
+            return typeof naam === 'string' && isUnit(v) && isLengte(v) ? v.toNumber(eenheid) : v;
+          },
+        });
+        result.push(bouwDrieDScene(node, {
+          reken: (expr, alsGetal) => reken(expr, alsGetal ? lengtesAlsGetal : scope),
+          zet: (naam, waarde) => {
+            const had = Object.prototype.hasOwnProperty.call(scope, naam);
+            const oud = scope[naam];
+            scope[naam] = waarde;
+            return () => {
+              if (had) scope[naam] = oud;
+              else delete scope[naam];
+            };
+          },
+          alsTekst: (waarde) => stringifyInterpolated(waarde, undefined, stand.decimalen),
+        }));
+        break;
+      }
+
+      case 'iframe':
+        if (node.hidden) break;
+        result.push(bouwIframe(node, {
+          reken: (expr) => reken(expr, scope),
+          alsTekst: (waarde) => stringifyInterpolated(waarde, undefined, stand.decimalen),
+        }));
+        break;
+
+      case 'js':
+        if (node.hidden) break;
+        result.push(bouwJsBlok(node, {
+          reken: (expr) => reken(expr, scope),
+          alsTekst: (waarde) => stringifyInterpolated(waarde, undefined, stand.decimalen),
+          scope,
+        }));
+        break;
+
+      case 'ifcx':
+        if (node.hidden) break;
+        result.push(bouwIfcxBlok(node, { reken: (expr) => reken(expr, scope), scope }));
+        break;
 
       case 'image':
         if (node.hidden) break;
@@ -823,6 +1739,10 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         break;
       }
     }
+    // `#pre`: wat deze knoop opleverde, staat alleen op het scherm.
+    if ('scherm' in node && node.scherm) {
+      for (let k = begin; k < result.length; k++) (result[k] as { scherm?: boolean }).scherm = true;
+    }
   }
 
   return result;
@@ -853,9 +1773,11 @@ function getalMetEenheid(getal: string, eenheid: string): unknown {
   }
 }
 
-// Separate "expr to unit" into expression and target unit
+// Separate "expr to unit" into expression and target unit. Een omrekening met
+// `in` of `|` heeft de parser al naar `to` gezet (zetInOmNaarTo in
+// parser.ts); een andere `in` is de inch (`L = 5 in + 2 mm`) en wordt hier niet
+// meer als omrekening gesplitst.
 const TO_UNIT_RE = /^(.+?)\s+to\s+(.+)$/;
-const IN_UNIT_RE = /^(.+?)\s+in\s+(.+)$/;
 
 /**
  * Doeleenheid van een omrekening, in een vorm die mathjs als doeleenheid
@@ -888,13 +1810,17 @@ function doeleenheid(eenheid: string): string | null {
 function evaluateAssignment(
   name: string,
   expression: string,
-  scope: Scope
+  scope: Scope,
+  toon = true,
+  index?: string,
+  stand: Stand = nieuweStand(),
+  formaat?: string,
 ): EvaluatedNode {
   try {
-    // Parse "to unit" / "in unit" for display purposes
+    // Parse "to unit" for display purposes
     let displayExpr = expression;
     let rekenExpr = expression;
-    const toMatch = expression.match(TO_UNIT_RE) || expression.match(IN_UNIT_RE);
+    const toMatch = expression.match(TO_UNIT_RE);
     if (toMatch) {
       displayExpr = toMatch[1].trim();
       // `α to 1/degC`: zie doeleenheid.
@@ -903,33 +1829,44 @@ function evaluateAssignment(
     }
 
     // Evaluate the full expression (including "to unit" if present)
-    const parsed = math.parse(rekenExpr);
-    const value = parsed.evaluate(scope);
-    scope[name] = value;
+    const value = reken(rekenExpr, scope);
+    const weergaveNaam = index === undefined ? name : kenElementToe(name, index, value, scope);
+    if (index === undefined) scope[name] = value;
+
+    // Een verborgen regel wordt niet getoond: de ingevulde formule en de
+    // opgemaakte uitkomst zijn dan overbodig werk.
+    if (!toon) {
+      return { type: 'assignment', name: weergaveNaam, expression: displayExpr, substitution: '', result: '', unit: '' };
+    }
+
+    // Wat de regel toont (zie Stand). Een $Root-, $Sum-blok enz. toont geen
+    // invulling: het blok staat er als formule, met de uitkomst.
+    const weergave: 'val' | 'noc' | 'nosub' | 'novar' | undefined =
+      stand.weergave !== 'equ' ? stand.weergave
+        : stand.invullen === 'nosub' || displayExpr.includes('_cp_los(') ? 'nosub'
+          : stand.invullen === 'novar' ? 'novar' : undefined;
 
     // Build substitution: replace variable names with their values
-    const substitution = buildSubstitution(displayExpr, scope, name, displayExpr === expression ? parsed : undefined);
-
-    // Format the result with simplified units
-    const resultStr = formatResult(value);
-    const unit = isUnit(value) ? simplifyUnitString(value) : '';
+    const substitution = weergave === 'val' || weergave === 'noc'
+      ? ''
+      : buildSubstitution(displayExpr, scope, name, displayExpr === expression ? ontleedExpr(rekenExpr) : undefined, stand.decimalen);
 
     return {
       type: 'assignment',
-      name,
+      name: weergaveNaam,
       expression: displayExpr,
       substitution,
-      result: resultStr,
-      waarde: numeriek(value),
-      unit,
+      ...uitkomstVelden(value, opmaakVan(stand, formaat)),
+      ...(weergave ? { weergave } : {}),
     };
   } catch (err) {
     // Bind to NaN so downstream references don't cascade into "Undefined
     // symbol" — they'll get NaN and either short-circuit or propagate.
-    scope[name] = Number.NaN;
+    // Een mislukte toekenning aan een element laat de matrix zelf staan.
+    if (index === undefined) scope[name] = Number.NaN;
     return {
       type: 'assignment',
-      name,
+      name: index === undefined ? name : `${name}.(${index.replace(/,/g, ';')})`,
       expression,
       substitution: '',
       result: `Error: ${(err as Error).message}`,
@@ -938,11 +1875,47 @@ function evaluateAssignment(
   }
 }
 
+/**
+ * Kent `waarde` toe aan één element van de vector of matrix `naam`
+ * (`v.(i) = …`, `A.(i; j) = …`), 1-gebaseerd zoals in CalcPAD. De matrix
+ * wordt eerst gekopieerd: een eerdere `B = A` deelt anders hetzelfde object
+ * en zou mee veranderen. Een index buiten de afmetingen is een fout, zoals in
+ * CalcPAD ("Index out of range"); de matrix groeit niet stil mee.
+ * Geeft de naam voor de weergave, met de berekende index: `v.(3)`.
+ */
+function kenElementToe(naam: string, index: string, waarde: unknown, scope: Scope): string {
+  const doel = scope[naam];
+  if (doel === undefined) {
+    throw new Error(`${naam} is niet gedefinieerd; maak eerst de vector of matrix, bijvoorbeeld ${naam} = vector(n) of ${naam} = matrix(m; n)`);
+  }
+  const d = afmetingen(doel);
+  if (!d) throw new Error(`${naam} is geen vector of matrix`);
+  if (afmetingen(waarde)) throw new Error(`${naam}: een element krijgt één waarde, geen vector of matrix`);
+  const idx = plat([reken(`[${index}]`, scope)]).map((i) => indexGetal(i, naam));
+  if (idx.length !== d.length) {
+    throw new Error(d.length === 1
+      ? `${naam} is een vector: één index, ${naam}.(i)`
+      : `${naam} is een matrix: twee indices, ${naam}.(i; j)`);
+  }
+  idx.forEach((k, as) => {
+    if (k < 1 || k > d[as]) {
+      throw new Error(`Index buiten bereik: ${naam}.(${idx.join('; ')}) bij afmetingen ${d.join(' × ')}`);
+    }
+  });
+  const kopie = (math.isMatrix(doel) ? (doel as unknown as { clone: () => unknown }).clone() : math.matrix(doel as number[])) as {
+    set: (i: number[], v: unknown) => void;
+  };
+  kopie.set(idx.map((k) => k - 1), waarde);
+  scope[naam] = kopie;
+  return `${naam}.(${idx.join('; ')})`;
+}
+
 function buildSubstitution(
   expression: string,
   scope: Scope,
   currentVar: string,
   parsedExpression?: MathNode,
+  decimalen: number | null = null,
 ): string {
   // Bij een gewone toewijzing is dit dezelfde boom die zojuist is berekend.
   // Alleen een eenheidsconversie toont een ander deel van de expressie.
@@ -971,7 +1944,7 @@ function buildSubstitution(
     const invulbaar =
       typeof val === 'number' || typeof val === 'string' || typeof val === 'boolean' || isUnit(val);
     if (!invulbaar) continue;
-    const formatted = formatInline(val);
+    const formatted = formatInline(val, decimalen);
     // Wrap in parentheses if value has a unit (contains space) to preserve
     // operator precedence: h^2 → (500 mm)^2, not 500 mm^2
     const wrapped = isUnit(val) ? `(${formatted})` : formatted;
@@ -979,7 +1952,14 @@ function buildSubstitution(
     // waardoor een naam die met een Griekse letter begint (γ_M, σ_m,d, ψ_0)
     // nooit werd ingevuld: de ingevulde formule toonde dan nog het symbool.
     const naam = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    sub = sub.replace(new RegExp(`(?<![\\p{L}\\p{N}_])${naam}(?![\\p{L}\\p{N}_])`, 'gu'), wrapped);
+    const patroon = new RegExp(`(?<![\\p{L}\\p{N}_])${naam}(?![\\p{L}\\p{N}_])`, 'gu');
+    // Niet binnen een tekenreeks: in `concat("n = "; string(n))` is de eerste
+    // n tekst. En met een functie als vervanging, zodat een `$` in een
+    // ingevulde tekst geen vervangpatroon wordt.
+    sub = sub
+      .split('"')
+      .map((stuk, i) => (i % 2 === 1 ? stuk : stuk.replace(patroon, () => wrapped)))
+      .join('"');
   }
   return sub;
 }
@@ -999,6 +1979,13 @@ interface MathUnit {
   value: number;
 }
 
+let meter: { equalBase(u: unknown): boolean } | null = null;
+/** Een waarde met een lengte als eenheid (mm, m, …), voor `{{…}}` in een `@3d`-blok. */
+function isLengte(v: MathUnit): boolean {
+  meter ??= math.unit('m') as unknown as { equalBase(u: unknown): boolean };
+  return v.value !== null && v.value !== undefined && meter.equalBase(v);
+}
+
 /** Check if a value is a mathjs Unit */
 function isUnit(value: unknown): value is MathUnit {
   return (
@@ -1009,19 +1996,43 @@ function isUnit(value: unknown): value is MathUnit {
   );
 }
 
-/** Eenheidsdelen samengevoegd per voorvoegsel en naam, zonder machten nul. */
+/**
+ * Eenheidsdelen samengevoegd per eenheid, ongeacht het voorvoegsel, zonder
+ * machten nul. kN boven en N of MN onder de streep vallen zo tegen elkaar weg,
+ * net als mm boven en m onder; de omrekenfactor komt in het getal, want
+ * `getNumericValue` rekent om naar de eenheid die hier overblijft. Wat
+ * overblijft krijgt het voorvoegsel met het grootste aandeel, boven en onder
+ * de streep samen: mm^2 / m wordt mm, niet m. Een last b·h·25 kN/m³ met b en
+ * h in mm, maal L² in m, is mm²·m²/m³: daar wint m (5 tegen 2) en komt het
+ * moment in kN·m, niet als 16730 mm·kN.
+ */
 function unitGroups(value: MathUnit): { name: string; power: number }[] {
-  const groups: Record<string, { name: string; power: number }> = {};
+  const perEenheid = new Map<string, { power: number; perPrefix: Map<string, number> }>();
 
   for (const u of value.units) {
-    const key = u.prefix.name + u.unit.name;
-    if (groups[key] === undefined) {
-      groups[key] = { name: key, power: 0 };
+    let g = perEenheid.get(u.unit.name);
+    if (g === undefined) {
+      g = { power: 0, perPrefix: new Map() };
+      perEenheid.set(u.unit.name, g);
     }
-    groups[key].power += u.power;
+    g.power += u.power;
+    g.perPrefix.set(u.prefix.name, (g.perPrefix.get(u.prefix.name) ?? 0) + Math.abs(u.power));
   }
 
-  return Object.values(groups).filter(g => g.power !== 0);
+  const uit: { name: string; power: number }[] = [];
+  for (const [naam, g] of perEenheid) {
+    if (g.power === 0) continue;
+    let prefix = '';
+    let grootste = 0;
+    for (const [p, aandeel] of g.perPrefix) {
+      if (aandeel > grootste) {
+        prefix = p;
+        grootste = aandeel;
+      }
+    }
+    uit.push({ name: prefix + naam, power: g.power });
+  }
+  return uit;
 }
 
 /**
@@ -1030,7 +2041,12 @@ function unitGroups(value: MathUnit): { name: string; power: number }[] {
  */
 function simplifyUnitString(value: MathUnit): string {
   const entries = unitGroups(value);
-  const pos = entries.filter(g => g.power > 0);
+  // Lengte achteraan in een product: kN m, niet m kN. De volgorde volgt anders
+  // die van de delen in de berekening.
+  const isLengte = (naam: string) => /^[a-zµ]?m$/.test(naam);
+  const pos = entries
+    .filter(g => g.power > 0)
+    .sort((a, b) => Number(isLengte(a.name)) - Number(isLengte(b.name)));
   const neg = entries.filter(g => g.power < 0);
 
   let result = pos
@@ -1113,10 +2129,180 @@ function formatNumber(n: number): string {
   return n.toExponential(3);
 }
 
+/**
+ * De opmaak van een getal in beeld, naar CalcPAD:
+ *   `formaat` achter een uitdrukking (`x = a/b:F2`), als in .NET:
+ *     F n  vast n decimalen, met nullen achteraan (F = F2): 3.14159:F2 → 3.14
+ *     N n  als F; zonder scheiding van duizendtallen, want een komma of punt
+ *          daarvoor botst met het decimaalteken
+ *     E n  wetenschappelijk met n decimalen (E = E6)
+ *     G n  n significante cijfers (G zonder getal: de opmaak van de app)
+ *     P n  procent: ×100, n decimalen en een %-teken (P = P2)
+ *   `decimalen` uit `#round n`: afgerond op n decimalen, zonder nullen
+ *     achteraan (2.5 blijft 2.5); wat daarbij op 0 zou uitkomen, staat in
+ *     wetenschappelijke notatie.
+ * Een formaat achter de uitdrukking gaat voor `#round`. Zonder beide: de
+ * opmaak van de app (formatNumber).
+ */
+interface Opmaak {
+  formaat?: string;
+  decimalen: number | null;
+}
+
+function opmaakVan(stand: Stand, formaat?: string): Opmaak | undefined {
+  if (!formaat && stand.decimalen === null) return undefined;
+  return { formaat, decimalen: stand.decimalen };
+}
+
+/** `n` vast op d decimalen, afgerond zoals round(); "-0.00" wordt "0.00". */
+function vasteDecimalen(n: number, d: number): string {
+  const s = (nativeRound(n, d) as number).toFixed(d);
+  return /^-0(?:\.0*)?$/.test(s) ? s.slice(1) : s;
+}
+
+function formatGetal(n: number, opmaak?: Opmaak): string {
+  if (!opmaak || !Number.isFinite(n)) return formatNumber(n);
+  const m = opmaak.formaat?.match(/^([FNEGP])(\d*)$/i);
+  if (m) {
+    const d = m[2] === '' ? null : Math.min(15, parseInt(m[2], 10));
+    switch (m[1].toUpperCase()) {
+      case 'F':
+      case 'N':
+        return vasteDecimalen(n, d ?? 2);
+      case 'E':
+        return n.toExponential(d ?? 6);
+      case 'G':
+        return d ? String(parseFloat(n.toPrecision(d))) : formatNumber(n);
+      case 'P':
+        return `${vasteDecimalen(n * 100, d ?? 2)} %`;
+    }
+  }
+  if (opmaak.decimalen !== null) {
+    if (n === 0) return '0';
+    const r = nativeRound(n, opmaak.decimalen) as number;
+    if (r === 0 || Math.abs(n) >= 1e15) {
+      return n.toExponential(opmaak.decimalen).replace(/\.?0+e/, 'e');
+    }
+    return String(r);
+  }
+  return formatNumber(n);
+}
+
+/** Een procentformaat geldt niet voor een grootheid met eenheid; die krijgt dan vaste decimalen. */
+function opmaakMetEenheid(opmaak: Opmaak): Opmaak {
+  const f = opmaak.formaat;
+  return f && /^P/i.test(f) ? { ...opmaak, formaat: 'F' + f.slice(1) } : opmaak;
+}
+
+/** De uitkomst in beeld met een opmaak; undefined als er niets op te maken is. */
+function toonUitkomst(value: unknown, opmaak: Opmaak): string | undefined {
+  if (isUnit(value)) {
+    return `${formatGetal(getNumericValue(value), opmaakMetEenheid(opmaak))} ${simplifyUnitString(value)}`;
+  }
+  if (typeof value === 'number') return formatGetal(value, opmaak);
+  return undefined;
+}
+
 /** De uitkomst als onafgerond getal in de getoonde eenheid; geen getal → undefined. */
 function numeriek(value: unknown): number | undefined {
   if (isUnit(value)) return getNumericValue(value);
   return typeof value === 'number' ? value : undefined;
+}
+
+/** Hoeveel rijen en kolommen van een matrix de uitwerking ten hoogste toont. */
+const TOON_RIJEN = 12;
+const TOON_KOLOMMEN = 10;
+
+/**
+ * De plaatsen die getoond worden van `n`: alles, of bij meer dan `max` de
+ * eerste max − 2, een gat (-1) en de laatste.
+ */
+function getoondePlaatsen(n: number, max: number): number[] {
+  if (n <= max) return Array.from({ length: n }, (_, i) => i);
+  return [...Array.from({ length: max - 2 }, (_, i) => i), -1, n - 1];
+}
+
+/**
+ * Een vector of matrix voor de uitwerking: elk element afgerond en met zijn
+ * eenheid vereenvoudigd zoals een gewone uitkomst. Delen alle elementen
+ * dezelfde eenheid (een kale 0 telt mee), dan staat die één keer achter de
+ * haak. Rekenruis (een element dat meer dan 10¹³ keer kleiner is dan het
+ * grootste) wordt als 0 getoond. Een grote matrix wordt ingekort. null als
+ * de waarde geen vector of matrix is (of meer dan twee dimensies heeft).
+ */
+function matrixUitkomst(value: unknown, opmaak?: Opmaak): { tekst: string; matrix: MatrixUitkomst } | null {
+  const d = afmetingen(value);
+  if (!d || d.length < 1 || d.length > 2) return null;
+  const vector = d.length === 1;
+  const rijen: unknown[][] = vector ? [toArrayLike(value) ?? []] : alsRijen(value);
+  const m = rijen.length;
+  const n = vector ? d[0] : d[1];
+
+  const alle = rijen.flat();
+  const eenheden = new Set<string>();
+  let grootste = 0;
+  for (const el of alle) {
+    if (isUnit(el)) {
+      eenheden.add(simplifyUnitString(el));
+      grootste = Math.max(grootste, Math.abs(getNumericValue(el)));
+    } else if (typeof el === 'number') {
+      if (el !== 0) eenheden.add('');
+      if (Number.isFinite(el)) grootste = Math.max(grootste, Math.abs(el));
+    } else {
+      eenheden.add('\u0000');
+    }
+  }
+  const eenheid = eenheden.size === 1 ? [...eenheden][0] : '';
+  const gedeeld = eenheid !== '' && eenheid !== '\u0000';
+  const ruis = grootste * 1e-13;
+  const getal = (x: number, o = opmaak): string => formatGetal(Math.abs(x) < ruis ? 0 : x, o);
+  const element = (el: unknown): string => {
+    if (isUnit(el)) {
+      const w = getal(getNumericValue(el), opmaak && opmaakMetEenheid(opmaak));
+      return gedeeld ? w : `${w} ${simplifyUnitString(el)}`.trim();
+    }
+    if (typeof el === 'number') return getal(el);
+    if (typeof el === 'boolean') return el ? '1' : '0';
+    return String(el);
+  };
+
+  const ri = vector ? [0] : getoondePlaatsen(m, TOON_RIJEN);
+  const ki = getoondePlaatsen(n, TOON_KOLOMMEN);
+  const getoond = ri.map((i) => ki.map((j) => {
+    if (i === -1) return j === -1 ? '⋱' : '⋮';
+    if (j === -1) return '⋯';
+    return element(rijen[i][j]);
+  }));
+  const tekst = `[${getoond.map((r) => r.map((e) => (e === '⋮' || e === '⋱' || e === '⋯' ? '…' : e)).join('; ')).join(' | ')}]`
+    + (gedeeld ? ` ${eenheid}` : '');
+  return {
+    tekst,
+    matrix: { rijen: getoond, vector, eenheid: gedeeld ? eenheid : '', m: vector ? 1 : m, n },
+  };
+}
+
+/**
+ * De velden van een uitkomst voor de uitwerking: tekst, eenheid, getal en zo
+ * nodig de matrixopmaak. Met een opmaak (`:F2`, `#round n`) komt de getoonde
+ * vorm in `getoond` (bij een matrix in de elementen van `matrix`); `result`
+ * houdt de standaardopmaak, zodat wie de uitkomst leest hetzelfde getal krijgt.
+ */
+function uitkomstVelden(value: unknown, opmaak?: Opmaak): {
+  result: string; unit: string; waarde?: number; matrix?: MatrixUitkomst; getoond?: string;
+} {
+  const mat = matrixUitkomst(value);
+  if (mat) {
+    const getoond = opmaak ? matrixUitkomst(value, opmaak) : null;
+    return { result: mat.tekst, unit: mat.matrix.eenheid, matrix: (getoond ?? mat).matrix };
+  }
+  const result = formatResult(value);
+  const getoond = opmaak ? toonUitkomst(value, opmaak) : undefined;
+  return {
+    result,
+    waarde: numeriek(value),
+    unit: isUnit(value) ? simplifyUnitString(value) : '',
+    ...(getoond !== undefined && getoond !== result ? { getoond } : {}),
+  };
 }
 
 /** Format value for the final result: "150000 mm^2" */
@@ -1141,18 +2327,23 @@ function formatResult(value: unknown): string {
  * daarna door de formuleopmaak (mathjs-parse), dus de eenheid moet daar
  * leesbaar zijn: een zuiver inverse eenheid wordt `1.2e-5 K^-1`.
  */
-function formatInline(value: unknown): string {
+function formatInline(value: unknown, decimalen: number | null = null): string {
   if (value === null || value === undefined) return '';
+  const opmaak: Opmaak | undefined = decimalen === null ? undefined : { decimalen };
 
   if (isUnit(value)) {
     const num = getNumericValue(value);
     const unit = unitExpression(value);
-    return `${formatNumber(num)} ${unit}`;
+    return `${formatGetal(num, opmaak)} ${unit}`;
   }
 
   if (typeof value === 'number') {
-    return formatNumber(value);
+    return formatGetal(value, opmaak);
   }
+
+  // Een tekst tussen aanhalingstekens, zodat de formuleopmaak hem als tekst
+  // leest en niet als een naam (of, met spaties, als iets onleesbaars).
+  if (typeof value === 'string') return JSON.stringify(value);
 
   return String(value);
 }
@@ -1167,6 +2358,7 @@ function evaluateConditional(
   node: ConditionalNode,
   scope: Scope,
   selectValues: SelectValues,
+  stand: Stand,
 ): EvaluatedNode | null {
   const branches = node.branches ?? (
     // Legacy fallback if a caller hands us pre-cascading nodes
@@ -1177,10 +2369,10 @@ function evaluateConditional(
 
   for (const branch of branches) {
     try {
-      const condValue = math.evaluate(branch.condition, scope);
+      const condValue = reken(branch.condition, scope);
       if (Boolean(condValue)) {
         if (branch.body.length === 0) return null;
-        const children = evaluateNodes(branch.body, scope, selectValues);
+        const children = evaluateNodes(branch.body, scope, selectValues, stand);
         return { type: 'conditional-branch', children };
       }
     } catch {
@@ -1193,7 +2385,7 @@ function evaluateConditional(
 
   // No branch matched — try else
   if (node.elseBody && node.elseBody.length > 0) {
-    const children = evaluateNodes(node.elseBody, scope, selectValues);
+    const children = evaluateNodes(node.elseBody, scope, selectValues, stand);
     return { type: 'conditional-branch', children };
   }
   return null;
@@ -1211,16 +2403,29 @@ function renderPlotSvg(
   scope: Scope,
 ): string {
   const samples = node.samples ?? 120;
-  const lo = toPlain(math.evaluate(node.lo, scope));
-  const hi = toPlain(math.evaluate(node.hi, scope));
+  // Grenzen met een eenheid (`x = 0 m : L`): de variabele loopt dan met die
+  // eenheid, zodat een functie als q·x·(L − x)/2 met eenheden rekent. Zonder
+  // deze stap viel elk punt af op "Units do not match" en bleef de grafiek leeg.
+  const loW = reken(node.lo, scope);
+  const hiW = reken(node.hi, scope);
+  const grens = [hiW, loW].find(isUnit) as MathUnit | undefined;
+  const xEenheid = grens ? unitExpression(grens) : '';
+  const alsGetal = (v: unknown): number => {
+    if (!isUnit(v)) return toPlain(v);
+    try { return v.toNumber(xEenheid); } catch { return Number.NaN; }
+  };
+  const lo = alsGetal(loW);
+  const hi = alsGetal(hiW);
   if (!isFinite(lo) || !isFinite(hi) || lo === hi) {
     throw new Error(`invalid range ${lo} … ${hi}`);
   }
+  let xLabel = grens ? simplifyUnitString(grens) : '';
+  let yLabel = '';
 
   // Pre-compile each curve's expressions
   const compiled = node.curves.map((c) => ({
-    x: c.xExpr ? math.parse(c.xExpr).compile() : null,
-    y: math.parse(c.yExpr).compile(),
+    x: c.xExpr ? vertaalCalcpad(ontleedExpr(c.xExpr)).compile() : null,
+    y: vertaalCalcpad(ontleedExpr(c.yExpr)).compile(),
   }));
 
   // Sample
@@ -1229,11 +2434,18 @@ function renderPlotSvg(
   const innerScope: Scope = { ...scope };
   for (let i = 0; i <= samples; i++) {
     const t = lo + ((hi - lo) * i) / samples;
-    innerScope[node.param] = t;
+    innerScope[node.param] = xEenheid ? math.unit(t, xEenheid) : t;
     for (let s = 0; s < compiled.length; s++) {
       try {
-        const x = compiled[s].x ? toPlain(compiled[s].x!.evaluate(innerScope)) : t;
-        const y = toPlain(compiled[s].y.evaluate(innerScope));
+        let x = t;
+        if (compiled[s].x) {
+          const xw = compiled[s].x!.evaluate(innerScope);
+          if (s === 0 && i === 0) xLabel = isUnit(xw) ? simplifyUnitString(xw) : '';
+          x = toPlain(xw);
+        }
+        const yw = compiled[s].y.evaluate(innerScope);
+        if (!yLabel && isUnit(yw)) yLabel = simplifyUnitString(yw);
+        const y = toPlain(yw);
         if (isFinite(x) && isFinite(y)) {
           seriesData[s].push({ x, y });
         }
@@ -1257,8 +2469,14 @@ function renderPlotSvg(
   const yPad = (yMax - yMin) * 0.08;
   xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
 
-  const W = 520;
-  const H = 320;
+  // CalcPAD-variabelen PlotWidth en PlotHeight (pixels) bepalen de maat.
+  const maat = (naam: string, standaard: number): number => {
+    const v = scope[naam];
+    const n = typeof v === 'number' ? v : Number.NaN;
+    return Number.isFinite(n) && n >= 50 && n <= 4000 ? n : standaard;
+  };
+  const W = maat('PlotWidth', 520);
+  const H = maat('PlotHeight', 320);
   const padL = 44, padR = 16, padT = 16, padB = 32;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
@@ -1299,6 +2517,14 @@ function renderPlotSvg(
     ticks.push(`<text x="${x.toFixed(1)}" y="${H - padB + 14}" font-size="9" fill="#64748b" text-anchor="middle">${formatTick(tx)}</text>`);
     ticks.push(`<text x="${padL - 6}" y="${y.toFixed(1) }" font-size="9" fill="#64748b" text-anchor="end" dominant-baseline="middle">${formatTick(ty)}</text>`);
   }
+  // De eenheden van de assen, als de grafiek met eenheden rekent.
+  const svgTekst = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  if (xLabel) {
+    ticks.push(`<text x="${padL + plotW}" y="${padT + plotH - 4}" font-size="9" fill="#64748b" text-anchor="end">${svgTekst(xLabel)}</text>`);
+  }
+  if (yLabel) {
+    ticks.push(`<text x="${padL + 4}" y="${padT + 10}" font-size="9" fill="#64748b" text-anchor="start">${svgTekst(yLabel)}</text>`);
+  }
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" class="calc-plot">
     <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="#fafaf9" stroke="#e7e5e4" stroke-width="1" />
@@ -1331,12 +2557,14 @@ function formatTick(n: number): string {
  * Convert an evaluated mathjs value to a string suitable for inlining into
  * SVG / HTML markup. Numbers lose their units (SVG coordinates are unitless).
  */
-function stringifyInterpolated(v: unknown): string {
+function stringifyInterpolated(v: unknown, formaat?: string, decimalen: number | null = null): string {
   if (v === null || v === undefined) return '';
-  if (typeof v === 'number') return formatNumber(v);
+  // Een formaat (`'x:F2'`) of `#round n` geldt ook voor een ingevoegde waarde.
+  const opmaak: Opmaak | undefined = formaat || decimalen !== null ? { formaat, decimalen } : undefined;
+  if (typeof v === 'number') return formatGetal(v, opmaak);
   if (typeof v === 'string') return v;
   if (typeof v === 'boolean') return v ? '1' : '0';
-  if (isUnit(v)) return formatNumber(getNumericValue(v));
+  if (isUnit(v)) return formatGetal(getNumericValue(v), opmaak && opmaakMetEenheid(opmaak));
   return String(v);
 }
 

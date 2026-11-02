@@ -1,0 +1,259 @@
+{
+  "kit": {
+    "klikWijzig": "{{naam}} — click to edit",
+    "voldoet": "✓ passes",
+    "voldoetNiet": "✗ fails",
+    "ja": "Yes",
+    "nee": "No"
+  },
+  "ligger": {
+    "titel": "Parametric view — beam",
+    "kop": "Beam",
+    "materiaal": "Material",
+    "hout": "Timber",
+    "staal": "Steel",
+    "systeem": "System",
+    "systemen": {
+      "twee": "Two supports",
+      "drie": "Three supports",
+      "vier": "Four supports",
+      "uitkraging": "Cantilever"
+    },
+    "inklemming": "Fixed ends",
+    "inklemmingen": {
+      "geen": "None",
+      "links": "Left",
+      "rechts": "Right",
+      "beide": "Both ends"
+    },
+    "gerberscharnieren": "Gerber hinges",
+    "aantalScharnieren": {
+      "geen": "None",
+      "een": "One",
+      "twee": "Two"
+    },
+    "scharnierX": "Hinge {{n}}, x (m)",
+    "noot": "Loads, cross-section and checks are in the calculation sheet; positions are measured from the left end.",
+    "aanzicht": "Elevation with characteristic loads and bending moment diagram (G + Q, all loads)",
+    "beweeglijk": "mechanism: too few supports or one hinge too many",
+    "klik": "Click a blue dimension or a load to edit it — the change flows straight back into the calculation sheet.",
+    "inBlad": "Combinations, envelope and checks are in the calculation sheet.",
+    "lengte": "length {{l}} m",
+    "lasten_one": "{{count}} load",
+    "lasten_other": "{{count}} loads",
+    "scharnieren_one": "{{count}} hinge",
+    "scharnieren_other": "{{count}} hinges"
+  },
+  "balklaag": {
+    "titel": "Parametric view — timber joist floor",
+    "nietAangetoond": "✗ not demonstrated (f₁ ≤ 8 Hz)",
+    "algemeen": "General",
+    "statischSchema": "Static system",
+    "schema": "System",
+    "schemas": {
+      "enkelvoudig": {
+        "label": "Simply supported, on two supports",
+        "kort": "Single span"
+      },
+      "overstek": {
+        "label": "With a cantilever at one end",
+        "kort": "Cantilever"
+      },
+      "tweeveld": {
+        "label": "On three supports (two spans)",
+        "kort": "Two spans"
+      },
+      "raveel": {
+        "label": "Trimmer along an opening",
+        "kort": "Trimmer"
+      }
+    },
+    "soortLigger": "Member type",
+    "liggers": {
+      "balk": "Joist in a joist floor",
+      "onderslag": "Supporting beam (loaded width)"
+    },
+    "oudBlad": "This sheet was made with an older version; insert the joist floor again to get the supporting beam and custom size options.",
+    "belasteBreedte": "Loaded width (m)",
+    "belasteBreedteUitleg": "For joists continuous over two equal spans 1,25 × L; for separate joists on either side, the sum of the half spans.",
+    "overstek": "Cantilever a (mm)",
+    "tweedeOverspanning": "Second span (mm)",
+    "opleglengteSteun": "Bearing length, intermediate support (mm)",
+    "opleglengteSteunUitleg": "Bearing length at the intermediate support; for joists on a supporting beam, the width of that beam. Counts in the bearing stress check (§6.1.5).",
+    "breedteSparing": "Opening width (mm)",
+    "staartlengte": "Tail joist length (mm)",
+    "geometrie": "Geometry",
+    "profiel": "Section (b×h)",
+    "zelfInvullen": "Custom",
+    "slsDubbel": "SLS double {{maat}}",
+    "breedteB": "Width b (mm)",
+    "hoogteH": "Depth h (mm)",
+    "doorsnedeVorm": "Cross-section",
+    "vormen": {
+      "rechthoek": {
+        "label": "Rectangular joist",
+        "kort": "Rectangular"
+      },
+      "tbalk": {
+        "label": "T-beam: joist with the floor panel as effective flange (EN 1995-1-1 §9.1.2)",
+        "kort": "T-beam"
+      }
+    },
+    "tbalk": {
+      "kop": "Cross-section — T-beam, panel glued",
+      "inHetVeld": "in the span",
+      "bijHetSteunpunt": "at the support",
+      "plaat": "Floor panel (table 9.1)",
+      "platen": {
+        "multiplexEvenwijdig": "Plywood, face grain ∥ joists",
+        "multiplexLoodrecht": "Plywood, face grain ⊥ joists",
+        "osbEvenwijdig": "OSB/3, major axis ∥ joists",
+        "osbLoodrecht": "OSB/3, major axis ⊥ joists",
+        "spaanplaat": "Particleboard or fibreboard"
+      },
+      "nogTeControleren": "To be checked: the T-beam check has not yet been verified against reference sheets.",
+      "verlijmd": "The panel is assumed glued to the joists over the full length. A nailed or screwed panel falls under annex B (γ-method), not under this sheet.",
+      "fabrikantMultiplex": "Plywood: enter the manufacturer's values, in the direction of the joists (EN 636, EN 12369-2).",
+      "fabrikantSpaanplaat": "Particleboard or fibreboard: enter the manufacturer's values, in the direction of the joists, and k_mod and k_def from tables 3.1 and 3.2 for the type.",
+      "fabrikantgegeven": "manufacturer's value",
+      "invoer": {
+        "druk": "compression (N/mm²)",
+        "trek": "tension (N/mm²)",
+        "rolschuif": "rolling shear (N/mm²)",
+        "emodulus": "along the joists (N/mm²)",
+        "kmod": "table 3.1",
+        "kmodG": "permanent",
+        "kdef": "table 3.2"
+      },
+      "onvolledig": "Panel data incomplete or out of range (OSB/3: 6 < t ≤ 25 mm, service class 1 or 2): the T-beam is not verified.",
+      "nietGetoetst": "✗ T-beam not verified (panel data)",
+      "nvt": "The T-beam applies to a joist in a floor; for a supporting beam or trimmer the sheet calculates the rectangular joist."
+    },
+    "ontwerp": {
+      "knop": "Design",
+      "zoekt": "Searching…",
+      "uitleg": "picks the first section in the list that passes",
+      "geen": "No section in the list passes. Reduce the c/c spacing or the span, choose a higher strength class, or enter a custom size.",
+      "al": "{{profiel}} already passes — there is no lighter section in this list.",
+      "gekozen": "{{profiel}} selected: the first section that passes."
+    },
+    "dagmaat": "Clear span (mm)",
+    "opleglengte": "Bearing length (mm)",
+    "hoh": "C/c spacing (mm)",
+    "dikteBeschot": "Decking thickness (mm)",
+    "eBeschot": "Decking E-modulus (N/mm²)",
+    "breedteVloer": "Floor width (m)",
+    "materiaal": "Material",
+    "sterkteklasse": "Strength class",
+    "klimaatklasse": "Service class",
+    "klimaat": {
+      "binnen": {
+        "label": "1 — heated interior",
+        "uitleg": "Service class 1 — moisture content corresponding to 20 °C and a relative humidity that exceeds 65 % for only a few weeks per year. Average moisture content at most 12 %. Typical: heated, enclosed interiors."
+      },
+      "overdekt": {
+        "label": "2 — covered, unheated",
+        "uitleg": "Service class 2 — 20 °C and a relative humidity that exceeds 85 % for only a few weeks per year. Average moisture content at most 20 %. Typical: covered but open or unheated — carport, ventilated crawl space, unheated attic."
+      },
+      "buiten": {
+        "label": "3 — exterior / damp",
+        "uitleg": "Service class 3 — conditions leading to a higher moisture content than service class 2. Typical: unprotected exterior or permanently damp spaces. Gives the lowest k_mod and the highest creep factor."
+      }
+    },
+    "duurklasse": "Load-duration class",
+    "duur": {
+      "kort": "Short-term",
+      "middellang": "Medium-term",
+      "lang": "Long-term",
+      "blijvend": "Permanent"
+    },
+    "belasting": "Loads",
+    "gedragen": "supported joists (kN/m²)",
+    "gedragenUitleg": "Self-weight of the joists resting on this beam, per m² of floor; the sheet adds it to G_k. For example 71×221 at 600 c/c in C24: about 0,11 kN/m².",
+    "categorie": "Category (Table NB.2 — A1.1)",
+    "categorieen": {
+      "a": "A — domestic and residential areas",
+      "b": "B — office areas",
+      "c": "C — congregation areas",
+      "d": "D — shopping areas",
+      "e": "E — storage areas",
+      "f": "F — traffic area, vehicle ≤ 25 kN",
+      "g": "G — traffic area, 25 < vehicle ≤ 160 kN",
+      "h": "H — roofs",
+      "sneeuw": "Snow load",
+      "wind": "Wind load",
+      "zelf": "Custom"
+    },
+    "doorbuiging": "Deflection",
+    "controleerDoorbuiging": "Check deflection",
+    "grensFin": "Final deflection limit",
+    "grensBij": "Additional deflection limit",
+    "brosseAfwerking": "{{grens}} (brittle finishes)",
+    "trilling": "Vibrations (§7.3.3)",
+    "controleerTrilling": "Check vibrations",
+    "drieDKop": "3D view",
+    "drieDTonen": "Show the 3D view",
+    "drieDAfdrukken": "On the printout",
+    "drieDAfdrukkenUitleg": "A small image at the end of the sheet. Off by default, to keep the printout short.",
+    "onderslagTrilling": "A supporting beam has no vibration check; that belongs to the joist floor it carries.",
+    "demping": "ζ — damping ratio",
+    "plattegrond": "Plan of the opening",
+    "doorsnedeOnderslag": "Cross-section of the supporting beam",
+    "belasteBreedteMaat": "loaded width {{b}} m",
+    "doorsnede": "Cross-section",
+    "schemaKop": "Static system — characteristic loads per joist",
+    "veranderlijk": "variable",
+    "permanent": "permanent",
+    "mLijn": "Moment (ULS, envelope)",
+    "mLijnOnder": "point load in governing position",
+    "omhullendNoot": "Safe envelope: maxima of permanent and point load added,",
+    "vLijn": "Shear (ULS, envelope)",
+    "vLijnOnder": "point load in governing position",
+    "doorbuigingKop": "Deflection (SLS)",
+    "grens": "limit",
+    "uiteinde": "free end",
+    "veld2": "span 2",
+    "stippel": "dashed:",
+    "lijn": "solid:",
+    "metKruip": "(with creep); values from the sheet",
+    "klik": "Click a blue dimension to change it.",
+    "uc": {
+      "doorbuiging": "deflection",
+      "doorbuigingNvt": "deflection n/a",
+      "buiging": "bending",
+      "afschuiving": "shear",
+      "oplegdruk": "bearing",
+      "kip": "lateral-torsional buckling",
+      "alleenG": "G only",
+      "trilling": "vibrations",
+      "nietAangetoond": "not demonstrated",
+      "trillingNvt": "vibrations n/a",
+      "trekOplegging": "uplift at bearing {{kn}} kN",
+      "plaat": "panel",
+      "lijmnaad": "glue line",
+      "flensbreedte": "flange width"
+    }
+  },
+  "raveel": {
+    "raveelbalk": "trimmer {{profiel}}",
+    "staartbalken": "tail joists ({{n}}×)",
+    "wisselbalk": "trimming joist (double)",
+    "belasteStrook": "loaded strip",
+    "sparing": "opening"
+  },
+  "afdruk": {
+    "titel": "Print preview",
+    "titelRapport": "Print preview — report",
+    "opmaken": "laying out pages…",
+    "paginas_one": "{{count}} page",
+    "paginas_other": "{{count}} pages",
+    "bereik": "Range",
+    "heleProject_one": "Whole project ({{count}} sheet)",
+    "heleProject_other": "Whole project ({{count}} sheets)",
+    "alleen": "Only: {{naam}}",
+    "zoom": "Zoom",
+    "afdrukken": "PDF / print…",
+    "sluiten": "Close",
+    "paginaVan": "Page {{nummer}} of {{totaal}}"
+  }
+}

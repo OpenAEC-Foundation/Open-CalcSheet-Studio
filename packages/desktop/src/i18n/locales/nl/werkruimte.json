@@ -1,0 +1,338 @@
+{
+  "algemeen": {
+    "project": "Project",
+    "projectgegevens": "Projectgegevens",
+    "rapport": "Rapport",
+    "afdrukvoorbeeld": "Afdrukvoorbeeld"
+  },
+  "weergave": {
+    "codeVisueel": "Code + Visueel",
+    "codeUitwerking": "Code + Uitwerking",
+    "visueelUitwerking": "Visueel + Uitwerking"
+  },
+  "leeg": {
+    "titel": "Nog geen rekenblad geopend",
+    "uitleg": "Voeg een module toe met <b>Module</b> in het lint (tab Start). Elk blad dat je toevoegt heeft zijn eigen invoer — je kunt dezelfde module meerdere keren gebruiken zonder dat de bladen elkaar beïnvloeden."
+  },
+  "bestand": {
+    "naamloos": "Naamloos",
+    "nietOpgeslagen": "Niet-opgeslagen wijzigingen",
+    "wijzigingenWeggooien": "Niet-opgeslagen wijzigingen worden weggegooid. Doorgaan?",
+    "openenMislukt": "Bestand openen mislukt: {{fout}}",
+    "opslaanMislukt": "Bestand opslaan mislukt: {{fout}}",
+    "recentAlleenDesktop": "Recente bestanden openen vereist de desktop-app.",
+    "eerstBladOpenen": "Open eerst het rekenblad dat je als PDF wilt opslaan."
+  },
+  "recent": {
+    "minuten": "{{aantal}}m ago",
+    "uren": "{{aantal}}h ago",
+    "dagen": "{{aantal}}d ago"
+  },
+  "browser": {
+    "uitklappen": "Zijpaneel uitklappen",
+    "inklappen": "Zijpaneel inklappen",
+    "projectgegevensUitleg": "Projectgegevens — gelden voor alle bladen in dit project",
+    "rapportUitleg": "Rapport — het constructierapport van dit project, met de rekenbladen als bijlage",
+    "geenBladen": "Nog geen rekenbladen. Voeg er een toe met <b>Module</b> in het lint.",
+    "moduleToevoegen": "Module toevoegen…",
+    "moduleToevoegenUitleg": "Een module of een naslagblad aan dit project toevoegen",
+    "dubbelklik": "Dubbelklik om te hernoemen",
+    "omhoog": "Omhoog",
+    "omlaag": "Omlaag",
+    "hernoemen": "Hernoemen",
+    "dupliceren": "Dupliceren (kopie met dezelfde invoer)",
+    "verwijderen": "Verwijderen",
+    "verwijderenVraag": "\"{{naam}}\" uit het project verwijderen?",
+    "bladen": "Bladen",
+    "ucVoldoet": "Maatgevende UC {{uc}} — voldoet",
+    "ucVoldoetNiet": "Maatgevende UC {{uc}} — voldoet niet",
+    "gegevensToevoegen": "Projectgegevens toevoegen",
+    "rapportToevoegen": "Rapport toevoegen",
+    "uitProjectHalen": "{{naam}} uit de projectboom halen (de inhoud blijft bewaard)"
+  },
+  "catalogus": {
+    "groepen": {
+      "cat-algemeen": "Algemeen",
+      "cat-hout": "Hout",
+      "calcpad-samples": "Voorbeelden"
+    },
+    "modules": {
+      "ligger": "Ligger (hout of staal)",
+      "balklaag": "Balklaag (houten vloerbalken)",
+      "calcpad-demo": "Open CalcSheet Studio demo"
+    }
+  },
+  "kiezer": {
+    "titel": "Module toevoegen",
+    "tabs": {
+      "modules": "Modules",
+      "bibliotheek": "Bibliotheek",
+      "normbestanden": "Normbestanden",
+      "online": "Online bibliotheek"
+    },
+    "zoekLabel": {
+      "modules": "Zoek een module",
+      "bibliotheek": "Zoek in de bibliotheek",
+      "normbestanden": "Zoek een lokaal normbestand",
+      "online": "Zoek in de online bibliotheek"
+    },
+    "zoekPlaceholder": {
+      "modules": "Zoek een module…",
+      "bibliotheek": "Zoek in de bibliotheek…",
+      "normbestanden": "Zoek een lokaal normbestand…",
+      "online": "Zoek modules, normen…"
+    },
+    "nietsGevonden": "Niets gevonden voor \"{{zoek}}\".",
+    "nietBeschikbaar": "{{naam}} — nog niet beschikbaar",
+    "gepubliceerd": "gepubliceerd",
+    "gepubliceerdLegenda": "nagekeken en vrijgegeven",
+    "publicatie": {
+      "gepubliceerd": "Gepubliceerd — nagekeken en vrijgegeven",
+      "onuitgegeven": "Nog niet gepubliceerd — nog niet nagekeken"
+    },
+    "nenOverzicht": "NEN-overzicht ↗",
+    "normUitleg": "Rekenuitwerkingen en bronverwijzingen; controleer de geldende editie en nationale bijlage.",
+    "toevoegen": "Toevoegen",
+    "online": {
+      "uitleg": "Rekenmodules uit de open modulebibliotheek. Een geïnstalleerde module staat daarna onder Modules en werkt ook zonder internet.",
+      "laden": "Bibliotheek laden…",
+      "fout": "De bibliotheek kon niet worden geladen ({{fout}}). Controleer de internetverbinding.",
+      "opnieuw": "Opnieuw proberen",
+      "installeren": "Installeren",
+      "bijwerken": "Bijwerken naar v{{versie}}",
+      "bezig": "Installeren…",
+      "geinstalleerd": "Geïnstalleerd · v{{versie}}",
+      "verwijderen": "Verwijderen",
+      "bijdragen": "Een module bijdragen…",
+      "uitBibliotheek": "Uit de online modulebibliotheek"
+    }
+  },
+  "normen": {
+    "terug": "← Normbestanden",
+    "lezerUitleg": "Open de lokale PDF in een nieuw tabblad. Als de browser geen PDF-weergave heeft, kun je het bestand downloaden.",
+    "pdfOpenen": "PDF openen ↗",
+    "pdfDownloaden": "PDF downloaden",
+    "uitleg": "Koppel je eigen norm-PDF's aan nummer en editie. De bestanden blijven in de lokale opslag van deze app en komen niet in het projectbestand.",
+    "normnummer": "Normnummer",
+    "normnummerVoorbeeld": "Bijv. NEN-EN 1990",
+    "editie": "Editie",
+    "editieVoorbeeld": "Jaar en bijlage",
+    "pdfBestand": "PDF-bestand",
+    "toevoegen": "Toevoegen",
+    "geenGevonden": "Geen normbestand gevonden.",
+    "nogGeen": "Nog geen lokale normbestanden gekoppeld.",
+    "openPdf": "Open PDF",
+    "verwijder": "Verwijder",
+    "verwijderLabel": "{{nummer}} verwijderen",
+    "verwijderVraag": "{{nummer}} ({{editie}}) uit de lokale bibliotheek verwijderen?",
+    "nietBeschikbaar": "PDF is niet meer beschikbaar"
+  },
+  "gegevens": {
+    "introGeen": "Deze waarden gelden voor elk rekenblad dat je aan dit project toevoegt. Elk blad kan ze gebruiken zonder ze opnieuw te vragen.",
+    "intro_one": "Deze waarden gelden voor het rekenblad in dit project. Elk blad kan ze gebruiken zonder ze opnieuw te vragen.",
+    "intro_other": "Deze waarden gelden voor alle {{count}} rekenbladen in dit project. Elk blad kan ze gebruiken zonder ze opnieuw te vragen.",
+    "bestand": "Bestand",
+    "projectnaam": "Projectnaam (bestand)",
+    "projectnaamPlaceholder": "Nieuw project",
+    "projectnaamHint": "Naam van het projectbestand en de kop van de PDF-uitdraai.",
+    "vervallen": "Deze keuze bestaat niet meer; de bladen rekenen met de waarde die erachter staat. Kies er een uit de lijst om dat vast te leggen.",
+    "afgeleid": "Afgeleid:",
+    "kaart": "Kaart — zoek een adres of klik op de locatie; het windgebied wordt dan vanzelf ingevuld",
+    "voet": "In een rekenblad zijn deze namen direct te gebruiken, bijvoorbeeld <code>{{voorbeeld1}}</code> of <code>{{voorbeeld2}}</code>. Een blad dat de naam zelf opnieuw toekent, overschrijft de projectwaarde alleen voor dat blad.",
+    "vervallenKeuze": "{{label}} — vervallen keuze, gerekend als {{vervanger}}",
+    "onbekendeKeuze": "{{waarde}} — onbekende keuze",
+    "groepen": {
+      "rekenwijze": "Rekenwijze",
+      "project": "Project",
+      "grondslagen": "Grondslagen (NEN-EN 1990 + NB)",
+      "wind": "Wind (NEN-EN 1991-1-4 + NB)"
+    },
+    "velden": {
+      "rekenwijze": {
+        "label": "Rekenwijze bij een verschil met het referentieprogramma",
+        "hint": "de referentie-uitwerking is het rekenprogramma dat we vandaag hanteren en is daarom de standaard; elke uitkomst is tegen referentiebladen na te rekenen. De norm-stand rekent op de gemarkeerde punten volgens de Eurocode zelf — die tak is niet tegen een referentie te toetsen en staat er voor het moment dat dit programma op eigen benen staat. Het gekozen antwoord staat altijd op de afdruk.",
+        "opties": {
+          "0": "De norm volgen",
+          "1": "de referentie-uitwerking volgen (huidige praktijk)"
+        }
+      },
+      "project_nummer": {
+        "label": "Projectnummer"
+      },
+      "project_naam": {
+        "label": "Projectnaam"
+      },
+      "opdrachtgever": {
+        "label": "Opdrachtgever"
+      },
+      "constructeur": {
+        "label": "Constructeur"
+      },
+      "locatie": {
+        "label": "Locatie"
+      },
+      "onderdeel": {
+        "label": "Onderdeel"
+      },
+      "CC": {
+        "label": "Gevolgklasse",
+        "hint": "Bepaalt K_FI (tabel B3, met de opmerking bij tabel NB.4 – A1.2(B)): CC1 → 0,90 · CC2 → 1,00 · CC3 → 1,10. Elk blad krijgt zowel CC als K_FI.",
+        "opties": {
+          "1": "CC1 — beperkte gevolgen",
+          "2": "CC2 — middelmatige gevolgen",
+          "3": "CC3 — grote gevolgen"
+        }
+      },
+      "RC": {
+        "label": "Betrouwbaarheidsklasse",
+        "opties": {
+          "1": "RC1",
+          "2": "RC2",
+          "3": "RC3"
+        }
+      },
+      "DesignLife": {
+        "label": "Ontwerplevensduur",
+        "hint": "Minimumwaarden volgens tabel NB.1 – 2.1. Een tijdelijk bouwwerk valt in klasse 3, tenzij het hooguit 5 jaar in gebruik is (klasse 1) of een bestemming uit klasse 2 heeft. De belastingen rekenen met een referentieperiode van ten minste 15 jaar.",
+        "opties": {
+          "5": "5 jaar — klasse 1: tijdelijk, hooguit 5 jaar in gebruik",
+          "15": "15 jaar — klasse 2: landbouw, industrie met 1 of 2 bouwlagen",
+          "50": "50 jaar — klasse 3: gebouwen en gewone constructies (standaard)",
+          "100": "100 jaar — klasse 4: monumentale gebouwen"
+        },
+        "vervallen": {
+          "10": "10 jaar",
+          "25": "25 jaar"
+        }
+      },
+      "windgebied": {
+        "label": "Windgebied",
+        "hint": "Indeling volgens 4.2(1) opmerking 2 van de NB, v_b0 uit tabel NB.1: provinciegrenzen, en in Noord-Holland een horizontale lijn op 52½° noorderbreedte; gebied I is Noord-Holland daarboven (o.a. Den Helder, Alkmaar, Hoorn, Heemskerk, Purmerend). Binnen 5 km van een grens gaat v_b0 geleidelijk over (figuur NB.1); het gebied waarin de locatie ligt, zit dan aan de veilige kant. Een blad met windbelasting rekent q_p hieruit, met de referentiehoogte uit het blad.",
+        "opties": {
+          "1": "I — Waddeneilanden, Waddenzee, IJsselmeer, Markermeer en Noord-Holland-noord (v_b0 = 29,5 m/s)",
+          "2": "II — rest van Noord-Holland, vasteland Groningen en Friesland, Flevoland, Zuid-Holland, Zeeland (27,0)",
+          "3": "III — rest van Nederland (24,5)"
+        }
+      },
+      "terreincategorie": {
+        "label": "Terreincategorie",
+        "hint": "Volgt uit de omgeving van het gebouw (Tabel NB.3-4.1).",
+        "opties": {
+          "1": "0 — Zee of kustgebied (z₀ = 0,005 · z_min = 1)",
+          "2": "II — Onbebouwd gebied (z₀ = 0,2 · z_min = 4)",
+          "3": "III — Bebouwd gebied (z₀ = 0,5 · z_min = 7)"
+        }
+      }
+    }
+  },
+  "windkaart": {
+    "nietGevonden": "Adres niet gevonden in Nederland.",
+    "geocodeFout": "Geocoding fout: {{fout}}",
+    "puntOpKaart": "punt op de kaart, {{lat}}° NB {{lng}}° OL",
+    "placeholder": "Adres of plaats in Nederland — bv. 'Rokin 100, Amsterdam'",
+    "bezig": "Bezig…",
+    "zoek": "Zoek",
+    "windgebied": "Windgebied {{gebied}}",
+    "overgang": "{{afstand}} km van de grens met gebied {{gebied}}: in de overgangszone van figuur NB.2 mag v<sub>b,0</sub> = {{vb0}} m/s. De bladen rekenen met de gebiedswaarde, aan de veilige kant.",
+    "buitenGebieden": "Locatie gevonden maar valt buiten de gedefinieerde polygons — kies handmatig in de Projectgegevens.",
+    "gebiedTooltip": "{{naam}} — gebied {{gebied}}",
+    "geenGebied": "Geen gebied bepaald",
+    "gebiedNaam": {
+      "1": "Gebied I — Waddeneilanden, Waddenzee, IJsselmeer, Markermeer en Noord-Holland-noord",
+      "2": "Gebied II — rest van Noord-Holland, vasteland Groningen en Friesland, Flevoland, Zuid-Holland, Zeeland",
+      "3": "Gebied III — rest van Nederland"
+    },
+    "legenda": {
+      "1": "I — noordkust en meren",
+      "2": "II — overige kust",
+      "3": "III — binnenland"
+    },
+    "bron": "Indeling volgens NEN-EN 1991-1-4, nationale bijlage, figuur NB.1: provinciegrenzen, en in Noord-Holland een horizontale lijn op 52½° noorderbreedte. Klik op de kaart om een plek te kiezen."
+  },
+  "ifc": {
+    "kopieer": "Kopieer",
+    "exporteer": "Exporteer",
+    "docs": "{{type}} — BuildingSMART docs",
+    "bezig": "Het IFC-document wordt opgebouwd…",
+    "mislukt": "Het IFC-document kon niet worden opgebouwd. Zie de console.",
+    "attributen": "Attributen",
+    "ingekort": "Lange teksten zijn hier ingekort; de export en het projectbestand bevatten alles.",
+    "variabele": "Variabele",
+    "waarde": "Waarde",
+    "formule": "Formule",
+    "status": {
+      "voldoet": "voldoet",
+      "voldoet_niet": "voldoet niet",
+      "geen_oordeel": "geen oordeel",
+      "niet_doorgerekend": "niet doorgerekend"
+    }
+  },
+  "paneel": {
+    "code": "Code",
+    "visueel": "Visueel",
+    "uitwerking": "Uitwerking",
+    "regels_one": "{{count}} regel",
+    "regels_other": "{{count}} regels"
+  },
+  "pdf": {
+    "toevoegen": "PDF toevoegen…",
+    "toevoegenUitleg": "Een PDF-bestand als blad aan het project toevoegen; het komt op zijn plek in hoofdstuk Berekeningen van het rapport. Voor een FEM-model: exporteer in Open FEM Studio het rapport als PDF en voeg dat toe.",
+    "kiesTitel": "PDF toevoegen — voor een FEM-model: het rapport-PDF uit Open FEM Studio",
+    "filter": "PDF-bestanden",
+    "geenPdf": "\"{{naam}}\" is geen PDF-bestand.",
+    "groot": "\"{{naam}}\" is {{grootte}}. De PDF komt in het projectbestand, dat daardoor minstens zo groot wordt en trager opent en opslaat. Toch toevoegen?",
+    "lezenMislukt": "PDF inlezen mislukt: {{fout}}",
+    "tab": "PDF",
+    "paneel": "PDF",
+    "rij": "PDF-bijlage — {{bestand}}",
+    "paginas_one": "{{count}} pagina",
+    "paginas_other": "{{count}} pagina's",
+    "pagina": "Pagina {{nummer}}",
+    "laden": "PDF laden…",
+    "paginaLaden": "Pagina {{nummer}} laden…",
+    "paginaMislukt": "Pagina {{nummer}} kon niet worden getekend.",
+    "fout": "Het PDF-bestand kon niet worden gelezen: {{fout}}",
+    "ontbreekt": "Dit PDF-blad heeft geen bestand. Kies er een met Vervangen…",
+    "vervangen": "Vervangen…",
+    "vervangenUitleg": "Een ander PDF-bestand voor dit blad kiezen, bijvoorbeeld een nieuwe export van het FEM-rapport. Naam, plaats en toelichting in het rapport blijven staan.",
+    "nietOpTijd": "De PDF-bladen werden niet op tijd getekend; het afdrukken is afgebroken."
+  },
+  "welkom": {
+    "titel": "Welkom in Open CalcSheet Studio",
+    "intro": "Constructieve berekeningen als leesbare rekenbladen: jij schrijft de berekening, de app rekent hem uit, tekent hem en stelt het constructief rapport samen.",
+    "stap": {
+      "project": {
+        "titel": "Projectgegevens",
+        "uitleg": "Gevolgklasse, windgebied en projectgegevens: één keer invullen, elk blad gebruikt ze."
+      },
+      "bladen": {
+        "titel": "Bladen",
+        "uitleg": "Voeg een module of een leeg blad toe. Code, parametrisch beeld en uitwerking staan naast elkaar."
+      },
+      "rapport": {
+        "titel": "Rapport",
+        "uitleg": "Hoofdstukken, bladen en bijlagen samen in één constructief rapport, afgedrukt of als PDF."
+      }
+    },
+    "syntaxKop": "De rekentaal in het kort",
+    "syntax": {
+      "titel": "Titel van het blad",
+      "kop": "Hoofdstukkop",
+      "tekst": "Tekstregel, met HTML-opmaak",
+      "waarde": "Waarde met eenheid",
+      "formule": "Formule: de uitwerking toont de formule, de ingevulde waarden en de uitkomst; eenheden worden vereenvoudigd",
+      "voorwaarde": "Voorwaarde: alleen één tak komt in de uitwerking",
+      "grafiek": "Grafiek van een functie",
+      "tekening": "Tekening (SVG), ook parametrisch"
+    },
+    "syntaxNoot": "Alles staat ook als knop op de lintab CalcPAD; Help legt het volledig uit.",
+    "voorbeeld": "Voorbeeldblad openen",
+    "voorbeeldUitleg": "Een uitgewerkt blad dat de hele rekentaal laat zien, met uitleg.",
+    "module": "Module toevoegen",
+    "moduleUitleg": "Een kant-en-klare toetsing, zoals de houten balklaag.",
+    "leegBlad": "Leeg blad",
+    "leegBladUitleg": "Schrijf je eigen berekening vanaf nul.",
+    "bijStart": "Tonen bij opstarten",
+    "beginnen": "Beginnen"
+  }
+}

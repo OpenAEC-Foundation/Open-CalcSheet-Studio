@@ -1,0 +1,282 @@
+{
+ "bsi::ifc::presentation::diffuseColor": {
+  "value": {
+   "dataType": "Array",
+   "arrayRestrictions": {
+    "value": {
+     "dataType": "Real"
+    }
+   }
+  }
+ },
+ "bsi::ifc::presentation::opacity": {
+  "value": {
+   "dataType": "Real"
+  }
+ },
+ "bsi::ifc::class": {
+  "value": {
+   "dataType": "Object",
+   "objectRestrictions": {
+    "values": {
+     "code": {
+      "dataType": "String"
+     },
+     "uri": {
+      "dataType": "String"
+     }
+    }
+   }
+  }
+ },
+ "bsi::ifc::material": {
+  "value": {
+   "dataType": "Object",
+   "objectRestrictions": {
+    "values": {
+     "code": {
+      "dataType": "String"
+     },
+     "uri": {
+      "dataType": "String"
+     }
+    }
+   }
+  }
+ },
+ "bsi::ifc::prop::Name": {
+  "value": {
+   "dataType": "String"
+  }
+ },
+ "bsi::ifc::prop::Description": {
+  "value": {
+   "dataType": "String"
+  }
+ },
+ "bsi::ifc::prop::UsageType": {
+  "value": {
+   "dataType": "String"
+  }
+ },
+ "bsi::ifc::prop::RefElevation": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Length"
+  }
+ },
+ "bsi::ifc::prop::ElevationOfRefHeight": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Length"
+  }
+ },
+ "bsi::ifc::prop::ElevationOfTerrain": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Length"
+  }
+ },
+ "bsi::ifc::prop::NumberOfStoreys": {
+  "value": {
+   "dataType": "Integer"
+  }
+ },
+ "bsi::ifc::prop::IsExternal": {
+  "value": {
+   "dataType": "Boolean"
+  }
+ },
+ "bsi::ifc::prop::Volume": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Volume"
+  }
+ },
+ "bsi::ifc::prop::NetVolume": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Volume"
+  }
+ },
+ "bsi::ifc::prop::Height": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Length"
+  }
+ },
+ "bsi::ifc::prop::Width": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Length"
+  }
+ },
+ "bsi::ifc::prop::Length": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Length"
+  }
+ },
+ "bsi::ifc::prop::Depth": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Length"
+  }
+ },
+ "bsi::ifc::prop::NetArea": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Area"
+  }
+ },
+ "bsi::ifc::prop::NetSideArea": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Area"
+  }
+ },
+ "bsi::ifc::prop::CrossSectionArea": {
+  "value": {
+   "dataType": "Real",
+   "quantityKind": "Area"
+  }
+ },
+ "bsi::ifc::prop::Station": {
+  "value": {
+   "dataType": "Real"
+  }
+ },
+ "bsi::ifc::prop::TypeName": {
+  "value": {
+   "dataType": "String"
+  }
+ },
+ "bsi::ifc-mat::prop::StrengthClass": {
+  "value": {
+   "dataType": "String"
+  }
+ },
+ "bsi::ifc-mat::prop::MoistureContent": {
+  "value": {
+   "dataType": "Real"
+  }
+ },
+ "bsi::ifc-mat::prop::MassDensity": {
+  "value": {
+   "dataType": "Real"
+  }
+ },
+ "bsi::ifc-mat::prop::GWP": {
+  "value": {
+   "dataType": "Object",
+   "objectRestrictions": {
+    "values": {
+     "A1-A3": {
+      "dataType": "Real"
+     },
+     "A4": {
+      "dataType": "Real"
+     },
+     "A5": {
+      "dataType": "Real"
+     },
+     "C2": {
+      "dataType": "Real"
+     },
+     "C3": {
+      "dataType": "Real"
+     },
+     "D": {
+      "dataType": "Real"
+     }
+    }
+   }
+  }
+ },
+ "usd::usdgeom::mesh": {
+  "value": {
+   "dataType": "Object",
+   "objectRestrictions": {
+    "values": {
+     "faceVertexIndices": {
+      "dataType": "Array",
+      "arrayRestrictions": {
+       "value": {
+        "dataType": "Integer"
+       }
+      }
+     },
+     "points": {
+      "dataType": "Array",
+      "arrayRestrictions": {
+       "value": {
+        "dataType": "Array",
+        "arrayRestrictions": {
+         "value": {
+          "dataType": "Real"
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "usd::usdgeom::visibility": {
+  "value": {
+   "dataType": "Object",
+   "objectRestrictions": {
+    "values": {
+     "visibility": {
+      "dataType": "String"
+     }
+    }
+   }
+  }
+ },
+ "usd::xformop": {
+  "value": {
+   "dataType": "Object",
+   "objectRestrictions": {
+    "values": {
+     "transform": {
+      "dataType": "Array",
+      "arrayRestrictions": {
+       "value": {
+        "dataType": "Array",
+        "arrayRestrictions": {
+         "value": {
+          "dataType": "Real"
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "usd::usdgeom::basiscurves": {
+  "value": {
+   "dataType": "Object",
+   "objectRestrictions": {
+    "values": {
+     "points": {
+      "dataType": "Array",
+      "arrayRestrictions": {
+       "value": {
+        "dataType": "Array",
+        "arrayRestrictions": {
+         "value": {
+          "dataType": "Real"
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}
