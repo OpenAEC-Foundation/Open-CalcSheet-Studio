@@ -13,6 +13,7 @@ import {
   MATEN,
   SPELING,
   houdtBijVolgende,
+  paginaVanAnkers,
   verdeelInPaginas,
   verdeelPerSectie,
 } from "../packages/desktop/src/components/calc/paginering.ts";
@@ -23,8 +24,8 @@ function toets(naam, ok, detail = "") {
   console.log(`  ${ok ? "OK    " : "FOUT  "} ${naam}${ok || !detail ? "" : `   (kreeg ${detail})`}`);
 }
 
-const blok = (hoogte, sectie = "rpa-sectie", nieuwePagina = false, houdBijVolgende = false) =>
-  ({ el: null, hoogte, nieuwePagina, houdBijVolgende, sectie, wikkels: [] });
+const blok = (hoogte, sectie = "rpa-sectie", nieuwePagina = false, houdBijVolgende = false, ankers = []) =>
+  ({ el: null, hoogte, nieuwePagina, houdBijVolgende, sectie, wikkels: [], ankers });
 /** "2+1": twee blokken op het eerste vel, één op het tweede. */
 const vorm = (paginas) => paginas.map((p) => p.length).join("+");
 
@@ -91,6 +92,31 @@ toets("een blok zonder hoogte na de kop telt niet als vervolg", leegVorm === "1+
 // Is het vervolg hoger dan een heel vel, dan helpt doorschuiven niet.
 const teHoog = vorm(verdeelPerSectie([blok(50, "rpa-sectie", true), blok(20, "rpa-sectie", false, true), blok(120)], () => 100));
 toets("een kop met een vervolg hoger dan een vel blijft staan", teHoog === "2+1", teHoog);
+
+// De nummers van de inhoudsopgave: uit de verdeling zelf, dus gelijk aan de vellen.
+// Vel 1: voorblad. Vel 2: kop a en een blok van 80 (samen 100). Vel 3: kop b met 90,
+// want op vel 2 past niets meer. Vel 4: het volgende blad, dat op een nieuw vel begint.
+const metAnkers = [
+  blok(50, "rpa-sectie", true),
+  blok(20, "rpa-sectie", true, true, ["a"]), blok(80),
+  blok(10, "rpa-sectie", false, true, ["b", "b#0"]), blok(90),
+  blok(30, "print-blad", true, false, ["c"]),
+];
+const vellen = verdeelPerSectie(metAnkers, () => 100);
+const nummers = paginaVanAnkers(vellen);
+toets("elk anker staat op het vel waar de verdeling het legt",
+  [...nummers].join(";") === "a,2;b,3;b#0,3;c,4", [...nummers].join(";"));
+toets("een blok zonder anker telt niet mee", nummers.size === 4);
+const tweeKeer = paginaVanAnkers([[blok(1, "s", true, false, ["x"])], [blok(1, "s", true, false, ["x"])]]);
+toets("staat een anker er twee keer, dan telt het eerste vel", tweeKeer.get("x") === 1);
+// Elke ingevoegde pagina is een eigen vel: het volgende anker schuift mee op.
+const pdfBlad = (n) => [
+  blok(20, "print-blad", true, true, ["pdf"]),
+  ...Array.from({ length: n }, (_, i) => blok(60, "print-blad", i > 0)),
+  blok(20, "print-blad", true, true, ["erna"]),
+];
+const naPdf = (n) => paginaVanAnkers(verdeelPerSectie(pdfBlad(n), () => 100));
+toets("een PDF van vier pagina's schuift het volgende blad vier vellen op", naPdf(4).get("erna") - naPdf(4).get("pdf") === 4, naPdf(4).get("erna"));
 
 // Welke blokken als kop tellen.
 const el = (tagName, ...klassen) => ({ tagName, classList: { contains: (k) => klassen.includes(k) } });

@@ -246,7 +246,10 @@
     "toelichtingVoorbeeld": "Your own notes on this calculation (optional).",
     "inHoofdstuk": "Output in this chapter",
     "staatInHoofdstuk": "The full output appears directly below the notes.",
-    "staatInBijlage": "The full output is in appendix {{letter}}."
+    "staatInBijlage": "The full output is in appendix {{letter}}.",
+    "koppenInInhoud": "Headings from the text in the table of contents",
+    "bladenInInhoud": "Sheets in the table of contents",
+    "bladenInInhoudUitleg": "The table of contents at the front then also lists every sheet with its page: under this chapter or under appendix A. When off, the sheets are only listed in the table of contents of this chapter."
   },
   "pdfBlad": {
     "soort": "PDF attachment",
@@ -256,6 +259,19 @@
     "paginaMislukt": "Page {{nummer}} could not be drawn.",
     "fout": "The PDF file could not be read: {{fout}}",
     "ontbreekt": "The PDF file of this sheet is missing."
+  },
+  "markdownBlad": {
+    "soort": "Markdown",
+    "ontbreekt": "The text of this sheet is missing."
+  },
+  "spreadsheetBlad": {
+    "soort": "Spreadsheet",
+    "laden": "Loading spreadsheet…",
+    "leeg": "This spreadsheet is empty.",
+    "fout": "The workbook could not be read: {{fout}}",
+    "ontbreekt": "The workbook of this sheet is missing.",
+    "afgekapt_one": "Only the first {{count}} sheet of paper is printed; the workbook is longer.",
+    "afgekapt_other": "Only the first {{count}} sheets of paper are printed; the workbook is longer."
   },
   "bijlagen": {
     "intro": "Custom appendices are listed by title in the table of contents; you add the document itself outside the app.",

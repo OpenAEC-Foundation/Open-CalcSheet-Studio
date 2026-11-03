@@ -39,6 +39,8 @@ export const ATTR = {
   invoer: 'ocss::blad::invoer',
   elementen: 'ocss::blad::elementen',
   pdf: 'ocss::blad::pdf',
+  xlsx: 'ocss::blad::xlsx',
+  markdown: 'ocss::blad::markdown',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -160,7 +162,7 @@ const RAPPORT = object({
   inHoofdstuk: opt(VRIJ),
   bijlagen: opt(lijst(TEKST)),
   nieuwePagina: opt(VRIJ),
-  opmaak: opt(object(velden(['constructieprincipe', 'subkoppen'], JANEE))),
+  opmaak: opt(object(velden(['constructieprincipe', 'subkoppen', 'bladenInInhoud'], JANEE))),
   bureau: opt(object({
     ...velden(['naam', 'adres', 'postcode', 'plaats', 'telefoon', 'email', 'logo', 'voetafbeelding']),
     huisstijl: opt(object(velden(['hoofdkleur', 'accentkleur', 'tabeltekst', 'invoerkleur', 'lettertype']))),
@@ -183,7 +185,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       id: TEKST,
       volgorde: GEHEEL,
       templateId: TEKST,
-      soort: keuze('rekenblad', 'pdf'),
+      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
     }),
@@ -200,6 +202,27 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       grootte: GEHEEL,
       // Base64. IFCX kent het type Blob wel, maar de lezer van buildingSMART kan er nog niets mee.
       data: TEKST,
+    }),
+  },
+  [ATTR.xlsx]: {
+    value: object({
+      bestandsnaam: TEKST,
+      mediaType: TEKST,
+      grootte: GEHEEL,
+      data: TEKST,
+    }),
+  },
+  [ATTR.markdown]: {
+    value: object({
+      bestandsnaam: TEKST,
+      mediaType: TEKST,
+      grootte: GEHEEL,
+      // Gewone tekst, geen base64: het projectbestand blijft zo leesbaar en vergelijkbaar.
+      tekst: TEKST,
+      // Afbeeldingen die naast het bestand stonden: per adres in de tekst een data-URL.
+      beelden: opt(VRIJ),
+      // De koppen uit de tekst blijven uit de inhoudsopgave van het rapport.
+      koppenUit: opt(JANEE),
     }),
   },
   [ATTR.uitkomst]: {

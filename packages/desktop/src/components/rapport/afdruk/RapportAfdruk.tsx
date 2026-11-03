@@ -2,6 +2,7 @@ import { Fragment, type CSSProperties } from "react";
 import { STANDAARD_HUISSTIJL, type BureauProfiel, type Huisstijl } from "../../../rapport/model";
 import { PrintBlad } from "../../calc/PrintBlad";
 import { MATEN } from "../../calc/paginering";
+import { bijlageAnker, bijlageBladAnker } from "../../../rapport/opzet";
 import { useRapportWeergave, type RapportBlad } from "./useRapportWeergave";
 import { hoofdstukStukken, type Stuk } from "./Knopen";
 import Voorblad from "./Voorblad";
@@ -66,7 +67,7 @@ export default function RapportAfdruk() {
   const berekeningen = w.knopen.find((k) => k.id === "berekeningen");
   const inBijlage = (berekeningen?.kinderen ?? []).flatMap((k): BijlageBlad[] => {
     const blad = k.blad;
-    if (!blad || !blad.bijlage || w.rapport.inHoofdstuk[blad.id]) return [];
+    if (!blad || !blad.bijlage) return [];
     const b = w.bladen.find((x) => x.ex.id === blad.id);
     return b ? [{ ...b, nummer: blad.bijlage }] : [];
   });
@@ -86,14 +87,14 @@ export default function RapportAfdruk() {
       ))}
       {inBijlage.length > 0 && (
         <section className="rpa-sectie rpa-bijlagekop">
-          <h1 className="rpa-h1">Bijlage A {titelA}</h1>
+          <h1 className="rpa-h1" data-inhoud={bijlageAnker("A")}>Bijlage A {titelA}</h1>
         </section>
       )}
       {/* De kop (A.x) noemt naam en grondslag al; de titelkop van de uitwerking zou die herhalen.
-          Een PDF-blad krijgt zijn pagina's hier, elk op een eigen vel van het rapport. */}
+          Een aangemelde soort tekent hier zijn eigen onderdeel, op de vellen van het rapport. */}
       {inBijlage.map((b) => (
         <PrintBlad key={b.ex.id} ex={b.ex} html={b.html} nummer={b.nummer} resultaat={b.resultaat} titelInKop
-          maten={MATEN.rapport} />
+          maten={MATEN.rapport} anker={bijlageBladAnker(b.ex.id)} />
       ))}
     </div>
   );

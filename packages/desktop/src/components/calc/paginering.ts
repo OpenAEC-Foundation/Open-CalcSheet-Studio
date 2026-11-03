@@ -85,6 +85,8 @@ export interface Blok {
    * klopt het voorbeeld precies niet meer waar het om bedoeld was.
    */
   wikkels: string[];
+  /** De plekken voor de inhoudsopgave op dit blok (`data-inhoud`). */
+  ankers: string[];
 }
 
 /** Hoeveel px één millimeter is in dit venster. Gemeten, niet aangenomen: de
@@ -129,10 +131,11 @@ export function houdtBijVolgende(el: Pick<Element, "tagName" | "classList">): bo
 }
 
 /**
- * Wikkels die alleen groeperen: `.ifc-calc` om de uitwerking van een blad en
- * `.rpa-vlak` om de regels van het rapport. Wat erin zit, wordt los verdeeld.
+ * Wikkels die alleen groeperen: `.ifc-calc` om de uitwerking van een blad,
+ * `.rpa-vlak` om de regels van het rapport en `.md-citaat` om een citaat in een
+ * Markdown-tekst. Wat erin zit, wordt los verdeeld.
  */
-const WIKKELS = ["ifc-calc", "rpa-vlak"];
+const WIKKELS = ["ifc-calc", "rpa-vlak", "md-citaat"];
 
 /**
  * Haalt de wikkels weg en levert de regels die erin zitten.
@@ -148,6 +151,12 @@ function vlakUit(el: HTMLElement, wikkels: string[] = []): { el: HTMLElement; wi
   if (!WIKKELS.some((k) => el.classList.contains(k))) return [{ el, wikkels }];
   const dieper = [...wikkels, el.className];
   return (Array.from(el.children) as HTMLElement[]).flatMap((k) => vlakUit(k, dieper));
+}
+
+/** De plekken voor de inhoudsopgave op dit blok of erin. */
+function ankersVan(el: HTMLElement): string[] {
+  const eigen = el.dataset.inhoud ? [el.dataset.inhoud] : [];
+  return [...eigen, ...Array.from(el.querySelectorAll<HTMLElement>("[data-inhoud]"), (k) => k.dataset.inhoud ?? "")];
 }
 
 /**
@@ -211,8 +220,27 @@ export function meetBlokken(bron: HTMLElement): Blok[] {
       houdBijVolgende: houdtBijVolgende(r.el),
       sectie: r.sectie,
       wikkels: r.wikkels,
+      ankers: ankersVan(r.el),
     };
   });
+}
+
+/**
+ * Op welk vel elk anker staat, vanaf 1: de nummers van de inhoudsopgave. Staat een
+ * anker meer dan eens in de uitdraai, dan telt het eerste vel.
+ *
+ * Rekent op de uitkomst van de verdeling, dus op dezelfde vellen die de nummers
+ * onderaan krijgen. Het invullen verandert geen hoogte: de cellen voor de nummers
+ * staan er al, dus de inhoudsopgave zelf verschuift daardoor niet.
+ */
+export function paginaVanAnkers(paginas: Blok[][]): Map<string, number> {
+  const uit = new Map<string, number>();
+  paginas.forEach((pagina, i) => {
+    for (const blok of pagina) {
+      for (const anker of blok.ankers) if (!uit.has(anker)) uit.set(anker, i + 1);
+    }
+  });
+  return uit;
 }
 
 /**

@@ -146,10 +146,31 @@ export interface Rapportknoop extends Knoop {
   nummer: string;
   nieuwePagina: boolean;
   kinderen: Rapportknoop[];
-  blad?: { id: string; naam: string; bijlage: string };
+  blad?: { id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[] };
 }
 
-export interface Blad { id: string; naam: string }
+/** Waar de uitwerking van een blad staat. */
+export type BladPlek = "hoofdstuk" | "bijlage";
+
+/** Een regel onder de naam van een blad in de inhoudsopgave, zoals een kop uit een bestand. */
+export interface Inhoudskop {
+  titel: string;
+  /** Staat op papier als `data-inhoud` op die kop. */
+  anker: string;
+}
+
+export interface Blad {
+  id: string;
+  naam: string;
+  /** Waar de uitwerking staat zolang de gebruiker niets koos; zonder: in de bijlage. */
+  plek?: BladPlek;
+  koppen?: readonly Inhoudskop[];
+}
+
+/** Staat de uitwerking van dit blad in het hoofdstuk zelf? De keuze in het rapport wint van de soort. */
+export function staatInHoofdstuk(r: Rapport, b: Pick<Blad, "id" | "plek">): boolean {
+  return r.inHoofdstuk[b.id] ?? b.plek === "hoofdstuk";
+}
 
 /**
  * Staat er niets in? Een tekstknoop is leeg als zijn getrimde tekst leeg is; een
@@ -226,7 +247,12 @@ function bladKnopen(nummer: string, r: Rapport, bladen: Blad[]): Rapportknoop[] 
     nummer: `${nummer}.${i + 1}`,
     nieuwePagina: nieuwePaginaVoor(b.id, false, r),
     kinderen: [],
-    blad: { id: b.id, naam: b.naam, bijlage: r.inHoofdstuk[b.id] ? "" : `A.${++inBijlage}` },
+    blad: {
+      id: b.id,
+      naam: b.naam,
+      bijlage: staatInHoofdstuk(r, b) ? "" : `A.${++inBijlage}`,
+      ...(b.koppen?.length ? { koppen: b.koppen } : {}),
+    },
   }));
 }
 
@@ -250,19 +276,58 @@ export function bouwOpzet(r: Rapport, bladen: Blad[]): Rapportknoop[] {
     .map((k, i) => bouwKnoop(k, String(i + 1), r, bladen));
 }
 
-export interface Inhoudsregel { nummer: string; titel: string; niveau: 1 | 2; }
+export interface Inhoudsregel {
+  nummer: string;
+  titel: string;
+  /** 1 hoofdstuk, 2 paragraaf of blad, 3 kop uit een blad. */
+  niveau: 1 | 2 | 3;
+  /** De plek op papier (`data-inhoud`) waar het paginanummer vandaan komt. */
+  anker: string;
+}
 
-/** Hoofdstukken en paragrafen, behalve de paragrafen van "berekeningen" (die staan in de inhoudsopgave van dat hoofdstuk). */
-export function inhoudsopgave(knopen: Rapportknoop[]): Inhoudsregel[] {
+/** De regel van een blad met de koppen eronder. */
+function bladRegels(nummer: string, titel: string, anker: string, koppen: readonly Inhoudskop[] = []): Inhoudsregel[] {
+  return [
+    { nummer, titel, niveau: 2, anker },
+    ...koppen.map((k): Inhoudsregel => ({ nummer: "", titel: k.titel, niveau: 3, anker: k.anker })),
+  ];
+}
+
+/**
+ * Hoofdstukken en paragrafen. De paragrafen van "berekeningen" staan in de
+ * inhoudsopgave van dat hoofdstuk; met `metBladen` (rapport.opmaak.bladenInInhoud)
+ * staan de bladen met hun uitwerking in dat hoofdstuk hier ook. De andere bladen
+ * noemt bijlageRegels.
+ */
+export function inhoudsopgave(knopen: Rapportknoop[], metBladen = false): Inhoudsregel[] {
   const regels: Inhoudsregel[] = [];
   for (const h of knopen) {
-    regels.push({ nummer: h.nummer, titel: h.titel, niveau: 1 });
-    if (h.inhoud === "berekeningen") continue;
+    regels.push({ nummer: h.nummer, titel: h.titel, niveau: 1, anker: h.id });
+    if (h.inhoud === "berekeningen") {
+      if (!metBladen) continue;
+      for (const p of h.kinderen) {
+        if (p.blad && !p.blad.bijlage) regels.push(...bladRegels(p.nummer, p.titel, p.id, p.blad.koppen));
+      }
+      continue;
+    }
     for (const p of h.kinderen) {
-      if (p.niveau === 2) regels.push({ nummer: p.nummer, titel: p.titel, niveau: 2 });
+      if (p.niveau === 2) regels.push({ nummer: p.nummer, titel: p.titel, niveau: 2, anker: p.id });
     }
   }
   return regels;
+}
+
+/** De plek van de kop van een bijlage op papier. */
+export const bijlageAnker = (letter: string) => `bijlage-${letter}`;
+
+/** De plek van een blad in bijlage A op papier: het blad heeft ook een paragraaf in hoofdstuk Berekeningen. */
+export const bijlageBladAnker = (id: string) => `bijlage-blad-${id}`;
+
+/** De bladen in bijlage A, voor onder die bijlage in de inhoudsopgave (rapport.opmaak.bladenInInhoud). */
+export function bijlageRegels(knopen: Rapportknoop[]): Inhoudsregel[] {
+  const berekeningen = knopen.find((k) => k.inhoud === "berekeningen");
+  return (berekeningen?.kinderen ?? []).flatMap((p) =>
+    p.blad?.bijlage ? bladRegels(p.blad.bijlage, p.titel, bijlageBladAnker(p.id), p.blad.koppen) : []);
 }
 
 export interface Bijlage { letter: string; titel: string }
@@ -291,7 +356,7 @@ function bijlageLetter(index: number): string {
  */
 export function bijlagen(r: Rapport, bladen: Blad[]): Bijlage[] {
   const uit: Bijlage[] = [];
-  if (bladen.some((b) => !r.inHoofdstuk[b.id])) uit.push({ letter: "A", titel: BIJLAGE_A });
+  if (bladen.some((b) => !staatInHoofdstuk(r, b))) uit.push({ letter: "A", titel: BIJLAGE_A });
   r.bijlagen
     .map((t) => t.trim())
     .filter((t) => t !== "")

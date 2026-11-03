@@ -164,6 +164,11 @@ export interface Opmaak {
   constructieprincipe: boolean;
   /** Een korte regel die op ":" eindigt komt als vette subkop in de afdruk (tekstRegels in invullen.ts). */
   subkoppen: boolean;
+  /**
+   * De inhoudsopgave noemt ook de bladen: in hoofdstuk Berekeningen de bladen met hun
+   * uitwerking daar, onder bijlage A de rest (inhoudsopgave in opzet.ts).
+   */
+  bladenInInhoud: boolean;
 }
 
 export interface Rapport {
@@ -214,8 +219,11 @@ export interface Rapport {
  *      Een ouder rapport zonder eigen keuze krijgt opmaak.constructieprincipe
  *      en opmaak.subkoppen = false: de kop blijft Wijziging en de teksten
  *      blijven zonder subkoppen.
+ *   4  de inhoudsopgave noemt ook de bladen (Opmaak). Een ouder rapport zonder
+ *      eigen keuze krijgt opmaak.bladenInInhoud = false: de inhoudsopgave blijft
+ *      even lang, en de vellen erna verschuiven niet.
  */
-export const RAPPORT_VERSIE = 3;
+export const RAPPORT_VERSIE = 4;
 
 // ── Standaardwaarden ────────────────────────────────────────────────────────
 // Elke aanroep bouwt verse objecten en lijsten: een rapport dat de store
@@ -305,7 +313,7 @@ export function standaardRapport(vandaag: string, teksten: Record<string, string
     inHoofdstuk: {},
     bijlagen: [],
     nieuwePagina: {},
-    opmaak: { constructieprincipe: true, subkoppen: true },
+    opmaak: { constructieprincipe: true, subkoppen: true, bladenInInhoud: true },
     bureau: leegBureau(),
   };
 }
@@ -527,6 +535,7 @@ export function normaliseerRapport(x: unknown, vandaag: string, teksten: Record<
     opmaak: {
       constructieprincipe: keuze(opmaak.constructieprincipe, s.opmaak.constructieprincipe),
       subkoppen: keuze(opmaak.subkoppen, s.opmaak.subkoppen),
+      bladenInInhoud: typeof opmaak.bladenInInhoud === "boolean" ? opmaak.bladenInInhoud : versie >= 4 && s.opmaak.bladenInInhoud,
     },
     bureau: normaliseerBureau(o.bureau),
   };
