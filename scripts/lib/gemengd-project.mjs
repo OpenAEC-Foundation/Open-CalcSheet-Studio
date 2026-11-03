@@ -250,14 +250,14 @@ export function logboekTekst() {
 }
 
 /** Een werkmap met `rijen` rijen staven: 6 m lang, oplopend genummerd. */
-async function maakWerkmap(rijen) {
+export async function maakWerkmap(rijen, staaf = "Staaf") {
   const { initWasm, openWorkbook } = await import(new URL(`file:///${XLSX_DIST.replace(/\\/g, "/")}/index.js`).href);
   await initWasm(readFileSync(join(XLSX_DIST, "generated/xlsx_wasm_bg.wasm")));
   const wb = openWorkbook(new Uint8Array(Buffer.from(LEGE_WERKMAP, "base64")));
   try {
-    ["Staaf", "L (m)", "A (mm2)", "G (kg)"].forEach((w, k) => wb.editCell(0, 0, k, w));
+    [staaf, "L (m)", "A (mm2)", "G (kg)"].forEach((w, k) => wb.editCell(0, 0, k, w));
     for (let i = 1; i <= rijen; i++) {
-      wb.editCell(0, i, 0, `Staaf ${i}`);
+      wb.editCell(0, i, 0, `${staaf} ${i}`);
       wb.editCell(0, i, 1, "6");
       wb.editCell(0, i, 2, String(1000 + i));
       wb.editCell(0, i, 3, `=B${i + 1}*C${i + 1}*7850/1000000`);
