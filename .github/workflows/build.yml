@@ -4,7 +4,7 @@ name: Build
 #   - de ondertekende installers (desktop-ondertekend.yml): Windows (per machine
 #     en per gebruiker), macOS (universele .dmg) en Linux (.deb en .AppImage)
 #   - de rekenkern als npm-pakket (@ifc-calc/core)
-# De controles (npm run check) draaien ernaast. Hier wordt niets gepubliceerd;
+# De controles (npm run check) staan in ci.yml. Hier wordt niets gepubliceerd;
 # releases komen uit release.yml (v*-tags) en nightly.yml (main). Dit is daarom ook
 # de plek om de ondertekening op een eigen tak te proberen.
 
@@ -22,27 +22,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  checks:
-    name: Checks
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v6
-
-      # Een deel van de controles importeert TypeScript uit packages/desktop
-      # rechtstreeks; dat vraagt de ingebouwde type-stripping van Node 24.
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install workspace dependencies
-        run: npm install
-
-      - name: Run checks
-        run: npm run check
-
   desktop:
     uses: ./.github/workflows/desktop-ondertekend.yml
     with:
