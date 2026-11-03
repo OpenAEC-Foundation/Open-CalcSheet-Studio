@@ -28,6 +28,7 @@ import IfcViewerPanel from "./components/calc/IfcViewerPanel";
 import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
 import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
+import FeedbackDialog from "./components/FeedbackDialog";
 import { isPdfBlad } from "./store/pdfBijlage";
 import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
 import { isMarkdownBlad } from "./store/markdownBlad";
@@ -87,6 +88,7 @@ let startbestandGeopend = false;
 export default function App() {
   const { t } = useTranslation("werkruimte");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState("general");
   const [helpOpen, setHelpOpen] = useState(false);
   // Het welkomstvenster bij het opstarten, tot je het uitzet (Welkom.tsx).
@@ -363,7 +365,7 @@ export default function App() {
 
   return (
     <>
-      <TitleBar onSettingsClick={() => openSettings()} />
+      <TitleBar onSettingsClick={() => openSettings()} onFeedbackClick={() => setFeedbackOpen(true)} />
       <Ribbon
         onFileTabClick={() => setBackstageOpen(true)}
         onSettingsClick={openSettings}
@@ -444,6 +446,7 @@ export default function App() {
       {welkomOpen && <Welkom onSluit={() => setWelkomOpen(false)} />}
       <StatusBar />
       <SpreadsheetHouder />
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       {afdrukmodus && <PrintDocument />}
       <Backstage
         open={backstageOpen}
