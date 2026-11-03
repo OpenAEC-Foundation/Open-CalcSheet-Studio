@@ -40,6 +40,7 @@ export const ATTR = {
   elementen: 'ocss::blad::elementen',
   pdf: 'ocss::blad::pdf',
   xlsx: 'ocss::blad::xlsx',
+  jupyter: 'ocss::blad::jupyter',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -184,7 +185,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       id: TEKST,
       volgorde: GEHEEL,
       templateId: TEKST,
-      soort: keuze('rekenblad', 'pdf', 'spreadsheet'),
+      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'jupyter'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
     }),
@@ -209,6 +210,15 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       mediaType: TEKST,
       grootte: GEHEEL,
       data: TEKST,
+    }),
+  },
+  [ATTR.jupyter]: {
+    value: object({
+      bestandsnaam: TEKST,
+      mediaType: TEKST,
+      grootte: GEHEEL,
+      data: TEKST,
+      metCode: JANEE,
     }),
   },
   [ATTR.uitkomst]: {

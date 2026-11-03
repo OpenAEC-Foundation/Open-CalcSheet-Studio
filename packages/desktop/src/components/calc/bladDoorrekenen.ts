@@ -6,6 +6,8 @@ import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
+import { isJupyterBlad } from "../../store/jupyterBlad";
+import { werkmapHtml } from "./jupyterPapier";
 import { papier } from "./pdfBlad";
 
 /*
@@ -50,6 +52,18 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): Do
   // Idem een spreadsheet-blad; de werkbladen tekent SpreadsheetBladWeergave.tsx.
   if (isSpreadsheetBlad(ex)) {
     return { html: "", resultaat: { titel: ex.naam, norm: papier()("spreadsheetBlad.soort"), uc: null, voldoet: null } };
+  }
+  // Een Jupyter-blad rekent hier ook niets: de uitwerking komt uit de opgeslagen uitvoer.
+  if (isJupyterBlad(ex)) {
+    const t = papier();
+    const html = ex.jupyter
+      ? werkmapHtml(ex.jupyter, {
+        leeg: t("jupyterBlad.leeg"),
+        fout: (bestand) => t("jupyterBlad.notebookFout", { bestand }),
+        kapot: (fout) => t("jupyterBlad.fout", { fout }),
+      })
+      : `<p class="nb-tekst-los">${t("jupyterBlad.ontbreekt")}</p>`;
+    return { html, resultaat: { titel: ex.naam, norm: t("jupyterBlad.soort"), uc: null, voldoet: null } };
   }
   let html: string;
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };

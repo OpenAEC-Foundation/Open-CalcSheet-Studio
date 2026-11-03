@@ -7,6 +7,7 @@ import { standaardTeksten } from "../rapport/standaardteksten.ts";
 import { leesRekenversie } from "../components/calc/bladVersie.ts";
 import { isPdfBlad, leesPdfBijlage } from "./pdfBijlage.ts";
 import { isSpreadsheetBlad, leesSpreadsheetBestand } from "./spreadsheetBlad.ts";
+import { isJupyterBlad, leesJupyterWerkmap } from "./jupyterBlad.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -200,6 +201,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (pdf) ex.pdf = pdf;
   const xlsx = isSpreadsheetBlad(ex) ? leesSpreadsheetBestand(e.xlsx) : undefined;
   if (xlsx) ex.xlsx = xlsx;
+  const jupyter = isJupyterBlad(ex) ? leesJupyterWerkmap(e.jupyter) : undefined;
+  if (jupyter) ex.jupyter = jupyter;
   return ex;
 }
 

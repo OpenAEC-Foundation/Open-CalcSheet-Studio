@@ -35,6 +35,8 @@ const APP_NAAM = 'Open CalcSheet Studio';
 const PDF_SOORT = 'pdf';
 const SPREADSHEET_SOORT = 'spreadsheet';
 const XLSX_MEDIATYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const JUPYTER_SOORT = 'jupyter';
+const ZIP_MEDIATYPE = 'application/zip';
 
 export interface IfcxProjectInvoer {
   naam: string;
@@ -58,6 +60,7 @@ export interface IfcxGelezenBlad {
   bronVersie?: string;
   pdf?: { bestandsnaam: string; data: string };
   xlsx?: { bestandsnaam: string; data: string };
+  jupyter?: { bestandsnaam: string; data: string; metCode: boolean };
 }
 
 export interface IfcxGelezenProject {
@@ -150,8 +153,9 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     const pad = onder(`blad/${sleutel}`);
     const isPdf = blad.templateId === PDF_SOORT;
     const isSpreadsheet = blad.templateId === SPREADSHEET_SOORT;
+    const isJupyter = blad.templateId === JUPYTER_SOORT;
     // Een PDF of werkmap heeft geen rekentekst, geen invoer en geen oordeel.
-    const isLos = isPdf || isSpreadsheet;
+    const isLos = isPdf || isSpreadsheet || isJupyter;
     bladKinderen[kindNaam(`B${String(i + 1).padStart(3, '0')}_${blad.naam}`, bladNamen)] = pad;
 
     const uitkomst = leesUitkomst(blad.nodes, blad.naam, isLos ? { voldoet: null, uc: null } : blad.resultaat, blad.fout);
@@ -169,7 +173,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         id: sleutel,
         volgorde: i,
         templateId: blad.templateId ?? '',
-        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : 'rekenblad',
+        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isJupyter ? 'jupyter' : 'rekenblad',
         ...(blad.module ? { module: blad.module } : {}),
         ...(blad.bronVersie ? { bronVersie: blad.bronVersie } : {}),
       },
@@ -192,6 +196,15 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         mediaType: XLSX_MEDIATYPE,
         grootte: pdfBytes(blad.xlsx.data),
         data: blad.xlsx.data,
+      };
+    }
+    if (blad.jupyter) {
+      attributes[ATTR.jupyter] = {
+        bestandsnaam: blad.jupyter.bestandsnaam,
+        mediaType: ZIP_MEDIATYPE,
+        grootte: pdfBytes(blad.jupyter.data),
+        data: blad.jupyter.data,
+        metCode: blad.jupyter.metCode,
       };
     }
     attributes[ATTR.uitkomst] = uitkomst;
@@ -485,6 +498,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown };
     const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown } | undefined;
     const xlsx = a[ATTR.xlsx] as { bestandsnaam?: unknown; data?: unknown } | undefined;
+    const jupyter = a[ATTR.jupyter] as { bestandsnaam?: unknown; data?: unknown; metCode?: unknown } | undefined;
     const blad: IfcxGelezenBlad = {
       id: tekstVan(b.id),
       naam: tekstVan(a[ATTR.naam]),
@@ -496,6 +510,9 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     if (typeof b.bronVersie === 'string') blad.bronVersie = b.bronVersie;
     if (pdf && typeof pdf.data === 'string') blad.pdf = { bestandsnaam: tekstVan(pdf.bestandsnaam), data: pdf.data };
     if (xlsx && typeof xlsx.data === 'string') blad.xlsx = { bestandsnaam: tekstVan(xlsx.bestandsnaam), data: xlsx.data };
+    if (jupyter && typeof jupyter.data === 'string') {
+      blad.jupyter = { bestandsnaam: tekstVan(jupyter.bestandsnaam), data: jupyter.data, metCode: jupyter.metCode !== false };
+    }
     return blad;
   });
 

@@ -431,10 +431,10 @@ export function bouwProjectStep(doc: IfcxBestand, opties: StepOpties = {}): stri
     const a = k.attributes!;
     const blad = a[ATTR.blad] as { id: string; templateId: string; soort: string; module?: string; bronVersie?: string };
     const uitkomst = a[ATTR.uitkomst] as BladUitkomstGegevens | undefined;
-    const pdf = (a[ATTR.pdf] ?? a[ATTR.xlsx]) as { bestandsnaam?: string; mediaType?: string; grootte?: number } | undefined;
+    const pdf = (a[ATTR.pdf] ?? a[ATTR.xlsx] ?? a[ATTR.jupyter]) as { bestandsnaam?: string; mediaType?: string; grootte?: number } | undefined;
     const invoer = (a[ATTR.invoer] as Array<{ naam: string; waarde: string }> | undefined) ?? [];
     const naam = naamVan(k) || blad.id;
-    const isBijlage = blad.soort === 'pdf' || blad.soort === 'spreadsheet';
+    const isBijlage = blad.soort === 'pdf' || blad.soort === 'spreadsheet' || blad.soort === 'jupyter';
 
     const groep = voeg(`IFCGROUP(${guid(k.path)},${oh},${label(naam)},${optTekst(uitkomst?.norm)},'Rekenblad')`);
     const elementen = elementenVanBlad.get(k.path) ?? [];

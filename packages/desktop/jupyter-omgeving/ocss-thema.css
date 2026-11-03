@@ -1,0 +1,18 @@
+/*
+ * De omgeving ziet eruit als JupyterLab, met het accent van de app
+ * (--oa-accent uit src/openaec/openaec-tokens.css). `html:root` wint van de
+ * thema's van JupyterLab, die later laden.
+ */
+html:root {
+  --jp-brand-color0: #92400e;
+  --jp-brand-color1: #d97706;
+  --jp-brand-color2: #e78a08;
+  --jp-brand-color3: #f5c682;
+  --jp-brand-color4: #fbe7c9;
+  --jp-accent-color0: #92400e;
+  --jp-accent-color1: #d97706;
+  --jp-accent-color2: #e78a08;
+  --jp-accent-color3: #f5c682;
+  --jp-cell-editor-active-border-color: #d97706;
+  --jp-notebook-multiselected-color: #fbe7c9;
+}

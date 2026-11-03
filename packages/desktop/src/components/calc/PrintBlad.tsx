@@ -9,6 +9,9 @@ import { isPdfBlad } from "../../store/pdfBijlage";
 import { PdfBladAfdruk } from "./PdfBladWeergave";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
 import { SpreadsheetBladAfdruk } from "./SpreadsheetBladWeergave";
+import { isJupyterBlad } from "../../store/jupyterBlad";
+import "katex/dist/katex.min.css";
+import "./JupyterBlad.css";
 import { MATEN, type Maten } from "./paginering";
 import { useDrieDAfdruk } from "./drieDBlok";
 import { useIfcxAfdruk } from "./ifcxBlok";
@@ -82,6 +85,21 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
 }) {
   if (isPdfBlad(ex)) return <PdfBladAfdruk ex={ex} nummer={nummer} maten={maten} />;
   if (isSpreadsheetBlad(ex)) return <SpreadsheetBladAfdruk ex={ex} nummer={nummer} maten={maten} />;
+  // Een Jupyter-blad heeft geen rekenversie, projectregel en oordeel, wel een uitwerking.
+  if (isJupyterBlad(ex)) {
+    return (
+      <section className="print-blad print-jupyter">
+        <header className="print-blad-kop">
+          <span className="print-blad-nr">{nummer}</span>
+          <span className="print-blad-titel">
+            <span className="print-blad-naam">{ex.naam}</span>
+            <span className="print-blad-norm">{resultaat.norm}</span>
+          </span>
+        </header>
+        <UitwerkingHtml html={html} bladId={ex.id} />
+      </section>
+    );
+  }
   // Het beeld tekent zichzelf uit de waarden van dít exemplaar, niet uit het
   // blad dat toevallig openstaat. `alleenLezen` houdt tegen dat het afdrukken
   // standaardwaarden aanvult of iets anders aan het project verandert.

@@ -15,6 +15,7 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 | `packages/desktop/src/components/calc` | Parametrische beelden (`*Designer.tsx`), koppeling blad↔beeld (`designerKeuze.tsx`, via een herkenningstekst uit de titel), modulecatalogus met status (`projectTree.ts`), uitkomst van een blad (`bladResultaat.ts`), afdruk (`PrintDocument.tsx/.css`, `PrintBlad.tsx`, `paginering.ts`), rekenversie en bijwerken van bladen (`bladVersie.ts`, `BladBijwerken.tsx`). |
 | `packages/desktop/src/rapport`, `components/rapport` | Constructierapport (hoofdstukken, uitgangspunten, belastingen met opbouwen en gewichtenbibliotheek `gewichten.ts`, bijlage A met de rekenbladen). |
 | `packages/desktop/src/store` | Project (exemplaren/bladen, projectgegevens, rapport), projectbestand, undo. |
+| Bladsoorten | Naast rekenbladen ook PDF, spreadsheet en Jupyter. Een Jupyter-blad is een eigen werkmap met notebooks en scripts in een afgeschermde JupyterLab-omgeving: zie [jupyter-blad.md](jupyter-blad.md). |
 | `scripts/check-*.mjs` | Controles; `node scripts/check-alles.mjs` draait ze allemaal (nu 26 controles). |
 
 ## 2. Afspraken in de bladen
@@ -60,7 +61,7 @@ cd packages/desktop && npx tsc --noEmit -p .
 ## 5. Bouwen en uitbrengen
 
 - Versie (jaar.week.volgnummer) op zeven plekken: `packages/desktop/package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, de desktop-regel in `package-lock.json`, de app-regel in `src-tauri/Cargo.lock`, en de versieregel in `src/i18n/locales/{nl,en}/common.json`.
-- Installer: `npm run tauri build` in `packages/desktop`. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`).
+- Installer: `npm run tauri build` in `packages/desktop`. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`). Daarvoor bouwt `beforeBuildCommand` de Jupyter-omgeving als die er nog niet is (`scripts/bouw-jupyter-omgeving.mjs --als-nodig`); dat vraagt eenmalig internet en Python. Een `tauri dev` zonder pakbestand start gewoon, en een Jupyter-blad meldt dan dat de omgeving ontbreekt.
 - Draait de gebouwde app nog, dan houdt die `target/release/WebView2Loader.dll` vast en faalt de build: bouw dan met een eigen `CARGO_TARGET_DIR` (bijvoorbeeld `src-tauri/target-installer`, niet in git).
 
 ## 6. Modules

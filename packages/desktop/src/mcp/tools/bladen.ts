@@ -7,6 +7,7 @@ import { projectScope } from "../../store/projectGegevens.ts";
 import { bibliotheek, moduleCatalogus, modulesPerTemplate, type TreeNode } from "../../components/calc/projectTree.ts";
 import { isPdfBlad, base64Bytes, bladnaamVoor } from "../../store/pdfBijlage.ts";
 import { isLosBlad, isSpreadsheetBlad } from "../../store/spreadsheetBlad.ts";
+import { isJupyterBlad } from "../../store/jupyterBlad.ts";
 import { FORMULES, codeVan } from "../../components/ribbon/formules.ts";
 import { jsonGetal, regels, rekenDoor, ucWaarden, type Doorrekening } from "../rekenen.ts";
 import {
@@ -98,7 +99,7 @@ export const BLADTOOLS: McpToolDef[] = [
     name: "sheets_list",
     kind: "read",
     description:
-      "List the sheets of the project in order (id, name, kind calculation/pdf/spreadsheet, module, active, UC and verdict when known). " +
+      "List the sheets of the project in order (id, name, kind calculation/pdf/spreadsheet/jupyter, module, active, UC and verdict when known). " +
       "UC is reported for sheets evaluated through this API with their current input; pass evaluate=true to compute every sheet now.",
     inputSchema: objectSchema({
       evaluate: { type: "boolean", description: "Compute every calculation sheet now (a large sheet can take a second or more). Default false." },
@@ -207,6 +208,9 @@ export const BLADTOOLS: McpToolDef[] = [
       }
       if (isSpreadsheetBlad(blad)) {
         return ok({ ...basis, spreadsheet: blad.xlsx ? { fileName: blad.xlsx.bestandsnaam, bytes: base64Bytes(blad.xlsx.data) } : null });
+      }
+      if (isJupyterBlad(blad)) {
+        return ok({ ...basis, jupyter: blad.jupyter ? { fileName: blad.jupyter.bestandsnaam, bytes: base64Bytes(blad.jupyter.data) } : null });
       }
       const { velden, fout: leesfout } = veldenVan(blad.source);
       const veldnamen = new Set(velden.map((v) => v.naam));

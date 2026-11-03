@@ -32,6 +32,7 @@ export interface McpBlad {
   waarden: Record<string, string>;
   pdf?: McpPdf;
   xlsx?: McpPdf;
+  jupyter?: McpPdf & { metCode: boolean };
 }
 
 /** De stand van het project op één moment. */

@@ -217,12 +217,15 @@ const ast = parse(source, {
 - **CodeMirror 6** — editor met `.cpd` syntax highlighting + autocomplete
 - **React 19** — desktop UI
 - **Tauri 2** — Rust shell met file-system + dialog plugins
+- **JupyterLite + Pyodide** — Python in een Jupyter-blad, afgeschermd en zonder installatie; zie [`docs/jupyter-blad.md`](docs/jupyter-blad.md)
 - **Vite** — bundler met `?raw` imports voor samples
 - **npm workspaces** — monorepo
 
 ## Licentie
 
 LGPL-3.0, zie [`LICENSE`](LICENSE).
+
+De Jupyter-omgeving levert software mee onder eigen licenties (BSD, MIT, MPL-2.0, PSF): zie [`packages/desktop/jupyter-omgeving/LICENTIES.md`](packages/desktop/jupyter-omgeving/LICENTIES.md).
 
 ## Status
 

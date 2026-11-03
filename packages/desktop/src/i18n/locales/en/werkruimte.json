@@ -319,6 +319,42 @@
     "exporteren": "Export…",
     "exporterenUitleg": "Write this workbook to a separate XLSX file."
   },
+  "jupyter": {
+    "toevoegen": "Add Jupyter",
+    "toevoegenUitleg": "Add a work folder of its own with notebooks, Python scripts and data files to the project as a sheet. Python runs isolated inside the app; nothing needs installing. On paper you get the notebooks with their saved output.",
+    "importeren": "Read notebook…",
+    "importerenUitleg": "Add existing notebooks (.ipynb), Python scripts (.py) or a packed work folder (.zip) as a new Jupyter sheet. The files go into the project file. Nothing runs until you start it yourself.",
+    "nieuweNaam": "Jupyter",
+    "kiesTitel": "Choose files",
+    "filter": "Notebooks, scripts and work folders",
+    "filterZip": "Packed work folder",
+    "lezenMislukt": "Reading the files failed: {{fout}}",
+    "schrijvenMislukt": "Writing the work folder failed: {{fout}}",
+    "teGroot": "The work folder is too large to keep in the project. Remove files in the environment.",
+    "tab": "Jupyter",
+    "paneel": "Jupyter",
+    "rij": "Jupyter — work folder is in the project",
+    "laden": "Loading the Python environment…",
+    "stil": "The Python environment is not responding. The project keeps the last state it received.",
+    "opnieuwLaden": "Reload",
+    "alleenDesktop": "The Python environment only runs in the desktop app.",
+    "geenOmgeving": "The Python environment could not start: {{fout}}. The files and output of this sheet stay saved and still go on paper.",
+    "metCode": "Code on paper",
+    "metCodeUitleg": "Does the code of the cells go on paper, or only the text and the output?",
+    "inlezen": "Add files…",
+    "inlezenUitleg": "Add notebooks, scripts or data files to this work folder. The environment then reloads, and the kernel starts empty.",
+    "exporteren": "Export…",
+    "exporterenUitleg": "Write this work folder to a separate ZIP file.",
+    "start": {
+      "kop": "Notebook",
+      "uitleg": "Run a cell with Shift+Enter. Numpy, scipy, pandas and matplotlib are ready. Files in this work folder can simply be opened and imported in Python.",
+      "titel": "Example"
+    },
+    "kiezer": {
+      "kop": "Work folder of its own",
+      "naam": "Jupyter notebook"
+    }
+  },
   "welkom": {
     "titel": "Welcome to Open CalcSheet Studio",
     "intro": "Structural calculations as readable sheets: you write the calculation, the app works it out, draws it and assembles the structural report.",

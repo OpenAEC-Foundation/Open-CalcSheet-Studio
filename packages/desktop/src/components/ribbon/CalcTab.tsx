@@ -22,12 +22,14 @@ import {
   searchIcon,
   blankSheetIcon,
   spreadsheetIcon,
+  jupyterIcon,
 } from "./calcIcons";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../../store/projectStore";
 import { usePrintStore } from "../../store/printStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { useEditorViewStore } from "../../store/editorViewStore";
 import { voegLeegSpreadsheetToe } from "../calc/spreadsheetBlad";
+import { voegLeegJupyterToe } from "../calc/jupyterBlad";
 
 interface CalcTabProps {
   /** Opent de instellingen, eventueel op een bepaalde tab ("about"). */
@@ -180,6 +182,12 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
             label={t("calc.spreadsheet", "Spreadsheet")}
             size="large"
             onClick={() => voegLeegSpreadsheetToe(useProjectStore.getState().voegSpreadsheetToe)}
+          />
+          <RibbonButton
+            icon={jupyterIcon}
+            label={t("calc.jupyter", "Jupyter")}
+            size="large"
+            onClick={() => voegLeegJupyterToe(useProjectStore.getState().voegJupyterToe)}
           />
         </RibbonGroup>
 

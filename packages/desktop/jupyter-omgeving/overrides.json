@@ -1,0 +1,14 @@
+{
+  "@jupyterlab/docmanager-extension:plugin": {
+    "autosave": true,
+    "autosaveInterval": 5
+  },
+  "@jupyterlab/apputils-extension:notification": {
+    "checkForUpdates": false,
+    "doNotDisturbMode": true,
+    "fetchNews": "false"
+  },
+  "@jupyterlab/notebook-extension:tracker": {
+    "autoStartDefaultKernel": true
+  }
+}

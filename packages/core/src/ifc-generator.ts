@@ -76,6 +76,8 @@ export interface IfcCalcSheet {
   pdf?: { bestandsnaam: string; data: string };
   /** Bij een spreadsheet-blad: de werkmap, als base64. */
   xlsx?: { bestandsnaam: string; data: string };
+  /** Bij een Jupyter-blad: de werkmap als ZIP, in base64. */
+  jupyter?: { bestandsnaam: string; data: string; metCode: boolean };
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */

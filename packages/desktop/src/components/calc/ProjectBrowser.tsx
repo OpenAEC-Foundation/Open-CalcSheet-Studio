@@ -10,6 +10,8 @@ import { heeftEigenCode, huidigeModuletekst, isVerouderd, rekenversie } from "./
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
 import { voegLeegSpreadsheetToe, voegWerkmapToe } from "./spreadsheetBlad";
+import { isJupyterBlad } from "../../store/jupyterBlad";
+import { voegLeegJupyterToe, voegNotebookToe } from "./jupyterBlad";
 import { voegPdfBladToe } from "./pdfBlad";
 import Icoon from "../Icoon";
 import LibrarySectie from "./LibrarySectie";
@@ -107,15 +109,20 @@ function ExemplaarRij({
   // Een PDF-blad heeft geen module en geen rekenversie: een eigen icoon.
   const pdf = isPdfBlad(ex);
   const spreadsheet = isSpreadsheetBlad(ex);
+  const jupyter = isJupyterBlad(ex);
   const stip = pdf
     ? <Icoon id="report.cover" />
     : spreadsheet
     ? <Icoon id="data.table" />
+    : jupyter
+    ? <Icoon id="file.structure" uit="calculations" />
     : <span className={`pb-stip${status ? ` pb-status-${status}` : ""}`} aria-hidden="true" />;
   const uitleg = pdf
     ? `${ex.naam}\n${tw("pdf.rij", { bestand: ex.pdf?.bestandsnaam || "—" })}\n${tw("browser.dubbelklik")}`
     : spreadsheet
     ? `${ex.naam}\n${tw("spreadsheet.rij")}\n${tw("browser.dubbelklik")}`
+    : jupyter
+    ? `${ex.naam}\n${tw("jupyter.rij")}\n${tw("browser.dubbelklik")}`
     : `${ex.naam}${info ? ` — ${moduleNaam}` : ""}\n${versieRegel}` +
       (eigen ? `\n${t("bladVersie.eigenUitleg", { bron: ex.bronVersie })}` : "") +
       (verouderd ? `\n${t("bladVersie.rijVerouderd", { nieuw: nieuweVersie })}` : "") +
@@ -217,6 +224,7 @@ export default function ProjectBrowser() {
   const openModuleKiezer = useModuleKiezer((s) => s.openen);
   const voegPdfToe = useProjectStore((s) => s.voegPdfToe);
   const voegSpreadsheetToe = useProjectStore((s) => s.voegSpreadsheetToe);
+  const voegJupyterToe = useProjectStore((s) => s.voegJupyterToe);
 
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const activeId = useProjectStore((s) => s.activeId);
@@ -331,6 +339,16 @@ export default function ProjectBrowser() {
           <button className="pb-rij pb-toevoegen" onClick={() => void voegWerkmapToe(voegSpreadsheetToe)} title={tw("spreadsheet.importerenUitleg")}>
             <Icoon id="data.table" />
             <span className="pb-naam">{tw("spreadsheet.importeren")}</span>
+          </button>
+
+          {/* Een eigen werkmap met notebooks en scripts: nieuw, of bestaande bestanden. */}
+          <button className="pb-rij pb-toevoegen" onClick={() => voegLeegJupyterToe(voegJupyterToe)} title={tw("jupyter.toevoegenUitleg")}>
+            <Icoon id="file.structure" uit="calculations" />
+            <span className="pb-naam">{tw("jupyter.toevoegen")}</span>
+          </button>
+          <button className="pb-rij pb-toevoegen" onClick={() => void voegNotebookToe(voegJupyterToe)} title={tw("jupyter.importerenUitleg")}>
+            <Icoon id="file.import" uit="calculations" />
+            <span className="pb-naam">{tw("jupyter.importeren")}</span>
           </button>
 
           {/* Alleen als er iets bij te werken is; bijwerken gaat altijd via de vergelijking. */}
