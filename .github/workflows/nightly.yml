@@ -5,6 +5,11 @@ name: Nightly Build
 # Difference vs release.yml:
 #   - release.yml  -> triggered by `v*` semver tags, becomes the "Latest" stable release
 #   - nightly.yml  -> continuous interim builds, marked prerelease, single rolling tag
+#
+# De volgorde is bewust: eerst bouwen, ondertekenen en controleren, en pas als dat
+# allemaal groen is de vorige nightly vervangen. Mislukt er iets, dan blijft de vorige
+# staan en gaat er niets ongetekends naar buiten. Tot aan het publiceren heet het
+# concept nightly-<run>, omdat de tag nightly dan nog bij de vorige hoort.
 
 on:
   workflow_dispatch:
@@ -12,132 +17,108 @@ on:
     - cron: '0 4 * * *'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: nightly-build
   cancel-in-progress: true
 
 jobs:
-  prepare-release:
+  voorbereiden:
+    name: Voorbereiden
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      tag: ${{ steps.version.outputs.tag }}
-      release_id: ${{ steps.recreate.outputs.release_id }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Compute nightly version + tag
-        id: version
-        shell: bash
-        run: |
-          BASE_VERSION=$(node -p "require('./packages/desktop/package.json').version")
-          DATE=$(date -u +'%Y%m%d')
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          VERSION="${BASE_VERSION}-nightly.${DATE}.${SHORT_SHA}"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "tag=nightly" >> "$GITHUB_OUTPUT"
-          echo "Building nightly ${VERSION}"
-
-      - name: Delete previous nightly release + tag (rolling)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete nightly --yes --cleanup-tag || true
-
-      - name: Create fresh nightly release
-        id: recreate
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const version = "${{ steps.version.outputs.version }}";
-            const { data } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: "nightly",
-              target_commitish: context.sha,
-              name: `Nightly build ${version}`,
-              body: [
-                "**Nightly / interim build** — not a stable release.",
-                "",
-                "Built from the latest `main` branch. May contain bugs or incomplete features.",
-                "For stable, use the latest `v*` release.",
-                "",
-                `Source: \`${context.sha.substring(0,7)}\``,
-                `Build version: \`${version}\``
-              ].join("\n"),
-              draft: false,
-              prerelease: true
-            });
-            core.setOutput("release_id", data.id);
-            return data.id;
-
-  build-tauri:
-    needs: prepare-release
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'ubuntu-22.04'
-            args: ''
-            target: 'linux'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
-            target: 'macos'
-          - platform: 'windows-latest'
-            args: ''
-            target: 'windows-system'
-          - platform: 'windows-latest'
-            args: ''
-            target: 'windows-user'
-
-    runs-on: ${{ matrix.platform }}
-
+    outputs:
+      versie: ${{ steps.nummer.outputs.versie }}
+      bouwnummer: ${{ steps.nummer.outputs.bouwnummer }}
+      sha: ${{ steps.nummer.outputs.sha }}
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Rust targets (macOS universal)
-        if: matrix.target == 'macos'
-        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
-
-      - name: Install dependencies (Ubuntu only)
-        if: matrix.target == 'linux'
+      - name: Compute nightly version
+        id: nummer
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          set -euo pipefail
+          node scripts/versie.mjs controleer
+          VERSIE="$(node -p "require('./packages/desktop/package.json').version")"
+          BOUWNUMMER="${VERSIE}-nightly.$(date -u +'%Y%m%d').$(git rev-parse --short HEAD)"
+          {
+            echo "versie=$VERSIE"
+            echo "bouwnummer=$BOUWNUMMER"
+            echo "sha=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+          echo "Building nightly $BOUWNUMMER"
 
-      - name: Install workspace dependencies
-        run: npm install
-
-      - name: Build core package
-        run: npm run build --workspace=@ifc-calc/core
-
-      - name: Set user install mode (Windows user installer)
-        if: matrix.target == 'windows-user'
-        shell: pwsh
-        working-directory: packages/desktop
-        run: |
-          $conf = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
-          $conf.bundle.windows.nsis.installMode = "currentUser"
-          $conf | ConvertTo-Json -Depth 10 | Set-Content src-tauri/tauri.conf.json
-
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@action-v0.6.1
+      # Een afgebroken of mislukte run laat een concept achter. Alleen concepten van
+      # deze workflow gaan weg; de gepubliceerde nightly blijft staan.
+      - name: Ruim oude concepten op
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: packages/desktop
-          args: ${{ matrix.args }}
-          releaseId: ${{ needs.prepare-release.outputs.release_id }}
-          includeUpdaterJson: false
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            --jq '.[] | select(.draft and (.tag_name | startswith("nightly-"))) | .id' |
+            while read -r id; do gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"; done
+
+  bouwen:
+    needs: voorbereiden
+    uses: ./.github/workflows/desktop-ondertekend.yml
+    with:
+      ref: ${{ needs.voorbereiden.outputs.sha }}
+      versie: ${{ needs.voorbereiden.outputs.versie }}
+    secrets: inherit
+
+  concept:
+    needs: [voorbereiden, bouwen]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-concept.yml
+    with:
+      tag: nightly-${{ github.run_id }}
+      sha: ${{ needs.voorbereiden.outputs.sha }}
+      versie: ${{ needs.voorbereiden.outputs.versie }}
+      naam: Nightly build ${{ needs.voorbereiden.outputs.bouwnummer }}
+      prerelease: true
+      tekst: |
+        **Nightly / interim build** — not a stable release.
+
+        Built from the latest `main` branch. May contain bugs or incomplete features.
+        For stable, use the latest `v*` release.
+
+        Source: `${{ needs.voorbereiden.outputs.sha }}`
+        Build version: `${{ needs.voorbereiden.outputs.bouwnummer }}`
+
+        Windows and macOS installers are signed. Linux packages and `SHA256SUMS.txt` have detached
+        OpenPGP signatures (`.asc`), key fingerprint `13F6D414ADEE4ED4CD09AC60601D86C93C504D29`.
+        How to verify: [docs/ondertekening.md](https://github.com/${{ github.repository }}/blob/main/docs/ondertekening.md).
+    secrets: inherit
+
+  controleren:
+    needs: [voorbereiden, concept]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-controleren.yml
+    with:
+      tag: nightly-${{ github.run_id }}
+      sha: ${{ needs.voorbereiden.outputs.sha }}
+    secrets: inherit
+
+  publiceren:
+    name: Publiceren
+    needs: [voorbereiden, concept, controleren]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Vervang de vorige nightly
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ needs.concept.outputs.release_id }}
+          SHA: ${{ needs.voorbereiden.outputs.sha }}
+        run: |
+          set -euo pipefail
+          gh release delete nightly --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            -f tag_name=nightly -f target_commitish="$SHA" -F draft=false -F prerelease=true \
+            --jq '"Gepubliceerd: " + .html_url'

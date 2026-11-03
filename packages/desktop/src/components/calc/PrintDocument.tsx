@@ -94,6 +94,8 @@ export function useUitdraai(): Uitdraai {
 function Resultaten({ uitdraai }: { uitdraai: Uitdraai }) {
   const { bladen } = uitdraai;
   const nietGoed = bladen.filter((b) => b.resultaat.voldoet === false).length;
+  // Een blad dat niet is getoetst, mag niet onder "alle getoetste onderdelen voldoen" vallen.
+  const nietGetoetst = bladen.filter((b) => b.resultaat.nietGetoetst).length;
   return (
     <>
       <p className="print-sectiekop">{op("inhoudResultaten")}</p>
@@ -120,9 +122,10 @@ function Resultaten({ uitdraai }: { uitdraai: Uitdraai }) {
         </tbody>
       </table>
       <p className="print-resultaten-noot">
-        {nietGoed === 0
-          ? op("alleVoldoen")
-          : op(nietGoed === 1 ? "nietGoedEen" : "nietGoedMeer", { n: nietGoed, totaal: bladen.length })}
+        {nietGoed === 0 && nietGetoetst === 0 && op("alleVoldoen")}
+        {nietGoed > 0 && op(nietGoed === 1 ? "nietGoedEen" : "nietGoedMeer", { n: nietGoed, totaal: bladen.length })}
+        {nietGoed > 0 && nietGetoetst > 0 && " "}
+        {nietGetoetst > 0 && op(nietGetoetst === 1 ? "nietGetoetstEen" : "nietGetoetstMeer", { n: nietGetoetst, totaal: bladen.length })}
         {" "}{op("ucNoot")}
       </p>
     </>

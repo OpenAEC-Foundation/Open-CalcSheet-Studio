@@ -25,6 +25,7 @@ import "./PrintDocument.css";
 
 /** Het oordeel als klein label: groen, rood of neutraal. */
 export function Oordeel({ r }: { r: Resultaat }) {
+  if (r.nietGetoetst) return <span className="print-oordeel neutraal">{i18next.t("beelden:kit.nietGetoetst")}</span>;
   if (r.voldoet === null) return <span className="print-oordeel neutraal">—</span>;
   return (
     <span className={`print-oordeel ${r.voldoet ? "goed" : "fout"}`}>

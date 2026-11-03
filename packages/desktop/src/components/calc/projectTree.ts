@@ -88,6 +88,16 @@ export const moduleCatalogus: TreeNode[] = [
       { kind: "item", id: "sheet-balklaag", label: "Balklaag (houten vloerbalken)", templateId: "balklaag", status: "gereed", gepubliceerd: true },
     ],
   },
+  {
+    kind: "category",
+    id: "cat-beton",
+    label: "Beton",
+    defaultExpanded: true,
+    count: 1,
+    children: [
+      { kind: "item", id: "sheet-tweepaalspoer", label: "Tweepaalspoer (gewapend beton)", templateId: "tweepaalspoer", status: "controleren" },
+    ],
+  },
 ];
 
 export const bibliotheek: TreeNode[] = [

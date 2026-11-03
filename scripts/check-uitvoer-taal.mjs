@@ -23,6 +23,7 @@ const { leesResultaat, leesGetallen } = await import("../packages/desktop/src/co
 const { balklaagEn } = await import("../packages/desktop/src/templates/balklaag.en.ts");
 const { liggerEn } = await import("../packages/desktop/src/templates/ligger.en.ts");
 const { calcpadDemoEn } = await import("../packages/desktop/src/templates/calcpad-demo.en.ts");
+const { tweepaalspoerEn } = await import("../packages/desktop/src/templates/tweepaalspoer.en.ts");
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -39,6 +40,7 @@ const MODULES = [
   { naam: "balklaag", bron: blad("balklaag.ts", '"Balklaag —'), v: balklaagEn },
   { naam: "ligger", bron: blad("ligger.ts", '"Ligger van hout of staal'), v: liggerEn },
   { naam: "demoblad", bron: blad("calcpad-demo.ts", '"Open CalcSheet Studio demo'), v: calcpadDemoEn },
+  { naam: "tweepaalspoer", bron: blad("tweepaalspoer.ts", '"Tweepaalspoer —'), v: tweepaalspoerEn },
 ];
 
 // ── 1. Het mechanisme ─────────────────────────────────────────────────────
@@ -171,6 +173,35 @@ const LIGGER_GEVALLEN = [
   const u = bronVoorUitvoer(MODULES[2].bron, "en");
   const demo = zoekNederlands(render(evaluate(parse(u.bron), {}, PROJECT), { namen: u.namen }));
   meld(demo.length === 0, "demoblad: geen Nederlandse woorden", demo.join("\n         "));
+
+  // De tweepaalspoer in al zijn takken: voldoet, voldoet niet, niet getoetst, ongeldig, buiten het blad.
+  const POER = {
+    l_poer: "2100", b_poer: "580", h_poer: "900", a_hoh: "1400", e_p: "50", t_in: "50",
+    paalvorm: "1", p_x: "350", p_y: "350", kolomvorm: "1", c_x: "400", c_y: "400",
+    betonklasse: "30", betonstaal: "2", milieu: "2", ondergrond: "1", d_g: "16", c_o: "60", c_z: "40",
+    n_t: "6", d_t: "25", s_t: "70", lagen: "1", vorm_t: "2", l_op: "600", D_m: "125",
+    d_s: "12", s_s: "100", n_s: "4", n_z: "5", d_z: "12", n_b: "3", d_b: "12", n_hp: "2", d_hp: "12",
+    F_Ed: "1800", F_fr: "1200", dwars: "1",
+  };
+  const POER_GEVALLEN = [
+    {}, { dwars: "0" }, { e_p: "0" }, { n_t: "2" }, { vorm_t: "1" }, { h_poer: "1100" }, { paalvorm: "2", kolomvorm: "2", p_x: "400", c_x: "450" },
+    { F_Ed: "0" }, { l_poer: "1000" }, { n_s: "1" }, { l_op: "0" }, { h_poer: "80" }, { F_fr: "1900" },
+    { betonstaal: "1" }, { d_t: "40" }, { a_hoh: "1650", l_poer: "2400" }, { c_x: "1000" }, { n_hp: "0" },
+  ];
+  const poer = new Map();
+  const v = bronVoorUitvoer(MODULES[3].bron, "en");
+  for (const invoer of POER_GEVALLEN) {
+    const html = render(evaluate(parse(v.bron), { ...POER, ...invoer }, PROJECT), { namen: v.namen });
+    for (const r of zoekNederlands(html)) if (!poer.has(r)) poer.set(r, JSON.stringify(invoer));
+  }
+  meld(poer.size === 0, `tweepaalspoer: ${POER_GEVALLEN.length} gevallen, geen Nederlandse woorden`,
+    [...poer].map(([r, g]) => `${r}   (${g})`).join("\n         "));
+  const rPoer = leesResultaat(evaluate(parse(v.bron), POER, PROJECT), "x");
+  meld(rPoer.voldoet === true && rPoer.uc !== null && /Two-pile cap/.test(rPoer.titel), "tweepaalspoer: de slotregel en de kop in het Engels", JSON.stringify(rPoer));
+  const rNiet = leesResultaat(evaluate(parse(v.bron), { ...POER, dwars: "0" }, PROJECT), "x");
+  meld(rNiet.nietGetoetst === true && rNiet.voldoet === null && rNiet.uc === null, "tweepaalspoer: 'niet getoetst' in het Engels", JSON.stringify(rNiet));
+  const rFout = leesResultaat(evaluate(parse(v.bron), { ...POER, n_t: "2" }, PROJECT), "x");
+  meld(rFout.voldoet === false, "tweepaalspoer: 'voldoet niet' in het Engels", JSON.stringify(rFout));
 }
 
 // ── 4. De uitkomsten ──────────────────────────────────────────────────────

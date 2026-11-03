@@ -133,8 +133,11 @@ console.log("Lijnen, bogen, krommen en lagen (dxf-lijnen.dxf):");
   meld(/stroke-width="2" stroke-linecap="butt"/.test(uit.svg), "LWPOLYLINE met constante breedte 2 als dikke lijn");
   meld(/<path fill="#000" d="M[^"]*z[^"]*z"\/>/.test(uit.svg), "wisselende breedte als gevulde vlakken");
   meld(dxfNaarSvg(leesDxf(bytes("dxf-lijnen.dxf"))).svg === uit.svg, "zelfde invoer, zelfde SVG");
-  const crlf = tekstBytes(new TextDecoder().decode(bytes("dxf-lijnen.dxf")).replace(/\n/g, "\r\n"));
-  meld(dxfNaarSvg(leesDxf(crlf)).svg === uit.svg, "CRLF-regeleinden geven dezelfde SVG");
+  // De fixture kan op schijf al CRLF hebben (core.autocrlf): eerst terug naar LF en dan beide
+  // vormen vergelijken. Tegen `uit` zou dat op zo'n werkkopie CRLF met CRLF zijn.
+  const lfTekst = new TextDecoder().decode(bytes("dxf-lijnen.dxf")).replace(/\r\n/g, "\n");
+  const vanTekst = (s) => dxfNaarSvg(leesDxf(tekstBytes(s))).svg;
+  meld(vanTekst(lfTekst.replace(/\n/g, "\r\n")) === vanTekst(lfTekst), "CRLF-regeleinden geven dezelfde SVG");
 }
 
 console.log("\nBlokken en maatvoering (dxf-blokken.dxf):");
