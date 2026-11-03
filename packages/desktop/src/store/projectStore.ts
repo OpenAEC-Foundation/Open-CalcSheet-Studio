@@ -15,6 +15,7 @@ import { CANVAS_BLAD } from "./canvasBlad";
 import { GRAAF_BLAD } from "./graafBlad";
 import { legeGraaf, type Graaf } from "../graaf/model";
 import { TEKEN_BLAD, type TekenVel } from "./tekenBlad";
+import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
 
 const STORE_KEY = "projectState";
 
@@ -102,6 +103,11 @@ export interface Exemplaar {
    * het vel met zijn views.
    */
   tekenvel?: TekenVel;
+  /**
+   * Alleen bij een Jupyter-blad (`templateId` JUPYTER_BLAD, zie store/jupyterBlad.ts):
+   * de werkmap als ZIP, base64-gecodeerd.
+   */
+  jupyter?: JupyterWerkmap;
 }
 
 /**
@@ -174,6 +180,10 @@ interface ProjectState {
   voegTekenbladToe: (naam: string, tekenvel: TekenVel) => string;
   /** Het vel van een tekenblad; opeenvolgende bewerkingen tellen als één stap ongedaan maken. */
   zetTekenVel: (id: string, tekenvel: TekenVel) => void;
+  /** Een Jupyter-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegJupyterToe: (naam: string, jupyter: JupyterWerkmap) => string;
+  /** De werkmap van een Jupyter-blad; opeenvolgende wijzigingen tellen als één stap ongedaan maken. */
+  zetJupyter: (id: string, jupyter: JupyterWerkmap) => void;
   dupliceer: (id: string) => string | null;
   hernoem: (id: string, naam: string) => void;
   verwijder: (id: string) => void;
@@ -479,6 +489,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         ...metGeschiedenis(s, `tekenvel:${id}`),
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, tekenvel } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegJupyterToe: (naam, jupyter) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: JUPYTER_BLAD, source: "", waarden: {}, jupyter },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetJupyter: (id, jupyter) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, `jupyter:${id}`),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, jupyter } : e)),
         dirty: true,
       };
     }),

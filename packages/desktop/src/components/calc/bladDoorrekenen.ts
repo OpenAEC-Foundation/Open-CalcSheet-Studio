@@ -6,6 +6,9 @@ import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { bladSoortVan } from "./bladSoorten";
 import { rekenUitwerking, type CanvasUitwerking } from "./canvasRekenen";
+import { isJupyterBlad } from "../../store/jupyterBlad";
+import { werkmapHtml } from "./jupyterPapier";
+import { papier } from "./pdfBlad";
 
 /*
  * Een rekenblad doorrekenen voor op papier.
@@ -48,6 +51,18 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): Do
   const soort = bladSoortVan(ex);
   if (soort) {
     return { html: "", resultaat: { titel: ex.naam, norm: soort.soortTekst(), uc: null, voldoet: null } };
+  }
+  // Een Jupyter-blad rekent hier ook niets: de uitwerking komt uit de opgeslagen uitvoer.
+  if (isJupyterBlad(ex)) {
+    const t = papier();
+    const html = ex.jupyter
+      ? werkmapHtml(ex.jupyter, {
+        leeg: t("jupyterBlad.leeg"),
+        fout: (bestand) => t("jupyterBlad.notebookFout", { bestand }),
+        kapot: (fout) => t("jupyterBlad.fout", { fout }),
+      })
+      : `<p class="nb-tekst-los">${t("jupyterBlad.ontbreekt")}</p>`;
+    return { html, resultaat: { titel: ex.naam, norm: t("jupyterBlad.soort"), uc: null, voldoet: null } };
   }
   let html: string;
   let eenheden: CanvasUitwerking[] | undefined;

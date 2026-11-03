@@ -13,6 +13,8 @@ import Icoon from "../Icoon";
 import { useModuleKiezer, type KiezerTab } from "../../store/moduleKiezer";
 import { useProjectStore } from "../../store/projectStore";
 import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
+import { JUPYTER_BLAD } from "../../store/jupyterBlad";
+import { voegLeegJupyterToe } from "./jupyterBlad";
 import {
   useModuleBibliotheek,
   vergelijkVersie,
@@ -328,6 +330,42 @@ function Legenda() {
   );
 }
 
+/** De keuze Jupyter: geen module uit de catalogus, wel op dezelfde manier te kiezen. */
+const JUPYTER_KEUZE: Item = { kind: "item", id: "jupyter-blad", label: "Jupyter", templateId: JUPYTER_BLAD };
+
+function JupyterGroep({ zoek, gekozen, onKies, onVoegToe }: { zoek: string; gekozen: boolean; onKies: () => void; onVoegToe: () => void }) {
+  const { t: tw } = useTranslation("werkruimte");
+  const naam = tw("jupyter.kiezer.naam");
+  const z = zoek.trim().toLowerCase();
+  if (z && !naam.toLowerCase().includes(z)) return null;
+  return (
+    <section className="mk-groep mk-niveau-0">
+      <h3>{tw("jupyter.kiezer.kop")}</h3>
+      <div className="mk-tegels">
+        <button
+          type="button"
+          className={`mk-tegel${gekozen ? " gekozen" : ""}`}
+          aria-pressed={gekozen}
+          title={tw("jupyter.toevoegenUitleg")}
+          onClick={onKies}
+          onDoubleClick={onVoegToe}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onVoegToe();
+            }
+          }}
+        >
+          <span className="mk-kop">
+            <Icoon id="file.structure" uit="calculations" />
+            <span className="mk-naam">{naam}</span>
+          </span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export default function ModuleKiezer() {
   const open = useModuleKiezer((s) => s.open);
   const sluiten = useModuleKiezer((s) => s.sluiten);
@@ -361,6 +399,11 @@ export default function ModuleKiezer() {
       voegTekenbladToe(tw("kiezer.leeg.tekening"), tw("tekenblad.viewNaam", { n: 1 }));
       setGekozen(null);
       setZoek("");
+      return;
+    }
+    if (item === JUPYTER_KEUZE) {
+      voegLeegJupyterToe(useProjectStore.getState().voegJupyterToe);
+      afbreken();
       return;
     }
     if (!item?.templateId || !templates[item.templateId]) return;
@@ -441,6 +484,14 @@ export default function ModuleKiezer() {
                   gekozen={gekozen?.id === LEGE_TEKENING.id}
                   onKies={() => setGekozen(LEGE_TEKENING)}
                   onVoegToe={() => toevoegen(LEGE_TEKENING)}
+                />
+              )}
+              {tab === "modules" && (
+                <JupyterGroep
+                  zoek={zoek}
+                  gekozen={gekozen === JUPYTER_KEUZE}
+                  onKies={() => setGekozen(JUPYTER_KEUZE)}
+                  onVoegToe={() => toevoegen(JUPYTER_KEUZE)}
                 />
               )}
               {groepen.length === 0 && !documenten && <p className="mk-leeg">{tw("kiezer.nietsGevonden", { zoek })}</p>}

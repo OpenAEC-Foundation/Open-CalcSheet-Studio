@@ -43,6 +43,7 @@ export const ATTR = {
   markdown: 'ocss::blad::markdown',
   graaf: 'ocss::blad::graaf',
   tekenvel: 'ocss::blad::tekenvel',
+  jupyter: 'ocss::blad::jupyter',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -187,7 +188,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       id: TEKST,
       volgorde: GEHEEL,
       templateId: TEKST,
-      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown', 'graaf', 'tekenblad'),
+      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown', 'graaf', 'tekenblad', 'jupyter'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
     }),
@@ -212,6 +213,16 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       mediaType: TEKST,
       grootte: GEHEEL,
       data: TEKST,
+    }),
+  },
+  [ATTR.jupyter]: {
+    value: object({
+      bestandsnaam: TEKST,
+      mediaType: TEKST,
+      grootte: GEHEEL,
+      // Base64 van de ingepakte werkmap, zoals een PDF of werkmap.
+      data: TEKST,
+      metCode: JANEE,
     }),
   },
   [ATTR.markdown]: {

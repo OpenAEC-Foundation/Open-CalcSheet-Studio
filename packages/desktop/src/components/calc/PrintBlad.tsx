@@ -10,6 +10,9 @@ import { isCanvasBlad, legOpVellen, maxBreedte } from "../../store/canvasBlad";
 import { useEenheidMaten } from "./canvasMaten";
 import type { CanvasUitwerking } from "./canvasRekenen";
 import "./CanvasBladWeergave.css";
+import { isJupyterBlad } from "../../store/jupyterBlad";
+import "katex/dist/katex.min.css";
+import "./JupyterBlad.css";
 import { MATEN, type Maten } from "./paginering";
 import { UitwerkingHtml } from "./UitwerkingHtml";
 import "./PrintDocument.css";
@@ -108,6 +111,21 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
   const soort = bladSoortVan(ex);
   if (soort?.HeelBlad) return <soort.HeelBlad ex={ex} anker={anker} />;
   if (soort) return <LosBladAfdruk soort={soort} ex={ex} nummer={nummer} maten={maten} anker={anker} />;
+  // Een Jupyter-blad heeft geen rekenversie, projectregel en oordeel, wel een uitwerking.
+  if (isJupyterBlad(ex)) {
+    return (
+      <section className="print-blad print-jupyter">
+        <header className="print-blad-kop" data-inhoud={anker}>
+          <span className="print-blad-nr">{nummer}</span>
+          <span className="print-blad-titel">
+            <span className="print-blad-naam">{ex.naam}</span>
+            <span className="print-blad-norm">{resultaat.norm}</span>
+          </span>
+        </header>
+        <UitwerkingHtml html={html} bladId={ex.id} />
+      </section>
+    );
+  }
   // Het beeld tekent zichzelf uit de waarden van dít exemplaar, niet uit het
   // blad dat toevallig openstaat. `alleenLezen` houdt tegen dat het afdrukken
   // standaardwaarden aanvult of iets anders aan het project verandert.

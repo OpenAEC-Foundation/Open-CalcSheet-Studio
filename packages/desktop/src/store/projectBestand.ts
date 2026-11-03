@@ -11,6 +11,7 @@ import { isMarkdownBlad, leesMarkdownBestand } from "./markdownBlad.ts";
 import { isGraafBlad } from "./graafBlad.ts";
 import { leesGraaf } from "../graaf/model.ts";
 import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
+import { isJupyterBlad, leesJupyterWerkmap } from "./jupyterBlad.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -214,6 +215,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (graaf) ex.graaf = graaf;
   const tekenvel = isTekenBlad(ex) ? leesTekenVel(e.tekenvel) : undefined;
   if (tekenvel) ex.tekenvel = tekenvel;
+  const jupyter = isJupyterBlad(ex) ? leesJupyterWerkmap(e.jupyter) : undefined;
+  if (jupyter) ex.jupyter = jupyter;
   return ex;
 }
 

@@ -38,6 +38,8 @@ import { GraafBladInfo, GraafBladWeergave } from "./components/graaf/GraafBladWe
 import { isGraafBlad } from "./store/graafBlad";
 import { TekenbladInfo, TekenbladWeergave } from "./components/calc/TekenbladWeergave";
 import { isTekenBlad } from "./store/tekenBlad";
+import { JupyterBladInfo, JupyterBladWeergave, JupyterHouder } from "./components/calc/JupyterBladWeergave";
+import { isJupyterBlad } from "./store/jupyterBlad";
 import { getSetting } from "./store";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
 import { usePrintStore } from "./store/printStore";
@@ -280,6 +282,8 @@ export default function App() {
   const graafBlad = actief !== null && isGraafBlad(actief);
   // En een tekenblad: alleen zijn vel.
   const tekenBlad = actief !== null && isTekenBlad(actief);
+  // Idem een Jupyter-blad: alleen zijn omgeving.
+  const jupyterBlad = actief !== null && isJupyterBlad(actief);
   const mode = hasDesigner ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
@@ -316,9 +320,9 @@ export default function App() {
     setSplitMode((m) => (m === "vu" ? "cv" : m));
     setCanvasCode(true);
   }, [codeVerzoek, sluitVoorbeeld]);
-  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad) ? (
+  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad || jupyterBlad) ? (
     <div className="split-tabs">
-      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : tekenBlad ? "tekenblad.tab" : graafBlad ? "graaf.tab" : spreadsheetBlad ? "spreadsheet.tab" : "markdown.tab")}</button>
+      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : jupyterBlad ? "jupyter.tab" : tekenBlad ? "tekenblad.tab" : graafBlad ? "graaf.tab" : spreadsheetBlad ? "spreadsheet.tab" : "markdown.tab")}</button>
       <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
     </div>
   ) : actief && !toontProjectGegevens ? (
@@ -472,6 +476,15 @@ export default function App() {
                 </WerkPaneel>
               </div>
             </>
+          ) : jupyterBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("jupyter.paneel")} info={<JupyterBladInfo ex={actief} />}>
+                  <JupyterBladWeergave />
+                </WerkPaneel>
+              </div>
+            </>
           ) : spreadsheetBlad ? (
             <>
               {tabBalk}
@@ -504,6 +517,7 @@ export default function App() {
       <StatusBar />
       <SpreadsheetHouder />
       <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <JupyterHouder />
       {afdrukmodus && <PrintDocument />}
       <Backstage
         open={backstageOpen}

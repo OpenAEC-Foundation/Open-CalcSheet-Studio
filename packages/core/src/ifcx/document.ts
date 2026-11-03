@@ -39,6 +39,8 @@ const XLSX_MEDIATYPE = 'application/vnd.openxmlformats-officedocument.spreadshee
 const MARKDOWN_SOORT = 'markdown';
 const MARKDOWN_MEDIATYPE = 'text/markdown';
 const GRAAF_SOORT = 'graaf';
+const JUPYTER_SOORT = 'jupyter';
+const ZIP_MEDIATYPE = 'application/zip';
 
 export interface IfcxProjectInvoer {
   naam: string;
@@ -65,6 +67,7 @@ export interface IfcxGelezenBlad {
   md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
   graaf?: GraafGegevens;
   tekenvel?: Record<string, unknown>;
+  jupyter?: { bestandsnaam: string; data: string; metCode: boolean };
 }
 
 export interface IfcxGelezenProject {
@@ -183,8 +186,9 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     const isMarkdown = blad.templateId === MARKDOWN_SOORT;
     const isGraaf = blad.templateId === GRAAF_SOORT;
     const isTekenblad = blad.templateId === TEKENBLAD_SOORT;
-    // Een PDF, werkmap, Markdown-tekst, graaf of tekening heeft geen rekentekst, geen invoer en geen oordeel.
-    const isLos = isPdf || isSpreadsheet || isMarkdown || isGraaf || isTekenblad;
+    const isJupyter = blad.templateId === JUPYTER_SOORT;
+    // Een PDF, werkmap, Markdown-tekst, graaf, tekening of Jupyter-werkmap heeft geen rekentekst, geen invoer en geen oordeel.
+    const isLos = isPdf || isSpreadsheet || isMarkdown || isGraaf || isTekenblad || isJupyter;
     bladKinderen[kindNaam(`B${String(i + 1).padStart(3, '0')}_${blad.naam}`, bladNamen)] = pad;
 
     const uitkomst = leesUitkomst(blad.nodes, blad.naam, isLos ? { voldoet: null, uc: null } : blad.resultaat, blad.fout);
@@ -202,7 +206,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         id: sleutel,
         volgorde: i,
         templateId: blad.templateId ?? '',
-        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isMarkdown ? 'markdown' : isGraaf ? 'graaf' : isTekenblad ? 'tekenblad' : 'rekenblad',
+        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isMarkdown ? 'markdown' : isGraaf ? 'graaf' : isTekenblad ? 'tekenblad' : isJupyter ? 'jupyter' : 'rekenblad',
         ...(blad.module ? { module: blad.module } : {}),
         ...(blad.bronVersie ? { bronVersie: blad.bronVersie } : {}),
       },
@@ -239,6 +243,15 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     }
     if (blad.graaf) attributes[ATTR.graaf] = graafAttribuut(blad.graaf);
     if (blad.tekenvel) attributes[ATTR.tekenvel] = blad.tekenvel;
+    if (blad.jupyter) {
+      attributes[ATTR.jupyter] = {
+        bestandsnaam: blad.jupyter.bestandsnaam,
+        mediaType: ZIP_MEDIATYPE,
+        grootte: pdfBytes(blad.jupyter.data),
+        data: blad.jupyter.data,
+        metCode: blad.jupyter.metCode,
+      };
+    }
     attributes[ATTR.uitkomst] = uitkomst;
 
     // Figuren: de tekeningen en 3D-beelden staan ook in de rekentekst; hier zijn ze als zodanig te vinden.
@@ -533,6 +546,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown } | undefined;
     const graaf = graafUitAttribuut(a[ATTR.graaf]);
     const tekenvel = a[ATTR.tekenvel];
+    const jupyter = a[ATTR.jupyter] as { bestandsnaam?: unknown; data?: unknown; metCode?: unknown } | undefined;
     const blad: IfcxGelezenBlad = {
       id: tekstVan(b.id),
       naam: tekstVan(a[ATTR.naam]),
@@ -554,6 +568,9 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     }
     if (graaf) blad.graaf = graaf;
     if (tekenvel && typeof tekenvel === 'object' && !Array.isArray(tekenvel)) blad.tekenvel = tekenvel as Record<string, unknown>;
+    if (jupyter && typeof jupyter.data === 'string') {
+      blad.jupyter = { bestandsnaam: tekstVan(jupyter.bestandsnaam), data: jupyter.data, metCode: jupyter.metCode !== false };
+    }
     return blad;
   });
 

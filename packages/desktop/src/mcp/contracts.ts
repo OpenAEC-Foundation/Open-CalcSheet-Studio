@@ -38,6 +38,7 @@ export interface McpBlad {
   md?: { bestandsnaam: string; tekst: string };
   graaf?: Graaf;
   tekenvel?: TekenVel;
+  jupyter?: McpPdf & { metCode: boolean };
 }
 
 /** De stand van het project op één moment. */

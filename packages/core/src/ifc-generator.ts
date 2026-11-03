@@ -82,6 +82,8 @@ export interface IfcCalcSheet {
   graaf?: GraafGegevens;
   /** Alleen bij een tekenblad: het vel met zijn views (ocss::blad::tekenvel). */
   tekenvel?: Record<string, unknown>;
+  /** Bij een Jupyter-blad: de werkmap als ZIP, in base64. */
+  jupyter?: { bestandsnaam: string; data: string; metCode: boolean };
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */

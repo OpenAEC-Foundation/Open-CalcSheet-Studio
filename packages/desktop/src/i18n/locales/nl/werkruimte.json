@@ -513,6 +513,42 @@
       "fundering": "Fundering"
     }
   },
+  "jupyter": {
+    "toevoegen": "Jupyter toevoegen",
+    "toevoegenUitleg": "Een eigen werkmap met notebooks, Python-scripts en databestanden als blad aan het project toevoegen. Python draait afgeschermd in de app; er is geen installatie nodig. Op papier komen de notebooks met hun opgeslagen uitvoer.",
+    "importeren": "Notebook inlezen…",
+    "importerenUitleg": "Bestaande notebooks (.ipynb), Python-scripts (.py) of een ingepakte werkmap (.zip) als nieuw Jupyter-blad toevoegen. De bestanden komen in het projectbestand. Er draait niets tot je dat zelf start.",
+    "nieuweNaam": "Jupyter",
+    "kiesTitel": "Kies bestanden",
+    "filter": "Notebooks, scripts en werkmappen",
+    "filterZip": "Ingepakte werkmap",
+    "lezenMislukt": "Bestanden inlezen mislukt: {{fout}}",
+    "schrijvenMislukt": "Werkmap wegschrijven mislukt: {{fout}}",
+    "teGroot": "De werkmap is te groot om in het project te bewaren. Verwijder bestanden in de omgeving.",
+    "tab": "Jupyter",
+    "paneel": "Jupyter",
+    "rij": "Jupyter — werkmap staat in het project",
+    "laden": "Python-omgeving laden…",
+    "stil": "De Python-omgeving antwoordt niet. Het project bewaart de laatste stand die binnen is.",
+    "opnieuwLaden": "Opnieuw laden",
+    "alleenDesktop": "De Python-omgeving draait alleen in de desktop-app.",
+    "geenOmgeving": "De Python-omgeving kon niet starten: {{fout}}. De bestanden en de uitvoer van dit blad blijven bewaard en komen gewoon op papier.",
+    "metCode": "Code op papier",
+    "metCodeUitleg": "Komt de code van de cellen mee op papier, of alleen de tekst en de uitvoer?",
+    "inlezen": "Bestanden toevoegen…",
+    "inlezenUitleg": "Notebooks, scripts of databestanden aan deze werkmap toevoegen. De omgeving laadt daarna opnieuw; de kernel begint dan leeg.",
+    "exporteren": "Exporteren…",
+    "exporterenUitleg": "Deze werkmap wegschrijven als los ZIP-bestand.",
+    "start": {
+      "kop": "Notebook",
+      "uitleg": "Voer een cel uit met Shift+Enter. Numpy, scipy, pandas en matplotlib staan klaar. Bestanden in deze werkmap zijn in Python gewoon te openen en te importeren.",
+      "titel": "Voorbeeld"
+    },
+    "kiezer": {
+      "kop": "Eigen werkmap",
+      "naam": "Jupyter-notebook"
+    }
+  },
   "welkom": {
     "titel": "Welkom in Open CalcSheet Studio",
     "intro": "Constructieve berekeningen als leesbare rekenbladen: jij schrijft de berekening, de app rekent hem uit, tekent hem en stelt het constructief rapport samen.",
