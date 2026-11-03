@@ -18,7 +18,7 @@ import { designerVoor } from "./components/calc/designerKeuze";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
 import PrintDocument from "./components/calc/PrintDocument";
-import { wachtOpDrukbeelden, wachtOpVellen, wachtTotGetekend, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, wachtTotGetekend, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
 import BladBijwerken from "./components/calc/BladBijwerken";
@@ -195,7 +195,9 @@ export default function App() {
         const opruimen = zetDrukvellenKlaar(vellen);
         try {
           await wachtOpDrukbeelden();
-          window.print();
+          const { pdfPad, meldPdfGeschreven } = usePrintStore.getState();
+          if (pdfPad && (await vellenNaarPdf(pdfPad))) meldPdfGeschreven(pdfPad);
+          else window.print();
         } finally {
           opruimen();
           printKlaar();

@@ -265,6 +265,7 @@ const bouw = lees("scripts/bouw-jupyter-omgeving.mjs");
 meld(["numpy", "scipy", "pandas", "matplotlib"].every((p) => bouw.includes(`"${p}"`)), "numpy, scipy, pandas en matplotlib zitten in de omgeving");
 const brug = lees("packages/desktop/jupyter-omgeving/ocss-brug.js");
 meld(brug.includes("e.source !== window.top") && !/\beval\(|run-all|runAll|notebook:run/.test(brug), "de brug luistert alleen naar de app en start nooit een cel");
+meld(brug.includes("invalidate_caches") && brug.includes("store_history: false") && brug.includes("silent: true"), "de terugval voor een nieuw script komt in de kernel, zonder nummer op een cel");
 
 console.log("\nTeksten");
 const taal = (t, n) => JSON.parse(lees(`packages/desktop/src/i18n/locales/${t}/${n}.json`));

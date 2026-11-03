@@ -505,23 +505,42 @@ html.afdrukmodus .rpa-wortel .rpa-voet {
   display: none;
 }
 
-html.rapportdruk,
-html.rapportdruk body {
-  height: auto;
-  min-height: 0;
-  max-height: none;
-  overflow: visible;
-  margin: 0;
-  padding: 0;
-  background: #fff;
-}
-
-html.rapportdruk body > *:not(.rpa-drukvellen) {
-  display: none !important;
-}
-
+/*
+ * Op het scherm blijft de app staan: een PDF wegschrijven gebeurt zonder dialoog ervoor,
+ * en zo'n afdruk duurt even. De kopie staat dan buiten beeld, wel opgemaakt, en niets
+ * in de app reageert tot de afdruk klaar is.
+ */
 html.rapportdruk .rpa-drukvellen {
   display: block;
+  position: fixed;
+  top: 0;
+  left: -300mm;
+}
+
+html.rapportdruk #root {
+  pointer-events: none;
+  cursor: progress;
+}
+
+@media print {
+  html.rapportdruk,
+  html.rapportdruk body {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  html.rapportdruk body > *:not(.rpa-drukvellen) {
+    display: none !important;
+  }
+
+  html.rapportdruk .rpa-drukvellen {
+    position: static;
+  }
 }
 
 html.rapportdruk .rpa-drukvellen .av-pagina {

@@ -10,6 +10,10 @@
  *   - een CSP in de srcdoc: standaard geen netwerk. Alleen inline script en stijl,
  *     afbeeldingen uit data: en blob:. Een host komt erbij als het blok hem noemt,
  *     en die staat dan bij de bevestiging.
+ *   - geen WebRTC. Dat gaat buiten elke CSP om, naar elke host, en elk nieuw frame heeft het
+ *     opnieuw. Daarom haalt een opstartscript van de app het weg uit elk document, vóór elk
+ *     ander script (src-tauri/src/geen_webrtc.js). Heeft dat hier niet gedraaid, dan start de
+ *     code niet (jsLooptijd.js). Gemeten in het echte venster: scripts/proef-js-webrtc.mjs.
  *   - twee vensters in elkaar. Een CSP houdt het wegnavigeren van een venster zelf niet
  *     tegen, de `frame-src` van zijn ouder wel. Daarom draait het script in een binnenste
  *     venster, met het buitenste als ouder: `location.href`, een `<meta refresh>` of een
@@ -18,8 +22,9 @@
  *     door, en het binnenste kan het niet navigeren: dat verbiedt de sandbox.
  *   - geen inline script meer zodra de omgeving staat (jsLooptijd.js): de code zelf komt
  *     als blob. Een frame dat het script zelf maakt, erft die regel en een blob van een
- *     ander frame kan het niet lezen, dus daar draait niets. Dat is nodig voor WebRTC: dat
- *     kent geen CSP en is alleen hier weg te halen, niet in een nieuw frame.
+ *     ander frame kan het niet lezen, dus daar draait niets. Behalve met `netwerk=`: dan mag
+ *     zo'n frame script van die host laden, want daar geldt dezelfde CSP. De bevestiging noemt
+ *     die host, en verder dan die host komt het script daarmee niet.
  *   - berichten uit het venster zijn gegevens: een afbeelding als data:image/png,
  *     een hoogte, een foutmelding als tekst. Nooit html.
  *
@@ -76,6 +81,8 @@ export interface JsStart {
   netwerk: readonly string[];
   bibliotheken: readonly string[];
   opPapier: boolean;
+  /** Niet starten als WebRTC er nog is. Staat aan, tenzij een ontwikkelversie het uitzet (jsBlok.ts). */
+  webrtcToets?: boolean;
 }
 
 /** JSON die veilig in een inline script staat: `</script` kan er niet in voorkomen. */

@@ -35,8 +35,19 @@ interface PrintState {
    * "PDF / afdrukken…" in het voorbeeld drukt zo af wat er te zien is.
    */
   soort: AfdrukSoort;
+  /**
+   * Het bestand waar het rapport heen gaat, zonder printdialoog (tauri/rapportPdf.ts).
+   * `null` tijdens elke andere afdruk: die gaat naar de printdialoog.
+   */
+  pdfPad: string | null;
+  /** De laatst weggeschreven PDF, voor de statusbalk. */
+  pdfGeschreven: string | null;
   /** Start het afdrukken; een opgegeven selectie of soort wordt eerst ingesteld. */
   afdrukken: (selectie?: string[] | null, soort?: AfdrukSoort) => void;
+  /** Start het afdrukken van het rapport naar een bestand. */
+  rapportNaarPdf: (pad: string) => void;
+  /** De PDF staat op schijf. */
+  meldPdfGeschreven: (pad: string) => void;
   klaar: () => void;
   /** Opent het voorbeeld; een opgegeven selectie of soort wordt eerst ingesteld. */
   toonVoorbeeld: (selectie?: string[] | null, soort?: AfdrukSoort) => void;
@@ -57,8 +68,12 @@ export const usePrintStore = create<PrintState>((set) => ({
   voorbeeld: false,
   selectie: null,
   soort: "bladen",
-  afdrukken: (selectie, soort) => set({ bezig: true, ...opgegeven(selectie, soort) }),
-  klaar: () => set({ bezig: false }),
+  pdfPad: null,
+  pdfGeschreven: null,
+  afdrukken: (selectie, soort) => set({ bezig: true, pdfPad: null, ...opgegeven(selectie, soort) }),
+  rapportNaarPdf: (pad) => set({ bezig: true, pdfPad: pad, pdfGeschreven: null, ...opgegeven(null, "rapport") }),
+  meldPdfGeschreven: (pad) => set({ pdfGeschreven: pad }),
+  klaar: () => set({ bezig: false, pdfPad: null }),
   toonVoorbeeld: (selectie, soort) => set({ voorbeeld: true, ...opgegeven(selectie, soort) }),
   sluitVoorbeeld: () => set({ voorbeeld: false }),
   kiesSelectie: (selectie) => set({ selectie }),
