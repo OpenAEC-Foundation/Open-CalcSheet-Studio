@@ -1,0 +1,2 @@
+# Bash leest een regeleinde CRLF als onderdeel van de opdracht.
+*.sh text eol=lf

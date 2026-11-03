@@ -1,0 +1,93 @@
+name: Release controleren
+
+# Downloadt de bestanden van een release, of een concept daarvan, op elk platform en
+# controleert ze zoals een gebruiker ze krijgt. De aanroeper publiceert pas als dit
+# groen is. Signingcontroles zijn geen functionele test van de app.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'De tag van de release of het concept'
+        type: string
+        required: true
+      sha:
+        description: 'De commit waaruit de controlescripts komen'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Controle Windows
+    runs-on: windows-latest
+    timeout-minutes: 30
+    # Een concept lezen vraagt schrijfrechten.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.sha }}
+
+      - name: Download de installers
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release download $env:TAG --repo $env:GITHUB_REPOSITORY --pattern '*-setup.exe' --dir downloads
+          if ($LASTEXITCODE -ne 0) { throw "downloaden faalde (exit $LASTEXITCODE)" }
+
+      - name: Controleer de handtekeningen
+        shell: pwsh
+        run: pwsh -NoProfile -File scripts/release/windows-controleren.ps1 -Map downloads -Aantal 2
+
+  macos:
+    name: Controle macOS
+    runs-on: macos-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.sha }}
+
+      - name: Download de dmg
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.dmg' --dir downloads
+
+      - name: Controleer de handtekeningen
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bash scripts/release/macos-controleren.sh downloads
+
+  linux:
+    name: Controle Linux en checksums
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.sha }}
+
+      # Alle bestanden: SHA256SUMS.txt dekt de hele release, dus ook wat op de andere
+      # platformen is gebouwd.
+      - name: Download alle bestanden
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir downloads
+
+      - name: Controleer handtekeningen en checksums
+        run: |
+          set -euo pipefail
+          test -f downloads/SHA256SUMS.txt || { echo "::error::SHA256SUMS.txt ontbreekt"; exit 1; }
+          bash scripts/release/linux-controleren.sh downloads

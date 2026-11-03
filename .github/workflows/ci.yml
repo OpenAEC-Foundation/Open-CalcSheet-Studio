@@ -11,6 +11,26 @@ on:
       - main
 
 jobs:
+  # Op elke pull request: gelijke versievelden en de regels voor de Windows-installer.
+  # De andere controles (npm run check) draaien pas op main, in build.yml.
+  versie-uitlevering:
+    name: Versie en uitlevering
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Controleer het versienummer
+        run: node scripts/check-versie.mjs
+
+      - name: Controleer de uitlevering
+        run: node scripts/check-uitlevering.mjs
+
   build:
     strategy:
       fail-fast: false
