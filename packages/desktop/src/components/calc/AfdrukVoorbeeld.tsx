@@ -66,9 +66,8 @@ function rapportVoet(nummer: number, voetafbeelding: string, bureaunaam: string,
  * loopkop). Het verdelen is voor beide hetzelfde; de maten en de omlijsting
  * van een vel verschillen.
  *
- * De balk erboven en het nummer onder elk vel horen bij de app en volgen de
- * taal van het scherm. Wat óp het vel staat is de uitdraai, en die is
- * Nederlands — ook de loopvoet hieronder.
+ * De balk erboven, het nummer onder elk vel en wat óp het vel staat, volgen allemaal
+ * de taal van de app.
  */
 export default function AfdrukVoorbeeld() {
   const { t } = useTranslation("beelden");
@@ -205,7 +204,7 @@ export default function AfdrukVoorbeeld() {
         voet.className = "av-loopvoet";
         voet.innerHTML = "<span></span><span></span><span></span>";
         (voet.children[0] as HTMLElement).textContent = "Open CalcSheet Studio";
-        (voet.children[1] as HTMLElement).textContent = `Pagina ${i + 1} van ${paginas.length}`;
+        (voet.children[1] as HTMLElement).textContent = t("afdruk.paginaVan", { nummer: i + 1, totaal: paginas.length });
         (voet.children[2] as HTMLElement).textContent = datum;
 
         vel.append(kop, inhoud, voet);

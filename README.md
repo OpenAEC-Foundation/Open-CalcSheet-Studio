@@ -33,7 +33,7 @@ Compatibiliteit met voorbeeldbestanden voor de ondersteunde rekensyntax.
 - **`@img(file.svg)`** — externe SVG-tekeningen worden inline ge-embed (incl. `<polygon fill="…">`, hatch patterns, gradients) via dezelfde include-resolver als `#include`
 - **`@img(file.png|jpg|…)`** — raster afbeeldingen via `<img src>`
 - **`@iframe https://… hoogte=120mm`** — een externe pagina, laadt pas na bevestiging, in een sandbox
-- **`@js hoogte=90mm titel="…" bibliotheek=three … @end`** — JavaScript met de waarden van het blad als `calc`, pas na bevestiging, afgeschermd en zonder netwerk; een draaibaar model kan met `calc.wereld3d()`
+- **`@js hoogte=90mm titel="…" bibliotheek=three … @end`** — JavaScript met de waarden van het blad als `calc`, pas na bevestiging, afgeschermd en zonder netwerk; een draaibaar model kan met `calc.wereld3d()`, en een knop met `addEventListener` (geen `onclick=`)
 
 ### IFC export
 Live IFCX (JSON-LD draft) en IFC4x3 STEP-SPF generatie. Opslaan schrijft het

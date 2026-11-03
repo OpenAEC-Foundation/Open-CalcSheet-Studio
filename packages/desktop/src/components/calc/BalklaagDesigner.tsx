@@ -9,8 +9,9 @@ import {
   RaveelPlattegrond, raveelMaten, raveelHoogte, extremen, randwaarden, nl,
 } from "./balklaagTekening";
 import { leesBlad, rekenBladDoor, useBladUitkomst } from "./bladResultaat";
-import { belastinggevallen, helften, lijnen, omhullende, type Ligger, type Lijnen } from "./balklaagLijnen";
+import { belastinggevallen, helften, lijnen, omhullende, wisselOmhullende, type Ligger, type Lijnen } from "./balklaagLijnen";
 import { balklaagKent, kdefUitKlimaat } from "./balklaagBlad";
+import { weergaveNaamVoor } from "../../templates/vertalingen";
 import "./VoetplaatDesigner.css"; // hergebruik vd-* stijlen
 
 /**
@@ -196,11 +197,15 @@ function UcChip({ naam, uc, extra }: { naam: string; uc: number; extra?: string 
  * voorheen. plaat = 4 (OSB/3, hoofdas loodrecht op de balken) is de plaat die
  * het blad uit EN 12369-1 kan halen. De sterkte en stijfheid van multiplex en
  * spaanplaat staan er bewust niet in: dat zijn fabrikantgegevens.
+ *
+ * De wisselbalk (§8a van het blad): l_sparing = 0 is één raveelbalk, en L_w, b_w en
+ * h_w staan er bewust niet in: leeg volgt de overspanning en de doorsnede de balklaag.
  */
 const DEFAULTS: Record<string, number> = {
   profiel: 10, b_zelf: 63, h_zelf: 211, sterkteklasse: 2, duurklasse: 2, klimaat: 1,
   doorsnede: 1, plaat: 4,
   schema: 1, ligger: 1, a_over: 800, L_veld2: 3000, a_steun: 0, b_sparing: 2400, l_staart: 1800, b_ond: 2.5,
+  l_sparing: 0, n_w: 2, klasse_w: 0,
   L_d: 5000, a_opl: 50, hoh: 450, t_vloer: 25,
   E_beschot: 7000, b_vloer: 5,
   G_k: 0.5, Q_k: 2.55, F_k: 3, g_bl: 0, belastingcat: 1,
@@ -232,9 +237,8 @@ export default function BalklaagDesigner() {
   // meer hooks aan dan in de andere en klapt React eruit bij een bladwissel.
   const uitkomst = useBladUitkomst();
   const scope = useProjectScope();
-  // Op het scherm de taal van de app; in de afdruk zet PrintBlad er een
-  // Nederlandse vertaling omheen, want het rapport is Nederlands.
-  const { t } = useTranslation("beelden");
+  // De taal van de app, ook op papier: de uitvoer volgt de taal.
+  const { t, i18n } = useTranslation("beelden");
   const [editing, setEditing] = useState<string | null>(null);
   // Uitkomst van de ontwerpknop. De handtekening is een vingerafdruk van de
   // invoer waarop gezocht is — het profiel zit er bewust NIET in, want dat
@@ -335,6 +339,9 @@ export default function BalklaagDesigner() {
   const aSteun = d("a_steun");
   const bSparing = d("b_sparing");
   const lStaart = d("l_staart");
+  const lSparing = d("l_sparing");
+  const nW = Math.round(d("n_w"));
+  const klasseW = Math.round(d("klasse_w"));
   const Ld = d("L_d");
   const aOpl = d("a_opl");
   const hoh = d("hoh");
@@ -383,6 +390,11 @@ export default function BalklaagDesigner() {
   const { b, h } = prof;
   // Theoretische overspanning van veld 1: bij een raveelbalk de breedte van de sparing.
   const Lth = schema === 4 ? bSparing + aOpl : Ld + aOpl;
+  // De wisselbalk: leeg of 0 volgt de balklaag, zoals in het blad.
+  const metWissel = schema === 4 && kent.wissel;
+  const LwStandaard = Ld + aOpl;
+  const Lw = num("L_w", 0) > 0 ? num("L_w", 0) : LwStandaard;
+  const bW = num("b_w", 0) > 0 ? num("b_w", 0) : b;
 
   // ── uitkomst van het blad ──────────────────────────────────────────────────
   // Elke waarde in de eenheid van het blad: lasten in kN/m en kN, momenten in
@@ -426,8 +438,9 @@ export default function BalklaagDesigner() {
   const rMin = uitBlad("R_min");
   // Zoals de slotzin van het blad: voldoet alles behalve f₁ > 8 Hz, dan is de
   // balklaag niet afgekeurd maar niet aangetoond.
+  const ucWissel = uitBlad("UC_wb");
   const rest = Math.max(
-    ...[ucDoorMax, ucBuig, ucAfsch, ucC90, ucKip, ucG, uitBlad("UC_tril_a"), uitBlad("UC_tril_v"),
+    ...[ucDoorMax, ucBuig, ucAfsch, ucC90, ucKip, ucG, uitBlad("UC_tril_a"), uitBlad("UC_tril_v"), ucWissel,
       ...(tRekent ? [ucFlens, ucLijm, ucBf] : [])].filter(Number.isFinite),
   );
   const nietAangetoond = !ok && trilNvt && tril === 1 && !onderslag && rest <= 1;
@@ -530,11 +543,14 @@ export default function BalklaagDesigner() {
   const hMin = 130;
   // Het label van de raveelbalk hier vertaald, in dezelfde taal als de rest van
   // het beeld: de plattegrond meet er de breedte van zijn labelkolom op af.
-  const raveel = { bSparing, lStaart, hoh, bBalk: b, label: t("raveel.raveelbalk", { profiel: profielNaam(prof) }).trim() };
+  const raveel = {
+    bSparing, lStaart, hoh, bBalk: b, label: t("raveel.raveelbalk", { profiel: profielNaam(prof) }).trim(),
+    ...(metWissel ? { lW: Lw, bW, nW, lSparing } : {}),
+  };
   // De plattegrond krijgt de hoogte waarbij hij de breedte vult: op het scherm
   // scrollt de kolom, en op papier is het beeld zo hoog als zijn inhoud.
   const H = schema === 4
-    ? raveelHoogte(W, raveel)
+    ? raveelHoogte(W, raveel, alleenLezen ? 190 : 440)
     : Math.max(hMin, box.h - 5 * capH - schemaH - mH - vH - uH - gapH);
   const mX = 46, mTop = 26, mBot = 48;             // marges (px)
   // Bij een onderslag één balk; de "groep" is dan de balk met wat ruimte ernaast.
@@ -564,7 +580,7 @@ export default function BalklaagDesigner() {
               if (e.key === "Escape") setEditing(null);
             }} />
         ) : (
-          <button className="vd-dim-num" title={t("kit.klikWijzig", { naam: name })} onClick={() => setEditing(name)}>
+          <button className="vd-dim-num" title={t("kit.klikWijzig", { naam: weergaveNaamVoor(source, i18n.language, name) })} onClick={() => setEditing(name)}>
             {Number.isInteger(value) ? value : value.toFixed(0)}
           </button>
         )}
@@ -644,6 +660,41 @@ export default function BalklaagDesigner() {
                 <input type="number" step={100} value={lStaart}
                   onChange={(e) => setVal("l_staart", parseFloat(e.target.value))} />
               </label>
+              {metWissel && (
+                <>
+                  <label title={t("balklaag.wissel.lengteSparingUitleg")}>
+                    <span className="vd-help">{t("balklaag.wissel.lengteSparing")}</span>
+                    <input type="number" step={100} value={lSparing}
+                      onChange={(e) => setVal("l_sparing", parseFloat(e.target.value))} />
+                  </label>
+                  <span className="vd-ctrl-h">{t("balklaag.wissel.kop")}</span>
+                  <label title={t("balklaag.wissel.overspanningUitleg")}>
+                    <span className="vd-help">{t("balklaag.wissel.overspanning")}</span>
+                    <input type="number" step={100} value={ruw("L_w")} placeholder={String(LwStandaard)}
+                      onChange={(e) => zetBladWaarde("L_w", e.target.value)} />
+                  </label>
+                  <label>{t("balklaag.wissel.breedte")}
+                    <input type="number" step={1} value={ruw("b_w")} placeholder={String(b)}
+                      onChange={(e) => zetBladWaarde("b_w", e.target.value)} />
+                  </label>
+                  <label>{t("balklaag.wissel.hoogte")}
+                    <input type="number" step={1} value={ruw("h_w")} placeholder={String(h)}
+                      onChange={(e) => zetBladWaarde("h_w", e.target.value)} />
+                  </label>
+                  <label>{t("balklaag.wissel.aantal")}
+                    <select value={nW} onChange={(e) => setVal("n_w", parseInt(e.target.value))}>
+                      <option value={2}>{t("balklaag.wissel.twee")}</option>
+                      <option value={1}>{t("balklaag.wissel.een")}</option>
+                    </select>
+                  </label>
+                  <label>{t("balklaag.wissel.klasse")}
+                    <select value={klasseW} onChange={(e) => setVal("klasse_w", parseInt(e.target.value))}>
+                      <option value={0}>{t("balklaag.wissel.gelijk")}</option>
+                      {MATS.map((m) => <option key={m.v} value={m.v}>{m.label}</option>)}
+                    </select>
+                  </label>
+                </>
+              )}
             </>
           )}
 
@@ -866,8 +917,10 @@ export default function BalklaagDesigner() {
                   const m = raveelMaten(W, H, raveel);
                   return (
                     <>
-                      <Dim name="b_sparing" value={bSparing} x={m.xm} y={m.yMaat - 9} step={100} />
-                      <Dim name="l_staart" value={lStaart} x={m.xStaart - 3} y={(m.y0 + m.yRav) / 2} step={100} anker="end" />
+                      <Dim name="b_sparing" value={bSparing} x={m.xMaatB - 3} y={(m.yI1 + m.yI2) / 2} step={100} anker="end" />
+                      <Dim name="l_staart" value={lStaart} x={(m.x0 + m.xR) / 2} y={m.yMaat1 - 9} step={100} />
+                      {m.twee && <Dim name="l_sparing" value={lSparing} x={(m.xR + m.xR2) / 2} y={m.yMaat1 - 9} step={100} />}
+                      {m.heel && <Dim name="L_w" value={Lw} x={m.xm} y={m.yMaat2 - 9} step={100} />}
                     </>
                   );
                 })()}
@@ -1117,6 +1170,86 @@ export default function BalklaagDesigner() {
             );
           })()}
 
+          {/* ── De wisselbalk: statisch schema, M- en V-lijn (§8a van het blad) ── */}
+          {metWissel && !alleenLezen && tekenbaar && Number.isFinite(uitBlad("F_G_w")) && (() => {
+            const L = (Number.isFinite(uitBlad("L_w_th")) ? uitBlad("L_w_th") : Lw) / 1000;
+            const a1 = Math.min(Math.max(lStaart / 1000, 0), L);
+            const tweeRav = lSparing > 0 && lStaart + lSparing < L * 1000;
+            const a2 = tweeRav ? (lStaart + lSparing) / 1000 : L;
+            const nulIn = (v: number) => (Number.isFinite(v) ? v : 0);
+            const FG1 = uitBlad("F_G_w"), FQ1 = uitBlad("F_Q_w"), FG2 = nulIn(uitBlad("F_G_w_2")), FQ2 = nulIn(uitBlad("F_Q_w_2"));
+            const gW = uitBlad("w_G_w"), qW = uitBlad("w_Q_w");
+            const omw = wisselOmhullende(L, a1, a2, { g: gW, q: qW, FG1, FQ1, FG2, FQ2, F: lasten.F }, {
+              gG: Number.isFinite(gG) ? gG : 0, gQ: Number.isFinite(gQ) ? gQ : 0, gGa, gQa,
+            });
+            const mx1 = 54, mx2 = Math.max(mx1 + 80, W - 54);
+            const X = (x: number) => mx1 + ((mx2 - mx1) * x) / L;
+            const breek = [0, a1, ...(tweeRav ? [a2] : []), L];
+            const xs = [...Array.from({ length: 241 }, (_, i) => (L * i) / 240), a1, a2];
+            const Mpiek = Math.max(1e-9, ...xs.map(omw.M));
+            const Vboven = Math.max(1e-9, ...xs.map(omw.Vmax));
+            const Vonder = Math.max(1e-9, ...xs.map((x) => -omw.Vmin(x)));
+            const sMw = (mH - 66) / Mpiek;
+            const sVw = (vH - 66) / (Vboven + Vonder);
+            const asMw = 26;
+            const asVw = 26 + Vboven * sVw;
+            const xPiek = xs.reduce((a, x) => (omw.M(x) > omw.M(a) ? x : a), 0);
+            const yBalk = schemaH - 58, gTop = yBalk - 30;
+            const yMaat = yBalk + 46;
+            const F1 = FG1 + FQ1, F2 = FG2 + FQ2;
+            return (
+              <>
+                <div className="vd-canvas">
+                  <div className="vd-caption">{t("balklaag.wissel.schemaKop")} <span className="vd-caption-waarde">· UC = {tekst(ucWissel)}</span></div>
+                  <div className="vd-stage" style={{ width: W, height: schemaH, background: "transparent", border: "none", borderRadius: 0 }}>
+                    <svg width={W} height={schemaH} className="vd-svg">
+                      <defs>
+                        <marker id="bdDim3" markerWidth="10" markerHeight="12" refX="5" refY="6" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+                          <circle cx="5" cy="6" r="2.4" className="vd-dimarrow" />
+                        </marker>
+                      </defs>
+                      <LijnLast x1={mx1} x2={mx2} yTop={gTop} yBalk={yBalk} kleur={KLEUR_G} />
+                      <PuntLast x={X(a1)} yTop={gTop - 30} yBalk={yBalk} kleur={KLEUR_F} label={<>F = {tekst(FG1)} + {tekst(FQ1)} = {tekst(F1)} kN</>} />
+                      {tweeRav && <PuntLast x={X(a2)} yTop={gTop - 14} yBalk={yBalk} kleur={KLEUR_F} label={<>F = {tekst(F2)} kN</>} />}
+                      <rect x={mx1} y={yBalk} width={mx2 - mx1} height={12} fill="#D9A866" stroke="#8B6F47" strokeWidth={1.5} />
+                      <Oplegging x={mx1} y={yBalk + 12} soort="scharnier" />
+                      <Oplegging x={mx2} y={yBalk + 12} soort="rol" />
+                      <Label x={(mx1 + mx2) / 2} y={yBalk + 28} kleur={KLEUR_G}>w = {tekst(gW)} + {tekst(qW)} kN/m</Label>
+                      <line x1={mx1} y1={yMaat} x2={X(a1)} y2={yMaat} className="vd-dimmeasure" markerStart="url(#bdDim3)" markerEnd="url(#bdDim3)" />
+                      <line x1={X(a1)} y1={yMaat} x2={mx2} y2={yMaat} className="vd-dimmeasure" markerEnd="url(#bdDim3)" />
+                      <Label x={(mx1 + X(a1)) / 2} y={yMaat - 5} kleur="#1d4ed8">{nl(lStaart, 0)}</Label>
+                      <Label x={(X(a1) + mx2) / 2} y={yMaat - 5} kleur="#1d4ed8">{nl(L * 1000 - lStaart, 0)}</Label>
+                    </svg>
+                  </div>
+                </div>
+                <div className="vd-canvas">
+                  <div className="vd-caption">{t("balklaag.wissel.mLijn")} <span className="vd-caption-waarde">· M<sub>Ed</sub> = {tekst(uitBlad("M_Ed_w"))} kNm</span></div>
+                  <div className="vd-stage" style={{ width: W, height: mH, background: "transparent", border: "none", borderRadius: 0 }}>
+                    <svg width={W} height={mH} className="vd-svg">
+                      <KrachtenLijn x1={mx1} x2={mx2} tot={L} asY={asMw} schaal={sMw} f={omw.M} omlaag kleur={KLEUR_M} tekens
+                        labels={[{ x: xPiek, v: omw.M(xPiek), tekst: `${nl(omw.M(xPiek))} kNm` }]} />
+                      <Oplegging x={mx1} y={asMw} soort="scharnier" g={4.5} />
+                      <Oplegging x={mx2} y={asMw} soort="rol" g={4.5} />
+                    </svg>
+                  </div>
+                </div>
+                <div className="vd-canvas">
+                  <div className="vd-caption">{t("balklaag.wissel.vLijn")} <span className="vd-caption-waarde">· V<sub>Ed</sub> = {tekst(uitBlad("V_Ed_w"))} kN</span></div>
+                  <div className="vd-stage" style={{ width: W, height: vH, background: "transparent", border: "none", borderRadius: 0 }}>
+                    <svg width={W} height={vH} className="vd-svg">
+                      <KrachtenLijn x1={mx1} x2={mx2} tot={L} asY={asVw} schaal={sVw} f={omw.Vmax} omlaag={false} kleur={KLEUR_V} breekpunten={breek} arcering tekens
+                        labels={[{ x: 0, v: omw.Vmax(L * 1e-6), tekst: `${nl(omw.Vmax(L * 1e-6))} kN`, anker: "start", dx: 5 }]} />
+                      <KrachtenLijn x1={mx1} x2={mx2} tot={L} asY={asVw} schaal={sVw} f={omw.Vmin} omlaag={false} kleur={KLEUR_V} breekpunten={breek} arcering tekens
+                        labels={[{ x: L, v: omw.Vmin(L * (1 - 1e-6)), tekst: `${nl(omw.Vmin(L * (1 - 1e-6)))} kN`, anker: "end", dx: -5 }]} />
+                      <Oplegging x={mx1} y={asVw} soort="scharnier" g={4.5} />
+                      <Oplegging x={mx2} y={asVw} soort="rol" g={4.5} />
+                    </svg>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+
           {/* ── Doorbuigingslijn (BGT) ─────────────────────────────────── */}
           {!alleenLezen && (
           <div className="vd-canvas">
@@ -1204,6 +1337,7 @@ export default function BalklaagDesigner() {
           {Number.isFinite(ucC90) && <UcChip naam={t("balklaag.uc.oplegdruk")} uc={ucC90} />}
           {(schema === 2 || schema === 3) && Number.isFinite(ucKip) && <UcChip naam={t("balklaag.uc.kip")} uc={ucKip} />}
           {Number.isFinite(ucG) && <UcChip naam={t("balklaag.uc.alleenG")} uc={ucG} />}
+          {metWissel && Number.isFinite(ucWissel) && <UcChip naam={t("balklaag.uc.wisselbalk")} uc={ucWissel} />}
           {tril === 1 && !onderslag
             ? <UcChip naam={t("balklaag.uc.trilling")} uc={ucTril}
                 extra={Number.isFinite(f1) ? `f₁ = ${f1.toFixed(1)} Hz${trilNvt ? `, ${t("balklaag.uc.nietAangetoond")}` : ""}` : undefined} />

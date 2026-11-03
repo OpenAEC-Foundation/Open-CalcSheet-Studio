@@ -288,6 +288,57 @@ console.log("\n4. Vloerplaat, T-balk en raveling");
   const covering = van(r.el, "IfcCovering")[0];
   const gat = covering.vlakken.flatMap((v) => v.punten).filter((p) => p[0] > rav.grenzen.max[0] + 1e-6 && p[1] > 0 + 1e-6 && p[1] < 2.4 - 1e-6);
   meld(gat.length === 0, "de sparing zit niet dicht: de plaat loopt eromheen", String(gat.length));
+
+  // Met de wisselbalk uit het blad: de hele overspanning, op eigen maten en opleggingen.
+  const WISSEL = { L: 5050, b: 96, h: 271, n: 2, lSparing: 0, sterkteklasse: "C30" };
+  const v = lees({
+    schema: 4, bSparing: 2400, lStaart: 1800, Lth: 2450, b: 71, h: 221, hoh: 600, aOpl: 50, wissel: WISSEL,
+    uc: { max: 0.9, oplegdruk: 0.3, wissel: 0.8, wisselBuiging: 0.8, wisselOplegdruk: 0.4, wisselDoorbuiging: 0.7 },
+  });
+  meld(afwijkingen(v.doc).length === 0, "wisselbalk: volgens de specificatie", afwijkingen(v.doc).slice(0, 3).join(" | "));
+  const ws = v.el.filter((e) => e.naam.startsWith("Wisselbalk"));
+  const rv = v.el.find((e) => e.naam === "Raveelbalk");
+  meld(ws.length === 2 && maten(ws[0]).join() === `${5050 + 50},192,271`, "wisselbalken over de hele lengte: L + a_opl, 2·b, h", maten(ws[0]).join());
+  meld(ws.every((w) => dichtbij(w.grenzen.min[0], -0.025) && dichtbij(w.grenzen.max[0], 5.075)), "van oplegging A tot oplegging B", JSON.stringify(ws[0].grenzen));
+  meld(ws.every((w) => dichtbij(w.grenzen.max[2], 0.221) && dichtbij(w.grenzen.min[2], 0.221 - 0.271)), "de bovenkant gelijk aan de balken, op de eigen hoogte", JSON.stringify(ws[0].grenzen));
+  meld(dichtbij(ws[0].grenzen.max[1], 0) && dichtbij(ws[1].grenzen.min[1], 2.4), "de binnenkanten op de randen van de sparing");
+  meld(dichtbij((rv.grenzen.min[0] + rv.grenzen.max[0]) / 2, 1.8), "de raveelbalk met zijn hart op l_staart", JSON.stringify(rv.grenzen));
+  meld(ws[0].vlakken.length === 2 * 6, "twee samengestelde balken: twee lichamen", String(ws[0].vlakken.length));
+  meld(ws[0].attributen["ocss::calc::unityCheck"] === 0.8 && ws[0].attributen["ocss::calc::toetsen"]?.buiging === 0.8, "de wisselbalk draagt zijn eigen UC", JSON.stringify(ws[0].attributen));
+  meld(ws[0].attributen["ocss::calc::overspanning"] === 5.05 && ws[0].attributen["bsi::ifc::prop::TypeName"] === "2×96×271 C30" && ws[0].attributen["bsi::ifc-mat::prop::StrengthClass"] === "C30", "overspanning, type en sterkteklasse", JSON.stringify(ws[0].attributen));
+  const opl = van(v.el, "IfcBearing");
+  meld(opl.length === 6, "opleggingen: twee wanden en per wisselbalk twee", opl.map((o) => o.naam).join(", "));
+  const oplW = opl.filter((o) => o.naam.startsWith("Oplegging wisselbalk"));
+  meld(oplW.length === 4 && oplW.every((o) => dichtbij(o.grenzen.max[2], 0.221 - 0.271)), "de oplegging van een wisselbalk tegen zijn eigen onderkant", JSON.stringify(oplW[0]?.grenzen));
+  meld(oplW.every((o) => o.attributen["ocss::calc::unityCheck"] === 0.4), "met de oplegdruk van de wisselbalk");
+  const dek = van(v.el, "IfcCovering")[0];
+  const inGat = dek.vlakken.flatMap((q) => q.punten).filter((p) => p[0] > rv.grenzen.max[0] + 1e-6 && p[1] > 1e-6 && p[1] < 2.4 - 1e-6);
+  meld(inGat.length === 0, "de sparing is open tot oplegging B", String(inGat.length));
+
+  // Twee raveelbalken: ook het stuk aan de andere kant.
+  const t2 = lees({
+    schema: 4, bSparing: 2400, lStaart: 1200, Lth: 2450, b: 71, h: 221, hoh: 600, aOpl: 50, wissel: { ...WISSEL, n: 1, h: 221, lSparing: 2400, sterkteklasse: "C24" },
+    uc: { max: 0.9, wissel: 0.8 },
+  });
+  meld(afwijkingen(t2.doc).length === 0, "twee raveelbalken: volgens de specificatie", afwijkingen(t2.doc).slice(0, 3).join(" | "));
+  const rv2 = t2.el.filter((e) => e.naam.startsWith("Raveelbalk"));
+  meld(rv2.length === 2 && dichtbij((rv2[1].grenzen.min[0] + rv2[1].grenzen.max[0]) / 2, 3.6), "twee raveelbalken, op l_staart en l_staart + l_sparing", rv2.map((e) => e.naam).join());
+  const st2 = t2.el.filter((e) => e.naam.startsWith("Staartbalk"));
+  meld(st2.length === 6, "de staartbalken aan beide kanten", String(st2.length));
+  meld(st2.filter((e) => e.naam.includes("andere kant")).every((e) => dichtbij(e.grenzen.min[0], rv2[1].grenzen.max[0]) && dichtbij(e.grenzen.max[0], 5.075)), "aan de andere kant van de raveelbalk tot de oplegging");
+  const ws2 = t2.el.filter((e) => e.naam.startsWith("Wisselbalk"));
+  meld(ws2[0].vlakken.length === 6 && maten(ws2[0])[1] === 96, "één balk: één lichaam, breedte b", String(ws2[0].vlakken.length));
+  const d2 = van(t2.el, "IfcCovering")[0].vlakken.flatMap((q) => q.punten);
+  meld(d2.filter((p) => p[0] > rv2[0].grenzen.max[0] + 1e-6 && p[0] < rv2[1].grenzen.min[0] - 1e-6 && p[1] > 1e-6 && p[1] < 2.4 - 1e-6).length === 0, "de plaat met een gat tussen de raveelbalken");
+  meld(d2.some((p) => p[0] > 4 && p[1] > 1), "en de plaat aan de andere kant");
+  const omsch = t2.doc.data.find((k) => k.attributes?.["bsi::ifc::class"]?.code === "IfcElementAssembly").attributes["bsi::ifc::prop::Description"];
+  meld(/wisselbalken/.test(omsch) && /tweede raveelbalk/.test(omsch), "de omschrijving noemt het", omsch);
+
+  // In het Engels: dezelfde paden en maten, andere namen.
+  const en = balklaagIfcxDocument({ ...BASIS, schema: 4, bSparing: 2400, lStaart: 1800, Lth: 2450, wissel: WISSEL }, { taal: "en" });
+  const enEl = leesIfcx(en).elementen;
+  meld(enEl.some((e) => e.naam === "Trimmer") && enEl.some((e) => e.naam === "Trimming joist left") && enEl.some((e) => e.naam === "Tail joist 1") && enEl.some((e) => e.naam === "Decking"), "in het Engels: trimmer, trimming joist, tail joist, decking", enEl.map((e) => e.naam).join(", "));
+  meld(afwijkingen(en).length === 0, "en volgens de specificatie");
 }
 
 // ── 5. Attributen ───────────────────────────────────────────────────────────
@@ -397,6 +448,12 @@ console.log("\n7. Het balklaagblad");
   meld(van(twee, "IfcBearing").length === 3 && maten(van(twee, "IfcBearing")[1])[0] === 90, "twee velden uit het blad, met a_steun");
   const rav = leesIfcx(blok(reken({ schema: "4", b_sparing: "2400", l_staart: "1800" }).nodes).document).elementen;
   meld(rav.some((e) => e.naam === "Raveelbalk") && maten(rav.find((e) => e.naam === "Raveelbalk"))[1] === 2400, "raveelbalk uit het blad");
+  const wis = rav.filter((e) => e.naam.startsWith("Wisselbalk"));
+  meld(wis.length === 2 && maten(wis[0])[0] === 5050 + 50 && wis[0].attributen["ocss::calc::unityCheck"] > 0, "de wisselbalk uit het blad: hele overspanning, met zijn UC", maten(wis[0]).join());
+  const eigenMaat = leesIfcx(blok(reken({ schema: "4", b_sparing: "2400", l_staart: "1200", l_sparing: "2400", L_w: "6000", b_w: "96", h_w: "271", n_w: "1", klasse_w: "3" }).nodes).document).elementen;
+  const w1 = eigenMaat.find((e) => e.naam.startsWith("Wisselbalk"));
+  meld(maten(w1).join() === "6050,96,271" && w1.attributen["bsi::ifc-mat::prop::StrengthClass"] === "C30", "eigen maten, aantal en klasse uit het blad", maten(w1).join());
+  meld(eigenMaat.filter((e) => e.naam.startsWith("Raveelbalk")).length === 2, "en een tweede raveelbalk");
   const ond = leesIfcx(blok(reken({ ligger: "2", b_ond: "2.5" }).nodes).document).elementen;
   meld(van(ond, "IfcBeam").length === 1 && ond[0].naam === "Onderslag", "onderslag uit het blad", ond.map((e) => e.naam).join());
   const geenTril = blok(reken({ controleer_trilling: "0" }).nodes);

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import i18next from "i18next";
 import { parse, evaluate } from "@ifc-calc/core";
 import type { AstNode } from "@ifc-calc/core";
 import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-includes";
@@ -66,10 +67,10 @@ export function useBladUitkomst(): BladUitkomst | null {
 
 const GEEN_WAARDEN: Record<string, string> = {};
 
-/** De automatische samenvatting voor hoofdstuk Berekeningen: "Houten balklaag — UC 0,82, voldoet.". */
+/** De automatische samenvatting voor hoofdstuk Berekeningen: "Houten balklaag — UC 0,82, voldoet.", in de taal van de app. */
 export function samenvatting(r: Resultaat): string {
   const delen: string[] = [];
   if (r.uc !== null) delen.push(`UC ${ucTekst(r.uc)}`);
-  if (r.voldoet !== null) delen.push(r.voldoet ? "voldoet" : "voldoet niet");
+  if (r.voldoet !== null) delen.push(i18next.t(r.voldoet ? "beelden:afdruk.voldoet" : "beelden:afdruk.voldoetNiet"));
   return delen.length > 0 ? `${r.titel} — ${delen.join(", ")}.` : `${r.titel}.`;
 }

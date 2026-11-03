@@ -6,7 +6,7 @@ import type { JsonSchema, McpBlad, McpContext, McpToolDef } from "../contracts.t
 import { projectScope } from "../../store/projectGegevens.ts";
 import { bibliotheek, moduleCatalogus, modulesPerTemplate, type TreeNode } from "../../components/calc/projectTree.ts";
 import { isPdfBlad, base64Bytes, bladnaamVoor } from "../../store/pdfBijlage.ts";
-import { FORMULES } from "../../components/ribbon/formules.ts";
+import { FORMULES, codeVan } from "../../components/ribbon/formules.ts";
 import { jsonGetal, regels, rekenDoor, ucWaarden, type Doorrekening } from "../rekenen.ts";
 import {
   LEEG_BLAD, LEEG_BLAD_NAAM, LEEG_BLAD_TEKST, LEZEN, NIEUW, WEG, WIJZIGEN,
@@ -482,12 +482,13 @@ export const BLADTOOLS: McpToolDef[] = [
         id: idVerplicht,
         formulaId: { type: "string", minLength: 1, description: "Formula id (from formulas_list)." },
         position: { type: ["string", "integer"], description: "'end', 'start' or a line number after which to insert." },
+        language: { type: "string", enum: ["en", "nl"], description: "Language of the text lines of a worked example. Default: the language of the app." },
       },
       ["id", "formulaId"],
     ),
     annotations: NIEUW,
     rest: [{ method: "POST", path: "/sheets/{id}/formulas" }],
-    handler: (args, ctx) => {
+    handler: async (args, ctx) => {
       const gevonden = bladUit(args, ctx, false);
       if ("fout" in gevonden) return gevonden.fout;
       const pdf = geenPdfBlad(gevonden.blad);
@@ -503,7 +504,11 @@ export const BLADTOOLS: McpToolDef[] = [
       else if (plekArg === "start") na = 0;
       else if (typeof plekArg === "number" && Number.isInteger(plekArg) && plekArg >= 0) na = Math.min(plekArg, regelsNu.length);
       else return fout("VALIDATION", "position must be 'end', 'start' or a line number >= 0.");
-      const fragment = formule.code.split("\n");
+      // Alleen een voorbeeld met tekst heeft twee talen; "auto" volgt het systeem, zoals de app.
+      const ingesteld = formule.codeEn && typeof args.language !== "string" ? (await ctx.omgeving.instellingen.lees()).language : "";
+      const taal = typeof args.language === "string" ? args.language : ingesteld === "auto" ? globalThis.navigator?.language : ingesteld;
+      const tekst = codeVan(formule, taal);
+      const fragment = tekst.split("\n");
       const nieuw = [...regelsNu.slice(0, na), ...fragment, ...regelsNu.slice(na)];
       ctx.omgeving.acties.zetBron(gevonden.blad.id, nieuw.join("\n") + "\n");
       return ok({
@@ -511,7 +516,7 @@ export const BLADTOOLS: McpToolDef[] = [
         formulaId: formule.id,
         fromLine: na + 1,
         toLine: na + fragment.length,
-        inserted: formule.code,
+        inserted: tekst,
         ...(formule.projectvariabelen?.length ? { usesProjectData: formule.projectvariabelen } : {}),
       });
     },

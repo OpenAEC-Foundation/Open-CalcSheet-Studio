@@ -231,7 +231,25 @@
       "trekOplegging": "trek oplegging {{kn}} kN",
       "plaat": "plaat",
       "lijmnaad": "lijmnaad",
-      "flensbreedte": "flensbreedte"
+      "flensbreedte": "flensbreedte",
+      "wisselbalk": "wisselbalk"
+    },
+    "wissel": {
+      "kop": "Wisselbalk",
+      "lengteSparing": "Lengte sparing (mm)",
+      "lengteSparingUitleg": "Langs de balken. 0: de sparing loopt door tot de oplegging en er is één raveelbalk. Anders is er aan de andere kant een tweede raveelbalk, met zijn eigen staart.",
+      "overspanning": "Overspanning wisselbalk (mm)",
+      "overspanningUitleg": "Hart op hart van de opleggingen. Leeg: die van de balklaag (dagmaat plus opleglengte).",
+      "breedte": "Breedte per balk (mm)",
+      "hoogte": "Hoogte (mm)",
+      "aantal": "Samengesteld uit",
+      "twee": "Twee balken",
+      "een": "Eén balk",
+      "klasse": "Sterkteklasse wisselbalk",
+      "gelijk": "Gelijk aan de balklaag",
+      "schemaKop": "Wisselbalk — statisch schema, karakteristiek",
+      "mLijn": "Wisselbalk — moment (UGT, omhullend)",
+      "vLijn": "Wisselbalk — dwarskracht (UGT, omhullend)"
     }
   },
   "raveel": {
@@ -239,7 +257,9 @@
     "staartbalken": "staartbalken ({{n}}×)",
     "wisselbalk": "wisselbalk (dubbel)",
     "belasteStrook": "belaste strook",
-    "sparing": "sparing"
+    "sparing": "sparing",
+    "staart": "staart",
+    "wisselbalkEnkel": "wisselbalk"
   },
   "afdruk": {
     "titel": "Afdrukvoorbeeld",
@@ -254,6 +274,37 @@
     "zoom": "Zoom",
     "afdrukken": "PDF / afdrukken…",
     "sluiten": "Sluiten",
-    "paginaVan": "Pagina {{nummer}} van {{totaal}}"
+    "paginaVan": "Pagina {{nummer}} van {{totaal}}",
+    "voldoet": "voldoet",
+    "voldoetNiet": "voldoet niet",
+    "rekenversieKlein": "rekenversie",
+    "rekenversie": "Rekenversie",
+    "nietDoorgerekend": "Dit blad kon niet worden doorgerekend:",
+    "projectnummer": "Projectnummer",
+    "projectnaam": "Projectnaam",
+    "onderdeel": "Onderdeel",
+    "opdrachtgever": "Opdrachtgever",
+    "constructeur": "Constructeur",
+    "locatie": "Locatie",
+    "gevolgklasse": "Gevolgklasse",
+    "betrouwbaarheidsklasse": "Betrouwbaarheidsklasse",
+    "levensduur": "Ontwerplevensduur",
+    "jaar": "{{n}} jaar",
+    "rekenwijze": "Rekenwijze",
+    "rekenwijzeNorm": "de norm gevolgd op de gemarkeerde punten",
+    "rekenwijzeReferentie": "de referentie-uitwerking gevolgd op de gemarkeerde punten",
+    "inhoudResultaten": "Inhoud en resultaten",
+    "grondslag": "Grondslag",
+    "oordeel": "Oordeel",
+    "alleVoldoen": "Alle getoetste onderdelen voldoen.",
+    "nietGoedEen": "{{n}} van de {{totaal}} onderdelen voldoet niet; zie het betreffende blad.",
+    "nietGoedMeer": "{{n}} van de {{totaal}} onderdelen voldoen niet; zie het betreffende blad.",
+    "ucNoot": "UC is de maatgevende unity check van het blad; — betekent dat het blad geen eindtoets heeft.",
+    "soort": "Constructieve berekening",
+    "berekening": "Berekening",
+    "project": "Project {{nummer}}",
+    "opgesteldDoor": "Opgesteld door {{naam}}",
+    "paginaWoord": "Pagina",
+    "vanWoord": "van"
   }
 }

@@ -1,6 +1,8 @@
+import i18next from "i18next";
 import { parse, evaluate, render, defaultStyles } from "@ifc-calc/core";
 import type { Exemplaar } from "../../store/projectStore";
 import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-includes";
+import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { papier } from "./pdfBlad";
@@ -48,11 +50,13 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): Do
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
   try {
     const opties = { includes: calcpadIncludes, imageUrls: calcpadImageUrls };
-    const nodes = evaluate(parse(ex.source, opties), ex.waarden, scope);
-    html = render(nodes);
+    // De uitvoer volgt de taal van de app, ook op papier.
+    const uitvoer = bronVoorUitvoer(ex.source, i18next.language);
+    const nodes = evaluate(parse(uitvoer.bron, opties), ex.waarden, scope);
+    html = render(nodes, { namen: uitvoer.namen });
     resultaat = leesResultaat(nodes, ex.naam);
   } catch (err) {
-    html = `<p class="calc-text" style="color:#b91c1c">Dit blad kon niet worden doorgerekend: ${
+    html = `<p class="calc-text" style="color:#b91c1c">${i18next.t("beelden:afdruk.nietDoorgerekend")} ${
       (err as Error).message
     }</p>`;
   }

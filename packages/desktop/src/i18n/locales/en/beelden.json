@@ -231,7 +231,25 @@
       "trekOplegging": "uplift at bearing {{kn}} kN",
       "plaat": "panel",
       "lijmnaad": "glue line",
-      "flensbreedte": "flange width"
+      "flensbreedte": "flange width",
+      "wisselbalk": "trimming joist"
+    },
+    "wissel": {
+      "kop": "Trimming joist",
+      "lengteSparing": "Opening length (mm)",
+      "lengteSparingUitleg": "Along the joists. 0: the opening runs up to the support and there is one trimmer. Otherwise there is a second trimmer on the other side, with its own tail.",
+      "overspanning": "Span of trimming joist (mm)",
+      "overspanningUitleg": "Centre to centre of the supports. Empty: that of the joist floor (clear span plus bearing length).",
+      "breedte": "Width per joist (mm)",
+      "hoogte": "Depth (mm)",
+      "aantal": "Made up of",
+      "twee": "Two joists",
+      "een": "One joist",
+      "klasse": "Strength class of trimming joist",
+      "gelijk": "Same as the joist floor",
+      "schemaKop": "Trimming joist — static system, characteristic",
+      "mLijn": "Trimming joist — moment (ULS, envelope)",
+      "vLijn": "Trimming joist — shear (ULS, envelope)"
     }
   },
   "raveel": {
@@ -239,7 +257,9 @@
     "staartbalken": "tail joists ({{n}}×)",
     "wisselbalk": "trimming joist (double)",
     "belasteStrook": "loaded strip",
-    "sparing": "opening"
+    "sparing": "opening",
+    "staart": "tail",
+    "wisselbalkEnkel": "trimming joist"
   },
   "afdruk": {
     "titel": "Print preview",
@@ -254,6 +274,37 @@
     "zoom": "Zoom",
     "afdrukken": "PDF / print…",
     "sluiten": "Close",
-    "paginaVan": "Page {{nummer}} of {{totaal}}"
+    "paginaVan": "Page {{nummer}} of {{totaal}}",
+    "voldoet": "OK",
+    "voldoetNiet": "not OK",
+    "rekenversieKlein": "calculation version",
+    "rekenversie": "Calculation version",
+    "nietDoorgerekend": "This sheet could not be calculated:",
+    "projectnummer": "Project number",
+    "projectnaam": "Project name",
+    "onderdeel": "Part",
+    "opdrachtgever": "Client",
+    "constructeur": "Structural engineer",
+    "locatie": "Location",
+    "gevolgklasse": "Consequence class",
+    "betrouwbaarheidsklasse": "Reliability class",
+    "levensduur": "Design working life",
+    "jaar": "{{n}} years",
+    "rekenwijze": "Calculation method",
+    "rekenwijzeNorm": "the code followed at the marked points",
+    "rekenwijzeReferentie": "the reference calculation followed at the marked points",
+    "inhoudResultaten": "Contents and results",
+    "grondslag": "Basis",
+    "oordeel": "Verdict",
+    "alleVoldoen": "All checked parts are OK.",
+    "nietGoedEen": "{{n}} of the {{totaal}} parts is not OK; see the sheet concerned.",
+    "nietGoedMeer": "{{n}} of the {{totaal}} parts are not OK; see the sheet concerned.",
+    "ucNoot": "UC is the governing unity check of the sheet; — means the sheet has no final check.",
+    "soort": "Structural calculation",
+    "berekening": "Calculation",
+    "project": "Project {{nummer}}",
+    "opgesteldDoor": "Prepared by {{naam}}",
+    "paginaWoord": "Page",
+    "vanWoord": "of"
   }
 }

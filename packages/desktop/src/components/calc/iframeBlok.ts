@@ -26,6 +26,12 @@
  *
  * De hoogte staat vast in de kern, dus de verdeling over de vellen verandert niet
  * als er een iframe in komt.
+ *
+ * Een afbeelding van buiten (`@img(https://…)`, `<img src="https://…">`) valt onder
+ * dezelfde bevestiging: het adres kan een waarde uit het blad bevatten, en de opschoning
+ * heeft het daarom in `data-extern-src` gezet (uitwerkingRegels.ts). Op het scherm komt
+ * er per herkomst een knop bij (`IframeBeelden`). Op papier staat er zonder bevestiging
+ * alleen de naam van de host (`useIframeAfdruk`).
  */
 import { useLayoutEffect, useSyncExternalStore, type RefObject } from "react";
 import { herkomstVan, iframeAttributen, magLaden } from "./iframeRegels";
@@ -81,6 +87,41 @@ function leesBlok(blok: HTMLElement): { url: string; scripts: boolean; titel: st
   return { url, scripts: blok.dataset.iframeScripts === "ja", titel: blok.dataset.iframeTitel ?? url };
 }
 
+// ── Afbeeldingen van buiten ───────────────────────────────────────────────────
+
+/**
+ * Zet het adres terug op wat is bevestigd. De rest toont de naam van de host; met
+ * `knop` komt er per herkomst een knop om te bevestigen achter de eerste afbeelding.
+ */
+function zetBeelden(wortel: HTMLElement, knop?: { tekst: (host: string) => string; opKlik: () => void }) {
+  for (const oud of wortel.querySelectorAll(".calc-extern-laden, .calc-extern-plek")) oud.remove();
+  const gezien = new Set<string>();
+  for (const el of wortel.querySelectorAll<HTMLElement>("[data-extern-src]")) {
+    const url = magLaden(el.dataset.externSrc ?? "");
+    if (!url) continue;
+    if (isBevestigd(url)) {
+      el.setAttribute(el.localName === "image" ? "href" : "src", url);
+      continue;
+    }
+    const host = new URL(url).host;
+    const plek = document.createElement("span");
+    plek.className = "calc-extern-plek";
+    plek.textContent = host;
+    (el.closest("svg") ?? el).after(plek);
+    if (!knop || gezien.has(herkomstVan(url))) continue;
+    gezien.add(herkomstVan(url));
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "calc-iframe-laden calc-extern-laden";
+    b.textContent = knop.tekst(host);
+    b.addEventListener("click", () => {
+      bevestig(url);
+      knop.opKlik();
+    });
+    plek.after(b);
+  }
+}
+
 // ── De uitwerking ─────────────────────────────────────────────────────────────
 
 /** De teksten van de plaatshouder; ze volgen de taal van de app (calcpad.json, iframe). */
@@ -88,6 +129,7 @@ export interface IframeTeksten {
   laden: string;
   uitleg: string;
   scripts: string;
+  beeld: (host: string) => string;
 }
 
 interface Beeld {
@@ -120,6 +162,7 @@ export class IframeBeelden {
     }
     this.wortel = wortel;
     this.laag = laag;
+    if (wortel) zetBeelden(wortel, { tekst: (host) => this.teksten().beeld(host), opKlik: () => this.koppel(this.wortel, this.laag) });
     const blokken = wortel && laag ? [...wortel.querySelectorAll<HTMLElement>(BLOK)] : [];
     blokken.forEach((blok, i) => {
       const inhoud = leesBlok(blok);
@@ -235,12 +278,15 @@ export function vulIframesIn(wortel: HTMLElement): () => void {
 /**
  * In een afdruk: de iframes van de uitwerking. Niet in de meetopstelling van het
  * afdrukvoorbeeld: daar is de hoogte al vast en tellen alleen de vellen
- * (AfdrukVoorbeeld.tsx); anders zou elke pagina twee keer laden.
+ * (AfdrukVoorbeeld.tsx); anders zou elke pagina twee keer laden. De afbeeldingen van
+ * buiten wel: die bepalen de hoogte, en de vellen zijn daar een kopie van.
  */
 export function useIframeAfdruk(ref: RefObject<HTMLElement | null>, html: string) {
   useLayoutEffect(() => {
     const wortel = ref.current;
-    if (!wortel || !html.includes("calc-iframe") || wortel.closest(".av-meet")) return;
+    if (!wortel) return;
+    zetBeelden(wortel);
+    if (!html.includes("calc-iframe") || wortel.closest(".av-meet")) return;
     return vulIframesIn(wortel);
   }, [ref, html]);
 }

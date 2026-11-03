@@ -293,6 +293,23 @@
   background: var(--theme-accent-hover);
 }
 
+/* Een afbeelding van buiten die nog niet bevestigd is: de host, in een kader (iframeBlok.ts). */
+.calc-preview-content img[data-extern-src]:not([src]) {
+  display: none;
+}
+
+.calc-extern-plek {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.85em;
+  color: var(--theme-text-secondary, #57534e);
+  border: 1px dashed currentColor;
+}
+
+.calc-extern-laden {
+  display: block;
+}
+
 .calc-iframe-laag {
   position: absolute;
   top: 0;

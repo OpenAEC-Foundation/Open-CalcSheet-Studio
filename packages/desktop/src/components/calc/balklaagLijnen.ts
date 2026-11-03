@@ -289,3 +289,47 @@ export function lijnen(g: Ligger, s: Lastset): Lijnen {
     },
   };
 }
+
+/** De lasten op de wisselbalk, uit §8a van het blad: karakteristiek, in kN/m en kN. */
+export interface WisselLasten {
+  /** Verdeelde last, permanent en veranderlijk. */
+  g: number;
+  q: number;
+  /** De oplegreactie van de raveelbalk op a1, permanent en veranderlijk. */
+  FG1: number;
+  FQ1: number;
+  /** Idem van de tweede raveelbalk op a2; 0 zonder tweede raveelbalk. */
+  FG2: number;
+  FQ2: number;
+  /** De vrije puntlast op de vloer. */
+  F: number;
+}
+
+/**
+ * De omhullende van de wisselbalk (§8a): een ligger op twee steunpunten met een
+ * verdeelde last en de raveelbalken als puntlast, in 6.10a en 6.10b, en apart met de
+ * vrije puntlast op de ongunstigste plaats. Dezelfde statica als het blad; de
+ * uitkomsten die tellen staan daar.
+ */
+export function wisselOmhullende(L: number, a1: number, a2: number, l: WisselLasten, f: Factoren): {
+  M: (x: number) => number;
+  Vmax: (x: number) => number;
+  Vmin: (x: number) => number;
+} {
+  const R = (w: number, P1: number, P2: number) => (w * L) / 2 + (P1 * (L - a1) + P2 * (L - a2)) / L;
+  const M = (x: number, fG: number, fQ: number) => {
+    const w = fG * l.g + fQ * l.q, P1 = fG * l.FG1 + fQ * l.FQ1, P2 = fG * l.FG2 + fQ * l.FQ2;
+    return R(w, P1, P2) * x - (w * x * x) / 2 - P1 * Math.max(0, x - a1) - P2 * Math.max(0, x - a2);
+  };
+  const V = (x: number, fG: number, fQ: number) => {
+    const w = fG * l.g + fQ * l.q, P1 = fG * l.FG1 + fQ * l.FQ1, P2 = fG * l.FG2 + fQ * l.FQ2;
+    return R(w, P1, P2) - w * x - (x > a1 ? P1 : 0) - (x > a2 ? P2 : 0);
+  };
+  const formules: [number, number][] = [[f.gG, f.gQ]];
+  if (Number.isFinite(f.gGa) && Number.isFinite(f.gQa)) formules.push([f.gGa as number, f.gQa as number]);
+  return {
+    M: (x) => Math.max(...formules.flatMap(([fG, fQ]) => [M(x, fG, fQ), M(x, fG, 0) + (fQ * l.F * x * (L - x)) / L])),
+    Vmax: (x) => Math.max(0, ...formules.flatMap(([fG, fQ]) => [V(x, fG, fQ), V(x, fG, 0) + (fQ * l.F * (L - x)) / L])),
+    Vmin: (x) => Math.min(0, ...formules.flatMap(([fG, fQ]) => [V(x, fG, fQ), V(x, fG, 0) - (fQ * l.F * x) / L])),
+  };
+}

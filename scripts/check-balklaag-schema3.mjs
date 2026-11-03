@@ -548,13 +548,15 @@ const OUD = {
     invoer: { schema: "2", L_d: "4000", a_over: "1200" }, rekenwijze: 0,
     waarden: { P_g_k: 0.6647, q_q_k: 1.05, F_Q_k: 1.564, k_r: 0.782, w_lim: 16.2 },
   },
+  // UC_max staat hier niet meer bij: bij een raveelbalk telt ook de wisselbalk mee
+  // (check-balklaag-wisselbalk.mjs). Alle uitkomsten van de raveelbalk zelf zijn gelijk.
   "raveelbalk 2,45 m, staart 1,80 m": {
     invoer: { schema: "4", b_sparing: "2400", l_staart: "1800" },
-    waarden: { P_g_k: 0.9863, q_q_k: 1.575, F_Q_k: 2, k_r: 1, u_g_k: 0.6587, u_q_k: 1.052, u_Q_k: 0.8722, w_inst: 1.71, w_qp: 0.9742, w_fin: 2.295, w_lim: 9.8, M_y_Ed: 2.726, V_z_Ed: 4.45, "σ_m_y_d": 4.716, "τ_d": 0.4254, UC_buiging: 0.3193, UC_afsch: 0.1728, UC_doorbuiging: 0.2342, UC_c90: 0.3395, UC_max: 0.3395 },
+    waarden: { P_g_k: 0.9863, q_q_k: 1.575, F_Q_k: 2, k_r: 1, u_g_k: 0.6587, u_q_k: 1.052, u_Q_k: 0.8722, w_inst: 1.71, w_qp: 0.9742, w_fin: 2.295, w_lim: 9.8, M_y_Ed: 2.726, V_z_Ed: 4.45, "σ_m_y_d": 4.716, "τ_d": 0.4254, UC_buiging: 0.3193, UC_afsch: 0.1728, UC_doorbuiging: 0.2342, UC_c90: 0.3395 },
   },
   "raveelbalk 3,05 m, staart 2,50 m, norm-stand": {
     invoer: { schema: "4", b_sparing: "3000", l_staart: "2500" }, rekenwijze: 0,
-    waarden: { P_g_k: 1.315, q_q_k: 2.188, F_Q_k: 2, k_r: 1, u_g_k: 2.109, u_q_k: 3.509, u_Q_k: 1.683, w_inst: 5.617, w_qp: 3.161, w_fin: 7.514, w_lim: 12.2, M_y_Ed: 5.65, V_z_Ed: 7.41, "σ_m_y_d": 9.776, "τ_d": 0.7083, UC_buiging: 0.6619, UC_afsch: 0.2878, UC_doorbuiging: 0.6159, UC_max: 0.6619 },
+    waarden: { P_g_k: 1.315, q_q_k: 2.188, F_Q_k: 2, k_r: 1, u_g_k: 2.109, u_q_k: 3.509, u_Q_k: 1.683, w_inst: 5.617, w_qp: 3.161, w_fin: 7.514, w_lim: 12.2, M_y_Ed: 5.65, V_z_Ed: 7.41, "σ_m_y_d": 9.776, "τ_d": 0.7083, UC_buiging: 0.6619, UC_afsch: 0.2878, UC_doorbuiging: 0.6159 },
   },
 };
 

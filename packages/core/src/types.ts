@@ -233,6 +233,8 @@ export interface IfcxBlokNode {
   bron: string;
   hoogte?: string;
   papier?: string;
+  /** De taal van de namen in het document (`nl`, `en`); standaard Nederlands. */
+  taal?: string;
   fouten: string[];
   hidden?: boolean;
   /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */

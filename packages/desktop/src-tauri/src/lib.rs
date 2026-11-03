@@ -103,8 +103,50 @@ fn navigatie_bewaker() -> tauri::plugin::TauriPlugin<tauri::Wry> {
         .build()
 }
 
+/// Zet voorspellende verbindingen in WebView2 uit, vóór het venster start.
+///
+/// Chromium opent al een verbinding voordat `frame-src` een navigatie weigert.
+/// Een `@js`-blok zou zo een waarde in de hostnaam via DNS en TCP naar buiten
+/// kunnen sturen, ook al komt er geen verzoek aan. De voorkeuren staan in de
+/// map die WebView2 voor deze app gebruikt. Lukt dit niet, dan start de app
+/// gewoon; een onleesbaar bestand blijft onaangeraakt.
+#[cfg(windows)]
+fn geen_voorspellende_verbindingen(identifier: &str) {
+    let Some(basis) = std::env::var_os("LOCALAPPDATA") else { return };
+    let map = std::path::PathBuf::from(basis).join(identifier).join("EBWebView").join("Default");
+    let pad = map.join("Preferences");
+    let mut voorkeuren = match std::fs::read_to_string(&pad) {
+        Ok(tekst) => match serde_json::from_str::<serde_json::Value>(&tekst) {
+            Ok(waarde) if waarde.is_object() => waarde,
+            _ => return,
+        },
+        Err(fout) if fout.kind() == std::io::ErrorKind::NotFound => serde_json::json!({}),
+        Err(_) => return,
+    };
+    if voorkeuren.pointer("/net/network_prediction_options").and_then(|w| w.as_i64()) == Some(2) {
+        return;
+    }
+    let Some(alles) = voorkeuren.as_object_mut() else { return };
+    let net = alles.entry("net").or_insert_with(|| serde_json::json!({}));
+    if !net.is_object() {
+        *net = serde_json::json!({});
+    }
+    net["network_prediction_options"] = serde_json::json!(2);
+
+    if std::fs::create_dir_all(&map).is_err() {
+        return;
+    }
+    let tijdelijk = map.join("Preferences.tmp");
+    if std::fs::write(&tijdelijk, voorkeuren.to_string()).is_ok() {
+        let _ = std::fs::rename(&tijdelijk, &pad);
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let context = tauri::generate_context!();
+    #[cfg(windows)]
+    geen_voorspellende_verbindingen(&context.config().identifier);
     let bouwer = tauri::Builder::default();
     #[cfg(windows)]
     let bouwer = bouwer.plugin(navigatie_bewaker());
@@ -125,6 +167,6 @@ pub fn run() {
             mcp_bridge::mcp_bridge_start,
             mcp_bridge::mcp_bridge_stop,
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running tauri application");
 }

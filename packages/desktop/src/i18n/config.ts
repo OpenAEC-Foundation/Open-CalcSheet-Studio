@@ -14,6 +14,7 @@ import enRapport from "./locales/en/rapport.json";
 import enCalcpad from "./locales/en/calcpad.json";
 import enBeelden from "./locales/en/beelden.json";
 import enTekenen from "./locales/en/tekenen.json";
+import enLibrary from "./locales/en/library.json";
 // Dutch
 import nlCommon from "./locales/nl/common.json";
 import nlRibbon from "./locales/nl/ribbon.json";
@@ -25,6 +26,7 @@ import nlRapport from "./locales/nl/rapport.json";
 import nlCalcpad from "./locales/nl/calcpad.json";
 import nlBeelden from "./locales/nl/beelden.json";
 import nlTekenen from "./locales/nl/tekenen.json";
+import nlLibrary from "./locales/nl/library.json";
 
 export const LANGUAGES = [
   { code: "auto", name: "Auto-detect" },
@@ -41,8 +43,8 @@ export const STANDAARD_TAAL = "en";
 // Van de sjabloon: common, ribbon, backstage, settings, feedback. Van deze app:
 // werkruimte (project, panelen, modulekiezer), rapport (het rapportpaneel),
 // calcpad (tab CalcPAD, taalreferentie, editor), beelden (parametrische beelden)
-// en tekenen (tab Tekenen, de tekeneditor).
-const ns = ["common", "ribbon", "backstage", "settings", "feedback", "werkruimte", "rapport", "calcpad", "beelden", "tekenen"];
+// tekenen (tab Tekenen, de tekeneditor) en library (de Library in het projectpaneel).
+const ns = ["common", "ribbon", "backstage", "settings", "feedback", "werkruimte", "rapport", "calcpad", "beelden", "tekenen", "library"];
 
 i18next
   .use(LanguageDetector)
@@ -51,11 +53,11 @@ i18next
     resources: {
       en: {
         common: enCommon, ribbon: enRibbon, backstage: enBackstage, settings: enSettings, feedback: enFeedback,
-        werkruimte: enWerkruimte, rapport: enRapport, calcpad: enCalcpad, beelden: enBeelden, tekenen: enTekenen,
+        werkruimte: enWerkruimte, rapport: enRapport, calcpad: enCalcpad, beelden: enBeelden, tekenen: enTekenen, library: enLibrary,
       },
       nl: {
         common: nlCommon, ribbon: nlRibbon, backstage: nlBackstage, settings: nlSettings, feedback: nlFeedback,
-        werkruimte: nlWerkruimte, rapport: nlRapport, calcpad: nlCalcpad, beelden: nlBeelden, tekenen: nlTekenen,
+        werkruimte: nlWerkruimte, rapport: nlRapport, calcpad: nlCalcpad, beelden: nlBeelden, tekenen: nlTekenen, library: nlLibrary,
       },
     },
     ns,

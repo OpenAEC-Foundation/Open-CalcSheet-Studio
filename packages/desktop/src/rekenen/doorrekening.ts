@@ -13,6 +13,7 @@
  * papier uit komt (bladResultaat.ts, bladDoorrekenen.ts).
  */
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import i18next from "i18next";
 import { setAngleMode, type AngleMode } from "@ifc-calc/core";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import { calcpadIncludes, calcpadImageUrls } from "../templates/calcpad-includes";
@@ -24,6 +25,8 @@ export interface RekenVerzoek {
   scope: Record<string, unknown>;
   naam: string;
   hoekmodus: string;
+  /** De taal van de uitvoer: de taal van de app (templates/vertalingen.ts). */
+  taal?: string;
   includes: [string, string][];
   imageUrls: [string, string][];
 }
@@ -124,17 +127,20 @@ export function useDoorrekening(
   naam: string,
 ): { doorrekening: Doorrekening | null; bezig: boolean } {
   // Elke render opnieuw: de hoekmodus is geen React-toestand, en een wissel
-  // ervan moet een nieuwe sleutel geven (zetHoekmodus meldt de wissel).
-  const sleutel = [hoekmodus, naam, JSON.stringify(scope), JSON.stringify(waarden), source].join("\u0000");
+  // ervan moet een nieuwe sleutel geven (zetHoekmodus meldt de wissel). Zo ook de
+  // taal: de uitvoer volgt de app, en wie deze hook gebruikt, tekent bij een
+  // taalwissel opnieuw (useTranslation in de uitwerking en in het beeld).
+  const taal = i18next.language ?? "";
+  const sleutel = [hoekmodus, taal, naam, JSON.stringify(scope), JSON.stringify(waarden), source].join("\u0000");
   const hier = useSyncExternalStore(abonneer, () => uitkomsten.get(sleutel) ?? null);
 
   useEffect(() => {
     if (!source.trim()) return;
     vraag({
-      sleutel, source, waarden, scope, naam, hoekmodus,
+      sleutel, source, waarden, scope, naam, hoekmodus, taal,
       includes: [...calcpadIncludes], imageUrls: [...calcpadImageUrls],
     });
-  }, [sleutel, source, waarden, scope, naam]);
+  }, [sleutel, source, waarden, scope, naam, taal]);
 
   const resultaat = hier?.uitkomst?.resultaat;
   useEffect(() => {

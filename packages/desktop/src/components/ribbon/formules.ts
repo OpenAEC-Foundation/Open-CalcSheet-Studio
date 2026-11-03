@@ -20,6 +20,12 @@
  *
  * Gecontroleerd door scripts/check-formules.mjs: elk fragment rekent zonder
  * foutmelding door en een selectie uitkomsten klopt met een handberekening.
+ *
+ * De voorbeelden onderaan staan ook in de Library van het projectpaneel
+ * (calc/LibrarySectie.tsx) en hebben tekstregels, dus twee talen: `code` en
+ * `codeEn`, met `voorbeeld()` opgebouwd uit één lijst regels. Hulpvariabelen
+ * voor een tekening heten `p_…` en staan tussen `#hide` en `#show`. Hun
+ * uitkomsten staan in scripts/check-library.mjs.
  */
 
 export interface Tekst {
@@ -31,6 +37,16 @@ export interface FormuleGroep {
   /** Groep-id, bijv. "mechanica-ligger" of "en1995". */
   id: string;
   naam: Tekst;
+}
+
+/** De groepen van de Library in het projectpaneel. */
+export type LibraryGroepId = "ec2" | "ec3" | "vandepitte";
+
+export interface LibraryGroep {
+  id: LibraryGroepId;
+  naam: Tekst;
+  /** Wat erin zit, kort: naast de naam in het paneel. */
+  onder: Tekst;
 }
 
 export interface Formule {
@@ -46,26 +62,68 @@ export interface Formule {
   uitleg?: Tekst;
   /** Het in te voegen fragment in de rekentaal; meerdere regels. */
   code: string;
+  /** Hetzelfde fragment met Engelse tekst, als het tekstregels heeft; zie codeVan. */
+  codeEn?: string;
   /**
    * Projectvariabelen die het fragment gebruikt zonder ze zelf te zetten
    * (`CC`, `K_FI`). In de app staan die altijd in de scope.
    */
   projectvariabelen?: string[];
+  /** Staat ook in deze groep van de Library. */
+  library?: LibraryGroepId;
+  /** Het voorbeeld tekent ook iets; bepaalt het icoon in de Library. */
+  soort?: "grafiek" | "tekening";
 }
 
 /** Regels van een fragment, onder elkaar. */
 const c = (...regels: string[]): string => regels.join("\n");
+
+/** Een regel in twee talen. */
+const tw = (nl: string, en: string): Tekst => ({ nl, en });
+
+/** Rekentaal, of een regel met tekst in twee talen. */
+type Regel = string | Tekst;
+
+/**
+ * Een voorbeeld voor de Library: kop, bron en uitleg volgen uit de velden, dan
+ * de invoer en de rekenregels. Cursieve tekst komt alleen op het scherm, niet op
+ * papier (`isUitleg` in de kern).
+ */
+function voorbeeld(f: Omit<Formule, "code" | "codeEn">, invoer: Regel[], ...regels: Regel[]): Formule {
+  const kies = (r: Regel, taal: keyof Tekst): string => (typeof r === "string" ? r : r[taal]);
+  // De invoer op papier in drie kolommen, zoals in de modules (PrintDocument.css).
+  const kolom = (r: string): string => (r.endsWith("'") ? r.slice(0, -1) : `${r}'`) + `<span class="kolom-3"></span>'`;
+  const fragment = (taal: keyof Tekst): string => c(
+    `## ${f.naam[taal]}`,
+    `'<small>${taal === "en" ? "Source" : "Bron"}: ${f.bron}</small>`,
+    ...(f.uitleg ? [`'<i>${f.uitleg[taal]}</i>`] : []),
+    ...invoer.map((r) => kolom(kies(r, taal))),
+    ...regels.map((r) => kies(r, taal)),
+  );
+  return { ...f, code: fragment("nl"), codeEn: fragment("en") };
+}
+
+/** Het fragment in de taal van de app; zonder tekstregels is er maar één. */
+export const codeVan = (f: Formule, taal: string | undefined): string =>
+  (taal?.startsWith("en") ? f.codeEn : undefined) ?? f.code;
 
 export const FORMULE_GROEPEN: FormuleGroep[] = [
   { id: "mechanica-ligger", naam: { nl: "Mechanica — liggers", en: "Mechanics — beams" } },
   { id: "mechanica-doorsnede", naam: { nl: "Mechanica — doorsnedegrootheden", en: "Mechanics — section properties" } },
   { id: "mechanica-spanning", naam: { nl: "Mechanica — spanning en vervorming", en: "Mechanics — stress and strain" } },
   { id: "mechanica-stabiliteit", naam: { nl: "Mechanica — knik, kip en trilling", en: "Mechanics — buckling and vibration" } },
+  { id: "vandepitte", naam: { nl: "Prof. Vandepitte — klassieke mechanica", en: "Prof. Vandepitte — classical mechanics" } },
   { id: "en1990", naam: { nl: "EN 1990 — grondslagen en combinaties", en: "EN 1990 — basis of design and combinations" } },
   { id: "en1991", naam: { nl: "EN 1991 — belastingen", en: "EN 1991 — actions" } },
   { id: "en1992", naam: { nl: "EN 1992 — beton", en: "EN 1992 — concrete" } },
   { id: "en1993", naam: { nl: "EN 1993 — staal", en: "EN 1993 — steel" } },
   { id: "en1995", naam: { nl: "EN 1995 — hout", en: "EN 1995 — timber" } },
+];
+
+export const LIBRARY_GROEPEN: LibraryGroep[] = [
+  { id: "ec2", naam: { nl: "Eurocode 2", en: "Eurocode 2" }, onder: { nl: "EN 1992-1-1, beton", en: "EN 1992-1-1, concrete" } },
+  { id: "ec3", naam: { nl: "Eurocode 3", en: "Eurocode 3" }, onder: { nl: "EN 1993-1-1, staal", en: "EN 1993-1-1, steel" } },
+  { id: "vandepitte", naam: { nl: "Prof. Vandepitte", en: "Prof. Vandepitte" }, onder: { nl: "mechanica", en: "mechanics" } },
 ];
 
 // Voorbeeldprofiel in de mechanica: IPE 300, staal.
@@ -2778,4 +2836,649 @@ export const FORMULES: Formule[] = [
       "F_v,Rd = k_mod*F_v,Rk/γ_M', (2.17)'",
     ),
   },
+
+  // ════════════════════════════════════════════════════════════════════
+  // Library — Eurocode 2: één balk, van materiaal tot beugels
+  // ════════════════════════════════════════════════════════════════════
+  voorbeeld(
+    {
+      id: "library-ec2-rekenwaarden",
+      groep: "en1992",
+      library: "ec2",
+      soort: "grafiek",
+      naam: { nl: "Rekenwaarden materialen", en: "Material design values" },
+      bron: "NEN-EN 1992-1-1 tab. 2.1N; 3.1.6 (3.15), (3.16); 3.1.7 (3.17), (3.18); tab. 3.1; 3.2.7",
+      uitleg: {
+        nl: "Van sterkteklasse naar rekenwaarde, met het spanning-rekdiagram waarmee het beton op druk wordt gerekend.",
+        en: "From strength class to design value, with the stress-strain diagram used for concrete in compression.",
+      },
+    },
+    [
+      tw("f_ck = 30 N/mm^2', beton C30/37'", "f_ck = 30 N/mm^2', concrete C30/37'"),
+      tw("f_yk = 500 N/mm^2', betonstaal B500'", "f_yk = 500 N/mm^2', reinforcing steel B500'"),
+      tw("γ_C = 1.5', tabel 2.1N'", "γ_C = 1.5', table 2.1N'"),
+      tw("γ_S = 1.15', tabel 2.1N'", "γ_S = 1.15', table 2.1N'"),
+      "α_cc = 1.0",
+      tw("ε_c2 = 0.002', tabel 3.1'", "ε_c2 = 0.002', table 3.1'"),
+      tw("ε_cu2 = 0.0035', tabel 3.1'", "ε_cu2 = 0.0035', table 3.1'"),
+    ],
+    "f_cd = α_cc*f_ck/γ_C', (3.15)'",
+    "f_yd = f_yk/γ_S",
+    tw("f_ctm = 0.30*(f_ck/MPa)^(2/3)*MPa to N/mm^2', tabel 3.1'", "f_ctm = 0.30*(f_ck/MPa)^(2/3)*MPa to N/mm^2', table 3.1'"),
+    "f_ctd = 0.7*f_ctm/γ_C', (3.16)'",
+    "σ_c(ε) = f_cd*if(ε < ε_c2; 1 - (1 - ε/ε_c2)^2; 1)",
+    "#hide",
+    "PlotHeight = 220",
+    "#show",
+    "$Plot{σ_c(x/1000) @ x = 0 : 1000*ε_cu2}",
+    tw(
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ σ<sub>c</sub></span> &nbsp; parabool tot ε<sub>c2</sub>, daarna constant, (3.17), (3.18). Horizontaal de rek in ‰.",
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ σ<sub>c</sub></span> &nbsp; parabola up to ε<sub>c2</sub>, constant beyond it, (3.17), (3.18). Horizontal axis: strain in ‰.",
+    ),
+  ),
+  voorbeeld(
+    {
+      id: "library-ec2-momentcapaciteit",
+      groep: "en1992",
+      library: "ec2",
+      soort: "tekening",
+      naam: { nl: "Momentcapaciteit rechthoek", en: "Moment resistance, rectangle" },
+      bron: "NEN-EN 1992-1-1 3.1.7(3) (3.19), (3.21); 3.2.7(4); 6.1; tab. 3.1",
+      uitleg: {
+        nl: "Horizontaal evenwicht geeft de drukzone, de hefboomsarm geeft de capaciteit. De tekening volgt de invoer: verander het aantal staven en hij rekent mee.",
+        en: "Horizontal equilibrium gives the compression zone, the lever arm gives the resistance. The drawing follows the input: change the number of bars and it recalculates.",
+      },
+    },
+    [
+      "b = 300 mm",
+      "h = 500 mm",
+      "d = 450 mm",
+      tw("n_s = 3', aantal staven'", "n_s = 3', number of bars'"),
+      tw("φ_s = 20 mm', staafdiameter'", "φ_s = 20 mm', bar diameter'"),
+      "f_cd = 30 N/mm^2/1.5', C30/37'",
+      "f_yd = 500 N/mm^2/1.15', B500'",
+      "M_Ed = 150 kN*m",
+      "λ = 0.8', (3.19)'",
+      "η = 1.0', (3.21)'",
+    ],
+    "A_s = n_s*π*φ_s^2/4 to mm^2",
+    tw("x = A_s*f_yd/(λ*η*f_cd*b) to mm', hoogte drukzone'", "x = A_s*f_yd/(λ*η*f_cd*b) to mm', depth of the compression zone'"),
+    tw("z = d - λ*x/2 to mm', inwendige hefboomsarm'", "z = d - λ*x/2 to mm', internal lever arm'"),
+    "M_Rd = A_s*f_yd*z to kN*m",
+    "UC_M = M_Ed/M_Rd",
+    tw("ε_s = 0.0035*(d - x)/x', staalrek bij ε<sub>cu3</sub> = 3,5 ‰'", "ε_s = 0.0035*(d - x)/x', steel strain at ε<sub>cu3</sub> = 3.5 ‰'"),
+    "ε_yd = f_yd/(200000 N/mm^2)",
+    "#if ε_s ≥ ε_yd",
+    tw("'Het staal vloeit, dus rekenen met f<sub>yd</sub> klopt.", "'The steel yields, so using f<sub>yd</sub> is correct."),
+    "#else",
+    tw("'Het staal vloeit niet: de doorsnede is overwapend en deze capaciteit is te hoog.", "'The steel does not yield: the section is over-reinforced and this resistance is too high."),
+    "#end if",
+    "#hide",
+    "p_s = 200/(h/mm)",
+    "p_b = b/mm*p_s",
+    "p_d = 20 + d/mm*p_s",
+    "p_x = 20 + x/mm*p_s",
+    "p_c = λ*x/mm*p_s",
+    "p_m = 20 + p_c/2",
+    "p_r = max(φ_s/mm*p_s/2; 2.5)",
+    "p_a = (p_b - 28)/max(n_s - 1; 1)",
+    "p_R = 50 + p_b",
+    "p_N = round(A_s*f_yd/kN; 0)",
+    "p_tx = round(x/mm; 0)",
+    "p_tz = round(z/mm; 0)",
+    "p_tb = round(b/mm; 0)",
+    "p_th = round(h/mm; 0)",
+    "#show",
+    "'<svg class=\"lib-tekening\" viewBox=\"0 0 470 250\" style=\"width:100%; max-width:470px; font-size:12px;\">",
+    "'  <rect x=\"50\" y=\"20\" width=\"'p_b'\" height=\"200\" style=\"fill:#f5f5f4; stroke:#36363e; stroke-width:1.5\"/>",
+    "'  <rect x=\"50\" y=\"20\" width=\"'p_b'\" height=\"'p_c'\" style=\"fill:#fbbf77\"/>",
+    "'  <line x1=\"44\" y1=\"'p_x'\" x2=\"'p_R + 6'\" y2=\"'p_x'\" style=\"stroke:#36363e; stroke-dasharray:5 3\"/>",
+    "#for k_s = 1 : n_s",
+    "'  <circle cx=\"'64 + (k_s - 1)*p_a'\" cy=\"'p_d'\" r=\"'p_r'\" style=\"fill:#36363e\"/>",
+    "#loop",
+    "'  <text x=\"'50 + p_b/2'\" y=\"238\" text-anchor=\"middle\" style=\"fill:#52525b\">b = 'p_tb' mm</text>",
+    "'  <text x=\"38\" y=\"120\" text-anchor=\"middle\" transform=\"rotate(-90 38 120)\" style=\"fill:#52525b\">h = 'p_th' mm</text>",
+    "'  <text x=\"'p_R + 10'\" y=\"'p_x + 4'\" style=\"fill:#52525b\">x = 'p_tx' mm</text>",
+    "'  <line x1=\"300\" y1=\"20\" x2=\"300\" y2=\"220\" style=\"stroke:#36363e; stroke-width:1.5\"/>",
+    "'  <rect x=\"300\" y=\"20\" width=\"46\" height=\"'p_c'\" style=\"fill:#fbbf77; stroke:#d97706\"/>",
+    "'  <line x1=\"372\" y1=\"'p_m'\" x2=\"310\" y2=\"'p_m'\" style=\"stroke:#b45309; stroke-width:2\"/>",
+    "'  <polygon points=\"302,'p_m' 311,'p_m - 4' 311,'p_m + 4'\" style=\"fill:#b45309\"/>",
+    "'  <text x=\"376\" y=\"'p_m + 4'\" style=\"fill:#b45309; font-weight:700\">N<tspan dy=\"3\" font-size=\"9\">c</tspan><tspan dy=\"-3\"> = 'p_N' kN</tspan></text>",
+    "'  <line x1=\"300\" y1=\"'p_d'\" x2=\"363\" y2=\"'p_d'\" style=\"stroke:#1d4ed8; stroke-width:2\"/>",
+    "'  <polygon points=\"372,'p_d' 363,'p_d - 4' 363,'p_d + 4'\" style=\"fill:#1d4ed8\"/>",
+    "'  <text x=\"376\" y=\"'p_d + 4'\" style=\"fill:#1d4ed8; font-weight:700\">N<tspan dy=\"3\" font-size=\"9\">s</tspan><tspan dy=\"-3\"> = 'p_N' kN</tspan></text>",
+    "'  <line x1=\"284\" y1=\"'p_m'\" x2=\"284\" y2=\"'p_d'\" style=\"stroke:#52525b\"/>",
+    "'  <line x1=\"279\" y1=\"'p_m'\" x2=\"289\" y2=\"'p_m'\" style=\"stroke:#52525b\"/>",
+    "'  <line x1=\"279\" y1=\"'p_d'\" x2=\"289\" y2=\"'p_d'\" style=\"stroke:#52525b\"/>",
+    "'  <text x=\"276\" y=\"'(p_m + p_d)/2 + 4'\" text-anchor=\"end\" style=\"fill:#52525b\">z = 'p_tz' mm</text>",
+    "'</svg>",
+  ),
+  voorbeeld(
+    {
+      id: "library-ec2-buigwapening",
+      groep: "en1992",
+      library: "ec2",
+      naam: { nl: "Benodigde buigwapening", en: "Required reinforcement" },
+      bron: "NEN-EN 1992-1-1 3.1.7(3) (3.19); 9.2.1.1(1) (9.1N)",
+      uitleg: {
+        nl: "Andersom gerekend: uit het moment volgt de wapening, en het blad kiest zelf het aantal staven.",
+        en: "The other way round: the moment gives the reinforcement, and the sheet picks the number of bars itself.",
+      },
+    },
+    [
+      "M_Ed = 150 kN*m",
+      "b = 300 mm",
+      "d = 450 mm",
+      tw("φ_s = 20 mm', staafdiameter'", "φ_s = 20 mm', bar diameter'"),
+      "f_ck = 30 N/mm^2",
+      "f_yk = 500 N/mm^2",
+      "λ = 0.8', (3.19)'",
+    ],
+    "f_cd = f_ck/1.5",
+    "f_yd = f_yk/1.15",
+    "f_ctm = 0.30*(f_ck/MPa)^(2/3)*MPa to N/mm^2",
+    tw("x = (d - sqrt(d^2 - 2*M_Ed/(b*f_cd)))/λ to mm', uit het momentenevenwicht'", "x = (d - sqrt(d^2 - 2*M_Ed/(b*f_cd)))/λ to mm', from moment equilibrium'"),
+    "z = d - λ*x/2 to mm",
+    "A_s,req = M_Ed/(z*f_yd) to mm^2",
+    "A_s,min = max(0.26*f_ctm/f_yk*b*d; 0.0013*b*d) to mm^2', (9.1N)'",
+    tw("A_1 = π*φ_s^2/4 to mm^2', per staaf'", "A_1 = π*φ_s^2/4 to mm^2', per bar'"),
+    tw("n_s = ceil(max(A_s,req; A_s,min)/A_1)', aantal staven, naar boven afgerond'", "n_s = ceil(max(A_s,req; A_s,min)/A_1)', number of bars, rounded up'"),
+    "A_s,prov = n_s*A_1 to mm^2",
+    "UC_As = max(A_s,req; A_s,min)/A_s,prov",
+    tw("'<b>Kies 'n_s' × Ø'φ_s/mm'</b>", "'<b>Use 'n_s' × Ø'φ_s/mm'</b>"),
+  ),
+  voorbeeld(
+    {
+      id: "library-ec2-dwarskracht",
+      groep: "en1992",
+      library: "ec2",
+      naam: { nl: "Dwarskracht zonder beugels", en: "Shear without links" },
+      bron: "NEN-EN 1992-1-1 6.2.1(4); 6.2.2(1) (6.2.a), (6.2.b), (6.3N)",
+      uitleg: {
+        nl: "Wat de balk zonder dwarskrachtwapening opneemt, met de aanbevolen waarden en de ondergrens.",
+        en: "The shear the beam resists without shear reinforcement, with the recommended values and the lower bound.",
+      },
+    },
+    [
+      "V_Ed = 60 kN",
+      "b_w = 300 mm",
+      "d = 450 mm",
+      tw("A_sl = 942 mm^2', trekwapening 3 × Ø20'", "A_sl = 942 mm^2', tension bars 3 × Ø20'"),
+      "f_ck = 30 N/mm^2",
+      "γ_C = 1.5",
+    ],
+    "C_Rd,c = 0.18/γ_C",
+    "k = min(1 + sqrt(200 mm/d); 2.0)",
+    "ρ_l = min(A_sl/(b_w*d); 0.02)",
+    "v_Rd,c = C_Rd,c*k*(100*ρ_l*f_ck/MPa)^(1/3)*MPa to N/mm^2', (6.2.a)'",
+    "v_min = 0.035*k^(3/2)*sqrt(f_ck/MPa)*MPa to N/mm^2', (6.3N)'",
+    "V_Rd,c = max(v_Rd,c; v_min)*b_w*d to kN', (6.2.a), (6.2.b)'",
+    "UC_V = V_Ed/V_Rd,c",
+    "#if V_Ed ≤ V_Rd,c",
+    tw("'Geen berekende dwarskrachtwapening nodig; in een balk wel de minimale wapening volgens 9.2.2.", "'No calculated shear reinforcement is needed; a beam still gets the minimum reinforcement of 9.2.2."),
+    "#else",
+    tw("'De dwarskracht is te groot: reken beugels uit met V<sub>Rd,s</sub> en V<sub>Rd,max</sub>.", "'The shear force is too high: design links with V<sub>Rd,s</sub> and V<sub>Rd,max</sub>."),
+    "#end if",
+  ),
+  voorbeeld(
+    {
+      id: "library-ec2-beugels",
+      groep: "en1992",
+      library: "ec2",
+      soort: "grafiek",
+      naam: { nl: "Beugels en drukdiagonaal", en: "Links and compression strut" },
+      bron: "NEN-EN 1992-1-1 6.2.2(6) (6.6N); 6.2.3 (6.7N), (6.8), (6.9)",
+      uitleg: {
+        nl: "De hoek van de drukdiagonaal is een keuze: een schuinere diagonaal geeft de beugels meer capaciteit en het beton minder. De grafiek laat die afweging zien.",
+        en: "The angle of the compression strut is a choice: a flatter strut gives the links more capacity and the concrete less. The chart shows that trade-off.",
+      },
+    },
+    [
+      "V_Ed = 180 kN",
+      "b_w = 300 mm",
+      "d = 450 mm",
+      tw("φ_w = 8 mm', beugeldiameter'", "φ_w = 8 mm', link diameter'"),
+      tw("n_w = 2', sneden per beugel'", "n_w = 2', legs per link'"),
+      tw("s_l = 200 mm', beugelafstand'", "s_l = 200 mm', link spacing'"),
+      "f_ck = 30 N/mm^2",
+      "f_ywd = 500 N/mm^2/1.15",
+      "α_cw = 1.0",
+      tw("cot_θ = 2.5', tussen 1 en 2,5 (6.7N)'", "cot_θ = 2.5', between 1 and 2.5 (6.7N)'"),
+    ],
+    "f_cd = f_ck/1.5",
+    "A_sw = n_w*π*φ_w^2/4 to mm^2",
+    "z = 0.9*d to mm",
+    "ν_1 = 0.6*(1 - f_ck/(250 MPa))', (6.6N)'",
+    "V_s(c) = A_sw/s_l*z*f_ywd*c",
+    "V_max(c) = α_cw*b_w*z*ν_1*f_cd/(c + 1/c)",
+    "V_Rd,s = V_s(cot_θ) to kN', (6.8)'",
+    "V_Rd,max = V_max(cot_θ) to kN', (6.9)'",
+    "UC_V = V_Ed/min(V_Rd,s; V_Rd,max)",
+    "#hide",
+    "PlotHeight = 220",
+    "#show",
+    "$Plot{V_s(x)/kN & V_max(x)/kN & V_Ed/kN @ x = 1 : 2.5}",
+    tw(
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ V<sub>Rd,s</sub></span> &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ V<sub>Rd,max</sub></span> &nbsp; <span style=\"color:#16A34A; font-weight:700;\">━━ V<sub>Ed</sub></span> &nbsp; in kN, horizontaal cot θ.",
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ V<sub>Rd,s</sub></span> &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ V<sub>Rd,max</sub></span> &nbsp; <span style=\"color:#16A34A; font-weight:700;\">━━ V<sub>Ed</sub></span> &nbsp; in kN, horizontal axis cot θ.",
+    ),
+  ),
+
+  // ════════════════════════════════════════════════════════════════════
+  // Library — Eurocode 3: staal, van doorsnede tot stabiliteit
+  // ════════════════════════════════════════════════════════════════════
+  voorbeeld(
+    {
+      id: "library-ec3-normaalkracht",
+      groep: "en1993",
+      library: "ec3",
+      naam: { nl: "Trek en druk", en: "Tension and compression" },
+      bron: "NEN-EN 1993-1-1 6.2.3 (6.5), (6.6), (6.7); 6.2.4 (6.9), (6.10)",
+      uitleg: {
+        nl: "Een IPE 300 met vier boutgaten: bij trek telt de kleinste van de bruto en de netto doorsnede, bij druk de bruto doorsnede.",
+        en: "An IPE 300 with four bolt holes: in tension the lower of the gross and the net section governs, in compression the gross section.",
+      },
+    },
+    [
+      "N_Ed = 900 kN",
+      "A = 5381 mm^2', IPE 300'",
+      "t_f = 10.7 mm",
+      tw("d_0 = 22 mm', gat voor M20'", "d_0 = 22 mm', hole for M20'"),
+      tw("n_g = 4', gaten in de doorsnede'", "n_g = 4', holes in the section'"),
+      "f_y = 235 N/mm^2', S235'",
+      "f_u = 360 N/mm^2",
+      "γ_M0 = 1.0",
+      "γ_M2 = 1.25",
+    ],
+    "A_net = A - n_g*d_0*t_f to mm^2",
+    "N_pl,Rd = A*f_y/γ_M0 to kN', (6.6)'",
+    "N_u,Rd = 0.9*A_net*f_u/γ_M2 to kN', (6.7)'",
+    "N_t,Rd = min(N_pl,Rd; N_u,Rd)",
+    tw("UC_t = N_Ed/N_t,Rd', trek, (6.5)'", "UC_t = N_Ed/N_t,Rd', tension, (6.5)'"),
+    tw("N_c,Rd = A*f_y/γ_M0 to kN', druk in klasse 1, 2 of 3, (6.10)'", "N_c,Rd = A*f_y/γ_M0 to kN', compression in class 1, 2 or 3, (6.10)'"),
+    tw("UC_c = N_Ed/N_c,Rd', druk, (6.9)'", "UC_c = N_Ed/N_c,Rd', compression, (6.9)'"),
+  ),
+  voorbeeld(
+    {
+      id: "library-ec3-moment",
+      groep: "en1993",
+      library: "ec3",
+      soort: "tekening",
+      naam: { nl: "Momentcapaciteit I-profiel", en: "Moment resistance, I-section" },
+      bron: "NEN-EN 1993-1-1 5.5.2, tab. 5.2; 6.2.5 (6.12), (6.13), (6.14)",
+      uitleg: {
+        nl: "Eerst de doorsnedeklasse uit de slankheid van lijf en flens, dan de weerstand. De tekening toont het profiel op schaal met de plastische spanningen.",
+        en: "First the section class from the slenderness of web and flange, then the resistance. The drawing shows the section to scale with the plastic stresses.",
+      },
+    },
+    [
+      "M_Ed = 100 kN*m",
+      "h = 300 mm', IPE 300'",
+      "b = 150 mm",
+      "t_w = 7.1 mm",
+      "t_f = 10.7 mm",
+      "r = 15 mm",
+      "W_pl,y = 628.4 cm^3",
+      "W_el,y = 557.1 cm^3",
+      "f_y = 235 N/mm^2', S235'",
+      "γ_M0 = 1.0",
+    ],
+    "ε = sqrt(235 N/mm^2/f_y)",
+    "c_w = h - 2*t_f - 2*r",
+    "c_f = (b - t_w - 2*r)/2",
+    tw("s_w = c_w/t_w', lijf op buiging: klasse 1 tot 72ε, 2 tot 83ε, 3 tot 124ε'", "s_w = c_w/t_w', web in bending: class 1 up to 72ε, 2 up to 83ε, 3 up to 124ε'"),
+    tw("s_f = c_f/t_f', flens op druk: klasse 1 tot 9ε, 2 tot 10ε, 3 tot 14ε'", "s_f = c_f/t_f', flange in compression: class 1 up to 9ε, 2 up to 10ε, 3 up to 14ε'"),
+    "#hide",
+    "klasse_w = if(s_w ≤ 72*ε; 1; if(s_w ≤ 83*ε; 2; if(s_w ≤ 124*ε; 3; 4)))",
+    "klasse_f = if(s_f ≤ 9*ε; 1; if(s_f ≤ 10*ε; 2; if(s_f ≤ 14*ε; 3; 4)))",
+    "#show",
+    tw("klasse = max(klasse_w; klasse_f)', de hoogste van de twee'", "klasse = max(klasse_w; klasse_f)', the higher of the two'"),
+    "W_y = if(klasse ≤ 2; W_pl,y; W_el,y) to cm^3",
+    "M_c,Rd = W_y*f_y/γ_M0 to kN*m', (6.13), (6.14)'",
+    "UC_M = M_Ed/M_c,Rd', (6.12)'",
+    "#if klasse ≡ 4",
+    tw("'Klasse 4: reken met de effectieve doorsnede; deze capaciteit geldt dan niet.", "'Class 4: use the effective section; this resistance does not apply then."),
+    "#end if",
+    "#hide",
+    "p_s = 200/(h/mm)",
+    "p_b = b/mm*p_s",
+    "p_tw = max(t_w/mm*p_s; 2)",
+    "p_tf = max(t_f/mm*p_s; 2)",
+    "p_x = 120 - p_b/2",
+    "p_w = 120 - p_tw/2",
+    "p_y = 220 - p_tf",
+    "p_f = round(f_y/MPa; 0)",
+    "p_M = round(M_c,Rd/(kN*m); 1)",
+    "p_h = round(h/mm; 0)",
+    "p_tb = round(b/mm; 0)",
+    "#show",
+    "@svg",
+    "<svg class=\"lib-tekening\" viewBox=\"0 0 470 250\" style=\"width:100%; max-width:470px; font-size:12px;\">",
+    "  <rect x=\"{{p_w}}\" y=\"20\" width=\"{{p_tw}}\" height=\"200\" style=\"fill:#a1a1aa; stroke:#36363e\"/>",
+    "  <rect x=\"{{p_x}}\" y=\"20\" width=\"{{p_b}}\" height=\"{{p_tf}}\" style=\"fill:#a1a1aa; stroke:#36363e\"/>",
+    "  <rect x=\"{{p_x}}\" y=\"{{p_y}}\" width=\"{{p_b}}\" height=\"{{p_tf}}\" style=\"fill:#a1a1aa; stroke:#36363e\"/>",
+    "  <line x1=\"30\" y1=\"120\" x2=\"410\" y2=\"120\" style=\"stroke:#71717a; stroke-dasharray:6 4\"/>",
+    "  <text x=\"120\" y=\"240\" text-anchor=\"middle\" style=\"fill:#52525b\">{{p_h}} × {{p_tb}} mm</text>",
+    "  <line x1=\"330\" y1=\"20\" x2=\"330\" y2=\"220\" style=\"stroke:#36363e; stroke-width:1.5\"/>",
+    "  <rect x=\"330\" y=\"20\" width=\"50\" height=\"100\" style=\"fill:#fbbf77; stroke:#d97706\"/>",
+    "  <rect x=\"280\" y=\"120\" width=\"50\" height=\"100\" style=\"fill:#bfdbfe; stroke:#2563eb\"/>",
+    "  <text x=\"386\" y=\"74\" style=\"fill:#b45309; font-weight:700\">f<tspan dy=\"3\" font-size=\"9\">y</tspan><tspan dy=\"-3\"> = {{p_f}}</tspan></text>",
+    "  <text x=\"274\" y=\"174\" text-anchor=\"end\" style=\"fill:#1d4ed8; font-weight:700\">f<tspan dy=\"3\" font-size=\"9\">y</tspan><tspan dy=\"-3\"> = {{p_f}}</tspan></text>",
+    "  <text x=\"330\" y=\"240\" text-anchor=\"middle\" style=\"fill:#36363e; font-weight:700\">M<tspan dy=\"3\" font-size=\"9\">c,Rd</tspan><tspan dy=\"-3\"> = {{p_M}} kNm</tspan></text>",
+    "</svg>",
+    "@end",
+  ),
+  voorbeeld(
+    {
+      id: "library-ec3-dwarskracht",
+      groep: "en1993",
+      library: "ec3",
+      naam: { nl: "Dwarskracht in het lijf", en: "Shear in the web" },
+      bron: "NEN-EN 1993-1-1 6.2.6 (6.17), (6.18), (6.22); 6.2.8(2)",
+      uitleg: {
+        nl: "Het afschuifoppervlak van een gewalst profiel en de plastische capaciteit, plus twee vervolgvragen: plooit het lijf en moet de momentcapaciteit omlaag?",
+        en: "The shear area of a rolled section and the plastic resistance, plus two follow-up questions: does the web buckle and must the moment resistance be reduced?",
+      },
+    },
+    [
+      "V_Ed = 120 kN",
+      "A = 5381 mm^2', IPE 300'",
+      "h = 300 mm",
+      "b = 150 mm",
+      "t_w = 7.1 mm",
+      "t_f = 10.7 mm",
+      "r = 15 mm",
+      "f_y = 235 N/mm^2', S235'",
+      "γ_M0 = 1.0",
+      tw("η = 1.0', aan de veilige kant'", "η = 1.0', on the safe side'"),
+    ],
+    "h_w = h - 2*t_f",
+    "A_v = max(A - 2*b*t_f + (t_w + 2*r)*t_f; η*h_w*t_w) to mm^2",
+    "V_pl,Rd = A_v*(f_y/sqrt(3))/γ_M0 to kN', (6.18)'",
+    "UC_V = V_Ed/V_pl,Rd', (6.17)'",
+    "ε = sqrt(235 N/mm^2/f_y)",
+    tw("UC_plooi = (h_w/t_w)/(72*ε/η)', afschuifplooi hoeft niet getoetst bij ≤ 1, (6.22)'", "UC_plooi = (h_w/t_w)/(72*ε/η)', shear buckling need not be checked if ≤ 1, (6.22)'"),
+    "#if V_Ed ≤ 0.5*V_pl,Rd",
+    tw("'V<sub>Ed</sub> is niet meer dan de helft van V<sub>pl,Rd</sub>: de momentcapaciteit blijft ongereduceerd.", "'V<sub>Ed</sub> is at most half of V<sub>pl,Rd</sub>: the moment resistance is not reduced."),
+    "#else",
+    tw("'V<sub>Ed</sub> is meer dan de helft van V<sub>pl,Rd</sub>: reduceer de momentcapaciteit volgens 6.2.8.", "'V<sub>Ed</sub> exceeds half of V<sub>pl,Rd</sub>: reduce the moment resistance according to 6.2.8."),
+    "#end if",
+  ),
+  voorbeeld(
+    {
+      id: "library-ec3-knik",
+      groep: "en1993",
+      library: "ec3",
+      soort: "grafiek",
+      naam: { nl: "Knik: de vijf knikkrommen", en: "Buckling: the five curves" },
+      bron: "NEN-EN 1993-1-1 6.3.1 (6.46), (6.47), (6.49), (6.50), tab. 6.1, 6.2",
+      uitleg: {
+        nl: "Een HEB 200 om de zwakke as. De reductiefactor staat als eigen functie in het blad, en dezelfde functie tekent alle vijf de knikkrommen.",
+        en: "An HEB 200 about the minor axis. The reduction factor is a function in the sheet, and the same function draws all five buckling curves.",
+      },
+    },
+    [
+      "N_Ed = 800 kN",
+      "A = 7810 mm^2', HEB 200'",
+      "i_z = 50.7 mm",
+      "L_cr = 4 m",
+      "f_y = 235 N/mm^2', S235'",
+      "E = 210000 N/mm^2",
+      "γ_M1 = 1.0",
+      tw("α = 0.49', knikkromme c, tabel 6.1 en 6.2'", "α = 0.49', buckling curve c, tables 6.1 and 6.2'"),
+    ],
+    "λ_1 = π*sqrt(E/f_y)",
+    "λ_rel = L_cr/(i_z*λ_1)', (6.50)'",
+    "Φ_k(l; a) = 0.5*(1 + a*(l - 0.2) + l^2)",
+    "χ_k(l; a) = min(1/(Φ_k(l; a) + sqrt(Φ_k(l; a)^2 - l^2)); 1)",
+    "χ = χ_k(λ_rel; α)', (6.49)'",
+    "N_b,Rd = χ*A*f_y/γ_M1 to kN', (6.47)'",
+    "UC_b = N_Ed/N_b,Rd', (6.46)'",
+    "#hide",
+    "PlotHeight = 220",
+    "#show",
+    "$Plot{χ_k(x; 0.13) & χ_k(x; 0.21) & χ_k(x; 0.34) & χ_k(x; 0.49) & χ_k(x; 0.76) @ x = 0 : 3}",
+    tw(
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ a0</span> &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ a</span> &nbsp; <span style=\"color:#16A34A; font-weight:700;\">━━ b</span> &nbsp; <span style=\"color:#DC2626; font-weight:700;\">━━ c</span> &nbsp; <span style=\"color:#7C3AED; font-weight:700;\">━━ d</span> &nbsp; χ tegen de relatieve slankheid.",
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ a0</span> &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ a</span> &nbsp; <span style=\"color:#16A34A; font-weight:700;\">━━ b</span> &nbsp; <span style=\"color:#DC2626; font-weight:700;\">━━ c</span> &nbsp; <span style=\"color:#7C3AED; font-weight:700;\">━━ d</span> &nbsp; χ against the relative slenderness.",
+    ),
+  ),
+  voorbeeld(
+    {
+      id: "library-ec3-kip",
+      groep: "en1993",
+      library: "ec3",
+      soort: "grafiek",
+      naam: { nl: "Kip van een ligger", en: "Lateral-torsional buckling" },
+      bron: "NEN-EN 1993-1-1 6.3.2.2 (6.54), (6.55), (6.56), tab. 6.3, 6.4",
+      uitleg: {
+        nl: "IPE 300 met vorkopleggingen en een verdeelde last op het dwarskrachtmiddelpunt; het kritieke moment volgt uit de elastische stabiliteitstheorie. Alles is een functie van de vrije lengte, dus de grafiek toont hoe ver de ligger zonder steun kan.",
+        en: "IPE 300 with fork supports and a distributed load at the shear centre; the critical moment comes from elastic stability theory. Everything is a function of the free length, so the chart shows how far the beam can span unbraced.",
+      },
+    },
+    [
+      "M_Ed = 70 kN*m",
+      tw("L = 5 m', vrije lengte'", "L = 5 m', free length'"),
+      "W_y = 628.4 cm^3', IPE 300'",
+      "I_z = 603.8 cm^4",
+      "I_t = 20.12 cm^4",
+      "I_w = 125900 cm^6",
+      "E = 210000 N/mm^2",
+      "G = 81000 N/mm^2",
+      "f_y = 235 N/mm^2', S235'",
+      "γ_M1 = 1.0",
+      tw("C_1 = 1.13', verdeelde last'", "C_1 = 1.13', distributed load'"),
+      tw("α_LT = 0.21', kipkromme a bij h/b ≤ 2, tabel 6.3 en 6.4'", "α_LT = 0.21', curve a for h/b ≤ 2, tables 6.3 and 6.4'"),
+    ],
+    "M_cr(x) = C_1*π^2*E*I_z/x^2*sqrt(I_w/I_z + x^2*G*I_t/(π^2*E*I_z))",
+    "λ_LT(x) = sqrt(W_y*f_y/M_cr(x))",
+    "Φ_LT(x) = 0.5*(1 + α_LT*(λ_LT(x) - 0.2) + λ_LT(x)^2)",
+    "χ_LT(x) = min(1/(Φ_LT(x) + sqrt(Φ_LT(x)^2 - λ_LT(x)^2)); 1)",
+    "M_b(x) = χ_LT(x)*W_y*f_y/γ_M1",
+    "M_cr,L = M_cr(L) to kN*m",
+    "λ_LT,L = λ_LT(L)",
+    "χ_LT,L = χ_LT(L)', (6.56)'",
+    "M_b,Rd = M_b(L) to kN*m', (6.55)'",
+    "UC_LT = M_Ed/M_b,Rd', (6.54)'",
+    "#hide",
+    "PlotHeight = 220",
+    "#show",
+    "$Plot{M_b(x)/(kN*m) & M_Ed/(kN*m) @ x = 1 m : 12 m}",
+    tw(
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ M<sub>b,Rd</sub></span> &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ M<sub>Ed</sub></span> &nbsp; in kNm, tegen de vrije lengte.",
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ M<sub>b,Rd</sub></span> &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ M<sub>Ed</sub></span> &nbsp; in kNm, against the free length.",
+    ),
+  ),
+
+  // ════════════════════════════════════════════════════════════════════
+  // Library — Prof. Vandepitte: klassieke mechanica
+  // ════════════════════════════════════════════════════════════════════
+  voorbeeld(
+    {
+      id: "library-vandepitte-schuifspanning",
+      groep: "vandepitte",
+      library: "vandepitte",
+      soort: "grafiek",
+      naam: { nl: "Schuifspanning (Jourawsky)", en: "Shear stress (Jourawsky)" },
+      bron: "Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 2, art. 2.4",
+      uitleg: {
+        nl: "De schuifspanning over de hoogte van een I-doorsnede uit platen: klein in de flenzen, groot en bijna constant in het lijf, met een sprong op de overgang.",
+        en: "The shear stress over the depth of an I-section made of plates: small in the flanges, large and almost constant in the web, with a jump at the transition.",
+      },
+    },
+    [
+      "V_Ed = 100 kN",
+      "h = 300 mm",
+      "b = 150 mm",
+      "t_w = 7.1 mm",
+      "t_f = 10.7 mm",
+    ],
+    "I_y = (b*h^3 - (b - t_w)*(h - 2*t_f)^3)/12 to mm^4",
+    tw("S_f = b*t_f*(h - t_f)/2 to mm^3', statisch moment van één flens'", "S_f = b*t_f*(h - t_f)/2 to mm^3', first moment of one flange'"),
+    tw("S_0 = S_f + t_w*(h/2 - t_f)^2/2 to mm^3', tot aan de neutrale lijn'", "S_0 = S_f + t_w*(h/2 - t_f)^2/2 to mm^3', up to the neutral axis'"),
+    tw("τ_f = V_Ed*S_f/(I_y*t_w) to N/mm^2', lijf bij de flens'", "τ_f = V_Ed*S_f/(I_y*t_w) to N/mm^2', web at the flange'"),
+    tw("τ_0 = V_Ed*S_0/(I_y*t_w) to N/mm^2', neutrale lijn'", "τ_0 = V_Ed*S_0/(I_y*t_w) to N/mm^2', neutral axis'"),
+    tw("τ_m = V_Ed/((h - 2*t_f)*t_w) to N/mm^2', gemiddeld over het lijf'", "τ_m = V_Ed/((h - 2*t_f)*t_w) to N/mm^2', mean over the web'"),
+    "#hide",
+    "S_z(y) = if(abs(y) < h/2 - t_f; S_f + t_w*((h/2 - t_f)^2 - y^2)/2; b*(h^2/4 - y^2)/2)",
+    "b_z(y) = if(abs(y) < h/2 - t_f; t_w; b)",
+    "τ_z(y) = V_Ed*S_z(y)/(I_y*b_z(y))",
+    "PlotHeight = 220",
+    "#show",
+    "$Plot{τ_z(y)/MPa|y @ y = -h/2 : h/2}",
+    tw("'Horizontaal de schuifspanning in N/mm², verticaal de plaats y vanaf de neutrale lijn.", "'Horizontal axis: shear stress in N/mm²; vertical axis: position y from the neutral axis."),
+  ),
+  voorbeeld(
+    {
+      id: "library-vandepitte-mohr",
+      groep: "vandepitte",
+      library: "vandepitte",
+      soort: "tekening",
+      naam: { nl: "Doorbuiging volgens Mohr", en: "Deflection, Mohr analogy" },
+      bron: "Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 1, art. 2.1",
+      uitleg: {
+        nl: "Het momentenvlak M/EI wordt de belasting op een hulpligger: de reactie daarvan is de hoekverdraaiing, het moment de doorbuiging. Het blad integreert dat numeriek en vergelijkt met de bekende formule.",
+        en: "The M/EI diagram becomes the load on an auxiliary beam: its reaction is the rotation, its moment the deflection. The sheet integrates this numerically and compares it with the known formula.",
+      },
+    },
+    [
+      "q = 10 kN/m",
+      "L = 6 m",
+      "E = 210000 N/mm^2",
+      "I_y = 8356 cm^4', IPE 300'",
+    ],
+    "M(x) = q*x*(L - x)/2",
+    tw("φ_A = $Area{M(x)/(E*I_y) @ x = 0 m : L/2}', reactie van de hulpligger'", "φ_A = $Area{M(x)/(E*I_y) @ x = 0 m : L/2}', reaction of the auxiliary beam'"),
+    tw("M_h = $Area{M(x)/(E*I_y)*(L/2 - x) @ x = 0 m : L/2}', moment van de halve belasting om het midden'", "M_h = $Area{M(x)/(E*I_y)*(L/2 - x) @ x = 0 m : L/2}', moment of half the load about midspan'"),
+    tw("w_m = φ_A*L/2 - M_h to mm', moment van de hulpligger in het midden'", "w_m = φ_A*L/2 - M_h to mm', moment of the auxiliary beam at midspan'"),
+    tw("w_c = 5*q*L^4/(384*E*I_y) to mm', ter controle'", "w_c = 5*q*L^4/(384*E*I_y) to mm', as a check'"),
+    "#hide",
+    "p_M = round(M(L/2)/(kN*m); 1)",
+    "p_w = round(w_m/mm; 2)",
+    "p_q = round(q/(kN/m); 0)",
+    "#show",
+    "@svg",
+    "<svg class=\"lib-tekening\" viewBox=\"0 0 470 250\" style=\"width:100%; max-width:470px; font-size:12px;\">",
+    tw("  <text x=\"30\" y=\"16\" style=\"fill:#52525b\">werkelijke ligger, q = {{p_q}} kN/m</text>", "  <text x=\"30\" y=\"16\" style=\"fill:#52525b\">actual beam, q = {{p_q}} kN/m</text>"),
+    "  <rect x=\"60\" y=\"28\" width=\"350\" height=\"20\" style=\"fill:#fbbf77; stroke:#d97706\"/>",
+    "  <line x1=\"60\" y1=\"50\" x2=\"410\" y2=\"50\" style=\"stroke:#36363e; stroke-width:3\"/>",
+    "  <polygon points=\"60,51 53,63 67,63\" style=\"fill:none; stroke:#36363e; stroke-width:1.2\"/>",
+    "  <polygon points=\"410,51 403,63 417,63\" style=\"fill:none; stroke:#36363e; stroke-width:1.2\"/>",
+    "  <path d=\"M60 50 Q235 106 410 50\" style=\"fill:none; stroke:#1d4ed8; stroke-width:1.5; stroke-dasharray:5 3\"/>",
+    "  <text x=\"235\" y=\"96\" text-anchor=\"middle\" style=\"fill:#1d4ed8; font-weight:700\">w = {{p_w}} mm</text>",
+    tw("  <text x=\"30\" y=\"122\" style=\"fill:#52525b\">hulpligger, belast met M/EI</text>", "  <text x=\"30\" y=\"122\" style=\"fill:#52525b\">auxiliary beam, loaded with M/EI</text>"),
+    "  <path d=\"M60 216 Q235 96 410 216 Z\" style=\"fill:#fed7aa; stroke:#d97706; stroke-width:1.5\"/>",
+    "  <line x1=\"60\" y1=\"216\" x2=\"410\" y2=\"216\" style=\"stroke:#36363e; stroke-width:3\"/>",
+    "  <polygon points=\"60,217 53,229 67,229\" style=\"fill:none; stroke:#36363e; stroke-width:1.2\"/>",
+    "  <polygon points=\"410,217 403,229 417,229\" style=\"fill:none; stroke:#36363e; stroke-width:1.2\"/>",
+    "  <text x=\"235\" y=\"194\" text-anchor=\"middle\" style=\"fill:#b45309; font-weight:700\">M = {{p_M}} kNm</text>",
+    "  <text x=\"60\" y=\"244\" text-anchor=\"middle\" style=\"fill:#52525b\">φ<tspan dy=\"3\" font-size=\"9\">A</tspan></text>",
+    "</svg>",
+    "@end",
+  ),
+  voorbeeld(
+    {
+      id: "library-vandepitte-euler",
+      groep: "vandepitte",
+      library: "vandepitte",
+      soort: "grafiek",
+      naam: { nl: "Knik volgens Euler", en: "Euler buckling" },
+      bron: "Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 5, art. 5.2-5.4",
+      uitleg: {
+        nl: "De kritieke kracht bij de vier klassieke opleggingen, en de hyperbool van Euler die de vloeigrens snijdt bij een bepaalde slankheid.",
+        en: "The critical force for the four classic end conditions, and the Euler hyperbola that crosses the yield strength at a certain slenderness.",
+      },
+    },
+    [
+      "E = 210000 N/mm^2",
+      "I_z = 2003 cm^4', HEB 200'",
+      "A = 7810 mm^2",
+      "L = 4 m",
+      "f_y = 235 N/mm^2', S235'",
+    ],
+    "N_E(β) = π^2*E*I_z/(β*L)^2",
+    tw("N_cr,a = N_E(2) to kN', uitkraging, β = 2'", "N_cr,a = N_E(2) to kN', cantilever, β = 2'"),
+    tw("N_cr,b = N_E(1) to kN', scharnierend aan beide einden, β = 1'", "N_cr,b = N_E(1) to kN', pinned at both ends, β = 1'"),
+    tw("N_cr,c = N_E(0.7) to kN', ingeklemd en scharnierend, β = 0,7'", "N_cr,c = N_E(0.7) to kN', fixed and pinned, β = 0.7'"),
+    tw("N_cr,d = N_E(0.5) to kN', aan beide einden ingeklemd, β = 0,5'", "N_cr,d = N_E(0.5) to kN', fixed at both ends, β = 0.5'"),
+    "i_z = sqrt(I_z/A) to mm",
+    tw("λ_b = L/i_z', slankheid bij β = 1'", "λ_b = L/i_z', slenderness at β = 1'"),
+    tw("λ_p = π*sqrt(E/f_y)', hier snijdt de hyperbool de vloeigrens'", "λ_p = π*sqrt(E/f_y)', the hyperbola crosses the yield strength here'"),
+    "σ_E(λ) = π^2*E/λ^2",
+    "#hide",
+    "PlotHeight = 220",
+    "#show",
+    "$Plot{σ_E(x)/MPa & f_y/MPa @ x = 60 : 200}",
+    tw(
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ σ<sub>E</sub></span> &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ f<sub>y</sub></span> &nbsp; in N/mm², tegen de slankheid λ.",
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ σ<sub>E</sub></span> &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ f<sub>y</sub></span> &nbsp; in N/mm², against the slenderness λ.",
+    ),
+  ),
+  voorbeeld(
+    {
+      id: "library-vandepitte-eigenfrequentie",
+      groep: "vandepitte",
+      library: "vandepitte",
+      soort: "grafiek",
+      naam: { nl: "Eigenfrequentie ligger", en: "Natural frequency of a beam" },
+      bron: "Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 8, art. 8.2-8.3",
+      uitleg: {
+        nl: "Twee gevallen op dezelfde ligger: een puntmassa in het midden en een verdeelde massa. De frequentie volgt uit stijfheid en massa, of uit de statische doorbuiging.",
+        en: "Two cases on the same beam: a point mass at midspan and a distributed mass. The frequency follows from stiffness and mass, or from the static deflection.",
+      },
+    },
+    [
+      "L = 6 m",
+      "E = 210000 N/mm^2",
+      "I_y = 8356 cm^4', IPE 300'",
+      tw("M_p = 1000 kg', puntmassa in het midden'", "M_p = 1000 kg', point mass at midspan'"),
+      tw("m_l = 300 kg/m', verdeelde massa'", "m_l = 300 kg/m', distributed mass'"),
+      "g_n = 9.81 m/s^2",
+    ],
+    "k_b(x) = 48*E*I_y/x^3",
+    "f_p(x) = sqrt(k_b(x)/M_p)/(2*π)",
+    "f_v(x) = π/(2*x^2)*sqrt(E*I_y/m_l)",
+    tw("k_L = k_b(L) to kN/m', veerstijfheid in het midden'", "k_L = k_b(L) to kN/m', spring stiffness at midspan'"),
+    tw("f_1 = f_p(L) to Hz', puntmassa'", "f_1 = f_p(L) to Hz', point mass'"),
+    tw("δ_st = M_p*g_n/k_L to mm', statische doorbuiging'", "δ_st = M_p*g_n/k_L to mm', static deflection'"),
+    tw("f_δ = sqrt(g_n/δ_st)/(2*π) to Hz', dezelfde uitkomst via δ'", "f_δ = sqrt(g_n/δ_st)/(2*π) to Hz', same result via δ'"),
+    tw("f_2 = f_v(L) to Hz', verdeelde massa'", "f_2 = f_v(L) to Hz', distributed mass'"),
+    "#hide",
+    "PlotHeight = 220",
+    "#show",
+    "$Plot{f_p(x)/Hz & f_v(x)/Hz @ x = 3 m : 12 m}",
+    tw(
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ f<sub>p</sub></span> puntmassa &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ f<sub>v</sub></span> verdeelde massa &nbsp; in Hz, tegen de overspanning.",
+      "'<span style=\"color:#D97706; font-weight:700;\">━━ f<sub>p</sub></span> point mass &nbsp; <span style=\"color:#2563EB; font-weight:700;\">━━ f<sub>v</sub></span> distributed mass &nbsp; in Hz, against the span.",
+    ),
+  ),
+  voorbeeld(
+    {
+      id: "library-vandepitte-virtuele-arbeid",
+      groep: "vandepitte",
+      library: "vandepitte",
+      naam: { nl: "Virtuele arbeid", en: "Virtual work" },
+      bron: "Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 1, art. 1.1-1.5; Hoofdstuk 2, art. 1.2",
+      uitleg: {
+        nl: "De doorbuiging aan het eind van een uitkraging: de werkelijke momenten en dwarskrachten maal die van een eenheidslast op die plek. Zo tel je ook de dwarskrachtvervorming mee.",
+        en: "The deflection at the end of a cantilever: the actual moments and shear forces times those of a unit load at that point. That also picks up the shear deformation.",
+      },
+    },
+    [
+      "q = 10 kN/m",
+      "L = 3 m",
+      "E = 210000 N/mm^2",
+      "G = 81000 N/mm^2",
+      "I_y = 8356 cm^4', IPE 300'",
+      tw("A_v = 2568 mm^2', afschuifoppervlak'", "A_v = 2568 mm^2', shear area'"),
+    ],
+    "M(x) = q*(L - x)^2/2",
+    "Q(x) = q*(L - x)",
+    "m_1(x) = L - x",
+    tw("w_M = $Area{M(x)*m_1(x)/(E*I_y) @ x = 0 m : L} to mm', door buiging'", "w_M = $Area{M(x)*m_1(x)/(E*I_y) @ x = 0 m : L} to mm', from bending'"),
+    tw("w_Q = $Area{Q(x)/(G*A_v) @ x = 0 m : L} to mm', door dwarskracht'", "w_Q = $Area{Q(x)/(G*A_v) @ x = 0 m : L} to mm', from shear'"),
+    "w_tot = w_M + w_Q to mm",
+    tw("a_Q = w_Q/w_tot', aandeel van de dwarskracht'", "a_Q = w_Q/w_tot', share of the shear force'"),
+    tw("w_c = q*L^4/(8*E*I_y) to mm', ter controle: qL⁴/8EI'", "w_c = q*L^4/(8*E*I_y) to mm', as a check: qL⁴/8EI'"),
+  ),
 ];

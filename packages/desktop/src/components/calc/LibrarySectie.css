@@ -1,0 +1,251 @@
+/* De Library onder in het projectpaneel, en het voorbeeldvak ernaast. Opbouw en
+   kleuren uit de Blueprint-tokens, net als de rest van het paneel. */
+
+/* Onderaan vast: de lijst scrollt zelf en neemt nooit meer dan de helft van het
+   paneel, zodat de bladen erboven altijd in beeld blijven. */
+.lib-sectie {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--theme-border);
+  border-bottom: none;
+}
+
+.lib-sectie.open {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 1;
+  min-height: 0;
+  max-height: 50%;
+}
+
+.lib-sectie > .panel-section-header {
+  flex-shrink: 0;
+}
+
+.lib-lijst {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.lib-groep-kop {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  min-height: 24px;
+  padding: 5px 8px 3px 12px;
+  background: transparent;
+  border: none;
+  color: var(--theme-text);
+  font-family: inherit;
+  font-size: var(--oa-size-label);
+  text-align: left;
+  cursor: default;
+}
+
+.lib-groep-kop:hover {
+  background: var(--theme-hover);
+}
+
+.lib-groep-kop .panel-section-chevron {
+  align-self: center;
+}
+
+.lib-groep-naam {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.lib-groep-onder {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--theme-text-secondary);
+}
+
+.lib-rij {
+  padding-left: 18px;
+}
+
+.lib-glyph {
+  flex-shrink: 0;
+  width: 16px;
+  font-family: var(--font-heading, serif);
+  font-size: 15px;
+  font-style: italic;
+  line-height: 16px;
+  text-align: center;
+  color: var(--theme-text-secondary);
+}
+
+.pb-rij.gekozen .lib-glyph {
+  color: var(--theme-accent-tint);
+}
+
+/* Een tekening uit de Library op papier: de algemene grens van 150 px maakt de
+   bijschriften onleesbaar. */
+.print-opmaak .print-blad .calc-svg svg.lib-tekening {
+  max-height: 220px !important;
+}
+
+/* ─── Het voorbeeldvak ────────────────────────────────────────────────── */
+
+.lib-vak {
+  position: fixed;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-medium);
+  box-shadow: var(--oa-shadow-popup);
+  color: var(--theme-text);
+  font-size: var(--oa-size-body);
+}
+
+.lib-vak-kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  height: var(--oa-shell-panel-header);
+  padding: 0 4px 0 10px;
+  background: var(--theme-bg-lighter);
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.lib-vak-titel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oa-size-label);
+  font-weight: 600;
+  color: var(--theme-accent-tint);
+}
+
+.lib-vak-sluit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--oa-radius-small);
+  color: var(--theme-text-secondary);
+  cursor: default;
+}
+
+.lib-vak-sluit:hover {
+  background: var(--theme-ribbon-btn-hover);
+  border-color: var(--theme-ribbon-btn-hover-border);
+  color: var(--theme-accent-tint);
+}
+
+.lib-vak-sluit .oa-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* De uitwerking op papier, compacter dan in de werkruimte: korte regels zoals
+   de invoer staan naast elkaar, een lange formule krijgt zijn eigen regel. */
+.lib-papier.calc-preview-content {
+  flex: 1 1 auto;
+  min-height: 80px;
+  padding: 12px 16px 14px;
+  background: var(--theme-content-bg);
+  color: var(--theme-text);
+  font-size: 12.5px;
+  scrollbar-width: thin;
+}
+
+.lib-papier.calc-preview-content::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+
+.lib-papier.calc-preview-content::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 4px;
+}
+
+/* Zoals in de uitwerking: geen schuifbalkjes rond een losse formule. */
+.lib-papier *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.lib-papier * {
+  scrollbar-width: none;
+}
+
+.lib-papier .ifc-calc {
+  max-width: none;
+  padding: 0;
+  line-height: 1.45;
+}
+
+.lib-papier.calc-preview-content h2:first-child {
+  margin: 0 0 4px;
+  padding: 0;
+  border: none;
+  font-size: 15px;
+}
+
+.lib-papier .calc-line {
+  display: inline-flex;
+  vertical-align: middle;
+  max-width: 100%;
+  margin: 0 18px 0 0;
+  padding: 1px 0;
+}
+
+.lib-papier .calc-plot-wrap,
+.lib-papier .calc-svg {
+  margin: 8px 0 4px;
+}
+
+/* Beeld kleiner dan op het blad, zodat het vak zo min mogelijk hoeft te scrollen. */
+.lib-papier .calc-plot,
+.lib-papier .calc-svg svg {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.lib-vak-voet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 8px 10px;
+  background: var(--theme-bg-lighter);
+  border-top: 1px solid var(--theme-border);
+}
+
+.lib-vak-plek {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
+}
+
+.lib-vak-voet .settings-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

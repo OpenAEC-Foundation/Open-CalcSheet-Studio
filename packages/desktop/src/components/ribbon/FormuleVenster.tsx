@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Modal from "../Modal";
-import { FORMULES, FORMULE_GROEPEN, type Formule, type Tekst } from "./formules";
-import { voegIn } from "./invoegen";
-import { metEditor } from "../../store/codeVerzoek";
+import { FORMULES, FORMULE_GROEPEN, codeVan, type Formule, type Tekst } from "./formules";
+import { voegFormuleIn } from "./formuleInvoegen";
 import "../settings/SettingsDialog.css";
 import "./FormuleVenster.css";
 
@@ -11,7 +10,8 @@ import "./FormuleVenster.css";
  * De formulebibliotheek: mechanica en normformules (formules.ts), doorzoekbaar
  * per groep. Invoegen zet het fragment — invoer met voorbeeldwaarden en de
  * formules — op de cursor in het blad; staat de code niet in beeld, dan eerst
- * de code erbij (store/codeVerzoek.ts).
+ * de code erbij (store/codeVerzoek.ts). De voorbeelden van de Library
+ * (calc/LibrarySectie.tsx) staan hier ook: het zijn dezelfde fragmenten.
  */
 export default function FormuleVenster({ open, onSluit }: { open: boolean; onSluit: () => void }) {
   const { t, i18n } = useTranslation("calcpad");
@@ -24,13 +24,13 @@ export default function FormuleVenster({ open, onSluit }: { open: boolean; onSlu
   const lijst = useMemo(() => {
     const z = zoek.trim().toLowerCase();
     return FORMULES.filter((f) => (groep === null || f.groep === groep) && (!z ||
-      [f.naam.nl, f.naam.en, f.uitleg?.nl ?? "", f.uitleg?.en ?? "", f.bron ?? "", f.code].some((x) => x.toLowerCase().includes(z))));
+      [f.naam.nl, f.naam.en, f.uitleg?.nl ?? "", f.uitleg?.en ?? "", f.bron ?? "", f.code, f.codeEn ?? ""].some((x) => x.toLowerCase().includes(z))));
   }, [groep, zoek]);
 
   const invoegen = (f: Formule | null) => {
     if (!f) return;
     onSluit();
-    metEditor((view) => voegIn(view, { glyph: "ƒ", tekst: f.code, regel: true }));
+    voegFormuleIn(f, i18n.language);
   };
 
   const footer = (
@@ -71,7 +71,7 @@ export default function FormuleVenster({ open, onSluit }: { open: boolean; onSlu
                   {f.bron && <span className="fv-bron">{f.bron}</span>}
                 </span>
                 {f.uitleg && <span className="fv-uitleg">{taal(f.uitleg)}</span>}
-                {gekozen?.id === f.id && <pre className="fv-code">{f.code}</pre>}
+                {gekozen?.id === f.id && <pre className="fv-code">{codeVan(f, i18n.language)}</pre>}
               </button>
             ))}
             {lijst.length === 0 && <p className="fv-leeg">{t("formules.niets")}</p>}

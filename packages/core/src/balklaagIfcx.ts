@@ -6,7 +6,9 @@ import type { IfcxBestand, IfcxImport, IfcxKnoop, IfcxSchema } from './ifcx/type
  * Een stukje houten balklaag als IFCX (IFC5): de balken met hun doorsnede,
  * h.o.h.-afstand en overspanning, de vloerplaat en de opleggingen, of bij een
  * raveelbalk de raveling langs de sparing. Elk element draagt zijn naam,
- * materiaal, sterkteklasse, maten en unity check als attributen.
+ * materiaal, sterkteklasse, maten en unity check als attributen. De namen en
+ * opmerkingen volgen de taal van de uitvoer (`taal`, standaard Nederlands); de paden
+ * en de attribuutnamen van de standaard blijven gelijk.
  *
  * Wat de specificatie zegt, en waar dit bestand zich aan houdt
  * (buildingSMART/IFC5-development, schema/ifcx.tsp en de voorbeelden, gecontroleerd
@@ -52,6 +54,18 @@ export interface BalklaagInvoer {
   Lveld2: number;
   bSparing: number;
   lStaart: number;
+  /** De wisselbalk bij een raveelbalk (schema 4); ontbreekt bij een blad uit een oudere versie. */
+  wissel?: {
+    /** Overspanning, hart op hart van de opleggingen. */
+    L: number;
+    /** Breedte per balk, hoogte en aantal samengestelde balken. */
+    b: number;
+    h: number;
+    n: number;
+    /** Lengte van de sparing langs de balken; 0: tot de oplegging, dan één raveelbalk. */
+    lSparing: number;
+    sterkteklasse: string;
+  };
   tVloer: number;
   /** Breedte van het vloerveld; null als het blad die niet kent. */
   bVloer: number | null;
@@ -74,6 +88,14 @@ export interface BalklaagInvoer {
     flens?: number;
     lijmnaad?: number;
     flensbreedte?: number;
+    /** De wisselbalk: de maatgevende en per toets. */
+    wissel?: number;
+    wisselBuiging?: number;
+    wisselAfschuiving?: number;
+    wisselOplegdruk?: number;
+    wisselBlijvend?: number;
+    wisselDoorbuiging?: number;
+    wisselBijkomend?: number;
   };
 }
 
@@ -86,6 +108,66 @@ const STERKTEKLASSEN: Readonly<Record<number, string>> = { 1: 'C18', 2: 'C24', 3
 const PLATEN: Readonly<Record<number, string>> = {
   1: 'Multiplex', 2: 'Multiplex', 3: 'OSB/3', 4: 'OSB/3', 5: 'Spaanplaat of vezelplaat',
 };
+
+/** De teksten in het document, per taal. Wat de gebruiker in het viewerpaneel leest. */
+const TEKST_NL = {
+  balklaag: 'Balklaag', balk: (i: number) => `Balk ${i}`, onderslag: 'Onderslag',
+  staartbalk: (i: number) => `Staartbalk ${i}`, staartbalk2: (i: number) => `Staartbalk ${i}, andere kant`,
+  raveelbalk: 'Raveelbalk', raveelbalkNr: (i: number) => `Raveelbalk ${i}`,
+  wisselbalk: (kant: 'links' | 'rechts') => `Wisselbalk ${kant}`,
+  doorgaand: (i: number) => `Doorgaande balk ${i}`,
+  oplegging: (i: number) => `Oplegging ${i}`,
+  opleggingWissel: (kant: 'links' | 'rechts', i: number) => `Oplegging wisselbalk ${kant} ${i === 1 ? 'A' : 'B'}`,
+  beschot: 'Beschot', vloerplaat: (soort: string) => `Vloerplaat ${soort}, meewerkend als flens`.replace('  ', ' '),
+  nietOpgegeven: 'niet opgegeven',
+  platen: {} as Record<string, string>,
+  opmOplegging: 'Materiaal en hoogte van de oplegging vallen buiten dit blad; de unity check is de oplegdruk op de balk (6.1.5).',
+  opmOplegRaveel: 'Materiaal en hoogte van de oplegging vallen buiten dit blad; de balken erop zijn niet getoetst.',
+  opmOplegWissel: 'Materiaal en hoogte van de oplegging vallen buiten dit blad; de unity check is de oplegdruk op de wisselbalk (6.1.5).',
+  opmBeschot: 'Telt in dit blad mee in de trillingstoets, niet als flens; geen eigen unity check.',
+  opmStaart: 'Niet getoetst in dit blad; zet zijn oplegreactie af op de raveelbalk.',
+  opmWisselOud: 'Niet getoetst in dit blad; draagt de raveelbalk.',
+  opmWissel: 'Ligger op twee steunpunten over de hele overspanning, met de raveelbalk als puntlast.',
+  opmDoorgaand: 'Niet getoetst in dit blad.',
+  opmRaveel2: 'Getoetst met de langste staart; de raveelbalk met de kortste staart is lichter belast.',
+  omsRaveel: (type: string, b: number, l: number, n: number) => `Raveelbalk ${type} over een sparing van ${b} mm, staartlengte ${l} mm, ${n} staartbalken`,
+  omsWissel: (type: string, L: number) => `; wisselbalken ${type}, overspanning ${L} mm`,
+  omsTweede: (l: number) => `; tweede raveelbalk op ${l} mm verder`,
+  omsOnderslag: (type: string, L: number, l: number) => `Onderslag ${type}, overspanning ${L} mm, lengte ${l} mm`,
+  omsBalken: (deel: string, type: string, hoh: number, L: number) => `${deel} balken ${type}, h.o.h. ${hoh} mm, overspanning ${L} mm`,
+  omsDeel: (n: number, nEcht: number) => `Representatief stuk: ${n} van de ${nEcht}`,
+  project: 'Project', terrein: 'Terrein', gebouw: 'Gebouw', verdieping: 'Verdieping',
+};
+type Teksten = typeof TEKST_NL;
+const TEKST_EN: Teksten = {
+  balklaag: 'Timber joist floor', balk: (i) => `Joist ${i}`, onderslag: 'Supporting beam',
+  staartbalk: (i) => `Tail joist ${i}`, staartbalk2: (i) => `Tail joist ${i}, far side`,
+  raveelbalk: 'Trimmer', raveelbalkNr: (i) => `Trimmer ${i}`,
+  wisselbalk: (kant) => `Trimming joist ${kant === 'links' ? 'left' : 'right'}`,
+  doorgaand: (i) => `Through joist ${i}`,
+  oplegging: (i) => `Support ${i}`,
+  opleggingWissel: (kant, i) => `Support trimming joist ${kant === 'links' ? 'left' : 'right'} ${i === 1 ? 'A' : 'B'}`,
+  beschot: 'Decking', vloerplaat: (soort) => `Floor panel ${soort}, effective as flange`.replace('  ', ' '),
+  nietOpgegeven: 'not specified',
+  platen: { Multiplex: 'Plywood', 'Spaanplaat of vezelplaat': 'Particleboard or fibreboard' },
+  opmOplegging: 'Material and height of the support are outside this sheet; the unity check is the bearing stress on the joist (6.1.5).',
+  opmOplegRaveel: 'Material and height of the support are outside this sheet; the joists on it are not checked.',
+  opmOplegWissel: 'Material and height of the support are outside this sheet; the unity check is the bearing stress on the trimming joist (6.1.5).',
+  opmBeschot: 'Counts towards the vibration check on this sheet, not as a flange; no unity check of its own.',
+  opmStaart: 'Not checked on this sheet; bears on the trimmer.',
+  opmWisselOud: 'Not checked on this sheet; carries the trimmer.',
+  opmWissel: 'Simply supported over the full span, with the trimmer as a point load.',
+  opmDoorgaand: 'Not checked on this sheet.',
+  opmRaveel2: 'Checked with the longest tail; the trimmer with the shorter tail carries less.',
+  omsRaveel: (type, b, l, n) => `Trimmer ${type} across an opening of ${b} mm, tail length ${l} mm, ${n} tail joists`,
+  omsWissel: (type, L) => `; trimming joists ${type}, span ${L} mm`,
+  omsTweede: (l) => `; second trimmer ${l} mm further on`,
+  omsOnderslag: (type, L, l) => `Supporting beam ${type}, span ${L} mm, length ${l} mm`,
+  omsBalken: (deel, type, hoh, L) => `${deel} joists ${type}, c/c ${hoh} mm, span ${L} mm`,
+  omsDeel: (n, nEcht) => `Representative part: ${n} of ${nEcht}`,
+  project: 'Project', terrein: 'Site', gebouw: 'Building', verdieping: 'Storey',
+};
+const tekstVoor = (taal: string | undefined): Teksten => (taal === 'en' ? TEKST_EN : TEKST_NL);
 
 const ATTR = {
   klasse: 'bsi::ifc::class',
@@ -200,7 +282,8 @@ export function balklaagAantalBalken(bVloer: number | null, hoh: number): number
  * Voor het projectbestand: `IfcCalcSheet.geometrie`. De knopen gebruiken de
  * imports in BALKLAAG_IFCX_IMPORTS en de beschrijvingen in BALKLAAG_IFCX_SCHEMAS.
  */
-export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string): IfcxKnoop[] {
+export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string, taal?: string): IfcxKnoop[] {
+  const T = tekstVoor(taal);
   const pad = (naam: string) => uuidVan(`${bladId}/balklaag/${naam}`);
   const { b, h, hoh, schema, onderslag, tBalk, Lth, aOpl, aSteun, aOver, Lveld2, bSparing, lStaart, tVloer, uc } = invoer;
   const type = `${b}×${h} ${invoer.sterkteklasse}`;
@@ -285,14 +368,32 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string): Ifcx
       inherits: { materiaal: steun },
       attributes: {
         [ATTR.klasse]: ifcKlasse('IfcBearing'),
-        [ATTR.naam]: `Oplegging ${nr}`,
+        [ATTR.naam]: T.oplegging(nr),
         [ATTR.breedte]: naarM(breedte),
         [ATTR.lengte]: naarM(y1 - y0),
         ...(Number.isFinite(uc.oplegdruk) ? { [ATTR.uc]: uc.oplegdruk } : {}),
-        [ATTR.opmerking]: 'Materiaal en hoogte van de oplegging vallen buiten dit blad; de unity check is de oplegdruk op de balk (6.1.5).',
+        [ATTR.opmerking]: T.opmOplegging,
       },
     });
     kinderen[`Oplegging_${nr}`] = p;
+  };
+
+  /** Een blok zonder gedeeld profiel: een raveelbalk of wisselbalk, uit één of meer balken. */
+  const eigenBalk = (kind: string, delen: [number, number, number, number, number, number][], attr: Record<string, unknown>) => {
+    const p = pad(`balk/${kind}`);
+    const kind_: Record<string, string> = {};
+    delen.forEach(([xa, xb, ya, yb, za, zb], i) => {
+      const lichaam = pad(`balk/${kind}/lichaam${i === 0 ? '' : `/${i + 1}`}`);
+      knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(xa, xb, ya, yb, za, zb) } });
+      kind_[delen.length === 1 ? 'Lichaam' : `Lichaam_${i + 1}`] = lichaam;
+    });
+    knopen.push({
+      path: p,
+      children: kind_,
+      inherits: { materiaal: hout },
+      attributes: { [ATTR.klasse]: ifcKlasse('IfcBeam'), ...attr },
+    });
+    kinderen[kind] = p;
   };
 
   /** De vloerplaat, uit één of meer rechthoeken (x0, x1, y0, y1). */
@@ -304,7 +405,7 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string): Ifcx
       path: materiaal,
       attributes: {
         [ATTR.materiaal]: WOOD,
-        [ATTR.sterkteklasse]: invoer.plaat ?? 'niet opgegeven',
+        [ATTR.sterkteklasse]: (invoer.plaat && T.platen[invoer.plaat]) ?? invoer.plaat ?? T.nietOpgegeven,
         [ATTR.kleur]: PLAATKLEUR,
         [ATTR.dekking]: PLAAT_DEKKING,
       },
@@ -323,12 +424,12 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string): Ifcx
       attributes: {
         // Een meewerkende plaat is een constructief deel, gewoon beschot een afwerking.
         [ATTR.klasse]: ifcKlasse(tBalk ? 'IfcSlab' : 'IfcCovering'),
-        [ATTR.naam]: tBalk ? `Vloerplaat ${invoer.plaat ?? ''}, meewerkend als flens`.replace('  ', ' ') : 'Beschot',
+        [ATTR.naam]: tBalk ? T.vloerplaat((invoer.plaat && T.platen[invoer.plaat]) || invoer.plaat || '') : T.beschot,
         [ATTR.lengte]: naarM(lengte),
         [ATTR.breedte]: naarM(breedte),
         [ATTR.dikte]: naarM(tVloer),
         ...(ucPlaat !== null ? { [ATTR.uc]: ucPlaat, [ATTR.toetsen]: toetsenPlaat } : {}),
-        ...(tBalk ? {} : { [ATTR.opmerking]: 'Telt in dit blad mee in de trillingstoets, niet als flens; geen eigen unity check.' }),
+        ...(tBalk ? {} : { [ATTR.opmerking]: T.opmBeschot }),
       },
     });
     kinderen.Vloerplaat = p;
@@ -340,70 +441,139 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string): Ifcx
   const x0 = -aOpl / 2;
 
   if (schema === 4) {
-    // Raveelbalk: de staartbalken van de muur op x = 0 tot de raveelbalk, de
-    // raveelbalk tussen de dubbele wisselbalken, en daarnaast doorgaande balken.
-    const xRav = lStaart;
-    const stomp = Math.max(STOMP_MIN, 0.6 * lStaart);
-    const xEind = xRav + b + stomp;
+    // De raveling. Oplegging A op x = 0, de raveelbalk met zijn hart op l_staart. In de
+    // breedte is y = 0 de ene rand van de sparing en y = b_sparing de andere. De
+    // bovenkant van alle balken ligt gelijk, onder de plaat op z = h; een wisselbalk met
+    // een andere hoogte krijgt een eigen oplegging, op zijn eigen onderkant.
+    const w = invoer.wissel;
+    const heel = !!w && w.L > lStaart;
+    const nW = w?.n ?? 2;
+    const bW = w?.b ?? b;
+    const hW = w?.h ?? h;
+    const breedteW = nW * bW;
+    // Een blad uit een oudere versie kent de overspanning niet: dan alleen een stomp.
+    const xEind = heel ? w.L + aOpl / 2 : lStaart + b + Math.max(STOMP_MIN, 0.6 * lStaart);
+    const twee = heel && w.lSparing > 0 && lStaart + w.lSparing < w.L;
+    const xRav2 = twee ? lStaart + w.lSparing : 0;
     const lengteDoor = xEind - x0;
-    const lengteStaart = xRav - x0;
     const nStaart = Math.max(1, Math.floor(bSparing / hoh) - 1);
+    const lengteStaart = lStaart - b / 2 - x0;
     for (let i = 1; i <= nStaart; i++) {
-      balk(`Staartbalk_${String(i).padStart(2, '0')}`, `Staartbalk ${i}`, lengteStaart, x0, (i * bSparing) / (nStaart + 1), {
-        [ATTR.opmerking]: 'Niet getoetst in dit blad; zet zijn oplegreactie af op de raveelbalk.',
+      balk(`Staartbalk_${String(i).padStart(2, '0')}`, T.staartbalk(i), lengteStaart, x0, (i * bSparing) / (nStaart + 1), {
+        [ATTR.opmerking]: T.opmStaart,
       });
+    }
+    if (twee) {
+      for (let i = 1; i <= nStaart; i++) {
+        balk(`Staartbalk_b_${String(i).padStart(2, '0')}`, T.staartbalk2(i), xEind - (xRav2 + b / 2), xRav2 + b / 2, (i * bSparing) / (nStaart + 1), {
+          [ATTR.opmerking]: T.opmStaart,
+        });
+      }
     }
     // De raveelbalk staat dwars: hij ligt langs y, met zijn breedte langs x.
-    const pRav = pad('balk/Raveelbalk');
-    const lichaamRav = pad('balk/Raveelbalk/lichaam');
-    knopen.push({ path: lichaamRav, attributes: { [ATTR.mesh]: blok(xRav, xRav + b, 0, bSparing, 0, h) } });
-    knopen.push({
-      path: pRav,
-      children: { Lichaam: lichaamRav },
-      inherits: { materiaal: hout },
-      attributes: {
-        [ATTR.klasse]: ifcKlasse('IfcBeam'),
-        [ATTR.naam]: 'Raveelbalk',
-        [ATTR.type]: type,
-        [ATTR.breedte]: naarM(b),
-        [ATTR.hoogte]: naarM(h),
-        [ATTR.lengte]: naarM(bSparing),
-        ...metUitkomst,
-      },
+    const raveel = (kind: string, naam: string, x: number, extra: Record<string, unknown>) => eigenBalk(kind, [[x - b / 2, x + b / 2, 0, bSparing, 0, h]], {
+      [ATTR.naam]: naam,
+      [ATTR.type]: type,
+      [ATTR.breedte]: naarM(b),
+      [ATTR.hoogte]: naarM(h),
+      [ATTR.lengte]: naarM(bSparing),
+      ...metUitkomst,
+      ...extra,
     });
-    kinderen.Raveelbalk = pRav;
-    // De wisselbalken: dubbel, met de binnenkant op de rand van de sparing.
-    for (const [kant, y] of [['links', -b], ['rechts', bSparing + b]] as const) {
-      const p = pad(`balk/Wisselbalk_${kant}`);
-      const lichaam = pad(`balk/Wisselbalk_${kant}/lichaam`);
-      knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(x0, xEind, y - b, y + b, 0, h) } });
+    raveel('Raveelbalk', twee ? T.raveelbalkNr(1) : T.raveelbalk, lStaart, twee ? { [ATTR.opmerking]: T.opmRaveel2 } : {});
+    if (twee) raveel('Raveelbalk_2', T.raveelbalkNr(2), xRav2, { [ATTR.opmerking]: T.opmRaveel2 });
+    // De wisselbalken, met de binnenkant op de rand van de sparing; elke samengestelde
+    // balk een eigen lichaam, zodat te zien is hoeveel het er zijn.
+    const zW = h - hW;
+    const typeW = `${nW > 1 ? `${nW}×` : ''}${bW}×${hW} ${w?.sterkteklasse ?? invoer.sterkteklasse}`;
+    const toetsenW = eindig({
+      buiging: uc.wisselBuiging, afschuiving: uc.wisselAfschuiving, oplegdruk: uc.wisselOplegdruk,
+      blijvend: uc.wisselBlijvend, doorbuiging: uc.wisselDoorbuiging, bijkomend: uc.wisselBijkomend,
+    });
+    const ucW = Number.isFinite(uc.wissel) ? uc.wissel! : grootste(toetsenW);
+    for (const [kant, yIn, teken] of [['links', 0, -1], ['rechts', bSparing, 1]] as const) {
+      eigenBalk(`Wisselbalk_${kant}`, Array.from({ length: nW }, (_, i): [number, number, number, number, number, number] => {
+        const ya = yIn + teken * i * bW;
+        const yb = ya + teken * bW;
+        return [x0, xEind, Math.min(ya, yb), Math.max(ya, yb), zW, h];
+      }), {
+        [ATTR.naam]: T.wisselbalk(kant),
+        [ATTR.type]: typeW,
+        [ATTR.breedte]: naarM(breedteW),
+        [ATTR.hoogte]: naarM(hW),
+        [ATTR.lengte]: naarM(lengteDoor),
+        ...(heel ? { [ATTR.overspanning]: naarM(w.L) } : {}),
+        [ATTR.sterkteklasse]: w?.sterkteklasse ?? invoer.sterkteklasse,
+        ...(ucW !== null && heel ? { [ATTR.uc]: ucW } : {}),
+        ...(Object.keys(toetsenW).length && heel ? { [ATTR.toetsen]: toetsenW } : {}),
+        [ATTR.opmerking]: heel ? T.opmWissel : T.opmWisselOud,
+      });
+    }
+    // Twee doorgaande balken aan elke kant, hart op hart vanaf de wisselbalk.
+    const yOut = [-breedteW / 2 - hoh, -breedteW / 2 - 2 * hoh, bSparing + breedteW / 2 + hoh, bSparing + breedteW / 2 + 2 * hoh];
+    for (const [i, y] of yOut.entries()) {
+      balk(`Balk_${String(i + 1).padStart(2, '0')}`, T.doorgaand(i + 1), lengteDoor, x0, y, { [ATTR.opmerking]: T.opmDoorgaand });
+    }
+    const yL = yOut[1] - hoh / 2;
+    const yR = yOut[3] + hoh / 2;
+    // De plaat rond de sparing: links, rechts en boven de staartbalken; bij twee
+    // raveelbalken ook het stuk aan de andere kant. De sparing zelf blijft open.
+    const xGat = lStaart + b / 2;
+    const delen: [number, number, number, number][] = [[x0, xEind, yL, 0], [x0, xEind, bSparing, yR], [x0, xGat, 0, bSparing]];
+    if (twee) delen.push([xRav2 - b / 2, xEind, 0, bSparing]);
+    vloerplaat(delen, lengteDoor, yR - yL);
+    // De opleggingen: de wand onder de balklaag, met daarin de opleggingen van de
+    // wisselbalken op hun eigen onderkant.
+    const wand = (nr: number, x: number) => {
+      const p = pad(`oplegging/${nr}`);
+      const yIn0 = -breedteW;
+      const yIn1 = bSparing + breedteW;
+      const stroken: [number, number][] = [[yL, yIn0], [0, bSparing], [yIn1, yR]];
+      const kind_: Record<string, string> = {};
+      stroken.forEach(([ya, yb], i) => {
+        const lichaam = pad(`oplegging/${nr}/lichaam${i === 0 ? '' : `/${i + 1}`}`);
+        knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(x - aOpl / 2, x + aOpl / 2, ya, yb, -OPLEGGING_HOOGTE, 0) } });
+        kind_[`Lichaam_${i + 1}`] = lichaam;
+      });
       knopen.push({
         path: p,
-        children: { Lichaam: lichaam },
-        inherits: { materiaal: hout },
+        children: kind_,
+        inherits: { materiaal: steun },
         attributes: {
-          [ATTR.klasse]: ifcKlasse('IfcBeam'),
-          [ATTR.naam]: `Wisselbalk ${kant}`,
-          [ATTR.type]: `2×${type}`,
-          [ATTR.breedte]: naarM(2 * b),
-          [ATTR.hoogte]: naarM(h),
-          [ATTR.lengte]: naarM(lengteDoor),
-          [ATTR.opmerking]: 'Niet getoetst in dit blad; draagt de raveelbalk.',
+          [ATTR.klasse]: ifcKlasse('IfcBearing'),
+          [ATTR.naam]: T.oplegging(nr),
+          [ATTR.breedte]: naarM(aOpl),
+          [ATTR.lengte]: naarM(yR - yL),
+          [ATTR.opmerking]: T.opmOplegRaveel,
         },
       });
-      kinderen[`Wisselbalk_${kant}`] = p;
-    }
-    for (const [i, y] of [-2 * b - hoh, -2 * b - 2 * hoh, bSparing + 2 * b + hoh, bSparing + 2 * b + 2 * hoh].entries()) {
-      balk(`Balk_${String(i + 1).padStart(2, '0')}`, `Doorgaande balk ${i + 1}`, lengteDoor, x0, y, {
-        [ATTR.opmerking]: 'Niet getoetst in dit blad.',
-      });
-    }
-    const yL = -2 * b - 2 * hoh - hoh / 2;
-    const yR = bSparing + 2 * b + 2 * hoh + hoh / 2;
-    // De plaat rond de sparing: links, rechts en het deel boven de staartbalken.
-    vloerplaat([[x0, xEind, yL, 0], [x0, xEind, bSparing, yR], [x0, xRav + b, 0, bSparing]], lengteDoor, yR - yL);
-    oplegging(1, 0, aOpl, yL, yR);
-    omschrijving = `Raveelbalk ${type} over een sparing van ${bSparing} mm, staartlengte ${lStaart} mm, ${nStaart} staartbalken`;
+      kinderen[`Oplegging_${nr}`] = p;
+      for (const [kant, ya, yb] of [['links', yIn0, 0], ['rechts', bSparing, yIn1]] as const) {
+        const q = pad(`oplegging/${nr}/${kant}`);
+        const lichaam = pad(`oplegging/${nr}/${kant}/lichaam`);
+        // Tot op de onderkant van de wisselbalk, en altijd minstens zo diep als de wand.
+        knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(x - aOpl / 2, x + aOpl / 2, ya, yb, Math.min(zW, 0) - OPLEGGING_HOOGTE, zW) } });
+        knopen.push({
+          path: q,
+          children: { Lichaam: lichaam },
+          inherits: { materiaal: steun },
+          attributes: {
+            [ATTR.klasse]: ifcKlasse('IfcBearing'),
+            [ATTR.naam]: T.opleggingWissel(kant, nr),
+            [ATTR.breedte]: naarM(aOpl),
+            [ATTR.lengte]: naarM(breedteW),
+            ...(Number.isFinite(uc.wisselOplegdruk) ? { [ATTR.uc]: uc.wisselOplegdruk } : {}),
+            [ATTR.opmerking]: T.opmOplegWissel,
+          },
+        });
+        kinderen[`Oplegging_${nr}_${kant}`] = q;
+      }
+    };
+    wand(1, 0);
+    if (heel) wand(2, w.L);
+    omschrijving = T.omsRaveel(type, bSparing, lStaart, nStaart)
+      + (heel ? T.omsWissel(typeW, w.L) : '')
+      + (twee ? T.omsTweede(w.lSparing) : '');
   } else {
     const tweeVelden = schema === 3;
     const overstek = schema === 2;
@@ -413,21 +583,21 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string): Ifcx
       ? [[0, aOpl], [Lth, aSteun], [Lth + Lveld2, aOpl]]
       : [[0, aOpl], [Lth, aOpl]];
     if (onderslag) {
-      balk('Onderslag', 'Onderslag', lengte, x0, 0, metUitkomst);
+      balk('Onderslag', T.onderslag, lengte, x0, 0, metUitkomst);
       steunen.forEach(([x, a], i) => oplegging(i + 1, x, a, -1.5 * b, 1.5 * b));
-      omschrijving = `Onderslag ${type}, overspanning ${Lth} mm, lengte ${lengte} mm`;
+      omschrijving = T.omsOnderslag(type, Lth, lengte);
     } else {
       const nEcht = balklaagAantalBalken(invoer.bVloer, hoh);
       const n = Math.min(nEcht, BALKLAAG_MAX_BALKEN);
       for (let i = 0; i < n; i++) {
-        balk(`Balk_${String(i + 1).padStart(2, '0')}`, `Balk ${i + 1}`, lengte, x0, i * hoh, metUitkomst);
+        balk(`Balk_${String(i + 1).padStart(2, '0')}`, T.balk(i + 1), lengte, x0, i * hoh, metUitkomst);
       }
       const yL = -hoh / 2;
       const yR = (n - 1) * hoh + hoh / 2;
       vloerplaat([[x0, xEind, yL, yR]], lengte, yR - yL);
       steunen.forEach(([x, a], i) => oplegging(i + 1, x, a, yL, yR));
       aantalAttr = { [ATTR.aantal]: nEcht, [ATTR.getoond]: n };
-      omschrijving = `${n < nEcht ? `Representatief stuk: ${n} van de ${nEcht}` : n} balken ${type}, h.o.h. ${hoh} mm, overspanning ${Lth} mm`;
+      omschrijving = T.omsBalken(n < nEcht ? T.omsDeel(n, nEcht) : String(n), type, hoh, Lth);
     }
   }
 
@@ -436,7 +606,7 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string): Ifcx
     children: kinderen,
     attributes: {
       [ATTR.klasse]: ifcKlasse('IfcElementAssembly'),
-      [ATTR.naam]: 'Balklaag',
+      [ATTR.naam]: T.balklaag,
       [ATTR.omschrijving]: omschrijving,
       ...aantalAttr,
       ...(Number.isFinite(uc.max) ? { [ATTR.uc]: uc.max } : {}),
@@ -452,6 +622,8 @@ export interface BalklaagDocumentOpties {
   /** ISO 8601. Bij het rekenen een vaste waarde: gelijke invoer geeft zo een gelijk document. */
   tijdstip?: string;
   projectNaam?: string;
+  /** De taal van de namen in het document: `en` of standaard Nederlands. */
+  taal?: string;
 }
 
 /**
@@ -460,7 +632,8 @@ export interface BalklaagDocumentOpties {
  */
 export function balklaagIfcxDocument(invoer: BalklaagInvoer, opties: BalklaagDocumentOpties = {}): IfcxBestand {
   const bladId = opties.bladId ?? 'balklaag';
-  const knopen = balklaagIfcxKnopen(invoer, bladId);
+  const knopen = balklaagIfcxKnopen(invoer, bladId, opties.taal);
+  const T = tekstVoor(opties.taal);
   const pad = (naam: string) => uuidVan(`${bladId}/balklaag/ruimte/${naam}`);
   const laag = (naam: string, klasse: string, titel: string, kinderen: Record<string, string>): IfcxKnoop => ({
     path: pad(naam),
@@ -478,10 +651,10 @@ export function balklaagIfcxDocument(invoer: BalklaagInvoer, opties: BalklaagDoc
     imports: BALKLAAG_IFCX_IMPORTS,
     schemas: BALKLAAG_IFCX_SCHEMAS,
     data: [
-      laag('project', 'IfcProject', opties.projectNaam ?? 'Project', { Terrein: pad('terrein') }),
-      laag('terrein', 'IfcSite', 'Terrein', { Gebouw: pad('gebouw') }),
-      laag('gebouw', 'IfcBuilding', 'Gebouw', { Verdieping: pad('verdieping') }),
-      laag('verdieping', 'IfcBuildingStorey', 'Verdieping', { Balklaag: knopen[0].path }),
+      laag('project', 'IfcProject', opties.projectNaam ?? T.project, { Terrein: pad('terrein') }),
+      laag('terrein', 'IfcSite', T.terrein, { Gebouw: pad('gebouw') }),
+      laag('gebouw', 'IfcBuilding', T.gebouw, { Verdieping: pad('verdieping') }),
+      laag('verdieping', 'IfcBuildingStorey', T.verdieping, { Balklaag: knopen[0].path }),
       ...knopen,
     ],
   };
@@ -557,6 +730,16 @@ export function balklaagInvoerUitScope(scope: Record<string, unknown>): Balklaag
   const dichtheid = alsMaat(scope.ρ_mean, 'kg/m^3');
   const aOpl = rond(mm('a_opl'));
   const aSteun = rond(mm('a_steun'));
+  // De wisselbalk: alleen bij een raveelbalk, en alleen als het blad hem kent.
+  const Lw = mm('L_w_th');
+  const wissel = getal('schema') === 4 && Lw !== undefined ? {
+    L: rond(Lw),
+    b: rond(mm('b_w_e')),
+    h: rond(mm('h_w_e')),
+    n: getal('n_w') ?? 2,
+    lSparing: getal('tw') === 1 ? rond(mm('l_sparing')) : 0,
+    sterkteklasse: STERKTEKLASSEN[getal('id_w') ?? 0] ?? 'onbekend',
+  } : undefined;
   return {
     b: rond(b),
     h: rond(h),
@@ -571,6 +754,7 @@ export function balklaagInvoerUitScope(scope: Record<string, unknown>): Balklaag
     Lveld2: rond(mm('L_veld2')),
     bSparing: rond(mm('b_sparing')),
     lStaart: rond(mm('l_staart')),
+    ...(wissel ? { wissel } : {}),
     tVloer: rond(mm('t_vloer')),
     bVloer: bVloerM !== undefined && bVloerM > 0 ? rond(bVloerM) : null,
     sterkteklasse: STERKTEKLASSEN[getal('sterkteklasse') ?? 0] ?? 'onbekend',
@@ -589,6 +773,13 @@ export function balklaagInvoerUitScope(scope: Record<string, unknown>): Balklaag
       flens: uc('UC_flens'),
       lijmnaad: uc('UC_lijm'),
       flensbreedte: uc('UC_bf'),
+      wissel: uc('UC_wb'),
+      wisselBuiging: uc('UC_w_m'),
+      wisselAfschuiving: uc('UC_w_v'),
+      wisselOplegdruk: uc('UC_w_c90'),
+      wisselBlijvend: uc('UC_w_G'),
+      wisselDoorbuiging: uc('UC_w_fin'),
+      wisselBijkomend: uc('UC_w_bij'),
     },
   };
 }

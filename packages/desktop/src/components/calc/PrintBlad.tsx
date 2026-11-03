@@ -1,6 +1,5 @@
 import { useMemo, useRef, type ReactNode } from "react";
-import i18next, { type i18n } from "i18next";
-import { I18nextProvider } from "react-i18next";
+import i18next from "i18next";
 import type { Exemplaar } from "../../store/projectStore";
 import { ExemplaarContext } from "../../store/actiefBlad";
 import { designerVoor } from "./designerKeuze";
@@ -23,18 +22,11 @@ import "./PrintDocument.css";
  */
 
 /*
- * De uitdraai is een Nederlands document, ook als de app in een andere taal
- * staat. Het rekenblad zelf is Nederlands; de parametrische beelden halen hun
- * teksten uit i18n (namespace "beelden") en volgen anders de taal van het
- * scherm. Daarom tekent PrintBlad ze met een eigen, Nederlandse kopie van
- * i18next. Die deelt de vertalingen met de app en wordt één keer gemaakt, bij
- * het eerste blad op papier: dan is de app-instantie zeker al ingesteld.
+ * De uitdraai volgt de taal van de app, net als de uitwerking op het scherm: het
+ * rekenblad (bladDoorrekenen.ts) en de parametrische beelden (namespace "beelden").
+ * Voor een Nederlands rapport staat de app op Nederlands. Eerder was de afdruk altijd
+ * Nederlands; die keuze is vervallen.
  */
-let nederlands: i18n | null = null;
-function nederlandseVertaling(): i18n {
-  nederlands ??= i18next.cloneInstance({ lng: "nl" });
-  return nederlands;
-}
 
 /**
  * De uitwerking van een blad op papier. Een 3D-blok (`@3d`, `@ifcx`) wordt hier een
@@ -60,7 +52,7 @@ export function Oordeel({ r }: { r: Resultaat }) {
   if (r.voldoet === null) return <span className="print-oordeel neutraal">—</span>;
   return (
     <span className={`print-oordeel ${r.voldoet ? "goed" : "fout"}`}>
-      {r.voldoet ? "voldoet" : "voldoet niet"}
+      {i18next.t(r.voldoet ? "beelden:afdruk.voldoet" : "beelden:afdruk.voldoetNiet")}
     </span>
   );
 }
@@ -89,10 +81,9 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
   if (isPdfBlad(ex)) return <PdfBladAfdruk ex={ex} nummer={nummer} maten={maten} />;
   // Het beeld tekent zichzelf uit de waarden van dít exemplaar, niet uit het
   // blad dat toevallig openstaat. `alleenLezen` houdt tegen dat het afdrukken
-  // standaardwaarden aanvult of iets anders aan het project verandert. De
-  // Nederlandse vertaling houdt de teksten van het beeld gelijk aan het blad.
+  // standaardwaarden aanvult of iets anders aan het project verandert.
   const beeld = designerVoor(ex.source);
-  const onderkop = [resultaat.norm, projectregel ? "" : `rekenversie ${rekenversie(ex.source)}`]
+  const onderkop = [resultaat.norm, projectregel ? "" : `${i18next.t("beelden:afdruk.rekenversieKlein")} ${rekenversie(ex.source)}`]
     .filter(Boolean)
     .join(" · ");
   return (
@@ -111,11 +102,9 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
       {projectregel}
       {beeld && (
         <div className="print-beeld">
-          <I18nextProvider i18n={nederlandseVertaling()}>
-            <ExemplaarContext.Provider value={{ exemplaar: ex, alleenLezen: true }}>
-              {beeld}
-            </ExemplaarContext.Provider>
-          </I18nextProvider>
+          <ExemplaarContext.Provider value={{ exemplaar: ex, alleenLezen: true }}>
+            {beeld}
+          </ExemplaarContext.Provider>
         </div>
       )}
       <UitwerkingHtml html={html} bladId={ex.id} />

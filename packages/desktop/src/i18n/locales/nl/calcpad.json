@@ -340,7 +340,8 @@
   "iframe": {
     "laden": "Laden",
     "uitleg": "Dit blad wil deze pagina tonen. Ze laadt pas als je dat bevestigt, en je bevestigt alleen dit domein, tot je de app sluit.",
-    "scripts": "De pagina mag scripts uitvoeren, afgeschermd van de app."
+    "scripts": "De pagina mag scripts uitvoeren, afgeschermd van de app.",
+    "beeld": "Afbeelding laden van {{host}}"
   },
   "js": {
     "uitvoeren": "Uitvoeren",

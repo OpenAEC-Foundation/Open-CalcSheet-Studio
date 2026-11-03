@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import i18next from "i18next";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -16,8 +17,11 @@ export const KLEUR_V = { lijn: "#2563eb", vlak: "rgba(59, 130, 246, 0.20)" };
 export const KLEUR_U = { lijn: "#2563eb", licht: "#93c5fd" };
 const OPL = { vulling: "#fbbf24", lijn: "#92400e" };
 
-/** Getal op z'n Nederlands: 6.28 → "6,28". */
-export const nl = (v: number, dec = 2) => (Number.isFinite(v) ? v : 0).toFixed(dec).replace(".", ",");
+/** Een getal in de notatie van de taal van de app: "6,28" in het Nederlands, "6.28" anders. */
+export const nl = (v: number, dec = 2) => {
+  const t = (Number.isFinite(v) ? v : 0).toFixed(dec);
+  return i18next.language?.startsWith("nl") ? t.replace(".", ",") : t;
+};
 
 /** Tekst met een witte rand, zodat hij leesbaar blijft boven lijnen en vlakken. */
 export function Label(props: {
@@ -168,7 +172,7 @@ export function KrachtenLijn(props: {
       if (Math.abs(v * schaal) < 13) return;
       tekenLabels.push(
         <text key={sleutel} x={X(x)} y={(asY + Y(v)) / 2 + 4.5} textAnchor="middle" fontSize={13} fontWeight={700}
-          fill={kleur.lijn} stroke="#ffffff" strokeWidth={3} strokeLinejoin="round" paintOrder="stroke">
+          fill="#111827" stroke="#ffffff" strokeWidth={3} strokeLinejoin="round" paintOrder="stroke">
           {v > 0 ? "+" : "−"}
         </text>,
       );
@@ -268,19 +272,36 @@ export function randwaarden(f: (x: number) => number, grenzen: number[]): { x: n
  */
 export interface RaveelInvoer {
   bSparing: number; lStaart: number; hoh: number; bBalk: number; label?: string;
+  /** Overspanning van de wisselbalk, hart op hart; zonder (een ouder blad) een stomp met een breeklijn. */
+  lW?: number;
+  /** Breedte per wisselbalk en het aantal balken; standaard twee balken als de balklaag. */
+  bW?: number; nW?: number;
+  /** Lengte van de sparing langs de balken; 0: tot de oplegging, één raveelbalk. */
+  lSparing?: number;
 }
 
 /*
- * Vaste zones rond de plattegrond (px): een zijmarge, links twee maatketens,
- * rechts de labelkolom, boven de muur en onder de maatlijn van b_sparing.
+ * Vaste zones rond de plattegrond (px): een zijmarge, links de maat van de sparing,
+ * rechts de labelkolom, boven de maat van de strook en onder de twee maatketens.
  */
-const ZONE = { zij: 12, links: 80, rechts: 135, boven: 12, onder: 26 };
+const ZONE = { zij: 12, links: 62, rechts: 135, boven: 22, onder: 62 };
 /** In een smal paneel: een verklaring van vijf regels onder de tekening, in plaats van de labelkolom. */
 const LEGENDA = 5 * 14 + 8;
 const MAAT_KLEUR = "#2563eb", MAAT_TEKST = "#1d4ed8";
 
-/** Getekende lengte van de sparing: een stomp van een kwart staart, 300 tot 600 mm. */
-const stomp = (lStaart: number) => Math.min(600, Math.max(300, 0.25 * lStaart));
+/** Getekende lengte voorbij de raveelbalk als de overspanning niet bekend is. */
+const stomp = (lStaart: number) => Math.max(1000, 0.6 * lStaart);
+
+/** De hele lengte in mm, en of dat de echte overspanning is. */
+function lengteVan(p: RaveelInvoer) {
+  const heel = !!p.lW && p.lW > p.lStaart;
+  return { heel, L: heel ? (p.lW as number) : p.lStaart + stomp(p.lStaart) };
+}
+
+/** De maat dwars op de balken in mm: de sparing, de wisselbalken en een doorgaande balk aan elke kant. */
+function dwarsVan(p: RaveelInvoer) {
+  return p.bSparing + 2 * (p.nW ?? 2) * (p.bW ?? p.bBalk) + 2.6 * p.hoh;
+}
 
 /**
  * Indeling in de breedte. De labelkolom groeit mee met het raveelbalklabel
@@ -289,7 +310,7 @@ const stomp = (lStaart: number) => Math.min(600, Math.max(300, 0.25 * lStaart));
  */
 function indeling(W: number, p: RaveelInvoer) {
   const kolom = Math.max(ZONE.rechts, 18 + (p.label ?? "").length * 11 * 0.62 + 6);
-  const smal = W - 2 * ZONE.zij - ZONE.links - kolom < 150;
+  const smal = W - 2 * ZONE.zij - ZONE.links - kolom < 170;
   const rechts = smal ? 0 : kolom;
   return {
     smal, rechts,
@@ -299,47 +320,56 @@ function indeling(W: number, p: RaveelInvoer) {
 }
 
 /**
- * Alle coördinaten van de plattegrond, voor de tekening en voor de maatchips
- * die de designer erbovenop zet.
- *
- * De schaal volgt uit de sparing met één doorgaande balk per kant; is de
- * hoogte de beperking, dan vullen tot drie doorgaande balken per kant de
- * breedte op, zonder dat de schaal verandert.
+ * Alle coördinaten van de plattegrond, voor de tekening en voor de maatchips die de
+ * designer erbovenop zet. De balken lopen naar rechts: oplegging A links, oplegging B
+ * rechts, op één schaal. y loopt dwars op de balken: yI1 en yI2 zijn de randen van de
+ * sparing, de binnenkanten van de wisselbalken.
  */
 export function raveelMaten(W: number, H: number, p: RaveelInvoer) {
   const { bSparing, lStaart, hoh, bBalk } = p;
   const { smal, rechts, bBeschikbaar, onder } = indeling(W, p);
-  const lTot = lStaart + stomp(lStaart);
-  const s = Math.max(0.005, Math.min(bBeschikbaar / (bSparing + 2.6 * hoh), (H - ZONE.boven - onder) / lTot));
-  const nDoor = Math.min(3, Math.max(1, Math.floor((bBeschikbaar / s - bSparing - 0.6 * hoh) / (2 * hoh) + 1e-9)));
-  const bw = (bSparing + (2 * nDoor + 0.6) * hoh) * s;
-  const x0 = Math.max(ZONE.zij, (W - ZONE.links - bw - rechts) / 2) + ZONE.links;
-  const x1 = x0 + bw, xm = x0 + bw / 2;
-  const wl = xm - (bSparing * s) / 2, wr = xm + (bSparing * s) / 2;
-  // Is de breedte de beperking (een korte staart), dan verticaal gecentreerd.
-  const y0 = ZONE.boven + Math.max(0, (H - ZONE.boven - onder - lTot * s) / 2);
-  const yRav = y0 + lStaart * s;
-  const yOnd = y0 + lTot * s;
+  const { heel, L } = lengteVan(p);
+  const nW = p.nW ?? 2, bW = p.bW ?? bBalk;
+  const s = Math.max(0.005, Math.min(bBeschikbaar / L, (H - ZONE.boven - onder) / dwarsVan(p)));
+  const x0 = ZONE.zij + ZONE.links + Math.max(0, (bBeschikbaar - L * s) / 2);
+  const x1 = x0 + L * s;
+  void rechts;
+  const yBoven = ZONE.boven + Math.max(0, (H - ZONE.boven - onder - dwarsVan(p) * s) / 2);
+  const wisB = Math.max(4, nW * bW * s);
+  const yDoor1 = yBoven + 0.3 * hoh * s;
+  const yI1 = yDoor1 + hoh * s + (nW * bW * s) / 2;
+  const yI2 = yI1 + bSparing * s;
+  const yDoor2 = yI2 + (nW * bW * s) / 2 + hoh * s;
+  const yOnder = yDoor2 + 0.3 * hoh * s;
+  const twee = heel && !!p.lSparing && p.lSparing > 0 && lStaart + p.lSparing < L;
+  const xR = x0 + lStaart * s;
+  const xR2 = twee ? x0 + (lStaart + (p.lSparing as number)) * s : x1;
   const nStaart = Math.max(1, Math.floor(bSparing / hoh) - 1);
   return {
-    s, smal, nDoor, nStaart, x0, x1, xm, wl, wr, y0, yRav, yOnd,
+    s, smal, heel, twee, nStaart, x0, x1, xR, xR2, yBoven, yDoor1, yDoor2, yI1, yI2, yOnder, wisB,
+    xm: (x0 + x1) / 2,
     /** Rand van de strook die de raveelbalk draagt: l_staart/2 vóór zijn as. */
-    yStrook: yRav - (lStaart / 2) * s,
-    stap: (wr - wl) / (nStaart + 1),
+    xStrook: xR - (lStaart / 2) * s,
+    xStrook2: twee ? xR2 + (L - lStaart - (p.lSparing as number)) / 2 * s : x1,
+    stap: (yI2 - yI1) / (nStaart + 1),
     balkB: Math.max(3, bBalk * s),
-    /** Maatlijn van b_sparing, en de twee ketens links: l_staart en l_staart/2. */
-    yMaat: yOnd + 20, xStaart: x0 - 44, xStrook: x0 - 12,
+    /** De maatketens: de strook erboven, de staart en de overspanning eronder, de sparing links. */
+    yMaatStrook: yBoven - 8,
+    yMaat1: yOnder + 18,
+    yMaat2: yOnder + 42,
+    xMaatB: x0 - 14,
     /** De labels: rechts in een kolom, of in een smal paneel de verklaring eronder. */
-    xLabel: smal ? x0 - 72 : x1 + 18,
-    yLegenda: yOnd + 20 + 24,
+    xLabel: smal ? x0 - 40 : x1 + 18,
+    yLegenda: yOnder + 42 + 22,
   };
 }
 
-/** Hoogte waarbij de plattegrond de breedte vult, begrensd op 440 px. */
-export function raveelHoogte(W: number, p: RaveelInvoer) {
+/** Hoogte waarbij de plattegrond de breedte vult, begrensd op `max` px. */
+export function raveelHoogte(W: number, p: RaveelInvoer, max = 440) {
   const { bBeschikbaar, onder } = indeling(W, p);
-  const h = ZONE.boven + onder + (p.lStaart + stomp(p.lStaart)) * (bBeschikbaar / (p.bSparing + 2.6 * p.hoh));
-  return Math.min(440, Math.max(120, h));
+  const { L } = lengteVan(p);
+  const h = ZONE.boven + onder + dwarsVan(p) * (bBeschikbaar / L);
+  return Math.min(max, Math.max(150, h));
 }
 
 /**
@@ -368,56 +398,55 @@ function MaatLijn({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number; y2: 
 }
 
 /**
- * Plattegrond van een sparing met raveelbalk: de muur waar de balken op
- * liggen, de doorgaande balken, de dubbele wisselbalken langs de sparing, de
- * staartbalken met de strook die de raveelbalk draagt, en de raveelbalk zelf.
- * De sparing is een stomp die in een breeklijn eindigt.
+ * Plattegrond van een sparing met raveelbalk, over de hele overspanning van de
+ * wisselbalken: de opleggingen links en rechts, de doorgaande balken, de wisselbalken
+ * langs de sparing, de staartbalken met de strook die de raveelbalk draagt, de
+ * raveelbalk zelf en bij een sparing die niet tot de oplegging doorloopt de tweede
+ * raveelbalk met zijn staart. Bij een ouder blad, dat de overspanning niet kent,
+ * eindigt de tekening in een breeklijn.
  *
  * Labels staan in een kolom rechts, met een verwijslijn (in een smal paneel
  * als verklaring onder de tekening); maten links en onder, elk op een eigen
- * lijn. De getallen van b_sparing en l_staart tekent de plattegrond alleen met
- * `getallen`: op het scherm zet de designer er klikbare maten neer.
+ * lijn. De getallen tekent de plattegrond alleen met `getallen`: op het scherm zet
+ * de designer er klikbare maten neer.
  */
 export function RaveelPlattegrond(props: RaveelInvoer & { W: number; H: number; getallen?: boolean }) {
-  const { W, H, bSparing, lStaart, hoh, label, getallen } = props;
+  const { W, H, bSparing, lStaart, label, getallen } = props;
   const { t } = useTranslation("beelden");
   const m = raveelMaten(W, H, props);
-  const { s, x0, x1, xm, wl, wr, y0, yRav, yOnd, yStrook, balkB, stap, nStaart, nDoor } = m;
+  const { x0, x1, xR, xR2, yI1, yI2, yBoven, yOnder, yDoor1, yDoor2, wisB, balkB, stap, nStaart, xStrook, xStrook2, twee, heel, s } = m;
   const houtVul = "#E3C08A", houtLijn = "#8B6F47", rood = "#b91c1c";
-  const hRav = Math.max(8, balkB);
-  const staarten = Array.from({ length: nStaart }, (_, i) => wl + (i + 1) * stap);
-  const door = Array.from({ length: nDoor }, (_, i) => [wl - (i + 1) * hoh * s, wr + (i + 1) * hoh * s]).flat();
-  // Breeklijn over de volle breedte, met een knik in de balkzone aan elke kant.
-  const knik = (x: number) => `${x - 4},${yOnd} ${x - 1.5},${yOnd - 5} ${x + 1.5},${yOnd + 5} ${x + 4},${yOnd}`;
-  const breeklijn = `${x0 - 4},${yOnd} ${knik((x0 + wl - balkB) / 2)} ${knik((wr + balkB + x1) / 2)} ${x1 + 4},${yOnd}`;
-  const stompH = yOnd - yRav;
+  const nW = props.nW ?? 2;
+  const raveelB = Math.max(8, balkB);
+  const staarten = Array.from({ length: nStaart }, (_, i) => yI1 + (i + 1) * stap);
+  // Breeklijn over de volle hoogte, als de overspanning niet bekend is.
+  const knik = (y: number) => `${x1},${y - 4} ${x1 - 5},${y - 1.5} ${x1 + 5},${y + 1.5} ${x1},${y + 4}`;
+  const breeklijn = `${x1},${yBoven - 4} ${knik((yDoor1 + yI1) / 2)} ${knik((yI2 + yDoor2) / 2)} ${x1},${yOnder + 4}`;
   // Van boven naar beneden, elk met het vlakje dat het in de verklaring krijgt.
-  // De wisselbalk loopt over de volle lengte en wijst daarom boven de strook
-  // aan, waar de kolom nog ruimte heeft.
   const labels: {
     doel: [number, number]; kleur: string; vet?: boolean; tekst: ReactNode;
     vlak: { vul: string; lijn: string; streep?: string };
   }[] = [
     {
-      doel: [staarten[staarten.length - 1], y0 + 0.3 * (yStrook - y0)], kleur: houtLijn,
+      doel: [twee ? (xR2 + x1) / 2 : (x0 + xStrook) / 2, staarten[0]], kleur: houtLijn,
       tekst: t("raveel.staartbalken", { n: nStaart }), vlak: { vul: houtVul, lijn: houtLijn },
     },
     {
-      doel: [wr + balkB, y0 + 0.75 * (yStrook - y0)], kleur: houtLijn,
-      tekst: t("raveel.wisselbalk"), vlak: { vul: "#D9A866", lijn: houtLijn },
-    },
-    {
-      doel: [wr - stap / 2, (yStrook + yRav) / 2], kleur: "#dc2626",
-      tekst: <>{t("raveel.belasteStrook")} l<tspan baselineShift="sub" fontSize={8}>staart</tspan>/2</>,
+      doel: [(xStrook + xR) / 2, staarten[staarten.length - 1] - stap / 2], kleur: "#dc2626",
+      tekst: <>{t("raveel.belasteStrook")} l<tspan baselineShift="sub" fontSize={8}>{t("raveel.staart")}</tspan>/2</>,
       vlak: { vul: "rgba(239, 68, 68, 0.13)", lijn: "#ef4444", streep: "3 2" },
     },
     {
-      doel: [wr - stap / 2, yRav], kleur: rood, vet: true,
+      doel: [xR, yI1 + 0.72 * (yI2 - yI1)], kleur: rood, vet: true,
       tekst: label ?? "", vlak: { vul: "#fca5a5", lijn: rood },
     },
     {
-      doel: [wr - 0.2 * (wr - wl), yRav + 0.5 * stompH], kleur: "#64748b",
+      doel: [(xR + xR2) / 2, (yI1 + yI2) / 2], kleur: "#64748b",
       tekst: t("raveel.sparing"), vlak: { vul: "#f8fafc", lijn: "#94a3b8", streep: "3 2" },
+    },
+    {
+      doel: [x1 - 0.1 * (x1 - x0), yI2 + wisB / 2], kleur: houtLijn,
+      tekst: t(nW > 1 ? "raveel.wisselbalk" : "raveel.wisselbalkEnkel"), vlak: { vul: "#D9A866", lijn: houtLijn },
     },
   ];
   const labelY = m.smal
@@ -426,38 +455,61 @@ export function RaveelPlattegrond(props: RaveelInvoer & { W: number; H: number; 
   const xL = m.xLabel;
   return (
     <g>
-      {/* muur waarop de balken liggen, met arcering */}
-      <rect x={x0} y={y0 - 9} width={x1 - x0} height={9} fill="#e5e7eb" stroke="#374151" strokeWidth={1.2} />
-      {Array.from({ length: Math.floor((x1 - x0 - 2) / 8) }, (_, i) => (
-        <line key={i} x1={x0 + 1 + i * 8} y1={y0} x2={x0 + 9 + i * 8} y2={y0 - 9} stroke="#6b7280" strokeWidth={0.6} />
+      {/* de opleggingen, met arcering */}
+      {(heel ? [x0, x1] : [x0]).map((x, k) => (
+        <g key={k}>
+          <rect x={x - 4.5} y={yBoven - 4} width={9} height={yOnder - yBoven + 8} fill="#e5e7eb" stroke="#374151" strokeWidth={1.2} />
+          {Array.from({ length: Math.floor((yOnder - yBoven + 8) / 8) }, (_, i) => (
+            <line key={i} x1={x - 4.5} y1={yBoven - 4 + (i + 1) * 8} x2={x + 4.5} y2={yBoven - 4 + i * 8} stroke="#6b7280" strokeWidth={0.6} />
+          ))}
+        </g>
       ))}
-      {/* sparing: een stomp met kruis */}
-      <rect x={wl} y={yRav} width={wr - wl} height={stompH} fill="#f8fafc" stroke="#94a3b8" strokeWidth={1} strokeDasharray="5 3" />
-      <line x1={wl} y1={yRav} x2={wr} y2={yOnd} stroke="#cbd5e1" strokeWidth={0.8} />
-      <line x1={wr} y1={yRav} x2={wl} y2={yOnd} stroke="#cbd5e1" strokeWidth={0.8} />
+      {/* sparing: open, met een kruis */}
+      <rect x={xR} y={yI1} width={xR2 - xR} height={yI2 - yI1} fill="#f8fafc" stroke="#94a3b8" strokeWidth={1} strokeDasharray="5 3" />
+      <line x1={xR} y1={yI1} x2={xR2} y2={yI2} stroke="#cbd5e1" strokeWidth={0.8} />
+      <line x1={xR2} y1={yI1} x2={xR} y2={yI2} stroke="#cbd5e1" strokeWidth={0.8} />
       {/* de strook die via de staartbalken op de raveelbalk komt */}
-      <rect x={wl} y={yStrook} width={wr - wl} height={yRav - yStrook} fill="rgba(239, 68, 68, 0.13)" stroke="none" />
-      <line x1={wl} y1={yStrook} x2={wr} y2={yStrook} stroke="#ef4444" strokeWidth={0.8} strokeDasharray="3 2" />
-      {/* doorgaande balken, tot de breeklijn */}
-      {door.map((x, i) => (
-        <rect key={i} x={x - balkB / 2} y={y0} width={balkB} height={yOnd - y0} fill={houtVul} stroke={houtLijn} strokeWidth={0.9} />
+      <rect x={xStrook} y={yI1} width={xR - xStrook} height={yI2 - yI1} fill="rgba(239, 68, 68, 0.13)" stroke="none" />
+      <line x1={xStrook} y1={yI1} x2={xStrook} y2={yI2} stroke="#ef4444" strokeWidth={0.8} strokeDasharray="3 2" />
+      {twee && (
+        <>
+          <rect x={xR2} y={yI1} width={xStrook2 - xR2} height={yI2 - yI1} fill="rgba(239, 68, 68, 0.13)" stroke="none" />
+          <line x1={xStrook2} y1={yI1} x2={xStrook2} y2={yI2} stroke="#ef4444" strokeWidth={0.8} strokeDasharray="3 2" />
+        </>
+      )}
+      {/* doorgaande balken, naast de wisselbalken */}
+      {[yDoor1, yDoor2].map((y, i) => (
+        <rect key={i} x={x0} y={y - balkB / 2} width={x1 - x0} height={balkB} fill={houtVul} stroke={houtLijn} strokeWidth={0.9} />
       ))}
-      {/* staartbalken: van de muur tot op de raveelbalk */}
-      {staarten.map((x, i) => (
-        <rect key={i} x={x - balkB / 2} y={y0} width={balkB} height={yRav - y0} fill={houtVul} stroke={houtLijn} strokeWidth={0.9} />
+      {/* staartbalken: van de oplegging tot op de raveelbalk */}
+      {staarten.map((y, i) => (
+        <g key={i}>
+          <rect x={x0} y={y - balkB / 2} width={xR - raveelB / 2 - x0} height={balkB} fill={houtVul} stroke={houtLijn} strokeWidth={0.9} />
+          {twee && <rect x={xR2 + raveelB / 2} y={y - balkB / 2} width={x1 - xR2 - raveelB / 2} height={balkB} fill={houtVul} stroke={houtLijn} strokeWidth={0.9} />}
+        </g>
       ))}
-      {/* wisselbalken: dubbel, dragen de raveelbalk */}
-      {[wl, wr].map((x, i) => (
-        <rect key={i} x={x - balkB} y={y0} width={2 * balkB} height={yOnd - y0} fill="#D9A866" stroke={houtLijn} strokeWidth={1.1} />
+      {/* wisselbalken: over de hele lengte, en ze dragen de raveelbalk */}
+      {[yI1 - wisB, yI2].map((y, i) => (
+        <g key={i}>
+          <rect x={x0} y={y} width={x1 - x0} height={wisB} fill="#D9A866" stroke={houtLijn} strokeWidth={1.1} />
+          {nW > 1 && <line x1={x0} y1={y + wisB / 2} x2={x1} y2={y + wisB / 2} stroke={houtLijn} strokeWidth={0.7} />}
+        </g>
       ))}
       {/* de raveelbalk: die wordt hier berekend */}
-      <rect x={wl} y={yRav - hRav / 2} width={wr - wl} height={hRav} fill="#fca5a5" stroke={rood} strokeWidth={1.6} />
+      {(twee ? [xR, xR2] : [xR]).map((x, i) => (
+        <rect key={i} x={x - raveelB / 2} y={yI1} width={raveelB} height={yI2 - yI1} fill="#fca5a5" stroke={rood} strokeWidth={1.6} />
+      ))}
       {/* de staartbalken zetten hun oplegreactie af op de raveelbalk */}
-      {staarten.map((x, i) => {
-        const y = yRav - hRav / 2 - 1;
-        return <polygon key={i} points={`${x},${y} ${x - 3.5},${y - 7} ${x + 3.5},${y - 7}`} fill={rood} />;
+      {staarten.map((y, i) => {
+        const x = xR - raveelB / 2 - 1;
+        return (
+          <g key={i}>
+            <polygon points={`${x},${y} ${x - 7},${y - 3.5} ${x - 7},${y + 3.5}`} fill={rood} />
+            {twee && <polygon points={`${xR2 + raveelB / 2 + 1},${y} ${xR2 + raveelB / 2 + 8},${y - 3.5} ${xR2 + raveelB / 2 + 8},${y + 3.5}`} fill={rood} />}
+          </g>
+        );
       })}
-      <polyline points={breeklijn} fill="none" stroke="#374151" strokeWidth={1.1} strokeLinejoin="round" />
+      {!heel && <polyline points={breeklijn} fill="none" stroke="#374151" strokeWidth={1.1} strokeLinejoin="round" />}
 
       {/* labelkolom rechts, met verwijslijnen; in een smal paneel een verklaring eronder */}
       {labels.map((l, i) => (
@@ -475,22 +527,40 @@ export function RaveelPlattegrond(props: RaveelInvoer & { W: number; H: number; 
         </g>
       ))}
 
-      {/* b_sparing: tussen de assen van de wisselbalken */}
-      <line x1={wl} y1={yOnd + 3} x2={wl} y2={m.yMaat + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
-      <line x1={wr} y1={yOnd + 3} x2={wr} y2={m.yMaat + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
-      <MaatLijn x1={wl} y1={m.yMaat} x2={wr} y2={m.yMaat} />
-      {/* links twee ketens: l_staart vanaf de muur, l_staart/2 vanaf de strookrand, beide tot de as van de raveelbalk */}
-      {[y0, yRav].map((y, i) => (
-        <line key={i} x1={m.xStaart - 4} y1={y} x2={x0 - 3} y2={y} stroke={MAAT_KLEUR} strokeWidth={1} />
-      ))}
-      <line x1={m.xStrook - 4} y1={yStrook} x2={x0 - 3} y2={yStrook} stroke={MAAT_KLEUR} strokeWidth={1} />
-      <MaatLijn x1={m.xStaart} y1={y0} x2={m.xStaart} y2={yRav} />
-      <MaatLijn x1={m.xStrook} y1={yStrook} x2={m.xStrook} y2={yRav} />
-      <Label x={m.xStrook - 4} y={(yStrook + yRav) / 2 + 4} kleur={MAAT_TEKST} anker="end">{nl(lStaart / 2, 0)}</Label>
+      {/* b_sparing: tussen de binnenkanten van de wisselbalken */}
+      <line x1={m.xMaatB - 4} y1={yI1} x2={x0 - 6} y2={yI1} stroke={MAAT_KLEUR} strokeWidth={1} />
+      <line x1={m.xMaatB - 4} y1={yI2} x2={x0 - 6} y2={yI2} stroke={MAAT_KLEUR} strokeWidth={1} />
+      <MaatLijn x1={m.xMaatB} y1={yI1} x2={m.xMaatB} y2={yI2} />
+      {/* de strook boven de tekening: l_staart/2 tot de as van de raveelbalk */}
+      <MaatLijn x1={xStrook} y1={m.yMaatStrook} x2={xR} y2={m.yMaatStrook} />
+      <Label x={(xStrook + xR) / 2} y={m.yMaatStrook - 4} kleur={MAAT_TEKST}>{nl(lStaart / 2, 0)}</Label>
+      {/* de staart, en bij twee raveelbalken de sparing en de andere staart */}
+      <line x1={x0} y1={yOnder + 3} x2={x0} y2={m.yMaat1 + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
+      <line x1={xR} y1={yOnder + 3} x2={xR} y2={m.yMaat1 + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
+      <MaatLijn x1={x0} y1={m.yMaat1} x2={xR} y2={m.yMaat1} />
+      {twee && (
+        <>
+          <line x1={xR2} y1={yOnder + 3} x2={xR2} y2={m.yMaat1 + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
+          <line x1={x1} y1={yOnder + 3} x2={x1} y2={m.yMaat1 + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
+          <MaatLijn x1={xR} y1={m.yMaat1} x2={xR2} y2={m.yMaat1} />
+          <MaatLijn x1={xR2} y1={m.yMaat1} x2={x1} y2={m.yMaat1} />
+          <Label x={(xR2 + x1) / 2} y={m.yMaat1 - 5} kleur={MAAT_TEKST}>{nl((x1 - xR2) / s, 0)}</Label>
+        </>
+      )}
+      {/* de hele overspanning van de wisselbalk */}
+      {heel && (
+        <>
+          <line x1={x0} y1={m.yMaat1 + 4} x2={x0} y2={m.yMaat2 + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
+          <line x1={x1} y1={yOnder + 3} x2={x1} y2={m.yMaat2 + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
+          <MaatLijn x1={x0} y1={m.yMaat2} x2={x1} y2={m.yMaat2} />
+        </>
+      )}
       {getallen && (
         <>
-          <Label x={xm} y={m.yMaat - 5} kleur={MAAT_TEKST}>{nl(bSparing, 0)}</Label>
-          <Label x={m.xStaart - 4} y={(y0 + yRav) / 2 + 4} kleur={MAAT_TEKST} anker="end">{nl(lStaart, 0)}</Label>
+          <Label x={m.xMaatB - 4} y={(yI1 + yI2) / 2 + 4} kleur={MAAT_TEKST} anker="end">{nl(bSparing, 0)}</Label>
+          <Label x={(x0 + xR) / 2} y={m.yMaat1 - 5} kleur={MAAT_TEKST}>{nl(lStaart, 0)}</Label>
+          {twee && <Label x={(xR + xR2) / 2} y={m.yMaat1 - 5} kleur={MAAT_TEKST}>{nl(props.lSparing as number, 0)}</Label>}
+          {heel && <Label x={m.xm} y={m.yMaat2 - 5} kleur={MAAT_TEKST}>{nl(props.lW as number, 0)}</Label>}
         </>
       )}
     </g>

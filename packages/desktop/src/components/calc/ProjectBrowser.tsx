@@ -10,6 +10,7 @@ import { heeftEigenCode, huidigeModuletekst, isVerouderd, rekenversie } from "./
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { voegPdfBladToe } from "./pdfBlad";
 import Icoon from "../Icoon";
+import LibrarySectie from "./LibrarySectie";
 import "./ProjectBrowser.css";
 import "./BladVersie.css";
 
@@ -326,6 +327,9 @@ export default function ProjectBrowser() {
           )}
         </Sectie>
       </div>
+
+      {/* Onder de bladen, met een eigen schuifbalk: de lijst drukt ze niet weg. */}
+      <LibrarySectie />
     </aside>
   );
 }

@@ -73,7 +73,31 @@ function escapeText(s: string): string {
   return s.replace(/\\/g, '\\backslash{}').replace(/[_^{}#$%&]/g, '\\$&');
 }
 
-function symbolToLatex(name: string): string {
+/**
+ * De weergavenamen van een blad, zolang het wordt opgemaakt (zie render): de naam
+ * in de code blijft gelijk, in beeld staat een andere (`b_sparing` → `b_opening`).
+ * Sleutels en waarden met de komma's al gevouwen tot `_`, zoals na het inlezen.
+ */
+let weergaveNamen: Readonly<Record<string, string>> | null = null;
+
+/** Voert `f` uit met deze weergavenamen; de opmaak is synchroon, dus dat kan zo. */
+export function metWeergaveNamen<T>(namen: Readonly<Record<string, string>> | undefined, f: () => T): T {
+  const vorige = weergaveNamen;
+  weergaveNamen = namen ?? null;
+  try {
+    return f();
+  } finally {
+    weergaveNamen = vorige;
+  }
+}
+
+/** De naam zoals hij in beeld staat. */
+export function weergaveNaam(naam: string): string {
+  return weergaveNamen?.[naam] ?? naam;
+}
+
+function symbolToLatex(codeNaam: string): string {
+  const name = weergaveNaam(codeNaam);
   const underscoreIdx = name.indexOf('_');
   if (underscoreIdx > 0) {
     const base = name.substring(0, underscoreIdx);

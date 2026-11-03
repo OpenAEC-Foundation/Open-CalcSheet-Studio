@@ -22,6 +22,8 @@ export interface BalklaagKent {
   bijkomend: boolean;
   /** Het 3D-beeld met zijn twee keuzes (toon_3d en druk_3d). */
   drieD: boolean;
+  /** De toetsing van de wisselbalk bij een raveelbalk (§8a). */
+  wissel: boolean;
 }
 
 export function balklaagKent(source: string): BalklaagKent {
@@ -32,6 +34,7 @@ export function balklaagKent(source: string): BalklaagKent {
     gedragen: /^\s*g_bl = \?/m.test(source),
     bijkomend: /@select grens_bij\b/.test(source),
     drieD: /^\s*@ifcx balklaag\b/m.test(source),
+    wissel: /^\s*L_w = \?/m.test(source),
   };
 }
 

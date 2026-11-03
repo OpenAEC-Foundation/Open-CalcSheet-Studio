@@ -1,6 +1,6 @@
 import katex from 'katex';
 import type { EvaluatedNode, MatrixUitkomst } from './types.js';
-import { exprToLatex, matrixResultToLatex, nameToLatex, resultToLatex } from './latex.js';
+import { exprToLatex, matrixResultToLatex, metWeergaveNamen, nameToLatex, resultToLatex, weergaveNaam } from './latex.js';
 import { renderDrieD } from './drieD.js';
 import { renderIframe } from './iframeBlok.js';
 import { renderIfcxBlok } from './ifcxBlok.js';
@@ -162,8 +162,42 @@ function metKlasse(html: string, klasse: string): string {
   );
 }
 
-export function render(nodes: EvaluatedNode[]): string {
-  const coalesced = coalesceSvg(nodes);
+/**
+ * Wat een blad vooraan wil hebben: een tekening met de klasse `vooraan` of een
+ * prozaregel met het merkteken `<span class="vooraan"></span>`. Zo'n tekening heeft
+ * uitkomsten nodig die pas verderop in het blad worden berekend (de lasten per
+ * balk). Hij wordt daarom gewoon op zijn eigen plek doorgerekend en pas bij het
+ * opmaken verplaatst; het doorrekenen en de uitkomsten merken er niets van.
+ */
+function isVooraan(n: EvaluatedNode): boolean {
+  if (n.type === 'svg') return /^\s*<svg\b[^>]*\bclass="[^"]*\bvooraan\b/.test(n.content);
+  return n.type === 'text' && n.html === true && !n.inline && n.text.includes('<span class="vooraan"></span>');
+}
+
+/** Zet wat vooraan hoort direct onder de titel, in de volgorde van het blad. */
+function vooraanGezet(nodes: EvaluatedNode[]): EvaluatedNode[] {
+  const vooraan = nodes.filter(isVooraan);
+  if (vooraan.length === 0) return nodes;
+  const rest = nodes.filter((n) => !isVooraan(n));
+  const plek = rest.findIndex((n) => n.type === 'heading') + 1;
+  return [...rest.slice(0, plek), ...vooraan, ...rest.slice(plek)];
+}
+
+/** Hoe een blad wordt opgemaakt. */
+export interface RenderOpties {
+  /**
+   * De weergavenamen van de variabelen: naam in de code → naam in beeld, met de
+   * komma's gevouwen tot `_`. De code en de sleutels van de invoer blijven gelijk.
+   */
+  namen?: Readonly<Record<string, string>>;
+}
+
+export function render(nodes: EvaluatedNode[], opties: RenderOpties = {}): string {
+  return metWeergaveNamen(opties.namen, () => maakHtml(nodes));
+}
+
+function maakHtml(nodes: EvaluatedNode[]): string {
+  const coalesced = vooraanGezet(coalesceSvg(nodes));
   const parts: string[] = ['<div class="ifc-calc">'];
   let open: OpenTag[] = [];
 
@@ -304,7 +338,7 @@ function renderInputPrompt(node: {
   // punt niet in te typen was. inputmode="decimal" geeft op een tablet toch het
   // numerieke toetsenbord; de rekenkern leest een komma als decimaalteken.
   return `<div class="calc-input-prompt">
-  <label class="calc-input-label">${escapeHtml(node.label)} =</label>
+  <label class="calc-input-label">${escapeHtml(weergaveNaam(node.label))} =</label>
   <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false"
     class="calc-input-value"
     data-prompt="${escapeHtml(node.name)}"

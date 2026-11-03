@@ -18,6 +18,7 @@
  */
 import * as OBC from "@thatopen/components";
 import CameraControls from "camera-controls";
+import i18next from "i18next";
 import * as THREE from "three";
 import { ifcxNaarScene, leesIfcx, type IfcxElement } from "@ifc-calc/core";
 import { sprite } from "../ribbon/calcIcons";
@@ -49,7 +50,7 @@ const VOLGORDE = [
 const kortNaam = (sleutel: string) => sleutel.split("::").pop() ?? sleutel;
 
 function getalTekst(n: number): string {
-  return n.toLocaleString("nl-NL", { maximumFractionDigits: 6 });
+  return n.toLocaleString(i18next.language?.startsWith("nl") ? "nl-NL" : "en-GB", { maximumFractionDigits: 6 });
 }
 
 /** Een attribuut als rijen voor het paneel; een object met losse getallen geeft een rij per sleutel. */
@@ -61,7 +62,7 @@ function rijenVan(sleutel: string, waarde: unknown, t: IfcxTeksten): [string, st
     return [[label, eenheid ? `${getalTekst(waarde)} ${eenheid}` : getalTekst(waarde), sleutel]];
   }
   if (typeof waarde === "string") return [[label, waarde, sleutel]];
-  if (typeof waarde === "boolean") return [[label, waarde ? "ja" : "nee", sleutel]];
+  if (typeof waarde === "boolean") return [[label, i18next.t(waarde ? "beelden:kit.ja" : "beelden:kit.nee"), sleutel]];
   if (typeof waarde === "object" && waarde !== null) {
     const code = (waarde as { code?: unknown }).code;
     if (typeof code === "string") return [[label, code, sleutel]];

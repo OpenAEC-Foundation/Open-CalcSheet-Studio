@@ -1,0 +1,14 @@
+{
+  "titel": "Bibliotheek",
+  "uitleg": "Voorbeelden uit de Eurocodes en de klassieke mechanica. Klik er een aan om hem uitgerekend te zien, en voeg hem in of begin er een nieuw blad mee.",
+  "invoegen": "Invoegen",
+  "invoegenUitleg": "Zet dit voorbeeld op de cursor in het open blad; zonder open blad begint het een nieuw blad",
+  "nieuwBlad": "Nieuw blad",
+  "nieuwBladUitleg": "Begin een nieuw blad met dit voorbeeld",
+  "sluiten": "Sluiten",
+  "opCursor": "Op de cursor in {{naam}}",
+  "geenBlad": "Geen blad open: Invoegen begint een nieuw blad",
+  "alleFormules": "Alle formules zoeken…",
+  "alleFormulesUitleg": "Open de formulebibliotheek met alle formules, ook deze voorbeelden",
+  "rekenfout": "Dit voorbeeld kan niet worden doorgerekend: {{fout}}"
+}

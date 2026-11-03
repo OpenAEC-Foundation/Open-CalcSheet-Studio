@@ -14,6 +14,7 @@ import type { EvaluatedIfcxBlok, IfcxBlokNode } from './types.js';
  * (nu alleen `balklaag`, balklaagIfcx.ts). Opties:
  *   hoogte=340     hoogte van het beeld op het scherm in px (standaard 320)
  *   papier=ja|nee  ook op de uitdraai, of `{{…}}` (0 is nee); standaard ja
+ *   taal=en        de taal van de namen in het document; standaard Nederlands
  *
  * De renderer schrijft `<div class="calc-ifcx" data-ifcx="…">` met het document
  * als JSON en daarin een stilstaande projectie van wat er uit dat document te
@@ -34,16 +35,17 @@ function escapeHtml(str: string): string {
 export function leesIfcxBlok(
   rest: string,
   normaliseer: (expr: string) => string,
-): Pick<IfcxBlokNode, 'bron' | 'hoogte' | 'papier' | 'fouten'> {
-  const uit: Pick<IfcxBlokNode, 'bron' | 'hoogte' | 'papier' | 'fouten'> = { bron: '', fouten: [] };
+): Pick<IfcxBlokNode, 'bron' | 'hoogte' | 'papier' | 'taal' | 'fouten'> {
+  const uit: Pick<IfcxBlokNode, 'bron' | 'hoogte' | 'papier' | 'taal' | 'fouten'> = { bron: '', fouten: [] };
   const norm = (t: string) => t.replace(INVULLING_RE, (_m, e: string) => `{{${normaliseer(e.trim())}}}`);
   const delen = rest.match(/(?:\{\{[\s\S]*?\}\}|\S)+/g) ?? [];
   uit.bron = (delen.shift() ?? '').toLowerCase();
   if (!uit.bron) uit.fouten.push('IFCX-blok: geen bron; schrijf @ifcx balklaag');
   for (const deel of delen) {
-    const m = deel.match(/^(hoogte|papier)=(.+)$/i);
-    if (!m) uit.fouten.push(`IFCX-blok: onbekende optie "${deel}" (bekend: hoogte=…, papier=…)`);
+    const m = deel.match(/^(hoogte|papier|taal)=(.+)$/i);
+    if (!m) uit.fouten.push(`IFCX-blok: onbekende optie "${deel}" (bekend: hoogte=…, papier=…, taal=…)`);
     else if (m[1].toLowerCase() === 'hoogte') uit.hoogte = norm(m[2]);
+    else if (m[1].toLowerCase() === 'taal') uit.taal = m[2].toLowerCase();
     else uit.papier = norm(m[2]);
   }
   return uit;
@@ -89,7 +91,7 @@ export function bouwIfcxBlok(node: IfcxBlokNode, r: IfcxBlokRekenaar): Evaluated
   let document: EvaluatedIfcxBlok['document'] = null;
   if (node.bron === 'balklaag') {
     const invoer = balklaagInvoerUitScope(r.scope);
-    if (invoer) document = balklaagIfcxDocument(invoer);
+    if (invoer) document = balklaagIfcxDocument(invoer, { taal: node.taal });
     else meldingen.push('IFCX-blok: dit blad heeft geen balk met een doorsnede (b_balk en h_balk)');
   } else if (node.bron) {
     meldingen.push(`IFCX-blok: onbekende bron "${node.bron}" (bekend: balklaag)`);

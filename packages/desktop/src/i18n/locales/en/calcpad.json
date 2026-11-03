@@ -340,7 +340,8 @@
   "iframe": {
     "laden": "Load",
     "uitleg": "This sheet wants to show this page. It loads only when you confirm, and you confirm this domain only, until you close the app.",
-    "scripts": "The page may run scripts, shielded from the app."
+    "scripts": "The page may run scripts, shielded from the app.",
+    "beeld": "Load image from {{host}}"
   },
   "js": {
     "uitvoeren": "Run",

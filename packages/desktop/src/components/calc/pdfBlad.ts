@@ -257,11 +257,10 @@ export function usePdfVersie(): number {
 }
 
 /**
- * Teksten op papier. De uitdraai is een Nederlands document, ook als de app
- * in een andere taal staat (zie PrintBlad.tsx); ze staan in rapport.json
- * onder `pdfBlad`.
+ * Teksten op papier: de uitdraai volgt de taal van de app (zie PrintBlad.tsx). Ze
+ * staan in rapport.json onder `pdfBlad`.
  */
-export const papier = () => i18next.getFixedT("nl", "rapport");
+export const papier = () => i18next.getFixedT(i18next.language, "rapport");
 
 // ── Base64 ────────────────────────────────────────────────────────────────────
 

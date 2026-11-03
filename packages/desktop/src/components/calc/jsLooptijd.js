@@ -1,16 +1,19 @@
 /*
- * De omgeving van een `@js`-blok. Draait in het afgeschermde venster (jsRegels.ts
- * zet dit bestand als inline script in de srcdoc), niet in de app. Dit bestand is
- * tekst voor dat venster: het importeert niets, en de app voert het zelf niet uit.
+ * De omgeving van een `@js`-blok. Draait in het binnenste afgeschermde venster
+ * (jsRegels.ts zet dit bestand als inline script in de srcdoc), niet in de app. Dit
+ * bestand is tekst voor dat venster: het importeert niets, en de app voert het zelf
+ * niet uit.
  *
  * Het maakt `calc`, laadt zo nodig een bibliotheek en voert dan de code van het
- * blok uit. Met de app praat het alleen via berichten:
+ * blok uit. Met de app praat het alleen via berichten, die het buitenste venster
+ * doorgeeft:
  *
  *   naar de app   geladen, klaar, luistert, pong, fout, hoogte, afdruk, vraag-bibliotheek
  *   van de app    waarden, ping, afdruk, bibliotheek
  *
  * Wat de app ervan aanneemt, staat in `leesBericht` in jsRegels.ts. Alles hier is
- * gemak voor het script, geen beveiliging: de afscherming zit in de sandbox en de CSP.
+ * gemak voor het script, geen beveiliging: de afscherming zit in de sandbox, de CSP
+ * en de twee vensters.
  */
 (function () {
   "use strict";
@@ -46,12 +49,17 @@
   ["__TAURI__", "__TAURI_INTERNALS__", "__TAURI_IPC__", "__TAURI_INVOKE__", "ipc", "__ocs"].forEach(function (naam) {
     try { delete window[naam]; } catch (e) { /* niets */ }
   });
-  if (!start.netwerk.length) {
-    // Een verbinding buiten de CSP om; zonder `netwerk=` heeft niemand die nodig.
-    ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChannel", "RTCSessionDescription"].forEach(function (naam) {
-      try { delete window[naam]; window[naam] = undefined; } catch (e) { /* niets */ }
-    });
-  }
+  // WebRTC maakt een verbinding buiten de CSP om, naar elke host. Weg dus, ook met `netwerk=`.
+  ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChannel", "RTCSessionDescription"].forEach(function (naam) {
+    try { delete window[naam]; window[naam] = undefined; } catch (e) { /* niets */ }
+  });
+  // Vanaf nu geen inline script meer. Zo draait er ook niets in een frame dat het script
+  // zelf maakt, en daar zou WebRTC er weer wel zijn: dat frame erft deze regel, en kan een
+  // blob van dit venster niet lezen (een eigen herkomst). De code hieronder komt als blob.
+  var regel = document.createElement("meta");
+  regel.httpEquiv = "Content-Security-Policy";
+  regel.content = "script-src blob:" + start.netwerk.map(function (h) { return " https://" + h; }).join("");
+  document.head.appendChild(regel);
 
   // WebGL drukt anders leeg af: de tekenbuffer is na het tekenen weer leeg.
   var getContext = HTMLCanvasElement.prototype.getContext;
@@ -495,14 +503,14 @@
   });
 
   // ── Bibliotheek, en dan de code ─────────────────────────────────────────────
-  function alsModule(tekst) {
+  function alsBlob(tekst) {
     return URL.createObjectURL(new Blob([tekst], { type: "text/javascript" }));
   }
 
   function laadDrie(delen) {
-    var core = alsModule(delen.core);
-    var module = alsModule(delen.module.split("./three.core.js").join(core));
-    var orbit = alsModule(delen.orbit.replace(/from\s+['"]three['"]/g, "from '" + module + "'"));
+    var core = alsBlob(delen.core);
+    var module = alsBlob(delen.module.split("./three.core.js").join(core));
+    var orbit = alsBlob(delen.orbit.replace(/from\s+['"]three['"]/g, "from '" + module + "'"));
     return Promise.all([import(module), import(orbit)]).then(function (m) {
       window.THREE = m[0];
       window.OrbitControls = m[1].OrbitControls;
@@ -510,23 +518,31 @@
   }
 
   function voerUit() {
+    var url = alsBlob(start.code);
     var s = document.createElement("script");
-    s.textContent = start.code;
+    s.onload = s.onerror = function () {
+      s.remove();
+      URL.revokeObjectURL(url);
+      stuur({ soort: "klaar", luistert: luisteraars.length > 0 });
+    };
+    s.src = url;
     document.body.appendChild(s);
-    s.remove();
-    stuur({ soort: "klaar", luistert: luisteraars.length > 0 });
   }
 
   stuur({ soort: "geladen" });
-  if (start.bibliotheken.indexOf("three") >= 0) {
-    new Promise(function (klaar) {
-      bibliotheek = klaar;
-      stuur({ soort: "vraag-bibliotheek", naam: "three" });
-    }).then(laadDrie).then(voerUit).catch(function (e) {
-      meldFout("De bibliotheek laadde niet: " + (e && e.message));
-      stuur({ soort: "klaar", luistert: false });
-    });
-  } else {
-    voerUit();
-  }
+  // Pas als de pagina helemaal geladen is. Een tweede `load` betekent dan altijd dat het
+  // script is weggegaan, ook als het dat meteen probeert (jsRegels.ts).
+  window.addEventListener("load", function () {
+    if (start.bibliotheken.indexOf("three") >= 0) {
+      new Promise(function (klaar) {
+        bibliotheek = klaar;
+        stuur({ soort: "vraag-bibliotheek", naam: "three" });
+      }).then(laadDrie).then(voerUit).catch(function (e) {
+        meldFout("De bibliotheek laadde niet: " + (e && e.message));
+        stuur({ soort: "klaar", luistert: false });
+      });
+    } else {
+      voerUit();
+    }
+  });
 })();

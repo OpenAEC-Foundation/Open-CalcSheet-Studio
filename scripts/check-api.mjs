@@ -211,6 +211,20 @@ console.log("Bladen:");
   const evIns = await api("POST", `/api/v1/sheets/${eigenId}/evaluate`, { numbers: false });
   meld(evIns.status === 200, "blad met ingevoegde formule rekent door", kort(evIns));
 
+  // Een voorbeeld uit de Library heeft tekstregels in twee talen.
+  const vb = FORMULES.find((f) => f.library);
+  const vbGet = await api("GET", `/api/v1/formulas/${vb.id}`);
+  meld(vbGet.status === 200 && vbGet.data.library === vb.library && vbGet.data.code === vb.code && vbGet.data.codeEn === vb.codeEn, "GET /formulas/{id}: voorbeeld in twee talen", kort(vbGet));
+  const vbBlad = await api("POST", "/api/v1/sheets", { source: '"Voorbeeld\n' });
+  const vbEn = await api("POST", `/api/v1/sheets/${vbBlad.data.id}/formulas`, { formulaId: vb.id, language: "en" });
+  meld(vbEn.status === 200 && vbEn.data.inserted === vb.codeEn, "POST /sheets/{id}/formulas: language en", kort(vbEn));
+  const vbNl = await api("POST", `/api/v1/sheets/${vbBlad.data.id}/formulas`, { formulaId: vb.id, language: "nl" });
+  meld(vbNl.status === 200 && vbNl.data.inserted === vb.code, "POST /sheets/{id}/formulas: language nl", kort(vbNl));
+  const vbApp = await api("POST", `/api/v1/sheets/${vbBlad.data.id}/formulas`, { formulaId: vb.id });
+  meld(vbApp.status === 200 && [vb.code, vb.codeEn].includes(vbApp.data.inserted), "POST /sheets/{id}/formulas: zonder language de taal van de app", kort(vbApp));
+  meld((await api("POST", `/api/v1/sheets/${vbBlad.data.id}/formulas`, { formulaId: vb.id, language: "fr" })).status === 400, "POST /sheets/{id}/formulas: onbekende taal 400");
+  meld((await api("DELETE", `/api/v1/sheets/${vbBlad.data.id}`)).status === 200, "voorbeeldblad weer weg");
+
   const ren = await api("PATCH", `/api/v1/sheets/${eigenId}`, { name: "Eigen blad" });
   meld(ren.status === 200 && ren.data.name === "Eigen blad", "PATCH /sheets/{id}: hernoemen");
   const dup = await api("POST", `/api/v1/sheets/${liggerId}/duplicate`, { name: "Ligger dak (b)" });

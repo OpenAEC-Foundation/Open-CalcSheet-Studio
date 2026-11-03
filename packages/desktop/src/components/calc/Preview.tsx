@@ -126,7 +126,7 @@ export default function Preview() {
   useLayoutEffect(() => {
     const b = new IframeBeelden(() => {
       const vt = tRef.current;
-      return { laden: vt("iframe.laden"), uitleg: vt("iframe.uitleg"), scripts: vt("iframe.scripts") };
+      return { laden: vt("iframe.laden"), uitleg: vt("iframe.uitleg"), scripts: vt("iframe.scripts"), beeld: (host) => vt("iframe.beeld", { host }) };
     });
     iframes.current = b;
     return () => {

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import i18next from "i18next";
 import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { projectScope, type ProjectGegevens } from "../../../store/projectGegevens";
@@ -75,7 +76,9 @@ export function useRapportWeergave(): RapportWeergave {
   const bladen = useMemo(() => {
     const scope = projectScope(gegevens);
     return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope) }));
-  }, [exemplaren, gegevens]);
+    // De taal hoort erbij: de uitvoer van een blad volgt de taal van de app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exemplaren, gegevens, i18next.language]);
 
   const opzet = useMemo(() => {
     const lijst = exemplaren.map((ex) => ({ id: ex.id, naam: ex.naam }));

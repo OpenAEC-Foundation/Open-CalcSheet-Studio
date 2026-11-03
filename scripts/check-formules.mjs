@@ -120,6 +120,21 @@ console.log(`  ${FORMULE_GROEPEN.map((g) => `${g.id} ${FORMULES.filter((f) => f.
 // ─── 2. Elk fragment rekent foutloos door ───────────────────────────
 console.log("\nElk fragment rekent met de kern zonder foutmelding:");
 const TOEWIJZING = /^\s*[\p{L}_][\p{L}\p{N}_,]*\s*=/u;
+/**
+ * De regels met en zonder #hide: een verborgen toewijzing (hulpvariabelen voor
+ * een tekening) rekent wel mee, maar komt niet terug als knoop.
+ */
+function splitOpHide(code) {
+  const zichtbaar = [];
+  const verborgen = [];
+  let weg = false;
+  for (const r of code.split("\n")) {
+    if (/^#hide\b/i.test(r)) weg = true;
+    else if (/^#show\b/i.test(r)) weg = false;
+    else (weg ? verborgen : zichtbaar).push(r);
+  }
+  return { zichtbaar, verborgen };
+}
 let schoon = 0;
 for (const f of FORMULES) {
   const standen = f.projectvariabelen?.length ? [1, 2, 3] : [2];
@@ -134,8 +149,13 @@ for (const f of FORMULES) {
       continue;
     }
     const toew = knopen.filter((n) => n.type === "assignment");
-    const regels = f.code.split("\n").filter((r) => TOEWIJZING.test(r)).length;
+    const { zichtbaar, verborgen } = splitOpHide(f.code);
+    const regels = zichtbaar.filter((r) => TOEWIJZING.test(r)).length;
     if (toew.length !== regels) ok = meld(false, waar, `${regels} toewijzingsregels, maar ${toew.length} toewijzingen gelezen`) && ok;
+    for (const r of verborgen) {
+      const naam = TOEWIJZING.test(r) ? r.split("=")[0].trim() : "";
+      if (EENHEIDSNAMEN.has(naam)) ok = meld(false, waar, `verborgen variabele "${naam}" overschaduwt een eenheid of constante`) && ok;
+    }
     for (const n of knopen) {
       const tekst = String(n.result ?? n.text ?? "");
       if (/error/i.test(tekst)) ok = meld(false, waar, `${n.name ?? n.type}: ${tekst}`) && ok;

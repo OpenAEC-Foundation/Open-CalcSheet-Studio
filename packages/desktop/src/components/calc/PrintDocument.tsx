@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import i18next from "i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { projectScope, projectWaarde } from "../../store/projectGegevens";
 import { usePrintStore } from "../../store/printStore";
@@ -8,6 +9,9 @@ import { rekenversie } from "./bladVersie";
 import { Oordeel, PrintBlad } from "./PrintBlad";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import "./PrintDocument.css";
+
+/** Een tekst op papier: de uitdraai volgt de taal van de app (beelden.json, onder `afdruk`). */
+const op = (sleutel: string, opties?: Record<string, unknown>) => i18next.t(`beelden:afdruk.${sleutel}`, opties ?? {});
 
 /** Wat er op het voorblad en in de uitdraai staat. */
 export interface Uitdraai {
@@ -49,27 +53,27 @@ export function useUitdraai(): Uitdraai {
     // Een selectie met alleen verdwenen bladen valt terug op het hele project.
     const gekozen = selectie ? exemplaren.filter((e) => selectie.includes(e.id)) : exemplaren;
     return (gekozen.length ? gekozen : exemplaren).map((ex) => ({ ex, ...rekenBladDoor(ex, scope) }));
-  }, [exemplaren, gegevens, selectie, soort]);
+    // De taal hoort erbij: de uitvoer volgt de taal van de app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exemplaren, gegevens, selectie, soort, i18next.language]);
 
   const kop: Array<[string, string | undefined]> = [
-    ["Projectnummer", gegevens.project_nummer],
-    ["Projectnaam", gegevens.project_naam],
-    ["Onderdeel", gegevens.onderdeel],
-    ["Opdrachtgever", gegevens.opdrachtgever],
-    ["Constructeur", gegevens.constructeur],
-    ["Locatie", gegevens.locatie],
-    ["Gevolgklasse", gegevens.CC ? `CC${gegevens.CC}` : undefined],
-    ["Betrouwbaarheidsklasse", gegevens.RC ? `RC${gegevens.RC}` : undefined],
-    ["Ontwerplevensduur", gegevens.DesignLife ? `${projectWaarde(gegevens, "DesignLife")} jaar` : undefined],
+    [op("projectnummer"), gegevens.project_nummer],
+    [op("projectnaam"), gegevens.project_naam],
+    [op("onderdeel"), gegevens.onderdeel],
+    [op("opdrachtgever"), gegevens.opdrachtgever],
+    [op("constructeur"), gegevens.constructeur],
+    [op("locatie"), gegevens.locatie],
+    [op("gevolgklasse"), gegevens.CC ? `CC${gegevens.CC}` : undefined],
+    [op("betrouwbaarheidsklasse"), gegevens.RC ? `RC${gegevens.RC}` : undefined],
+    [op("levensduur"), gegevens.DesignLife ? op("jaar", { n: projectWaarde(gegevens, "DesignLife") }) : undefined],
     // Op de splitspunten tussen de referentie-uitwerking en de norm rekent elk blad allebei en
     // kiest er één. Welke, moet op de afdruk staan: zonder die regel zijn twee
     // rapporten uit hetzelfde project niet met elkaar te vergelijken, en weet
     // een controleur niet welke lezing hij voor zich heeft.
     [
-      "Rekenwijze",
-      gegevens.rekenwijze === "0"
-        ? "de norm gevolgd op de gemarkeerde punten"
-        : "de referentie-uitwerking gevolgd op de gemarkeerde punten",
+      op("rekenwijze"),
+      gegevens.rekenwijze === "0" ? op("rekenwijzeNorm") : op("rekenwijzeReferentie"),
     ],
   ];
 
@@ -79,7 +83,7 @@ export function useUitdraai(): Uitdraai {
     alleBladen: exemplaren,
     enkel: bladen.length === 1,
     kopregels: kop.filter((r): r is [string, string] => !!r[1]),
-    datum: new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }),
+    datum: new Date().toLocaleDateString(i18next.language?.startsWith("nl") ? "nl-NL" : "en-GB", { day: "numeric", month: "long", year: "numeric" }),
     onderdeel: gegevens.onderdeel,
     projectNummer: gegevens.project_nummer,
     constructeur: gegevens.constructeur,
@@ -92,15 +96,15 @@ function Resultaten({ uitdraai }: { uitdraai: Uitdraai }) {
   const nietGoed = bladen.filter((b) => b.resultaat.voldoet === false).length;
   return (
     <>
-      <p className="print-sectiekop">Inhoud en resultaten</p>
+      <p className="print-sectiekop">{op("inhoudResultaten")}</p>
       <table className="print-resultaten">
         <thead>
           <tr>
             <th className="nr">#</th>
-            <th>Onderdeel</th>
-            <th>Grondslag</th>
+            <th>{op("onderdeel")}</th>
+            <th>{op("grondslag")}</th>
             <th className="uc">UC</th>
-            <th>Oordeel</th>
+            <th>{op("oordeel")}</th>
           </tr>
         </thead>
         <tbody>
@@ -117,9 +121,9 @@ function Resultaten({ uitdraai }: { uitdraai: Uitdraai }) {
       </table>
       <p className="print-resultaten-noot">
         {nietGoed === 0
-          ? "Alle getoetste onderdelen voldoen."
-          : `${nietGoed} van de ${bladen.length} onderdelen ${nietGoed === 1 ? "voldoet" : "voldoen"} niet; zie het betreffende blad.`}
-        {" "}UC is de maatgevende unity check van het blad; — betekent dat het blad geen eindtoets heeft.
+          ? op("alleVoldoen")
+          : op(nietGoed === 1 ? "nietGoedEen" : "nietGoedMeer", { n: nietGoed, totaal: bladen.length })}
+        {" "}{op("ucNoot")}
       </p>
     </>
   );
@@ -131,8 +135,8 @@ export function PrintVoorblad({ uitdraai }: { uitdraai: Uitdraai }) {
   return (
     <section className="print-voorblad">
       <div className="print-voorblad-band" />
-      <p className="print-soort">Constructieve berekening</p>
-      <h1>{projectNaam || "Berekening"}</h1>
+      <p className="print-soort">{op("soort")}</p>
+      <h1>{projectNaam || op("berekening")}</h1>
       {onderdeel && <p className="print-ondertitel">{onderdeel}</p>}
       {kopregels.length > 0 && (
         <table className="print-gegevens">
@@ -148,8 +152,8 @@ export function PrintVoorblad({ uitdraai }: { uitdraai: Uitdraai }) {
       )}
       <Resultaten uitdraai={uitdraai} />
       <div className="print-voorblad-voet">
-        <span>{projectNummer ? `Project ${projectNummer}` : ""}</span>
-        <span>{constructeur ? `Opgesteld door ${constructeur}` : ""}</span>
+        <span>{projectNummer ? op("project", { nummer: projectNummer }) : ""}</span>
+        <span>{constructeur ? op("opgesteldDoor", { naam: constructeur }) : ""}</span>
         <span>{datum}</span>
       </div>
     </section>
@@ -168,14 +172,14 @@ export function PrintVoorblad({ uitdraai }: { uitdraai: Uitdraai }) {
 export function PrintProjectregel({ uitdraai, rekenversie }: { uitdraai: Uitdraai; rekenversie?: string }) {
   const { kopregels, datum } = uitdraai;
   // Naam en nummer staan al in de loopkop; hier de rest van de gegevens.
-  const regels = kopregels.filter(([label]) => label !== "Projectnaam" && label !== "Projectnummer");
+  const regels = kopregels.filter(([label]) => label !== op("projectnaam") && label !== op("projectnummer"));
   return (
     <p className="print-projectregel">
-      <span className="print-soort">Constructieve berekening</span>
+      <span className="print-soort">{op("soort")}</span>
       {regels.map(([label, waarde]) => (
         <span key={label}><b>{label}</b> {waarde}</span>
       ))}
-      {rekenversie && <span><b>Rekenversie</b> {rekenversie}</span>}
+      {rekenversie && <span><b>{op("rekenversie")}</b> {rekenversie}</span>}
       <span>{datum}</span>
     </p>
   );
@@ -188,7 +192,7 @@ export function UitdraaiInhoud({ uitdraai }: { uitdraai: Uitdraai }) {
     <>
       {!enkel && <PrintVoorblad uitdraai={uitdraai} />}
       {bladen.map(({ ex, html, resultaat }, i) => (
-        <PrintBlad key={ex.id} ex={ex} html={html} nummer={i + 1} resultaat={resultaat}
+        <PrintBlad key={ex.id} ex={ex} html={html} nummer={i + 1} resultaat={resultaat} titelInKop
           projectregel={enkel ? <PrintProjectregel uitdraai={uitdraai} rekenversie={rekenversie(ex.source)} /> : undefined} />
       ))}
     </>
@@ -246,6 +250,9 @@ function BladenDocument() {
         <span>{datum}</span>
       </div>
 
+      {/* De paginaregel in de marge (PrintDocument.css) in de taal van de app; zo'n
+          regel kent geen eigen tekst per taal, dus hier de woorden. */}
+      <style>{`@page { @bottom-center { content: "${op("paginaWoord")} " counter(page) " ${op("vanWoord")} " counter(pages); } }`}</style>
       <UitdraaiInhoud uitdraai={uitdraai} />
     </div>
   );

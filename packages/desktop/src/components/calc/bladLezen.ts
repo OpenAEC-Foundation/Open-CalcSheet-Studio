@@ -1,3 +1,4 @@
+import i18next from "i18next";
 import type { EvaluatedNode } from "@ifc-calc/core";
 
 /*
@@ -23,8 +24,11 @@ export interface Resultaat {
   voldoet: boolean | null;
 }
 
-/** Nederlandse notatie met twee decimalen; een oneindige UC als ∞. */
-export const ucTekst = (uc: number) => (Number.isFinite(uc) ? uc.toFixed(2).replace(".", ",") : "∞");
+/** Twee decimalen in de notatie van de taal van de app; een oneindige UC als ∞. */
+export const ucTekst = (uc: number) => {
+  if (!Number.isFinite(uc)) return "∞";
+  return i18next.language?.startsWith("nl") ? uc.toFixed(2).replace(".", ",") : uc.toFixed(2);
+};
 
 /** Een uitkomst van het blad als getal. ∞ is een geldige UC: weerstand nul. */
 function getal(tekst: string): number {
@@ -46,7 +50,8 @@ function* knopen(lijst: EvaluatedNode[]): Generator<EvaluatedNode> {
  * De maatgevende UC is de laatste zichtbare `UC_max`. Het oordeel komt uit de
  * slotzin ("Maatgevende UC = … → voldoet"), want een blad kan ondanks een UC
  * onder 1,0 afkeuren, bijvoorbeeld op de detaillering. Zonder slotzin beslist
- * de UC.
+ * de UC. De slotzin staat in de taal van de uitvoer: Nederlands, of in het Engels
+ * "Governing UC = … → … OK" (templates/vertalingen.ts).
  */
 export function leesResultaat(nodes: EvaluatedNode[], naam: string): Resultaat {
   let titel = naam;
@@ -66,14 +71,14 @@ export function leesResultaat(nodes: EvaluatedNode[], naam: string): Resultaat {
     if (n.type === "text") tekstdelen.push(n.text);
   }
   const tekst = tekstdelen.join(" ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-  const slot = tekst.lastIndexOf("Maatgevende UC");
+  const slot = Math.max(tekst.lastIndexOf("Maatgevende UC"), tekst.lastIndexOf("Governing UC"));
   let voldoet: boolean | null = null;
   if (slot >= 0) {
     const zin = tekst.slice(slot, slot + 240);
-    voldoet = !/voldoe[nt] niet/.test(zin) && /voldoe[nt]/.test(zin);
+    voldoet = !/voldoe[nt] niet|\bnot OK\b/.test(zin) && /voldoe[nt]|\bOK\b/.test(zin);
     // Staat UC_max niet zichtbaar in het blad, dan het getal uit de slotzin.
     if (uc === null) {
-      const m = zin.match(/Maatgevende UC\s*=\s*([\d.,]+|∞)/);
+      const m = zin.match(/(?:Maatgevende|Governing) UC\s*=\s*([\d.,]+|∞)/);
       const w = m ? getal(m[1]) : NaN;
       if (!Number.isNaN(w)) uc = w;
     }

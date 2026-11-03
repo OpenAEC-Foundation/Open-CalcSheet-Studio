@@ -29,6 +29,15 @@
  * papier te breed is staat daar de kale waarde met `alleen-afdruk`. De knopen
  * blijven gelijk; wat het beeld en de controles lezen, verandert niet.
  *
+ * De tekeningen van het statische schema en de plattegrond dragen de klasse
+ * `vooraan`: ze rekenen op hun eigen plek mee (ze hebben de lasten uit §3 nodig),
+ * en de kern zet ze bij het opmaken direct onder de titel. De uitkomsten merken
+ * daar niets van.
+ *
+ * Bij een raveelbalk toetst §8a ook de wisselbalk waar hij op afdraagt: een ligger
+ * op twee steunpunten met de oplegreactie als puntlast. Met de hand nagerekend in
+ * scripts/check-balklaag-wisselbalk.mjs.
+ *
  * Paragraaf 10 is het 3D-beeld: `@ifcx balklaag` maakt uit de waarden op die plek
  * een IFCX-document (packages/core/src/balklaagIfcx.ts), en het beeld leest alleen
  * dat document. Het staat achteraan omdat het de unity checks nodig heeft. Standaard
@@ -220,8 +229,11 @@ s23 = s2 + s3
 #if schema ≡ 4
     b_sparing = ?*(mm)', breedte sparing<span class="alleen-scherm"> = overspanning van de raveelbalk</span><span class="kolom-3"></span>'
     l_staart = ?*(mm)', staartlengte<span class="alleen-scherm"> van de onderbroken balken</span><span class="kolom-3"></span>'
+    l_sparing = ?*(mm)', lengte sparing<span class="alleen-scherm"> langs de balken; 0: de sparing loopt door tot de oplegging en er is één raveelbalk</span><span class="kolom-3"></span>'
+    L_w = ?*(mm)', overspanning wisselbalk<span class="alleen-scherm">, hart op hart opleggingen; 0: die van de balklaag, L<sub>d</sub> + a<sub>opl</sub></span><span class="alleen-scherm"></span>'
     #hide
-    L_d = 0 mm
+    'De dagmaat van de balklaag is hier alleen de standaard voor de wisselbalk.
+    L_d = ?*(mm)
     #show
 #else
     L_d = ?*(mm)', dagmaat<span class="alleen-scherm"> (vrije overspanning); bij twee velden die van het eerste veld</span><span class="kolom-3"></span>'
@@ -248,6 +260,22 @@ a_opl = ?*(mm)', opleglengte<span class="alleen-scherm"> per zijde</span><span c
 hoh = ?*(mm)', h.o.h. balken<span class="kolom-3"></span>'
 t_vloer = ?*(mm)', dikte beschot<span class="kolom-3"></span>'
 E_beschot = ?*(N/mm^2)', beschot<span class="alleen-scherm"> (E<sub>0,ser,rep</sub>)</span><span class="kolom-3"></span>'
+#if schema ≡ 4
+    b_w = ?*(mm)', breedte per wisselbalk<span class="alleen-scherm">; 0: gelijk aan de balklaag</span><span class="alleen-scherm"></span>'
+    h_w = ?*(mm)', hoogte wisselbalk<span class="alleen-scherm">; 0: gelijk aan de balklaag</span><span class="alleen-scherm"></span>'
+    @select n_w "Wisselbalk samengesteld uit"
+      Twee balken = 2
+      Eén balk = 1
+    @end
+    @select klasse_w "Sterkteklasse wisselbalk"
+      Gelijk aan de balklaag = 0
+      C18 = 1
+      C24 = 2
+      C30 = 3
+      GL24h = 4
+      GL28h = 5
+    @end
+#end if
 #if ond ≡ 1
     b_ond = ?*(m)', belaste breedte onderslag<span class="kolom-3"></span>'
     '<i>Een onderslag draagt een strook vloer in plaats van één balk: bij balken die over twee gelijke velden doorlopen 1,25 × L, bij losse balken aan weerszijden de som van de halve overspanningen. k<sub>r</sub> is dan 1,0 en de trillingstoets hoort bij de balklaag zelf. Het eigen gewicht van de balken die op de onderslag liggen komt in g<sub>bl</sub> (§3).</i><span class="alleen-scherm"></span>
@@ -261,6 +289,33 @@ E_beschot = ?*(N/mm^2)', beschot<span class="alleen-scherm"> (E<sub>0,ser,rep</s
     L_th = b_sparing + a_opl', theoretische overspanning, sparing plus opleglengte'
 #else
     L_th = L_d + a_opl', theoretische overspanning'
+#end if
+
+#if schema ≡ 4
+    #hide
+    'De wisselbalk (§8a): overspanning, doorsnede en de plaats van de raveelbalken. Een
+    'sparing die niet tot de oplegging doorloopt, heeft een tweede raveelbalk met de
+    'staart aan de andere kant.
+    L_w,th = if(L_w > 0 mm; L_w; L_d + a_opl)
+    b_w,e = if(b_w > 0 mm; b_w; b_balk)
+    h_w,e = if(h_w > 0 mm; h_w; h_balk)
+    b_w,t = n_w*b_w,e
+    tw = bool(l_sparing > 0 mm)*bool(l_staart + l_sparing < L_w,th)
+    l_staart,2 = if(tw ≡ 1; L_w,th - l_staart - l_sparing; 0 mm)
+    wb_onv = 1 - bool(l_staart > 0 mm)*bool(l_staart < L_w,th)
+    #show
+    #if wb_onv ≡ 1
+        '<span style="color:#b91c1c"><b>De raveelbalk ligt niet op de overspanning van de wisselbalk:</b> l<sub>staart</sub> hoort tussen 0 en L<sub>w,th</sub> te liggen. De wisselbalk is zo niet getoetst.</span>
+    #end if
+    #if bool(l_sparing > 0 mm)*(1 - tw) ≡ 1
+        '<span style="color:#b45309">De sparing loopt tot of voorbij de oplegging van de wisselbalk: het blad rekent met één raveelbalk.</span>
+    #end if
+#else
+    #hide
+    tw = 0
+    wb_onv = 0
+    UC_wb = 0
+    #show
 #end if
 
 #hide
@@ -572,7 +627,11 @@ F_k = ?*(kN)', geconcentreerd<span class="kolom-3"></span>'
 '<h6>Lasten per balk<span class="alleen-scherm"></span></h6>
 '<i>De belaste breedte is bij een balk in een balklaag de hart-op-hart afstand en bij een onderslag de ingevoerde strook vloer. Bij een raveelbalk is het de halve staartlengte: elke onderbroken balk zet zijn oplegreactie op de raveelbalk af, per strekkende meter een vloerstrook van l<sub>staart</sub>/2.</i><span class="alleen-scherm"></span>
 #if schema ≡ 4
-    b_belast = l_staart/2 to mm', belaste breedte, halve staartlengte'
+    #if tw ≡ 1
+        b_belast = max(l_staart; l_staart,2)/2 to mm', belaste breedte, de helft van de langste staart: de zwaarste raveelbalk'
+    #else
+        b_belast = l_staart/2 to mm', belaste breedte, halve staartlengte'
+    #end if
 #else if ligger ≡ 2
     b_belast = b_ond to mm', belaste breedte van de onderslag'
 #else
@@ -603,7 +662,8 @@ kr_een = max(bool(schema ≡ 4); bool(ligger ≡ 2))
     '<i>Een puntlast verdeelt zich via het beschot over meerdere balken. De concentratiefactor k<sub>r</sub> (NB) is het deel dat op één balk komt; stijver beschot geeft een kleinere k<sub>r</sub>.</i><span class="alleen-scherm"></span>
     k_r_0 = 0.37 + 0.8*hoh/a_ref - E_vl*t_ruw^3/12/EI_ref
     '<i>(NB.5.1) geldt voor 0 &lt; k<sub>r</sub> ≤ 1. Bij een dik of stijf beschot op een kleine h.o.h. komt k<sub>r,0</sub> op of onder 0 uit; dan ligt de formule buiten dat gebied en geeft de NB geen reductie: k<sub>r</sub> = 1. Binnen het gebied houdt het blad een ondergrens van 1/3 aan (veilige kant): één balk neemt dan nog een derde van de puntlast.</i><span class="alleen-scherm"></span>
-    k_r = if(k_r_0 ≤ 0; 1; min(1; max(k_r_0; 1/3)))'<span class="alleen-scherm">, concentratiefactor (NB.5.1)</span><span class="kolom-2"></span>'
+    k_r = if(k_r_0 ≤ 0; 1; min(1; max(k_r_0; 1/3)))'<span class="alleen-scherm">, concentratiefactor (NB.5.1)</span><span class="alleen-scherm"></span>'
+    k_r'<span class="alleen-afdruk"></span><span class="kolom-2"></span>'
     #if k_r_0 ≤ 0
         '<span style="color: #b45309">k<sub>r,0</sub> = 'k_r_0' ≤ 0: buiten het geldigheidsgebied 0 &lt; k<sub>r</sub> ≤ 1 van (NB.5.1); geen reductie, k<sub>r</sub> = 1.</span>
     #else if k_r_0 < 1/3
@@ -676,67 +736,91 @@ o_x = 240 - o_b/2
 '</svg>'
 #end if
 
-'<h6>Statisch schema<span class="alleen-scherm"></span></h6>
+'<h6>Statisch schema<span class="alleen-scherm"></span><span class="vooraan"></span></h6>
 #if schema ≡ 4
-    '<i>Plattegrond van de sparing, op schaal. De onderbroken balken eindigen op de raveelbalk; die draagt zijn last af op de twee wisselbalken ernaast en staat hieronder als ligger op twee steunpunten.</i><span class="alleen-scherm"></span>
     #hide
-    'Tekengebied: de sparing plus anderhalve balkafstand aan weerszijden, en in
-    'de lengte de staart plus de helft daarvan om de sparing zelf te tonen.
-    pw = b_sparing + 3*hoh
-    ph = 1.5*l_staart
-    p_s = min(400/(pw/(1 mm)); 150/(ph/(1 mm)))
-    p_b = p_s*pw/(1 mm)
-    p_h = p_s*ph/(1 mm)
-    p_x0 = 40 + (400 - p_b)/2
-    p_y0 = 30
-    p_spb = p_s*b_sparing/(1 mm)
-    p_st = p_s*l_staart/(1 mm)
-    p_hoh = p_s*hoh/(1 mm)
-    p_mid = p_x0 + p_b/2
-    p_wl = p_mid - p_spb/2
-    p_wr = p_mid + p_spb/2
-    p_rav = p_y0 + p_st
-    p_ond = p_y0 + p_h
-    p_n = max(1; floor(b_sparing/hoh) - 1)
-    p_stap = p_spb/(p_n + 1)
+    'Tekengebied: de hele overspanning van de wisselbalken met de opleggingen, op schaal.
+    'De balken lopen hier naar rechts: oplegging A links, oplegging B rechts.
+    p_L = max(L_w,th/(1 mm); 1)
+    p_bs = max(b_sparing/(1 mm); 1)
+    p_hoh = max(hoh/(1 mm); 1)
+    p_s = min(400/p_L; 190/(p_bs + 2*b_w,t/(1 mm) + 2*p_hoh))
+    p_x0 = 40 + (400 - p_s*p_L)/2
+    p_x1 = p_x0 + p_s*p_L
+    p_yt = 20
+    p_bB = max(3; p_s*b_w,t/(1 mm))
+    p_bj = max(2; p_s*b_balk/(1 mm))
+    p_i1 = p_yt + p_s*p_hoh + p_bB/2
+    p_i2 = p_i1 + p_s*p_bs
+    p_yb = p_i2 + p_bB/2 + p_s*p_hoh
+    p_xr = p_x0 + p_s*min(l_staart/(1 mm); p_L)
+    p_xr2 = if(tw ≡ 1; p_x0 + p_s*(l_staart + l_sparing)/(1 mm); p_x1)
+    p_n = min(12; max(1; floor(b_sparing/max(hoh; 1 mm)) - 1))
+    p_stap = (p_i2 - p_i1)/(p_n + 1)
+    p_ym = (p_i1 + p_i2)/2
+    p_xs = (p_xr + p_xr2)/2
+    p_H = p_yb + 58
     #show
-    '<svg class="alleen-scherm" viewbox="0 0 480 220" xmlns="http://www.w3.org/2000/svg" style="font-size:11px; width:100%; max-height:230px;">
-    '  <!-- de muur waar de balken op liggen -->
-    '  <line x1="'p_x0 - 10'" y1="'p_y0'" x2="'p_x0 + p_b + 10'" y2="'p_y0'" style="stroke:#374151; stroke-width:2"/>
-    #for i = 0 : 20
-    '  <line x1="'p_x0 - 10 + i*(p_b + 20)/20'" y1="'p_y0'" x2="'p_x0 - 16 + i*(p_b + 20)/20'" y2="'p_y0 - 7'" style="stroke:#374151; stroke-width:0.7"/>
-    #loop
-    '  <!-- doorlopende balken naast de wisselbalken -->
-    '  <line x1="'p_wl - p_hoh'" y1="'p_y0'" x2="'p_wl - p_hoh'" y2="'p_ond'" style="stroke:#8B6F47; stroke-width:1.4"/>
-    '  <line x1="'p_wr + p_hoh'" y1="'p_y0'" x2="'p_wr + p_hoh'" y2="'p_ond'" style="stroke:#8B6F47; stroke-width:1.4"/>
+    '<svg class="vooraan alleen-scherm" viewbox="0 0 480 'p_H'" xmlns="http://www.w3.org/2000/svg" style="font-size:11px; width:100%; max-height:'p_H + 10'px;">
+    '  <!-- de opleggingen van de wisselbalken en de balklaag -->
+    '  <rect x="'p_x0 - 4'" y="'p_yt - 9'" width="8" height="'p_yb - p_yt + 18'" style="fill:#e5e7eb; stroke:#374151; stroke-width:1"/>
+    '  <rect x="'p_x1 - 4'" y="'p_yt - 9'" width="8" height="'p_yb - p_yt + 18'" style="fill:#e5e7eb; stroke:#374151; stroke-width:1"/>
+    '  <!-- de doorgaande balken naast de wisselbalken -->
+    '  <rect x="'p_x0'" y="'p_yt - p_bj/2'" width="'p_x1 - p_x0'" height="'p_bj'" style="fill:#E3C08A; stroke:#8B6F47; stroke-width:0.7"/>
+    '  <rect x="'p_x0'" y="'p_yb - p_bj/2'" width="'p_x1 - p_x0'" height="'p_bj'" style="fill:#E3C08A; stroke:#8B6F47; stroke-width:0.7"/>
     '  <!-- de sparing -->
-    '  <rect x="'p_wl'" y="'p_rav'" width="'p_spb'" height="'p_ond - p_rav'" style="fill:#F1F5F9; stroke:#94A3B8; stroke-width:0.8; stroke-dasharray:4 3"/>
-    '  <text x="'p_mid'" y="'(p_rav + p_ond)/2 + 4'" text-anchor="middle" style="fill:#64748B">sparing</text>
-    '  <!-- onderbroken balken: van de muur tot op de raveelbalk -->
+    '  <rect x="'p_xr'" y="'p_i1'" width="'p_xr2 - p_xr'" height="'p_i2 - p_i1'" style="fill:#F1F5F9; stroke:#94A3B8; stroke-width:0.8; stroke-dasharray:4 3"/>
+    '  <line x1="'p_xr'" y1="'p_i1'" x2="'p_xr2'" y2="'p_i2'" style="stroke:#cbd5e1; stroke-width:0.8"/>
+    '  <line x1="'p_xr2'" y1="'p_i1'" x2="'p_xr'" y2="'p_i2'" style="stroke:#cbd5e1; stroke-width:0.8"/>
+    '  <!-- de onderbroken balken: van de oplegging tot op de raveelbalk -->
     #for i = 1 : p_n
-    '  <line x1="'p_wl + i*p_stap'" y1="'p_y0'" x2="'p_wl + i*p_stap'" y2="'p_rav'" style="stroke:#8B6F47; stroke-width:1.4"/>
+    '  <rect x="'p_x0'" y="'p_i1 + i*p_stap - p_bj/2'" width="'p_xr - p_x0'" height="'p_bj'" style="fill:#E3C08A; stroke:#8B6F47; stroke-width:0.7"/>
+    #if tw ≡ 1
+        '  <rect x="'p_xr2'" y="'p_i1 + i*p_stap - p_bj/2'" width="'p_x1 - p_xr2'" height="'p_bj'" style="fill:#E3C08A; stroke:#8B6F47; stroke-width:0.7"/>
+    #end if
     #loop
-    '  <!-- wisselbalken: die dragen de raveelbalk -->
-    '  <rect x="'p_wl - 3'" y="'p_y0'" width="6" height="'p_ond - p_y0'" style="fill:#E3C08A; stroke:#8B6F47; stroke-width:1.2"/>
-    '  <rect x="'p_wr - 3'" y="'p_y0'" width="6" height="'p_ond - p_y0'" style="fill:#E3C08A; stroke:#8B6F47; stroke-width:1.2"/>
-    '  <text x="'p_wl - 8'" y="'p_ond + 12'" text-anchor="end" style="fill:#8B6F47">wisselbalk</text>
-    '  <text x="'p_wr + 8'" y="'p_ond + 12'" style="fill:#8B6F47">wisselbalk</text>
-    '  <!-- de raveelbalk zelf -->
-    '  <rect x="'p_wl'" y="'p_rav - 4'" width="'p_spb'" height="8" style="fill:#B45309; stroke:#7C2D12; stroke-width:1"/>
-    '  <text x="'p_mid'" y="'p_rav - 8'" text-anchor="middle" style="fill:#7C2D12; font-weight:700">raveelbalk</text>
-    '  <!-- maatlijnen -->
-    '  <line x1="'p_wl'" y1="'p_ond + 26'" x2="'p_wr'" y2="'p_ond + 26'" style="stroke:#1E40AF; stroke-width:1"/>
-    '  <circle cx="'p_wl'" cy="'p_ond + 26'" r="2.6" style="fill:#1E40AF"/>
-    '  <circle cx="'p_wr'" cy="'p_ond + 26'" r="2.6" style="fill:#1E40AF"/>
-    '  <text x="'p_mid'" y="'p_ond + 22'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">b<tspan dy="2.5" font-size="8">sparing</tspan><tspan dy="-2.5"> = 'b_sparing'</tspan></text>
-    '  <line x1="'p_x0 - 26'" y1="'p_y0'" x2="'p_x0 - 26'" y2="'p_rav'" style="stroke:#1E40AF; stroke-width:1"/>
-    '  <circle cx="'p_x0 - 26'" cy="'p_y0'" r="2.6" style="fill:#1E40AF"/>
-    '  <circle cx="'p_x0 - 26'" cy="'p_rav'" r="2.6" style="fill:#1E40AF"/>
-    '  <text x="'p_x0 - 30'" y="'(p_y0 + p_rav)/2'" text-anchor="end" style="fill:#1E40AF; font-weight:700">l<tspan dy="2.5" font-size="8">staart</tspan><tspan dy="-2.5"> = 'l_staart'</tspan></text>
+    '  <!-- de wisselbalken over hun volle lengte -->
+    '  <rect x="'p_x0'" y="'p_i1 - p_bB'" width="'p_x1 - p_x0'" height="'p_bB'" style="fill:#D9A866; stroke:#8B6F47; stroke-width:1"/>
+    '  <rect x="'p_x0'" y="'p_i2'" width="'p_x1 - p_x0'" height="'p_bB'" style="fill:#D9A866; stroke:#8B6F47; stroke-width:1"/>
+    '  <!-- de raveelbalk -->
+    '  <rect x="'p_xr - 2.5'" y="'p_i1'" width="5" height="'p_i2 - p_i1'" style="fill:#fca5a5; stroke:#b91c1c; stroke-width:1"/>
+    #if tw ≡ 1
+        '  <rect x="'p_xr2 - 2.5'" y="'p_i1'" width="5" height="'p_i2 - p_i1'" style="fill:#fca5a5; stroke:#b91c1c; stroke-width:1"/>
+    #end if
+    '  <!-- benamingen -->
+    '  <text x="'(p_xr + p_x1)/2'" y="'p_i1 - p_bB - 3'" text-anchor="middle" style="fill:#8B6F47; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">wisselbalk</text>
+    '  <text x="'p_xs'" y="'p_ym - 6'" text-anchor="middle" style="fill:#64748B">sparing</text>
+    #if p_xr2 - p_xr > 125
+        '  <text x="'p_xs'" y="'p_ym + 8'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">b<tspan dy="2.5" font-size="8">sparing</tspan><tspan dy="-2.5"> = 'b_sparing' mm</tspan></text>
+    #else
+        '  <text x="'p_xs'" y="'p_ym + 8'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">'b_sparing' mm</text>
+    #end if
+    '  <text x="'p_xr + 7'" y="'p_i1 + 13'" style="fill:#b91c1c; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">raveelbalk</text>
+    '  <text x="'p_x0 + 6'" y="'p_i1 + p_stap/2 + 3.5'" style="fill:#8B6F47; font-size:9.5px; stroke:#ffffff; stroke-width:3; paint-order:stroke">onderbroken balken</text>
+    '  <!-- maatlijnen: de staart, en de hele overspanning -->
+    '  <line x1="'p_x0'" y1="'p_yb + 24'" x2="'p_xr'" y2="'p_yb + 24'" style="stroke:#1E40AF; stroke-width:1"/>
+    '  <circle cx="'p_x0'" cy="'p_yb + 24'" r="2.6" style="fill:#1E40AF"/>
+    '  <circle cx="'p_xr'" cy="'p_yb + 24'" r="2.6" style="fill:#1E40AF"/>
+    #if tw ≡ 1
+        '  <text x="'(p_x0 + p_xr)/2'" y="'p_yb + 20'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">'l_staart' mm</text>
+    #else
+        '  <text x="'(p_x0 + p_xr)/2'" y="'p_yb + 20'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">l<tspan dy="2.5" font-size="8">staart</tspan><tspan dy="-2.5"> = 'l_staart' mm</tspan></text>
+    #end if
+    #if tw ≡ 1
+        '  <line x1="'p_xr'" y1="'p_yb + 24'" x2="'p_xr2'" y2="'p_yb + 24'" style="stroke:#1E40AF; stroke-width:1"/>
+        '  <line x1="'p_xr2'" y1="'p_yb + 24'" x2="'p_x1'" y2="'p_yb + 24'" style="stroke:#1E40AF; stroke-width:1"/>
+        '  <circle cx="'p_xr2'" cy="'p_yb + 24'" r="2.6" style="fill:#1E40AF"/>
+        '  <circle cx="'p_x1'" cy="'p_yb + 24'" r="2.6" style="fill:#1E40AF"/>
+        '  <text x="'p_xs'" y="'p_yb + 20'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">'l_sparing' mm</text>
+        '  <text x="'(p_xr2 + p_x1)/2'" y="'p_yb + 20'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">'l_staart,2' mm</text>
+    #end if
+    '  <line x1="'p_x0'" y1="'p_yb + 48'" x2="'p_x1'" y2="'p_yb + 48'" style="stroke:#1E40AF; stroke-width:1"/>
+    '  <circle cx="'p_x0'" cy="'p_yb + 48'" r="2.6" style="fill:#1E40AF"/>
+    '  <circle cx="'p_x1'" cy="'p_yb + 48'" r="2.6" style="fill:#1E40AF"/>
+    '  <text x="'(p_x0 + p_x1)/2'" y="'p_yb + 44'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">L<tspan dy="2.5" font-size="8">w,th</tspan><tspan dy="-2.5"> = 'L_w,th' mm</tspan></text>
     '</svg>'
 #end if
 
-'<i>De ligger met de karakteristieke lasten per balk, op schaal; de verdeling over de velden staat in §4, de combinaties in §5.</i><span class="alleen-scherm"></span>
 #hide
 'Totale lengte: bij een overstek of een tweede veld hoort daar meer bij dan
 'alleen de overspanning van het eerste veld.
@@ -749,7 +833,7 @@ sy = 124', hoogte van de balk-as
 smid = (sx1 + sx2)/2
 s_stap = (sx3 - sx1)/14', pijlafstand in de lastbanden
 #show
-'<svg class="alleen-scherm" viewbox="0 0 480 212" xmlns="http://www.w3.org/2000/svg" style="font-size:11px; width:100%; max-height:232px;">
+'<svg class="vooraan alleen-scherm" viewbox="0 0 480 212" xmlns="http://www.w3.org/2000/svg" style="font-size:11px; width:100%; max-height:232px;">
 '  <!-- veranderlijke verdeelde last: bovenste band, met een regel eronder voor het label van de permanente last -->
 #if q_q,k > 0 kN/m
     #for i = 0 : 14
@@ -793,19 +877,23 @@ s_stap = (sx3 - sx1)/14', pijlafstand in de lastbanden
 '  <line x1="'sx1'" y1="'sy + 52'" x2="'sx2'" y2="'sy + 52'" style="stroke:#1E40AF; stroke-width:1"/>
 '  <circle cx="'sx1'" cy="'sy + 52'" r="2.6" style="fill:#1E40AF"/>
 '  <circle cx="'sx2'" cy="'sy + 52'" r="2.6" style="fill:#1E40AF"/>
-'  <text x="'smid'" y="'sy + 48'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">L<tspan dy="2.5" font-size="8">th</tspan><tspan dy="-2.5"> = 'L_th'</tspan></text>
+'  <text x="'smid'" y="'sy + 48'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">L<tspan dy="2.5" font-size="8">th</tspan><tspan dy="-2.5"> = 'L_th' mm</tspan></text>
 #if schema ≡ 2
     '  <line x1="'sx2'" y1="'sy + 52'" x2="'sx3'" y2="'sy + 52'" style="stroke:#1E40AF; stroke-width:1"/>
     '  <circle cx="'sx3'" cy="'sy + 52'" r="2.6" style="fill:#1E40AF"/>
-    '  <text x="'(sx2 + sx3)/2'" y="'sy + 48'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">a = 'a_over'</text>
+    '  <text x="'(sx2 + sx3)/2'" y="'sy + 48'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">a = 'a_over' mm</text>
 #end if
 #if schema ≡ 3
     '  <line x1="'sx2'" y1="'sy + 52'" x2="'sx3'" y2="'sy + 52'" style="stroke:#1E40AF; stroke-width:1"/>
     '  <circle cx="'sx3'" cy="'sy + 52'" r="2.6" style="fill:#1E40AF"/>
-    '  <text x="'(sx2 + sx3)/2'" y="'sy + 48'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">L<tspan dy="2.5" font-size="8">2</tspan><tspan dy="-2.5"> = 'L_veld2'</tspan></text>
+    '  <text x="'(sx2 + sx3)/2'" y="'sy + 48'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">L<tspan dy="2.5" font-size="8">2</tspan><tspan dy="-2.5"> = 'L_veld2' mm</tspan></text>
 #end if
 '</svg>'
-'<span class="alleen-scherm"><span style="display:inline-block; width:14px; border-top:3px solid #475569; vertical-align:middle"></span>&nbsp;permanent &nbsp;&nbsp; <span style="display:inline-block; width:14px; border-top:3px solid #B45309; vertical-align:middle"></span>&nbsp;veranderlijk, verdeeld &nbsp;&nbsp; <span style="display:inline-block; width:14px; border-top:3px solid #B91C1C; vertical-align:middle"></span>&nbsp;veranderlijk, geconcentreerd</span>
+'<span class="alleen-scherm"><span style="display:inline-block; width:14px; border-top:3px solid #475569; vertical-align:middle"></span>&nbsp;permanent &nbsp;&nbsp; <span style="display:inline-block; width:14px; border-top:3px solid #B45309; vertical-align:middle"></span>&nbsp;veranderlijk, verdeeld &nbsp;&nbsp; <span style="display:inline-block; width:14px; border-top:3px solid #B91C1C; vertical-align:middle"></span>&nbsp;veranderlijk, geconcentreerd<span class="vooraan"></span></span>
+'<i>De ligger met de karakteristieke lasten per balk, op schaal; de verdeling over de velden staat in §4, de combinaties in §5.</i><span class="alleen-scherm"></span><span class="vooraan"></span>
+#if schema ≡ 4
+    '<i>De onderbroken balken eindigen op de raveelbalk; die staat hierboven als ligger op twee steunpunten en draagt zijn last als puntlast af op de twee wisselbalken (§8a).</i><span class="alleen-scherm"></span><span class="vooraan"></span>
+#end if
 
 # 4. Belastinggevallen
 
@@ -901,7 +989,7 @@ r_xP2 = if(s2 ≡ 1; r_tot; r_L1 + r_L2/2)
     b_Mv2 = M_veld2/(1 kN*m)
     b_Mp = max(b_Mv1; b_Mv2; 0)
     b_Mn = max(b_m; 0)
-    b_sM = 23/max(b_Mp + b_Mn; 0.00001)
+    b_sM = 28/max(b_Mp + b_Mn; 0.00001)
     b_yM = 32 + b_Mn*b_sM
     b_va = v1(0; b_w1; b_P1; b_m)
     b_vb = v1(r_L1; b_w1; b_P1; b_m)
@@ -909,7 +997,7 @@ r_xP2 = if(s2 ≡ 1; r_tot; r_L1 + r_L2/2)
     b_vd = v2(0; b_w2; b_P2; b_m)
     b_Vp = max(b_va; b_vc*r_twee; 0)
     b_Vn = max(-b_vb; -b_vd*r_twee; 0)
-    b_sV = 20/max(b_Vp + b_Vn; 0.00001)
+    b_sV = 28/max(b_Vp + b_Vn; 0.00001)
     b_yV = b_yM + b_Mp*b_sM + 19 + b_Vp*b_sV
     b_up = 0
     b_un = 0
@@ -928,6 +1016,22 @@ r_xP2 = if(s2 ≡ 1; r_tot; r_L1 + r_L2/2)
     b_x1 = x1t(b_w1; b_P1; b_m)
     b_x2 = r_tot - t2t(b_w2; b_P2; b_m)
     b_kleur = if(k ≡ 1; "#475569"; if(k ≤ 3; "#B45309"; "#B91C1C"))
+    'De tekens in de vlakken: het teken van de waarde op die plek, en alleen waar het
+    'vlak hoog genoeg is voor het teken (8 px). Bij het steunpunt en aan de randen van
+    'een veld wordt de lijn bemonsterd, op de plek waar nog ruimte is naast de waarden.
+    b_xS1 = 0.88*r_L1
+    b_xS2 = r_L1 + if(s2 ≡ 1; 0.3; 0.12)*(r_tot - r_L1)
+    b_mS1 = Mx(b_xS1; b_w1; b_w2; b_P1; b_P2; b_m)
+    b_mS2 = r_twee*Mx(b_xS2; b_w1; b_w2; b_P1; b_P2; b_m)
+    b_xa = 0.12*r_L1
+    b_xb = 0.88*r_L1
+    b_xc = r_L1 + 0.12*(r_tot - r_L1)
+    b_xd = r_L1 + 0.88*(r_tot - r_L1)
+    b_v1 = Vx(b_xa; b_w1; b_w2; b_P1; b_P2; b_m)
+    b_v2 = Vx(b_xb; b_w1; b_w2; b_P1; b_P2; b_m)
+    b_v3 = r_twee*Vx(b_xc; b_w1; b_w2; b_P1; b_P2; b_m)
+    b_v4 = r_twee*Vx(b_xd; b_w1; b_w2; b_P1; b_P2; b_m)
+    b_st = "fill:#111827; font-size:11px; font-weight:700; stroke:#ffffff; stroke-width:2.5; paint-order:stroke"
     #show
     '<svg class="bg-kaart" viewbox="0 0 260 'b_H'" xmlns="http://www.w3.org/2000/svg" style="font-size:10px; width:100%; max-height:'1.6*b_H'px;">
     '  <!-- de kop staat op het scherm erboven; op papier staan de kaarten naast elkaar en draagt de kaart hem zelf -->
@@ -975,13 +1079,25 @@ r_xP2 = if(s2 ≡ 1; r_tot; r_L1 + r_L2/2)
     '  <line x1="'bX(0) - 4'" y1="'b_yM'" x2="'bX(r_tot) + 4'" y2="'b_yM'" style="stroke:#374151; stroke-width:0.8"/>
     '  <text x="2" y="'b_yM + 3.5'" style="fill:#dc2626; font-weight:700">M</text>
     #if b_Mv1 > 0.00001
-        '  <text x="'bX(b_x1)'" y="'b_yM + b_sM*b_Mv1 + 10'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_Mv1'</text>
+        '  <text x="'bX(b_x1)'" y="'b_yM + b_sM*b_Mv1 + 10'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_Mv1' kNm</text>
+    #end if
+    #if b_Mv1*b_sM ≥ 8
+        '  <text x="'bX(b_x1)'" y="'b_yM + b_sM*b_Mv1/2 + 3.5'" text-anchor="middle" style="'b_st'">+</text>
     #end if
     #if b_Mn > 0.00001
-        '  <text x="'bX(r_L1)'" y="'b_yM - b_sM*b_Mn - 3'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'-b_Mn'</text>
+        '  <text x="'bX(r_L1)'" y="'b_yM - b_sM*b_Mn - 3'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'-b_Mn' kNm</text>
+    #end if
+    #if b_mS1*b_sM ≤ -8
+        '  <text x="'bX(b_xS1)'" y="'b_yM + b_sM*b_mS1/2 + 3.5'" text-anchor="middle" style="'b_st'">−</text>
+    #end if
+    #if b_mS2*b_sM ≤ -8
+        '  <text x="'bX(b_xS2)'" y="'b_yM + b_sM*b_mS2/2 + 3.5'" text-anchor="middle" style="'b_st'">−</text>
     #end if
     #if b_Mv2 > 0.00001
-        '  <text x="'bX(b_x2)'" y="'b_yM + b_sM*b_Mv2 + 10'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_Mv2'</text>
+        '  <text x="'bX(b_x2)'" y="'b_yM + b_sM*b_Mv2 + 10'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_Mv2' kNm</text>
+    #end if
+    #if b_Mv2*b_sM ≥ 8
+        '  <text x="'bX(b_x2)'" y="'b_yM + b_sM*b_Mv2/2 + 3.5'" text-anchor="middle" style="'b_st'">+</text>
     #end if
     '  <!-- V-lijn -->
     '  <polygon points="'bX(0)','b_yV'
@@ -996,13 +1112,41 @@ r_xP2 = if(s2 ≡ 1; r_tot; r_L1 + r_L2/2)
     ' 'bX(r_tot)','b_yV'" style="fill:rgba(59,130,246,0.18); stroke:#2563eb; stroke-width:1.2; stroke-linejoin:round"/>
     '  <line x1="'bX(0) - 4'" y1="'b_yV'" x2="'bX(r_tot) + 4'" y2="'b_yV'" style="stroke:#374151; stroke-width:0.8"/>
     '  <text x="2" y="'b_yV + 3.5'" style="fill:#2563eb; font-weight:700">V</text>
-    '  <text x="'bX(0) + 2'" y="'b_yV - b_sV*b_va + if(b_va < 0; 10; -3)'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_va'</text>
-    '  <text x="'bX(r_L1) - 2'" y="'b_yV - b_sV*b_vb + if(b_vb < 0; 10; -3)'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_vb'</text>
+    '  <text x="'bX(0) + 2'" y="'b_yV - b_sV*b_va + if(b_va < 0; 10; -3)'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_va' kN</text>
+    #if abs(b_vb - b_va) > 10^-6
+        '  <text x="'bX(r_L1) - 4'" y="'b_yV - b_sV*b_vb + if(b_vb < 0; 10; -3)'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_vb' kN</text>
+    #end if
+    #if b_v1*b_v2 > 0
+        #if abs(b_v1)*b_sV ≥ 8
+            '  <text x="'bX(0.5*r_L1)'" y="'b_yV - b_sV*b_v1/2 + 3.5'" text-anchor="middle" style="'b_st'">'if(b_v1 > 0; "+"; "−")'</text>
+        #end if
+    #else
+        #if abs(b_v1)*b_sV ≥ 8
+            '  <text x="'bX(b_xa)'" y="'b_yV - b_sV*b_v1/2 + 3.5'" text-anchor="middle" style="'b_st'">'if(b_v1 > 0; "+"; "−")'</text>
+        #end if
+        #if abs(b_v2)*b_sV ≥ 8
+            '  <text x="'bX(b_xb)'" y="'b_yV - b_sV*b_v2/2 + 3.5'" text-anchor="middle" style="'b_st'">'if(b_v2 > 0; "+"; "−")'</text>
+        #end if
+    #end if
+    #if b_v3*b_v4 > 0
+        #if abs(b_v3)*b_sV ≥ 8
+            '  <text x="'bX((b_xc + b_xd)/2)'" y="'b_yV - b_sV*b_v3/2 + 3.5'" text-anchor="middle" style="'b_st'">'if(b_v3 > 0; "+"; "−")'</text>
+        #end if
+    #else
+        #if abs(b_v3)*b_sV ≥ 8
+            '  <text x="'bX(b_xc)'" y="'b_yV - b_sV*b_v3/2 + 3.5'" text-anchor="middle" style="'b_st'">'if(b_v3 > 0; "+"; "−")'</text>
+        #end if
+        #if abs(b_v4)*b_sV ≥ 8
+            '  <text x="'bX(b_xd)'" y="'b_yV - b_sV*b_v4/2 + 3.5'" text-anchor="middle" style="'b_st'">'if(b_v4 > 0; "+"; "−")'</text>
+        #end if
+    #end if
     #if r_twee ≡ 1
-        '  <text x="'bX(r_L1) + 2'" y="'b_yV - b_sV*b_vc + if(b_vc < 0; 10; -3)'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_vc'</text>
+        '  <text x="'bX(r_L1) + 4'" y="'b_yV - b_sV*b_vc + if(b_vc < 0; 10; -3)'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_vc' kN</text>
     #end if
     #if s3 ≡ 1
-        '  <text x="'bX(r_tot) - 2'" y="'b_yV - b_sV*b_vd + if(b_vd < 0; 10; -3)'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_vd'</text>
+        #if abs(b_vd - b_vc) > 10^-6
+            '  <text x="'bX(r_tot) - 2'" y="'b_yV - b_sV*b_vd + if(b_vd < 0; 10; -3)'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_vd' kN</text>
+        #end if
     #end if
     '  <!-- zakkingslijn, omlaag positief -->
     '  <polyline points="
@@ -1017,12 +1161,12 @@ r_xP2 = if(s2 ≡ 1; r_tot; r_L1 + r_L2/2)
     '" style="fill:none; stroke:#2563eb; stroke-width:1.5; stroke-linejoin:round"/>
     '  <line x1="'bX(0) - 4'" y1="'b_yU'" x2="'bX(r_tot) + 4'" y2="'b_yU'" style="stroke:#9ca3af; stroke-width:0.8; stroke-dasharray:4 3"/>
     '  <text x="2" y="'b_yU + 3.5'" style="fill:#2563eb; font-weight:700">u</text>
-    '  <text x="'bX(r_L1/2)'" y="'b_yU + b_sU*b_u1m + if(b_u1m < 0; -4; 11)'" text-anchor="middle" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_u1m'</text>
+    '  <text x="'bX(r_L1/2)'" y="'b_yU + b_sU*b_u1m + if(b_u1m < 0; -4; 11)'" text-anchor="middle" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_u1m' mm</text>
     #if s3 ≡ 1
-        '  <text x="'bX(r_L1 + r_L2/2)'" y="'b_yU + b_sU*b_u2m + if(b_u2m < 0; -4; 11)'" text-anchor="middle" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_u2m'</text>
+        '  <text x="'bX(r_L1 + r_L2/2)'" y="'b_yU + b_sU*b_u2m + if(b_u2m < 0; -4; 11)'" text-anchor="middle" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_u2m' mm</text>
     #end if
     #if s2 ≡ 1
-        '  <text x="'bX(r_tot) - 2'" y="'b_yU + b_sU*b_ue + if(b_ue < 0; -4; 11)'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_ue'</text>
+        '  <text x="'bX(r_tot) - 2'" y="'b_yU + b_sU*b_ue + if(b_ue < 0; -4; 11)'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">'b_ue' mm</text>
     #end if
     '  <!-- opleggingen onder de zakkingslijn -->
     '  <polygon points="'bX(0)','b_yU' 'bX(0) - 4','b_yU + 6' 'bX(0) + 4','b_yU + 6'" style="fill:#fbbf24; stroke:#92400e; stroke-width:0.8"/>
@@ -1649,6 +1793,20 @@ my = 38 + o_Mh*m_s', as van de M-lijn'
 v_s = 48/max(o_Vp + o_Vn; 0.0001)
 vy2 = my + o_Mp*m_s + 58 + o_Vp*v_s', as van de V-lijn'
 svg_mv = vy2 + o_Vn*v_s + 24
+'De tekens in de vlakken van de omhullende: alleen waar het vlak hoog genoeg is (12 px).
+o_st = "fill:#111827; font-size:13px; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke"
+o_xS1 = 0.88*r_L1
+o_xS2 = r_L1 + if(s2 ≡ 1; 0.3; 0.12)*(r_tot - r_L1)
+o_mS1 = Mh_steun(o_xS1)
+o_mS2 = r_twee*Mh_steun(o_xS2)
+o_xa = 0.12*r_L1
+o_xb = 0.88*r_L1
+o_xc = r_L1 + 0.12*(r_tot - r_L1)
+o_xd = r_L1 + 0.88*(r_tot - r_L1)
+o_va = Vo_boven(o_xa)
+o_vb = Vo_onder(o_xb)
+o_vc = r_twee*Vo_boven(o_xc)
+o_vd = r_twee*Vo_onder(o_xd)
 #show
 '<i>De grootste uitkomsten van de UGT-combinaties (6.10a en 6.10b) uit de tabel in 5.2 en van de omhullende hieronder, met de puntlast op de ongunstigste plaats. De doorsnede is prismatisch, dus alleen de grootte telt: veld of steun.</i><span class="alleen-scherm"></span>
 #hide
@@ -1672,7 +1830,7 @@ V_Ed,omh = max(o_Vp; o_Vn)*kN
 M_y,Ed'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
 V_z,Ed'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
 
-'<svg class="omhullende" viewbox="0 0 480 'svg_mv'" xmlns="http://www.w3.org/2000/svg" style="font-size:11px; width:100%; max-height:'svg_mv + 10'px;">
+'<svg class="omhullende" viewbox="0 0 480 'svg_mv'" xmlns="http://www.w3.org/2000/svg" style="font-size:11px; width:100%; max-height:'svg_mv + 10'px; overflow:visible;">
 '  <!-- M-lijn: onder de as het grootste veldmoment, boven de as het grootste steunmoment, elk als gevuld vlak aan de trekzijde -->
 '  <polygon points="'lX(0)','my'
 #for i = 0 : 25
@@ -1698,15 +1856,27 @@ V_z,Ed'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
 '  <text x="'lX(0) - 10'" y="12" style="fill:#dc2626; font-weight:700">M-lijn [kNm]</text>
 #if o_M1 > o_Mk
     '  <circle cx="'lX(o_x1)'" cy="'my + m_s*o_M1'" r="2.4" style="fill:#dc2626"/>
-    '  <text x="'lX(o_x1)'" y="'my + m_s*o_M1 + 14'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_M1'</text>
+    '  <text x="'lX(o_x1)'" y="'my + m_s*o_M1 + 14'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_M1' kNm</text>
+#end if
+#if o_M1*m_s ≥ 12
+    '  <text x="'lX(o_x1)'" y="'my + m_s*o_M1/2 + 4.5'" text-anchor="middle" style="'o_st'">+</text>
 #end if
 #if o_M2 > o_Mk
     '  <circle cx="'lX(o_x2)'" cy="'my + m_s*o_M2'" r="2.4" style="fill:#dc2626"/>
-    '  <text x="'lX(o_x2)'" y="'my + m_s*o_M2 + 14'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_M2'</text>
+    '  <text x="'lX(o_x2)'" y="'my + m_s*o_M2 + 14'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_M2' kNm</text>
+#end if
+#if o_M2*m_s ≥ 12
+    '  <text x="'lX(o_x2)'" y="'my + m_s*o_M2/2 + 4.5'" text-anchor="middle" style="'o_st'">+</text>
 #end if
 #if o_Mh > o_Mk
     '  <circle cx="'lX(r_L1)'" cy="'my - m_s*o_Mh'" r="2.4" style="fill:#dc2626"/>
-    '  <text x="'lX(r_L1)'" y="'my - m_s*o_Mh - 6'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'-o_Mh'</text>
+    '  <text x="'lX(r_L1)'" y="'my - m_s*o_Mh - 6'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'-o_Mh' kNm</text>
+#end if
+#if o_mS1*m_s ≤ -12
+    '  <text x="'lX(o_xS1)'" y="'my + m_s*o_mS1/2 + 4.5'" text-anchor="middle" style="'o_st'">−</text>
+#end if
+#if o_mS2*m_s ≤ -12
+    '  <text x="'lX(o_xS2)'" y="'my + m_s*o_mS2/2 + 4.5'" text-anchor="middle" style="'o_st'">−</text>
 #end if
 '  <!-- V-lijn: boven de as de grootste positieve, onder de as de grootste negatieve waarde -->
 '  <polygon points="'lX(0)','vy2'
@@ -1733,32 +1903,45 @@ V_z,Ed'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
 '  <text x="'lX(0) - 10'" y="'vy2 - o_Vp*v_s - 26'" style="fill:#2563eb; font-weight:700">V-lijn [kN]</text>
 '  <!-- waarden aan de randen: boven de as positief, onder de as negatief; trek in een eindoplegging buiten de ligger, naast de oplegging -->
 #if o_V0 > 0.005 or o_V0n > -0.005
-    '  <text x="'lX(0) + 5'" y="'vy2 - v_s*o_V0 - 5'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_V0'</text>
+    '  <text x="'lX(0) + 5'" y="'vy2 - v_s*o_V0 - 5'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_V0' kN</text>
 #end if
 #if o_V0n < -0.005
-    '  <text x="'lX(0) - 8'" y="'max(vy2 - v_s*o_V0n + 4; vy2 + 12)'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_V0n'</text>
+    '  <text x="'lX(0) - 8'" y="'max(vy2 - v_s*o_V0n + 4; vy2 + 12)'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_V0n' kN</text>
 #end if
 #if o_VL < -0.005 or o_VLp < 0.005
-    '  <text x="'lX(r_L1) - 5'" y="'vy2 - v_s*o_VL + 14'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VL'</text>
+    '  <text x="'lX(r_L1) - 5'" y="'vy2 - v_s*o_VL + 14'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VL' kN</text>
 #end if
 #if o_VLp > 0.005
-    '  <text x="'lX(r_L1) - 5'" y="'vy2 - v_s*o_VLp - 5'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VLp'</text>
+    '  <text x="'lX(r_L1) - 5'" y="'vy2 - v_s*o_VLp - 5'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VLp' kN</text>
 #end if
 #if r_twee ≡ 1
     #if o_VR > 0.005 or o_VRn > -0.005
-        '  <text x="'lX(r_L1) + 5'" y="'vy2 - v_s*o_VR - 5'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VR'</text>
+        '  <text x="'lX(r_L1) + 5'" y="'vy2 - v_s*o_VR - 5'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VR' kN</text>
     #end if
     #if o_VRn < -0.005
-        '  <text x="'lX(r_L1) + 5'" y="'vy2 - v_s*o_VRn + 14'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VRn'</text>
+        '  <text x="'lX(r_L1) + 5'" y="'vy2 - v_s*o_VRn + 14'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VRn' kN</text>
     #end if
 #end if
 #if s3 ≡ 1
     #if o_VE < -0.005 or o_VEp < 0.005
-        '  <text x="'lX(r_tot) - 5'" y="'vy2 - v_s*o_VE + 14'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VE'</text>
+        '  <text x="'lX(r_tot) - 5'" y="'vy2 - v_s*o_VE + 14'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VE' kN</text>
     #end if
     #if o_VEp > 0.005
-        '  <text x="'lX(r_tot) + 8'" y="'min(vy2 - v_s*o_VEp + 4; vy2 - 3)'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VEp'</text>
+        '  <text x="'lX(r_tot) + 8'" y="'min(vy2 - v_s*o_VEp + 4; vy2 - 3)'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'o_VEp' kN</text>
     #end if
+#end if
+'  <!-- de tekens in de vlakken van de dwarskracht -->
+#if o_va*v_s ≥ 12
+    '  <text x="'lX(o_xa)'" y="'vy2 - v_s*o_va/2 + 4.5'" text-anchor="middle" style="'o_st'">+</text>
+#end if
+#if o_vb*v_s ≤ -12
+    '  <text x="'lX(o_xb)'" y="'vy2 - v_s*o_vb/2 + 4.5'" text-anchor="middle" style="'o_st'">−</text>
+#end if
+#if o_vc*v_s ≥ 12
+    '  <text x="'lX(o_xc)'" y="'vy2 - v_s*o_vc/2 + 4.5'" text-anchor="middle" style="'o_st'">+</text>
+#end if
+#if o_vd*v_s ≤ -12
+    '  <text x="'lX(o_xd)'" y="'vy2 - v_s*o_vd/2 + 4.5'" text-anchor="middle" style="'o_st'">−</text>
 #end if
 '  <!-- opleggingen onder beide assen -->
 '  <polygon points="'lX(0)','my' 'lX(0) - 6','my + 11' 'lX(0) + 6','my + 11'" style="fill:#fbbf24; stroke:#92400e; stroke-width:1"/>
@@ -2464,6 +2647,323 @@ UC_G = max(UC_G,m; UC_G,v; UC_G,c90)
     '<span class="alleen-scherm">UC<sub>G</sub> = 'UC_G'</span><span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
 #end if
 
+#if schema ≡ 4
+    # 8a. Wisselbalk — §6.1.6, §6.1.7, §6.1.5, §3.1.3(2) en §7.2
+
+    '<i>De raveelbalk zet zijn oplegreactie als puntlast af op de wisselbalk naast de sparing. De wisselbalk is een ligger op twee steunpunten over de hele overspanning L<sub>w,th</sub>: de puntlast staat op l<sub>staart</sub> van oplegging A, bij een tweede raveelbalk ook op l<sub>staart</sub> + l<sub>sparing</sub>. De combinaties en k<sub>mod</sub> zijn die van de rest van het blad: 6.10a en 6.10b, apart de vrije puntlast F<sub>Q,k</sub> en apart alleen de permanente last met k<sub>mod,G</sub>. De bovenrand is gesteund door het beschot, dus geen kip. Samengestelde balken zijn onderling verbonden; die verbinding valt buiten dit blad.</i><span class="alleen-scherm"></span>
+    #hide
+    'Materiaal, standaard gelijk aan de balklaag; dezelfde tabel en regels als §1.
+    id_w = if(klasse_w ≡ 0; sterkteklasse; klasse_w)
+    f_m,k,w = hlookup(materialen; id_w; 1; 2)*N/mm^2
+    f_v,k,w = hlookup(materialen; id_w; 1; 3)*N/mm^2
+    E_mean,w = hlookup(materialen; id_w; 1; 4)*N/mm^2
+    ρ_w = hlookup(materialen; id_w; 1; 5)*kg/m^3
+    γ_M,w = hlookup(materialen; id_w; 1; 6)
+    f_c,90,k,w = hlookup(materialen; id_w; 1; 7)*N/mm^2
+    gl_w = bool(id_w ≥ 4)
+    h_w,r = h_w,e/(1 mm)
+    A_w = b_w,t*h_w,e
+    W_w = b_w,t*h_w,e^2/6
+    I_w = b_w,t*h_w,e^3/12
+    g_w = A_w*if(rekenwijze ≡ 1; ρ_ref*g_ref; ρ_w*g_nb) to kN/m
+    #show
+    #hide
+    k_h,w = if(gl_w ≡ 1; if(h_w,r < 600; min(1.1; (600/h_w,r)^0.1); 1); if(h_w,r < 150; min(1.3; (150/h_w,r)^0.2); 1))
+    #show
+    L_w,th'<span class="kolom-4"></span>'
+    b_w,t'<span class="alleen-scherm">, n<sub>w</sub> balken samen</span><span class="kolom-4"></span>'
+    h_w,e'<span class="kolom-4"></span>'
+    k_h,w'<span class="kolom-4"></span>'
+    f_m,d,w = k_mod*k_h,w*f_m,k,w/γ_M,w'<span class="alleen-scherm"></span>'
+    f_v,d,w = k_mod*f_v,k,w/γ_M,w'<span class="alleen-scherm"></span>'
+    w_G,w = hoh*G_k + g_w to kN/m'<span class="alleen-scherm"></span>'
+    w_Q,w = hoh*Q_k to kN/m'<span class="alleen-scherm"></span>'
+    f_m,d,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    f_v,d,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    w_G,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    w_Q,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+
+    'Aangenomen: verdeelde last uit een vloerstrook h.o.h. over de hele lengte, plus het eigen gewicht<span class="alleen-scherm"> (een veilige bovengrens: de vloer tussen de wisselbalk en de eerste onderbroken balk zit al grotendeels in de oplegreactie van de raveelbalk, en langs de sparing ligt maar aan één kant vloer)</span>. 'if(tw ≡ 1; "Twee raveelbalken: de sparing loopt niet door tot de oplegging."; "Eén raveelbalk: de sparing loopt door tot oplegging B.")'
+    #if tw ≡ 1
+        #hide
+        P_g,1 = l_staart/2*(G_k + g_bl) + g_balk to kN/m
+        q_q,1 = l_staart/2*Q_k to kN/m
+        P_g,2 = l_staart,2/2*(G_k + g_bl) + g_balk to kN/m
+        q_q,2 = l_staart,2/2*Q_k to kN/m
+        #show
+        P_g,1'<span class="alleen-scherm">, raveelbalk op l<sub>staart</sub></span><span class="kolom-4"></span>'
+        q_q,1'<span class="alleen-scherm">, idem</span><span class="kolom-4"></span>'
+        P_g,2'<span class="alleen-scherm">, tweede raveelbalk</span><span class="kolom-4"></span>'
+        q_q,2'<span class="alleen-scherm">, idem</span><span class="kolom-4"></span>'
+        F_G,w = P_g,1*L_th/2 to kN'<span class="alleen-scherm"></span>'
+        F_Q,w = q_q,1*L_th/2 to kN'<span class="alleen-scherm"></span>'
+        F_G,w,2 = P_g,2*L_th/2 to kN'<span class="alleen-scherm"></span>'
+        F_Q,w,2 = q_q,2*L_th/2 to kN'<span class="alleen-scherm"></span>'
+        F_G,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        F_Q,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        F_G,w,2'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        F_Q,w,2'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    #else
+        F_G,w = P_g,k*L_th/2 to kN'<span class="alleen-scherm">, oplegreactie raveelbalk</span><span class="alleen-scherm"></span>'
+        F_Q,w = q_q,k*L_th/2 to kN'<span class="alleen-scherm">, oplegreactie raveelbalk</span><span class="alleen-scherm"></span>'
+        #hide
+        F_G,w,2 = 0 kN
+        F_Q,w,2 = 0 kN
+        #show
+    #end if
+    #if tw ≡ 0
+        F_G,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        F_Q,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+    #end if
+    #hide
+    'De wisselbalk als kale getallen: lengtes in m, lasten in kN/m en kN, moment in kNm.
+    r_Lw = max(L_w,th/(1 m); 0.001)
+    r_a1 = min(max(l_staart/(1 m); 0); r_Lw)
+    r_a2 = if(tw ≡ 1; (l_staart + l_sparing)/(1 m); r_Lw)
+    w_gn = w_G,w/(1 kN/m)
+    w_qn = w_Q,w/(1 kN/m)
+    w_FG1 = F_G,w/(1 kN)
+    w_FQ1 = F_Q,w/(1 kN)
+    w_FG2 = F_G,w,2/(1 kN)
+    w_FQ2 = F_Q,w,2/(1 kN)
+    w_Fv = F_Q,k/(1 kN)
+    'Ligger op twee steunpunten met een verdeelde last w en puntlasten P1 op r_a1 en P2 op r_a2.
+    wRa(w; P1; P2) = w*r_Lw/2 + (P1*(r_Lw - r_a1) + P2*(r_Lw - r_a2))/r_Lw
+    wM(x; w; P1; P2) = wRa(w; P1; P2)*x - w*x^2/2 - P1*max(0; x - r_a1) - P2*max(0; x - r_a2)
+    wV(x; w; P1; P2) = wRa(w; P1; P2) - w*x - P1*bool(x > r_a1) - P2*bool(x > r_a2)
+    'Zakking onder een puntlast 1 op a: x·b·(L² − b² − x²)/(6·L) links ervan, gespiegeld rechts.
+    wup(x; a) = if(x ≤ a; (r_Lw - a)*x*(r_Lw^2 - (r_Lw - a)^2 - x^2); a*(r_Lw - x)*(r_Lw^2 - a^2 - (r_Lw - x)^2))/(6*r_Lw)
+    EI_wn = max(E_mean,w*I_w/(1 kN*m^2); 0.001)
+    wU(x; w; P1; P2) = 1000/EI_wn*(w*x*(r_Lw^3 - 2*r_Lw*x^2 + x^3)/24 + P1*wup(x; r_a1) + P2*wup(x; r_a2))
+    'Een combinatie: fG op de permanente en fQ op de veranderlijke lasten.
+    wMc(x; fG; fQ) = wM(x; fG*w_gn + fQ*w_qn; fG*w_FG1 + fQ*w_FQ1; fG*w_FG2 + fQ*w_FQ2)
+    wVc(x; fG; fQ) = wV(x; fG*w_gn + fQ*w_qn; fG*w_FG1 + fQ*w_FQ1; fG*w_FG2 + fQ*w_FQ2)
+    'De vrije puntlast F_Q,k staat per doorsnede op de ongunstigste plaats (§5.3) en, net
+    'als daar, niet tegelijk met de verdeelde veranderlijke last.
+    wMF(x; fG; fQ) = wMc(x; fG; 0) + fQ*w_Fv*x*(r_Lw - x)/r_Lw
+    wVFb(x; fG; fQ) = wVc(x; fG; 0) + fQ*w_Fv*(r_Lw - x)/r_Lw
+    wVFo(x; fG; fQ) = wVc(x; fG; 0) - fQ*w_Fv*x/r_Lw
+    'De omhullende van 6.10a en 6.10b.
+    wMh(x) = max(wMc(x; γ_G; γ_Q); wMc(x; γ_G,a; γ_Q,a); wMF(x; γ_G; γ_Q); wMF(x; γ_G,a; γ_Q,a))
+    wVb(x) = max(wVc(x; γ_G; γ_Q); wVc(x; γ_G,a; γ_Q,a); wVFb(x; γ_G; γ_Q); wVFb(x; γ_G,a; γ_Q,a); 0)
+    wVo(x) = min(wVc(x; γ_G; γ_Q); wVc(x; γ_G,a; γ_Q,a); wVFo(x; γ_G; γ_Q); wVFo(x; γ_G,a; γ_Q,a); 0)
+    'Het grootste moment: langs de ligger in 96 stappen en onder de puntlasten.
+    w_Mm = max(wMh(r_a1); wMh(r_a2))
+    w_xm = if(wMh(r_a1) ≥ wMh(r_a2); r_a1; r_a2)
+    w_Mg = max(wMc(r_a1; 1; 0); wMc(r_a2; 1; 0))
+    #for i = 0 : 96
+    w_z = r_Lw*i/96
+    w_v = wMh(w_z)
+    w_xm = if(w_v > w_Mm; w_z; w_xm)
+    w_Mm = max(w_Mm; w_v)
+    w_Mg = max(w_Mg; wMc(w_z; 1; 0))
+    #loop
+    w_Va = wVb(0)
+    w_Vd = -wVo(r_Lw)
+    M_Ed,w = w_Mm*kN*m
+    R_A,w = w_Va*kN
+    R_B,w = w_Vd*kN
+    V_Ed,w = max(R_A,w; R_B,w)
+    #show
+    M_Ed,w'<span class="kolom-4"></span>'
+    V_Ed,w'<span class="kolom-4"></span>'
+    R_A,w'<span class="alleen-scherm">, oplegging A</span><span class="kolom-4"></span>'
+    R_B,w'<span class="alleen-scherm">, oplegging B</span><span class="kolom-4"></span>'
+    #hide
+    'De tekening: links het statische schema met de lasten, rechts de M- en de V-lijn.
+    wX(x) = 44 + 286*x/r_Lw
+    wY(x) = 440 + 290*x/r_Lw
+    'Punten langs de ligger, met een dubbel punt onder elke puntlast: daar springt de V-lijn.
+    w_e = r_Lw*10^-6
+    wsx(i) = if(i ≤ 16; r_a1*i/16 - bool(i ≡ 16)*w_e; if(i ≤ 33; r_a1 + (r_a2 - r_a1)*(i - 17)/16 + bool(i ≡ 17)*w_e - bool(i ≡ 33)*w_e; r_a2 + (r_Lw - r_a2)*(i - 34)/16 + bool(i ≡ 34)*bool(r_a2 < r_Lw)*w_e))
+    w_ms = 42/max(w_Mm; 0.0001)
+    w_vs = 42/max(w_Va + w_Vd; 0.0001)
+    w_my = 22
+    w_vy = 110 + w_Va*w_vs
+    w_Hs = max(w_vy + w_Vd*w_vs + 18; 164)
+    w_xF1 = wX(r_a1)
+    w_xF2 = wX(r_a2)
+    'Het label van de verdeelde last staat in het grootste vrije stuk tussen de puntlasten.
+    w_xL = min(max(wX(if(r_a1 ≥ max(r_a2 - r_a1; r_Lw - r_a2); r_a1/2; if(r_a2 - r_a1 ≥ r_Lw - r_a2; (r_a1 + r_a2)/2; (r_a2 + r_Lw)/2))); 110); 264)
+    w_st = "fill:#111827; font-size:13px; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke"
+    w_va = wVb(0.12*r_Lw)
+    w_vo = wVo(0.88*r_Lw)
+    #show
+    '<svg class="wisselbalk-lijnen" viewbox="0 0 760 'w_Hs'" xmlns="http://www.w3.org/2000/svg" style="font-size:11px; width:100%; max-height:'w_Hs + 40'px;">
+    '  <!-- de verdeelde last -->
+    #for i = 0 : 10
+    '  <line x1="'wX(r_Lw*i/10)'" y1="60" x2="'wX(r_Lw*i/10)'" y2="78" style="stroke:#475569; stroke-width:1.4"/>
+    '  <polygon points="'wX(r_Lw*i/10)',84 'wX(r_Lw*i/10) - 3.2',77 'wX(r_Lw*i/10) + 3.2',77" style="fill:#475569"/>
+    #loop
+    '  <line x1="'wX(0)'" y1="60" x2="'wX(r_Lw)'" y2="60" style="stroke:#475569; stroke-width:2"/>
+    '  <!-- de puntlast van de raveelbalk -->
+    '  <line x1="'w_xF1'" y1="22" x2="'w_xF1'" y2="74" style="stroke:#ffffff; stroke-width:6"/>
+    '  <line x1="'w_xF1'" y1="22" x2="'w_xF1'" y2="74" style="stroke:#B91C1C; stroke-width:2.6"/>
+    '  <polygon points="'w_xF1',84 'w_xF1 - 5.5',73 'w_xF1 + 5.5',73" style="fill:#B91C1C"/>
+    '  <text x="'min(max(w_xF1; 80); 290)'" y="14" text-anchor="middle" style="fill:#B91C1C; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">F = 'F_G,w' + 'F_Q,w' kN</text>
+    #if tw ≡ 1
+        '  <line x1="'w_xF2'" y1="36" x2="'w_xF2'" y2="74" style="stroke:#ffffff; stroke-width:6"/>
+        '  <line x1="'w_xF2'" y1="36" x2="'w_xF2'" y2="74" style="stroke:#B91C1C; stroke-width:2.6"/>
+        '  <polygon points="'w_xF2',84 'w_xF2 - 5.5',73 'w_xF2 + 5.5',73" style="fill:#B91C1C"/>
+        '  <text x="'min(max(w_xF2; 80); 290)'" y="32" text-anchor="middle" style="fill:#B91C1C; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">F = 'F_G,w,2' + 'F_Q,w,2' kN</text>
+    #end if
+    '  <text x="'w_xL'" y="54" text-anchor="middle" style="fill:#475569; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke">w = 'w_G,w' + 'w_Q,w' kN/m</text>
+    '  <!-- de wisselbalk met zijn opleggingen -->
+    '  <rect x="'wX(0)'" y="84" width="286" height="10" style="fill:#D9A866; stroke:#8B6F47; stroke-width:1.2"/>
+    '  <polygon points="'wX(0)',94 'wX(0) - 7',107 'wX(0) + 7',107" style="fill:#fbbf24; stroke:#92400e; stroke-width:1.2"/>
+    '  <polygon points="'wX(r_Lw)',94 'wX(r_Lw) - 7',105 'wX(r_Lw) + 7',105" style="fill:#fbbf24; stroke:#92400e; stroke-width:1.2"/>
+    '  <circle cx="'wX(r_Lw) - 3.2'" cy="107.4" r="2.3" style="fill:#fbbf24; stroke:#92400e; stroke-width:1"/>
+    '  <circle cx="'wX(r_Lw) + 3.2'" cy="107.4" r="2.3" style="fill:#fbbf24; stroke:#92400e; stroke-width:1"/>
+    '  <!-- de maten -->
+    '  <line x1="'wX(0)'" y1="128" x2="'w_xF1'" y2="128" style="stroke:#1E40AF; stroke-width:1"/>
+    '  <circle cx="'wX(0)'" cy="128" r="2.4" style="fill:#1E40AF"/>
+    '  <circle cx="'w_xF1'" cy="128" r="2.4" style="fill:#1E40AF"/>
+    '  <text x="'(wX(0) + w_xF1)/2'" y="124" text-anchor="middle" style="fill:#1E40AF; font-weight:700">'l_staart' mm</text>
+    #if tw ≡ 1
+        '  <line x1="'w_xF1'" y1="128" x2="'w_xF2'" y2="128" style="stroke:#1E40AF; stroke-width:1"/>
+        '  <circle cx="'w_xF2'" cy="128" r="2.4" style="fill:#1E40AF"/>
+        '  <text x="'(w_xF1 + w_xF2)/2'" y="124" text-anchor="middle" style="fill:#1E40AF; font-weight:700">'l_sparing' mm</text>
+    #end if
+    '  <line x1="'wX(0)'" y1="152" x2="'wX(r_Lw)'" y2="152" style="stroke:#1E40AF; stroke-width:1"/>
+    '  <circle cx="'wX(0)'" cy="152" r="2.4" style="fill:#1E40AF"/>
+    '  <circle cx="'wX(r_Lw)'" cy="152" r="2.4" style="fill:#1E40AF"/>
+    '  <text x="'(wX(0) + wX(r_Lw))/2'" y="148" text-anchor="middle" style="fill:#1E40AF; font-weight:700">L<tspan dy="2.5" font-size="8">w,th</tspan><tspan dy="-2.5"> = 'L_w,th' mm</tspan></text>
+    '  <!-- de M-lijn, onder de as: het veldmoment aan de trekzijde -->
+    '  <polygon points="'wY(0)','w_my'
+    #for i = 0 : 50
+    ' 'wY(wsx(i))','w_my + w_ms*wMh(wsx(i))'
+    #loop
+    ' 'wY(r_Lw)','w_my'" style="fill:rgba(239,68,68,0.22); stroke:#dc2626; stroke-width:2; stroke-linejoin:round"/>
+    '  <line x1="'wY(0) - 10'" y1="'w_my'" x2="'wY(r_Lw) + 10'" y2="'w_my'" style="stroke:#374151; stroke-width:1.4"/>
+    '  <text x="'wY(0) - 10'" y="12" style="fill:#dc2626; font-weight:700">M-lijn [kNm]</text>
+    '  <circle cx="'wY(w_xm)'" cy="'w_my + w_ms*w_Mm'" r="2.4" style="fill:#dc2626"/>
+    '  <text x="'wY(w_xm)'" y="'w_my + w_ms*w_Mm + 14'" text-anchor="middle" style="fill:#dc2626; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'w_Mm' kNm</text>
+    '  <text x="'wY(w_xm)'" y="'w_my + w_ms*w_Mm/2 + 4.5'" text-anchor="middle" style="'w_st'">+</text>
+    '  <polygon points="'wY(0)','w_my' 'wY(0) - 6','w_my + 11' 'wY(0) + 6','w_my + 11'" style="fill:#fbbf24; stroke:#92400e; stroke-width:1"/>
+    '  <polygon points="'wY(r_Lw)','w_my' 'wY(r_Lw) - 6','w_my + 11' 'wY(r_Lw) + 6','w_my + 11'" style="fill:#fbbf24; stroke:#92400e; stroke-width:1"/>
+    '  <!-- de V-lijn: boven de as de grootste positieve, onder de as de grootste negatieve waarde -->
+    '  <polygon points="'wY(0)','w_vy'
+    #for i = 0 : 50
+    ' 'wY(wsx(i))','w_vy - w_vs*wVb(wsx(i))'
+    #loop
+    ' 'wY(r_Lw)','w_vy'" style="fill:rgba(59,130,246,0.20); stroke:#2563eb; stroke-width:2; stroke-linejoin:round"/>
+    '  <polygon points="'wY(0)','w_vy'
+    #for i = 0 : 50
+    ' 'wY(wsx(i))','w_vy - w_vs*wVo(wsx(i))'
+    #loop
+    ' 'wY(r_Lw)','w_vy'" style="fill:rgba(59,130,246,0.20); stroke:#2563eb; stroke-width:2; stroke-linejoin:round"/>
+    '  <line x1="'wY(0) - 10'" y1="'w_vy'" x2="'wY(r_Lw) + 10'" y2="'w_vy'" style="stroke:#374151; stroke-width:1.4"/>
+    '  <text x="'wY(0) - 10'" y="88" style="fill:#2563eb; font-weight:700">V-lijn [kN]</text>
+    '  <text x="'wY(0) + 5'" y="'w_vy - w_vs*w_Va - 5'" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'w_Va' kN</text>
+    '  <text x="'wY(r_Lw) - 5'" y="'w_vy + w_vs*w_Vd + 14'" text-anchor="end" style="fill:#2563eb; font-weight:700; stroke:#ffffff; stroke-width:3; paint-order:stroke; stroke-linejoin:round">'-w_Vd' kN</text>
+    #if w_va*w_vs ≥ 12
+        '  <text x="'wY(0.12*r_Lw)'" y="'w_vy - w_vs*w_va/2 + 4.5'" text-anchor="middle" style="'w_st'">+</text>
+    #end if
+    #if w_vo*w_vs ≤ -12
+        '  <text x="'wY(0.88*r_Lw)'" y="'w_vy - w_vs*w_vo/2 + 4.5'" text-anchor="middle" style="'w_st'">−</text>
+    #end if
+    '  <polygon points="'wY(0)','w_vy' 'wY(0) - 6','w_vy + 11' 'wY(0) + 6','w_vy + 11'" style="fill:#fbbf24; stroke:#92400e; stroke-width:1"/>
+    '  <polygon points="'wY(r_Lw)','w_vy' 'wY(r_Lw) - 6','w_vy + 11' 'wY(r_Lw) + 6','w_vy + 11'" style="fill:#fbbf24; stroke:#92400e; stroke-width:1"/>
+    '</svg>'
+
+    UC_w,m = M_Ed,w/(W_w*f_m,d,w)', buiging (6.11)'
+    #if UC_w,m ≤ 1.0
+        '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+    #else
+        '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+    #end if
+    UC_w,v = 1.5*V_Ed,w/(A_w*f_v,d,w)', afschuiving (6.13), k<sub>cr</sub> = 1,0'
+    #if UC_w,v ≤ 1.0
+        '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+    #else
+        '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+    #end if
+    #hide
+    'Oplegdruk zoals §8.3: de opleglengte plus 30 mm aan de binnenzijde; k_c,90 volgens 6.1.5(4).
+    k_c,90,w = if(L_w,th ≥ 2*h_w,e; if(gl_w ≡ 1; if(a_opl ≤ 400 mm; 1.75; 1); 1.5); 1)
+    f_c,90,d,w = k_mod*f_c,90,k,w/γ_M,w
+    A_c,w = b_w,t*(a_opl + min(30 mm; a_opl))
+    #show
+    UC_w,c90 = V_Ed,w/(A_c,w*k_c,90,w*f_c,90,d,w)', oplegdruk (6.3)'
+    #if UC_w,c90 ≤ 1.0
+        '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+    #else
+        '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+    #end if
+    #hide
+    'Alleen de permanente last, 6.10a, met k_mod,G (§8.5): buiging, afschuiving en oplegdruk.
+    M_G,w = γ_G,a*w_Mg*kN*m
+    V_G,w = γ_G,a*max(wVc(0; 1; 0); -wVc(r_Lw; 1; 0))*kN
+    UC_w,Gm = M_G,w/(W_w*k_mod,G*k_h,w*f_m,k,w/γ_M,w)
+    UC_w,Gv = 1.5*V_G,w/(A_w*k_mod,G*f_v,k,w/γ_M,w)
+    UC_w,Gc = V_G,w/(A_c,w*k_c,90,w*k_mod,G*f_c,90,k,w/γ_M,w)
+    #show
+    UC_w,G = max(UC_w,Gm; UC_w,Gv; UC_w,Gc)', k<sub>mod,G</sub>'
+    #if UC_w,G ≤ 1.0
+        '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+    #else
+        '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+    #end if
+    #if controleer ≡ 1
+        #hide
+        'De eindstand langs de ligger, in 48 stappen en daarna verfijnd zoals in 5.1. De vrije
+        'puntlast telt met F·L³/(48·EI), de grootste zakking op welke plek dan ook, bij de
+        'grootste zakking onder de permanente last: een veilige bovengrens.
+        wUf(x) = (1 + k_def)*wU(x; w_gn; w_FG1; w_FG2) + (1 + ψ_2*k_def)*wU(x; w_qn; w_FQ1; w_FQ2)
+        wz_q = -10^9
+        wi_q = 0
+        wu_g = 0
+        #for i = 0 : 48
+        wz_t = wUf(r_Lw*i/48)
+        wi_q = if(wz_t > wz_q; i; wi_q)
+        wz_q = max(wz_q; wz_t)
+        wu_g = max(wu_g; wU(r_Lw*i/48; w_gn; w_FG1; w_FG2))
+        #loop
+        w_h = r_Lw/48
+        wx_r = w_h*(wi_q + bool(wi_q > 0)*bool(wi_q < 48)*dpar(wUf(w_h*(wi_q - 1)); wUf(w_h*wi_q); wUf(w_h*(wi_q + 1))))
+        wx_q = if(wUf(wx_r) ≥ wz_q; wx_r; w_h*wi_q)
+        wu_F = 1000*w_Fv*r_Lw^3/(48*EI_wn)
+        w_pF = bool(rekenwijze ≡ 0)*bool((1 + k_def)*wu_g + (1 + ψ_2*k_def)*wu_F > wUf(wx_q))
+        u_g,w = if(w_pF ≡ 1; wu_g; wU(wx_q; w_gn; w_FG1; w_FG2))*mm
+        u_var,w = if(w_pF ≡ 1; wu_F; wU(wx_q; w_qn; w_FQ1; w_FQ2))*mm
+        #show
+        w_fin,w = (1 + k_def)*u_g,w + (1 + ψ_2*k_def)*u_var,w to mm'<span class="alleen-scherm">, (7.2)</span><span class="alleen-scherm"></span>'
+        w_bij,w = w_fin,w - u_g,w to mm'<span class="alleen-scherm"></span>'
+        u_g,w'<span class="alleen-scherm">, permanent</span><span class="kolom-4"></span>'
+        u_var,w'<span class="alleen-scherm">, veranderlijk</span><span class="kolom-4"></span>'
+        w_fin,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        w_bij,w'<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        UC_w,fin = w_fin,w/(grensfactor*L_w,th)', eindstand'
+        #if UC_w,fin ≤ 1.0
+            '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+        #else
+            '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+        #end if
+        UC_w,bij = w_bij,w/(grens_bij*L_w,th)', bijkomend'
+        #if UC_w,bij ≤ 1.0
+            '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+        #else
+            '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+        #end if
+    #else
+        #hide
+        UC_w,fin = 0
+        UC_w,bij = 0
+        #show
+    #end if
+    #hide
+    UC_wb = max(UC_w,m; UC_w,v; UC_w,c90; UC_w,G; UC_w,fin; UC_w,bij)
+    #show
+    UC_wb', wisselbalk'
+    #if wb_onv ≡ 1
+        '<span class="oordeel" style="color: red"> → <b>wisselbalk niet getoetst</b></span>
+    #else if UC_wb ≤ 1.0
+        '<span class="oordeel" style="color: green"> ≤ 1.0 → <b>voldoet</b></span>
+    #else
+        '<span class="oordeel" style="color: red"> > 1.0 → <b>voldoet niet</b></span>
+    #end if
+#end if
+
 # 9. Samenvatting
 
 #hide
@@ -2584,6 +3084,44 @@ oordeel_tril = if(tril_onv ≡ 1; "invoer onvolledig"; if(tril_na ≡ 1; "niet a
 '<td style="padding:2px 8px; text-align:right; color:#9ca3af;">—</td>
 '<td style="padding:2px 8px; color:#9ca3af;">niet getoetst</td></tr>
 #end if
+#if schema ≡ 4
+    #hide
+    kleur_w(u) = if(u > 1; c_1; if(u > 0.9; c_2; c_3))
+    oordeel_w(u) = if(u ≤ 1; "voldoet"; "voldoet niet")
+    #show
+    '<tr style="border-bottom:1px solid #e5e7eb;">
+    '<td style="padding:2px 8px;">Wisselbalk, buiging</td>
+    '<td style="padding:2px 8px;">§6.1.6 (6.11)</td>
+    '<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_w(UC_w,m)'">'UC_w,m'</td>
+    '<td style="padding:2px 8px; color:'kleur_w(UC_w,m)'">'oordeel_w(UC_w,m)'</td></tr>
+    '<tr style="border-bottom:1px solid #e5e7eb;">
+    '<td style="padding:2px 8px;">Wisselbalk, afschuiving</td>
+    '<td style="padding:2px 8px;">§6.1.7 (6.13)</td>
+    '<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_w(UC_w,v)'">'UC_w,v'</td>
+    '<td style="padding:2px 8px; color:'kleur_w(UC_w,v)'">'oordeel_w(UC_w,v)'</td></tr>
+    '<tr style="border-bottom:1px solid #e5e7eb;">
+    '<td style="padding:2px 8px;">Wisselbalk, oplegdruk</td>
+    '<td style="padding:2px 8px;">§6.1.5 (6.3)</td>
+    '<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_w(UC_w,c90)'">'UC_w,c90'</td>
+    '<td style="padding:2px 8px; color:'kleur_w(UC_w,c90)'">'oordeel_w(UC_w,c90)'</td></tr>
+    '<tr style="border-bottom:1px solid #e5e7eb;">
+    '<td style="padding:2px 8px;">Wisselbalk, alleen permanent</td>
+    '<td style="padding:2px 8px;">§3.1.3(2), 6.10a</td>
+    '<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_w(UC_w,G)'">'UC_w,G'</td>
+    '<td style="padding:2px 8px; color:'kleur_w(UC_w,G)'">'oordeel_w(UC_w,G)'</td></tr>
+    #if controleer ≡ 1
+        '<tr style="border-bottom:1px solid #e5e7eb;">
+        '<td style="padding:2px 8px;">Wisselbalk, doorbuiging eindstand</td>
+        '<td style="padding:2px 8px;">§7.2 (7.2)</td>
+        '<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_w(UC_w,fin)'">'UC_w,fin'</td>
+        '<td style="padding:2px 8px; color:'kleur_w(UC_w,fin)'">'oordeel_w(UC_w,fin)'</td></tr>
+        '<tr style="border-bottom:1px solid #e5e7eb;">
+        '<td style="padding:2px 8px;">Wisselbalk, doorbuiging bijkomend</td>
+        '<td style="padding:2px 8px;">NB bij EN 1990, A1.4</td>
+        '<td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur_w(UC_w,bij)'">'UC_w,bij'</td>
+        '<td style="padding:2px 8px; color:'kleur_w(UC_w,bij)'">'oordeel_w(UC_w,bij)'</td></tr>
+    #end if
+#end if
 #if tril_aan ≡ 1
 '<tr style="border-bottom:1px solid #e5e7eb;">
 '<td style="padding:2px 8px;">Trilling</td>
@@ -2603,7 +3141,7 @@ oordeel_tril = if(tril_onv ≡ 1; "invoer onvolledig"; if(tril_na ≡ 1; "niet a
     '<span style="color:#b45309"><b>T-balk:</b> de toetsing volgens §9.1.2 is nog niet nagerekend op referentiebladen.</span>
     UC_max = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G; UC_trilling; UC_tb)'<span class="alleen-scherm"></span>'
 #else
-UC_max = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G; UC_trilling)'<span class="alleen-scherm"></span>'
+UC_max = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G; UC_trilling; UC_wb)'<span class="alleen-scherm"></span>'
 #end if
 UC_max'<span class="alleen-afdruk"></span>'
 #hide
@@ -2611,12 +3149,14 @@ UC_max'<span class="alleen-afdruk"></span>'
 'f_1 ≤ 8 Hz niet afgekeurd maar niet aangetoond: er is een nader onderzoek nodig.
 'UC_tb: de toetsen van de T-balk (plaat, lijmnaad, flensbreedte); 0 bij een
 'rechthoekige balk.
-UC_rest = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G; UC_tril_av; UC_tb)
+UC_rest = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G; UC_tril_av; UC_tb; UC_wb)
 #show
 #if tril_onv ≡ 1
     '<span class="alleen-scherm"><b>Maatgevende UC</b></span><span class="oordeel" style="color: red"> niet bepaald → <b>Balklaag niet getoetst: invoer onvolledig</b></span>
 #else if tb_onv ≡ 1
     '<span class="alleen-scherm"><b>Maatgevende UC</b></span><span class="oordeel" style="color: red"> niet bepaald → <b>Balklaag niet getoetst: gegevens van de vloerplaat onvolledig of buiten het bereik (T-balk, §2)</b></span>
+#else if wb_onv ≡ 1
+    '<span class="alleen-scherm"><b>Maatgevende UC</b></span><span class="oordeel" style="color: red"> niet bepaald → <b>Balklaag niet getoetst: de raveelbalk ligt niet op de overspanning van de wisselbalk (§2)</b></span>
 #else if tril_na*bool(UC_rest ≤ 1) ≡ 1
     '<span class="alleen-scherm"><b>Maatgevende UC = 'UC_max'</b></span><span class="oordeel" style="color: red"> → <b>Balklaag niet aangetoond</b>: f<sub>1</sub> ≤ 8 Hz, nader onderzoek naar de trillingen (§7.3.3(1))</span>
 #else if UC_max ≤ 1.0
@@ -2631,7 +3171,7 @@ UC_rest = max(UC_doorbuiging; UC_bij; UC_buiging; UC_afsch; UC_c90; UC_kip; UC_G
 #if tbr ≡ 1
     'Aangenomen bij de T-balk: de vloerplaat is over de volle lengte op de balk gelijmd (geen slip)<span class="alleen-scherm">; een gespijkerde of geschroefde plaat valt onder bijlage B en niet onder dit blad</span>. Naden in de plaat dwars op de balken dragen de normaalkracht in de plaat over<span class="alleen-scherm"> (verlijmd; in een getrokken zone bij het steunpunt een gelijmde las)</span>.
 #end if
-'Aangenomen: bovenrand gesteund door beschot of balken ('if(s23 ≥ 1; "kip alleen bij het steunmoment"; "geen kip")'). Buiten dit blad: ondersteuning'if(ond ≡ 1; ", verbindingen en de druk onder de balken op de bovenzijde van de onderslag"; " en verbindingen")'.
+'Aangenomen: bovenrand gesteund door beschot of balken ('if(s23 ≥ 1; "kip alleen bij het steunmoment"; "geen kip")'). Buiten dit blad: ondersteuning'if(ond ≡ 1; ", verbindingen en de druk onder de balken op de bovenzijde van de onderslag"; if(schema ≡ 4; ", de verbinding van de raveelbalk met de wisselbalk en die tussen samengestelde balken"; " en verbindingen"))'.
 
 '<h1>10. Model in 3D<span class="alleen-scherm"></span></h1>
 #pre

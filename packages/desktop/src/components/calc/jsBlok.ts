@@ -19,9 +19,12 @@
  *                  uitgevoerd, mislukt of niet op tijd: het kader met de titel.
  *                  Zolang het loopt draagt het blok `data-afdruk-laadt`.
  *
- * Een script dat vastloopt of wegnavigeert, wordt gestopt: dat ziet de app aan een
- * uitblijvend antwoord en aan een tweede `load`. Wat het venster stuurt, gaat door
- * `leesBericht` (jsRegels.ts) en wordt nooit als html gebruikt.
+ * Het venster bestaat uit twee frames in elkaar, zodat een script niet kan wegnavigeren
+ * (jsRegels.ts). Hier is dat één iframe: de buitenste. Een script dat vastloopt of toch
+ * probeert weg te gaan, wordt gestopt: dat ziet de app aan een uitblijvend antwoord en
+ * aan een bericht van het venster, of aan een tweede `load` als het buitenste frame
+ * ooit zelf zou verdwijnen. Wat het venster stuurt, gaat door `leesBericht` en wordt
+ * nooit als html gebruikt.
  */
 import { useLayoutEffect, useSyncExternalStore, type RefObject } from "react";
 import { useProjectStore } from "../../store/projectStore";
@@ -162,7 +165,7 @@ class Venster {
     iframe.className = "calc-iframe-inhoud";
     for (const [naam, waarde] of Object.entries(jsAttributen(inhoud.titel))) iframe.setAttribute(naam, waarde);
     iframe.addEventListener("load", () => {
-      // De srcdoc laadt één keer. Een tweede keer is het script weggenavigeerd.
+      // De srcdoc laadt één keer. Een tweede keer is het venster toch weggenavigeerd.
       if (++this.laden > 1) this.stop("weg");
     });
     iframe.srcdoc = jsSrcdoc(looptijd, {
@@ -171,7 +174,7 @@ class Venster {
       netwerk: inhoud.netwerk,
       bibliotheken: inhoud.bibliotheken,
       opPapier,
-    });
+    }, inhoud.titel);
     this.iframe = iframe;
   }
 
@@ -198,6 +201,9 @@ class Venster {
     if (!b || this.weg) return;
     this.zonderAntwoord = 0;
     switch (b.soort) {
+      case "weg":
+        this.stop("weg");
+        break;
       case "luistert":
         this.luistert = true;
         break;

@@ -271,8 +271,9 @@ console.log("\nHet beeld:");
 {
   const beeld = readFileSync(join(repo, "packages/desktop/src/components/calc/BalklaagDesigner.tsx"), "utf8");
   const lijnen = [...beeld.matchAll(/<KrachtenLijn\b[\s\S]*?\/>/g)].map((t) => t[0]);
-  const mLijnen = lijnen.filter((t) => /kleur=\{KLEUR_M\}/.test(t));
-  const vLijnen = lijnen.filter((t) => /kleur=\{KLEUR_V\}/.test(t));
+  // De lijnen van de ligger zelf; de wisselbalk heeft zijn eigen omhullende (§8a).
+  const mLijnen = lijnen.filter((t) => /f=\{Momh\./.test(t));
+  const vLijnen = lijnen.filter((t) => /f=\{Vomh\./.test(t));
   toets(/\bomhullende\(ligger, lasten,/.test(beeld) && /helften\(omh\.Mmax, omh\.Mmin\)/.test(beeld) && /helften\(omh\.Vmax, omh\.Vmin\)/.test(beeld),
     "BalklaagDesigner rekent beide lijnen met omhullende() en helften()");
   toets(mLijnen.length === 2 && /f=\{Momh\.boven\}/.test(mLijnen[0]) && /f=\{Momh\.onder\}/.test(mLijnen[1]),
@@ -374,10 +375,18 @@ console.log("\nHet rekenblad, §5.3:");
     // De waarden in de figuur. Randpunten van de vlakken: 1 = begin,
     // 26 = links van de tweede oplegging, 27 = rechts ervan, 52 = eind van veld 2.
     const alleTeksten = [...svg.matchAll(/<text x="([^"]+)" y="([^"]+)"([^>]*)>([^<]*)<\/text>/g)]
-      .map((t) => ({ x: Number(t[1]), y: Number(t[2]), anker: /text-anchor="(\w+)"/.exec(t[3])?.[1] ?? "start", tekst: t[4], v: Number(t[4]), blauw: t[3].includes("fill:#2563eb") }));
+      .map((t) => ({ x: Number(t[1]), y: Number(t[2]), anker: /text-anchor="(\w+)"/.exec(t[3])?.[1] ?? "start", tekst: t[4], v: Number(/^(-?[\d.]+) kNm?$/.exec(t[4])?.[1] ?? NaN), blauw: t[3].includes("fill:#2563eb") }));
     const teksten = alleTeksten.filter((t) => t.blauw && Number.isFinite(t.v));
     const mTeksten = alleTeksten.filter((t) => !t.blauw && Number.isFinite(t.v));
-    const titels = alleTeksten.filter((t) => !Number.isFinite(t.v));
+    // De tekens in de vlakken: het teken van de waarde aan die kant van de as.
+    const tekens = alleTeksten.filter((t) => t.tekst === "+" || t.tekst === "−");
+    const titels = alleTeksten.filter((t) => !Number.isFinite(t.v) && !tekens.includes(t));
+    toets(teksten.every((t) => / kN$/.test(t.tekst)) && mTeksten.every((t) => / kNm$/.test(t.tekst)),
+      `blad ${titel}: elke waarde met zijn eenheid`);
+    const yVTitel = titels[1]?.y ?? Infinity;
+    const scheefTeken = tekens.filter((t) => (t.y < yVTitel ? (t.tekst === "+") !== (t.y > mAs) : (t.tekst === "+") !== (t.y < as)));
+    toets(scheefTeken.length === 0 && tekens.some((t) => t.y < yVTitel) && tekens.some((t) => t.y > yVTitel),
+      `blad ${titel}: + en − in de vlakken, aan de goede kant van de as (${tekens.length} tekens${scheefTeken.length ? `, ${scheefTeken.length} verkeerd` : ""})`);
     toets(titels.length === 2 && titels[0].tekst === "M-lijn [kNm]" && titels[1].tekst === "V-lijn [kN]",
       `blad ${titel}: alleen de titels M-lijn en V-lijn als tekst (gevonden: ${titels.map((t) => t.tekst).join(" | ")})`);
     const randen = [[1, "eerste oplegging"], [26, "tweede oplegging (links)"]];
@@ -432,7 +441,7 @@ console.log("\nHet rekenblad, §5.3:");
     toets(piekM <= uit.M_y_Ed * 1.001 + 1e-6 && piekV <= uit.V_z_Ed * 1.001 + 1e-6,
       `blad ${titel}: de lijn komt niet boven M_y,Ed en V_z,Ed (${piekM.toFixed(3)} ≤ ${uit.M_y_Ed.toFixed(3)} kNm, ${piekV.toFixed(3)} ≤ ${uit.V_z_Ed.toFixed(3)} kN)`);
 
-    const vakken = [...teksten, ...mTeksten, ...titels].map((t) => ({ t, ...vak(t) }));
+    const vakken = [...teksten, ...mTeksten, ...titels, ...tekens].map((t) => ({ t, ...vak(t) }));
     const botsing = [];
     for (let i = 0; i < vakken.length; i++) {
       for (let j = i + 1; j < vakken.length; j++) {
@@ -442,7 +451,8 @@ console.log("\nHet rekenblad, §5.3:");
     }
     toets(botsing.length === 0, `blad ${titel}: waarden en titels overlappen niet${botsing.length ? ` (${botsing.join("; ")})` : ""}`);
     const [, , bw, bh] = (/viewbox="([^"]+)"/.exec(svg)?.[1] ?? "0 0 0 0").split(/\s+/).map(Number);
-    const buiten = vakken.filter((v) => v.x0 < 0 || v.x1 > bw || v.y0 < 0 || v.y1 > bh).map((v) => v.t.tekst);
+    // De tekening mag iets buiten haar vak tekenen (overflow: visible), niet buiten de kolom.
+    const buiten = vakken.filter((v) => v.x0 < -20 || v.x1 > bw + 20 || v.y0 < 0 || v.y1 > bh).map((v) => v.t.tekst);
     toets(buiten.length === 0, `blad ${titel}: waarden en titels binnen de tekening${buiten.length ? ` (buiten: ${buiten.join(", ")})` : ""}`);
 
     if (!invoer.schema) {

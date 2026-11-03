@@ -37,7 +37,9 @@ function formuleJson(f: Formule, metCode: boolean): Record<string, unknown> {
     ...(f.bron ? { source: f.bron } : {}),
     ...(f.uitleg ? { explanation: f.uitleg.en, explanationNl: f.uitleg.nl } : {}),
     ...(f.projectvariabelen?.length ? { usesProjectData: f.projectvariabelen } : {}),
+    ...(f.library ? { library: f.library } : {}),
     ...(metCode ? { code: f.code } : {}),
+    ...(metCode && f.codeEn ? { codeEn: f.codeEn } : {}),
   };
 }
 
@@ -157,7 +159,8 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     kind: "read",
     description:
       "Search the formula library: standard formulas from mechanics and the Eurocodes (EN 1990, 1991, 1992, 1993, 1995) as ready-to-run calculation text. " +
-      "query searches names, explanations, sources and code; group limits to one group. includeCode=true adds the calculation text. Insert one with sheet_insert_formula.",
+      "query searches names, explanations, sources and code; group limits to one group. includeCode=true adds the calculation text. Insert one with sheet_insert_formula. " +
+      "Formulas with library are the worked examples of the app's Library panel: their text lines are Dutch in code and English in codeEn.",
     inputSchema: objectSchema({
       query: { type: "string", description: "Search text." },
       group: { type: "string", enum: FORMULE_GROEPEN.map((g) => g.id), description: "Group id." },
@@ -168,7 +171,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     handler: (args) => {
       const z = typeof args.query === "string" ? args.query.trim().toLowerCase() : "";
       const lijst = FORMULES.filter((f) => (args.group === undefined || f.groep === args.group) && (!z ||
-        [f.naam.nl, f.naam.en, f.uitleg?.nl ?? "", f.uitleg?.en ?? "", f.bron ?? "", f.code].some((x) => x.toLowerCase().includes(z))));
+        [f.naam.nl, f.naam.en, f.uitleg?.nl ?? "", f.uitleg?.en ?? "", f.bron ?? "", f.code, f.codeEn ?? ""].some((x) => x.toLowerCase().includes(z))));
       return ok({
         groups: FORMULE_GROEPEN.map((g) => ({ id: g.id, name: g.naam.en, nameNl: g.naam.nl })),
         count: lijst.length,

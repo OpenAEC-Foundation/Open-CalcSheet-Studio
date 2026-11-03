@@ -9,6 +9,7 @@
  */
 import { parse, evaluate, render, setAngleMode, type AngleMode } from "@ifc-calc/core";
 import { leesGetallen, leesResultaat, metRefNamen } from "../components/calc/bladLezen";
+import { bronVoorUitvoer } from "../templates/vertalingen";
 import type { RekenVerzoek, RekenAntwoord } from "./doorrekening";
 
 self.onmessage = (e: MessageEvent<RekenVerzoek>) => {
@@ -16,11 +17,13 @@ self.onmessage = (e: MessageEvent<RekenVerzoek>) => {
   let antwoord: RekenAntwoord;
   try {
     setAngleMode(v.hoekmodus as AngleMode);
-    const ast = parse(v.source, { includes: new Map(v.includes), imageUrls: new Map(v.imageUrls) });
+    // De uitvoer in de taal van de app; de getallen en het oordeel lezen hetzelfde.
+    const uitvoer = bronVoorUitvoer(v.source, v.taal);
+    const ast = parse(uitvoer.bron, { includes: new Map(v.includes), imageUrls: new Map(v.imageUrls) });
     const nodes = evaluate(ast, v.waarden, v.scope);
     antwoord = {
       sleutel: v.sleutel,
-      html: render(nodes),
+      html: render(nodes, { namen: uitvoer.namen }),
       uitkomst: {
         resultaat: leesResultaat(nodes, v.naam),
         getallen: metRefNamen(leesGetallen(nodes), v.source),

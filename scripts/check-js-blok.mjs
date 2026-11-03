@@ -11,15 +11,20 @@
  *      `@img`, `#include`; alleen een regel die precies `@end` is, sluit het blok;
  *   2. de attributen, ook met `{{…}}`, en de geweigerde netwerkwaarden;
  *   3. de sandbox en de CSP van het venster, ook wat een blok er niet in kan zetten;
- *   4. welke berichten uit het venster worden aangenomen;
- *   5. `calc`: waarden met eenheid, omrekenen, fouten (de omgeving draait hier in jsdom);
- *   6. de opschoning: kwaadaardige tekstregels en SVG gaan weg;
- *   7. wat de bladen gebruiken, blijft: opmaak, SVG met `<symbol>` en `<use>`,
+ *   4. de twee vensters in elkaar: de code zit alleen in het binnenste, en het buitenste
+ *      geeft alleen de afgesproken berichten door, van de juiste kant;
+ *   5. welke berichten uit het venster worden aangenomen;
+ *   6. `calc`: waarden met eenheid, omrekenen, fouten (de omgeving draait hier in jsdom),
+ *      en wat de omgeving dichtzet voordat de code begint;
+ *   7. de opschoning: kwaadaardige tekstregels en SVG gaan weg;
+ *   8. wat de bladen gebruiken, blijft: opmaak, SVG met `<symbol>` en `<use>`,
  *      formules, invoervelden en onze eigen blokken;
- *   8. de sjablonen: de zichtbare tekst van elk blad staat er na de opschoning nog.
+ *   9. geen adres naar buiten dat vanzelf laadt: een afbeelding wacht op bevestiging,
+ *      de rest vervalt, en een link blijft een link;
+ *  10. de sjablonen: de zichtbare tekst van elk blad staat er na de opschoning nog.
  *
- * Wat echt in een browser moet (de CSP, `window.parent`, opslag, netwerk) staat niet
- * hier: jsdom kent geen sandbox.
+ * Wat echt in een browser moet (de CSP, de `frame-src` van de ouder, `window.parent`,
+ * opslag, netwerk) staat niet hier: jsdom kent geen sandbox.
  *
  * Draaien:  node scripts/check-js-blok.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -27,14 +32,15 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import createDOMPurify from "dompurify";
 import { parse, evaluate, render, jsHost } from "../packages/core/dist/index.js";
 import { laadTemplate } from "./lib/refcheck.mjs";
 import {
-  JS_SANDBOX, jsAttributen, jsCsp, jsSrcdoc, leesBericht, geldigePng, geldigeHost,
+  JS_SANDBOX, JS_NAAR_APP, JS_NAAR_SCRIPT, jsAttributen, jsBinnenSrcdoc, jsCsp, jsSrcdoc, leesBericht, geldigePng, geldigeHost,
 } from "../packages/desktop/src/components/calc/jsRegels.ts";
-import { maakOpschoner, gevaarlijkeStijl } from "../packages/desktop/src/components/calc/uitwerkingRegels.ts";
+import { adresNaarBuiten, linkNaarBuiten, maakOpschoner, gevaarlijkeStijl } from "../packages/desktop/src/components/calc/uitwerkingRegels.ts";
+import { magLaden } from "../packages/desktop/src/components/calc/iframeRegels.ts";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const looptijd = readFileSync(join(hier, "../packages/desktop/src/components/calc/jsLooptijd.js"), "utf8");
@@ -152,27 +158,88 @@ console.log("\n3. Sandbox en CSP");
   meld(JS_SANDBOX === "allow-scripts" && a.sandbox === "allow-scripts", 'sandbox="allow-scripts"', a.sandbox);
   meld(!/allow-same-origin|allow-top|allow-popups|allow-forms|allow-modals|allow-downloads/.test(a.sandbox), "zonder allow-same-origin of een ander recht");
   meld(a.referrerpolicy === "no-referrer" && a.allow === "", "referrerpolicy en een leeg allow");
-  const csp = jsCsp([], false);
-  for (const regel of ["default-src 'none'", "script-src 'unsafe-inline'", "style-src 'unsafe-inline'", "img-src data: blob:", "connect-src 'none'", "frame-src 'none'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "worker-src 'none'"]) {
+  const csp = jsCsp([]);
+  for (const regel of ["default-src 'none'", "script-src 'unsafe-inline' blob:", "style-src 'unsafe-inline'", "img-src data: blob:", "connect-src 'none'", "frame-src 'none'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "worker-src 'none'"]) {
     meld(csp.split("; ").includes(regel), `CSP: ${regel}`, csp);
   }
   meld(!/https?:|\*/.test(csp), "zonder netwerk= geen enkele host");
   meld(!/unsafe-eval/.test(csp), "geen unsafe-eval");
-  const met = jsCsp(["cdn.voorbeeld.nl"], true);
+  const met = jsCsp(["cdn.voorbeeld.nl"]);
   meld(/connect-src https:\/\/cdn\.voorbeeld\.nl/.test(met) && /script-src 'unsafe-inline' blob: https:\/\/cdn\.voorbeeld\.nl/.test(met), "met netwerk=: die host, met https", met);
   meld(!/http:/.test(met), "nooit http");
-  meld(!/;\s*script-src \*/.test(jsCsp(["x.nl; script-src *"], false)) && !jsCsp(["x.nl; script-src *"], false).includes("x.nl"), "een nagemaakte host in de html komt niet in de CSP");
+  meld(met.split("; ").includes("frame-src 'none'"), "ook met netwerk= geen frame naar die host: de navigatie blijft dicht", met);
+  meld(!/;\s*script-src \*/.test(jsCsp(["x.nl; script-src *"])) && !jsCsp(["x.nl; script-src *"]).includes("x.nl"), "een nagemaakte host in de html komt niet in de CSP");
 
   const code = 'const t = "</script><img src=x onerror=1>"; document.body.dataset.a = t;';
-  const doc = jsSrcdoc(looptijd, { code, waarden: { L: { w: "</script>" } }, netwerk: ["x.nl", "*"], bibliotheken: [], opPapier: false });
+  const doc = jsBinnenSrcdoc(looptijd, { code, waarden: { L: { w: "</script>" } }, netwerk: ["x.nl", "*"], bibliotheken: [], opPapier: false });
   meld(doc.indexOf('http-equiv="Content-Security-Policy"') < doc.indexOf("<script"), "de CSP staat vóór elk script");
   meld(!doc.includes("</script><img"), "een </script> in de code breekt de pagina niet", doc.slice(doc.indexOf("__calcStart"), doc.indexOf("__calcStart") + 120));
   const csp2 = ontsnap(doc.match(/content="([^"]*default-src[^"]*)"/)?.[1] ?? "");
   meld(csp2.includes("https://x.nl") && !csp2.includes("*"), "de hosts in de srcdoc zijn opnieuw getoetst", csp2);
 }
 
-// ── 4. Berichten uit het venster ────────────────────────────────────────────
-console.log("\n4. Berichten uit het venster");
+// ── 4. De twee vensters ─────────────────────────────────────────────────────
+console.log("\n4. De twee vensters");
+{
+  const start = { code: '"></iframe><script>parent.x = 1</script><iframe srcdoc="', waarden: { L: { w: "</iframe>" } }, netwerk: ["x.nl", "*"], bibliotheken: [], opPapier: false };
+  const buiten = jsSrcdoc(looptijd, start, 'Titel "met" <tekens>');
+  const d = new JSDOM(buiten).window.document;
+  const frames = d.querySelectorAll("iframe");
+  meld(frames.length === 1 && d.querySelectorAll("script").length === 1, "één binnenste venster en één script, ook met </iframe> in de code", `${frames.length} ${d.querySelectorAll("script").length}`);
+  const f = frames[0];
+  meld(f?.getAttribute("sandbox") === "allow-scripts" && f?.getAttribute("referrerpolicy") === "no-referrer" && f?.getAttribute("allow") === "", "het binnenste venster heeft dezelfde rechten", f?.outerHTML.slice(0, 100));
+  meld(f?.getAttribute("title") === 'Titel "met" <tekens>', "en de titel, als tekst");
+  meld(f?.getAttribute("srcdoc") === jsBinnenSrcdoc(looptijd, start), "de code en de waarden staan alleen in het binnenste venster");
+  meld(!d.querySelector("script").textContent.includes("parent.x"), "niet in het script van het buitenste");
+  const cspVan = (doc) => doc.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute("content");
+  meld(cspVan(d) === jsCsp(["x.nl"]) && cspVan(new JSDOM(f.getAttribute("srcdoc")).window.document) === jsCsp(["x.nl"]), "beide vensters dezelfde CSP, met frame-src 'none'", cspVan(d));
+  meld(buiten.indexOf("Content-Security-Policy") < buiten.indexOf("<script") && buiten.indexOf("<script") < buiten.indexOf("<iframe"), "de CSP eerst, dan het script, dan het venster");
+
+  // Het doorgeven: alleen de afgesproken soorten, en alleen van de juiste kant.
+  const dom = new JSDOM(buiten, { runScripts: "dangerously", pretendToBeVisual: true, virtualConsole: new VirtualConsole() });
+  const w = dom.window;
+  await new Promise((k) => setTimeout(k, 50));
+  const app = [];
+  const script = [];
+  const ander = {};
+  w.postMessage = (b) => app.push(b);
+  const inner = w.document.querySelector("iframe");
+  const binnenWindow = inner.contentWindow;
+  binnenWindow.postMessage = (b) => script.push(b);
+  const stuur = (data, bron) => {
+    const e = new w.MessageEvent("message", { data });
+    Object.defineProperty(e, "source", { value: bron });
+    w.dispatchEvent(e);
+  };
+  for (const soort of JS_NAAR_APP) stuur({ soort }, binnenWindow);
+  meld(app.map((b) => b.soort).join() === JS_NAAR_APP.join(), "van het script naar de app: de afgesproken soorten", app.map((b) => b.soort).join());
+  for (const soort of JS_NAAR_SCRIPT) stuur({ soort }, w);
+  meld(script.map((b) => b.soort).join() === JS_NAAR_SCRIPT.join(), "van de app naar het script: de afgesproken soorten", script.map((b) => b.soort).join());
+  app.length = 0;
+  script.length = 0;
+  stuur({ soort: "html", html: "<img>" }, binnenWindow);
+  stuur({ soort: "weg" }, binnenWindow);
+  stuur({ soort: "ping" }, binnenWindow);
+  stuur("klaar", binnenWindow);
+  stuur(null, binnenWindow);
+  meld(app.length === 0, "een andere soort van het script gaat niet door, ook geen `weg`", JSON.stringify(app));
+  stuur({ soort: "klaar" }, w);
+  stuur({ soort: "html" }, w);
+  meld(script.length === 0, "wat de app niet stuurt, gaat ook niet naar het script", JSON.stringify(script));
+  stuur({ soort: "klaar" }, ander);
+  stuur({ soort: "ping" }, ander);
+  stuur({ soort: "klaar" }, null);
+  meld(app.length === 0 && script.length === 0, "van een ander venster: niets", JSON.stringify([app, script]));
+  meld(!JS_NAAR_APP.includes("html") && !JS_NAAR_SCRIPT.includes("html"), "html staat nergens op de lijst");
+  // Een tweede keer laden: het script is weg, en het venster meldt dat zelf.
+  inner.dispatchEvent(new w.Event("load"));
+  inner.dispatchEvent(new w.Event("load"));
+  meld(app.filter((b) => b.soort === "weg").length === 1 && !w.document.querySelector("iframe"), "een tweede keer laden: `weg` naar de app, en het binnenste venster verdwijnt", JSON.stringify(app));
+  w.close();
+}
+
+// ── 5. Berichten uit het venster ────────────────────────────────────────────
+console.log("\n5. Berichten uit het venster");
 {
   const png = "data:image/png;base64,iVBORw0KGgo=";
   meld(geldigePng(png), "een PNG als base64");
@@ -180,6 +247,7 @@ console.log("\n4. Berichten uit het venster");
     meld(!geldigePng(w), `geen PNG: ${String(w).slice(0, 40)}`);
   }
   meld(leesBericht({ soort: "klaar", luistert: true })?.soort === "klaar", "klaar");
+  meld(leesBericht({ soort: "weg" })?.soort === "weg", "weg");
   meld(leesBericht({ soort: "html", html: "<img>" }) === null, "een onbekende soort: genegeerd");
   meld(leesBericht("klaar") === null && leesBericht(null) === null, "geen object: genegeerd");
   meld(leesBericht({ soort: "hoogte", px: 1e9 })?.px === 870 && leesBericht({ soort: "hoogte", px: 1 })?.px === 76, "hoogte binnen de grenzen");
@@ -193,8 +261,41 @@ console.log("\n4. Berichten uit het venster");
   meld(Object.keys(leesBericht({ soort: "pong", html: "<img>", extra: 1 })).join() === "soort", "wat er verder in staat, gaat niet mee");
 }
 
-// ── 5. calc ─────────────────────────────────────────────────────────────────
-console.log("\n5. calc in het venster");
+// ── 6. calc ─────────────────────────────────────────────────────────────────
+console.log("\n6. calc in het venster");
+/**
+ * Het binnenste venster in jsdom. Dat laadt geen blob, dus dat doet dit: de omgeving zet de
+ * code als blob in de pagina, en hier wordt die uitgevoerd. Klaar als de omgeving dat zegt.
+ */
+async function draaiBinnen(start, voorbereiden) {
+  const blobs = new Map();
+  const dom = new JSDOM(jsBinnenSrcdoc(looptijd, start), {
+    runScripts: "dangerously",
+    pretendToBeVisual: true,
+    virtualConsole: new VirtualConsole(),
+    beforeParse(w) {
+      voorbereiden?.(w);
+      w.Blob = class { constructor(delen) { this.tekst = delen.join(""); } };
+      w.URL.createObjectURL = (b) => { const u = `blob:proef/${blobs.size}`; blobs.set(u, b.tekst); return u; };
+      w.URL.revokeObjectURL = () => {};
+      const voegToe = w.Node.prototype.appendChild;
+      w.Node.prototype.appendChild = function (n) {
+        const uit = voegToe.call(this, n);
+        if (n.localName === "script" && blobs.has(n.getAttribute("src"))) {
+          w.eval(blobs.get(n.getAttribute("src")));
+          n.onload?.();
+        }
+        return uit;
+      };
+    },
+  });
+  await new Promise((k) => {
+    if (dom.window.document.readyState === "complete") k();
+    else dom.window.addEventListener("load", k);
+  });
+  await new Promise((k) => setTimeout(k, 20));
+  return dom;
+}
 {
   const { blokken } = doorreken(`L = 5 m
 b = 75 mm
@@ -224,7 +325,7 @@ window.__bevroren = Object.isFrozen(calc);
   const b = blokken[0];
   meld(b.waarden.L.w === 5 && b.waarden.L.e === "m" && b.waarden.L.s === 5 && b.waarden.L.d[1] === 1, "de waarde, eenheid, SI en dimensie gaan mee", JSON.stringify(b.waarden.L));
   meld(!("f" in b.waarden), "een functie gaat niet mee");
-  const dom = new JSDOM(jsSrcdoc(looptijd, { code: b.code, waarden: b.waarden, netwerk: [], bibliotheken: [], opPapier: false }), { runScripts: "dangerously", pretendToBeVisual: true, virtualConsole: new (await import("jsdom")).VirtualConsole() });
+  const dom = await draaiBinnen({ code: b.code, waarden: b.waarden, netwerk: [], bibliotheken: [], opPapier: false });
   const u = dom.window.__uit ?? {};
   const dicht = (a, w) => Math.abs(a - w) < 1e-9 * Math.max(1, Math.abs(w));
   meld(u.L_mm === 5000 && u.L_m === 5 && u.L_cm === 500, "L: mm, zonder eenheid, cm", JSON.stringify(u));
@@ -243,10 +344,28 @@ window.__bevroren = Object.isFrozen(calc);
   meld(dom.window.__bevroren === true, "het script kan calc niet veranderen");
   meld(!/__calcStart/.test(Object.keys(dom.window).join()), "de startgegevens staan niet meer op window");
   dom.window.close();
+
+  // Wat dicht is voordat de code begint, met en zonder netwerk=.
+  for (const netwerk of [[], ["x.nl"]]) {
+    const proef = await draaiBinnen({ code: "window.__rtc = [typeof RTCPeerConnection, typeof webkitRTCPeerConnection, typeof RTCDataChannel].join();", waarden: {}, netwerk, bibliotheken: [], opPapier: false }, (w) => {
+      w.RTCPeerConnection = class {};
+      w.webkitRTCPeerConnection = class {};
+      w.RTCDataChannel = class {};
+    });
+    const naam = netwerk.length ? "met netwerk=" : "zonder netwerk=";
+    meld(proef.window.__rtc === "undefined,undefined,undefined", `WebRTC is weg, ${naam}`, proef.window.__rtc);
+    const regels = [...proef.window.document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]')].map((m) => m.getAttribute("content"));
+    const verwacht = `script-src blob:${netwerk.map((h) => ` https://${h}`).join("")}`;
+    meld(regels.at(-1) === verwacht, `daarna geen inline script meer, ${naam}: ${verwacht}`, regels.at(-1));
+    proef.window.close();
+  }
+  const volgorde = await draaiBinnen({ code: "window.__stand = document.readyState;", waarden: {}, netwerk: [], bibliotheken: [], opPapier: false });
+  meld(volgorde.window.__stand === "complete", "de code begint pas als de pagina geladen is: een tweede `load` is dan altijd een navigatie", volgorde.window.__stand);
+  volgorde.window.close();
 }
 
-// ── 6. De opschoning: kwaadaardig ───────────────────────────────────────────
-console.log("\n6. De opschoning: wat er niet in mag");
+// ── 7. De opschoning: kwaadaardig ───────────────────────────────────────────
+console.log("\n7. De opschoning: wat er niet in mag");
 const venster = new JSDOM("<!doctype html>").window;
 const schoon = maakOpschoner(createDOMPurify(venster));
 const lees = (html) => {
@@ -308,6 +427,7 @@ const heeftGevaar = (d) => {
   meld(!stijl("position:fixed;inset:0;z-index:9999"), "en bedekt de app niet");
   meld(stijl("color:#b91c1c;font-weight:700") && stijl("fill:url(#verloop)") && stijl("position:relative"), "gewone stijlen en url(#…) blijven");
   meld(gevaarlijkeStijl("@import 'https://x.nl/a.css'") && gevaarlijkeStijl("a{background:u\\72l(https://x.nl)}"), "@import en een verstopte url");
+  meld(gevaarlijkeStijl("background:image-set('https://x.nl/a.png' 1x)") && gevaarlijkeStijl("background:-webkit-image-set('https://x.nl/a.png' 1x)") && gevaarlijkeStijl("background:src('https://x.nl/a.png')"), "image-set en src zonder url()");
   meld(lees("<style>*{display:none}</style><b>x</b>").querySelector("style") === null, "een los stijlblok gaat weg");
   meld(lees("<svg><style>@import url(https://x.nl/a.css);</style></svg>").querySelector("style") === null, "een stijlblok in SVG met @import ook");
   meld(lees("<svg><style>.a{fill:red}</style></svg>").querySelector("style") !== null, "een gewoon stijlblok in SVG blijft");
@@ -315,8 +435,8 @@ const heeftGevaar = (d) => {
   meld(!clobber.querySelector("img")?.hasAttribute("name"), "een naam die `document` overschrijft, gaat weg");
 }
 
-// ── 7. De opschoning: wat blijft ────────────────────────────────────────────
-console.log("\n7. De opschoning: wat er blijft");
+// ── 8. De opschoning: wat blijft ────────────────────────────────────────────
+console.log("\n8. De opschoning: wat er blijft");
 {
   const blijft = (html, kies, wat, f) => {
     const d = lees(html);
@@ -394,8 +514,65 @@ t_vloer = 18 mm
   meld(JSON.parse(lees(ifcx.html).querySelector(".calc-ifcx")?.getAttribute("data-ifcx") ?? "{}").header?.ifcxVersion === "ifcx_alpha", "@ifcx houdt zijn document");
 }
 
-// ── 8. De sjablonen ─────────────────────────────────────────────────────────
-console.log("\n8. De sjablonen door de opschoning");
+// ── 9. Adressen naar buiten ─────────────────────────────────────────────────
+console.log("\n9. Adressen naar buiten");
+{
+  // Een waarde uit het blad komt zo in een adres; dat mag niet vanzelf laden.
+  const blad = (regel) => lees(doorreken(`L = 5 m\n${regel}`).html);
+  const metWaarde = blad(`'<img src="https://x.nl/a.png?L={{L}}">`).querySelector("img");
+  meld(metWaarde && !metWaarde.hasAttribute("src") && metWaarde.dataset.externSrc === "https://x.nl/a.png?L=5", "een tekstregel met {{L}} in het adres: wacht op bevestiging", metWaarde?.outerHTML);
+  const opImg = blad("@img(https://x.nl/a.png)").querySelector("img");
+  meld(opImg && !opImg.hasAttribute("src") && opImg.dataset.externSrc === "https://x.nl/a.png", "@img(https://…) ook", opImg?.outerHTML);
+  for (const vorm of ["//x.nl/a.png", "/\\x.nl/a.png", "\\\\x.nl\\a.png", "ht&#9;tps://x.nl/a.png", " https://x.nl/a.png", "HTTPS://X.NL/a.png", "http://x.nl:8080/a.png", "http://127.0.0.1:3000/a.png"]) {
+    const img = lees(`<img src="${vorm}">`).querySelector("img");
+    meld(img && !img.hasAttribute("src") && !!magLaden(img.dataset.externSrc ?? ""), `naar buiten: ${vorm}`, img?.outerHTML);
+  }
+  for (const vorm of ["a.png", "./a.png", "/src/assets/a.png", "data:image/png;base64,iVBORw0KGgo="]) {
+    const img = lees(`<img src="${vorm}">`).querySelector("img");
+    meld(img?.getAttribute("src") === vorm && !img.hasAttribute("data-extern-src"), `blijft staan: ${vorm.slice(0, 30)}`, img?.outerHTML);
+  }
+  meld(adresNaarBuiten("onleesbaar://[") === null && adresNaarBuiten("") === null, "wat niet te lezen is, laadt de browser ook niet");
+  const weg = {
+    srcset: '<img srcset="https://x.nl/a.png 1x">',
+    picture: '<picture><source srcset="https://x.nl/a.png"><img src="a.png"></picture>',
+    video: '<video src="https://x.nl/a" poster="https://x.nl/b.png"></video>',
+    audio: '<audio src="https://x.nl/a" autoplay></audio>',
+    source: '<video><source src="https://x.nl/a"></video>',
+    track: '<video><track src="https://x.nl/a"></video>',
+    input: '<input type="image" src="https://x.nl/a.png">',
+    tabel: '<table background="https://x.nl/a.png"><tr><td>x</td></tr></table>',
+    feImage: '<svg><filter id="f"><feImage href="https://x.nl/a.png"/></filter></svg>',
+    "feImage xlink": '<svg><filter id="f"><feImage xlink:href="https://x.nl/a.png"/></filter></svg>',
+    pattern: '<svg><pattern id="p" href="https://x.nl/a.svg#b"/></svg>',
+    verloop: '<svg><linearGradient id="g" href="https://x.nl/a.svg#b"/></svg>',
+    use: '<svg><use href="https://x.nl/a.svg#b"/></svg>',
+    fill: '<svg><rect fill="url(https://x.nl/a.svg#b)"/></svg>',
+    filter: '<svg><rect filter="url(https://x.nl/a.svg#b)"/></svg>',
+    mask: '<svg><rect mask="url(https://x.nl/a.svg#b)"/></svg>',
+    "clip-path": '<svg><rect clip-path="url(https://x.nl/a.svg#b)"/></svg>',
+    marker: '<svg><line marker-end="url(https://x.nl/a.svg#b)"/></svg>',
+    stijl: '<div style="background:image-set(\'https://x.nl/a.png\' 1x)">x</div>',
+    stijlblok: '<svg><style>rect{cursor:url(https://x.nl/a.png),auto}</style></svg>',
+  };
+  for (const [naam, html] of Object.entries(weg)) meld(!schoon(html).includes("x.nl"), `geen adres meer: ${naam}`, schoon(html));
+  for (const naam of ["href", "xlink:href"]) {
+    const img = lees(`<svg><image ${naam}="https://x.nl/a.png"/></svg>`).querySelector("image");
+    meld(img && !img.hasAttribute("href") && !img.hasAttribute("xlink:href") && img.dataset.externSrc === "https://x.nl/a.png", `SVG <image ${naam}>: wacht op bevestiging`, img?.outerHTML);
+  }
+  meld(lees('<svg><rect fill="url(#a)"/></svg>').querySelector("rect")?.getAttribute("fill") === "url(#a)", "een verwijzing binnen de tekening blijft");
+  meld(lees('<svg><image href="#a"/></svg>').querySelector("image")?.getAttribute("href") === "#a", "en een <image> binnen de pagina ook");
+  // Een link laadt pas na een klik: die blijft, en opent buiten de app.
+  meld(lees('<a href="https://x.nl/?L=5">x</a>').querySelector("a")?.getAttribute("href") === "https://x.nl/?L=5", "een link blijft staan");
+  meld(lees('<svg><a href="https://x.nl/"><text>x</text></a></svg>').querySelector("a")?.getAttribute("href") === "https://x.nl/", "ook in SVG");
+  meld(linkNaarBuiten("https://x.nl/?L=5") === "https://x.nl/?L=5" && linkNaarBuiten("//x.nl/a") === "http://x.nl/a" && linkNaarBuiten("mailto:a@x.nl") === "mailto:a@x.nl", "een link naar buiten: http, https, mailto");
+  for (const adres of ["/pad", "a.html", "#kop", "ms-proef:x", "javascript:alert(1)", "file:///c:/a", "data:text/html,x"]) {
+    meld(linkNaarBuiten(adres) === null, `geen link naar buiten: ${adres}`, String(linkNaarBuiten(adres)));
+  }
+  meld(magLaden("javascript:alert(1)") === null && magLaden("data:image/png;base64,x") === null, "een nagemaakte data-extern-src met iets anders dan http laadt niet");
+}
+
+// ── 10. De sjablonen ────────────────────────────────────────────────────────
+console.log("\n10. De sjablonen door de opschoning");
 {
   const SCOPE = { CC: 2, K_FI: 1, rekenwijze: 0 };
   const BALKLAAG = {
@@ -411,6 +588,7 @@ console.log("\n8. De sjablonen door de opschoning");
     const zichtbaar = (d) => [...d.querySelectorAll(".katex-mathml")].forEach((e) => e.remove()) ?? d.textContent.replace(/\s+/g, " ");
     meld(zichtbaar(voor.content) === zichtbaar(na), `${naam}: de zichtbare tekst is gelijk`);
     meld(heeftGevaar(na) === null, `${naam}: geen gevaarlijke elementen`, heeftGevaar(na));
+    meld(na.querySelectorAll("[data-extern-src]").length === 0, `${naam}: geen afbeelding van buiten`);
     const tel = (d, k) => d.querySelectorAll(k).length;
     for (const k of ["svg", "input", "select", "table", ".katex-html", ".calc-line", ".calc-js", ".calc-iframe"]) {
       if (tel(voor.content, k) !== tel(na, k)) meld(false, `${naam}: ${k} blijft`, `${tel(voor.content, k)} → ${tel(na, k)}`);

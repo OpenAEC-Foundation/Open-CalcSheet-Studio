@@ -555,8 +555,10 @@ html.afdrukmodus .print-loopvoet {
 }
 
 /* Het oordeel van een toets achter de toetsregel zelf: formule, ingevulde
-   waarden, UC en oordeel op één regel. */
-.print-opmaak .print-blad .calc-line:has(+ .calc-text .oordeel) {
+   waarden, UC en oordeel op één regel. Niet bij een regel die alleen op het scherm
+   staat: die zou dan op papier blijven, of in het voorbeeld ruimte kosten en
+   verdwijnen zodra de regels op een vel staan. */
+.print-opmaak .print-blad .calc-line:has(+ .calc-text .oordeel):not(:has(.alleen-scherm:empty)) {
   display: inline-flex !important;
   vertical-align: middle;
   margin-right: 0.3em !important;
@@ -590,6 +592,11 @@ html.afdrukmodus .print-loopvoet {
 }
 
 .print-opmaak .print-blad .calc-svg svg.omhullende {
+  max-height: none !important;
+}
+
+/* De wisselbalk: het statische schema naast de M- en V-lijn, op de bladbreedte. */
+.print-opmaak .print-blad .calc-svg svg.wisselbalk-lijnen {
   max-height: none !important;
 }
 
@@ -663,7 +670,7 @@ html.afdrukmodus .print-loopvoet {
 .print-opmaak .print-beeld .vd-dim-num,
 .print-opmaak .print-beeld .vd-dim button {
   border: none !important;
-  background: transparent !important;
+  background: #ffffff !important;
   color: #000 !important;
   padding: 0 !important;
   font: inherit !important;
@@ -841,6 +848,19 @@ html.afdrukmodus .print-loopvoet {
 .print-opmaak .calc-iframe-laden,
 .print-opmaak .calc-iframe-uitleg {
   display: none;
+}
+
+/* Een afbeelding van buiten die niet bevestigd is: de host, in een dun kader. */
+.print-opmaak img[data-extern-src]:not([src]) {
+  display: none;
+}
+
+.print-opmaak .calc-extern-plek {
+  display: inline-block;
+  padding: 1mm 2mm;
+  font-size: 8pt;
+  color: #57534e;
+  border: 0.2mm dashed #57534e;
 }
 
 /* Een beeld waarvan op papier geen tekening op de gemeten hoogte schaalt, mag

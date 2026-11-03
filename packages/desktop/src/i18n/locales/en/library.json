@@ -1,0 +1,14 @@
+{
+  "titel": "Library",
+  "uitleg": "Examples from the Eurocodes and classical mechanics. Click one to see it calculated, then insert it or start a new sheet with it.",
+  "invoegen": "Insert",
+  "invoegenUitleg": "Put this example at the cursor in the open sheet; without an open sheet it starts a new one",
+  "nieuwBlad": "New sheet",
+  "nieuwBladUitleg": "Start a new sheet with this example",
+  "sluiten": "Close",
+  "opCursor": "At the cursor in {{naam}}",
+  "geenBlad": "No sheet open: Insert starts a new sheet",
+  "alleFormules": "Search all formulas…",
+  "alleFormulesUitleg": "Open the formula library with all formulas, including these examples",
+  "rekenfout": "This example cannot be calculated: {{fout}}"
+}

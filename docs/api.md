@@ -111,7 +111,7 @@ de alleen-lezenstand.
 | `DELETE /sheets/{id}` | `sheet_remove` | wijzigen | **id** |
 | `POST /sheets/{id}/select` | `sheet_select` | beeld | **id** (ook `project`, `report`) |
 | `POST /sheets/{id}/evaluate` | `sheet_evaluate` | lezen | id, numbers, names |
-| `POST /sheets/{id}/formulas` | `sheet_insert_formula` | wijzigen | **id**, **formulaId**, position |
+| `POST /sheets/{id}/formulas` | `sheet_insert_formula` | wijzigen | **id**, **formulaId**, position, language |
 | `POST /evaluate` | `calc_evaluate` | lezen | **source**, values, useProjectData, maxLines |
 | `GET /library` | `library_list` | lezen | refresh |
 | `POST /library/{id}/install` | `library_install` | wijzigen | **id** |
