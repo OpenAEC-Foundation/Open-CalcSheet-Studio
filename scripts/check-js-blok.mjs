@@ -189,7 +189,8 @@ console.log("\n4. De twee vensters");
   const f = frames[0];
   meld(f?.getAttribute("sandbox") === "allow-scripts" && f?.getAttribute("referrerpolicy") === "no-referrer" && f?.getAttribute("allow") === "", "het binnenste venster heeft dezelfde rechten", f?.outerHTML.slice(0, 100));
   meld(f?.getAttribute("title") === 'Titel "met" <tekens>', "en de titel, als tekst");
-  meld(f?.getAttribute("srcdoc") === jsBinnenSrcdoc(looptijd, start), "de code en de waarden staan alleen in het binnenste venster");
+  // De HTML-parser maakt van CRLF een LF, en jsLooptijd.js staat in de werkmap op LF of CRLF (core.autocrlf).
+  meld(f?.getAttribute("srcdoc") === jsBinnenSrcdoc(looptijd, start).replace(/\r\n/g, "\n"), "de code en de waarden staan alleen in het binnenste venster");
   meld(!d.querySelector("script").textContent.includes("parent.x"), "niet in het script van het buitenste");
   const cspVan = (doc) => doc.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute("content");
   meld(cspVan(d) === jsCsp(["x.nl"]) && cspVan(new JSDOM(f.getAttribute("srcdoc")).window.document) === jsCsp(["x.nl"]), "beide vensters dezelfde CSP, met frame-src 'none'", cspVan(d));
