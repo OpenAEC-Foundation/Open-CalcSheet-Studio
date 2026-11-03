@@ -34,6 +34,7 @@ import { leesFiguren, leesUitkomst, type UitkomstStatus } from './uitkomst.js';
 const APP_NAAM = 'Open CalcSheet Studio';
 const PDF_SOORT = 'pdf';
 const SPREADSHEET_SOORT = 'spreadsheet';
+const TEKENBLAD_SOORT = 'tekenblad';
 const XLSX_MEDIATYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 export interface IfcxProjectInvoer {
@@ -58,6 +59,7 @@ export interface IfcxGelezenBlad {
   bronVersie?: string;
   pdf?: { bestandsnaam: string; data: string };
   xlsx?: { bestandsnaam: string; data: string };
+  tekenvel?: Record<string, unknown>;
 }
 
 export interface IfcxGelezenProject {
@@ -150,8 +152,9 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     const pad = onder(`blad/${sleutel}`);
     const isPdf = blad.templateId === PDF_SOORT;
     const isSpreadsheet = blad.templateId === SPREADSHEET_SOORT;
-    // Een PDF of werkmap heeft geen rekentekst, geen invoer en geen oordeel.
-    const isLos = isPdf || isSpreadsheet;
+    const isTekenblad = blad.templateId === TEKENBLAD_SOORT;
+    // Een PDF, werkmap of tekening heeft geen rekentekst, geen invoer en geen oordeel.
+    const isLos = isPdf || isSpreadsheet || isTekenblad;
     bladKinderen[kindNaam(`B${String(i + 1).padStart(3, '0')}_${blad.naam}`, bladNamen)] = pad;
 
     const uitkomst = leesUitkomst(blad.nodes, blad.naam, isLos ? { voldoet: null, uc: null } : blad.resultaat, blad.fout);
@@ -169,7 +172,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         id: sleutel,
         volgorde: i,
         templateId: blad.templateId ?? '',
-        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : 'rekenblad',
+        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isTekenblad ? 'tekenblad' : 'rekenblad',
         ...(blad.module ? { module: blad.module } : {}),
         ...(blad.bronVersie ? { bronVersie: blad.bronVersie } : {}),
       },
@@ -194,6 +197,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         data: blad.xlsx.data,
       };
     }
+    if (blad.tekenvel) attributes[ATTR.tekenvel] = blad.tekenvel;
     attributes[ATTR.uitkomst] = uitkomst;
 
     // Figuren: de tekeningen en 3D-beelden staan ook in de rekentekst; hier zijn ze als zodanig te vinden.
@@ -485,6 +489,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown };
     const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown } | undefined;
     const xlsx = a[ATTR.xlsx] as { bestandsnaam?: unknown; data?: unknown } | undefined;
+    const tekenvel = a[ATTR.tekenvel];
     const blad: IfcxGelezenBlad = {
       id: tekstVan(b.id),
       naam: tekstVan(a[ATTR.naam]),
@@ -496,6 +501,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     if (typeof b.bronVersie === 'string') blad.bronVersie = b.bronVersie;
     if (pdf && typeof pdf.data === 'string') blad.pdf = { bestandsnaam: tekstVan(pdf.bestandsnaam), data: pdf.data };
     if (xlsx && typeof xlsx.data === 'string') blad.xlsx = { bestandsnaam: tekstVan(xlsx.bestandsnaam), data: xlsx.data };
+    if (tekenvel && typeof tekenvel === 'object' && !Array.isArray(tekenvel)) blad.tekenvel = tekenvel as Record<string, unknown>;
     return blad;
   });
 

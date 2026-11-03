@@ -298,5 +298,9 @@
     "geenLogo": "geen logo",
     "voetafbeelding": "Voetafbeelding",
     "bijwerken": "Bijwerken uit bureauprofiel"
+  },
+  "tekenBlad": {
+    "soort": "Tekening",
+    "ontbreekt": "Het vel van dit blad ontbreekt."
   }
 }

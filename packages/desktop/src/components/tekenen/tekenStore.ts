@@ -10,6 +10,7 @@ import { create } from "zustand";
 import type { EditorView } from "@codemirror/view";
 import i18next from "../../i18n/config";
 import { useProjectStore } from "../../store/projectStore";
+import { isTekenBlad, type TekenView } from "../../store/tekenBlad";
 import { bladOpen, metEditor, vraagCode } from "../../store/codeVerzoek";
 import { useEditorViewStore } from "../../store/editorViewStore";
 import { voegIn } from "../ribbon/invoegen";
@@ -34,7 +35,8 @@ import {
   type Tekening,
   type Vorm,
 } from "./model";
-import { gelijkSleutel, heeftVulling, symboolDef, zetOptie, type SymboolId } from "./symbolen";
+import { gelijkSleutel, heeftVulling, SCHAAL_SYMBOLEN, symboolDef, zetOptie, type SymboolId } from "./symbolen";
+import { MODEL_SCHAAL, rasterVoorSchaal, tekeningVanView } from "./vel";
 import { kopie, metNieuwId } from "./bewerk";
 import type { CommandoNaam } from "./commando";
 
@@ -57,6 +59,18 @@ export interface Raster {
   object: boolean;
   /** Ortho: lijnen horizontaal of verticaal. */
   ortho: boolean;
+}
+
+/**
+ * Een view van een tekenblad in bewerking. Dezelfde editor, maar in deze stand is
+ * één eenheid één mm in het echt (vel.ts) en hoort de tekening bij het vel, niet
+ * bij een blok in de code.
+ */
+export interface VelBewerking {
+  exId: string;
+  viewId: string;
+  /** De schaal 1 : n van de view. */
+  schaal: number;
 }
 
 /** Wat het gereedschap Symbool plaatst: het symbool en zijn keuzes (familie, type oplegging). */
@@ -96,6 +110,12 @@ interface TekenState {
   melding: Melding | null;
   /** Een zojuist geplaatste tekst: het paneel zet de cursor in zijn tekstveld. */
   focus: string | null;
+  /** Een view van een tekenblad in bewerking; null: een tekening uit de code. */
+  vel: VelBewerking | null;
+  /** De gekozen view op het vel in beeld. */
+  velKeuze: string | null;
+  /** Een teller: het lint gaat naar de tab Tekenen als hij verandert. */
+  lintVerzoek: number;
 }
 
 export const useTeken = create<TekenState>(() => ({
@@ -119,6 +139,9 @@ export const useTeken = create<TekenState>(() => ({
   gewijzigd: false,
   melding: null,
   focus: null,
+  vel: null,
+  velKeuze: null,
+  lintVerzoek: 0,
 }));
 
 const MAX_TERUG = 100;
@@ -218,7 +241,7 @@ export function gekozenVormen(): Vorm[] {
 /** De tekenschaal voor nieuwe profielen; een geselecteerd profiel of hout neemt hem over. */
 export function zetSchaal(n: number) {
   useTeken.setState({ schaal: n });
-  const ids = gekozenVormen().filter((v) => v.sym === "staal" || v.sym === "hout").map((v) => v.id);
+  const ids = gekozenVormen().filter((v) => SCHAAL_SYMBOLEN.includes(v.sym as SymboolId)).map((v) => v.id);
   if (ids.length > 0) wijzigVormen(ids, (o) => zetOptie(o, "schaal", String(n)), "schaal");
 }
 
@@ -365,6 +388,14 @@ export function bewerkTekening() {
 export function toonTekenen() {
   if (!bladOpen()) return;
   const s = useTeken.getState();
+  // Op een tekenblad: de gekozen view, zonder de code erbij.
+  const p = useProjectStore.getState();
+  const actief = p.exemplaren.find((e) => e.id === p.activeId);
+  if (actief && isTekenBlad(actief)) {
+    const eerste = actief.tekenvel?.views[0]?.id;
+    if (!s.vel && eerste) openView(actief.id, s.velKeuze ?? eerste, false);
+    return;
+  }
   if (s.open) {
     useTeken.setState({ zichtbaar: true });
     if (!useEditorViewStore.getState().view) vraagCode();
@@ -389,13 +420,132 @@ export function sluitTekenen() {
 /** Het blad wisselde: de tekening gaat dan als nieuwe tekening naar de cursor van dat blad. */
 export function bladGewisseld(id: string) {
   const s = useTeken.getState();
-  if (!s.open || s.bladId === id) return;
+  if (!s.open || s.vel || s.bladId === id) return;
   useTeken.setState({
     bladId: id,
     doel: { soort: "nieuw" },
     plek: useEditorViewStore.getState().view ? cursor(useEditorViewStore.getState().view!) : 0,
     melding: { sleutel: "melding.anderBlad" },
   });
+}
+
+// ─── Een view van een tekenblad ──────────────────────────────────────────────
+
+type Bewaard = Pick<TekenState, "open" | "zichtbaar" | "tekening" | "doel" | "bladId" | "plek" | "gereedschap" | "symbool" | "schaal" | "stijl" | "raster" | "gekozen" | "terug" | "vooruit" | "laatste" | "gewijzigd" | "melding">;
+
+/** De tekening uit de code die opzij staat zolang er een view open is. */
+let bewaard: Bewaard | null = null;
+let stopKoppeling: (() => void) | null = null;
+
+function huidigeView(): TekenView | undefined {
+  const { vel } = useTeken.getState();
+  if (!vel) return undefined;
+  const ex = useProjectStore.getState().exemplaren.find((e) => e.id === vel.exId);
+  return ex?.tekenvel?.views.find((v) => v.id === vel.viewId);
+}
+
+/**
+ * De tekening in de editor en de view in het project lopen gelijk: elke wijziging
+ * in de editor gaat meteen naar het project, zodat opslaan en het afdrukvoorbeeld
+ * altijd de laatste stand hebben. Andersom volgt de editor het project, voor de
+ * schaal en het kader uit het paneel en voor ongedaan maken op projectniveau.
+ */
+function koppelView() {
+  const uitEditor = useTeken.subscribe((nu, was) => {
+    if (!nu.vel || nu.tekening.elementen === was.tekening.elementen) return;
+    const view = huidigeView();
+    if (!view || view.elementen === nu.tekening.elementen) return;
+    // Een view bevat alleen vormen: een onbekend element komt er niet in (store/tekenBlad.ts).
+    wijzigOpenView((v) => ({ ...v, elementen: nu.tekening.elementen as Vorm[] }));
+  });
+  const uitProject = useProjectStore.subscribe(() => {
+    const s = useTeken.getState();
+    if (!s.vel) return;
+    const view = huidigeView();
+    if (!view) return sluitView();
+    const nieuw = tekeningVanView(view);
+    const tk = s.tekening;
+    if (
+      view.elementen === tk.elementen && view.schaal === s.vel.schaal && nieuw.x0 === tk.x0 && nieuw.y0 === tk.y0 &&
+      nieuw.breed.v === tk.breed.v && nieuw.hoog.v === tk.hoog.v
+    ) return;
+    const anderInhoud = view.elementen !== tk.elementen;
+    useTeken.setState({
+      tekening: nieuw,
+      vel: { ...s.vel, schaal: view.schaal },
+      ...(anderInhoud ? { terug: [], vooruit: [], gekozen: [], laatste: null } : {}),
+    });
+  });
+  return () => {
+    uitEditor();
+    uitProject();
+  };
+}
+
+/** Wijzig de view die open staat. */
+export function wijzigOpenView(f: (v: TekenView) => TekenView) {
+  const { vel } = useTeken.getState();
+  if (vel) wijzigView(vel.exId, vel.viewId, f);
+}
+
+/** Wijzig een view van een tekenblad in het project. */
+export function wijzigView(exId: string, viewId: string, f: (v: TekenView) => TekenView) {
+  const p = useProjectStore.getState();
+  const ex = p.exemplaren.find((e) => e.id === exId);
+  if (!ex?.tekenvel) return;
+  p.zetTekenVel(exId, { ...ex.tekenvel, views: ex.tekenvel.views.map((v) => (v.id === viewId ? f(v) : v)) });
+}
+
+/**
+ * Een view van een tekenblad in de editor zetten. Een tekening uit de code die nog
+ * in bewerking is, staat zolang opzij en komt bij het sluiten terug. `naarLint`:
+ * het lint gaat mee naar de tab Tekenen.
+ */
+export function openView(exId: string, viewId: string, naarLint = true) {
+  const ex = useProjectStore.getState().exemplaren.find((e) => e.id === exId);
+  const view = ex?.tekenvel?.views.find((v) => v.id === viewId) ?? ex?.tekenvel?.views[0];
+  if (!view) return;
+  if (useTeken.getState().vel) sluitView();
+  const s = useTeken.getState();
+  bewaard = {
+    open: s.open, zichtbaar: s.zichtbaar, tekening: s.tekening, doel: s.doel, bladId: s.bladId, plek: s.plek,
+    gereedschap: s.gereedschap, symbool: s.symbool, schaal: s.schaal, stijl: s.stijl, raster: s.raster,
+    gekozen: s.gekozen, terug: s.terug, vooruit: s.vooruit, laatste: s.laatste, gewijzigd: s.gewijzigd, melding: s.melding,
+  };
+  useTeken.setState((o) => ({
+    open: true,
+    zichtbaar: true,
+    tekening: tekeningVanView(view),
+    doel: { soort: "nieuw" },
+    bladId: exId,
+    plek: 0,
+    gereedschap: "selecteer",
+    // De modelmaat: een profiel, wand of vloer tekent één eenheid per mm.
+    schaal: MODEL_SCHAAL,
+    stijl: { ...STANDAARD_STIJL, lijn: "#000000", dikte: 1 },
+    raster: { ...o.raster, maat: rasterVoorSchaal(view.schaal) },
+    gekozen: [],
+    terug: [],
+    vooruit: [],
+    laatste: null,
+    gewijzigd: false,
+    melding: null,
+    focus: null,
+    vel: { exId, viewId: view.id, schaal: view.schaal },
+    velKeuze: view.id,
+    lintVerzoek: naarLint ? o.lintVerzoek + 1 : o.lintVerzoek,
+  }));
+  stopKoppeling = koppelView();
+}
+
+/** Terug naar het vel: de editor dicht, en een tekening uit de code weer terug op zijn plek. */
+export function sluitView() {
+  stopKoppeling?.();
+  stopKoppeling = null;
+  if (!useTeken.getState().vel) return;
+  const terug = bewaard;
+  bewaard = null;
+  useTeken.setState({ vel: null, ...(terug ?? { open: false, gekozen: [], terug: [], vooruit: [], gewijzigd: false }) });
 }
 
 /** Waar het doelblok nu staat; null als het er niet meer is. */

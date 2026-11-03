@@ -6,6 +6,7 @@ import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
+import { isTekenBlad } from "../../store/tekenBlad";
 import { papier } from "./pdfBlad";
 
 /*
@@ -50,6 +51,10 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): Do
   // Idem een spreadsheet-blad; de werkbladen tekent SpreadsheetBladWeergave.tsx.
   if (isSpreadsheetBlad(ex)) {
     return { html: "", resultaat: { titel: ex.naam, norm: papier()("spreadsheetBlad.soort"), uc: null, voldoet: null } };
+  }
+  // Idem een tekenblad; het vel tekent TekenbladWeergave.tsx.
+  if (isTekenBlad(ex)) {
+    return { html: "", resultaat: { titel: ex.naam, norm: papier()("tekenBlad.soort"), uc: null, voldoet: null } };
   }
   let html: string;
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };

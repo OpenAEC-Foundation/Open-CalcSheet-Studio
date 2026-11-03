@@ -15,6 +15,7 @@
  * Dit bestand en de andere kernbestanden importeren met `.ts`-extensie en
  * zonder React of stores, zodat Node ze rechtstreeks kan laden.
  */
+import type { TekenVel } from "../store/tekenBlad.ts";
 
 /** Het PDF-bestand van een PDF-blad (zie store/pdfBijlage.ts). */
 export interface McpPdf {
@@ -32,6 +33,7 @@ export interface McpBlad {
   waarden: Record<string, string>;
   pdf?: McpPdf;
   xlsx?: McpPdf;
+  tekenvel?: TekenVel;
 }
 
 /** De stand van het project op één moment. */

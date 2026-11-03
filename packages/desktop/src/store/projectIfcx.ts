@@ -27,6 +27,7 @@ import {
 import { projectScope } from "./projectGegevens.ts";
 import type { PdfBijlage } from "./pdfBijlage.ts";
 import { isLosBlad, type SpreadsheetBestand } from "./spreadsheetBlad.ts";
+import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 
 /** Wat dit bestand van een blad nodig heeft; een uittreksel van `Exemplaar`. */
@@ -40,6 +41,7 @@ export interface BladVoorIfc {
   elementen?: ElementRef[];
   pdf?: PdfBijlage;
   xlsx?: SpreadsheetBestand;
+  tekenvel?: TekenVel;
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -69,6 +71,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
     elementen: ex.elementen,
     pdf: ex.pdf,
     xlsx: ex.xlsx,
+    ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
     nodes: [],
   };
   if (!isLosBlad(ex)) {

@@ -434,7 +434,7 @@ export function bouwProjectStep(doc: IfcxBestand, opties: StepOpties = {}): stri
     const pdf = (a[ATTR.pdf] ?? a[ATTR.xlsx]) as { bestandsnaam?: string; mediaType?: string; grootte?: number } | undefined;
     const invoer = (a[ATTR.invoer] as Array<{ naam: string; waarde: string }> | undefined) ?? [];
     const naam = naamVan(k) || blad.id;
-    const isBijlage = blad.soort === 'pdf' || blad.soort === 'spreadsheet';
+    const isBijlage = blad.soort === 'pdf' || blad.soort === 'spreadsheet' || blad.soort === 'tekenblad';
 
     const groep = voeg(`IFCGROUP(${guid(k.path)},${oh},${label(naam)},${optTekst(uitkomst?.norm)},'Rekenblad')`);
     const elementen = elementenVanBlad.get(k.path) ?? [];

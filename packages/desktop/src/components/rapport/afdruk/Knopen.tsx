@@ -6,6 +6,8 @@ import { MATEN } from "../../calc/paginering";
 import { PdfPaginas } from "../../calc/PdfBladWeergave";
 import { SpreadsheetVellen } from "../../calc/SpreadsheetBladWeergave";
 import { isSpreadsheetBlad } from "../../../store/spreadsheetBlad";
+import { TekenvelOpPapier } from "../../calc/TekenbladWeergave";
+import { isTekenBlad } from "../../../store/tekenBlad";
 import { UitwerkingHtml } from "../../calc/PrintBlad";
 import { isPdfBlad } from "../../../store/pdfBijlage";
 import type { RapportWeergave } from "./useRapportWeergave";
@@ -126,6 +128,8 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
         <PdfPaginas ex={b.ex} maten={MATEN.rapport} />
       ) : inHoofdstuk && b && isSpreadsheetBlad(b.ex) ? (
         <SpreadsheetVellen ex={b.ex} maten={MATEN.rapport} />
+      ) : inHoofdstuk && b && isTekenBlad(b.ex) ? (
+        <TekenvelOpPapier ex={b.ex} />
       ) : inHoofdstuk && b ? (
         // `print-blad` geeft de uitwerking dezelfde compacte opmaak als een
         // los blad; `rpa-inline` haalt de paginasprong van een los blad weg.

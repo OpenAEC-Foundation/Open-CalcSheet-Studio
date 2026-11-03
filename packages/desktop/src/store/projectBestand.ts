@@ -7,6 +7,7 @@ import { standaardTeksten } from "../rapport/standaardteksten.ts";
 import { leesRekenversie } from "../components/calc/bladVersie.ts";
 import { isPdfBlad, leesPdfBijlage } from "./pdfBijlage.ts";
 import { isSpreadsheetBlad, leesSpreadsheetBestand } from "./spreadsheetBlad.ts";
+import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -108,6 +109,7 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       bronVersie: ex.bronVersie,
       elementen: ex.elementen,
       pdf: ex.pdf,
+      ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
     })),
   });
   return JSON.stringify(doc, null, 2);
@@ -200,6 +202,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (pdf) ex.pdf = pdf;
   const xlsx = isSpreadsheetBlad(ex) ? leesSpreadsheetBestand(e.xlsx) : undefined;
   if (xlsx) ex.xlsx = xlsx;
+  const tekenvel = isTekenBlad(ex) ? leesTekenVel(e.tekenvel) : undefined;
+  if (tekenvel) ex.tekenvel = tekenvel;
   return ex;
 }
 

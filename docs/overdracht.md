@@ -15,6 +15,7 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 | `packages/desktop/src/components/calc` | Parametrische beelden (`*Designer.tsx`), koppeling blad↔beeld (`designerKeuze.tsx`, via een herkenningstekst uit de titel), modulecatalogus met status (`projectTree.ts`), uitkomst van een blad (`bladResultaat.ts`), afdruk (`PrintDocument.tsx/.css`, `PrintBlad.tsx`, `paginering.ts`), rekenversie en bijwerken van bladen (`bladVersie.ts`, `BladBijwerken.tsx`). |
 | `packages/desktop/src/rapport`, `components/rapport` | Constructierapport (hoofdstukken, uitgangspunten, belastingen met opbouwen en gewichtenbibliotheek `gewichten.ts`, bijlage A met de rekenbladen). |
 | `packages/desktop/src/store` | Project (exemplaren/bladen, projectgegevens, rapport), projectbestand, undo. |
+| `packages/desktop/src/components/tekenen` | De tekeneditor: tekeningen in een rekenblad (`@svg`-blok) en de views van een tekenblad. `vel.ts` rekent een view van echte maat naar papier; het vel staat in `store/tekenBlad.ts`. |
 | `scripts/check-*.mjs` | Controles; `node scripts/check-alles.mjs` draait ze allemaal (nu 26 controles). |
 
 ## 2. Afspraken in de bladen
@@ -76,6 +77,13 @@ Status in de catalogus: *gereed* (gecalibreerd op referentiebladen), *controlere
 De toetsing van de balklaag staat in [balklaag-toetsing.md](balklaag-toetsing.md),
 de bewuste splitspunten tussen referentie-uitwerking en norm in
 [afwijkingen-referentie.md](afwijkingen-referentie.md).
+
+Naast de modules zijn er bladen zonder rekentekst: een PDF, een spreadsheet en een
+tekenblad (*Module toevoegen → Lege tekening*). Een tekenblad is een vel A4, A3 of A2 met
+views, elk met een eigen plek, schaal en titel. In een view is één eenheid één mm in het
+echt; lijndikte, tekst en de maat van een symbool staan in px op papier en veranderen
+niet met de schaal. Op papier staat het vel op zijn eigen formaat, ook in het rapport.
+Controle: `scripts/check-tekenblad.mjs`.
 
 Een nieuwe module bestaat uit een rekenblad in `packages/desktop/src/templates`
 (geregistreerd in `index.ts`), een regel in de catalogus (`projectTree.ts`), zo

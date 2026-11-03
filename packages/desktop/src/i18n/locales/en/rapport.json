@@ -298,5 +298,9 @@
     "geenLogo": "no logo",
     "voetafbeelding": "Footer image",
     "bijwerken": "Update from office profile"
+  },
+  "tekenBlad": {
+    "soort": "Drawing",
+    "ontbreekt": "The sheet of this drawing is missing."
   }
 }

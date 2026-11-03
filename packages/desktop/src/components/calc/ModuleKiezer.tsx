@@ -8,6 +8,8 @@ import {
   type TreeNode,
 } from "./projectTree";
 import { templates } from "../../templates";
+import { TEKEN_BLAD } from "../../store/tekenBlad";
+import Icoon from "../Icoon";
 import { useModuleKiezer, type KiezerTab } from "../../store/moduleKiezer";
 import {
   useModuleBibliotheek,
@@ -225,6 +227,65 @@ function GroepBlok({ groep, niveau, gekozen, onKies, onVoegToe }: {
   );
 }
 
+/** De keuze "lege tekening": geen module uit de catalogus, wel op dezelfde manier te kiezen. */
+const LEGE_TEKENING: Item = { kind: "item", id: "leeg-tekenblad", label: "Lege tekening", templateId: TEKEN_BLAD };
+
+/**
+ * Wat je zonder module aan het rapport toevoegt: een leeg tekenblad, en straks een
+ * project uit Open FEM Studio. Dat laatste staat er al wel, maar is nog uitgeschakeld.
+ */
+function LegeBladen({ zoek, gekozen, onKies, onVoegToe }: {
+  zoek: string;
+  gekozen: boolean;
+  onKies: () => void;
+  onVoegToe: () => void;
+}) {
+  const { t: tw } = useTranslation("werkruimte");
+  const tekening = tw("kiezer.leeg.tekening");
+  const fem = tw("kiezer.leeg.fem");
+  const z = zoek.trim().toLowerCase();
+  const toon = (naam: string) => !z || naam.toLowerCase().includes(z);
+  if (!toon(tekening) && !toon(fem)) return null;
+  return (
+    <section className="mk-groep mk-niveau-0">
+      <h3>{tw("kiezer.leeg.kop")}</h3>
+      <div className="mk-tegels">
+        {toon(tekening) && (
+          <button
+            type="button"
+            className={`mk-tegel${gekozen ? " gekozen" : ""}`}
+            aria-pressed={gekozen}
+            onClick={onKies}
+            onDoubleClick={onVoegToe}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onVoegToe();
+              }
+            }}
+            title={tw("kiezer.leeg.tekeningUitleg")}
+          >
+            <span className="mk-kop">
+              <span className="mk-leeg-icoon"><Icoon id="assistant.draw" uit="calculations" /></span>
+              <span className="mk-naam">{tekening}</span>
+            </span>
+            <span className="mk-onder"><span className="mk-status">{tw("kiezer.leeg.tekeningOnder")}</span></span>
+          </button>
+        )}
+        {toon(fem) && (
+          <button type="button" className="mk-tegel uit" disabled aria-disabled="true" title={tw("kiezer.leeg.femUitleg")}>
+            <span className="mk-kop">
+              <span className="mk-leeg-icoon"><Icoon id="file.new" uit="calculations" /></span>
+              <span className="mk-naam">{fem}</span>
+            </span>
+            <span className="mk-onder"><span className="mk-status">{tw("kiezer.leeg.femLater")}</span></span>
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /** De betekenis van de statusbolletjes en van "gepubliceerd", onder in het scherm. */
 function Legenda() {
   const { t } = useTranslation();
@@ -248,6 +309,7 @@ export default function ModuleKiezer() {
   const open = useModuleKiezer((s) => s.open);
   const sluiten = useModuleKiezer((s) => s.sluiten);
   const voegToe = useModuleKiezer((s) => s.voegToe);
+  const voegTekenbladToe = useModuleKiezer((s) => s.voegTekenbladToe);
   const startTab = useModuleKiezer((s) => s.tab);
   const geinstalleerd = useModuleBibliotheek((s) => s.geinstalleerd);
   const { t: tw } = useTranslation("werkruimte");
@@ -272,6 +334,12 @@ export default function ModuleKiezer() {
   }, [bron, zoek, tw]);
 
   const toevoegen = (item: Item | null) => {
+    if (item?.templateId === TEKEN_BLAD) {
+      voegTekenbladToe(tw("kiezer.leeg.tekening"), tw("tekenblad.viewNaam", { n: 1 }));
+      setGekozen(null);
+      setZoek("");
+      return;
+    }
     if (!item?.templateId || !templates[item.templateId]) return;
     // Het catalogus-label, niet de vertaalde naam: de naamgeving van nieuwe
     // bladen blijft zoals hij was.
@@ -341,6 +409,14 @@ export default function ModuleKiezer() {
           />
           {tab === "normbestanden" ? <LokaleNormen zoek={zoek} /> : tab === "online" ? <OnlineBibliotheek zoek={zoek} /> : (
             <div className="mk-lijst">
+              {tab === "modules" && (
+                <LegeBladen
+                  zoek={zoek}
+                  gekozen={gekozen?.id === LEGE_TEKENING.id}
+                  onKies={() => setGekozen(LEGE_TEKENING)}
+                  onVoegToe={() => toevoegen(LEGE_TEKENING)}
+                />
+              )}
               {groepen.length === 0 && <p className="mk-leeg">{tw("kiezer.nietsGevonden", { zoek })}</p>}
               {groepen.map((g) => (
                 <GroepBlok

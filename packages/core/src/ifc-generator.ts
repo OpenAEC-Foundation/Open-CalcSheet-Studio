@@ -76,6 +76,8 @@ export interface IfcCalcSheet {
   pdf?: { bestandsnaam: string; data: string };
   /** Bij een spreadsheet-blad: de werkmap, als base64. */
   xlsx?: { bestandsnaam: string; data: string };
+  /** Alleen bij een tekenblad: het vel met zijn views (ocss::blad::tekenvel). */
+  tekenvel?: Record<string, unknown>;
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */

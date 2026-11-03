@@ -8,6 +8,7 @@ import { invoervelden, type Invoerveld } from "../../components/calc/bladVersie.
 import type { Resultaat } from "../../components/calc/bladLezen.ts";
 import { isPdfBlad, lijktOpPdf, PDF_GROOT_BYTES, base64Bytes } from "../../store/pdfBijlage.ts";
 import { isLosBlad, isSpreadsheetBlad } from "../../store/spreadsheetBlad.ts";
+import { isTekenBlad } from "../../store/tekenBlad.ts";
 import { jsonGetal, leesBron, rekenDoor, type Doorrekening } from "../rekenen.ts";
 
 // ── Resultaten ──────────────────────────────────────────────────────────────
@@ -76,16 +77,16 @@ export function bladUit(
   return blad ? { blad, stand } : { fout: geenBlad(stand, id) };
 }
 
-/** Een rekenblad, geen PDF- of spreadsheet-blad: die hebben geen rekentekst en geen invoer. */
+/** Een rekenblad, geen PDF-, spreadsheet- of tekenblad: die hebben geen rekentekst en geen invoer. */
 export function geenPdfBlad(blad: McpBlad): McpToolResultaat | null {
   return isLosBlad(blad)
-    ? fout("VALIDATION", `Sheet "${blad.naam}" is a ${isPdfBlad(blad) ? "PDF" : "spreadsheet"} sheet: it has no calculation text or inputs.`)
+    ? fout("VALIDATION", `Sheet "${blad.naam}" is a ${isPdfBlad(blad) ? "PDF" : isTekenBlad(blad) ? "drawing" : "spreadsheet"} sheet: it has no calculation text or inputs.`)
     : null;
 }
 
 /** De soort van een blad, zoals de API die noemt. */
-export function bladSoort(blad: McpBlad): "pdf" | "spreadsheet" | "calculation" {
-  return isPdfBlad(blad) ? "pdf" : isSpreadsheetBlad(blad) ? "spreadsheet" : "calculation";
+export function bladSoort(blad: McpBlad): "pdf" | "spreadsheet" | "drawing" | "calculation" {
+  return isPdfBlad(blad) ? "pdf" : isSpreadsheetBlad(blad) ? "spreadsheet" : isTekenBlad(blad) ? "drawing" : "calculation";
 }
 
 /** Een invoerwaarde als tekst: getallen zoals de app ze bewaart. */

@@ -1,0 +1,167 @@
+/*
+ * Een tekenblad: het vel in de werkruimte en op papier. Tekenen zelf gebruikt de
+ * opmaak van de tekeneditor (tekenen/Tekenen.css).
+ */
+
+/* De editor in de werkruimte, in plaats van als venster over de uitwerking. */
+.tk-ingebed {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  container-type: inline-size;
+  background: var(--theme-bg);
+  color: var(--theme-text);
+  font-size: var(--oa-size-body);
+}
+
+.tv-werk {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  color: var(--theme-text);
+  font-size: var(--oa-size-body);
+}
+
+.tv-vlak {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--oa-workspace);
+}
+
+.tv-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+.tv-papier {
+  fill: #fff;
+  filter: drop-shadow(0 0.4px 1px rgba(0, 0, 0, 0.35));
+}
+
+.tv-inhoud {
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* Een view is op het vel een kader om te pakken; op papier heeft hij geen kader. */
+.tv-view {
+  fill: transparent;
+  stroke: var(--theme-accent);
+  stroke-width: 0.25;
+  stroke-dasharray: 2 1.2;
+  cursor: move;
+}
+
+.tv-view:hover {
+  fill: color-mix(in srgb, var(--theme-accent) 6%, transparent);
+}
+
+.tv-view.gekozen {
+  stroke-width: 0.5;
+  stroke-dasharray: none;
+}
+
+.tv-greep {
+  fill: #fff;
+  stroke: var(--theme-accent);
+  stroke-width: 0.4;
+}
+
+.tv-greep-nw,
+.tv-greep-se {
+  cursor: nwse-resize;
+}
+
+.tv-greep-ne,
+.tv-greep-sw {
+  cursor: nesw-resize;
+}
+
+.tv-leeg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+}
+
+.tv-lijst {
+  display: flex;
+  flex-direction: column;
+}
+
+.tv-rij {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 6px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tv-rij:hover {
+  background: var(--theme-hover);
+}
+
+.tv-rij.gekozen {
+  background: var(--theme-selected, var(--theme-hover));
+  font-weight: 600;
+}
+
+.tv-rij-naam {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-rij-schaal {
+  flex-shrink: 0;
+  color: var(--theme-text-secondary);
+}
+
+.tk-veld.tk-fout {
+  border-color: var(--theme-error, #dc2626);
+}
+
+.tk-uitleg.tk-let-op {
+  color: var(--theme-warning, #b45309);
+}
+
+/* ─── Op papier ───────────────────────────────────────────────── */
+
+/* De paginaregels van de vellen staan in PrintDocument.css, achter de algemene @page. */
+/* Boven de loopkop en -voet van de losse bladen: die herhaalt de browser op elke
+   pagina, ook op een vel dat zijn eigen titelhoek heeft. */
+.print-opmaak .print-tekenvel {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-opmaak .print-blad .print-tekenvel svg,
+.print-opmaak .print-tekenvel svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.print-opmaak .print-tekenvel text {
+  font-family: "Inter", system-ui, sans-serif;
+}

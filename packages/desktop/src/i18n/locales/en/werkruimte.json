@@ -105,6 +105,15 @@
       "verwijderen": "Remove",
       "bijdragen": "Contribute a module…",
       "uitBibliotheek": "From the online module library"
+    },
+    "leeg": {
+      "kop": "Blank sheets",
+      "tekening": "Blank drawing",
+      "tekeningOnder": "A4, A3 or A2 sheet with views",
+      "tekeningUitleg": "A blank drawing sheet as a sheet in the project: choose the paper size and place views on it, each with its own scale. With steel, floors, grids, walls and structural diagrams.",
+      "fem": "Add Open FEM Studio project",
+      "femLater": "Coming later",
+      "femUitleg": "Add a project from Open FEM Studio to this report. This is coming later; it is not available yet."
     }
   },
   "normen": {
@@ -356,5 +365,39 @@
     "leegBladUitleg": "Write your own calculation from scratch.",
     "bijStart": "Show at startup",
     "beginnen": "Start"
+  },
+  "tekenblad": {
+    "tab": "Drawing sheet",
+    "paneel": "Drawing sheet",
+    "rij": "Drawing sheet — sheet with views",
+    "ontbreekt": "The sheet of this drawing is missing.",
+    "nieuwVel": "Create a new sheet",
+    "view": "View",
+    "viewNaam": "View {{n}}",
+    "aantalViews_one": "{{count}} view",
+    "aantalViews_other": "{{count}} views",
+    "bereik": "{{b}} × {{h}} mm in real size",
+    "ligging": {
+      "staand": "Portrait",
+      "liggend": "Landscape"
+    },
+    "liggingLabel": "Orientation",
+    "papier": "Paper",
+    "formaat": "Size",
+    "views": "Views",
+    "viewToevoegen": "Add view",
+    "viewToevoegenTip": "A new, empty view at a free spot on the sheet.",
+    "viewTip": "{{naam}}: drag to move, double-click to draw in it.",
+    "geenViews": "No views on this sheet yet.",
+    "tekenen": "Draw",
+    "verwijderen": "Delete",
+    "verwijderVraag": "Delete view \"{{naam}}\" with everything drawn in it?",
+    "titel": "Title",
+    "x": "Left (mm)",
+    "y": "Top (mm)",
+    "breedte": "Width (mm)",
+    "hoogte": "Height (mm)",
+    "plekUitleg": "Place and size on paper. This does not change what is in the view.",
+    "uitleg": "Click a view to select it, drag to move it, and double-click to draw in it."
   }
 }

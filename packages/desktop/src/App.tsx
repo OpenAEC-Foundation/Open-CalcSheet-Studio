@@ -27,8 +27,10 @@ import { BladVersieKop, BladVersieMelding } from "./components/calc/BladVersieKo
 import IfcViewerPanel from "./components/calc/IfcViewerPanel";
 import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
+import { TekenbladInfo, TekenbladWeergave } from "./components/calc/TekenbladWeergave";
 import { isPdfBlad } from "./store/pdfBijlage";
 import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
+import { isTekenBlad } from "./store/tekenBlad";
 import { getSetting } from "./store";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
 import { usePrintStore } from "./store/printStore";
@@ -256,6 +258,8 @@ export default function App() {
   const pdfBlad = actief !== null && isPdfBlad(actief);
   // Idem een spreadsheet-blad: alleen zijn werkmap.
   const spreadsheetBlad = actief !== null && isSpreadsheetBlad(actief);
+  // En een tekenblad: alleen zijn vel.
+  const tekenBlad = actief !== null && isTekenBlad(actief);
   const mode = hasDesigner ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
@@ -290,9 +294,9 @@ export default function App() {
     sluitVoorbeeld();
     setSplitMode((m) => (m === "vu" ? "cv" : m));
   }, [codeVerzoek, sluitVoorbeeld]);
-  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad) ? (
+  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || tekenBlad) ? (
     <div className="split-tabs">
-      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : "spreadsheet.tab")}</button>
+      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : tekenBlad ? "tekenblad.tab" : "spreadsheet.tab")}</button>
       <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
     </div>
   ) : actief && !toontProjectGegevens ? (
@@ -397,6 +401,15 @@ export default function App() {
                 <Trans t={t} i18nKey="leeg.uitleg" components={{ b: <b /> }} />
               </p>
             </div>
+          ) : tekenBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("tekenblad.paneel")} info={<TekenbladInfo ex={actief} />}>
+                  <TekenbladWeergave ex={actief} />
+                </WerkPaneel>
+              </div>
+            </>
           ) : spreadsheetBlad ? (
             <>
               {tabBalk}

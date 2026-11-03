@@ -9,6 +9,7 @@ import { templates } from "../../templates";
 import { heeftEigenCode, huidigeModuletekst, isVerouderd, rekenversie } from "./bladVersie";
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
+import { isTekenBlad } from "../../store/tekenBlad";
 import { voegLeegSpreadsheetToe, voegWerkmapToe } from "./spreadsheetBlad";
 import { voegPdfBladToe } from "./pdfBlad";
 import Icoon from "../Icoon";
@@ -107,15 +108,20 @@ function ExemplaarRij({
   // Een PDF-blad heeft geen module en geen rekenversie: een eigen icoon.
   const pdf = isPdfBlad(ex);
   const spreadsheet = isSpreadsheetBlad(ex);
+  const tekenblad = isTekenBlad(ex);
   const stip = pdf
     ? <Icoon id="report.cover" />
     : spreadsheet
     ? <Icoon id="data.table" />
+    : tekenblad
+    ? <Icoon id="assistant.draw" uit="calculations" />
     : <span className={`pb-stip${status ? ` pb-status-${status}` : ""}`} aria-hidden="true" />;
   const uitleg = pdf
     ? `${ex.naam}\n${tw("pdf.rij", { bestand: ex.pdf?.bestandsnaam || "—" })}\n${tw("browser.dubbelklik")}`
     : spreadsheet
     ? `${ex.naam}\n${tw("spreadsheet.rij")}\n${tw("browser.dubbelklik")}`
+    : tekenblad
+    ? `${ex.naam}\n${tw("tekenblad.rij")}\n${tw("browser.dubbelklik")}`
     : `${ex.naam}${info ? ` — ${moduleNaam}` : ""}\n${versieRegel}` +
       (eigen ? `\n${t("bladVersie.eigenUitleg", { bron: ex.bronVersie })}` : "") +
       (verouderd ? `\n${t("bladVersie.rijVerouderd", { nieuw: nieuweVersie })}` : "") +

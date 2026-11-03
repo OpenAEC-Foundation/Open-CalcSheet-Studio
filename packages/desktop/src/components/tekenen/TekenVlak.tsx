@@ -2,6 +2,7 @@ import { schoonSvgDeel } from "../calc/uitwerkingOpschonen";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { beeldVan, kernGetal } from "./code";
+import { elementOpPapier } from "./vel";
 import {
   boogEind,
   grepen,
@@ -14,11 +15,12 @@ import {
   verschuif,
   waardeVan,
   MAAT_AFSTAND,
+  type Element,
   type Gereedschap,
   type Opgelost,
   type Vorm,
 } from "./model";
-import { draaiKeuze, getekend, nieuwSymbool, plaatsingKeuze, spiegelKeuze, type SnapPunt } from "./symbolen";
+import { draaiKeuze, getekend, nieuwSymbool, plaatsingKeuze, SCHAAL_SYMBOLEN, spiegelKeuze, type SnapPunt, type SymboolId } from "./symbolen";
 import { ortho, snapset, zoekSnap } from "./snap";
 import { PX_PER_MM } from "./staalprofielen";
 import { draaiing, metNieuwId, pasToe, schaling, spiegeling, type Omzetting } from "./bewerk";
@@ -70,6 +72,9 @@ interface Concept {
 }
 
 const rond = (n: number) => Math.round(n * 100) / 100;
+
+/** Waar een klik of toets bij de tekening hoort: het venster, de werkruimte van een tekenblad en het lint. */
+const TEKENPLEK = ".tk-venster, .tk-ingebed, .ribbon-content";
 
 /** Een lijn onder een veelvoud van 45°: met Shift. */
 function richtHoek(a: Punt, b: Punt): Punt {
@@ -204,6 +209,11 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
   const raster = useTeken((s) => s.raster);
   const gekozen = useTeken((s) => s.gekozen);
   const commando = useTeken((s) => s.commando);
+  // Een view van een tekenblad: de eenheid is hier een mm in het echt, en wat er
+  // getekend wordt, staat in px op papier (vel.ts). Elders is één eenheid één px.
+  const velSchaal = useTeken((s) => s.vel?.schaal ?? null);
+  const opPapier = velSchaal ? PX_PER_MM / velSchaal : 1;
+  const naarEenheid = velSchaal ? `scale(${1 / opPapier})` : undefined;
 
   const svgRef = useRef<SVGSVGElement>(null);
   const vlakRef = useRef<HTMLDivElement>(null);
@@ -225,6 +235,14 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
   const H = waardeVan(tekening.hoog, opgelost) || 1;
   const rand = Math.max(W, H) * 0.04 + 8;
   const vakVlak = { x: tekening.x0 - rand, y: tekening.y0 - rand, w: W + 2 * rand, h: H + 2 * rand };
+  // Ingezoomd (het muiswiel) of verschoven (de middelste muisknop); null: de hele tekening past.
+  const [zicht, setZicht] = useState<typeof vakVlak | null>(null);
+  const vak = zicht ?? vakVlak;
+  const vakRef = useRef(vak);
+  vakRef.current = vak;
+  const vakVlakRef = useRef(vakVlak);
+  vakVlakRef.current = vakVlak;
+  const schuifZicht = useRef<{ x: number; y: number; van: typeof vakVlak } | null>(null);
   const plaatsing = gereedschap === "symbool" ? plaatsingKeuze(symbool.sym, symbool.o) : null;
 
   // Schermpixels per eenheid: grepen en raster houden zo hun maat op het scherm.
@@ -233,23 +251,50 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
     if (!svg) return;
     const meet = () => {
       const r = svg.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) setSchaal(Math.min(r.width / vakVlak.w, r.height / vakVlak.h));
+      if (r.width > 0 && r.height > 0) setSchaal(Math.min(r.width / vak.w, r.height / vak.h));
     };
     meet();
     const ro = new ResizeObserver(meet);
     ro.observe(svg);
     return () => ro.disconnect();
-  }, [vakVlak.w, vakVlak.h]);
+  }, [vak.w, vak.h]);
+
+  // Een ander formaat tekening: weer alles in beeld.
+  useEffect(() => setZicht(null), [vakVlak.w, vakVlak.h]);
+
+  // Zoomen rond het punt onder de muis. Niet via onWheel: React luistert passief, en dan
+  // houdt preventDefault het scrollen van de pagina niet tegen.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const wiel = (e: WheelEvent) => {
+      e.preventDefault();
+      const m = svg.getScreenCTM();
+      if (!m) return;
+      const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+      const f = e.deltaY < 0 ? 0.8 : 1.25;
+      const nu = vakRef.current;
+      const w = nu.w * f, h = nu.h * f;
+      setZicht(w >= vakVlakRef.current.w ? null : { x: p.x - (p.x - nu.x) * f, y: p.y - (p.y - nu.y) * f, w, h });
+    };
+    svg.addEventListener("wheel", wiel, { passive: false });
+    return () => svg.removeEventListener("wheel", wiel);
+  }, []);
+
+  /** Het beeld van een vorm: in een view eerst van echte maat naar papier. */
+  const beeldOp = (el: Element, tekst?: (e: string) => string | undefined) =>
+    beeldVan(velSchaal ? elementOpPapier(el, velSchaal) : el, tekening.naam, opgelost, tekst);
 
   const markup = useMemo(() => {
     const m = new Map<string, string>();
     for (const el of tekening.elementen) {
-      const beeld = beeldVan(el, tekening.naam, opgelost, tekstVan);
+      const beeld = beeldOp(el, tekstVan);
       // Een "vaste" vorm is rauwe SVG uit het blad, en dat kan van iemand anders komen.
       m.set(el.id, el.soort === "vast" ? schoonSvgDeel(beeld) : beeld);
     }
     return m;
-  }, [tekening.elementen, tekening.naam, opgelost, tekstVan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tekening.elementen, tekening.naam, opgelost, tekstVan, velSchaal]);
 
   const snaps = useMemo(() => snapset(tekening, opgelost), [tekening, opgelost]);
 
@@ -329,7 +374,7 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
     const lijn = { x1: p.x, y1: p.y, x2: q.x, y2: q.y };
     // De maatlijn komt onder de oplegging met zijn arcering; de hulplijnen beginnen daaronder.
     const onderOplegging = 19;
-    const maat = nieuweVorm("maat", { ...lijn, offset: onderOplegging + 21 }, stijl, { tekst: "L", o: { gat: String(onderOplegging + 3) } });
+    const maat = nieuweVorm("maat", { ...lijn, offset: (onderOplegging + 21) / opPapier }, stijl, { tekst: "L", o: { gat: String(onderOplegging + 3) } });
     const last = nieuwSymbool("qlast", lijn, stijl);
     voegToe([
       nieuwSymbool("ligger", lijn, stijl),
@@ -345,7 +390,7 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
   /** Een nieuw symbool van het gekozen soort op een plek. */
   const maakSymbool = (plek: Record<string, number>) => {
     const extra: Record<string, string> = { ...symbool.o };
-    if (symbool.sym === "staal" || symbool.sym === "hout") extra.schaal = String(schaalTekening);
+    if (SCHAAL_SYMBOLEN.includes(symbool.sym as SymboolId)) extra.schaal = String(schaalTekening);
     return nieuwSymbool(symbool.sym, plek, stijl, extra);
   };
 
@@ -363,7 +408,7 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
     if (gereedschap === "schema") return zetSchema({ x: v.p.x1.v, y: v.p.y1.v }, { x: v.p.x2.v, y: v.p.y2.v });
     if (v.soort === "maat") {
       const r = richtMaat(v, schaalTekening);
-      setConcept({ vorm: { ...r, p: { ...r.p, offset: { v: MAAT_AFSTAND } } }, a: { x: r.p.x1.v, y: r.p.y1.v }, stap: 3 });
+      setConcept({ vorm: { ...r, p: { ...r.p, offset: { v: MAAT_AFSTAND / opPapier } } }, a: { x: r.p.x1.v, y: r.p.y1.v }, stap: 3 });
       return;
     }
     if (v.soort === "symbool") {
@@ -525,7 +570,7 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
     setFout(null);
     if (concept?.stap === 3) {
       // De maatlijn op de standaardafstand, aan de kant van de muis.
-      const af = concept.vorm.p.offset.v < 0 ? -MAAT_AFSTAND : MAAT_AFSTAND;
+      const af = (concept.vorm.p.offset.v < 0 ? -MAAT_AFSTAND : MAAT_AFSTAND) / opPapier;
       const n = tekst ? leesGetal(tekst) : null;
       voegToe([{ ...concept.vorm, p: { ...concept.vorm.p, offset: { v: n ?? af } } }]);
       setConcept(null);
@@ -569,7 +614,7 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
   const laatsteKlikBinnen = useRef(true);
   useEffect(() => {
     const h = (e: globalThis.PointerEvent) => {
-      laatsteKlikBinnen.current = !!(e.target as globalThis.Element | null)?.closest?.(".tk-venster, .ribbon-content");
+      laatsteKlikBinnen.current = !!(e.target as globalThis.Element | null)?.closest?.(TEKENPLEK);
     };
     window.addEventListener("pointerdown", h, true);
     return () => window.removeEventListener("pointerdown", h, true);
@@ -581,7 +626,7 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
     // Typen in een veld (paneel, code, keuzelijst in het lint) start nooit een commando.
     if (doel?.closest?.("input, textarea, select, [contenteditable='true'], .cm-editor")) return;
     const actief = document.activeElement;
-    const opVenster = !!actief?.closest?.(".tk-venster, .ribbon-content");
+    const opVenster = !!actief?.closest?.(TEKENPLEK);
     if (actief && actief !== document.body && !opVenster) return;
     // Zonder focus (een klik op de kale achtergrond van het paneel, een knop die uitgaat) telt de
     // plek van de laatste klik: anders draait Ctrl+Z het project terug in plaats van de tekening.
@@ -680,6 +725,12 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
   };
 
   const omlaag = (e: PointerEvent<SVGSVGElement>) => {
+    if (e.button === 1) {
+      e.preventDefault();
+      schuifZicht.current = { x: e.clientX, y: e.clientY, van: vakRef.current };
+      svgRef.current?.setPointerCapture(e.pointerId);
+      return;
+    }
     if (e.button !== 0) return;
     vlakRef.current?.focus({ preventScroll: true });
     const ruw = naarTekening(e);
@@ -811,6 +862,11 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
   };
 
   const beweeg = (e: PointerEvent<SVGSVGElement>) => {
+    const sz = schuifZicht.current;
+    if (sz) {
+      setZicht({ ...sz.van, x: sz.van.x - (e.clientX - sz.x) / schaal, y: sz.van.y - (e.clientY - sz.y) / schaal });
+      return;
+    }
     const ruw = naarTekening(e);
     const s = sleep.current;
     if (s?.soort === "kader") {
@@ -880,6 +936,10 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
 
   const omhoog = (e: PointerEvent<SVGSVGElement>) => {
     if (svgRef.current?.hasPointerCapture(e.pointerId)) svgRef.current.releasePointerCapture(e.pointerId);
+    if (schuifZicht.current) {
+      schuifZicht.current = null;
+      return;
+    }
     const s = sleep.current;
     if (s) {
       sleep.current = null;
@@ -908,17 +968,17 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
   const voorbeeld = useMemo(() => {
     if (!muis) return null;
     if (gereedschap === "symbool" && plaatsing === "punt" && !concept) {
-      return beeldVan(maakSymbool({ x: muis.x, y: muis.y }), tekening.naam, opgelost);
+      return beeldOp(maakSymbool({ x: muis.x, y: muis.y }));
     }
     if (gereedschap === "boog" && boogPunten.length > 0) {
       const lijnStijl = `stroke:${stijl.lijn}; stroke-width:${stijl.dikte}; fill:none`;
       if (boogPunten.length === 1) {
         const a = boogPunten[0];
-        return `<line x1="${a.x}" y1="${a.y}" x2="${muis.x}" y2="${muis.y}" style="${lijnStijl}; stroke-dasharray:4 3"/>`;
+        return `<line x1="${a.x * opPapier}" y1="${a.y * opPapier}" x2="${muis.x * opPapier}" y2="${muis.y * opPapier}" style="${lijnStijl}; stroke-dasharray:4 3"/>`;
       }
       const b = boogDoor(boogPunten[0], boogPunten[1], muis);
       if (!b) return null;
-      return beeldVan(nieuweVorm("boog", b, stijl), tekening.naam, opgelost);
+      return beeldOp(nieuweVorm("boog", b, stijl));
     }
     return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -930,7 +990,7 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
     const oms = omzettingen(sessie, muis);
     if (oms.length === 0) return "";
     const vormen = gekozenVormen();
-    return oms.flatMap((om) => vormen.map((v) => beeldVan(pasToe(v, om, wOm(v)), tekening.naam, opgelost))).join("");
+    return oms.flatMap((om) => vormen.map((v) => beeldOp(pasToe(v, om, wOm(v))))).join("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessie, muis, gekozen, tekening, opgelost]);
 
@@ -957,7 +1017,7 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
         ref={svgRef}
         className="tk-svg"
         data-oa-theme="light"
-        viewBox={`${vakVlak.x} ${vakVlak.y} ${vakVlak.w} ${vakVlak.h}`}
+        viewBox={`${vak.x} ${vak.y} ${vak.w} ${vak.h}`}
         preserveAspectRatio="xMidYMid meet"
         style={{ cursor }}
         onPointerDown={omlaag}
@@ -990,17 +1050,17 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
           const vlak = el.soort === "tekst" || el.soort === "vast" || (el.soort === "symbool" && plaatsingVan(el) !== "lijn");
           return (
             <g key={el.id} data-vid={el.id} className={`tk-el${vlak ? " tk-el-vlak" : ""}`}>
-              <g className="tk-beeld" dangerouslySetInnerHTML={{ __html: markup.get(el.id) ?? "" }} />
+              <g className="tk-beeld"><g transform={naarEenheid} dangerouslySetInnerHTML={{ __html: markup.get(el.id) ?? "" }} /></g>
               {isVorm(el) && <Raak v={el} opgelost={opgelost} breed={raakBreed} />}
             </g>
           );
         })}
 
         {concept && (
-          <g className="tk-concept" pointerEvents="none" dangerouslySetInnerHTML={{ __html: beeldVan(concept.vorm, tekening.naam, opgelost) }} />
+          <g className="tk-concept" pointerEvents="none" transform={naarEenheid} dangerouslySetInnerHTML={{ __html: beeldOp(concept.vorm) }} />
         )}
-        {voorbeeld && <g className="tk-concept" pointerEvents="none" dangerouslySetInnerHTML={{ __html: voorbeeld }} />}
-        {sessieBeeld && <g className="tk-concept" pointerEvents="none" dangerouslySetInnerHTML={{ __html: sessieBeeld }} />}
+        {voorbeeld && <g className="tk-concept" pointerEvents="none" transform={naarEenheid} dangerouslySetInnerHTML={{ __html: voorbeeld }} />}
+        {sessieBeeld && <g className="tk-concept" pointerEvents="none" transform={naarEenheid} dangerouslySetInnerHTML={{ __html: sessieBeeld }} />}
         {sessie?.basis && muis && (
           <line className="tk-hulplijn" x1={sessie.basis.x} y1={sessie.basis.y} x2={muis.x} y2={muis.y}
             strokeWidth={1 / schaal} strokeDasharray={`${4 / schaal} ${3 / schaal}`} pointerEvents="none" />
@@ -1059,7 +1119,7 @@ export default function TekenVlak({ opgelost, tekstVan }: Props) {
         <span className="tk-cmd-regel">{regel}<i className="tk-cmd-cursor" /></span>
       </div>
       <div className="tk-vlak-status">
-        <span className="tk-coord">{muis ? `x ${kernGetal(muis.x)} · y ${kernGetal(muis.y)} px` : ""}</span>
+        <span className="tk-coord">{muis ? `x ${kernGetal(muis.x)} · y ${kernGetal(muis.y)} ${velSchaal ? "mm" : "px"}` : ""}</span>
         {snapNu && <span className="tk-snapnaam">{t(`snap.${snapNu.soort}`)}</span>}
         {raster.ortho && <span className="tk-snapnaam">{t("lint.ortho")}</span>}
         {gekozen.length > 1 && <span className="tk-snapnaam">{t("vlak.gekozen", { aantal: gekozen.length })}</span>}

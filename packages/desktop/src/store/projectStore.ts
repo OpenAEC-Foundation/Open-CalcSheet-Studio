@@ -10,6 +10,7 @@ import { rekenversie } from "../components/calc/bladVersie";
 import { normaliseerExemplaren } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
 import { SPREADSHEET_BLAD, type SpreadsheetBestand } from "./spreadsheetBlad";
+import { TEKEN_BLAD, type TekenVel } from "./tekenBlad";
 
 const STORE_KEY = "projectState";
 
@@ -81,6 +82,11 @@ export interface Exemplaar {
    * store/spreadsheetBlad.ts): de werkmap zelf, base64-gecodeerd.
    */
   xlsx?: SpreadsheetBestand;
+  /**
+   * Alleen bij een tekenblad (`templateId` TEKEN_BLAD, zie store/tekenBlad.ts):
+   * het vel met zijn views.
+   */
+  tekenvel?: TekenVel;
 }
 
 /**
@@ -136,6 +142,10 @@ interface ProjectState {
   voegSpreadsheetToe: (naam: string, xlsx: SpreadsheetBestand) => string;
   /** De werkmap van een spreadsheet-blad; opeenvolgende bewerkingen tellen als één stap ongedaan maken. */
   zetSpreadsheet: (id: string, xlsx: SpreadsheetBestand) => void;
+  /** Een tekenblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegTekenbladToe: (naam: string, tekenvel: TekenVel) => string;
+  /** Het vel van een tekenblad; opeenvolgende bewerkingen tellen als één stap ongedaan maken. */
+  zetTekenVel: (id: string, tekenvel: TekenVel) => void;
   dupliceer: (id: string) => string | null;
   hernoem: (id: string, naam: string) => void;
   verwijder: (id: string) => void;
@@ -356,6 +366,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         ...metGeschiedenis(s, `xlsx:${id}`),
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, xlsx } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegTekenbladToe: (naam, tekenvel) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: TEKEN_BLAD, source: "", waarden: {}, tekenvel },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetTekenVel: (id, tekenvel) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, `tekenvel:${id}`),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, tekenvel } : e)),
         dirty: true,
       };
     }),
