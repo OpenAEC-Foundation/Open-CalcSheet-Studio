@@ -343,12 +343,12 @@ function VelPaneel({ vel, gekozen, zetFormaat, kies, voegToe, wijzig, verwijder,
  * `@page`-regel van dat formaat (Tekenblad.css); in het afdrukvoorbeeld zet
  * AfdrukVoorbeeld.tsx het vel op die maat met de `data-vel-*`-attributen.
  */
-export function TekenvelOpPapier({ ex, anker }: { ex: Exemplaar; anker?: string }) {
+export function TekenvelOpPapier({ ex, nummer, anker }: { ex: Exemplaar; nummer?: number | string; anker?: string }) {
   const project = useProjectStore((s) => s.projectNaam);
   const vel = ex.tekenvel;
   const inhoud = useMemo(
-    () => (vel ? { __html: schoonUitwerking(velSvg(vel, { naam: ex.naam, project })) } : null),
-    [vel, ex.naam, project],
+    () => (vel ? { __html: schoonUitwerking(velSvg(vel, { naam: nummer === undefined ? ex.naam : `${nummer} ${ex.naam}`, project })) } : null),
+    [vel, ex.naam, nummer, project],
   );
   const t = papier();
   if (!vel || !inhoud) return <p className="print-pdf-melding">{t("tekenBlad.ontbreekt")}</p>;
@@ -368,11 +368,11 @@ export function TekenvelOpPapier({ ex, anker }: { ex: Exemplaar; anker?: string 
   );
 }
 
-/** Een tekenblad als eigen onderdeel van de uitdraai. De naam staat in de titelhoek van het vel. */
-export function TekenbladAfdruk({ ex, anker }: { ex: Exemplaar; anker?: string }) {
+/** Een tekenblad als eigen onderdeel van de uitdraai. Nummer en naam staan in de titelhoek van het vel. */
+export function TekenbladAfdruk({ ex, nummer, anker }: { ex: Exemplaar; nummer?: number | string; anker?: string }) {
   return (
     <section className="print-blad print-tekenblad">
-      <TekenvelOpPapier ex={ex} anker={anker} />
+      <TekenvelOpPapier ex={ex} nummer={nummer} anker={anker} />
     </section>
   );
 }

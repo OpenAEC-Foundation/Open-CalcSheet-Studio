@@ -109,7 +109,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
   titelInKop?: boolean; maten?: Maten; anker?: string; eenheden?: CanvasUitwerking[];
 }) {
   const soort = bladSoortVan(ex);
-  if (soort?.HeelBlad) return <soort.HeelBlad ex={ex} anker={anker} />;
+  if (soort?.HeelBlad) return <soort.HeelBlad ex={ex} nummer={nummer} anker={anker} />;
   if (soort) return <LosBladAfdruk soort={soort} ex={ex} nummer={nummer} maten={maten} anker={anker} />;
   // Een Jupyter-blad heeft geen rekenversie, projectregel en oordeel, wel een uitwerking.
   if (isJupyterBlad(ex)) {

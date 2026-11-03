@@ -207,6 +207,15 @@ export default function AfdrukVoorbeeld() {
       }
       if (eigenVel) {
         vel.append(inhoud);
+        // In het rapport loopt de nummering ook over een vel op eigen formaat door.
+        if (rapport) {
+          const nr = document.createElement("div");
+          nr.className = "av-rapport-nummer";
+          nr.textContent = String(i + 1);
+          nr.style.right = "6mm";
+          nr.style.height = "8mm";
+          vel.append(nr);
+        }
       } else if (rapport) {
         // Geen loopkop: het rapport heeft alleen een voet.
         vel.append(inhoud, ...rapportVoet(i + 1, voetafbeelding, bureaunaam, maten));

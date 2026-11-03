@@ -6,7 +6,8 @@ meldt zich op één plek aan: `SOORTEN` in
 [`components/calc/bladSoorten.tsx`](../packages/desktop/src/components/calc/bladSoorten.tsx).
 De losse uitdraai (`PrintBlad`), het rapport (`Knopen`, `RapportAfdruk`), het
 doorrekenen (`bladDoorrekenen`), het paneel Rapport en het afdrukvoorbeeld vragen
-het daar na. Een blad zonder aanmelding is een rekenblad.
+het daar na. Een blad zonder aanmelding is een rekenblad; alleen Jupyter wijkt nog af
+(zie onder).
 
 ## Een soort aanmelden
 
@@ -29,6 +30,7 @@ het daar na. Een blad zonder aanmelding is een rekenblad.
 | `inhoudsKoppen` | regels onder de naam van het blad in de inhoudsopgave | alleen de naam |
 | `useVersie` | verandert als er iets klaar is getekend, zodat het afdrukvoorbeeld opnieuw verdeelt | niet nodig als alles meteen klaar is |
 | `RapportKeuze` | een eigen keuze op de kaart van het blad in het paneel Rapport | geen |
+| `HeelBlad` | het hele blad zelf, zonder kop erboven: voor een blad op eigen papierformaat met zijn naam op het vel, zoals een tekenblad | de kop met `Afdruk` eronder |
 
 De kop met het nummer tekent `LosBladAfdruk`: losse bladen 1, 2, …, bijlage A
 A.1, A.2, …. In hoofdstuk Berekeningen staat het afdrukonderdeel onder de
@@ -78,6 +80,10 @@ Een pagina die groter is dan A4 of liggend staat (een A1-tekening, een liggend A
 komt passend verkleind op een A4 staand vel, bovenaan en in het midden, en draagt het
 nummer op de gewone plek rechtsonder. Het vel draait niet mee.
 
+Een tekenblad gaat anders: dat kiest zelf A4, A3 of A2 en krijgt een vel op dat formaat
+(`data-vel-pagina`, `data-vel-breedte`, `data-vel-hoogte`). In het rapport loopt de
+nummering erover door, en de naam in zijn titelhoek krijgt het nummer van het blad.
+
 ## Wat er verder bij een nieuwe soort hoort
 
 Buiten de afdruk heeft een soort nog deze plekken, zoals bij Markdown:
@@ -114,12 +120,25 @@ De koppen uit de tekst komen standaard in de inhoudsopgave, de bovenste twee niv
 erin voorkomen. Een eerste kop gelijk aan de naam van het blad vervalt, op papier en in
 de inhoudsopgave. Uitzetten kan per blad, op zijn kaart in het paneel Rapport.
 
+## Canvas, graaf, tekenblad en Jupyter
+
+- **Canvas** is geen losse soort maar een rekenblad: de rekentekst staat gewoon in
+  `source`, met per eenheid een regel `//@eenheid id=e1 x=10 y=15`. De kern rekent van
+  boven naar beneden, en `CanvasVellen` zet de eenheden op papier.
+- **Graaf** staat in `graaf` op het blad (`ocss::blad::graaf`) en is aangemeld met
+  `GraafVellen`.
+- **Tekenblad** staat in `tekenvel` (`ocss::blad::tekenvel`) en is aangemeld met
+  `HeelBlad`, omdat de kop in de titelhoek van het vel staat.
+- **Jupyter** staat in `jupyter` (`ocss::blad::jupyter`) en is de uitzondering: dat blad
+  heeft nog een eigen tak in `PrintBlad.tsx` en `bladDoorrekenen.ts`, en staat niet in
+  `SOORTEN`. Zie [`jupyter-blad.md`](jupyter-blad.md).
+
 ## Controleren
 
 ```
 node scripts/check-markdown.mjs       # opslaan en heropenen, html, opschoning, op papier
 node scripts/check-paginering.mjs     # de verdeling en de nummers bij de ankers
-node scripts/check-rapport-pdf.mjs    # een echte PDF van een gemengd project
+node scripts/check-rapport-pdf.mjs    # een echte PDF van een gemengd project, alle soorten
 ```
 
 `check-rapport-pdf` start zijn eigen dev-server op een vrije poort en een headless

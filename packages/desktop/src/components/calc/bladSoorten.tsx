@@ -46,7 +46,7 @@ export interface BladSoort {
    * Het hele blad zelf, zonder kop erboven: voor een blad op eigen papierformaat met
    * zijn naam op het vel. Zonder: de kop met `Afdruk` eronder (LosBladAfdruk).
    */
-  HeelBlad?: ComponentType<{ ex: Exemplaar; anker?: string }>;
+  HeelBlad?: ComponentType<{ ex: Exemplaar; nummer?: number | string; anker?: string }>;
   /** Wat er achter de soort onder de kop staat, zoals de bestandsnaam. Een haak: mag een stand lezen. */
   useOnderkop?: (ex: Exemplaar) => Array<string | undefined>;
   /** Verandert als er iets klaar is getekend: het afdrukvoorbeeld verdeelt dan opnieuw. */

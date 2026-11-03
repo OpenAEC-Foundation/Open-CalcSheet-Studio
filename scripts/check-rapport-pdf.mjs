@@ -30,7 +30,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { bouwGemengdProject, BLADEN, LANG, MARKDOWN_KOPPEN, PDF_PAGINAS } from "./lib/gemengd-project.mjs";
+import { bouwGemengdProject, BLADEN, KENMERKEN, LANG, MARKDOWN_KOPPEN, PDF_PAGINAS } from "./lib/gemengd-project.mjs";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const REPO = join(hier, "..");
@@ -182,7 +182,8 @@ async function controleer() {
   const anders = vellen.flatMap((vel, i) => {
     if (vel.formules || !paginas[i]) return [];
     const dom = zonderWit(vel.tekst);
-    return ontbrekendeTekens(dom, zonderWit(paginas[i].tekst)) > dom.length * 0.02 ? [i + 1] : [];
+    // Minstens twee tekens speling: op een vel met weinig tekst telt een dubbele punt in een SVG-lettertype anders al.
+    return ontbrekendeTekens(dom, zonderWit(paginas[i].tekst)) > Math.max(2, dom.length * 0.02) ? [i + 1] : [];
   });
   meld(anders.length === 0, "op elke pagina staat de tekst van dat vel", `anders op ${anders.join(", ")}`);
   const overloop = vellen.flatMap((v, i) => (v.loopt > 1 ? [`${i + 1}: ${v.loopt} px`] : []));
@@ -234,6 +235,8 @@ async function controleer() {
     const eerst = naInhoud.find((p) => {
       if (!bijlage) return p.regels.some((x) => x.tekst === r.tekst);
       const stukken = p.regels.flatMap((x) => x.stukken);
+      // Op een tekenvel staan nummer en naam samen in de titelhoek.
+      if (stukken.some((s) => s.tekst === r.tekst)) return true;
       return stukken.some((nr) => nr.tekst === bijlage[1] &&
         stukken.some((naam) => naam.tekst === bijlage[2] && naam.x > nr.x && Math.abs(naam.y - nr.y) < 12));
     });
@@ -246,7 +249,7 @@ async function controleer() {
   const zoek = (titel, voorvoegsel) => inhoudsregels.find((r) => (voorvoegsel ? r.tekst.startsWith(voorvoegsel) : true) && r.tekst.endsWith(titel));
   const bladen = Object.values(BLADEN);
   const ontbreekt = bladen.filter((b) => !zoek(b.naam));
-  meld(ontbreekt.length === 0, "elk blad staat erin: rekenblad, module, PDF, werkmap en Markdown", ontbreekt.map((b) => b.naam).join(", "));
+  meld(ontbreekt.length === 0, "elk blad staat erin: rekenblad, module, PDF, werkmap, Markdown, canvas, graaf, tekening en Jupyter", ontbreekt.map((b) => b.naam).join(", "));
   const zonderPagina = bladen.filter((b) => zoek(b.naam) && zoek(b.naam).pagina === null);
   meld(zonderPagina.length === 0, "elk blad heeft een paginanummer", zonderPagina.map((b) => b.naam).join(", "));
   const koppen = [...MARKDOWN_KOPPEN.notitie, ...MARKDOWN_KOPPEN.logboek];
@@ -284,6 +287,14 @@ async function controleer() {
   const werkmapVellen = paginas.slice(werkmap.pagina - 1, logboek.pagina - 1);
   meld(werkmapVellen.length >= 3 && werkmapVellen.every((p) => p.afbeeldingen >= 1),
     `de werkmap van 150 rijen loopt over ${werkmapVellen.length} vellen, elk met afbeelding`, werkmapVellen.length);
+
+  console.log("\nCanvas, graaf, tekening en Jupyter");
+  for (const [soort, tekst] of Object.entries(KENMERKEN)) {
+    const { pagina } = bijlageVan(BLADEN[soort].naam);
+    const vel = pagina ? paginas[pagina - 1] : null;
+    meld(vel?.regels.some((r) => zonderWit(r.tekst).includes(zonderWit(tekst))),
+      `${BLADEN[soort].naam} staat op de pagina uit de inhoudsopgave (p. ${pagina})`, tekst);
+  }
 
   console.log("\nEen Markdown-tekst langer dan een vel");
   const alles = paginas.slice(logboek.pagina - 1);
