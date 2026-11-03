@@ -239,6 +239,25 @@ try {
   meld(await s.voerUit(`document.querySelector('.jp-RenderedHTMLCommon table.dataframe') ? 1 : 0`, a) === 1, "import uit helper.py en pandas op data/invoer.csv geven een tabel");
   meld(/\n?\s*2\s*\n?|dubbel/.test(uitvoer) && !/Traceback|Error/.test(uitvoer), "geen foutmelding in de cellen");
   meld(/1\.\d+\.\d+/.test(await inKernel(s, a, "import scipy; print(scipy.__version__)")), "scipy is beschikbaar");
+  // Tegenproef in dezelfde kernel: zonder de terugval uit de brug is een nieuw script onvindbaar.
+  const nieuw = await inKernel(s, a, [
+    "import sys",
+    "terugval = [f for f in sys.meta_path if getattr(f, '__name__', '') == 'ZoekOpnieuw']",
+    "print('terugval', len(terugval))",
+    "sys.meta_path[:] = [f for f in sys.meta_path if f not in terugval]",
+    "open('nieuw_script.py', 'w').write('def drie():\\n    return 3\\n')",
+    "try:",
+    "    import nieuw_script",
+    "    print('zonder gevonden')",
+    "except ModuleNotFoundError:",
+    "    print('zonder onvindbaar')",
+    "sys.meta_path.extend(terugval)",
+    "import nieuw_script",
+    "print('met', nieuw_script.drie())",
+  ].join("\n"));
+  meld(nieuw.includes("terugval 1"), "de terugval staat één keer in de kernel", nieuw);
+  meld(nieuw.includes("zonder onvindbaar"), "tegenproef: zonder terugval is een nieuw script onvindbaar", nieuw);
+  meld(nieuw.includes("met 3"), "met de terugval is een nieuw script meteen te vinden", nieuw);
   const browser = await s.voerUit(`[...document.querySelectorAll('.jp-DirListing-itemName')].map((e) => e.textContent).join()`, a);
   meld(["helper.py", "data", "notebook.ipynb"].every((n) => browser.includes(n)), "de bestandsbrowser toont notebook, script en map", browser);
   await foto("1-numpy-matplotlib.png");
@@ -405,7 +424,7 @@ try {
   await s.voerUit(`[...document.querySelectorAll('.pb-naam')].find((e) => /^(Rapport|Report)$/.test(e.textContent.trim())).closest('button').click()`);
   await wacht(500);
   await s.voerUit(`[...document.querySelectorAll('.split-tab')].find((b) => /Print preview|Afdrukvoorbeeld/.test(b.textContent)).click()`);
-  await s.wachtOp(() => s.voerUit(`[...document.querySelectorAll('.nb-beeld img')].some((i) => i.naturalWidth > 100) ? 1 : 0`), { tekst: "het rapport", ms: 40000 });
+  await s.wachtOp(() => s.voerUit(`[...document.querySelectorAll('.av-pagina-inhoud .nb-beeld img')].some((i) => i.naturalWidth > 100) ? 1 : 0`), { tekst: "het rapport", ms: 40000 });
   meld(true, "de notebooks staan in het rapport, met hun afbeelding");
   await s.voerUit(`document.querySelector('.av-pagina-inhoud .nb-beeld img').scrollIntoView({ block: 'center' })`);
   await wacht(500);

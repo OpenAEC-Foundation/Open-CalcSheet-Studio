@@ -84,7 +84,10 @@ Navigeert code de pagina toch, dan weigert het omhulsel dat en toont de iframe e
 foutpagina. Er gaat niets naar buiten en het project houdt de laatste stand; de melding
 boven het venster biedt *Opnieuw laden*.
 
-Er draait niets uit zichzelf. De kernel start bij het openen, maar geen cel. Een notebook
+Er draait niets uit zichzelf. De kernel start bij het openen, maar geen cel; alleen de
+brug zet één regel klaar in de kernel: een terugval die bij een mislukte import nog één
+keer zoekt. Python onthoudt de inhoud van een map tot de wijzigingstijd verandert, en die
+is op `/drive` altijd 0. Zonder terugval blijft een nieuw script onvindbaar. Een notebook
 verliest bij het inlezen zijn vertrouwen (`trusted`), dus HTML in de opgeslagen uitvoer
 wordt door JupyterLab geschoond. Afbeeldingen en tabellen blijven zichtbaar.
 

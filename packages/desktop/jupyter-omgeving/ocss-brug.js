@@ -21,9 +21,44 @@
   /** Bestanden die als tekst in de omgeving horen, om ze in de editor te kunnen openen. */
   const TEKST = /\.(py|pyi|txt|md|markdown|csv|tsv|json|ya?ml|toml|ini|cfg|html?|css|js|ts|tex|xml|svg|rst|log|dat)$/i;
 
+  /**
+   * Python onthoudt per map welke bestanden erin staan en kijkt pas opnieuw als de
+   * wijzigingstijd van de map verandert. Die is op /drive altijd 0, dus een script dat
+   * er na de eerste import bijkomt, bleef onvindbaar (ModuleNotFoundError). Deze
+   * terugval komt pas aan de beurt als een import mislukt, en zoekt dan nog één keer.
+   */
+  const ZOEK_OPNIEUW = `def _ocss_zoek_opnieuw():
+    import importlib, importlib.machinery, sys
+    class ZoekOpnieuw:
+        @staticmethod
+        def find_spec(naam, pad=None, doel=None):
+            importlib.invalidate_caches()
+            return importlib.machinery.PathFinder.find_spec(naam, pad, doel)
+    if not any(getattr(f, "__name__", "") == "ZoekOpnieuw" for f in sys.meta_path):
+        sys.meta_path.append(ZoekOpnieuw)
+_ocss_zoek_opnieuw()
+del _ocss_zoek_opnieuw`;
+
   let app = null;
   let bezig = false;
   let appHerkomst = "*";
+  const gevolgd = new WeakSet();
+
+  /** Zet de terugval in elke kernel van een notebook, ook na herstarten. */
+  function volgKernel(widget) {
+    const sessie = widget?.sessionContext;
+    if (!sessie || gevolgd.has(sessie)) return;
+    gevolgd.add(sessie);
+    const zet = () => {
+      const kernel = sessie.session?.kernel;
+      if (kernel) kernel.requestExecute({ code: ZOEK_OPNIEUW, silent: true, store_history: false }, true).done.catch(() => {});
+    };
+    sessie.kernelChanged.connect(zet);
+    sessie.statusChanged.connect((_, status) => {
+      if (status === "restarting" || status === "autorestarting") zet();
+    });
+    sessie.ready.then(zet, () => {});
+  }
 
   function stuur(bericht) {
     window.top.postMessage({ bron: BRON, ...bericht }, appHerkomst);
@@ -164,6 +199,8 @@
     lab.serviceManager.contents.fileChanged.connect(() => {
       if (!bezig) stuur({ soort: "gewijzigd" });
     });
+    lab.shell.currentChanged.connect((_, { newValue }) => volgKernel(newValue));
+    volgKernel(lab.shell.currentWidget);
     stuur({ soort: "gereed" });
   }
 
