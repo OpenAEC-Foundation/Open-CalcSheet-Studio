@@ -33,8 +33,11 @@ function Test-Handtekening([string]$Label, [string]$Pad, [string[]]$Toegestaan) 
   $sig = Get-AuthenticodeSignature -LiteralPath $Pad
   $ondertekenaar = if ($sig.SignerCertificate) { $sig.SignerCertificate.Subject -replace ',.*$', '' } else { 'geen' }
   $tijdstempel = if ($sig.TimeStamperCertificate) { $sig.TimeStamperCertificate.Subject -replace ',.*$', '' } else { 'geen' }
+  # signtool meldt een fout op stderr; dat mag het script niet stoppen, de uitslag is de exitcode.
+  $ErrorActionPreference = 'Continue'
   $uit = & $script:signtool.FullName verify /pa /v $Pad 2>&1 | Out-String
   $signtoolExit = $LASTEXITCODE
+  $ErrorActionPreference = 'Stop'
   $goed = ($sig.Status -eq 'Valid') -and ($null -ne $sig.TimeStamperCertificate) -and
     ($signtoolExit -eq 0) -and ($Toegestaan -contains $ondertekenaar)
   if (-not $goed) {

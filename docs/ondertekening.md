@@ -105,6 +105,6 @@ gh api repos/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/organization-secre
 
 Ontbreekt er een, of is hij verlopen, dan faalt de bouw met de naam van het geheim
 in de melding en blijft de vorige release of nightly staan. Waarden komen nooit in een
-log. Wordt de releasesleutel vervangen, pas dan ook `openaec-vingerafdruk.txt` en de
-teksten in `release.yml` en `nightly.yml` aan; `check-uitlevering.mjs` bewaakt dat ze
-gelijk zijn.
+log. De releasesleutel verloopt op 25-10-2028; daarna zakt de controle. Wordt hij
+vervangen, pas dan ook `openaec-vingerafdruk.txt` en de teksten in `release.yml` en
+`nightly.yml` aan; `check-uitlevering.mjs` bewaakt dat ze gelijk zijn.
