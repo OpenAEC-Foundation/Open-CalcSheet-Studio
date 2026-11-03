@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { bewaarOpenWerkmappen, isSpreadsheetBlad, LEGE_WERKMAP } from "../../store/spreadsheetBlad";
+import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
 import { papier } from "./pdfBlad";
 import { SPELING, type Maten } from "./paginering";
 import { exporteerWerkmap, kiesWerkmap, useWerkmapVellen, werkmapGrootte } from "./spreadsheetBlad";
@@ -20,7 +21,7 @@ const SpreadsheetEditor = lazy(() => import("./SpreadsheetEditor"));
 
 /*
  * De editor blijft leven als je naar een ander blad of het afdrukvoorbeeld gaat:
- * hij bewaart asynchroon in zijn worker, en een editor die meteen weg is, neemt
+ * hij sluit een open cel pas na het wisselen, en een editor die meteen weg is, neemt
  * zijn laatste invoer mee. Daarom rendert SpreadsheetHouder hem in een eigen
  * vak dat tussen de werkruimte en een verborgen parkeerplek verhuist. Terugkomen
  * is daardoor ook meteen klaar. Een ander spreadsheet-blad vervangt hem, nadat
@@ -80,8 +81,10 @@ export function SpreadsheetBladWeergave() {
   const plek = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     plek.current?.appendChild(editorVak());
+    useSpreadsheetEditor.setState({ zichtbaar: true });
     return () => {
       parkeer();
+      useSpreadsheetEditor.setState({ zichtbaar: false });
       void bewaarOpenWerkmappen();
     };
   }, []);

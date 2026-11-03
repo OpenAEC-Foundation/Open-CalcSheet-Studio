@@ -317,7 +317,26 @@
     "inlezenUitleg": "Replace this workbook with an XLSX file. Name, position and notes in the report stay as they are.",
     "vervangenVraag": "Replace the workbook of \"{{naam}}\" with the chosen file?",
     "exporteren": "Export…",
-    "exporterenUitleg": "Write this workbook to a separate XLSX file."
+    "exporterenUitleg": "Write this workbook to a separate XLSX file.",
+    "vulgreep": "Drag to fill; double-click fills down as far as the column next to it is filled",
+    "kolomTip": "Column {{naam}}, width {{breedte}} characters. Drag the edge for the width; double-click the edge to fit.",
+    "rijTip": "Row {{naam}}, height {{hoogte}} points. Drag the edge for the height; double-click the edge to fit.",
+    "allesSelecteren": "Select all",
+    "melding": {
+      "geenEditor": "The spreadsheet has not finished loading.",
+      "kiesCel": "Select a cell first.",
+      "beveiligd": "This worksheet is protected and cannot be changed.",
+      "invoerGeweigerd": "The open cell is not valid. Correct or cancel the entry first.",
+      "mislukt": "Spreadsheet: {{fout}}",
+      "teGroot": "This range is too large for this operation.",
+      "buitenBlad": "This no longer fits on the worksheet.",
+      "leegKlembord": "There is nothing on the clipboard to paste.",
+      "kopierenMislukt": "Copying to the clipboard failed.",
+      "geenPlek": "There is no room for the result below this selection.",
+      "vastzettenCel": "Choose a cell beyond the first row or column; the rows above it and the columns to its left stay in place.",
+      "sorteerLeeg": "There is nothing here to sort.",
+      "sorteerSamengevoegd": "A range with merged cells cannot be sorted."
+    }
   },
   "welkom": {
     "titel": "Welcome to Open CalcSheet Studio",

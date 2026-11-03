@@ -211,7 +211,7 @@ function IngeklapteGroep({ groep, uit }: { groep: LintGroep; uit: boolean }) {
  * een klik erbuiten of Escape. Een klik in een ander CalcPAD-paneel (een menu
  * binnen een ingeklapte groep) telt als binnen.
  */
-function Uitklap({ anker, onSluit, className, children }: {
+export function Uitklap({ anker, onSluit, className, children }: {
   anker: HTMLElement;
   onSluit: () => void;
   className: string;
