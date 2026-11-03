@@ -189,7 +189,14 @@ console.log("\n4. De twee vensters");
   const f = frames[0];
   meld(f?.getAttribute("sandbox") === "allow-scripts" && f?.getAttribute("referrerpolicy") === "no-referrer" && f?.getAttribute("allow") === "", "het binnenste venster heeft dezelfde rechten", f?.outerHTML.slice(0, 100));
   meld(f?.getAttribute("title") === 'Titel "met" <tekens>', "en de titel, als tekst");
-  meld(f?.getAttribute("srcdoc") === jsBinnenSrcdoc(looptijd, start), "de code en de waarden staan alleen in het binnenste venster");
+  // De html-parser maakt van elk regeleinde in de pagina een \n, ook in een attribuut. Op een
+  // werkkopie met CRLF (core.autocrlf) staat in de looptijd nog \r\n, dus ook in de verwachting.
+  const naParser = (html) => html.replace(/\r\n?/g, "\n");
+  meld(f?.getAttribute("srcdoc") === naParser(jsBinnenSrcdoc(looptijd, start)), "de code en de waarden staan alleen in het binnenste venster");
+  // `?raw` laat de regeleinden staan, dus een bouw op Windows heeft de looptijd met CRLF.
+  const looptijdLf = looptijd.replace(/\r\n/g, "\n");
+  const binnenMet = (lt) => new JSDOM(jsSrcdoc(lt, start, "T")).window.document.querySelector("iframe")?.getAttribute("srcdoc");
+  meld(binnenMet(looptijdLf.replace(/\n/g, "\r\n")) === binnenMet(looptijdLf), "een looptijd met CRLF geeft hetzelfde binnenste venster als met LF");
   meld(!d.querySelector("script").textContent.includes("parent.x"), "niet in het script van het buitenste");
   const cspVan = (doc) => doc.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute("content");
   meld(cspVan(d) === jsCsp(["x.nl"]) && cspVan(new JSDOM(f.getAttribute("srcdoc")).window.document) === jsCsp(["x.nl"]), "beide vensters dezelfde CSP, met frame-src 'none'", cspVan(d));
