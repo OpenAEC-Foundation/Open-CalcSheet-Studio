@@ -56,6 +56,7 @@ node scripts/check-alles.mjs
 cd packages/desktop && npx tsc --noEmit -p .
 ```
 
+- CI (`ci.yml`) draait `npm run check` bij elke pull request en elke push naar `main`, op Linux en op Windows met CRLF in de werkkopie; `scripts/werkkopie-crlf.mjs` bewijst dat laatste met een byte-telling.
 - Een module heeft een eigen check met handberekeningen (als commentaar bij de verwachting) en vaak een onafhankelijke uitwerking in het script zelf. Verwachtingen alleen aanpassen met een handberekening die aantoont dat de nieuwe waarde juist is.
 - `check-renders.mjs` rekent elk blad met elke keuze uit de keuzelijsten; `check-designerkeuze.mjs` controleert blad↔beeld; `check-blad-bijwerken.mjs` het bijwerken.
 - `check-rapport-pdf.mjs` maakt een echte PDF van een gemengd project en rekent de paginanummers en de inhoudsopgave daarin na; hij start zijn eigen dev-server op een vrije poort en slaat zich over zonder Chrome of Edge.
