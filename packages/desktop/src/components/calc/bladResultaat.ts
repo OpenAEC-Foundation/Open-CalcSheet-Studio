@@ -72,5 +72,6 @@ export function samenvatting(r: Resultaat): string {
   const delen: string[] = [];
   if (r.uc !== null) delen.push(`UC ${ucTekst(r.uc)}`);
   if (r.voldoet !== null) delen.push(i18next.t(r.voldoet ? "beelden:afdruk.voldoet" : "beelden:afdruk.voldoetNiet"));
+  else if (r.nietGetoetst) delen.push(i18next.t("beelden:kit.nietGetoetst"));
   return delen.length > 0 ? `${r.titel} — ${delen.join(", ")}.` : `${r.titel}.`;
 }

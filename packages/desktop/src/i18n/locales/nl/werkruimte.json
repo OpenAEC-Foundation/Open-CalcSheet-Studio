@@ -44,6 +44,7 @@
     "verwijderen": "Verwijderen",
     "verwijderenVraag": "\"{{naam}}\" uit het project verwijderen?",
     "bladen": "Bladen",
+    "nietGetoetst": "Niet getoetst",
     "ucVoldoet": "Maatgevende UC {{uc}} — voldoet",
     "ucVoldoetNiet": "Maatgevende UC {{uc}} — voldoet niet",
     "gegevensToevoegen": "Projectgegevens toevoegen",
@@ -54,11 +55,13 @@
     "groepen": {
       "cat-algemeen": "Algemeen",
       "cat-hout": "Hout",
+      "cat-beton": "Beton",
       "calcpad-samples": "Voorbeelden"
     },
     "modules": {
       "ligger": "Ligger (hout of staal)",
       "balklaag": "Balklaag (houten vloerbalken)",
+      "tweepaalspoer": "Tweepaalspoer (gewapend beton)",
       "calcpad-demo": "Open CalcSheet Studio demo"
     }
   },
