@@ -5,7 +5,7 @@
  * Elk blad wordt hier doorgerekend, met de projectgegevens als startwaarden en
  * zijn eigen invoer, langs dezelfde route als de afdruk en de API. Een blad dat
  * omvalt blijft in het document staan, met de fout erbij: alleen de uitkomst
- * ontbreekt dan. Een PDF-blad heeft niets om door te rekenen.
+ * ontbreekt dan. Een PDF- of spreadsheet-blad heeft niets om door te rekenen.
  *
  * De uitkomst van een blad blijft bewaard zolang het blad en de projectgegevens
  * niet veranderen: bij opslaan en in de IFC-tab hoeft dan alleen opnieuw wat
@@ -25,7 +25,8 @@ import {
   type ElementRef,
 } from "@ifc-calc/core";
 import { projectScope } from "./projectGegevens.ts";
-import { isPdfBlad, type PdfBijlage } from "./pdfBijlage.ts";
+import type { PdfBijlage } from "./pdfBijlage.ts";
+import { isLosBlad, type SpreadsheetBestand } from "./spreadsheetBlad.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 
 /** Wat dit bestand van een blad nodig heeft; een uittreksel van `Exemplaar`. */
@@ -38,6 +39,7 @@ export interface BladVoorIfc {
   bronVersie?: string;
   elementen?: ElementRef[];
   pdf?: PdfBijlage;
+  xlsx?: SpreadsheetBestand;
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -66,9 +68,10 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
     bronVersie: ex.bronVersie,
     elementen: ex.elementen,
     pdf: ex.pdf,
+    xlsx: ex.xlsx,
     nodes: [],
   };
-  if (!isPdfBlad(ex)) {
+  if (!isLosBlad(ex)) {
     try {
       const { nodes, resultaat } = rekenDoor(ex.source, ex.waarden, projectScope(gegevens), ex.naam);
       blad.nodes = nodes;

@@ -6,11 +6,12 @@ import type { JsonSchema, McpBlad, McpContext, McpToolDef } from "../contracts.t
 import { projectScope } from "../../store/projectGegevens.ts";
 import { bibliotheek, moduleCatalogus, modulesPerTemplate, type TreeNode } from "../../components/calc/projectTree.ts";
 import { isPdfBlad, base64Bytes, bladnaamVoor } from "../../store/pdfBijlage.ts";
+import { isLosBlad, isSpreadsheetBlad } from "../../store/spreadsheetBlad.ts";
 import { FORMULES, codeVan } from "../../components/ribbon/formules.ts";
 import { jsonGetal, regels, rekenDoor, ucWaarden, type Doorrekening } from "../rekenen.ts";
 import {
   LEEG_BLAD, LEEG_BLAD_NAAM, LEEG_BLAD_TEKST, LEZEN, NIEUW, WEG, WIJZIGEN,
-  alsTekst, bekendeUitkomst, bladUit, fout, geenBlad, geenPdfBlad, idOptioneel, idVerplicht, invoerJson,
+  alsTekst, bekendeUitkomst, bladSoort, bladUit, fout, geenBlad, geenPdfBlad, idOptioneel, idVerplicht, invoerJson,
   kiesKeuze, korteNaam, objectSchema, ok, pdfUit, rekenBlad, resultaatJson, ruimUitkomstenOp, tekstOfGetal,
   veldenVan, vergeetBlad, zoekBlad,
 } from "./hulp.ts";
@@ -21,7 +22,7 @@ function bladRegel(b: McpBlad, actief: string, r: ReturnType<typeof bekendeUitko
     id: b.id,
     name: b.naam,
     templateId: b.templateId,
-    kind: isPdfBlad(b) ? "pdf" : "calculation",
+    kind: bladSoort(b),
     module: modulesPerTemplate[b.templateId]?.label ?? null,
     active: b.id === actief,
     evaluated: r !== null,
@@ -97,7 +98,7 @@ export const BLADTOOLS: McpToolDef[] = [
     name: "sheets_list",
     kind: "read",
     description:
-      "List the sheets of the project in order (id, name, kind calculation/pdf, module, active, UC and verdict when known). " +
+      "List the sheets of the project in order (id, name, kind calculation/pdf/spreadsheet, module, active, UC and verdict when known). " +
       "UC is reported for sheets evaluated through this API with their current input; pass evaluate=true to compute every sheet now.",
     inputSchema: objectSchema({
       evaluate: { type: "boolean", description: "Compute every calculation sheet now (a large sheet can take a second or more). Default false." },
@@ -196,13 +197,16 @@ export const BLADTOOLS: McpToolDef[] = [
         id: blad.id,
         name: blad.naam,
         templateId: blad.templateId,
-        kind: isPdfBlad(blad) ? "pdf" : "calculation",
+        kind: bladSoort(blad),
         module: modulesPerTemplate[blad.templateId]?.label ?? null,
         active: blad.id === stand.activeId,
         position: stand.exemplaren.indexOf(blad),
       };
       if (isPdfBlad(blad)) {
         return ok({ ...basis, pdf: blad.pdf ? { fileName: blad.pdf.bestandsnaam, bytes: base64Bytes(blad.pdf.data) } : null });
+      }
+      if (isSpreadsheetBlad(blad)) {
+        return ok({ ...basis, spreadsheet: blad.xlsx ? { fileName: blad.xlsx.bestandsnaam, bytes: base64Bytes(blad.xlsx.data) } : null });
       }
       const { velden, fout: leesfout } = veldenVan(blad.source);
       const veldnamen = new Set(velden.map((v) => v.naam));
@@ -573,7 +577,7 @@ export function lijstVan(ctx: McpContext, nuRekenen: boolean): Record<string, un
   const stand = ctx.omgeving.stand();
   ruimUitkomstenOp(stand);
   return stand.exemplaren.map((b) => {
-    if (isPdfBlad(b)) return bladRegel(b, stand.activeId, null);
+    if (isLosBlad(b)) return bladRegel(b, stand.activeId, null);
     if (!nuRekenen) return bladRegel(b, stand.activeId, bekendeUitkomst(b, stand.gegevens));
     const uitkomst = rekenBlad(b, stand.gegevens);
     return uitkomst.ok ? bladRegel(b, stand.activeId, uitkomst.d.resultaat) : bladRegel(b, stand.activeId, null, uitkomst.fout);

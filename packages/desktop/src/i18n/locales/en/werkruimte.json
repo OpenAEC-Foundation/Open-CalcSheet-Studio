@@ -297,6 +297,28 @@
     "vervangenUitleg": "Choose a different PDF file for this sheet, for example a new export of the FEM report. Name, position and notes in the report stay as they are.",
     "nietOpTijd": "The PDF sheets were not drawn in time; printing was cancelled."
   },
+  "spreadsheet": {
+    "toevoegen": "Add spreadsheet",
+    "toevoegenUitleg": "Add an empty spreadsheet to the project as a sheet, for a bar schedule or a quantity list. It takes its place in the Calculations chapter of the report.",
+    "importeren": "Import XLSX…",
+    "importerenUitleg": "Add an existing XLSX file to the project as a spreadsheet sheet. The workbook is stored in the project file.",
+    "nieuweNaam": "Spreadsheet",
+    "kiesTitel": "Choose an XLSX file",
+    "filter": "XLSX workbooks",
+    "geenWerkmap": "\"{{naam}}\" is not an XLSX file.",
+    "groot": "\"{{naam}}\" is {{grootte}}. The workbook is stored in the project file, which becomes at least as large and slower to open and save. Add it anyway?",
+    "lezenMislukt": "Reading the workbook failed: {{fout}}",
+    "schrijvenMislukt": "Writing the workbook failed: {{fout}}",
+    "tab": "Spreadsheet",
+    "paneel": "Spreadsheet",
+    "rij": "Spreadsheet — stored in the project",
+    "laden": "Loading spreadsheet…",
+    "inlezen": "Replace…",
+    "inlezenUitleg": "Replace this workbook with an XLSX file. Name, position and notes in the report stay as they are.",
+    "vervangenVraag": "Replace the workbook of \"{{naam}}\" with the chosen file?",
+    "exporteren": "Export…",
+    "exporterenUitleg": "Write this workbook to a separate XLSX file."
+  },
   "welkom": {
     "titel": "Welcome to Open CalcSheet Studio",
     "intro": "Structural calculations as readable sheets: you write the calculation, the app works it out, draws it and assembles the structural report.",

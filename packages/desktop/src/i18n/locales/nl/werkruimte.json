@@ -297,6 +297,28 @@
     "vervangenUitleg": "Een ander PDF-bestand voor dit blad kiezen, bijvoorbeeld een nieuwe export van het FEM-rapport. Naam, plaats en toelichting in het rapport blijven staan.",
     "nietOpTijd": "De PDF-bladen werden niet op tijd getekend; het afdrukken is afgebroken."
   },
+  "spreadsheet": {
+    "toevoegen": "Spreadsheet toevoegen",
+    "toevoegenUitleg": "Een lege spreadsheet als blad aan het project toevoegen, voor een staaflijst of een hoeveelhedenoverzicht. Het komt op zijn plek in hoofdstuk Berekeningen van het rapport.",
+    "importeren": "XLSX inlezen…",
+    "importerenUitleg": "Een bestaand XLSX-bestand als spreadsheet-blad aan het project toevoegen. De werkmap komt in het projectbestand.",
+    "nieuweNaam": "Spreadsheet",
+    "kiesTitel": "Kies een XLSX-bestand",
+    "filter": "XLSX-werkmappen",
+    "geenWerkmap": "\"{{naam}}\" is geen XLSX-bestand.",
+    "groot": "\"{{naam}}\" is {{grootte}}. De werkmap komt in het projectbestand, dat daardoor minstens zo groot wordt en trager opent en opslaat. Toch toevoegen?",
+    "lezenMislukt": "Werkmap inlezen mislukt: {{fout}}",
+    "schrijvenMislukt": "Werkmap wegschrijven mislukt: {{fout}}",
+    "tab": "Spreadsheet",
+    "paneel": "Spreadsheet",
+    "rij": "Spreadsheet — staat in het project",
+    "laden": "Spreadsheet laden…",
+    "inlezen": "Vervangen…",
+    "inlezenUitleg": "Deze werkmap vervangen door een XLSX-bestand. Naam, plaats en toelichting in het rapport blijven staan.",
+    "vervangenVraag": "De werkmap van \"{{naam}}\" vervangen door het gekozen bestand?",
+    "exporteren": "Exporteren…",
+    "exporterenUitleg": "Deze werkmap wegschrijven als los XLSX-bestand."
+  },
   "welkom": {
     "titel": "Welkom in Open CalcSheet Studio",
     "intro": "Constructieve berekeningen als leesbare rekenbladen: jij schrijft de berekening, de app rekent hem uit, tekent hem en stelt het constructief rapport samen.",

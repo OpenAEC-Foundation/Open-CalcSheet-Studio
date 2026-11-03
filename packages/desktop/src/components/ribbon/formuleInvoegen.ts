@@ -1,7 +1,7 @@
 import { useProjectStore } from "../../store/projectStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { metEditor, vraagCode } from "../../store/codeVerzoek";
-import { isPdfBlad } from "../../store/pdfBijlage";
+import { isLosBlad } from "../../store/spreadsheetBlad";
 import { codeVan, type Formule } from "./formules";
 import { voegIn } from "./invoegen";
 
@@ -12,7 +12,7 @@ const LEEG_BLAD = "leeg";
 export function openRekenblad() {
   const s = useProjectStore.getState();
   const blad = s.exemplaren.find((e) => e.id === s.activeId);
-  return blad && !isPdfBlad(blad) ? blad : null;
+  return blad && !isLosBlad(blad) ? blad : null;
 }
 
 /**

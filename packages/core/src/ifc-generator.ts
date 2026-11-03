@@ -74,6 +74,8 @@ export interface IfcCalcSheet {
   waarden?: Record<string, string>;
   /** Bij een PDF-blad: het bestand, als base64. */
   pdf?: { bestandsnaam: string; data: string };
+  /** Bij een spreadsheet-blad: de werkmap, als base64. */
+  xlsx?: { bestandsnaam: string; data: string };
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */

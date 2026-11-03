@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { defaultStyles, evaluate, parse, render } from "@ifc-calc/core";
 import { useProjectStore } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
-import { isPdfBlad } from "../../store/pdfBijlage";
+import { isLosBlad } from "../../store/spreadsheetBlad";
 import Icoon from "../Icoon";
 import FormuleVenster from "../ribbon/FormuleVenster";
 import { FORMULES, LIBRARY_GROEPEN, codeVan, type Formule, type LibraryGroepId, type Tekst } from "../ribbon/formules";
@@ -102,7 +102,7 @@ function VoorbeeldVak({ f, anker, onSluit }: { f: Formule; anker: HTMLElement | 
   const taal = (w: Tekst) => (i18n.language?.startsWith("en") ? w.en : w.nl) || w.nl;
   const scope = useProjectScope();
   const blad = useProjectStore((s) => s.exemplaren.find((e) => e.id === s.activeId));
-  const open = blad && !isPdfBlad(blad) ? blad : null;
+  const open = blad && !isLosBlad(blad) ? blad : null;
   const groep = LIBRARY_GROEPEN.find((g) => g.id === f.library);
   const vak = useRef<HTMLDivElement>(null);
   const invoegKnop = useRef<HTMLButtonElement>(null);

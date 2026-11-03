@@ -1,0 +1,120 @@
+/*
+ * Spreadsheet-bladen (SpreadsheetBladWeergave.tsx): de editor in de werkruimte
+ * en de werkbladen op papier.
+ */
+
+/* ─── Werkruimte ──────────────────────────────────────────────── */
+
+/* De editor heeft een vaste hoogte van zijn ouder nodig. */
+.spreadsheet-plek,
+.spreadsheet-vak {
+  height: 100%;
+  min-height: 0;
+}
+
+.spreadsheet-weergave {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #fff;
+}
+
+.spreadsheet-weergave {
+  position: relative;
+}
+
+.spreadsheet-weergave .spreadsheet-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Ruimte voor de kolomletters en rijnummers (spreadsheetKoppen.tsx). */
+.spreadsheet-editor [data-testid="xlsx-workspace"] {
+  margin-left: 38px;
+  margin-top: 23px;
+}
+
+.spreadsheet-koppen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: var(--oa-font-body, inherit);
+  font-size: 11px;
+  color: #52525b;
+}
+
+.spreadsheet-hoek,
+.spreadsheet-kolomkoppen,
+.spreadsheet-rijkoppen {
+  position: absolute;
+  overflow: hidden;
+  background: #f4f4f5;
+  border: solid #d4d4d8;
+  border-width: 0 1px 1px 0;
+  box-sizing: border-box;
+}
+
+.spreadsheet-hoek {
+  width: 38px;
+  height: 23px;
+}
+
+.spreadsheet-kolomkoppen {
+  height: 23px;
+}
+
+.spreadsheet-rijkoppen {
+  width: 38px;
+}
+
+.spreadsheet-kolomkoppen > span,
+.spreadsheet-rijkoppen > span {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  pointer-events: auto;
+  user-select: none;
+  cursor: default;
+}
+
+.spreadsheet-kolomkoppen > span {
+  top: 0;
+  height: 100%;
+  border-right: 1px solid #d4d4d8;
+}
+
+.spreadsheet-rijkoppen > span {
+  left: 0;
+  width: 100%;
+  border-bottom: 1px solid #d4d4d8;
+}
+
+.spreadsheet-koppen [data-actief="true"] {
+  background: #fde8c8;
+  color: var(--oa-primary-dark, #92400e);
+  font-weight: 600;
+}
+
+/* ─── Op papier ───────────────────────────────────────────────── */
+
+.print-opmaak .print-xlsx {
+  margin: 0 0 6pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-opmaak .print-xlsx figcaption {
+  margin: 0 0 2pt;
+  font-size: 9pt;
+  font-weight: 600;
+  color: #2a2a32;
+}
+
+.print-opmaak figure.print-xlsx img {
+  display: block;
+  max-width: none;
+}

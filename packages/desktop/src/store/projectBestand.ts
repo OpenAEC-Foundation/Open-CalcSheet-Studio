@@ -6,6 +6,7 @@ import { datumTekst } from "../rapport/revisies.ts";
 import { standaardTeksten } from "../rapport/standaardteksten.ts";
 import { leesRekenversie } from "../components/calc/bladVersie.ts";
 import { isPdfBlad, leesPdfBijlage } from "./pdfBijlage.ts";
+import { isSpreadsheetBlad, leesSpreadsheetBestand } from "./spreadsheetBlad.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -197,6 +198,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   // Idem het PDF-bestand: alleen een PDF-blad met een bruikbaar bestand krijgt het veld.
   const pdf = isPdfBlad(ex) ? leesPdfBijlage(e.pdf) : undefined;
   if (pdf) ex.pdf = pdf;
+  const xlsx = isSpreadsheetBlad(ex) ? leesSpreadsheetBestand(e.xlsx) : undefined;
+  if (xlsx) ex.xlsx = xlsx;
   return ex;
 }
 

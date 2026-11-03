@@ -21,11 +21,13 @@ import {
   copyIcon,
   searchIcon,
   blankSheetIcon,
+  spreadsheetIcon,
 } from "./calcIcons";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../../store/projectStore";
 import { usePrintStore } from "../../store/printStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { useEditorViewStore } from "../../store/editorViewStore";
+import { voegLeegSpreadsheetToe } from "../calc/spreadsheetBlad";
 
 interface CalcTabProps {
   /** Opent de instellingen, eventueel op een bepaalde tab ("about"). */
@@ -173,6 +175,12 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
         <RibbonGroup label={t("calc.sheets", "Bladen")}>
           <RibbonButton icon={moduleIcon} label={t("calc.module", "Module")} size="large" onClick={() => openModuleKiezer()} />
           <RibbonButton icon={blankSheetIcon} label={t("calc.blankSheet", "Leeg blad")} size="large" onClick={leegBlad} />
+          <RibbonButton
+            icon={spreadsheetIcon}
+            label={t("calc.spreadsheet", "Spreadsheet")}
+            size="large"
+            onClick={() => voegLeegSpreadsheetToe(useProjectStore.getState().voegSpreadsheetToe)}
+          />
         </RibbonGroup>
 
         <RibbonGroup label={t("calc.output", "Uitvoer")}>

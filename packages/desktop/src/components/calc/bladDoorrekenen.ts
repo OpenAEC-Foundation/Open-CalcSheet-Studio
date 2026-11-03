@@ -5,6 +5,7 @@ import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-inclu
 import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { isPdfBlad } from "../../store/pdfBijlage";
+import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
 import { papier } from "./pdfBlad";
 
 /*
@@ -45,6 +46,10 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): Do
   // in de kolom grondslag van het overzicht; de pagina's tekent PdfBladWeergave.tsx.
   if (isPdfBlad(ex)) {
     return { html: "", resultaat: { titel: ex.naam, norm: papier()("pdfBlad.soort"), uc: null, voldoet: null } };
+  }
+  // Idem een spreadsheet-blad; de werkbladen tekent SpreadsheetBladWeergave.tsx.
+  if (isSpreadsheetBlad(ex)) {
+    return { html: "", resultaat: { titel: ex.naam, norm: papier()("spreadsheetBlad.soort"), uc: null, voldoet: null } };
   }
   let html: string;
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };

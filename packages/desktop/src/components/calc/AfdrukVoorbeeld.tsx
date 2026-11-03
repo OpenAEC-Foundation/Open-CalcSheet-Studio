@@ -7,6 +7,7 @@ import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import { meetBlokken, verdeelPerSectie, pxPerMm, MATEN, SPELING, type Maten } from "./paginering";
 import { usePdfVersie } from "./pdfBlad";
+import { useWerkmapVersie } from "./spreadsheetBlad";
 import { useDrieDVersie } from "./drieDBlok";
 import { useIfcxVersie } from "./ifcxBlok";
 import { useIframeVersie, vulIframesIn } from "./iframeBlok";
@@ -95,6 +96,8 @@ export default function AfdrukVoorbeeld() {
   // Een getekende PDF-pagina verandert de hoogte niet (de maat staat vooraf
   // vast), maar moet wel op de vellen komen: dan opnieuw verdelen.
   const pdfVersie = usePdfVersie();
+  // Een getekende werkmap verandert de hoogte juist wel.
+  const werkmapVersie = useWerkmapVersie();
   // Idem voor een 3D-blok: zijn afbeelding komt in de plaats van de projectie
   // (drieDBlok.ts), vaak zonder dat de hoogte verandert.
   const drieDVersie = useDrieDVersie();
@@ -263,7 +266,7 @@ export default function AfdrukVoorbeeld() {
       ro.disconnect();
       window.clearTimeout(timer);
     };
-  }, [bouwPaginas, bladen, rapportGegevens, gegevens, exemplaren, bureau, pdfVersie, drieDVersie, ifcxVersie, iframeVersie, jsVersie]);
+  }, [bouwPaginas, bladen, rapportGegevens, gegevens, exemplaren, bureau, pdfVersie, werkmapVersie, drieDVersie, ifcxVersie, iframeVersie, jsVersie]);
 
   useEffect(() => () => {
     iframesWeg.current?.();

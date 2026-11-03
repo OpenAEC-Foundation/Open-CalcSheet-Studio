@@ -39,6 +39,7 @@ export const ATTR = {
   invoer: 'ocss::blad::invoer',
   elementen: 'ocss::blad::elementen',
   pdf: 'ocss::blad::pdf',
+  xlsx: 'ocss::blad::xlsx',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -183,7 +184,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       id: TEKST,
       volgorde: GEHEEL,
       templateId: TEKST,
-      soort: keuze('rekenblad', 'pdf'),
+      soort: keuze('rekenblad', 'pdf', 'spreadsheet'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
     }),
@@ -199,6 +200,14 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       mediaType: TEKST,
       grootte: GEHEEL,
       // Base64. IFCX kent het type Blob wel, maar de lezer van buildingSMART kan er nog niets mee.
+      data: TEKST,
+    }),
+  },
+  [ATTR.xlsx]: {
+    value: object({
+      bestandsnaam: TEKST,
+      mediaType: TEKST,
+      grootte: GEHEEL,
       data: TEKST,
     }),
   },

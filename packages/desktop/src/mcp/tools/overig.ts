@@ -5,7 +5,7 @@
  */
 import { bouwProjectStep } from "@ifc-calc/core";
 import type { McpContext, McpEenheden, McpInstellingen, McpToolDef, McpWeergave } from "../contracts.ts";
-import { isPdfBlad } from "../../store/pdfBijlage.ts";
+import { isLosBlad } from "../../store/spreadsheetBlad.ts";
 import { PROJECT_FORMAAT_VERSIE } from "../../store/projectBestand.ts";
 import { projectIfcx } from "../../store/projectIfcx.ts";
 import { FORMULES, FORMULE_GROEPEN, type Formule } from "../../components/ribbon/formules.ts";
@@ -263,11 +263,11 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     handler: async (args, ctx) => {
       if (!ctx.omgeving.bestanden.beschikbaar()) return fout("NOT_AVAILABLE", "PDF export only works in the desktop app.");
       const stand = ctx.omgeving.stand();
-      const ids = Array.isArray(args.ids) ? args.ids.map(String) : stand.exemplaren.filter((b) => !isPdfBlad(b)).map((b) => b.id);
+      const ids = Array.isArray(args.ids) ? args.ids.map(String) : stand.exemplaren.filter((b) => !isLosBlad(b)).map((b) => b.id);
       for (const id of ids) {
         const blad = zoekBlad(stand, id);
         if (!blad) return fout("NOT_FOUND", `No sheet with id "${id}".`);
-        if (isPdfBlad(blad)) return fout("VALIDATION", `Sheet "${blad.naam}" is a PDF sheet; the report engine only takes calculation sheets.`);
+        if (isLosBlad(blad)) return fout("VALIDATION", `Sheet "${blad.naam}" is not a calculation sheet; the report engine only takes calculation sheets.`);
       }
       if (ids.length === 0) return fout("VALIDATION", "The project has no calculation sheets.");
       const pad = /\.pdf$/i.test(String(args.path)) ? String(args.path) : `${String(args.path)}.pdf`;

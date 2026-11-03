@@ -257,6 +257,15 @@
     "fout": "The PDF file could not be read: {{fout}}",
     "ontbreekt": "The PDF file of this sheet is missing."
   },
+  "spreadsheetBlad": {
+    "soort": "Spreadsheet",
+    "laden": "Loading spreadsheet…",
+    "leeg": "This spreadsheet is empty.",
+    "fout": "The workbook could not be read: {{fout}}",
+    "ontbreekt": "The workbook of this sheet is missing.",
+    "afgekapt_one": "Only the first {{count}} sheet of paper is printed; the workbook is longer.",
+    "afgekapt_other": "Only the first {{count}} sheets of paper are printed; the workbook is longer."
+  },
   "bijlagen": {
     "intro": "Custom appendices are listed by title in the table of contents; you add the document itself outside the app.",
     "vervalt": "omitted: the appendix contains no output",

@@ -257,6 +257,15 @@
     "fout": "Het PDF-bestand kon niet worden gelezen: {{fout}}",
     "ontbreekt": "Het PDF-bestand van dit blad ontbreekt."
   },
+  "spreadsheetBlad": {
+    "soort": "Spreadsheet",
+    "laden": "Spreadsheet laden…",
+    "leeg": "Deze spreadsheet is leeg.",
+    "fout": "De werkmap kon niet worden gelezen: {{fout}}",
+    "ontbreekt": "De werkmap van dit blad ontbreekt.",
+    "afgekapt_one": "Alleen het eerste vel is afgedrukt; de werkmap is langer.",
+    "afgekapt_other": "Alleen de eerste {{count}} vellen zijn afgedrukt; de werkmap is langer."
+  },
   "bijlagen": {
     "intro": "Eigen bijlagen staan met hun titel in de inhoudsopgave; het document zelf voeg je buiten de app toe.",
     "vervalt": "vervalt: er staat geen uitwerking in de bijlage",

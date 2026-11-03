@@ -31,6 +31,7 @@ export interface McpBlad {
   source: string;
   waarden: Record<string, string>;
   pdf?: McpPdf;
+  xlsx?: McpPdf;
 }
 
 /** De stand van het project op één moment. */

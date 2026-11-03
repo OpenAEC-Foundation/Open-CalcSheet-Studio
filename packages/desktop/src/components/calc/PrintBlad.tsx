@@ -7,6 +7,8 @@ import { ucTekst, type Resultaat } from "./bladResultaat";
 import { rekenversie } from "./bladVersie";
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { PdfBladAfdruk } from "./PdfBladWeergave";
+import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
+import { SpreadsheetBladAfdruk } from "./SpreadsheetBladWeergave";
 import { MATEN, type Maten } from "./paginering";
 import { useDrieDAfdruk } from "./drieDBlok";
 import { useIfcxAfdruk } from "./ifcxBlok";
@@ -79,6 +81,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
   titelInKop?: boolean; maten?: Maten;
 }) {
   if (isPdfBlad(ex)) return <PdfBladAfdruk ex={ex} nummer={nummer} maten={maten} />;
+  if (isSpreadsheetBlad(ex)) return <SpreadsheetBladAfdruk ex={ex} nummer={nummer} maten={maten} />;
   // Het beeld tekent zichzelf uit de waarden van dít exemplaar, niet uit het
   // blad dat toevallig openstaat. `alleenLezen` houdt tegen dat het afdrukken
   // standaardwaarden aanvult of iets anders aan het project verandert.
