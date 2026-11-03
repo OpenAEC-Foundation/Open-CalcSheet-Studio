@@ -94,7 +94,7 @@ export default function RapportAfdruk() {
           Een aangemelde soort tekent hier zijn eigen onderdeel, op de vellen van het rapport. */}
       {inBijlage.map((b) => (
         <PrintBlad key={b.ex.id} ex={b.ex} html={b.html} nummer={b.nummer} resultaat={b.resultaat} titelInKop
-          maten={MATEN.rapport} anker={bijlageBladAnker(b.ex.id)} />
+          maten={MATEN.rapport} anker={bijlageBladAnker(b.ex.id)} eenheden={b.eenheden} />
       ))}
     </div>
   );

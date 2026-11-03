@@ -273,6 +273,21 @@
     "afgekapt_one": "Alleen het eerste vel is afgedrukt; de werkmap is langer.",
     "afgekapt_other": "Alleen de eerste {{count}} vellen zijn afgedrukt; de werkmap is langer."
   },
+  "graafBlad": {
+    "soort": "Grafblad",
+    "ontbreekt": "De graaf van dit blad ontbreekt.",
+    "leeg": "Deze graaf is leeg.",
+    "naam": "Naam",
+    "uitkomst": "Uitkomst",
+    "zonderNaam": "Zonder naam"
+  },
+  "jupyterBlad": {
+    "soort": "Jupyter",
+    "leeg": "Deze werkmap heeft geen notebooks.",
+    "fout": "De werkmap kon niet worden gelezen: {{fout}}",
+    "notebookFout": "{{bestand}} kon niet worden gelezen als notebook.",
+    "ontbreekt": "De werkmap van dit blad ontbreekt."
+  },
   "bijlagen": {
     "intro": "Eigen bijlagen staan met hun titel in de inhoudsopgave; het document zelf voeg je buiten de app toe.",
     "vervalt": "vervalt: er staat geen uitwerking in de bijlage",
@@ -305,5 +320,9 @@
     "geenLogo": "geen logo",
     "voetafbeelding": "Voetafbeelding",
     "bijwerken": "Bijwerken uit bureauprofiel"
+  },
+  "tekenBlad": {
+    "soort": "Tekening",
+    "ontbreekt": "Het vel van dit blad ontbreekt."
   }
 }

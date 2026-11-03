@@ -8,6 +8,9 @@ import { bibliotheek, moduleCatalogus, modulesPerTemplate, type TreeNode } from 
 import { isPdfBlad, base64Bytes, bladnaamVoor } from "../../store/pdfBijlage.ts";
 import { isLosBlad, isSpreadsheetBlad } from "../../store/spreadsheetBlad.ts";
 import { isMarkdownBlad } from "../../store/markdownBlad.ts";
+import { isGraafBlad } from "../../store/graafBlad.ts";
+import { isTekenBlad } from "../../store/tekenBlad.ts";
+import { isJupyterBlad } from "../../store/jupyterBlad.ts";
 import { FORMULES, codeVan } from "../../components/ribbon/formules.ts";
 import { jsonGetal, regels, rekenDoor, ucWaarden, type Doorrekening } from "../rekenen.ts";
 import {
@@ -99,7 +102,7 @@ export const BLADTOOLS: McpToolDef[] = [
     name: "sheets_list",
     kind: "read",
     description:
-      "List the sheets of the project in order (id, name, kind calculation/pdf/spreadsheet/markdown, module, active, UC and verdict when known). " +
+      "List the sheets of the project in order (id, name, kind calculation/pdf/spreadsheet/markdown/graph/drawing/jupyter, module, active, UC and verdict when known). " +
       "UC is reported for sheets evaluated through this API with their current input; pass evaluate=true to compute every sheet now.",
     inputSchema: objectSchema({
       evaluate: { type: "boolean", description: "Compute every calculation sheet now (a large sheet can take a second or more). Default false." },
@@ -211,6 +214,19 @@ export const BLADTOOLS: McpToolDef[] = [
       }
       if (isMarkdownBlad(blad)) {
         return ok({ ...basis, markdown: blad.md ? { fileName: blad.md.bestandsnaam, text: blad.md.tekst } : null });
+      }
+      if (isGraafBlad(blad)) {
+        return ok({ ...basis, graph: blad.graaf ?? null });
+      }
+      if (isTekenBlad(blad)) {
+        const vel = blad.tekenvel;
+        return ok({
+          ...basis,
+          drawing: vel ? { paper: vel.formaat, orientation: vel.ligging, views: vel.views.map((v) => ({ title: v.titel, scale: v.schaal, shapes: v.elementen.length })) } : null,
+        });
+      }
+      if (isJupyterBlad(blad)) {
+        return ok({ ...basis, jupyter: blad.jupyter ? { fileName: blad.jupyter.bestandsnaam, bytes: base64Bytes(blad.jupyter.data) } : null });
       }
       const { velden, fout: leesfout } = veldenVan(blad.source);
       const veldnamen = new Set(velden.map((v) => v.naam));

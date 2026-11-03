@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useActieveBron, useActieveWaarden, useProjectScope } from "../../store/actiefBlad";
 import { useProjectStore } from "../../store/projectStore";
-import { bladOpen } from "../../store/codeVerzoek";
+import { isTekenBlad } from "../../store/tekenBlad";
 import { koppelingen, schoonUitdrukking, type Opgelost } from "./model";
 import { zoekBlokken } from "./code";
 import {
@@ -70,8 +70,12 @@ function useAnker(): Vak | null {
  * toont zich als er een tekening in bewerking is en de tab actief is.
  */
 export default function TekenEditor() {
-  const zichtbaar = useTeken((s) => s.open && s.zichtbaar);
-  const blad = useProjectStore(bladOpen);
+  const zichtbaar = useTeken((s) => s.open && s.zichtbaar && !s.vel);
+  // Een tekenblad heeft de editor in zijn eigen werkruimte (TekenbladWeergave.tsx).
+  const blad = useProjectStore((s) => {
+    const actief = s.exemplaren.find((e) => e.id === s.activeId);
+    return !!actief && !isTekenBlad(actief);
+  });
   const activeId = useProjectStore((s) => s.activeId);
   useEffect(() => {
     bladGewisseld(activeId);

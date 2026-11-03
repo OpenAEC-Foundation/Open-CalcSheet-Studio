@@ -9,7 +9,8 @@
  *     liggend, A3 liggend, A1 staand), en een van één pagina;
  *   • een werkmap die over meerdere vellen loopt, en een korte;
  *   • Markdown met koppen, lijsten, tabellen, code en afbeeldingen, en een
- *     tekst die over meerdere vellen loopt.
+ *     tekst die over meerdere vellen loopt;
+ *   • een canvas-blad, een grafblad, een tekenblad en een Jupyter-blad.
  *
  * Alles is fictief. De PDF en de werkmap worden hier gemaakt, zodat er geen
  * bestanden van buiten in de repo hoeven.
@@ -26,6 +27,11 @@ import { standaardRapport } from "../../packages/desktop/src/rapport/model.ts";
 import { standaardTeksten } from "../../packages/desktop/src/rapport/standaardteksten.ts";
 import { balklaag } from "../../packages/desktop/src/templates/balklaag.ts";
 import { ligger } from "../../packages/desktop/src/templates/ligger.ts";
+import { CANVAS_BLAD, schrijfEenheden } from "../../packages/desktop/src/store/canvasBlad.ts";
+import { GRAAF_BLAD } from "../../packages/desktop/src/store/graafBlad.ts";
+import { TEKEN_BLAD } from "../../packages/desktop/src/store/tekenBlad.ts";
+import { JUPYTER_BLAD, pakWerkmapIn } from "../../packages/desktop/src/store/jupyterBlad.ts";
+import { legeGraaf, verbind, voegNodeToe, zetInvoer, zetNodeNaam } from "../../packages/desktop/src/graaf/model.ts";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const XLSX_DIST = join(hier, "../../node_modules/@betteroffice/xlsx/dist");
@@ -41,7 +47,55 @@ export const BLADEN = {
   werkmapKort: { id: "ex-xlsx-kort", naam: "Hoeveelheden", inHoofdstuk: true },
   notitie: { id: "ex-md", naam: "Uitgangspunten fundering", inHoofdstuk: true },
   logboek: { id: "ex-md-lang", naam: "Logboek", inHoofdstuk: false },
+  canvas: { id: "ex-canvas", naam: "Ligger op canvas" },
+  graaf: { id: "ex-graaf", naam: "Momenten als graaf" },
+  tekenblad: { id: "ex-teken", naam: "Plattegrond begane grond" },
+  jupyter: { id: "ex-jupyter", naam: "Notebook hoeveelheden" },
 };
+
+/** Wat er van elk van deze bladen op zijn eigen pagina in de PDF hoort te staan. */
+export const KENMERKEN = {
+  canvas: "Canvasregel van het proefblad",
+  graaf: "Totaal moment",
+  tekenblad: "Proefview begane grond",
+  jupyter: "Notebookregel van het proefblad",
+};
+
+/** Een klein grafblad: twee getallen opgeteld in een codeblok, en de uitkomst bekeken. */
+function maakGraaf() {
+  let g = legeGraaf();
+  const voeg = (soort, x, y) => {
+    const r = voegNodeToe(g, soort, x, y);
+    g = r.graaf;
+    return r.id;
+  };
+  const a = voeg("getal", 0, 0);
+  const c = voeg("codeblok", 300, 0);
+  const v = voeg("bekijken", 600, 0);
+  g = zetInvoer(g, a, "waarde", "6");
+  g = zetInvoer(g, c, "code", "M = a*2");
+  g = verbind(g, { vanNode: a, vanPoort: "waarde", naarNode: c, naarPoort: "a" });
+  g = verbind(g, { vanNode: c, vanPoort: "M", naarNode: v, naarPoort: "waarde" });
+  return zetNodeNaam(g, v, KENMERKEN.graaf);
+}
+
+/** Een werkmap met één notebook: een tekstcel, een codecel en zijn opgeslagen uitvoer. */
+function maakJupyterWerkmap() {
+  const notebook = {
+    nbformat: 4,
+    nbformat_minor: 5,
+    metadata: {},
+    cells: [
+      { cell_type: "markdown", id: "tekst", metadata: {}, source: [KENMERKEN.jupyter] },
+      {
+        cell_type: "code", id: "code", metadata: {}, execution_count: 1, source: ["print(6 * 7)"],
+        outputs: [{ output_type: "stream", name: "stdout", text: ["42\n"] }],
+      },
+    ],
+  };
+  const zip = pakWerkmapIn([{ pad: "notebook.ipynb", bytes: new TextEncoder().encode(JSON.stringify(notebook)) }]);
+  return Buffer.from(zip).toString("base64");
+}
 
 /** De koppen die uit de Markdown-bladen in de inhoudsopgave horen te komen. */
 export const MARKDOWN_KOPPEN = {
@@ -246,6 +300,24 @@ export async function bouwGemengdProject() {
     { ...b.werkmapKort, ...kale, templateId: "spreadsheet", xlsx: { bestandsnaam: "hoeveelheden.xlsx", data: await maakWerkmap(5) } },
     { ...b.notitie, ...kale, templateId: "markdown", md: { bestandsnaam: "fundering.md", tekst: notitieTekst() } },
     { ...b.logboek, ...kale, templateId: "markdown", md: { bestandsnaam: "", tekst: logboekTekst() } },
+    {
+      ...b.canvas, templateId: CANVAS_BLAD, waarden: {}, elementen: [],
+      source: schrijfEenheden([
+        { id: "e1", x: 10, y: 15, tekst: `'${KENMERKEN.canvas}` },
+        { id: "e2", x: 10, y: 40, tekst: "L = 6*m" },
+        { id: "e3", x: 90, y: 40, tekst: "M = 8*kN/m*L^2/8" },
+      ]),
+    },
+    { ...b.graaf, ...kale, templateId: GRAAF_BLAD, graaf: maakGraaf() },
+    {
+      ...b.tekenblad, ...kale, templateId: TEKEN_BLAD,
+      tekenvel: {
+        formaat: "A4",
+        ligging: "staand",
+        views: [{ id: "v1", titel: KENMERKEN.tekenblad, x: 20, y: 20, breedte: 170, hoogte: 120, schaal: 50, x0: 0, y0: 0, elementen: [] }],
+      },
+    },
+    { ...b.jupyter, ...kale, templateId: JUPYTER_BLAD, jupyter: { bestandsnaam: "", data: maakJupyterWerkmap(), metCode: true } },
   ];
 
   const rapport = standaardRapport("01-09-2026", standaardTeksten());

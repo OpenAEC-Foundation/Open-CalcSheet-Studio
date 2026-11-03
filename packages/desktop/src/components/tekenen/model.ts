@@ -108,6 +108,17 @@ export const STANDAARD_HOOG = 320;
 let teller = 0;
 export const nieuwId = () => `v${++teller}`;
 
+/**
+ * Een id uit een bestand: de teller gaat erboven, zodat de editor het niet nog
+ * eens uitdeelt. Zonder id: een nieuw id.
+ */
+export function reserveerId(id?: string): string {
+  if (id === undefined) return nieuwId();
+  const m = /^v(\d+)$/.exec(id);
+  if (m) teller = Math.max(teller, Number(m[1]));
+  return id;
+}
+
 export const isVorm = (e: Element): e is Vorm => e.soort !== "vast";
 
 const MM_SLEUTELS = ["h", "b", "tw", "tf", "r", "t", "lengte"];

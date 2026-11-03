@@ -23,13 +23,21 @@ import {
   blankSheetIcon,
   spreadsheetIcon,
   markdownIcon,
+  canvasIcon,
+  graafIcon,
+  jupyterIcon,
 } from "./calcIcons";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../../store/projectStore";
 import { usePrintStore } from "../../store/printStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { useEditorViewStore } from "../../store/editorViewStore";
+import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
 import { voegLeegSpreadsheetToe } from "../calc/spreadsheetBlad";
 import { voegLeegMarkdownToe } from "../calc/markdownBlad";
+import { kopieer as kopieerCellen, plakKlembord } from "../calc/spreadsheetKlembord";
+import { ongedaan as cellenOngedaan, opnieuw as cellenOpnieuw, uitvoeren } from "../calc/spreadsheetOpdrachten";
+import { voegLeegGrafbladToe } from "../graaf/grafbladToevoegen";
+import { voegLeegJupyterToe } from "../calc/jupyterBlad";
 import { kanRapportPdfSchrijven, kiesRapportPdf } from "../../tauri/rapportPdf";
 
 interface CalcTabProps {
@@ -60,6 +68,10 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
   const activeId = useProjectStore((s) => s.activeId);
   const openModuleKiezer = useModuleKiezer((s) => s.openen);
   const view = useEditorViewStore((s) => s.view);
+  // Staat een spreadsheet in beeld, dan gelden klembord en ongedaan maken daarvoor.
+  const cellen = useSpreadsheetEditor((s) => s.zichtbaar && s.api !== null);
+  const cellenKanOngedaan = useSpreadsheetEditor((s) => s.kanOngedaan);
+  const cellenKanOpnieuw = useSpreadsheetEditor((s) => s.kanOpnieuw);
 
   // Klembord en zoeken werken op de code in de editor.
   const kopieer = useCallback(async (knip: boolean) => {
@@ -162,10 +174,10 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
         </RibbonGroup>
 
         <RibbonGroup label={t("calc.clipboard", "Klembord")}>
-          <RibbonButton icon={pasteIcon} label={t("calc.paste", "Plakken")} size="large" disabled={!view} onClick={plak} />
+          <RibbonButton icon={pasteIcon} label={t("calc.paste", "Plakken")} size="large" disabled={!view && !cellen} onClick={cellen ? () => uitvoeren(plakKlembord) : plak} />
           <RibbonButtonStack>
-            <RibbonButton icon={cutIcon} label={t("calc.cut", "Knippen")} size="small" disabled={!view} onClick={() => kopieer(true)} />
-            <RibbonButton icon={copyIcon} label={t("calc.copy", "Kopiëren")} size="small" disabled={!view} onClick={() => kopieer(false)} />
+            <RibbonButton icon={cutIcon} label={t("calc.cut", "Knippen")} size="small" disabled={!view && !cellen} onClick={() => (cellen ? uitvoeren(() => kopieerCellen(true)) : kopieer(true))} />
+            <RibbonButton icon={copyIcon} label={t("calc.copy", "Kopiëren")} size="small" disabled={!view && !cellen} onClick={() => (cellen ? uitvoeren(() => kopieerCellen(false)) : kopieer(false))} />
           </RibbonButtonStack>
         </RibbonGroup>
 
@@ -175,15 +187,15 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
               icon={undoIcon}
               label={t("calc.undo", "Ongedaan")}
               size="small"
-              disabled={!kanOngedaan}
-              onClick={ongedaan}
+              disabled={cellen ? !cellenKanOngedaan : !kanOngedaan}
+              onClick={cellen ? cellenOngedaan : ongedaan}
             />
             <RibbonButton
               icon={redoIcon}
               label={t("calc.redo", "Opnieuw")}
               size="small"
-              disabled={!kanOpnieuw}
-              onClick={opnieuw}
+              disabled={cellen ? !cellenKanOpnieuw : !kanOpnieuw}
+              onClick={cellen ? cellenOpnieuw : opnieuw}
             />
             <RibbonButton icon={searchIcon} label={t("calc.find", "Zoeken")} size="small" disabled={!view} onClick={zoek} />
           </RibbonButtonStack>
@@ -203,6 +215,19 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
             label={t("calc.markdown", "Markdown")}
             size="large"
             onClick={() => voegLeegMarkdownToe(useProjectStore.getState().voegMarkdownToe)}
+          />
+          <RibbonButton
+            icon={canvasIcon}
+            label={t("calc.canvas", "Canvas")}
+            size="large"
+            onClick={() => useProjectStore.getState().voegCanvasToe(t("werkruimte:canvas.nieuweNaam"))}
+          />
+          <RibbonButton icon={graafIcon} label={t("calc.graaf", "Grafblad")} size="large" onClick={voegLeegGrafbladToe} />
+          <RibbonButton
+            icon={jupyterIcon}
+            label={t("calc.jupyter", "Jupyter")}
+            size="large"
+            onClick={() => voegLeegJupyterToe(useProjectStore.getState().voegJupyterToe)}
           />
         </RibbonGroup>
 

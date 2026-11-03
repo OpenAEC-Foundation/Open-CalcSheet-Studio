@@ -41,6 +41,9 @@ export const ATTR = {
   pdf: 'ocss::blad::pdf',
   xlsx: 'ocss::blad::xlsx',
   markdown: 'ocss::blad::markdown',
+  graaf: 'ocss::blad::graaf',
+  tekenvel: 'ocss::blad::tekenvel',
+  jupyter: 'ocss::blad::jupyter',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -185,7 +188,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       id: TEKST,
       volgorde: GEHEEL,
       templateId: TEKST,
-      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown'),
+      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown', 'graaf', 'tekenblad', 'jupyter'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
     }),
@@ -212,6 +215,16 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       data: TEKST,
     }),
   },
+  [ATTR.jupyter]: {
+    value: object({
+      bestandsnaam: TEKST,
+      mediaType: TEKST,
+      grootte: GEHEEL,
+      // Base64 van de ingepakte werkmap, zoals een PDF of werkmap.
+      data: TEKST,
+      metCode: JANEE,
+    }),
+  },
   [ATTR.markdown]: {
     value: object({
       bestandsnaam: TEKST,
@@ -223,6 +236,44 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       beelden: opt(VRIJ),
       // De koppen uit de tekst blijven uit de inhoudsopgave van het rapport.
       koppenUit: opt(JANEE),
+    }),
+  },
+  [ATTR.graaf]: {
+    value: object({
+      versie: GEHEEL,
+      nodes: lijst(object({
+        id: TEKST,
+        soort: TEKST,
+        x: GETAL,
+        y: GETAL,
+        naam: opt(TEKST),
+        invoer: opt(lijst(PAAR)),
+        geheel: opt(lijst(TEKST)),
+      })),
+      verbindingen: lijst(object({
+        vanNode: TEKST,
+        vanPoort: TEKST,
+        naarNode: TEKST,
+        naarPoort: TEKST,
+      })),
+    }),
+  },
+  [ATTR.tekenvel]: {
+    value: object({
+      formaat: keuze('A4', 'A3', 'A2'),
+      ligging: keuze('staand', 'liggend'),
+      views: lijst(object({
+        id: TEKST,
+        titel: TEKST,
+        x: GETAL,
+        y: GETAL,
+        breedte: GETAL,
+        hoogte: GETAL,
+        schaal: GETAL,
+        x0: GETAL,
+        y0: GETAL,
+        elementen: lijst(VRIJ),
+      })),
     }),
   },
   [ATTR.uitkomst]: {

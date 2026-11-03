@@ -15,7 +15,10 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 | `packages/desktop/src/components/calc` | Parametrische beelden (`*Designer.tsx`), koppeling blad↔beeld (`designerKeuze.tsx`, via een herkenningstekst uit de titel), modulecatalogus met status (`projectTree.ts`), uitkomst van een blad (`bladResultaat.ts`), afdruk (`PrintDocument.tsx/.css`, `PrintBlad.tsx`, `paginering.ts`), rekenversie en bijwerken van bladen (`bladVersie.ts`, `BladBijwerken.tsx`). |
 | `packages/desktop/src/rapport`, `components/rapport` | Constructierapport (hoofdstukken, uitgangspunten, belastingen met opbouwen en gewichtenbibliotheek `gewichten.ts`, bijlage A met de rekenbladen). |
 | `components/calc/bladSoorten.tsx` | Bladen die niet rekenen (PDF, werkmap, Markdown): hier meldt een soort zich aan voor de afdruk en het rapport. Zie [bladsoorten.md](bladsoorten.md). |
+| `packages/desktop/src/graaf`, `components/graaf` | Het grafblad: grafisch programmeren met nodes en verbindingen. `graaf/` rekent zonder React (`model.ts`, `nodes.ts`, `rekenen.ts`, `scene.ts`, `papier.ts`), `components/graaf/` tekent het vlak, het 3D-voorbeeld en de afdruk. Het codeblok gebruikt `packages/core/src/rekenblok.ts`. Controle: `scripts/check-graaf.mjs`. |
 | `packages/desktop/src/store` | Project (exemplaren/bladen, projectgegevens, rapport), projectbestand, undo. |
+| `packages/desktop/src/components/tekenen` | De tekeneditor: tekeningen in een rekenblad (`@svg`-blok) en de views van een tekenblad. `vel.ts` rekent een view van echte maat naar papier; het vel staat in `store/tekenBlad.ts`. |
+| Bladsoorten | Naast rekenbladen ook PDF, spreadsheet en Jupyter. Een Jupyter-blad is een eigen werkmap met notebooks en scripts in een afgeschermde JupyterLab-omgeving: zie [jupyter-blad.md](jupyter-blad.md). |
 | `scripts/check-*.mjs` | Controles; `node scripts/check-alles.mjs` draait ze allemaal (nu 26 controles). |
 
 ## 2. Afspraken in de bladen
@@ -35,6 +38,7 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 - **Getallen voor een beeld**: een beeld leest de uitkomsten van zijn blad onafgerond (`waarde` op de knoop, via `leesGetallen`), niet de op vier cijfers afgeronde tekst; anders komt een nagerekende lijn een cijfer naast de waarde in de kop uit.
 - **Taal van de uitvoer**: de uitwerking, het afdrukvoorbeeld, de PDF en het blad in het rapport volgen de taal van de app. De rekentekst blijft Nederlands en de bron: de rekenversie, *Bladen bijwerken* en de invoersleutels kennen alleen die tekst, en in de editor staat die tekst. Bij het doorrekenen voor de weergave vervangt een tabel per module (`templates/<module>.en.ts`, geregistreerd in `templates/vertalingen.ts`, mechanisme in `components/calc/uitvoerTaal.ts`) de teksten die er exact mee overeenkomen; `namen` geeft de weergavenamen (`b_sparing` → `b_opening`). Nieuwe tekst in een blad hoort ook in de tabel; `check-uitvoer-taal.mjs` somt op wat ontbreekt. Geen rechte apostrof in een vertaling.
 - **Tekening vooraan**: een tekening met de klasse `vooraan` of een regel met `<span class="vooraan"></span>` rekent op zijn eigen plek mee en komt bij het opmaken direct onder de titel. Zo kan een schema uitkomsten gebruiken die pas verderop in het blad staan, zonder dat er iets aan het rekenen verandert.
+- **Canvas-blad**: formules als losse eenheden vrij op een vel (`store/canvasBlad.ts`, `components/calc/CanvasBladWeergave.tsx`). De eenheden staan in `source` als gewone rekentekst met per eenheid een merkteken dat voor de rekentaal commentaar is (`//@eenheid id=e1 x=10 y=15`), in de volgorde van doorrekenen: op positie, van boven naar beneden en bij gelijke hoogte van links naar rechts. Zo werken projectbestand, IFCX, API en UC zoals bij elk rekenblad; het is dus geen los blad (`isLosBlad`). Elke eenheid wordt apart ingelezen en alles gaat samen in één `evaluate` (`canvasRekenen.ts`): de scope loopt door en een fout, ook een blok dat niet wordt gesloten, blijft bij zijn eenheid. `#def` en `#include` gelden daardoor alleen binnen hun eigen eenheid. Op papier (`CanvasVellen` in `PrintBlad.tsx`) blijven de posities behouden; wat over de vouw zou vallen begint het volgende vel en wat eronder staat schuift evenveel mee (`legOpVellen`). `check-canvas.mjs` bewaakt dit.
 - **Tekens en eenheden in de lijnen**: elke M- en V-lijn heeft + en − in de vlakken, met het teken van de waarde op die plek en alleen waar het vlak hoog genoeg is, en elke waarde staat met zijn eenheid. `check-balklaag-wisselbalk.mjs` en `check-balklaag-omhullende.mjs` bewaken dat.
 
 ## 3. Normen
@@ -52,6 +56,7 @@ node scripts/check-alles.mjs
 cd packages/desktop && npx tsc --noEmit -p .
 ```
 
+- CI (`ci.yml`) draait `npm run check` bij elke pull request en elke push naar `main`, op Linux en op Windows met CRLF in de werkkopie; `scripts/werkkopie-crlf.mjs` bewijst dat laatste met een byte-telling.
 - Een module heeft een eigen check met handberekeningen (als commentaar bij de verwachting) en vaak een onafhankelijke uitwerking in het script zelf. Verwachtingen alleen aanpassen met een handberekening die aantoont dat de nieuwe waarde juist is.
 - `check-renders.mjs` rekent elk blad met elke keuze uit de keuzelijsten; `check-designerkeuze.mjs` controleert blad↔beeld; `check-blad-bijwerken.mjs` het bijwerken.
 - `check-rapport-pdf.mjs` maakt een echte PDF van een gemengd project en rekent de paginanummers en de inhoudsopgave daarin na; hij start zijn eigen dev-server op een vrije poort en slaat zich over zonder Chrome of Edge. De knop Rapport loopt daar met een nagebootste Rust-schil.
@@ -64,7 +69,7 @@ cd packages/desktop && npx tsc --noEmit -p .
 
 - Versie (jaar.week.volgnummer): zetten met `node scripts/versie.mjs zet JJJJ.W.N`, niet met de hand. `check-versie.mjs` zakt als de velden uit elkaar lopen.
 - Uitbrengen en ondertekenen: zie [ondertekening.md](ondertekening.md). Een release start met *Run workflow* op `release.yml`; die kiest het nummer, ondertekent en publiceert pas als alle controles groen zijn.
-- Installer: `npm run tauri build` in `packages/desktop`; lokaal zonder ondertekening. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`).
+- Installer: `npm run tauri build` in `packages/desktop`; lokaal zonder ondertekening. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`). Daarvoor bouwt `beforeBuildCommand` de Jupyter-omgeving als die er nog niet is (`scripts/bouw-jupyter-omgeving.mjs --als-nodig`); dat vraagt eenmalig internet en Python. Een `tauri dev` zonder pakbestand start gewoon, en een Jupyter-blad meldt dan dat de omgeving ontbreekt.
 - Draait de gebouwde app nog, dan houdt die `target/release/WebView2Loader.dll` vast en faalt de build: bouw dan met een eigen `CARGO_TARGET_DIR` (bijvoorbeeld `src-tauri/target-installer`, niet in git).
 
 ## 6. Modules
@@ -78,10 +83,34 @@ Status in de catalogus: *gereed* (gecalibreerd op referentiebladen), *controlere
 | Beton | Tweepaalspoer (staafwerkmodel; knopen, trekband, splijtkrachten, verankering, scheurwijdte, detaillering; tekening met de gekozen staven) |
 | Bibliotheek | CalcPAD-syntaxdemo |
 
+Een **spreadsheet-blad** is een werkmap (XLSX) als blad in het project, op de
+editor `@betteroffice/xlsx-react`. Die draait hier met `legacySyncApi`: de
+asynchrone API kent rijen invoegen, kolombreedte, vastzetten en verplaatsen niet,
+en alleen `api.handle.applyOps` maakt van cellen met opmaak één stap ongedaan
+maken. Het pakket laat deze weg in 0.6.0 vervallen, dus de versie staat vast op
+0.5.1; wie overstapt, moet eerst nagaan of de nieuwe API deze bewerkingen heeft.
+`components/calc/spreadsheetLogica.ts` is puur en wordt nagerekend door
+`check-spreadsheet.mjs`; `spreadsheetOpdrachten.ts` en `spreadsheetKlembord.ts`
+voeren uit op de rekenkern, `spreadsheetAanwijzen.ts` en `spreadsheetLaag.tsx`
+horen bij het raster, en `components/ribbon/SpreadsheetTab.tsx` is de lint-tab die
+verschijnt zolang een spreadsheet-blad in beeld is. `api.version()` en andere
+gewone API-aanroepen sluiten een open cel: de bewaartimer gebruikt daarom
+`api.handle` rechtstreeks. Hoe een werkmap over de vellen papier valt, staat in
+`spreadsheetVellen.ts`; de afdruk en de papierrand in het raster rekenen daarmee, en
+`check-spreadsheet.mjs` legt de uitkomst naast de getekende afbeeldingen. Het raster
+volgt de losse uitdraai (`MATEN.bladen`); in het rapport is de bladspiegel anders.
+
 De toetsing van de balklaag staat in [balklaag-toetsing.md](balklaag-toetsing.md),
 de bewuste splitspunten tussen referentie-uitwerking en norm in
 [afwijkingen-referentie.md](afwijkingen-referentie.md). Toepassingsgebied en toetsset
 van de tweepaalspoer staan in [tweepaalspoer-toetsing.md](tweepaalspoer-toetsing.md).
+
+Naast de modules zijn er bladen zonder rekentekst: een PDF, een spreadsheet en een
+tekenblad (*Module toevoegen → Lege tekening*). Een tekenblad is een vel A4, A3 of A2 met
+views, elk met een eigen plek, schaal en titel. In een view is één eenheid één mm in het
+echt; lijndikte, tekst en de maat van een symbool staan in px op papier en veranderen
+niet met de schaal. Op papier staat het vel op zijn eigen formaat, ook in het rapport.
+Controle: `scripts/check-tekenblad.mjs`.
 
 Een nieuwe module bestaat uit een rekenblad in `packages/desktop/src/templates`
 (geregistreerd in `index.ts`), een regel in de catalogus (`projectTree.ts`), zo

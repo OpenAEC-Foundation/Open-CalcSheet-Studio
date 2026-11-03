@@ -1,0 +1,525 @@
+/*
+ * Grafbladen (GraafBladWeergave.tsx, GraafNodeKaart.tsx, GraafZoekmenu.tsx,
+ * GraafAfdruk.tsx): het vlak met nodes, en de graaf op papier.
+ */
+
+/* ─── Het vlak ────────────────────────────────────────────────── */
+
+.graaf-vlak {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  outline: none;
+  background-color: var(--oa-workspace);
+  background-image: radial-gradient(circle, var(--theme-border) 1px, transparent 1.2px);
+}
+
+.graaf-3d,
+.graaf-3d-projectie {
+  position: absolute;
+  inset: 0;
+}
+
+.graaf-3d-doek {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.graaf-3d-doek:active {
+  cursor: grabbing;
+}
+
+.graaf-3d-projectie {
+  pointer-events: none;
+}
+
+.graaf-3d-projectie svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* De laag laat de muis door naar het 3D-voorbeeld; alleen nodes en verbindingen vangen hem. */
+.graaf-laag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.graaf-lijnen {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.graaf-lijn {
+  fill: none;
+  stroke: var(--theme-text-muted);
+  stroke-width: 1.6;
+}
+
+.graaf-lijn.gekozen,
+.graaf-lijn.trek {
+  stroke: var(--theme-accent);
+  stroke-width: 2.2;
+}
+
+.graaf-lijn-raak {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.graaf-vlak.trekt .graaf-lijn-raak {
+  pointer-events: none;
+}
+
+/* ─── De balk en de hint ──────────────────────────────────────── */
+
+.graaf-balk {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.graaf-icoonknop {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 4px;
+}
+
+.graaf-hint {
+  position: absolute;
+  left: 10px;
+  bottom: 6px;
+  right: 10px;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-muted);
+  pointer-events: none;
+}
+
+.graaf-leeg {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  max-width: 420px;
+  text-align: center;
+  font-size: var(--oa-size-body);
+  color: var(--theme-text-secondary);
+}
+
+.graaf-leeg p {
+  margin: 0 0 10px;
+}
+
+/* ─── Een node ────────────────────────────────────────────────── */
+
+.graaf-node {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: auto;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: 6px;
+  box-shadow: var(--theme-panel-shadow);
+  font-size: var(--oa-size-label);
+  color: var(--theme-text);
+  user-select: none;
+}
+
+.graaf-node.gekozen {
+  z-index: 1;
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 1px var(--theme-accent), var(--theme-panel-shadow);
+}
+
+.graaf-node.fout {
+  border-color: var(--oa-error);
+}
+
+.graaf-node-kop {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 0 4px 0 8px;
+  background: var(--theme-bg);
+  border-bottom: 1px solid var(--theme-border-subtle);
+  border-radius: 5px 5px 0 0;
+  cursor: move;
+}
+
+.graaf-soort-codeblok .graaf-node-kop,
+.graaf-soort-bekijken .graaf-node-kop {
+  background: var(--theme-accent-soft);
+}
+
+.graaf-node-titel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.graaf-node-weg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--theme-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.graaf-node-weg:hover {
+  background: var(--theme-hover);
+  color: var(--theme-text);
+}
+
+/* De rijen hebben een vaste hoogte (nodes.ts): daar rekenen de verbindingen mee. */
+.graaf-poorten {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.graaf-kolom {
+  flex: 1;
+  min-width: 0;
+}
+
+.graaf-kolom.uit {
+  flex: none;
+  max-width: 55%;
+}
+
+.graaf-rij {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  padding: 0 9px;
+}
+
+.graaf-rij.uit {
+  justify-content: flex-end;
+}
+
+.graaf-poort-naam {
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--theme-text-secondary);
+}
+
+.graaf-poort {
+  position: absolute;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  box-sizing: border-box;
+  margin-top: -5.5px;
+  border: 2px solid var(--theme-text-muted);
+  border-radius: 50%;
+  background: var(--theme-surface);
+  cursor: crosshair;
+}
+
+.graaf-poort.in {
+  left: -6px;
+}
+
+.graaf-poort.uit {
+  right: -6px;
+  background: var(--theme-text-muted);
+}
+
+.graaf-poort:hover,
+.graaf-vlak.trekt .graaf-poort:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent);
+}
+
+/* Een grotere vanger om de stip, want op een kleine zoom is hij klein. */
+.graaf-poort::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+/* ─── Velden ──────────────────────────────────────────────────── */
+
+.graaf-veld {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  border: 1px solid var(--theme-border);
+  border-radius: 3px;
+  background: var(--theme-bg-lighter);
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.graaf-veld:focus,
+.graaf-tekst:focus {
+  outline: 1px solid var(--theme-focus-color);
+  outline-offset: 0;
+}
+
+.graaf-velden {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px 6px;
+}
+
+.graaf-velden-rij {
+  display: flex;
+  gap: 4px;
+}
+
+.graaf-eenheid {
+  flex: 0 0 64px;
+}
+
+.graaf-schuif {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--theme-accent);
+}
+
+.graaf-grenzen label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--theme-text-muted);
+}
+
+.graaf-grenzen .graaf-veld {
+  height: 18px;
+  font-size: 11px;
+}
+
+.graaf-tekst {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px;
+  border: 1px solid var(--theme-border);
+  border-radius: 3px;
+  background: var(--theme-bg-lighter);
+  color: var(--theme-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.graaf-code {
+  font-family: var(--oa-font-mono, Consolas, monospace);
+  line-height: 1.4;
+  white-space: pre;
+  overflow: auto;
+}
+
+.graaf-geheel {
+  flex: none;
+  height: 18px;
+  padding: 0 3px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: var(--theme-text-muted);
+  font: 10px var(--oa-font-mono, Consolas, monospace);
+  cursor: pointer;
+}
+
+.graaf-geheel:hover {
+  background: var(--theme-hover);
+}
+
+.graaf-geheel.aan {
+  border-color: var(--theme-accent);
+  color: var(--theme-accent-tint);
+}
+
+/* ─── Het voorbeeld onder een node ────────────────────────────── */
+
+.graaf-voorbeeld {
+  padding: 4px 8px 5px;
+  border-top: 1px solid var(--theme-border-subtle);
+  border-radius: 0 0 5px 5px;
+  background: var(--theme-bg);
+  user-select: text;
+  cursor: text;
+}
+
+.graaf-regel {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.graaf-regel-label {
+  flex: none;
+  color: var(--theme-text-muted);
+}
+
+.graaf-regel-tekst {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.graaf-voorbeeld.groot .graaf-regel {
+  font-size: var(--oa-size-body);
+  font-weight: 600;
+}
+
+.graaf-lijstkop {
+  color: var(--theme-text-muted);
+}
+
+.graaf-melding {
+  color: var(--theme-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.graaf-melding.fout {
+  color: var(--oa-error);
+}
+
+/* ─── Het zoekmenu ────────────────────────────────────────────── */
+
+.graaf-zoekmenu {
+  position: absolute;
+  z-index: 5;
+  width: 260px;
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: 6px;
+  box-shadow: var(--theme-popover-shadow);
+  font-size: var(--oa-size-label);
+  color: var(--theme-text);
+}
+
+.graaf-zoekveld {
+  flex: none;
+  margin: 6px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid var(--theme-border);
+  border-radius: 3px;
+  background: var(--theme-bg-lighter);
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.graaf-zoekveld:focus {
+  outline: 1px solid var(--theme-focus-color);
+}
+
+.graaf-zoeklijst {
+  overflow: auto;
+  padding: 0 4px 4px;
+}
+
+.graaf-zoekregel {
+  display: block;
+  width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.graaf-zoekregel.actief {
+  background: var(--theme-accent-soft);
+}
+
+.graaf-zoeknaam {
+  display: block;
+  font-weight: 600;
+}
+
+.graaf-zoekuitleg {
+  display: block;
+  color: var(--theme-text-muted);
+}
+
+.graaf-zoekleeg {
+  padding: 6px;
+  color: var(--theme-text-muted);
+}
+
+/* ─── Op papier ───────────────────────────────────────────────── */
+
+.print-opmaak .print-graaf {
+  margin: 0 0 8pt;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-opmaak .print-graaf-tekening svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.print-opmaak .print-graaf-tabel {
+  width: 100%;
+  margin: 8pt 0 0;
+  border-collapse: collapse;
+  font-size: 9pt;
+  color: #2a2a32;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-opmaak .print-graaf-tabel th {
+  padding: 2pt 4pt;
+  border-bottom: 0.75pt solid #2a2a32;
+  font-weight: 600;
+  text-align: left;
+}
+
+.print-opmaak .print-graaf-tabel td {
+  padding: 2pt 4pt;
+  border-bottom: 0.25pt solid #c4c4cc;
+  vertical-align: top;
+}

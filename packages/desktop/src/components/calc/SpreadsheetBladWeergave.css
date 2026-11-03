@@ -59,6 +59,7 @@
 .spreadsheet-hoek {
   width: 38px;
   height: 23px;
+  pointer-events: auto;
 }
 
 .spreadsheet-kolomkoppen {
@@ -97,6 +98,141 @@
   background: #fde8c8;
   color: var(--oa-primary-dark, #92400e);
   font-weight: 600;
+}
+
+/* De hulplijn bij het slepen van een kolombreedte of rijhoogte. */
+.spreadsheet-hulplijn {
+  position: absolute;
+  background: var(--oa-primary, #d97706);
+  pointer-events: none;
+}
+
+.spreadsheet-hulplijn.kolom {
+  width: 1px;
+}
+
+.spreadsheet-hulplijn.rij {
+  height: 1px;
+}
+
+/* Boven het raster (spreadsheetLaag.tsx): verwijzingen, klembord en vulgreep. */
+.spreadsheet-markering,
+.spreadsheet-kopiekader,
+.spreadsheet-vulvoorbeeld {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.spreadsheet-markering {
+  border: 1px solid;
+}
+
+.spreadsheet-markering.aangewezen {
+  border-width: 2px;
+  border-style: dashed;
+}
+
+.spreadsheet-kopiekader {
+  background:
+    repeating-linear-gradient(90deg, #52525b 0 4px, transparent 4px 8px) top / 100% 1.5px no-repeat,
+    repeating-linear-gradient(90deg, #52525b 0 4px, transparent 4px 8px) bottom / 100% 1.5px no-repeat,
+    repeating-linear-gradient(0deg, #52525b 0 4px, transparent 4px 8px) left / 1.5px 100% no-repeat,
+    repeating-linear-gradient(0deg, #52525b 0 4px, transparent 4px 8px) right / 1.5px 100% no-repeat;
+}
+
+.spreadsheet-kopiekader.knippen {
+  opacity: 0.6;
+}
+
+.spreadsheet-vulvoorbeeld {
+  border: 1.5px dashed #52525b;
+}
+
+.spreadsheet-vulgreep {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  background: #217346;
+  border: 1px solid #fff;
+  cursor: crosshair;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* De rand van het papier in het raster (spreadsheetVellen.ts). */
+.spreadsheet-vellijnen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --vel-kleur: #2563eb;
+}
+
+.spreadsheet-vellijn {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.spreadsheet-vellijn.staand {
+  border-left: 1.5px dashed var(--vel-kleur);
+}
+
+.spreadsheet-vellijn.liggend {
+  border-top: 1.5px dashed var(--vel-kleur);
+}
+
+.spreadsheet-velhoek {
+  position: absolute;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: solid var(--vel-kleur);
+  border-width: 0 2px 2px 0;
+}
+
+.spreadsheet-veltekst {
+  position: absolute;
+  padding: 0 3px;
+  transform: translateX(-100%);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--vel-kleur);
+  font: 10px / 13px var(--oa-font-body, system-ui, sans-serif);
+  white-space: nowrap;
+}
+
+/* De naam van een vel staat op dat vel, boven zijn onderrand. */
+.spreadsheet-veltekst.boven {
+  transform: translate(-100%, -100%);
+}
+
+.spreadsheet-velhoek.zonder-inhoud,
+.spreadsheet-veltekst.zonder-inhoud,
+.spreadsheet-vellijn.zonder-inhoud {
+  opacity: 0.45;
+}
+
+/* Hierin plakt de browser bij Ctrl+V; buiten beeld, maar wel focusbaar. */
+.spreadsheet-plakvang {
+  position: fixed;
+  left: -1000px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+/* Het menu van de functies: naam met uitleg ernaast. */
+.spreadsheet-menu .calcpad-menu-rij {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.spreadsheet-menu-uitleg {
+  color: var(--text-secondary, #52525b);
+  font-size: 11px;
 }
 
 /* ─── Op papier ───────────────────────────────────────────────── */

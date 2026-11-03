@@ -273,6 +273,21 @@
     "afgekapt_one": "Only the first {{count}} sheet of paper is printed; the workbook is longer.",
     "afgekapt_other": "Only the first {{count}} sheets of paper are printed; the workbook is longer."
   },
+  "graafBlad": {
+    "soort": "Graph sheet",
+    "ontbreekt": "The graph of this sheet is missing.",
+    "leeg": "This graph is empty.",
+    "naam": "Name",
+    "uitkomst": "Result",
+    "zonderNaam": "Unnamed"
+  },
+  "jupyterBlad": {
+    "soort": "Jupyter",
+    "leeg": "This work folder has no notebooks.",
+    "fout": "The work folder could not be read: {{fout}}",
+    "notebookFout": "{{bestand}} could not be read as a notebook.",
+    "ontbreekt": "The work folder of this sheet is missing."
+  },
   "bijlagen": {
     "intro": "Custom appendices are listed by title in the table of contents; you add the document itself outside the app.",
     "vervalt": "omitted: the appendix contains no output",
@@ -305,5 +320,9 @@
     "geenLogo": "no logo",
     "voetafbeelding": "Footer image",
     "bijwerken": "Update from office profile"
+  },
+  "tekenBlad": {
+    "soort": "Drawing",
+    "ontbreekt": "The sheet of this drawing is missing."
   }
 }

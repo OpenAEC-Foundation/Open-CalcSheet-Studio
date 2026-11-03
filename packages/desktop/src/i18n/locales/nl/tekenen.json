@@ -49,7 +49,13 @@
     "symbolen": "Symbolen",
     "bibliotheek": "Bibliotheek",
     "bibliotheekTip": "Alle parametrische symbolen: staalprofielen en hout op ware grootte, schematisering en maatvoering. Kies er een en klik of sleep in de tekening.",
-    "schemaKort": "Snel schema"
+    "schemaKort": "Snel schema",
+    "view": "View",
+    "terugNaarVel": "Terug naar vel",
+    "terugNaarVelTip": "Klaar met deze view: terug naar het hele vel. De tekening staat al in het project.",
+    "constructie": "Vloeren",
+    "inViewTekenen": "Tekenen",
+    "inViewTekenenTip": "In de gekozen view van dit vel tekenen."
   },
   "gereedschap": {
     "selecteer": "Selecteren",
@@ -168,7 +174,9 @@
     "alleGelijkTip": "Aangevinkt verandert een keuze alle gelijke symbolen in deze tekening, bijvoorbeeld alle HEB 240; anders alleen dit exemplaar.",
     "eindteken": "Eindteken",
     "eindtekenRond": "Rondje",
-    "eindtekenTik": "Schuine tik"
+    "eindtekenTik": "Schuine tik",
+    "maatLabelUitleg": "Een getal als label volgt de echte maat. Eigen tekst blijft staan.",
+    "plaatsUitlegView": "Maten in mm in het echt. De schaal is die van de view. R draait en F spiegelt aan de cursor."
   },
   "venster": {
     "titel": "Tekening {{naam}}",
@@ -211,7 +219,11 @@
     "windverband": "Windverband",
     "stramien": "Stramien",
     "peil": "Peilmaat",
-    "paalpunt": "Paalpuntniveau"
+    "paalpunt": "Paalpuntniveau",
+    "wand": "Wand",
+    "kanaalplaat": "Kanaalplaatvloer",
+    "kanaalplaatdoorsnede": "Kanaalplaat doorsnede",
+    "niveau": "Niveau"
   },
   "symboolTip": {
     "staal": "Doorsnede van een staalprofiel op ware grootte (tekenschaal). Kies het type; maat en type wissel je daarna in het paneel.",
@@ -226,7 +238,11 @@
     "windverband": "Een windverband in een vak: kruis of enkele diagonaal.",
     "stramien": "Een stramienlijn met bol en nummer of letter.",
     "peil": "Een peilmaat met open of dicht driehoekje.",
-    "paalpunt": "Het paalpuntniveau in een kader; het niveau mag uit het blad komen."
+    "paalpunt": "Het paalpuntniveau in een kader; het niveau mag uit het blad komen.",
+    "wand": "Twee punten op de hartlijn. Dikte in mm, op schaal, met de arcering en kleur van het materiaal.",
+    "kanaalplaat": "Sleep een veld. De naden liggen om de 1200 mm, met een pijl in de overspanningsrichting.",
+    "kanaalplaatdoorsnede": "Twee punten op de bovenkant. Platen van 1200 mm met hun kanalen, op schaal.",
+    "niveau": "Twee punten: een streeplijn op de hoogte van het niveau, met het peilteken aan het begin."
   },
   "familie": {
     "HEA": "HEA",
@@ -267,7 +283,10 @@
     "voor": "Tekst",
     "ref": "Referentie",
     "niveau": "Niveau (m)",
-    "aanzicht": "Aanzicht"
+    "aanzicht": "Aanzicht",
+    "materiaal": "Materiaal",
+    "dikteMm": "Dikte (mm)",
+    "hoogteMm": "Hoogte (mm)"
   },
   "veldTip": {
     "waarde": "Een getal, of een variabele of formule uit het blad (q_Ed). Die rekent mee: verandert het blad, dan verandert de tekening.",
@@ -294,7 +313,9 @@
     },
     "richting": {
       "rechtsom": "Rechtsom",
-      "linksom": "Linksom"
+      "linksom": "Linksom",
+      "x": "Horizontaal",
+      "y": "Verticaal"
     },
     "bollen": {
       "begin": "Begin",
@@ -305,6 +326,19 @@
       "doorsnede": "Doorsnede",
       "boven": "Bovenaanzicht",
       "zij": "Zijaanzicht"
+    },
+    "materiaal": {
+      "metselwerk": "Metselwerk",
+      "kalkzandsteen": "Kalkzandsteen",
+      "prefab": "Prefab beton",
+      "beton": "Beton (gewapend)",
+      "steenwol": "Steenwol",
+      "glaswol": "Glaswol",
+      "pir": "PIR",
+      "eps": "EPS",
+      "kooltherm": "Kooltherm",
+      "pur": "PUR",
+      "geen": "Geen arcering"
     }
   },
   "profiel": {
@@ -368,5 +402,23 @@
       "naam": "Wis",
       "tip": "De selectie verwijderen. Commando e, of de toets Delete."
     }
+  },
+  "view": {
+    "kop": "View",
+    "titel": "Titel",
+    "schaal": "Schaal",
+    "schaalTip": "De schaal van deze view. Wat er getekend staat, houdt zijn echte maat; lijnen en tekst blijven even groot.",
+    "bereik": "Deze view laat {{b}} × {{h}} mm in het echt zien.",
+    "uitleg": "Tekenen gaat in echte maten: typ je 5400, dan is dat 5400 mm. Kader en plek op papier stel je in op het vel.",
+    "stramienKop": "Stramien",
+    "veldenX": "Velden x (mm)",
+    "veldenY": "Velden y (mm)",
+    "veldenTip": "De veldmaten in mm, gescheiden door een spatie: 5400 5400 7200, of 3x5400.",
+    "uitloop": "Uitloop (mm)",
+    "maatvoering": "Maatvoering",
+    "pastNiet": "Dit stramien is te groot voor deze view. Op {{schaal}} past het wel, of maak de view groter op het vel.",
+    "pastNooit": "Dit stramien is te groot voor deze view, ook op de kleinste schaal. Maak de view groter op het vel.",
+    "stramienPlaatsen": "Stramien plaatsen",
+    "stramienUitleg": "Assen 1, 2, 3 … en A, B, C …, midden in de view, met de maatketens erbij. Daarna gewone vormen: je kunt ze verplaatsen en aanpassen."
   }
 }

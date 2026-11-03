@@ -1,0 +1,240 @@
+/*
+ * Canvas-bladen (CanvasBladWeergave.tsx): het vel in de werkruimte en de
+ * eenheden op papier.
+ */
+
+/* ─── Werkruimte ──────────────────────────────────────────────── */
+
+/* Het werkvlak volgt het thema, net als het afdrukvoorbeeld; het vel zelf is
+   altijd wit papier. */
+.canvas-weergave {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px 16px 32px;
+  background: var(--oa-workspace);
+}
+
+/* De breedte en de zijmarges van een A4, in de letter van de uitdraai. */
+.canvas-papier {
+  box-sizing: border-box;
+  width: 210mm;
+  margin: 0 auto;
+  padding: 8mm 16mm 16mm;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.12);
+  font-family: var(--font-body, "Inter", system-ui, sans-serif);
+  font-size: 10.5pt;
+  line-height: 1.45;
+  color: var(--pr-tekst);
+}
+
+/* Terwijl de worker rekent, blijven de vorige uitkomsten staan; pas na een korte
+   tel iets lichter, zoals in de uitwerking. */
+.canvas-papier .canvas-eenheid {
+  transition: opacity 0.15s ease 0.25s;
+}
+
+.canvas-papier.rekent .canvas-eenheid {
+  opacity: 0.7;
+}
+
+/* De plek van de kop op papier: op het eerste vel staat hij boven de eenheden. */
+.canvas-kop {
+  height: 12mm;
+  padding-bottom: 2mm;
+  margin-bottom: 3mm;
+  box-sizing: border-box;
+  border-bottom: 1.5pt solid var(--pr-accent);
+  font-family: var(--pr-kop);
+  font-size: 14pt;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Het raster om op uit te lijnen: elke 5 mm (RASTER_MM in store/canvasBlad.ts). */
+.canvas-vlak {
+  position: relative;
+  cursor: cell;
+  background-image:
+    linear-gradient(to right, var(--oa-border-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--oa-border-subtle) 1px, transparent 1px);
+  background-size: 5mm 5mm;
+}
+
+.canvas-uitleg {
+  position: absolute;
+  top: 10mm;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: var(--oa-size-body);
+  color: var(--oa-text-secondary);
+  pointer-events: none;
+}
+
+/* Een pagina-afbreking: over de volle breedte van het vel, met de nieuwe pagina in de marge. */
+.canvas-vouw {
+  position: absolute;
+  left: -16mm;
+  right: -16mm;
+  height: 0;
+  border-top: 1px dashed var(--oa-accent);
+  pointer-events: none;
+}
+
+.canvas-vouw span {
+  position: absolute;
+  right: 2mm;
+  top: 1px;
+  font-size: var(--oa-size-label);
+  color: var(--oa-accent-text);
+}
+
+.canvas-eenheid {
+  position: absolute;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 10mm;
+  min-height: 5mm;
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+  outline: 1px solid transparent;
+  outline-offset: 1px;
+}
+
+/* De regels komen tegen de rand van de eenheid; de marges horen bij een doorlopend blad. */
+.canvas-eenheid > .ifc-calc > .ifc-calc > :first-child,
+.print-canvas-eenheid .ifc-calc > .ifc-calc > :first-child {
+  margin-top: 0;
+}
+
+.canvas-eenheid > .ifc-calc > .ifc-calc > :last-child,
+.print-canvas-eenheid .ifc-calc > .ifc-calc > :last-child {
+  margin-bottom: 0;
+}
+
+/* De formulezetter springt in; een eenheid moet juist op het raster beginnen. */
+.canvas-eenheid .katex-display.fleqn > .katex,
+.print-canvas-eenheid .katex-display.fleqn > .katex {
+  padding-left: 0;
+}
+
+.canvas-eenheid:hover {
+  outline-color: var(--oa-border);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.canvas-eenheid.sleept {
+  outline-color: var(--oa-accent);
+  background: rgba(255, 255, 255, 0.85);
+  z-index: 2;
+  opacity: 1;
+  transition: none;
+}
+
+/* Past hier niet op het vel: op papier begint hij op de volgende pagina. */
+.canvas-eenheid.over-de-vouw {
+  outline: 1px dashed var(--oa-warning, var(--oa-accent));
+}
+
+.canvas-alleen-tekst {
+  margin: 0;
+  font-family: var(--oa-font-mono, "Consolas", monospace);
+  font-size: 9pt;
+  color: var(--oa-text-secondary);
+  white-space: pre-wrap;
+}
+
+.canvas-weg {
+  display: none;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--oa-text-secondary);
+  background: var(--oa-panel);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-small);
+  cursor: pointer;
+}
+
+.canvas-weg .oa-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.canvas-weg:hover {
+  color: var(--oa-error);
+}
+
+.canvas-eenheid:hover .canvas-weg {
+  display: inline-flex;
+}
+
+.canvas-eenheid.sleept .canvas-weg {
+  display: none;
+}
+
+.canvas-invoer {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  min-height: 8mm;
+  max-height: 200mm;
+  padding: 2px 4px;
+  field-sizing: content;
+  resize: none;
+  font-family: var(--oa-font-mono, "Consolas", monospace);
+  font-size: 9.5pt;
+  line-height: 1.4;
+  color: var(--oa-text);
+  background: var(--oa-field);
+  border: 1px solid var(--oa-accent);
+  border-radius: var(--oa-radius-small);
+  outline: none;
+}
+
+/* Wat op papier niet meekomt, staat op het vel wel in beeld, maar licht: wie erop
+   wil klikken moet het kunnen zien. */
+.print-opmaak .print-blad.canvas-vlak .alleen-scherm,
+.print-opmaak .print-blad.canvas-vlak .calc-uitleg {
+  display: revert !important;
+  opacity: 0.6;
+}
+
+/* Op papier is een invoerveld een waarde; hier blijft het een veld. */
+.print-opmaak .print-blad.canvas-vlak input,
+.print-opmaak .print-blad.canvas-vlak select {
+  border-bottom: 1px solid var(--oa-accent) !important;
+  background: var(--oa-selected) !important;
+  padding: 0 3px !important;
+  cursor: text;
+}
+
+.print-opmaak .print-blad.canvas-vlak select {
+  cursor: pointer;
+}
+
+/* ─── Op papier ───────────────────────────────────────────────── */
+
+/* Elk vel is één blok: de eenheden staan erin op hun plek. */
+.print-opmaak .print-canvas-vel {
+  position: relative;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-opmaak .print-canvas-eenheid {
+  position: absolute;
+  width: max-content;
+}

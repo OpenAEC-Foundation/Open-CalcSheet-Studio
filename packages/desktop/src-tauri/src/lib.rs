@@ -14,6 +14,7 @@
 //! De MCP-brug (`mcp_bridge`) is het lokale doorgeefluik voor een
 //! AI-assistent; zie `docs/mcp.md`.
 
+mod jupyter_omgeving;
 mod mcp_bridge;
 mod rapport_pdf;
 
@@ -161,6 +162,8 @@ pub fn run() {
         // MCP-brug: één actieve brug of geen. Starten en stoppen doet de
         // frontend (src/mcp/brug.ts) met de twee commando's hieronder.
         .manage(mcp_bridge::BridgeState::default())
+        // De server van de Jupyter-bladen; start bij het eerste blad.
+        .manage(jupyter_omgeving::JupyterOmgeving::default())
         .invoke_handler(tauri::generate_handler![
             engine_generate_pdf,
             engine_save_pdf,
@@ -170,6 +173,7 @@ pub fn run() {
             rapport_pdf::rapport_pdf_schrijven,
             mcp_bridge::mcp_bridge_start,
             mcp_bridge::mcp_bridge_stop,
+            jupyter_omgeving::jupyter_omgeving_start,
         ])
         .run(context)
         .expect("error while running tauri application");

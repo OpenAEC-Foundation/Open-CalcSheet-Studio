@@ -5,7 +5,8 @@
  * Elk blad wordt hier doorgerekend, met de projectgegevens als startwaarden en
  * zijn eigen invoer, langs dezelfde route als de afdruk en de API. Een blad dat
  * omvalt blijft in het document staan, met de fout erbij: alleen de uitkomst
- * ontbreekt dan. Een PDF-, spreadsheet- of Markdown-blad heeft niets om door te rekenen.
+ * ontbreekt dan. Een blad zonder rekentekst (PDF, werkmap, Markdown, graaf, tekening,
+ * Jupyter) heeft niets om door te rekenen.
  *
  * De uitkomst van een blad blijft bewaard zolang het blad en de projectgegevens
  * niet veranderen: bij opslaan en in de IFC-tab hoeft dan alleen opnieuw wat
@@ -28,6 +29,9 @@ import { projectScope } from "./projectGegevens.ts";
 import type { PdfBijlage } from "./pdfBijlage.ts";
 import { isLosBlad, type SpreadsheetBestand } from "./spreadsheetBlad.ts";
 import type { MarkdownBestand } from "./markdownBlad.ts";
+import type { Graaf } from "../graaf/model.ts";
+import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
+import type { JupyterWerkmap } from "./jupyterBlad.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 
 /** Wat dit bestand van een blad nodig heeft; een uittreksel van `Exemplaar`. */
@@ -42,6 +46,9 @@ export interface BladVoorIfc {
   pdf?: PdfBijlage;
   xlsx?: SpreadsheetBestand;
   md?: MarkdownBestand;
+  graaf?: Graaf;
+  tekenvel?: TekenVel;
+  jupyter?: JupyterWerkmap;
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -72,6 +79,9 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
     pdf: ex.pdf,
     xlsx: ex.xlsx,
     md: ex.md,
+    graaf: ex.graaf,
+    ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
+    jupyter: ex.jupyter,
     nodes: [],
   };
   if (!isLosBlad(ex)) {
