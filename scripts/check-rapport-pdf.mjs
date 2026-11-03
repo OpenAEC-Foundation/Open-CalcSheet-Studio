@@ -98,7 +98,7 @@ try {
   // Een tweede poging: bij een lege Vite-cache kan de eerste keer een herlaadbeurt treffen.
   let r;
   for (let poging = 0; poging < 2; poging++) {
-    r = spawnSync(process.execPath, [join(hier, "rapport-pdf.mjs"), projectPad, pdfPad, "--url", url, "--beginwaarden", "--vellen", vellenPad, "--knop", knopPad], {
+    r = spawnSync(process.execPath, [join(hier, "rapport-pdf.mjs"), projectPad, pdfPad, "--url", url, "--browser", browser, "--beginwaarden", "--vellen", vellenPad, "--knop", knopPad], {
       encoding: "utf8",
       timeout: 300000,
     });
