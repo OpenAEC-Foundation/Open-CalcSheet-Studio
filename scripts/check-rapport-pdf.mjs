@@ -17,11 +17,19 @@
  *   5. van een Markdown-tekst langer dan een vel valt niets af: elke regel staat
  *      precies één keer in de PDF, en op geen vel loopt iets over de rand;
  *   6. de knop "Rapport (PDF)" komt vanuit een koude start tot aan de printdialoog,
- *      met dezelfde vellen en nummers.
+ *      met dezelfde vellen en nummers;
+ *   7. in de app (nagebootste Rust-schil) vraagt die knop een bestandsnaam en schrijft
+ *      hij zonder printdialoog; mislukt dat, dan volgt een melding en de printdialoog.
+ *
+ * Met --app-pdf gaan dezelfde controles ook over een PDF die de gebouwde app zelf
+ * schreef (scripts/proef-rapport-app.mjs), en moet die pagina voor pagina gelijk zijn
+ * aan de PDF van deze controle. Dat project heeft dezelfde bladen. Geef met --schaal
+ * de schermschaal van de app mee (dat script meldt hem): de verdeling over de vellen
+ * meet op het scherm, en een andere schaal kan een regel laten doorschuiven.
  *
  * Zonder Chrome of Edge op de machine slaat dit script zich over.
  *
- * Draaien:  node scripts/check-rapport-pdf.mjs [--bewaar map]
+ * Draaien:  node scripts/check-rapport-pdf.mjs [--bewaar map] [--app-pdf uit-de-app.pdf] [--schaal 1.5]
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
 import { spawn, spawnSync } from "node:child_process";
@@ -84,6 +92,10 @@ async function wachtOpServer() {
 
 const bewaarIndex = process.argv.indexOf("--bewaar");
 const bewaar = bewaarIndex > 0 ? resolve(process.argv[bewaarIndex + 1]) : null;
+const appPdfIndex = process.argv.indexOf("--app-pdf");
+const appPdf = appPdfIndex > 0 ? resolve(process.argv[appPdfIndex + 1]) : null;
+const schaalIndex = process.argv.indexOf("--schaal");
+const schaal = schaalIndex > 0 ? ["--schaal", process.argv[schaalIndex + 1]] : [];
 const map = bewaar ?? mkdtempSync(join(tmpdir(), "rapport-pdf-controle-"));
 mkdirSync(map, { recursive: true });
 const projectPad = join(map, "gemengd.ifccalculation");
@@ -98,7 +110,7 @@ try {
   // Een tweede poging: bij een lege Vite-cache kan de eerste keer een herlaadbeurt treffen.
   let r;
   for (let poging = 0; poging < 2; poging++) {
-    r = spawnSync(process.execPath, [join(hier, "rapport-pdf.mjs"), projectPad, pdfPad, "--url", url, "--browser", browser, "--beginwaarden", "--vellen", vellenPad, "--knop", knopPad], {
+    r = spawnSync(process.execPath, [join(hier, "rapport-pdf.mjs"), projectPad, pdfPad, "--url", url, "--browser", browser, "--beginwaarden", "--vellen", vellenPad, "--knop", knopPad, ...schaal], {
       encoding: "utf8",
       timeout: 300000,
     });
@@ -106,7 +118,11 @@ try {
   }
   if (r.status !== 0) throw new Error(`rapport-pdf.mjs mislukte:\n${r.stdout}\n${r.stderr}`);
 
-  await controleer();
+  const paginas = await controleer(pdfPad);
+  if (appPdf) {
+    console.log(`\n${"═".repeat(72)}\nDe PDF uit de gebouwde app: ${appPdf}\n${"═".repeat(72)}`);
+    vergelijk(await controleer(appPdf), paginas);
+  }
 } catch (e) {
   console.error(e?.stack ?? e);
   fouten++;
@@ -172,8 +188,34 @@ function ontbrekendeTekens(a, b) {
 
 // ── De controles ──────────────────────────────────────────────────────────────
 
-async function controleer() {
-  const paginas = await leesPdf(pdfPad);
+/** Dezelfde pagina's, voet en nummers als de PDF van deze controle, op de plaats af. */
+function vergelijk(app, referentie) {
+  console.log("\nGelijk aan de PDF van rapport-pdf.mjs");
+  meld(app.length === referentie.length, "evenveel pagina's", `${app.length} tegen ${referentie.length}`);
+  const paren = referentie.flatMap((r, i) => (app[i] ? [[app[i], r]] : []));
+  const voet = (p) => p.regels.flatMap((r) => r.stukken).filter((s) => s.y < 60).map((s) => s.tekst).join(" ");
+  const anders = (fn) => paren.filter(([a, r]) => fn(a) !== fn(r)).map(([a]) => a.n);
+  const tekstAnders = paren.filter(([a, r]) => ontbrekendeTekens(zonderWit(r.tekst), zonderWit(a.tekst)) > zonderWit(r.tekst).length * 0.01).map(([a]) => a.n);
+  meld(tekstAnders.length === 0, "op elke pagina dezelfde tekst", `anders op ${tekstAnders.join(", ")}`);
+  const voetAnders = anders(voet);
+  meld(voetAnders.length === 0, "op elke pagina dezelfde voet en hetzelfde nummer", `anders op ${voetAnders.join(", ")}`);
+  const beeldenAnders = anders((p) => p.afbeeldingen);
+  meld(beeldenAnders.length === 0, "op elke pagina evenveel afbeeldingen", `anders op ${beeldenAnders.join(", ")}`);
+  // Hetzelfde rechtsonder en linksboven: dan staat het vel ook op dezelfde plek.
+  const plaats = paren.filter(([a, r]) => {
+    const hoek = (p) => {
+      const stukken = p.regels.flatMap((x) => x.stukken);
+      return stukken.length ? { x: Math.min(...stukken.map((s) => s.x)), y: Math.max(...stukken.map((s) => s.y)) } : { x: 0, y: 0 };
+    };
+    const ha = hoek(a);
+    const hr = hoek(r);
+    return Math.abs(ha.x - hr.x) > 1 || Math.abs(ha.y - hr.y) > 1;
+  }).map(([a]) => a.n);
+  meld(plaats.length === 0, "en die staan op dezelfde plek, op een punt na", `verschoven op ${plaats.join(", ")}`);
+}
+
+async function controleer(pad) {
+  const paginas = await leesPdf(pad);
   const vellen = JSON.parse(readFileSync(vellenPad, "utf8"));
   console.log(`\n${paginas.length} pagina's in de PDF, ${vellen.length} vellen in het voorbeeld\n`);
 
@@ -196,6 +238,33 @@ async function controleer() {
   meld(knop.nummers?.every((n, i) => n === String(i + 1)), "die op volgorde genummerd zijn");
   meld(knop.beeldenNietKlaar === 0 && knop.laadt === 0, "en waarop niets meer wordt getekend", { niet: knop.beeldenNietKlaar, laadt: knop.laadt });
   meld(knop.inhoud?.some((n) => n !== ""), "de inhoudsopgave heeft zijn nummers");
+
+  console.log("\nDe knop in de app (nagebootste Rust-schil)");
+  const opVolgorde = (nummers) => nummers?.length === paginas.length && nummers.every((n, i) => n === String(i + 1));
+  const bestand = knop.bestand;
+  const geschreven = bestand.geschreven[0];
+  meld(bestand.bestandsnamen.length === 1 && bestand.bestandsnamen[0].endsWith(".pdf"), "vraagt één keer een bestandsnaam, met .pdf als voorstel", bestand.bestandsnamen);
+  meld(bestand.geschreven.length === 1 && geschreven.pad === "C:\\proef\\rapport.pdf", "schrijft naar dat bestand, met .pdf erachter", geschreven?.pad);
+  meld(bestand.print.length === 0 && bestand.meldingen.length === 0, "zonder printdialoog en zonder melding", bestand.meldingen);
+  meld(opVolgorde(geschreven?.nummers) && geschreven.beeldenNietKlaar === 0, "met dezelfde vellen en nummers als de PDF", geschreven?.nummers?.length);
+  meld(geschreven?.appZichtbaar && geschreven.kopieBuitenBeeld, "de app blijft staan, de kopie staat buiten beeld", geschreven);
+  meld(/\.\.\.|…/.test(geschreven?.status ?? ""), "de statusbalk zegt dat de PDF wordt gemaakt", geschreven?.status);
+  meld(!bestand.bezig && bestand.statusNa.includes("rapport.pdf"), "en daarna waar hij staat", bestand.statusNa);
+
+  const terugval = knop.terugval;
+  meld(terugval.geschreven.length === 1 && terugval.geschreven[0].pad === "C:\\proef\\rapport.PDF", "een .PDF krijgt er geen tweede extensie bij", terugval.geschreven[0]?.pad);
+  meld(terugval.meldingen.length === 1 && terugval.meldingen[0].includes("Schijf vol"), "lukt schrijven niet, dan zegt een melding waarom", terugval.meldingen);
+  meld(terugval.print.length === 1 && opVolgorde(terugval.print[0].nummers), "en opent de printdialoog met dezelfde vellen", terugval.print.length);
+  meld(terugval.print[0]?.meldingenVooraf === 1, "pas als de melding gelezen is", terugval.print[0]?.meldingenVooraf);
+  meld(terugval.pdfGeschreven === null, "en de statusbalk meldt dan geen opgeslagen PDF", terugval.pdfGeschreven);
+
+  const geannuleerd = knop.geannuleerd;
+  meld(geannuleerd.bestandsnamen.length === 1 && geannuleerd.geschreven.length + geannuleerd.print.length === 0 && !geannuleerd.bezig,
+    "annuleren bij de bestandsnaam doet verder niets", geannuleerd);
+
+  const zonderBestand = knop.zonderBestand;
+  meld(zonderBestand.bestandsnamen.length === 0 && zonderBestand.geschreven.length === 0 && zonderBestand.print.length === 1,
+    "een afdruk zonder bestandsnaam (MCP-tool print, Ctrl+P) blijft naar de printdialoog gaan", zonderBestand);
 
   console.log("\nPaginanummers");
   const zonderNummer = paginas.filter((p) => {
@@ -336,4 +405,5 @@ async function controleer() {
   meld(notitie.some((r) => r.includes("voorbeeld.invalid")), "een afbeelding van buiten laadt niet zonder bevestiging: de naam van de host staat er");
   meld(notitie.some((r) => r.includes("foto/ontbreekt.png")), "een afbeelding die er niet is: het adres staat er");
   meld(notitieVellen.reduce((s, p) => s + p.afbeeldingen, 0) >= 2, "de afbeelding uit de tekst staat op papier, naast de werkmap");
+  return paginas;
 }

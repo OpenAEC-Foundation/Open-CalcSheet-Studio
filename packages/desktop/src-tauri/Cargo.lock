@@ -3035,6 +3035,8 @@ dependencies = [
  "tauri-plugin-os",
  "tauri-plugin-store",
  "tiny_http",
+ "webview2-com",
+ "windows",
 ]
 
 [[package]]

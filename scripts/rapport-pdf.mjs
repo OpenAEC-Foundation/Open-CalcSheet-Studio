@@ -12,7 +12,7 @@
  * Gebruik:
  *   node scripts/rapport-pdf.mjs <projectbestand> <uit.pdf>
  *        [--bureau profiel.json] [--url http://localhost:3021] [--browser <pad>]
- *        [--beginwaarden] [--vellen vellen.json] [--knop knop.json]
+ *        [--beginwaarden] [--vellen vellen.json] [--knop knop.json] [--schaal 1.5]
  *
  *   --bureau   een bureauprofiel (JSON in de vorm van BureauProfiel); komt in
  *              rapport.bureau, zodat huisstijl en voet van dat profiel gelden.
@@ -24,8 +24,11 @@
  *              templateId's heeft; een opgeslagen project heeft zijn invoer al.
  *   --vellen   schrijft per vel uit het voorbeeld het nummer, de tekst en of er
  *              iets afvalt naar een JSON-bestand, om met de PDF te vergelijken.
- *   --knop     gaat eerst de weg van de knop "Rapport (PDF)" in de app, tot aan de
- *              printdialoog, en schrijft naar een JSON-bestand wat daar klaarstaat.
+ *   --knop     gaat eerst de weg van de knop "Rapport (PDF)" in de browser, tot aan de
+ *              printdialoog, en daarna die van de knop in de app, met een nagebootste
+ *              Rust-schil. Schrijft naar een JSON-bestand wat daar klaarstaat.
+ *   --schaal   de schermschaal van de browser (devicePixelRatio); standaard 1. De
+ *              verdeling over de vellen meet op het scherm en hangt daar iets van af.
  *
  * Vereist:
  *   • een draaiende dev-server: npm --prefix packages/desktop run dev. Het script
@@ -60,7 +63,7 @@ const BROWSERS = [
 ];
 const GEBRUIK =
   "gebruik: node scripts/rapport-pdf.mjs <projectbestand> <uit.pdf> " +
-  "[--bureau profiel.json] [--url http://localhost:3021] [--browser <pad>] [--beginwaarden] [--vellen vellen.json] [--knop knop.json]";
+  "[--bureau profiel.json] [--url http://localhost:3021] [--browser <pad>] [--beginwaarden] [--vellen vellen.json] [--knop knop.json] [--schaal 1.5]";
 
 /** Een fout met een uitleg voor de gebruiker: gemeld zonder stacktrace. */
 class Stop extends Error {}
@@ -75,12 +78,12 @@ const meldingen = [];
 
 function leesArgumenten(argv) {
   const los = [];
-  const opties = { bureau: null, url: "http://localhost:3021", browser: null, help: false, beginwaarden: false, vellen: null, knop: null };
+  const opties = { bureau: null, url: "http://localhost:3021", browser: null, help: false, beginwaarden: false, vellen: null, knop: null, schaal: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--help" || a === "-h") opties.help = true;
     else if (a === "--beginwaarden") opties.beginwaarden = true;
-    else if (a === "--bureau" || a === "--url" || a === "--browser" || a === "--vellen" || a === "--knop") {
+    else if (a === "--bureau" || a === "--url" || a === "--browser" || a === "--vellen" || a === "--knop" || a === "--schaal") {
       const w = argv[++i];
       if (w === undefined || w.startsWith("--")) stop(`${a} verwacht een waarde.\n${GEBRUIK}`);
       opties[a.slice(2)] = w;
@@ -141,7 +144,7 @@ async function controleerVooraf(o) {
 }
 
 /** Start de browser met een eigen, tijdelijk profiel en een vrije debugpoort. */
-function startBrowser(pad, profiel) {
+function startBrowser(pad, profiel, schaal) {
   const proc = spawn(pad, [
     "--headless=new",
     "--remote-debugging-port=0",
@@ -149,6 +152,7 @@ function startBrowser(pad, profiel) {
     "--no-first-run",
     "--no-default-browser-check",
     "--window-size=1280,900",
+    ...(schaal ? [`--force-device-scale-factor=${schaal}`] : []),
     "about:blank",
   ], { stdio: ["ignore", "ignore", "pipe"] });
   const b = { proc, stderr: "", fout: null, gestopt: false };
@@ -265,7 +269,7 @@ async function hoofd() {
   let browser = null;
   let cdp = null;
   try {
-    browser = startBrowser(browserPad, profiel);
+    browser = startBrowser(browserPad, profiel, o.schaal);
     const poort = await debugPoort(browser, profiel);
     const versie = await (await fetch(`http://127.0.0.1:${poort}/json/version`)).json();
     cdp = await Cdp.verbind(versie.webSocketDebuggerUrl);
@@ -382,6 +386,70 @@ async function hoofd() {
         for (let i = 0; i < 50 && usePrintStore.getState().bezig; i++) await new Promise((r) => setTimeout(r, 100));
         window.print = oudePrint;
         window.alert = oudeAlert;
+
+        // De knop in de app: de dialoog en het schrijven komen hier uit een nagebootste
+        // Rust-schil, die opneemt wat er op dat moment klaarstaat.
+        const knopInApp = async ({ dialoog, schrijven, start }) => {
+          const r = { bestandsnamen: [], geschreven: [], print: [], meldingen: [] };
+          const stand = () => {
+            const vellen = [...document.querySelectorAll(".rpa-drukvellen .av-pagina")];
+            const kopie = document.querySelector(".rpa-drukvellen");
+            return {
+              nummers: vellen.map((v) => v.querySelector(".av-rapport-nummer")?.textContent ?? ""),
+              beeldenNietKlaar: [...document.querySelectorAll(".rpa-drukvellen img")].filter((b) => !b.complete).length,
+              appZichtbaar: getComputedStyle(document.getElementById("root")).display !== "none",
+              kopieBuitenBeeld: kopie ? kopie.getBoundingClientRect().right <= 0 : null,
+              status: document.querySelector(".status-bar-left .status-item-label")?.textContent ?? "",
+            };
+          };
+          window.alert = (melding) => r.meldingen.push(String(melding));
+          window.print = () => r.print.push({ ...stand(), meldingenVooraf: r.meldingen.length });
+          window.__TAURI_INTERNALS__ = {
+            invoke: async (opdracht, args) => {
+              if (opdracht === "rapport_pdf_beschikbaar") return true;
+              if (opdracht === "plugin:dialog|save") {
+                r.bestandsnamen.push(args.options.defaultPath);
+                return dialoog;
+              }
+              if (opdracht === "plugin:dialog|message") {
+                // De gebruiker leest de melding even: pas daarna mag de printdialoog komen.
+                await new Promise((klaar) => setTimeout(klaar, 200));
+                r.meldingen.push(args.message);
+                return "Ok";
+              }
+              if (opdracht === "rapport_pdf_schrijven") {
+                r.geschreven.push({ pad: args.pad, ...stand() });
+                return schrijven();
+              }
+              throw new Error("onverwachte opdracht: " + opdracht);
+            },
+          };
+          try {
+            start();
+            // De knop begint met een vraag aan de schil en de dialoog: pas daarna is hij bezig.
+            await new Promise((klaar) => setTimeout(klaar, 500));
+            for (let i = 0; i < 600 && usePrintStore.getState().bezig; i++) await new Promise((klaar) => setTimeout(klaar, 100));
+            r.bezig = usePrintStore.getState().bezig;
+            await new Promise((klaar) => setTimeout(klaar, 100));
+            r.statusNa = document.querySelector(".status-bar-left .status-item-label")?.textContent ?? "";
+            r.pdfGeschreven = usePrintStore.getState().pdfGeschreven;
+          } finally {
+            delete window.__TAURI_INTERNALS__;
+            window.print = oudePrint;
+            window.alert = oudeAlert;
+          }
+          return r;
+        };
+        const klikKnop = () => {
+          const knop = [...document.querySelectorAll(".ribbon-btn")].find((b) => /^(Rapport|Report)$/.test(b.textContent.trim()));
+          if (!knop) throw new Error("de knop Rapport staat niet in het lint");
+          knop.click();
+        };
+        uitkomst.bestand = await knopInApp({ dialoog: "C:\\\\proef\\\\rapport", schrijven: () => 1234, start: klikKnop });
+        uitkomst.terugval = await knopInApp({ dialoog: "C:\\\\proef\\\\rapport.PDF", schrijven: () => { throw "Schijf vol"; }, start: klikKnop });
+        uitkomst.geannuleerd = await knopInApp({ dialoog: null, schrijven: () => 1234, start: klikKnop });
+        // Wat de MCP-tool print en Ctrl+P doen: geen bestandsnaam, dus de printdialoog, ook in de app.
+        uitkomst.zonderBestand = await knopInApp({ dialoog: null, schrijven: () => 1234, start: () => usePrintStore.getState().afdrukken(null, "rapport") });
         return uitkomst;
       })()`, "de weg van de knop");
       writeFileSync(resolve(o.knop), JSON.stringify(knop));

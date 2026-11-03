@@ -8,13 +8,15 @@
 //!
 //! Afdrukken loopt in de app zelf via de browser
 //! (`src/components/calc/PrintDocument.tsx`); die weg neemt ook de tekeningen
-//! mee, wat de rapportengine niet doet. Zie `docs/backlog.md`.
+//! mee, wat de rapportengine niet doet. Zie `docs/backlog.md`. Het rapport kan
+//! op die weg ook zonder printdialoog naar een bestand (`rapport_pdf`).
 //!
 //! De MCP-brug (`mcp_bridge`) is het lokale doorgeefluik voor een
 //! AI-assistent; zie `docs/mcp.md`.
 
 mod jupyter_omgeving;
 mod mcp_bridge;
+mod rapport_pdf;
 
 #[cfg(feature = "rapportengine")]
 mod rapport {
@@ -185,6 +187,8 @@ pub fn run() {
             engine_save_pdf,
             engine_preview_pdf,
             startbestand,
+            rapport_pdf::rapport_pdf_beschikbaar,
+            rapport_pdf::rapport_pdf_schrijven,
             mcp_bridge::mcp_bridge_start,
             mcp_bridge::mcp_bridge_stop,
             jupyter_omgeving::jupyter_omgeving_start,

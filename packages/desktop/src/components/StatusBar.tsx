@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useProjectStore } from "../store/projectStore";
+import { usePrintStore } from "../store/printStore";
 import { version } from "../../package.json";
 import McpStatusItem from "../mcp/McpStatusItem";
 import "./StatusBar.css";
@@ -7,12 +8,20 @@ import "./StatusBar.css";
 export default function StatusBar() {
   const { t } = useTranslation();
   const aantalBladen = useProjectStore((s) => s.exemplaren.length);
+  // Zonder printdialoog zie je hier dat de PDF wordt gemaakt, en waar hij is gebleven.
+  const pdfPad = usePrintStore((s) => s.pdfPad);
+  const pdfGeschreven = usePrintStore((s) => s.pdfGeschreven);
+  const stand = pdfPad
+    ? t("werkruimte:pdf.schrijven")
+    : pdfGeschreven
+      ? t("werkruimte:pdf.geschreven", { bestand: pdfGeschreven.split(/[\\/]/).pop() })
+      : t("ready");
 
   return (
     <div className="status-bar">
       <div className="status-bar-left">
-        <div className="status-item">
-          <span className="status-item-label">{t("ready")}</span>
+        <div className="status-item" title={pdfPad ?? pdfGeschreven ?? undefined}>
+          <span className="status-item-label">{stand}</span>
         </div>
         <div className="status-separator" />
         <div className="status-item">

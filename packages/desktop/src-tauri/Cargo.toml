@@ -45,6 +45,12 @@ tiny_http = "0.12"
 #                 npm run tauri build -- --features rapportengine
 openaec-core = { git = "https://github.com/OpenAEC-Foundation/openaec-reports", branch = "main", optional = true }
 
+# Het rapport als PDF zonder printdialoog (src/rapport_pdf.rs). Dezelfde versies als
+# in de `tauri`-afhankelijkheid: de webview die Tauri aanreikt, is van dit type.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.38"
+windows = "0.61"
+
 # Release profile — reduce LTO + raise codegen-units so the linker fits in RAM
 # on dev machines (LLVM OOM otherwise). Trade-off: slightly bigger binary.
 [profile.release]

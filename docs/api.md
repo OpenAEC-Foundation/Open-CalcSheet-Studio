@@ -161,14 +161,16 @@ Origin-weigering en de binding aan 127.0.0.1 gelden ook voor deze route.
 
 ## Wat er niet (helemaal) kan
 
-- **PDF naar een pad.** De app drukt af via de printdialoog van het systeem:
-  dat is de enige weg met de tekeningen en het volledige constructierapport.
-  `print` opent die dialoog in de app (rapport of bladen); de gebruiker kiest
-  daar een PDF-printer en de plek. `export_pdf` schrijft wél zelf een PDF, maar
-  alleen in een build met de rapportengine (`--features rapportengine`), en dan
-  zonder tekeningen; zonder die engine geeft hij 501. Een rechtstreekse
-  PDF-export van de webview (WebView2 `PrintToPdf`) zou een aanpassing in de
-  Rust-schil vragen en is er nog niet.
+- **PDF naar een pad.** Het volledige constructierapport met de tekeningen komt
+  uit de webview. De knop Rapport in het lint schrijft het op Windows zelf weg:
+  één klik plus een bestandsnaam, zonder printdialoog (WebView2 `PrintToPdf`, zie
+  `src-tauri/src/rapport_pdf.rs`). Op een ander platform, of als dat mislukt, opent
+  de printdialoog van het systeem. De API heeft die weg niet: `print` opent de
+  printdialoog in de app (rapport of bladen), en de gebruiker kiest daar een
+  PDF-printer en de plek. Ook losse bladen en Ctrl+P gaan via die dialoog.
+  `export_pdf` schrijft wél zelf een PDF, maar alleen in een build met de
+  rapportengine (`--features rapportengine`), en dan zonder tekeningen; zonder die
+  engine geeft hij 501.
 - **Dialogen en vragen.** De API vraagt nooit iets: waar de app een vraag stelt
   (wijzigingen weggooien, een PDF boven 20 MB) geeft de API 409 of 400 en
   verwacht hij `force: true`.

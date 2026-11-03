@@ -308,7 +308,11 @@
     "ontbreekt": "This PDF sheet has no file. Choose one with Replace…",
     "vervangen": "Replace…",
     "vervangenUitleg": "Choose a different PDF file for this sheet, for example a new export of the FEM report. Name, position and notes in the report stay as they are.",
-    "nietOpTijd": "The PDF sheets were not drawn in time; printing was cancelled."
+    "nietOpTijd": "The PDF sheets were not drawn in time; printing was cancelled.",
+    "opslaanTitel": "Save report as PDF",
+    "schrijven": "Creating PDF…",
+    "geschreven": "PDF saved: {{bestand}}",
+    "schrijvenMislukt": "The PDF was not saved to {{pad}}. Is that file open in another program?\n\nThe print dialog opens now; you can choose another location there.\n\nTechnical message: {{fout}}"
   },
   "spreadsheet": {
     "toevoegen": "Add spreadsheet",
