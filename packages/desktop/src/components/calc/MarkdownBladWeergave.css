@@ -181,10 +181,6 @@
   margin: 0;
 }
 
-/* Na het laatste stuk van een lijst of tabel: de lege regel die het hele blok zou hebben. */
-.print-opmaak .md-papier .ifc-calc .md-slot {
-  margin-bottom: var(--rpa-rij, 6pt);
-}
 
 .print-opmaak .md-papier .ifc-calc .md-los li > p {
   padding: 0;
@@ -205,6 +201,11 @@
   border-bottom: var(--rpa-lijn, 0.5pt solid #d4d4d8);
   overflow-wrap: anywhere;
   color: var(--rpa-tabel, inherit);
+}
+
+/* Na het laatste stuk van een lijst of tabel: de lege regel die het hele blok zou hebben. */
+.print-opmaak .md-papier .ifc-calc :is(.md-los, .md-tabel).md-slot {
+  margin-bottom: var(--rpa-rij, 6pt);
 }
 
 /* Links, tenzij de tekst iets anders vraagt (`|--:|` in de scheidingsregel). */
