@@ -28,7 +28,12 @@ interface ModuleKiezerState {
   voegToe: (templateId: string, label: string) => void;
   /** Voegt een leeg tekenblad toe, met één lege view, en sluit het scherm. */
   voegTekenbladToe: (naam: string, viewTitel: string) => void;
+  /** Voegt een leeg blad toe om zelf een berekening in te schrijven. */
+  voegLeegBladToe: () => void;
 }
+
+/** Het sjabloon-id van een blad dat leeg begint; het hoort bij geen module. */
+const LEEG_BLAD = "leeg";
 
 export const useModuleKiezer = create<ModuleKiezerState>((set) => ({
   open: false,
@@ -49,6 +54,11 @@ export const useModuleKiezer = create<ModuleKiezerState>((set) => ({
   },
   voegTekenbladToe: (naam, viewTitel) => {
     const id = useProjectStore.getState().voegTekenbladToe(naam, nieuwVel(viewTitel));
+    set({ nieuwId: id, open: false });
+  },
+  voegLeegBladToe: () => {
+    // Net als bij een module: het blad staat meteen in de naamgeefstand.
+    const id = useProjectStore.getState().voegToe(LEEG_BLAD, "Blad", "\"Nieuw blad\n\n");
     set({ nieuwId: id, open: false });
   },
 }));

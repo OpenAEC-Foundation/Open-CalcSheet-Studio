@@ -33,8 +33,7 @@
     "inklappen": "Collapse side panel",
     "projectgegevensUitleg": "Project data — applies to all sheets in this project",
     "rapportUitleg": "Report — the structural report of this project, with the sheets as an appendix",
-    "geenBladen": "No sheets yet. Add one with <b>Module</b> on the ribbon.",
-    "moduleToevoegen": "Add module…",
+    "geenBladen": "No sheets yet. Add one with <b>Add sheet</b> below, or from the ribbon.",
     "moduleToevoegenUitleg": "Add a module or a reference sheet to this project",
     "dubbelklik": "Double-click to rename",
     "omhoog": "Move up",
@@ -49,7 +48,27 @@
     "ucVoldoetNiet": "Governing UC {{uc}} — does not pass",
     "gegevensToevoegen": "Add project data",
     "rapportToevoegen": "Add report",
-    "uitProjectHalen": "Remove {{naam}} from the project tree (the content is kept)"
+    "uitProjectHalen": "Remove {{naam}} from the project tree (the content is kept)",
+    "toevoegen": {
+      "knop": "Add sheet",
+      "uitleg": "Add a sheet to this project: a module, a blank sheet, a spreadsheet, a drawing, a notebook or a file",
+      "nieuw": "New",
+      "bestand": "From a file",
+      "module": "Module…",
+      "leeg": "Blank sheet",
+      "leegUitleg": "A blank sheet to write your own calculation in",
+      "spreadsheet": "Spreadsheet",
+      "canvas": "Canvas",
+      "graaf": "Graph sheet",
+      "tekening": "Drawing",
+      "tekeningUitleg": "A blank drawing on A4, A3 or A2, with views to scale",
+      "jupyter": "Jupyter notebook",
+      "markdown": "Markdown",
+      "pdf": "PDF…",
+      "xlsx": "Spreadsheet (XLSX)…",
+      "markdownBestand": "Markdown…",
+      "notebook": "Notebook or Python script…"
+    }
   },
   "catalogus": {
     "groepen": {
@@ -288,7 +307,6 @@
     "regels_other": "{{count}} lines"
   },
   "pdf": {
-    "toevoegen": "Add PDF…",
     "toevoegenUitleg": "Add a PDF file to the project as a sheet; it takes its place in the Calculations chapter of the report. For an FEM model: export the report as PDF in Open FEM Studio and add that.",
     "kiesTitel": "Add PDF — for an FEM model: the report PDF from Open FEM Studio",
     "filter": "PDF files",
@@ -315,9 +333,7 @@
     "schrijvenMislukt": "The PDF was not saved to {{pad}}. Is that file open in another program?\n\nThe print dialog opens now; you can choose another location there.\n\nTechnical message: {{fout}}"
   },
   "spreadsheet": {
-    "toevoegen": "Add spreadsheet",
     "toevoegenUitleg": "Add an empty spreadsheet to the project as a sheet, for a bar schedule or a quantity list. It takes its place in the Calculations chapter of the report.",
-    "importeren": "Import XLSX…",
     "importerenUitleg": "Add an existing XLSX file to the project as a spreadsheet sheet. The workbook is stored in the project file.",
     "nieuweNaam": "Spreadsheet",
     "kiesTitel": "Choose an XLSX file",
@@ -381,7 +397,6 @@
     "exporterenUitleg": "Save this text as a separate .md file. Images stored in the project do not go with it."
   },
   "canvas": {
-    "toevoegen": "Add canvas",
     "toevoegenUitleg": "Add an empty canvas to the project as a sheet: formulas as separate units, placed freely on a page. It calculates from top to bottom, and at equal height from left to right.",
     "nieuweNaam": "Canvas",
     "tab": "Canvas",
@@ -396,7 +411,6 @@
     "pagina": "Page {{nummer}}"
   },
   "graaf": {
-    "toevoegen": "Add graph sheet",
     "toevoegenUitleg": "Add a calculation as a graph of nodes and connections to the project, with a 3D preview in the background. It takes its place in the Calculations chapter of the report.",
     "nieuweNaam": "Graph sheet",
     "tab": "Graph sheet",
@@ -518,9 +532,7 @@
     }
   },
   "jupyter": {
-    "toevoegen": "Add Jupyter",
     "toevoegenUitleg": "Add a work folder of its own with notebooks, Python scripts and data files to the project as a sheet. Python runs isolated inside the app; nothing needs installing. On paper you get the notebooks with their saved output.",
-    "importeren": "Read notebook…",
     "importerenUitleg": "Add existing notebooks (.ipynb), Python scripts (.py) or a packed work folder (.zip) as a new Jupyter sheet. The files go into the project file. Nothing runs until you start it yourself.",
     "nieuweNaam": "Jupyter",
     "kiesTitel": "Choose files",

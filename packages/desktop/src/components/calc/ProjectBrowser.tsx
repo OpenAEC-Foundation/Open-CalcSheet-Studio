@@ -11,15 +11,11 @@ import { isPdfBlad } from "../../store/pdfBijlage";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
 import { isCanvasBlad } from "../../store/canvasBlad";
 import { isTekenBlad } from "../../store/tekenBlad";
-import { voegLeegSpreadsheetToe, voegWerkmapToe } from "./spreadsheetBlad";
 import { isMarkdownBlad } from "../../store/markdownBlad";
-import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
 import { isGraafBlad } from "../../store/graafBlad";
-import { voegLeegGrafbladToe } from "../graaf/grafbladToevoegen";
 import { isJupyterBlad } from "../../store/jupyterBlad";
-import { voegLeegJupyterToe, voegNotebookToe } from "./jupyterBlad";
-import { voegPdfBladToe } from "./pdfBlad";
 import Icoon from "../Icoon";
+import BladToevoegen from "./BladToevoegen";
 import LibrarySectie from "./LibrarySectie";
 import "./ProjectBrowser.css";
 import "./BladVersie.css";
@@ -247,12 +243,6 @@ export default function ProjectBrowser() {
   // store/moduleKiezer.ts.
   const nieuwId = useModuleKiezer((s) => s.nieuwId);
   const naamKlaar = useModuleKiezer((s) => s.naamKlaar);
-  const openModuleKiezer = useModuleKiezer((s) => s.openen);
-  const voegPdfToe = useProjectStore((s) => s.voegPdfToe);
-  const voegSpreadsheetToe = useProjectStore((s) => s.voegSpreadsheetToe);
-  const voegMarkdownToe = useProjectStore((s) => s.voegMarkdownToe);
-  const voegCanvasToe = useProjectStore((s) => s.voegCanvasToe);
-  const voegJupyterToe = useProjectStore((s) => s.voegJupyterToe);
 
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const activeId = useProjectStore((s) => s.activeId);
@@ -348,58 +338,7 @@ export default function ProjectBrowser() {
             />
           ))}
 
-          <button className="pb-rij pb-toevoegen" onClick={() => openModuleKiezer()} title={tw("browser.moduleToevoegenUitleg")}>
-            <Icoon id="calculation.module-picker" uit="calculations" />
-            <span className="pb-naam">{tw("browser.moduleToevoegen")}</span>
-          </button>
-
-          {/* Een PDF als blad: komt op zijn plek in hoofdstuk Berekeningen van het rapport. */}
-          <button className="pb-rij pb-toevoegen" onClick={() => void voegPdfBladToe(voegPdfToe)} title={tw("pdf.toevoegenUitleg")}>
-            <Icoon id="file.import" uit="calculations" />
-            <span className="pb-naam">{tw("pdf.toevoegen")}</span>
-          </button>
-
-          {/* Een werkmap als blad: nieuw en leeg, of een bestaand XLSX-bestand. */}
-          <button className="pb-rij pb-toevoegen" onClick={() => voegLeegSpreadsheetToe(voegSpreadsheetToe)} title={tw("spreadsheet.toevoegenUitleg")}>
-            <Icoon id="spreadsheet.sheet-add" uit="calculations" />
-            <span className="pb-naam">{tw("spreadsheet.toevoegen")}</span>
-          </button>
-          <button className="pb-rij pb-toevoegen" onClick={() => void voegWerkmapToe(voegSpreadsheetToe)} title={tw("spreadsheet.importerenUitleg")}>
-            <Icoon id="data.table" />
-            <span className="pb-naam">{tw("spreadsheet.importeren")}</span>
-          </button>
-
-          {/* Een Markdown-tekst als blad: nieuw en leeg, of een bestaand .md-bestand. */}
-          <button className="pb-rij pb-toevoegen" onClick={() => voegLeegMarkdownToe(voegMarkdownToe)} title={tw("markdown.toevoegenUitleg")}>
-            <Icoon id="report.template" />
-            <span className="pb-naam">{tw("markdown.toevoegen")}</span>
-          </button>
-          <button className="pb-rij pb-toevoegen" onClick={() => void voegMarkdownBestandToe(voegMarkdownToe)} title={tw("markdown.importerenUitleg")}>
-            <Icoon id="file.import" uit="calculations" />
-            <span className="pb-naam">{tw("markdown.importeren")}</span>
-          </button>
-
-          {/* Formules als losse eenheden vrij op een vel. */}
-          <button className="pb-rij pb-toevoegen" onClick={() => voegCanvasToe(tw("canvas.nieuweNaam"))} title={tw("canvas.toevoegenUitleg")}>
-            <Icoon id="report.workspace" uit="calculations" />
-            <span className="pb-naam">{tw("canvas.toevoegen")}</span>
-          </button>
-
-          {/* Een rekening als graaf van nodes. */}
-          <button className="pb-rij pb-toevoegen" onClick={voegLeegGrafbladToe} title={tw("graaf.toevoegenUitleg")}>
-            <Icoon id="panel.model-tree" />
-            <span className="pb-naam">{tw("graaf.toevoegen")}</span>
-          </button>
-
-          {/* Een eigen werkmap met notebooks en scripts: nieuw, of bestaande bestanden. */}
-          <button className="pb-rij pb-toevoegen" onClick={() => voegLeegJupyterToe(voegJupyterToe)} title={tw("jupyter.toevoegenUitleg")}>
-            <Icoon id="file.structure" uit="calculations" />
-            <span className="pb-naam">{tw("jupyter.toevoegen")}</span>
-          </button>
-          <button className="pb-rij pb-toevoegen" onClick={() => void voegNotebookToe(voegJupyterToe)} title={tw("jupyter.importerenUitleg")}>
-            <Icoon id="file.import" uit="calculations" />
-            <span className="pb-naam">{tw("jupyter.importeren")}</span>
-          </button>
+          <BladToevoegen />
 
           {/* Alleen als er iets bij te werken is; bijwerken gaat altijd via de vergelijking. */}
           {verouderd.length > 0 && (

@@ -408,6 +408,24 @@
   color: var(--theme-accent-tint);
 }
 
+/* Blad toevoegen: blijft in beeld als de lijst met bladen scrolt. */
+.pb-blad-toevoegen {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--theme-bg);
+}
+
+.pb-blad-toevoegen .pb-toevoegen {
+  width: 100%;
+  font-weight: 600;
+}
+
+.pb-plus {
+  flex-shrink: 0;
+  color: var(--theme-accent);
+}
+
 .pb-leeg {
   margin: 4px 12px 6px 14px;
   font-size: var(--oa-size-label);

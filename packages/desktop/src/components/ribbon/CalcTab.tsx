@@ -47,9 +47,6 @@ interface CalcTabProps {
   onWelkomClick?: () => void;
 }
 
-/** Het sjabloon-id van een blad dat leeg begint; het hoort bij geen module. */
-const LEEG_BLAD = "leeg";
-
 /**
  * Start: wat je bij het rekenen het meest nodig hebt. Nieuw, Openen en
  * Opslaan staan onder Bestand en in de titelbalk; de rekentaal staat in de
@@ -67,6 +64,7 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
   const toonVoorbeeld = usePrintStore((s) => s.toonVoorbeeld);
   const activeId = useProjectStore((s) => s.activeId);
   const openModuleKiezer = useModuleKiezer((s) => s.openen);
+  const leegBlad = useModuleKiezer((s) => s.voegLeegBladToe);
   const view = useEditorViewStore((s) => s.view);
   // Staat een spreadsheet in beeld, dan gelden klembord en ongedaan maken daarvoor.
   const cellen = useSpreadsheetEditor((s) => s.zichtbaar && s.api !== null);
@@ -99,13 +97,6 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
   const zoek = useCallback(() => {
     if (view) openSearchPanel(view);
   }, [view]);
-
-  /** Een leeg blad om zelf een berekening in te schrijven. */
-  const leegBlad = useCallback(() => {
-    const id = useProjectStore.getState().voegToe(LEEG_BLAD, "Blad", "\"Nieuw blad\n\n");
-    // Net als bij een module: het blad staat meteen in de naamgeefstand.
-    useModuleKiezer.setState({ nieuwId: id });
-  }, []);
 
   /**
    * Afdrukken via de browser, niet via de rapportengine.

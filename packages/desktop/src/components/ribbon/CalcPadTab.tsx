@@ -224,7 +224,10 @@ export function Uitklap({ anker, onSluit, className, children }: {
     // Het anker zelf heeft geen vak (display: contents); de knop erin wel.
     const r = (anker.querySelector("button") ?? anker).getBoundingClientRect();
     const breed = paneel.current?.offsetWidth ?? 0;
-    setPlek({ left: Math.max(4, Math.min(r.left, window.innerWidth - breed - 4)), top: r.bottom + 2 });
+    const hoog = paneel.current?.offsetHeight ?? 0;
+    // Past het er niet onder, zoals bij een knop onder in het paneel, dan erboven.
+    const top = r.bottom + 2 + hoog > window.innerHeight ? Math.max(4, r.top - hoog - 2) : r.bottom + 2;
+    setPlek({ left: Math.max(4, Math.min(r.left, window.innerWidth - breed - 4)), top });
   }, [anker]);
 
   useEffect(() => {

@@ -33,8 +33,7 @@
     "inklappen": "Zijpaneel inklappen",
     "projectgegevensUitleg": "Projectgegevens — gelden voor alle bladen in dit project",
     "rapportUitleg": "Rapport — het constructierapport van dit project, met de rekenbladen als bijlage",
-    "geenBladen": "Nog geen rekenbladen. Voeg er een toe met <b>Module</b> in het lint.",
-    "moduleToevoegen": "Module toevoegen…",
+    "geenBladen": "Nog geen bladen. Voeg er een toe met <b>Blad toevoegen</b> hieronder, of vanuit het lint.",
     "moduleToevoegenUitleg": "Een module of een naslagblad aan dit project toevoegen",
     "dubbelklik": "Dubbelklik om te hernoemen",
     "omhoog": "Omhoog",
@@ -49,7 +48,27 @@
     "ucVoldoetNiet": "Maatgevende UC {{uc}} — voldoet niet",
     "gegevensToevoegen": "Projectgegevens toevoegen",
     "rapportToevoegen": "Rapport toevoegen",
-    "uitProjectHalen": "{{naam}} uit de projectboom halen (de inhoud blijft bewaard)"
+    "uitProjectHalen": "{{naam}} uit de projectboom halen (de inhoud blijft bewaard)",
+    "toevoegen": {
+      "knop": "Blad toevoegen",
+      "uitleg": "Voeg een blad toe aan dit project: een module, een leeg blad, een spreadsheet, een tekening, een notebook of een bestand",
+      "nieuw": "Nieuw",
+      "bestand": "Uit een bestand",
+      "module": "Module…",
+      "leeg": "Leeg blad",
+      "leegUitleg": "Een leeg blad om zelf een berekening in te schrijven",
+      "spreadsheet": "Spreadsheet",
+      "canvas": "Canvas",
+      "graaf": "Grafblad",
+      "tekening": "Tekening",
+      "tekeningUitleg": "Een lege tekening op A4, A3 of A2, met aanzichten op schaal",
+      "jupyter": "Jupyter-notebook",
+      "markdown": "Markdown",
+      "pdf": "PDF…",
+      "xlsx": "Spreadsheet (XLSX)…",
+      "markdownBestand": "Markdown…",
+      "notebook": "Notebook of Python-script…"
+    }
   },
   "catalogus": {
     "groepen": {
@@ -288,7 +307,6 @@
     "regels_other": "{{count}} regels"
   },
   "pdf": {
-    "toevoegen": "PDF toevoegen…",
     "toevoegenUitleg": "Een PDF-bestand als blad aan het project toevoegen; het komt op zijn plek in hoofdstuk Berekeningen van het rapport. Voor een FEM-model: exporteer in Open FEM Studio het rapport als PDF en voeg dat toe.",
     "kiesTitel": "PDF toevoegen — voor een FEM-model: het rapport-PDF uit Open FEM Studio",
     "filter": "PDF-bestanden",
@@ -315,9 +333,7 @@
     "schrijvenMislukt": "De PDF is niet opgeslagen in {{pad}}. Staat dat bestand open in een ander programma?\n\nDe printdialoog opent nu; daar kun je een andere plek kiezen.\n\nTechnische melding: {{fout}}"
   },
   "spreadsheet": {
-    "toevoegen": "Spreadsheet toevoegen",
     "toevoegenUitleg": "Een lege spreadsheet als blad aan het project toevoegen, voor een staaflijst of een hoeveelhedenoverzicht. Het komt op zijn plek in hoofdstuk Berekeningen van het rapport.",
-    "importeren": "XLSX inlezen…",
     "importerenUitleg": "Een bestaand XLSX-bestand als spreadsheet-blad aan het project toevoegen. De werkmap komt in het projectbestand.",
     "nieuweNaam": "Spreadsheet",
     "kiesTitel": "Kies een XLSX-bestand",
@@ -381,7 +397,6 @@
     "exporterenUitleg": "Deze tekst wegschrijven als los .md-bestand. Afbeeldingen in het project gaan niet mee."
   },
   "canvas": {
-    "toevoegen": "Canvas toevoegen",
     "toevoegenUitleg": "Een leeg canvas als blad aan het project toevoegen: formules als losse eenheden vrij op een vel. Doorgerekend wordt van boven naar beneden, en bij gelijke hoogte van links naar rechts.",
     "nieuweNaam": "Canvas",
     "tab": "Canvas",
@@ -396,7 +411,6 @@
     "pagina": "Pagina {{nummer}}"
   },
   "graaf": {
-    "toevoegen": "Grafblad toevoegen",
     "toevoegenUitleg": "Een rekening als graaf van nodes en verbindingen aan het project toevoegen, met een 3D-voorbeeld op de achtergrond. Het komt op zijn plek in hoofdstuk Berekeningen van het rapport.",
     "nieuweNaam": "Grafblad",
     "tab": "Grafblad",
@@ -518,9 +532,7 @@
     }
   },
   "jupyter": {
-    "toevoegen": "Jupyter toevoegen",
     "toevoegenUitleg": "Een eigen werkmap met notebooks, Python-scripts en databestanden als blad aan het project toevoegen. Python draait afgeschermd in de app; er is geen installatie nodig. Op papier komen de notebooks met hun opgeslagen uitvoer.",
-    "importeren": "Notebook inlezen…",
     "importerenUitleg": "Bestaande notebooks (.ipynb), Python-scripts (.py) of een ingepakte werkmap (.zip) als nieuw Jupyter-blad toevoegen. De bestanden komen in het projectbestand. Er draait niets tot je dat zelf start.",
     "nieuweNaam": "Jupyter",
     "kiesTitel": "Kies bestanden",

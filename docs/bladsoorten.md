@@ -95,7 +95,7 @@ Buiten de afdruk heeft een soort nog deze plekken, zoals bij Markdown:
 - `store/projectStore.ts` (toevoegen en wijzigen), `store/projectIfcx.ts` en
   `packages/core/src/ifcx/` (`ATTR`, schema en `soort` in `namespace.ts`, schrijven en
   lezen in `document.ts`, de bijlage in `step.ts`).
-- De werkruimte in `App.tsx`, de knoppen in `ProjectBrowser.tsx` en `CalcTab.tsx`, en
+- De werkruimte in `App.tsx`, de keuze in `BladToevoegen.tsx` (de ene knop in het paneel), de knop in `CalcTab.tsx`, en
   de teksten in `werkruimte.json` en `rapport.json` (Nederlands en Engels).
 - `bladSoort` in `mcp/tools/hulp.ts`.
 - Een eigen `scripts/check-<soort>.mjs`. `scripts/check-rapport-pdf.mjs` rekent de
