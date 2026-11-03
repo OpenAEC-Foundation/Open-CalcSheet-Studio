@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { defineXlsxPlugin, type XlsxPlugin, type XlsxPluginContext, type XlsxPluginGeometry } from "@betteroffice/xlsx-react";
+import { wijsKopAan } from "./spreadsheetAanwijzen";
 import { breedteTekens, hoogtePunten } from "./spreadsheetLogica";
 import { passendeBreedte, passendeHoogte, sporenBij, uitvoeren, zetKolombreedte, zetRijhoogte } from "./spreadsheetOpdrachten";
 
@@ -195,6 +196,7 @@ function Koppen({ context, geometry, laag }: { context: XlsxPluginContext<null>;
       }
       return;
     }
+    if (wijsKopAan(soort, spoor.nummer, e.nativeEvent)) return;
     const vorige = anker.current;
     const uitbreiden = e.shiftKey && vorige?.soort === soort;
     const begin = uitbreiden ? vorige.nummer : spoor.nummer;

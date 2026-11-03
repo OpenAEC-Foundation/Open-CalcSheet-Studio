@@ -2,8 +2,9 @@ import type { Translations } from "@betteroffice/xlsx-i18n";
 
 /*
  * De Nederlandse teksten van de spreadsheeteditor; het pakket levert geen
- * Nederlands mee. Overgenomen uit Open Office Studio (Apache-2.0). Wat hier
- * ontbreekt, valt terug op het Engels van de editor.
+ * Nederlands mee. De werkbalk komt uit Open Office Studio (Apache-2.0), de meldingen
+ * en de teksten voor schermlezers zijn hier aangevuld. Wat hier ontbreekt (samenwerken
+ * en voorstellen, die de app niet gebruikt), valt terug op het Engels van de editor.
  */
 
 export const spreadsheetNl: Translations = {
@@ -99,9 +100,63 @@ export const spreadsheetNl: Translations = {
     nameBoxPlaceholder: "Naamvak",
     formulaPlaceholder: "Voer een waarde of formule in",
   },
+  commands: {
+    fontSizeStep: "Tekengrootte wijzigen",
+    numberFormat: "Getalnotatie",
+    decimalPlaces: "Aantal decimalen wijzigen",
+    borderStyle: "Randstijl",
+    moreTools: "Meer gereedschap",
+    customFontSize: "Eigen grootte…",
+    fontSizePoints: "Tekengrootte in punten",
+    customZoom: "Eigen zoom…",
+    zoomPercent: "Zoom in procenten",
+    apply: "Toepassen",
+    cancel: "Annuleren",
+    reasons: {
+      editorUnavailable: "De editor is nog niet klaar.",
+      documentLoading: "De werkmap wordt nog geopend.",
+      noDocument: "Er is geen werkmap geopend.",
+      readOnly: "De werkmap is alleen-lezen.",
+      cellSelectionRequired: "Selecteer eerst cellen.",
+      unsupportedSelection: "Niet beschikbaar terwijl een grafiek is geselecteerd.",
+      multipleCellsRequired: "Selecteer meer dan één cel.",
+      multipleColumnsRequired: "Selecteer meer dan één kolom.",
+      multipleRowsRequired: "Selecteer meer dan één rij.",
+      noMergedCells: "De selectie heeft geen samengevoegde cellen.",
+      nothingToUndo: "Niets om ongedaan te maken.",
+      nothingToRedo: "Niets om opnieuw te doen.",
+      pngUnavailable: "Afbeelding exporteren zit niet in deze versie.",
+      hostDisabled: "Niet beschikbaar in deze werkbalk.",
+      unsupportedCommand: "Nog niet ondersteund.",
+      invalidArguments: "Deze waarde is niet geldig.",
+      inputFailed: "De invoer in de cel hiervoor kon niet worden bewaard.",
+      documentReplaced: "Er is een andere werkmap geopend.",
+      targetChanged: "De selectie is veranderd.",
+      gestureActive: "Rond eerst het verplaatsen van de grafiek af.",
+      renderFailed: "Het werkblad kon niet worden getekend om af te drukken.",
+      commandFailed: "De wijziging kon niet worden doorgevoerd.",
+    },
+  },
   editor: {
     appLabel: "Rekenblad",
     openError: "Rekenblad kon niet worden geopend",
+    openErrorDescription: "Het bestand is misschien beschadigd, of gebruikt iets wat deze editor nog niet kan lezen.",
+    stoppedError: "De editor liep tegen een probleem aan",
+    stoppedErrorDescription: "Open de werkmap opnieuw om verder te werken.",
+    loadError: "De editor kon niet laden",
+    loadErrorDescription: "Controleer de verbinding en laad de pagina opnieuw.",
+    reloadPage: "Pagina opnieuw laden",
+    showDetails: "Details tonen",
+    openPrompt: "Open een XLSX-bestand",
     sheetTabsLabel: "Werkbladen",
+  },
+  a11y: {
+    gridLabel: "Raster van het werkblad",
+    rowHeaderLabel: "Rij {row}",
+    columnHeaderLabel: "Kolom {column}",
+    cellLabel: "{address}, {value}",
+    cellLabelSelected: "{address}, {value}, geselecteerd",
+    emptyCellLabel: "{address}, leeg",
+    emptyCellLabelSelected: "{address}, leeg, geselecteerd",
   },
 };

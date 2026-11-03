@@ -265,6 +265,10 @@ meld(geplaatst.tekst === "=SUM(A1:B3)" && geplaatst.eind === 10, "slepen vervang
 meld(bereikA1(bereikTussen({ row: 2, col: 1 }, { row: 0, col: 0 })) === "A1:B3", "het bereik is genormaliseerd, ook omhoog gesleept");
 const gevonden = verwijzingenIn('=A1*SUM($B$2:C3)+"D4"+Blad2!E5');
 meld(gevonden.length === 3 && gevonden[1].bereik.bottom === 2 && gevonden[2].blad === "Blad2", "de verwijzingen in een formule voor de kaders; tekst telt niet");
+const sporen = verwijzingenIn("=SUM(B:C)+SUM(2:4)");
+meld(sporen.length === 2 && sporen[0].bereik.left === 1 && sporen[0].bereik.right === 2 && sporen[0].bereik.bottom === 1_048_575, "een hele kolom krijgt ook een kader");
+meld(sporen[1].bereik.top === 1 && sporen[1].bereik.bottom === 3 && sporen[1].bereik.right === 16_383, "een hele rij ook");
+meld(verwijzingenIn("=A1").length === 1 && verwijzingenIn("=LOG10(5)").length === 0, "een functienaam is geen verwijzing");
 
 console.log("\nInvoer zoals die getypt wordt");
 meld(invoerVoorKern("1,5") === "1.5" && invoerVoorKern("1.234,5") === "1234.5" && invoerVoorKern("12,5%") === "12.5%", "een decimaalkomma wordt een punt");
@@ -296,6 +300,8 @@ const plan = somPlan({ top: 0, bottom: 2, left: 0, right: 0 }, uitRaster);
 meld(plan.rij === 3 && plan.tot === 2, "op een gevulde selectie komt de som eronder");
 const planLeeg = somPlan({ top: 0, bottom: 3, left: 0, right: 0 }, uitRaster);
 meld(planLeeg.rij === 3 && planLeeg.tot === 2, "is de laatste cel leeg, dan daarin");
+const planBezet = somPlan({ top: 0, bottom: 1, left: 0, right: 0 }, uitRaster);
+meld(planBezet.rij === 3 && planBezet.tot === 1, "wat eronder staat blijft staan: de som komt in de eerste lege rij, over de selectie");
 
 console.log("\nHet klembord als tekst");
 meld(naarTsv([["a", "1"], ["b\tc", 'd"e']]) === 'a\t1\r\n"b\tc"\t"d""e"', "tabgescheiden, met aanhalingstekens waar nodig");

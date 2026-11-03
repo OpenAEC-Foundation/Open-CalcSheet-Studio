@@ -4,7 +4,7 @@ import {
   aantalCellen, bereikA1, leesHtmlTabel, leesTsv, MAX_KOLOMMEN, MAX_RIJEN, naarHtml, naarTsv, verschuifFormule, zelfdeTekst,
   type Bereik, type BronCel, type HtmlCel,
 } from "./spreadsheetLogica";
-import { binnenGebruikt, celOp, invoerNaarCel, leesCellen, MAX_CELLEN, Melding, rechthoek, selectie, type Doel } from "./spreadsheetOpdrachten";
+import { binnenGebruikt, celOp, invoerNaarCel, leesCellen, MAX_CELLEN, Melding, rechthoek, selectie, sluitInvoer, type Doel } from "./spreadsheetOpdrachten";
 
 /*
  * Het klembord van een spreadsheet-blad. Op het systeemklembord komt tabgescheiden
@@ -103,10 +103,9 @@ function htmlCellen(d: Doel, bereik: Bereik): HtmlCel[][] {
 
 /** Kopieert of knipt de selectie. */
 export async function kopieer(knippen = false): Promise<void> {
+  const eerste = selectie();
+  await sluitInvoer(eerste.api);
   const d = selectie();
-  await d.api.flushPendingInput().catch(() => {
-    throw new Melding(melding("invoerGeweigerd"));
-  });
   const bereik = binnenGebruikt(d, d.bereik);
   if (aantalCellen(bereik) > MAX_CELLEN) throw new Melding(melding("teGroot"));
   const html = htmlCellen(d, bereik);
@@ -123,6 +122,7 @@ export async function kopieer(knippen = false): Promise<void> {
   };
   if (!(await schrijfKlembord(tsv, naarHtml(html)))) throw new Melding(melding("kopierenMislukt"));
   useSpreadsheetEditor.setState({ kopie: { sheetId: d.sheetId, bereik, knippen } });
+  d.api.focus();
 }
 
 /** Het systeemklembord lezen (lint); valt terug op de laatste kopie in de app. */
@@ -168,9 +168,7 @@ function selecteerGeplakt(d: Doel, gebied: Bereik): void {
 /** Plakt linksboven in de selectie, in één stap. */
 export async function plak(inhoud: KlembordInhoud): Promise<void> {
   const eerste = selectie();
-  await eerste.api.flushPendingInput().catch(() => {
-    throw new Melding(melding("invoerGeweigerd"));
-  });
+  await sluitInvoer(eerste.api);
   const d = selectie();
   const lezing = d.api.handle.readCells({ ranges: [] });
   if (lezing.ok && lezing.sheets[d.blad]?.editable === false) throw new Melding(melding("beveiligd"));
@@ -200,7 +198,8 @@ function plakEigen(d: Doel, kopie: Kopie): void {
   const breed = kopie.cellen[0].length;
   const start = { row: d.bereik.top, col: d.bereik.left };
 
-  const hier = kopie.knippen && kopie.handle === d.api.handle && kopie.blad === d.blad;
+  const zelfdeWerkmap = kopie.knippen && kopie.handle === d.api.handle;
+  const hier = zelfdeWerkmap && kopie.blad === d.blad;
   const keer = kopie.knippen ? { rijen: 1, kolommen: 1 } : herhalingen(d.bereik, hoog, breed);
   const gebied: Bereik = {
     top: start.row,
@@ -229,11 +228,12 @@ function plakEigen(d: Doel, kopie: Kopie): void {
   }
 
   const ops: unknown[] = [];
-  if (hier) {
+  if (zelfdeWerkmap) {
+    laatste = null;
     for (let r = kopie.bereik.top; r <= kopie.bereik.bottom; r++) {
       for (let k = kopie.bereik.left; k <= kopie.bereik.right; k++) {
-        const inDoel = r >= gebied.top && r <= gebied.bottom && k >= gebied.left && k <= gebied.right;
-        if (!inDoel) ops.push(celOp(d.blad, { row: r, col: k }, { waarde: { kind: "empty" }, formule: null }));
+        const inDoel = hier && r >= gebied.top && r <= gebied.bottom && k >= gebied.left && k <= gebied.right;
+        if (!inDoel) ops.push(celOp(kopie.blad, { row: r, col: k }, { waarde: { kind: "empty" }, formule: null }));
       }
     }
   }

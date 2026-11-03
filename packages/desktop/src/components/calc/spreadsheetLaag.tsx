@@ -1,7 +1,8 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { defineXlsxPlugin, type XlsxPlugin, type XlsxPluginContext, type XlsxPluginGeometry, type XlsxPluginSelection } from "@betteroffice/xlsx-react";
 import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
+import { openFormuleVeld } from "./spreadsheetAanwijzen";
 import { bereikTussen, doelBereik, richtingNaar, type Bereik, type VulRichting } from "./spreadsheetLogica";
 import { uitvoeren, vul, vulTotEinde } from "./spreadsheetOpdrachten";
 
@@ -12,11 +13,9 @@ import { uitvoeren, vul, vulTotEinde } from "./spreadsheetOpdrachten";
  * voor het lint en de sneltoetsen.
  */
 
-const leegeSelectie = { bereik: null, focus: null };
-
 function meldSelectie(selectie: XlsxPluginSelection): void {
   if (!selectie) {
-    useSpreadsheetEditor.setState({ ...leegeSelectie });
+    useSpreadsheetEditor.setState({ bereik: null, focus: null });
     return;
   }
   const cellen = selectie.cells;
@@ -31,13 +30,13 @@ function meldSelectie(selectie: XlsxPluginSelection): void {
 function Vulgreep({ bereik, sheetId, geometry }: { bereik: Bereik; sheetId: string; geometry: XlsxPluginGeometry }) {
   const { t } = useTranslation("werkruimte");
   const api = useSpreadsheetEditor((s) => s.api);
-  const greep = useRef<HTMLDivElement>(null);
   const [voorbeeld, setVoorbeeld] = useState<{ doel: Bereik; richting: VulRichting } | null>(null);
   const hoek = geometry.getCellRect({ sheetId, row: bereik.bottom, col: bereik.right });
   if (!api || !hoek) return null;
 
   const begin = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
+    // Terwijl een formule openstaat is een klik hier een cel aanwijzen.
+    if (e.button !== 0 || openFormuleVeld()) return;
     e.preventDefault();
     e.stopPropagation();
     const element = e.currentTarget;
@@ -97,7 +96,6 @@ function Vulgreep({ bereik, sheetId, geometry }: { bereik: Bereik; sheetId: stri
   return (
     <>
       <div
-        ref={greep}
         className="spreadsheet-vulgreep"
         title={t("spreadsheet.vulgreep")}
         style={{ left: hoek.x + hoek.width - 4, top: hoek.y + hoek.height - 4 }}
@@ -157,9 +155,12 @@ export function laagPlugin(): XlsxPlugin {
     initialize(context) {
       meldSelectie(context.snapshot.selection);
     },
-    onEvent(_, event) {
+    onEvent(context, event) {
       if (event.type === "selection-change") meldSelectie(event.selection);
-      else if (event.type === "load") useSpreadsheetEditor.setState({ ...leegeSelectie, markeringen: [], kopie: null });
+      else if (event.type === "load") {
+        useSpreadsheetEditor.setState({ markeringen: [], kopie: null });
+        meldSelectie(context.snapshot.selection);
+      }
     },
     overlay: Laag,
   });

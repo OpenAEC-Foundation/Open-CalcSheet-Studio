@@ -74,7 +74,7 @@ async function schrijfbaar(): Promise<Doel> {
   return uit;
 }
 
-async function sluitInvoer(api: XlsxEditorApi): Promise<void> {
+export async function sluitInvoer(api: XlsxEditorApi): Promise<void> {
   try {
     normaliseerOpenVeld();
     await api.flushPendingInput();
@@ -121,8 +121,16 @@ function nietTeGroot(b: Bereik): void {
 
 // ── Ongedaan maken ────────────────────────────────────────────────────────
 
-export const ongedaan = () => void useSpreadsheetEditor.getState().api?.commands.execute("undo", null);
-export const opnieuw = () => void useSpreadsheetEditor.getState().api?.commands.execute("redo", null);
+/** Vanaf een knop buiten de editor; het toetsenbord gaat terug naar het raster. */
+function geschiedenis(opdracht: "undo" | "redo"): void {
+  const { api } = useSpreadsheetEditor.getState();
+  if (!api) return;
+  void api.commands.execute(opdracht, null);
+  api.focus();
+}
+
+export const ongedaan = () => geschiedenis("undo");
+export const opnieuw = () => geschiedenis("redo");
 
 // ── Rijen en kolommen ─────────────────────────────────────────────────────
 
@@ -264,7 +272,7 @@ function waardenRond(d: Doel, b: Bereik): (c: Cel) => Waarde {
  */
 export async function voegFunctieIn(f: Functie): Promise<void> {
   const open = openFormuleVeld();
-  if (open) {
+  if (open && (open.value === "" || open.value.startsWith("="))) {
     const { selectionStart: begin, selectionEnd: eind, value } = open;
     const b = begin ?? value.length;
     const e = eind ?? b;
@@ -301,13 +309,14 @@ export async function voegFunctieIn(f: Functie): Promise<void> {
 // ── Sorteren ──────────────────────────────────────────────────────────────
 
 /**
- * Sorteert de selectie op de kolom van de actieve cel, in één stap. Op één cel de
- * hele tabel eromheen; een kopregel blijft staan. Een formule verhuist mee met zijn
- * rij, de opmaak ook.
+ * Sorteert de selectie op de kolom van de actieve cel, in één stap. Op één kolom of
+ * cel de hele tabel eromheen, anders raken de rijen door elkaar; een kopregel blijft
+ * staan. Een formule verhuist mee met zijn rij, de opmaak ook.
  */
 export async function sorteren(aflopend: boolean): Promise<void> {
   const d = await schrijfbaar();
-  const gekozen = aantalCellen(d.bereik) > 1 ? binnenGebruikt(d, d.bereik) : d.api.handle.selectionData(d.blad, d.focus.row, d.focus.col).region;
+  const tabel = d.bereik.left === d.bereik.right ? d.api.handle.selectionData(d.blad, d.focus.row, d.focus.col).region : null;
+  const gekozen = tabel ?? (aantalCellen(d.bereik) > 1 ? binnenGebruikt(d, d.bereik) : null);
   if (!gekozen) throw new Melding(melding("sorteerLeeg"));
   nietTeGroot(gekozen);
   if (d.api.handle.mergedRanges(d.blad, bereikA1(gekozen)).length) throw new Melding(melding("sorteerSamengevoegd"));

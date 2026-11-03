@@ -73,6 +73,20 @@ Status in de catalogus: *gereed* (gecalibreerd op referentiebladen), *controlere
 | Hout | Balklaag (houten vloerbalken: enkelvoudige ligger, overstek, twee velden, raveelbalk; vijf belastinggevallen, omhullende M- en V-lijn, trillingen, oplegdruk, kip) |
 | Bibliotheek | CalcPAD-syntaxdemo |
 
+Een **spreadsheet-blad** is een werkmap (XLSX) als blad in het project, op de
+editor `@betteroffice/xlsx-react`. Die draait hier met `legacySyncApi`: de
+asynchrone API kent rijen invoegen, kolombreedte, vastzetten en verplaatsen niet,
+en alleen `api.handle.applyOps` maakt van cellen met opmaak één stap ongedaan
+maken. Het pakket laat deze weg in 0.6.0 vervallen, dus de versie staat vast op
+0.5.1; wie overstapt, moet eerst nagaan of de nieuwe API deze bewerkingen heeft.
+`components/calc/spreadsheetLogica.ts` is puur en wordt nagerekend door
+`check-spreadsheet.mjs`; `spreadsheetOpdrachten.ts` en `spreadsheetKlembord.ts`
+voeren uit op de rekenkern, `spreadsheetAanwijzen.ts` en `spreadsheetLaag.tsx`
+horen bij het raster, en `components/ribbon/SpreadsheetTab.tsx` is de lint-tab die
+verschijnt zolang een spreadsheet-blad in beeld is. `api.version()` en andere
+gewone API-aanroepen sluiten een open cel: de bewaartimer gebruikt daarom
+`api.handle` rechtstreeks.
+
 De toetsing van de balklaag staat in [balklaag-toetsing.md](balklaag-toetsing.md),
 de bewuste splitspunten tussen referentie-uitwerking en norm in
 [afwijkingen-referentie.md](afwijkingen-referentie.md).

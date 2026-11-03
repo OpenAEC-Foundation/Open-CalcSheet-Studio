@@ -1,7 +1,7 @@
 import type { XlsxEditorApi } from "@betteroffice/xlsx-react";
 import { useSpreadsheetEditor, type Markering } from "../../store/spreadsheetEditor";
 import {
-  bereikA1, bereikTussen, invoerVoorKern, magVerwijzingHier, verwijzingenIn, zetVerwijzing,
+  bereikA1, bereikTussen, invoerVoorKern, kolomLetters, magVerwijzingHier, verwijzingenIn, zetVerwijzing,
   type Bereik, type Cel,
 } from "./spreadsheetLogica";
 
@@ -85,11 +85,25 @@ function werkMarkeringenBij(): void {
  * Wat een gebruiker typte omzetten naar wat de rekenkern leest, voor de cel sluit:
  * `1,5` is anders tekst, en `=IF(A1>1;1;0)` geen formule.
  */
-export function normaliseerOpenVeld(): void {
-  const veld = openFormuleVeld();
-  if (!veld) return;
+function normaliseer(veld: Veld): void {
   const nieuw = invoerVoorKern(veld.value);
   if (nieuw !== veld.value) zetVeld(veld, nieuw, nieuw.length);
+}
+
+export function normaliseerOpenVeld(): void {
+  const veld = openFormuleVeld();
+  if (veld) normaliseer(veld);
+}
+
+let peil: CanvasRenderingContext2D | null = null;
+
+/** De cel groeit mee met wat erin staat; de editor houdt hem op de breedte van de kolom. */
+function celVeldMeegroeien(veld: Veld): void {
+  if (!veld.matches('[data-testid="xlsx-cell-editor"]')) return;
+  peil ??= document.createElement("canvas").getContext("2d");
+  if (!peil) return;
+  peil.font = getComputedStyle(veld).font;
+  veld.style.minWidth = `${Math.ceil(peil.measureText(veld.value).width) + 12}px`;
 }
 
 /** De cel onder de muis, ook als die buiten het raster staat: dan de rand ervan. */
@@ -138,18 +152,17 @@ export function startAanwijzen(api: XlsxEditorApi): () => void {
     const veld = openFormuleVeld();
     const doel = e.target instanceof Element ? e.target : null;
     const raster = doel?.closest<HTMLElement>(RASTER);
-    if (!veld || !raster || doel === veld) return;
-    if (!veld.value.startsWith("=")) {
-      normaliseerOpenVeld();
+    if (!veld || !raster || doel === veld || !veld.value.startsWith("=")) return;
+    // Op de schuifbalk: de browser laat schuiven, de editor mag de cel niet sluiten.
+    const vak = raster.getBoundingClientRect();
+    if (e.clientX >= vak.left + raster.clientWidth || e.clientY >= vak.top + raster.clientHeight) {
+      e.stopImmediatePropagation();
       return;
     }
     const cel = celBij(api, raster, e.clientX, e.clientY);
     if (!cel) return;
     const plek = plekVoor(veld, e);
-    if (!plek) {
-      normaliseerOpenVeld();
-      return;
-    }
+    if (!plek) return;
     // Vóór de editor: hij mag de cel niet sluiten en het veld de focus niet kwijtraken.
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -215,22 +228,47 @@ export function startAanwijzen(api: XlsxEditorApi): () => void {
     if (veld?.value.startsWith("=") && doel?.closest(RASTER) && doel !== veld) e.stopImmediatePropagation();
   };
 
-  const bijwerken = () => werkMarkeringenBij();
-  const naVerlaten = () => setTimeout(werkMarkeringenBij);
+  const bijwerken = (e: Event) => {
+    if (e.target instanceof HTMLInputElement) celVeldMeegroeien(e.target);
+    werkMarkeringenBij();
+  };
+  // Het veld sluit als het de focus verliest: dan moet de invoer al goed staan.
+  const opVerlaten = (e: FocusEvent) => {
+    if (e.target instanceof HTMLInputElement && e.target.matches(VELDEN)) normaliseer(e.target);
+    setTimeout(werkMarkeringenBij);
+  };
   window.addEventListener("mousedown", opMuisOmlaag, true);
   window.addEventListener("dblclick", opDubbelklik, true);
+  window.addEventListener("focusout", opVerlaten, true);
   document.addEventListener("input", bijwerken, true);
   document.addEventListener("focusin", bijwerken, true);
-  document.addEventListener("focusout", naVerlaten, true);
   return () => {
     slepen?.stop();
     window.removeEventListener("mousedown", opMuisOmlaag, true);
     window.removeEventListener("dblclick", opDubbelklik, true);
+    window.removeEventListener("focusout", opVerlaten, true);
     document.removeEventListener("input", bijwerken, true);
     document.removeEventListener("focusin", bijwerken, true);
-    document.removeEventListener("focusout", naVerlaten, true);
     aangewezen = null;
   };
+}
+
+/**
+ * Een klik op een kolom- of rijkop terwijl een formule openstaat: de hele kolom of
+ * rij als verwijzing. Onwaar als er geen formule openstaat of die daar al af is; dan
+ * is het gewoon selecteren.
+ */
+export function wijsKopAan(soort: "kolom" | "rij", nummer: number, e: MouseEvent): boolean {
+  const veld = openFormuleVeld();
+  if (!veld?.value.startsWith("=")) return false;
+  const plek = plekVoor(veld, e);
+  if (!plek) return false;
+  const naam = soort === "kolom" ? kolomLetters(nummer) : String(nummer + 1);
+  const start = soort === "kolom" ? { row: 0, col: nummer } : { row: nummer, col: 0 };
+  const uit = zetVerwijzing(veld.value, plek.begin, plek.eind, `${naam}:${naam}`);
+  aangewezen = { veld, tekst: uit.tekst, begin: uit.begin, eind: uit.eind, start };
+  zetVeld(veld, uit.tekst, uit.eind);
+  return true;
 }
 
 function wachtOpCelVeld(): Promise<Veld | null> {
@@ -240,7 +278,7 @@ function wachtOpCelVeld(): Promise<Veld | null> {
       const veld = document.querySelector<Veld>('.spreadsheet-editor [data-testid="xlsx-cell-editor"]');
       if (veld) return klaar(veld);
       if (++pogingen > 30) return klaar(null);
-      requestAnimationFrame(kijk);
+      setTimeout(kijk, 16);
     };
     kijk();
   });

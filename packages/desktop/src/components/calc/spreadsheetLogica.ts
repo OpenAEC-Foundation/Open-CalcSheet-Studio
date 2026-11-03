@@ -142,14 +142,24 @@ export interface GevondenVerwijzing {
 }
 
 const GEVONDEN = new RegExp(
-  `${TEKST_IN_FORMULE}|(?:(?:(${BLADNAAM})|([A-Za-z_][\\w.]*))!)?${CELVERWIJZING}(?::${CELVERWIJZING})?`,
+  `${TEKST_IN_FORMULE}|(?:(?:(${BLADNAAM})|([A-Za-z_][\\w.]*))!)?(?:${CELVERWIJZING}(?::${CELVERWIJZING})?|${HELE_KOLOM}|${HELE_RIJ})`,
   "g",
 );
 
-/** De celverwijzingen in een open formule (met "="), om ze in het raster aan te wijzen. */
+/** De verwijzingen in een open formule (met "="), om ze in het raster aan te wijzen. */
 export function verwijzingenIn(tekst: string): GevondenVerwijzing[] {
   const uit: GevondenVerwijzing[] = [];
   for (const m of tekst.matchAll(GEVONDEN)) {
+    const heel = m[12] !== undefined
+      ? { top: 0, bottom: MAX_RIJEN - 1, left: Math.min(kolomNummer(m[12]), kolomNummer(m[14])), right: Math.max(kolomNummer(m[12]), kolomNummer(m[14])) }
+      : m[16] !== undefined
+        ? { left: 0, right: MAX_KOLOMMEN - 1, top: Math.min(Number(m[16]), Number(m[18])) - 1, bottom: Math.max(Number(m[16]), Number(m[18])) - 1 }
+        : null;
+    if (heel) {
+      const blad = m[1] ? m[1].slice(1, -1).replace(/''/g, "'") : (m[2] ?? null);
+      uit.push({ begin: m.index, eind: m.index + m[0].length, blad, bereik: heel });
+      continue;
+    }
     if (m[4] === undefined) continue;
     const a = ontleedAdres(`${m[4]}${m[6]}`);
     const b = m[8] !== undefined ? ontleedAdres(`${m[8]}${m[10]}`) : a;
@@ -296,15 +306,19 @@ export function functieTekst(f: Functie, bereik: Bereik | null, cel: Cel | null)
 }
 
 /**
- * Waar de formule komt bij een selectie van meer cellen: in de laatste cel als die
- * leeg is (dan telt de selectie tot daar), anders in de cel eronder of ernaast.
+ * Waar de formule komt bij een selectie van meer cellen: in de laatste rij als die
+ * leeg is (dan telt de selectie tot daar), anders in de eerste lege rij eronder.
+ * Wat er al staat blijft staan.
  */
 export function somPlan(bereik: Bereik, waarde: (c: Cel) => Waarde): { rij: number; vanaf: number; tot: number; links: number; rechts: number } | null {
-  let laatsteLeeg = true;
-  for (let c = bereik.left; c <= bereik.right; c++) if (!isLeeg(waarde({ row: bereik.bottom, col: c }))) laatsteLeeg = false;
-  const rij = laatsteLeeg ? bereik.bottom : bereik.bottom + 1;
-  const tot = rij - 1;
-  if (tot < bereik.top || rij >= MAX_RIJEN) return null;
+  const rijLeeg = (rij: number) => {
+    for (let c = bereik.left; c <= bereik.right; c++) if (!isLeeg(waarde({ row: rij, col: c }))) return false;
+    return true;
+  };
+  const tot = rijLeeg(bereik.bottom) ? bereik.bottom - 1 : bereik.bottom;
+  let rij = tot + 1;
+  while (rij < MAX_RIJEN && rij < bereik.bottom + 1000 && !rijLeeg(rij)) rij++;
+  if (tot < bereik.top || rij >= MAX_RIJEN || !rijLeeg(rij)) return null;
   return { rij, vanaf: bereik.top, tot, links: bereik.left, rechts: bereik.right };
 }
 
