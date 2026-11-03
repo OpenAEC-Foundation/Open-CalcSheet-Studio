@@ -321,7 +321,28 @@
     "inlezenUitleg": "Deze werkmap vervangen door een XLSX-bestand. Naam, plaats en toelichting in het rapport blijven staan.",
     "vervangenVraag": "De werkmap van \"{{naam}}\" vervangen door het gekozen bestand?",
     "exporteren": "Exporteren…",
-    "exporterenUitleg": "Deze werkmap wegschrijven als los XLSX-bestand."
+    "exporterenUitleg": "Deze werkmap wegschrijven als los XLSX-bestand.",
+    "vulgreep": "Slepen om door te voeren; dubbelklikken vult omlaag zover als de kolom ernaast gevuld is",
+    "kolomTip": "Kolom {{naam}}, breedte {{breedte}} tekens. Sleep de rand voor de breedte; dubbelklik op de rand maakt hem passend.",
+    "rijTip": "Rij {{naam}}, hoogte {{hoogte}} punten. Sleep de rand voor de hoogte; dubbelklik op de rand maakt hem passend.",
+    "allesSelecteren": "Alles selecteren",
+    "vel": "Vel {{nummer}}",
+    "schaalOpPapier": "Op papier {{procent}}%",
+    "melding": {
+      "geenEditor": "De spreadsheet is nog niet klaar met laden.",
+      "kiesCel": "Selecteer eerst een cel.",
+      "beveiligd": "Dit werkblad is beveiligd en kan niet worden gewijzigd.",
+      "invoerGeweigerd": "De cel die openstaat is niet geldig. Corrigeer of annuleer de invoer eerst.",
+      "mislukt": "Spreadsheet: {{fout}}",
+      "teGroot": "Dit bereik is te groot voor deze bewerking.",
+      "buitenBlad": "Dit past niet meer op het werkblad.",
+      "leegKlembord": "Er staat niets op het klembord om te plakken.",
+      "kopierenMislukt": "Kopiëren naar het klembord is mislukt.",
+      "geenPlek": "Onder deze selectie is geen plek voor de uitkomst.",
+      "vastzettenCel": "Kies een cel naast de eerste rij of kolom; de rijen erboven en de kolommen links ervan blijven staan.",
+      "sorteerLeeg": "Hier staat niets om te sorteren.",
+      "sorteerSamengevoegd": "Een bereik met samengevoegde cellen kan niet gesorteerd worden."
+    }
   },
   "markdown": {
     "toevoegen": "Markdown toevoegen",

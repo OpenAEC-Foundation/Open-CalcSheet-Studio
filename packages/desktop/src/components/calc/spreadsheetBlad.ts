@@ -5,6 +5,8 @@ import {
   bladnaamVoorWerkmap, LEGE_WERKMAP, lijktOpWerkmap, type SpreadsheetBestand,
 } from "../../store/spreadsheetBlad";
 import { base64NaarBytes, bytesNaarBase64 } from "./pdfBlad";
+import { bereikA1 } from "./spreadsheetLogica";
+import { MM_PER_PX, verdeelWerkmap } from "./spreadsheetVellen";
 
 /*
  * Spreadsheet-bladen in de app: een werkmap kiezen en wegschrijven, en de
@@ -16,20 +18,11 @@ import { base64NaarBytes, bytesNaarBase64 } from "./pdfBlad";
  * Tekenen
  * -------
  * De rekenkern tekent de cellen zelf naar PNG, met opmaak en rasterlijnen zoals
- * op het scherm. Een werkblad dat niet op één vel past, gaat in stukken langs de
- * rijgrenzen; te breed wordt kleiner, tot de breedte van de bladspiegel. De
- * kern en zijn WASM worden pas geladen bij de eerste afdruk.
+ * op het scherm. Hoe een werkmap over de vellen valt, staat in spreadsheetVellen.ts;
+ * het raster tekent daarmee ook zijn lijnen. De kern en zijn WASM worden pas geladen
+ * bij de eerste afdruk.
  */
 
-/** Tekenschaal: 2 is 192 dpi op ware grootte, scherp genoeg voor tekst op papier. */
-const TEKENSCHAAL = 2;
-const MM_PER_PX = 25.4 / 96;
-/** Ruimte boven het eerste vel voor de kop van het blad, als bij een PDF-blad. */
-const KOP_RUIMTE = 20;
-/** Ruimte voor de naam van het werkblad boven de cellen. */
-const NAAM_RUIMTE = 7;
-/** Meer vellen dan dit komen niet op papier; een melding zegt dat het er meer zijn. */
-const MAX_VELLEN = 60;
 /** Zoveel getekende werkmappen blijven bewaard als niets ze meer toont. */
 const BEWAARD = 6;
 
@@ -47,7 +40,7 @@ export interface WerkmapVel {
 export interface WerkmapStand {
   status: "laden" | "klaar" | "fout";
   vellen: WerkmapVel[];
-  /** De werkmap past niet op MAX_VELLEN vellen. */
+  /** De werkmap past niet op het grootste aantal vellen (spreadsheetVellen.ts). */
   afgekapt?: boolean;
   fout?: string;
 }
@@ -93,74 +86,26 @@ function pngUrl(png: Uint8Array): string {
   return URL.createObjectURL(new Blob([png as Uint8Array<ArrayBuffer>], { type: "image/png" }));
 }
 
-/** "B2:F40" naar zijn kolommen en rijen. Geen geldig bereik: null. */
-function leesBereik(bereik: string): { van: string; tot: string; eerste: number; laatste: number } | null {
-  const m = /^([A-Z]+)(\d+)(?::([A-Z]+)(\d+))?$/.exec(bereik);
-  if (!m) return null;
-  return { van: m[1], tot: m[3] ?? m[1], eerste: Number(m[2]), laatste: Number(m[4] ?? m[2]) };
-}
-
 async function tekenVellen(data: string, breedte: number, hoogte: number): Promise<WerkmapStand> {
   const { initWasm, openWorkbook } = await import("@betteroffice/xlsx");
   await initWasm();
   const wb = openWorkbook(base64NaarBytes(data));
   try {
-    const inhoud = wb.exportStructured({ includeDefinedNames: false, maxCells: 1_000_000, maxBytes: 16 * 1024 * 1024 });
-    if (!inhoud.ok) throw new Error(inhoud.failure.message);
-    const bladen = inhoud.content.sheets.filter((b) => b.kind === "worksheet" && b.usedRange);
+    const verdeling = verdeelWerkmap(wb, { breedte, hoogte });
     const vellen: WerkmapVel[] = [];
-    let afgekapt = false;
-
-    for (const blad of bladen) {
-      const bereik = leesBereik(blad.usedRange ?? "");
-      if (!bereik || blad.anchor.kind !== "sheet") continue;
-      wb.setActiveSheet(blad.anchor.sheet.index);
-      const naam = bladen.length > 1 ? blad.anchor.sheet.name : "";
-      const ruimte = (eerste: boolean) => hoogte - (vellen.length === 0 && eerste ? KOP_RUIMTE : 0) - (naam ? NAAM_RUIMTE : 0);
-      const stuk = (van: number, tot: number) =>
-        wb.renderRangePng({ range: `${bereik.van}${van}:${bereik.tot}${tot}`, scale: TEKENSCHAAL });
-
-      const heel = stuk(bereik.eerste, bereik.laatste);
-      const maat = pngMaat(heel);
-      const opWareGrootte = (maat.breedte / TEKENSCHAAL) * MM_PER_PX;
-      const schaal = Math.min(1, breedte / opWareGrootte);
-      const mm = (px: number) => (px / TEKENSCHAAL) * MM_PER_PX * schaal;
-      const voeg = (png: Uint8Array, vervolg: boolean) => {
+    for (const blad of verdeling.bladen) {
+      wb.setActiveSheet(blad.index);
+      const mm = (px: number) => (px / blad.tekenschaal) * MM_PER_PX * blad.schaal;
+      for (const [i, stuk] of blad.stukken.entries()) {
+        const range = bereikA1({ ...blad.bereik, top: stuk.van, bottom: stuk.tot });
+        const png = wb.renderRangePng({ range, scale: blad.tekenschaal });
         const m = pngMaat(png);
-        vellen.push({ blad: vervolg ? "" : naam, url: pngUrl(png), breedte: mm(m.breedte), hoogte: mm(m.hoogte), vervolg });
-      };
-
-      if (mm(maat.hoogte) <= ruimte(true)) {
-        voeg(heel, false);
-        continue;
-      }
-
-      // Te hoog: in stukken langs de rijgrenzen, met de gemiddelde rijhoogte als schatting.
-      const rijen = bereik.laatste - bereik.eerste + 1;
-      const perRij = mm(maat.hoogte) / rijen;
-      let rij = bereik.eerste;
-      let eerste = true;
-      while (rij <= bereik.laatste) {
-        if (vellen.length >= MAX_VELLEN) {
-          afgekapt = true;
-          break;
-        }
-        const beschikbaar = ruimte(eerste);
-        let aantal = Math.min(Math.max(1, Math.floor(beschikbaar / perRij)), bereik.laatste - rij + 1);
-        let png = stuk(rij, rij + aantal - 1);
-        while (aantal > 1 && mm(pngMaat(png).hoogte) > beschikbaar) {
-          aantal -= 1;
-          png = stuk(rij, rij + aantal - 1);
-        }
-        voeg(png, !eerste);
-        rij += aantal;
-        eerste = false;
+        vellen.push({ blad: i === 0 ? blad.naam : "", url: pngUrl(png), breedte: mm(m.breedte), hoogte: mm(m.hoogte), vervolg: i > 0 });
         // Tussendoor ademhalen: de kern tekent op de hoofdthread.
         await new Promise((ok) => setTimeout(ok));
       }
-      if (afgekapt) break;
     }
-    return { status: "klaar", vellen, afgekapt };
+    return { status: "klaar", vellen, afgekapt: verdeling.afgekapt };
   } finally {
     wb.dispose();
   }

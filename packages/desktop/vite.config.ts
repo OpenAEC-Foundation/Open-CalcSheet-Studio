@@ -8,8 +8,8 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react()],
 
-  // De spreadsheetkern draait in een worker en laadt zijn WASM relatief aan
-  // import.meta.url; prebundelen verbreekt die paden.
+  // De spreadsheetkern laadt zijn WASM en worker relatief aan import.meta.url;
+  // prebundelen verbreekt die paden.
   worker: { format: "es" as const },
   optimizeDeps: { exclude: ["@betteroffice/xlsx", "@betteroffice/xlsx-react"] },
 

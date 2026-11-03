@@ -4,9 +4,11 @@ import RibbonTab from "./RibbonTab";
 import CalcTab from "./CalcTab";
 import IfcTab from "./IfcTab";
 import CalcPadTab from "./CalcPadTab";
+import SpreadsheetTab from "./SpreadsheetTab";
 import TekenenTab from "../tekenen/TekenenTab";
 import { toonTekenen, verbergTekenen } from "../tekenen/tekenStore";
 import { useEditorViewStore } from "../../store/editorViewStore";
+import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
 import { vraagCode } from "../../store/codeVerzoek";
 import "./Ribbon.css";
 
@@ -21,14 +23,17 @@ interface RibbonProps {
 }
 
 const TABS = ["calc", "calcpad", "tekenen", "ifc"] as const;
-type TabId = (typeof TABS)[number];
+/** Spreadsheet is er alleen als een spreadsheet-blad openstaat. */
+const MET_SPREADSHEET = [...TABS, "spreadsheet"] as const;
+type TabId = (typeof MET_SPREADSHEET)[number];
 
 export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, onWelkomClick, onViewChange }: RibbonProps) {
   const { t, i18n } = useTranslation("ribbon");
   // De tab CalcPAD staat er altijd; zijn knoppen voegen in op de cursor in de
   // editor. Wie de tab kiest, wil code schrijven: staat die niet in beeld, dan
   // zet de werkruimte hem erbij (store/codeVerzoek.ts).
-  const tabs: readonly TabId[] = TABS;
+  const spreadsheet = useSpreadsheetEditor((s) => s.zichtbaar);
+  const tabs: readonly TabId[] = spreadsheet ? MET_SPREADSHEET : TABS;
   const [activeTab, setActiveTab] = useState<TabId>("calc");
   const [prevTab, setPrevTab] = useState<TabId | null>(null);
   const [animating, setAnimating] = useState(false);
@@ -85,10 +90,19 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
     else if (activeTab === "tekenen") verbergTekenen();
   }, [activeTab, onViewChange, tabs]);
 
+  // Een spreadsheet-blad open: meteen zijn gereedschap; weg ervan: terug naar Start.
+  const vorigeSpreadsheet = useRef(spreadsheet);
+  useEffect(() => {
+    if (vorigeSpreadsheet.current === spreadsheet) return;
+    vorigeSpreadsheet.current = spreadsheet;
+    if (spreadsheet) switchTab("spreadsheet");
+    else if (activeTab === "spreadsheet") switchTab("calc");
+  }, [spreadsheet, activeTab, switchTab]);
+
   useEffect(() => {
     updateHighlight();
     requestAnimationFrame(updateHighlight);
-  }, [activeTab, i18n.language, updateHighlight]);
+  }, [activeTab, spreadsheet, i18n.language, updateHighlight]);
 
   useEffect(() => {
     window.addEventListener("resize", updateHighlight);
@@ -112,6 +126,7 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
       case "ifc": return <IfcTab />;
       case "calcpad": return <CalcPadTab />;
       case "tekenen": return <TekenenTab />;
+      case "spreadsheet": return <SpreadsheetTab />;
     }
   };
 

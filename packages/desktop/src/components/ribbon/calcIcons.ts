@@ -3,12 +3,14 @@
  *
  * public/icons/standard.svg is de sprite van de standaardapplicatie,
  * public/icons/calculations.svg die van Calculations; beide komen ongewijzigd
- * uit `web/icons/` van de Blueprint. Elk icoon staat er in 16 en 24 px in: een
+ * uit `web/icons/` van de Blueprint. public/icons/spreadsheet.svg bevat alleen de
+ * symbolen voor de tab Spreadsheet, ongewijzigd uit andere sprites daar, omdat die
+ * sprites zelf een megabyte zijn. Elk icoon staat er in 16 en 24 px in: een
  * grote knop toont het 24 px-ontwerp, een kleine het 16 px-ontwerp (zie
  * Ribbon.css). Een nieuw icoon: kies het id uit de Blueprint, niet zelf tekenen.
  */
 
-export type Sprite = "standard" | "calculations";
+export type Sprite = "standard" | "calculations" | "spreadsheet";
 
 export const sprite = (naam: Sprite) => `${import.meta.env.BASE_URL}icons/${naam}.svg`;
 
@@ -52,6 +54,19 @@ export const markdownIcon = b2("report.template", "standard");
 export const previewIcon = b2("view.report-preview", "standard");
 export const printSheetIcon = b2("report.print-entry");
 export const reportIcon = b2("report.generate", "standard");
+
+// Spreadsheet
+export const autoSomIcon = glyph("Σ");
+export const functieIcon = b2("budget.add-formula", "spreadsheet");
+export const omlaagIcon = b2("list.move-down", "spreadsheet");
+export const rechtsIcon = b2("nav.forward", "spreadsheet");
+export const rijInvoegenIcon = b2("frame.row-add", "spreadsheet");
+export const kolomInvoegenIcon = b2("frame.column-add", "spreadsheet");
+export const kolomPassendIcon = b2("view.fit-width", "spreadsheet");
+export const rijPassendIcon = b2("view.fit-height", "spreadsheet");
+export const sorteerIcon = b2("list.sort-fields", "spreadsheet");
+export const vastzettenIcon = b2("object.lock", "spreadsheet");
+export const papierrandIcon = b2("view.fit-page", "spreadsheet");
 
 // Tekenen
 export const tekeningNieuwIcon = b2("file.new");

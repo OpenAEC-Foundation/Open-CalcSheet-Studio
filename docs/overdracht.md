@@ -77,6 +77,23 @@ Status in de catalogus: *gereed* (gecalibreerd op referentiebladen), *controlere
 | Beton | Tweepaalspoer (staafwerkmodel; knopen, trekband, splijtkrachten, verankering, scheurwijdte, detaillering; tekening met de gekozen staven) |
 | Bibliotheek | CalcPAD-syntaxdemo |
 
+Een **spreadsheet-blad** is een werkmap (XLSX) als blad in het project, op de
+editor `@betteroffice/xlsx-react`. Die draait hier met `legacySyncApi`: de
+asynchrone API kent rijen invoegen, kolombreedte, vastzetten en verplaatsen niet,
+en alleen `api.handle.applyOps` maakt van cellen met opmaak één stap ongedaan
+maken. Het pakket laat deze weg in 0.6.0 vervallen, dus de versie staat vast op
+0.5.1; wie overstapt, moet eerst nagaan of de nieuwe API deze bewerkingen heeft.
+`components/calc/spreadsheetLogica.ts` is puur en wordt nagerekend door
+`check-spreadsheet.mjs`; `spreadsheetOpdrachten.ts` en `spreadsheetKlembord.ts`
+voeren uit op de rekenkern, `spreadsheetAanwijzen.ts` en `spreadsheetLaag.tsx`
+horen bij het raster, en `components/ribbon/SpreadsheetTab.tsx` is de lint-tab die
+verschijnt zolang een spreadsheet-blad in beeld is. `api.version()` en andere
+gewone API-aanroepen sluiten een open cel: de bewaartimer gebruikt daarom
+`api.handle` rechtstreeks. Hoe een werkmap over de vellen papier valt, staat in
+`spreadsheetVellen.ts`; de afdruk en de papierrand in het raster rekenen daarmee, en
+`check-spreadsheet.mjs` legt de uitkomst naast de getekende afbeeldingen. Het raster
+volgt de losse uitdraai (`MATEN.bladen`); in het rapport is de bladspiegel anders.
+
 De toetsing van de balklaag staat in [balklaag-toetsing.md](balklaag-toetsing.md),
 de bewuste splitspunten tussen referentie-uitwerking en norm in
 [afwijkingen-referentie.md](afwijkingen-referentie.md). Toepassingsgebied en toetsset
