@@ -11,7 +11,8 @@ import { isMarkdownBlad } from "../../store/markdownBlad.ts";
 import { isGraafBlad } from "../../store/graafBlad.ts";
 import { isTekenBlad } from "../../store/tekenBlad.ts";
 import { isJupyterBlad } from "../../store/jupyterBlad.ts";
-import { FORMULES, codeVan } from "../../components/ribbon/formules.ts";
+import { codeVan } from "../../components/ribbon/formules.ts";
+import { alleFormules } from "../../store/library.ts";
 import { jsonGetal, regels, rekenDoor, ucWaarden, type Doorrekening } from "../rekenen.ts";
 import {
   LEEG_BLAD, LEEG_BLAD_NAAM, LEEG_BLAD_TEKST, LEZEN, NIEUW, WEG, WIJZIGEN,
@@ -517,7 +518,7 @@ export const BLADTOOLS: McpToolDef[] = [
       if ("fout" in gevonden) return gevonden.fout;
       const pdf = geenPdfBlad(gevonden.blad);
       if (pdf) return pdf;
-      const formule = FORMULES.find((f) => f.id === args.formulaId);
+      const formule = alleFormules().find((f) => f.id === args.formulaId);
       if (!formule) return fout("NOT_FOUND", `Unknown formula "${String(args.formulaId)}". Call formulas_list.`);
       const regelsNu = gevonden.blad.source.split("\n");
       // Een lege slotregel telt niet mee als plek: "einde" is na de laatste echte regel.

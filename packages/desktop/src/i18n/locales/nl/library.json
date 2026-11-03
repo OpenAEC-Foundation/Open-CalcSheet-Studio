@@ -10,5 +10,10 @@
   "geenBlad": "Geen blad open: Invoegen begint een nieuw blad",
   "alleFormules": "Alle formules zoeken…",
   "alleFormulesUitleg": "Open de formulebibliotheek met alle formules, ook deze voorbeelden",
-  "rekenfout": "Dit voorbeeld kan niet worden doorgerekend: {{fout}}"
+  "rekenfout": "Dit voorbeeld kan niet worden doorgerekend: {{fout}}",
+  "ophalen": "Bibliotheek ophalen…",
+  "nietOpgehaald": "De bibliotheek kon niet worden opgehaald. Controleer je internetverbinding.",
+  "nietBijgewerkt": "Niet bijgewerkt: dit is de stand van {{datum}}.",
+  "teNieuw": "Deze bibliotheek vraagt een nieuwere versie van de app.",
+  "opnieuw": "Opnieuw proberen"
 }

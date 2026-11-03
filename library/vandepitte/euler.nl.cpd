@@ -1,0 +1,22 @@
+## Knik volgens Euler
+'<small>Bron: Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 5, art. 5.2-5.4</small>
+'<i>De kritieke kracht bij de vier klassieke opleggingen, en de hyperbool van Euler die de vloeigrens snijdt bij een bepaalde slankheid.</i>
+E = 210000 N/mm^2'<span class="kolom-3"></span>'
+I_z = 2003 cm^4', HEB 200<span class="kolom-3"></span>'
+A = 7810 mm^2'<span class="kolom-3"></span>'
+L = 4 m'<span class="kolom-3"></span>'
+f_y = 235 N/mm^2', S235<span class="kolom-3"></span>'
+N_E(β) = π^2*E*I_z/(β*L)^2
+N_cr,a = N_E(2) to kN', uitkraging, β = 2'
+N_cr,b = N_E(1) to kN', scharnierend aan beide einden, β = 1'
+N_cr,c = N_E(0.7) to kN', ingeklemd en scharnierend, β = 0,7'
+N_cr,d = N_E(0.5) to kN', aan beide einden ingeklemd, β = 0,5'
+i_z = sqrt(I_z/A) to mm
+λ_b = L/i_z', slankheid bij β = 1'
+λ_p = π*sqrt(E/f_y)', hier snijdt de hyperbool de vloeigrens'
+σ_E(λ) = π^2*E/λ^2
+#hide
+PlotHeight = 220
+#show
+$Plot{σ_E(x)/MPa & f_y/MPa @ x = 60 : 200}
+'<span style="color:#D97706; font-weight:700;">━━ σ<sub>E</sub></span> &nbsp; <span style="color:#2563EB; font-weight:700;">━━ f<sub>y</sub></span> &nbsp; in N/mm², tegen de slankheid λ.

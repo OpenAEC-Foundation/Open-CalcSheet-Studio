@@ -1,0 +1,22 @@
+## Natural frequency of a beam
+'<small>Source: Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 8, art. 8.2-8.3</small>
+'<i>Two cases on the same beam: a point mass at midspan and a distributed mass. The frequency follows from stiffness and mass, or from the static deflection.</i>
+L = 6 m'<span class="kolom-3"></span>'
+E = 210000 N/mm^2'<span class="kolom-3"></span>'
+I_y = 8356 cm^4', IPE 300<span class="kolom-3"></span>'
+M_p = 1000 kg', point mass at midspan<span class="kolom-3"></span>'
+m_l = 300 kg/m', distributed mass<span class="kolom-3"></span>'
+g_n = 9.81 m/s^2'<span class="kolom-3"></span>'
+k_b(x) = 48*E*I_y/x^3
+f_p(x) = sqrt(k_b(x)/M_p)/(2*π)
+f_v(x) = π/(2*x^2)*sqrt(E*I_y/m_l)
+k_L = k_b(L) to kN/m', spring stiffness at midspan'
+f_1 = f_p(L) to Hz', point mass'
+δ_st = M_p*g_n/k_L to mm', static deflection'
+f_δ = sqrt(g_n/δ_st)/(2*π) to Hz', same result via δ'
+f_2 = f_v(L) to Hz', distributed mass'
+#hide
+PlotHeight = 220
+#show
+$Plot{f_p(x)/Hz & f_v(x)/Hz @ x = 3 m : 12 m}
+'<span style="color:#D97706; font-weight:700;">━━ f<sub>p</sub></span> point mass &nbsp; <span style="color:#2563EB; font-weight:700;">━━ f<sub>v</sub></span> distributed mass &nbsp; in Hz, against the span.

@@ -5,9 +5,11 @@ import { defaultStyles, evaluate, parse, render } from "@ifc-calc/core";
 import { useProjectStore } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
 import { isLosBlad } from "../../store/spreadsheetBlad";
+import { useLibrary } from "../../store/library";
+import { werkLibraryBij } from "../../store/libraryLaden";
 import Icoon from "../Icoon";
 import FormuleVenster from "../ribbon/FormuleVenster";
-import { FORMULES, LIBRARY_GROEPEN, codeVan, type Formule, type LibraryGroepId, type Tekst } from "../ribbon/formules";
+import { codeVan, type Formule, type Tekst } from "../ribbon/formules";
 import { nieuwBladMetFormule, voegFormuleIn } from "../ribbon/formuleInvoegen";
 import { schoonUitwerking } from "./uitwerkingOpschonen";
 import "katex/dist/katex.min.css";
@@ -17,9 +19,10 @@ import "./LibrarySectie.css";
 
 /**
  * De Library in het projectpaneel: een handvol voorbeelden uit de Eurocodes en
- * de klassieke mechanica. De voorbeelden zelf staan in formules.ts, dus ook in
- * het formulevenster en de API; dit is alleen de etalage. Een klik toont de
- * uitwerking in een vak naast het paneel, met Invoegen en Nieuw blad.
+ * de klassieke mechanica. De voorbeelden komen bij het opstarten uit de repository
+ * (store/library.ts) en staan ook in het formulevenster en de API; dit is alleen
+ * de etalage. Een klik toont de uitwerking in een vak naast het paneel, met
+ * Invoegen en Nieuw blad.
  */
 
 function Chevron({ open }: { open: boolean }) {
@@ -103,7 +106,7 @@ function VoorbeeldVak({ f, anker, onSluit }: { f: Formule; anker: HTMLElement | 
   const scope = useProjectScope();
   const blad = useProjectStore((s) => s.exemplaren.find((e) => e.id === s.activeId));
   const open = blad && !isLosBlad(blad) ? blad : null;
-  const groep = LIBRARY_GROEPEN.find((g) => g.id === f.library);
+  const groep = useLibrary((s) => s.groepen.find((g) => g.id === f.library));
   const vak = useRef<HTMLDivElement>(null);
   const invoegKnop = useRef<HTMLButtonElement>(null);
 
@@ -177,13 +180,28 @@ function ItemIcoon({ f }: { f: Formule }) {
   return <span className="lib-glyph" aria-hidden="true">ƒ</span>;
 }
 
-const PER_GROEP = new Map<LibraryGroepId, Formule[]>(
-  LIBRARY_GROEPEN.map((g) => [g.id, FORMULES.filter((f) => f.library === g.id)]),
-);
+/** Wat het ophalen te melden heeft; met een bewaarde stand blijft de lijst gewoon staan. */
+function LibraryMelding() {
+  const { t, i18n } = useTranslation("library");
+  const { voorbeelden, opgehaald, bezig, fout } = useLibrary();
+  if (bezig) return voorbeelden.length === 0 ? <p className="lib-melding">{t("ophalen")}</p> : null;
+  if (fout === null) return null;
+  const datum = opgehaald ? new Date(opgehaald).toLocaleDateString(i18n.language) : null;
+  return (
+    <p className="lib-melding">
+      {fout === "teNieuw" ? t("teNieuw") : datum ? t("nietBijgewerkt", { datum }) : t("nietOpgehaald")}
+      {fout === "verbinding" && (
+        <button className="lib-opnieuw" onClick={() => void werkLibraryBij()}>{t("opnieuw")}</button>
+      )}
+    </p>
+  );
+}
 
 export default function LibrarySectie() {
   const { t, i18n } = useTranslation("library");
   const taal = (w: Tekst) => (i18n.language?.startsWith("en") ? w.en : w.nl) || w.nl;
+  const groepen = useLibrary((s) => s.groepen);
+  const voorbeelden = useLibrary((s) => s.voorbeelden);
   const [stand, setStand] = useState(leesStand);
   const [gekozen, setGekozen] = useState<{ f: Formule; anker: HTMLElement } | null>(null);
   const [zoekt, setZoekt] = useState(false);
@@ -198,7 +216,6 @@ export default function LibrarySectie() {
     wijzig({ ...stand, groepenDicht: dicht ? stand.groepenDicht.filter((g) => g !== id) : [...stand.groepenDicht, id] });
   };
   const open = !stand.sectieDicht;
-  const totaal = FORMULES.filter((f) => f.library).length;
 
   return (
     <div className={`panel-section lib-sectie${open ? " open" : ""}`}>
@@ -206,13 +223,14 @@ export default function LibrarySectie() {
         onClick={() => { sluit(); wijzig({ ...stand, sectieDicht: open }); }}>
         <Chevron open={open} />
         <span className="panel-section-title">{t("titel")}</span>
-        <span className="pb-teller">{totaal}</span>
+        <span className="pb-teller">{voorbeelden.length}</span>
       </button>
       {open && (
         <div className="lib-lijst">
-          {LIBRARY_GROEPEN.map((g) => {
+          <LibraryMelding />
+          {groepen.map((g) => {
             const groepOpen = !stand.groepenDicht.includes(g.id);
-            const items = PER_GROEP.get(g.id) ?? [];
+            const items = voorbeelden.filter((f) => f.library === g.id);
             return (
               <div className="lib-groep" key={g.id}>
                 <button className="lib-groep-kop" aria-expanded={groepOpen} onClick={() => wisselGroep(g.id)}

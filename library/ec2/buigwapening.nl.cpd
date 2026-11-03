@@ -1,0 +1,22 @@
+## Benodigde buigwapening
+'<small>Bron: NEN-EN 1992-1-1 3.1.7(3) (3.19); 9.2.1.1(1) (9.1N)</small>
+'<i>Andersom gerekend: uit het moment volgt de wapening, en het blad kiest zelf het aantal staven.</i>
+M_Ed = 150 kN*m'<span class="kolom-3"></span>'
+b = 300 mm'<span class="kolom-3"></span>'
+d = 450 mm'<span class="kolom-3"></span>'
+φ_s = 20 mm', staafdiameter<span class="kolom-3"></span>'
+f_ck = 30 N/mm^2'<span class="kolom-3"></span>'
+f_yk = 500 N/mm^2'<span class="kolom-3"></span>'
+λ = 0.8', (3.19)<span class="kolom-3"></span>'
+f_cd = f_ck/1.5
+f_yd = f_yk/1.15
+f_ctm = 0.30*(f_ck/MPa)^(2/3)*MPa to N/mm^2
+x = (d - sqrt(d^2 - 2*M_Ed/(b*f_cd)))/λ to mm', uit het momentenevenwicht'
+z = d - λ*x/2 to mm
+A_s,req = M_Ed/(z*f_yd) to mm^2
+A_s,min = max(0.26*f_ctm/f_yk*b*d; 0.0013*b*d) to mm^2', (9.1N)'
+A_1 = π*φ_s^2/4 to mm^2', per staaf'
+n_s = ceil(max(A_s,req; A_s,min)/A_1)', aantal staven, naar boven afgerond'
+A_s,prov = n_s*A_1 to mm^2
+UC_As = max(A_s,req; A_s,min)/A_s,prov
+'<b>Kies 'n_s' × Ø'φ_s/mm'</b>

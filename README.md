@@ -54,6 +54,7 @@ per blad. Zie [docs/ifc-export.md](docs/ifc-export.md).
 - Eén klik export: `.ifc` / `.ifcx` download
 
 ### Overig
+- **Library** — voorbeelden uit de Eurocodes en de mechanica; de app haalt ze bij het opstarten op uit [`library/`](library), zodat een fout meteen hersteld kan worden. Zie [docs/library.md](docs/library.md)
 - **Projectgegevens** — gevolgklasse, ontwerplevensduur, windgebied en de projectkop staan op projectniveau en werken door in elk blad
 - **Afdrukken / PDF** — het hele project als één document: voorblad uit de projectgegevens, inhoudsopgave, elk blad op een eigen pagina, met het parametrische beeld én de uitwerking. Met **Voorbeeld** zie je op het scherm precies wat er op papier komt
 - **5 themes** (light, forge, openaec, blueprint, contrast) — OpenAEC design tokens

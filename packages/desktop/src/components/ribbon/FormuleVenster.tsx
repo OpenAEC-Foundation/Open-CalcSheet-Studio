@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import Modal from "../Modal";
 import { FORMULES, FORMULE_GROEPEN, codeVan, type Formule, type Tekst } from "./formules";
 import { voegFormuleIn } from "./formuleInvoegen";
+import { useLibrary } from "../../store/library";
 import "../settings/SettingsDialog.css";
 import "./FormuleVenster.css";
 
@@ -11,7 +12,7 @@ import "./FormuleVenster.css";
  * per groep. Invoegen zet het fragment — invoer met voorbeeldwaarden en de
  * formules — op de cursor in het blad; staat de code niet in beeld, dan eerst
  * de code erbij (store/codeVerzoek.ts). De voorbeelden van de Library
- * (calc/LibrarySectie.tsx) staan hier ook: het zijn dezelfde fragmenten.
+ * (store/library.ts) staan hier ook, zodra ze zijn opgehaald.
  */
 export default function FormuleVenster({ open, onSluit }: { open: boolean; onSluit: () => void }) {
   const { t, i18n } = useTranslation("calcpad");
@@ -21,11 +22,13 @@ export default function FormuleVenster({ open, onSluit }: { open: boolean; onSlu
   const [zoek, setZoek] = useState("");
   const [gekozen, setGekozen] = useState<Formule | null>(null);
 
+  const voorbeelden = useLibrary((s) => s.voorbeelden);
+
   const lijst = useMemo(() => {
     const z = zoek.trim().toLowerCase();
-    return FORMULES.filter((f) => (groep === null || f.groep === groep) && (!z ||
+    return [...FORMULES, ...voorbeelden].filter((f) => (groep === null || f.groep === groep) && (!z ||
       [f.naam.nl, f.naam.en, f.uitleg?.nl ?? "", f.uitleg?.en ?? "", f.bron ?? "", f.code, f.codeEn ?? ""].some((x) => x.toLowerCase().includes(z))));
-  }, [groep, zoek]);
+  }, [groep, zoek, voorbeelden]);
 
   const invoegen = (f: Formule | null) => {
     if (!f) return;

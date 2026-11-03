@@ -1,0 +1,35 @@
+## Deflection, Mohr analogy
+'<small>Source: Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 1, art. 2.1</small>
+'<i>The M/EI diagram becomes the load on an auxiliary beam: its reaction is the rotation, its moment the deflection. The sheet integrates this numerically and compares it with the known formula.</i>
+q = 10 kN/m'<span class="kolom-3"></span>'
+L = 6 m'<span class="kolom-3"></span>'
+E = 210000 N/mm^2'<span class="kolom-3"></span>'
+I_y = 8356 cm^4', IPE 300<span class="kolom-3"></span>'
+M(x) = q*x*(L - x)/2
+φ_A = $Area{M(x)/(E*I_y) @ x = 0 m : L/2}', reaction of the auxiliary beam'
+M_h = $Area{M(x)/(E*I_y)*(L/2 - x) @ x = 0 m : L/2}', moment of half the load about midspan'
+w_m = φ_A*L/2 - M_h to mm', moment of the auxiliary beam at midspan'
+w_c = 5*q*L^4/(384*E*I_y) to mm', as a check'
+#hide
+p_M = round(M(L/2)/(kN*m); 1)
+p_w = round(w_m/mm; 2)
+p_q = round(q/(kN/m); 0)
+#show
+@svg
+<svg class="lib-tekening" viewBox="0 0 470 250" style="width:100%; max-width:470px; font-size:12px;">
+  <text x="30" y="16" style="fill:#52525b">actual beam, q = {{p_q}} kN/m</text>
+  <rect x="60" y="28" width="350" height="20" style="fill:#fbbf77; stroke:#d97706"/>
+  <line x1="60" y1="50" x2="410" y2="50" style="stroke:#36363e; stroke-width:3"/>
+  <polygon points="60,51 53,63 67,63" style="fill:none; stroke:#36363e; stroke-width:1.2"/>
+  <polygon points="410,51 403,63 417,63" style="fill:none; stroke:#36363e; stroke-width:1.2"/>
+  <path d="M60 50 Q235 106 410 50" style="fill:none; stroke:#1d4ed8; stroke-width:1.5; stroke-dasharray:5 3"/>
+  <text x="235" y="96" text-anchor="middle" style="fill:#1d4ed8; font-weight:700">w = {{p_w}} mm</text>
+  <text x="30" y="122" style="fill:#52525b">auxiliary beam, loaded with M/EI</text>
+  <path d="M60 216 Q235 96 410 216 Z" style="fill:#fed7aa; stroke:#d97706; stroke-width:1.5"/>
+  <line x1="60" y1="216" x2="410" y2="216" style="stroke:#36363e; stroke-width:3"/>
+  <polygon points="60,217 53,229 67,229" style="fill:none; stroke:#36363e; stroke-width:1.2"/>
+  <polygon points="410,217 403,229 417,229" style="fill:none; stroke:#36363e; stroke-width:1.2"/>
+  <text x="235" y="194" text-anchor="middle" style="fill:#b45309; font-weight:700">M = {{p_M}} kNm</text>
+  <text x="60" y="244" text-anchor="middle" style="fill:#52525b">φ<tspan dy="3" font-size="9">A</tspan></text>
+</svg>
+@end

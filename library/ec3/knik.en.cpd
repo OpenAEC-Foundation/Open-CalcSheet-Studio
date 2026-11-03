@@ -1,0 +1,23 @@
+## Buckling: the five curves
+'<small>Source: NEN-EN 1993-1-1 6.3.1 (6.46), (6.47), (6.49), (6.50), tab. 6.1, 6.2</small>
+'<i>An HEB 200 about the minor axis. The reduction factor is a function in the sheet, and the same function draws all five buckling curves.</i>
+N_Ed = 800 kN'<span class="kolom-3"></span>'
+A = 7810 mm^2', HEB 200<span class="kolom-3"></span>'
+i_z = 50.7 mm'<span class="kolom-3"></span>'
+L_cr = 4 m'<span class="kolom-3"></span>'
+f_y = 235 N/mm^2', S235<span class="kolom-3"></span>'
+E = 210000 N/mm^2'<span class="kolom-3"></span>'
+γ_M1 = 1.0'<span class="kolom-3"></span>'
+α = 0.49', buckling curve c, tables 6.1 and 6.2<span class="kolom-3"></span>'
+λ_1 = π*sqrt(E/f_y)
+λ_rel = L_cr/(i_z*λ_1)', (6.50)'
+Φ_k(l; a) = 0.5*(1 + a*(l - 0.2) + l^2)
+χ_k(l; a) = min(1/(Φ_k(l; a) + sqrt(Φ_k(l; a)^2 - l^2)); 1)
+χ = χ_k(λ_rel; α)', (6.49)'
+N_b,Rd = χ*A*f_y/γ_M1 to kN', (6.47)'
+UC_b = N_Ed/N_b,Rd', (6.46)'
+#hide
+PlotHeight = 220
+#show
+$Plot{χ_k(x; 0.13) & χ_k(x; 0.21) & χ_k(x; 0.34) & χ_k(x; 0.49) & χ_k(x; 0.76) @ x = 0 : 3}
+'<span style="color:#D97706; font-weight:700;">━━ a0</span> &nbsp; <span style="color:#2563EB; font-weight:700;">━━ a</span> &nbsp; <span style="color:#16A34A; font-weight:700;">━━ b</span> &nbsp; <span style="color:#DC2626; font-weight:700;">━━ c</span> &nbsp; <span style="color:#7C3AED; font-weight:700;">━━ d</span> &nbsp; χ against the relative slenderness.

@@ -1,0 +1,27 @@
+## Links and compression strut
+'<small>Source: NEN-EN 1992-1-1 6.2.2(6) (6.6N); 6.2.3 (6.7N), (6.8), (6.9)</small>
+'<i>The angle of the compression strut is a choice: a flatter strut gives the links more capacity and the concrete less. The chart shows that trade-off.</i>
+V_Ed = 180 kN'<span class="kolom-3"></span>'
+b_w = 300 mm'<span class="kolom-3"></span>'
+d = 450 mm'<span class="kolom-3"></span>'
+φ_w = 8 mm', link diameter<span class="kolom-3"></span>'
+n_w = 2', legs per link<span class="kolom-3"></span>'
+s_l = 200 mm', link spacing<span class="kolom-3"></span>'
+f_ck = 30 N/mm^2'<span class="kolom-3"></span>'
+f_ywd = 500 N/mm^2/1.15'<span class="kolom-3"></span>'
+α_cw = 1.0'<span class="kolom-3"></span>'
+cot_θ = 2.5', between 1 and 2.5 (6.7N)<span class="kolom-3"></span>'
+f_cd = f_ck/1.5
+A_sw = n_w*π*φ_w^2/4 to mm^2
+z = 0.9*d to mm
+ν_1 = 0.6*(1 - f_ck/(250 MPa))', (6.6N)'
+V_s(c) = A_sw/s_l*z*f_ywd*c
+V_max(c) = α_cw*b_w*z*ν_1*f_cd/(c + 1/c)
+V_Rd,s = V_s(cot_θ) to kN', (6.8)'
+V_Rd,max = V_max(cot_θ) to kN', (6.9)'
+UC_V = V_Ed/min(V_Rd,s; V_Rd,max)
+#hide
+PlotHeight = 220
+#show
+$Plot{V_s(x)/kN & V_max(x)/kN & V_Ed/kN @ x = 1 : 2.5}
+'<span style="color:#D97706; font-weight:700;">━━ V<sub>Rd,s</sub></span> &nbsp; <span style="color:#2563EB; font-weight:700;">━━ V<sub>Rd,max</sub></span> &nbsp; <span style="color:#16A34A; font-weight:700;">━━ V<sub>Ed</sub></span> &nbsp; in kN, horizontal axis cot θ.

@@ -8,7 +8,8 @@ import type { McpContext, McpEenheden, McpInstellingen, McpToolDef, McpWeergave 
 import { isLosBlad } from "../../store/spreadsheetBlad.ts";
 import { PROJECT_FORMAAT_VERSIE } from "../../store/projectBestand.ts";
 import { projectIfcx } from "../../store/projectIfcx.ts";
-import { FORMULES, FORMULE_GROEPEN, type Formule } from "../../components/ribbon/formules.ts";
+import { FORMULE_GROEPEN, type Formule } from "../../components/ribbon/formules.ts";
+import { alleFormules } from "../../store/library.ts";
 import { LEZEN, NIEUW, WEG, WIJZIGEN, fout, melding, objectSchema, ok, zoekBlad } from "./hulp.ts";
 
 /**
@@ -170,7 +171,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     rest: [{ method: "GET", path: "/formulas" }],
     handler: (args) => {
       const z = typeof args.query === "string" ? args.query.trim().toLowerCase() : "";
-      const lijst = FORMULES.filter((f) => (args.group === undefined || f.groep === args.group) && (!z ||
+      const lijst = alleFormules().filter((f) => (args.group === undefined || f.groep === args.group) && (!z ||
         [f.naam.nl, f.naam.en, f.uitleg?.nl ?? "", f.uitleg?.en ?? "", f.bron ?? "", f.code, f.codeEn ?? ""].some((x) => x.toLowerCase().includes(z))));
       return ok({
         groups: FORMULE_GROEPEN.map((g) => ({ id: g.id, name: g.naam.en, nameNl: g.naam.nl })),
@@ -188,7 +189,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     annotations: LEZEN,
     rest: [{ method: "GET", path: "/formulas/{id}" }],
     handler: (args) => {
-      const f = FORMULES.find((x) => x.id === args.id);
+      const f = alleFormules().find((x) => x.id === args.id);
       return f ? ok(formuleJson(f, true)) : fout("NOT_FOUND", `Unknown formula "${String(args.id)}".`);
     },
   },

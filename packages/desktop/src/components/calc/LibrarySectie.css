@@ -29,6 +29,29 @@
   scrollbar-width: thin;
 }
 
+.lib-melding {
+  margin: 0;
+  padding: 4px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--theme-text-secondary);
+}
+
+.lib-opnieuw {
+  display: block;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--theme-accent-tint);
+  cursor: pointer;
+}
+
+.lib-opnieuw:hover {
+  text-decoration: underline;
+}
+
 .lib-groep-kop {
   display: flex;
   align-items: baseline;
