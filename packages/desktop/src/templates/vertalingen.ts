@@ -2,13 +2,14 @@ import { uitvoerBron, type BladVertaling, type UitvoerBron } from "../components
 import { balklaagEn } from "./balklaag.en.ts";
 import { calcpadDemoEn } from "./calcpad-demo.en.ts";
 import { liggerEn } from "./ligger.en.ts";
+import { tweepaalspoerEn } from "./tweepaalspoer.en.ts";
 
 /**
  * Welke vertaling hoort bij een bladtekst. De koppeling loopt via de kop van het blad,
  * net als bij de parametrische beelden (designerKeuze.tsx). De bron is Nederlands: in
  * die taal is er niets te vertalen.
  */
-const ENGELS: BladVertaling[] = [liggerEn, balklaagEn, calcpadDemoEn];
+const ENGELS: BladVertaling[] = [liggerEn, balklaagEn, tweepaalspoerEn, calcpadDemoEn];
 
 export function vertalingVoor(bron: string, taal: string | undefined): BladVertaling | null {
   if (!taal || taal.startsWith("nl")) return null;
