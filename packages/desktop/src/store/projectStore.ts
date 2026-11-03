@@ -10,6 +10,7 @@ import { rekenversie } from "../components/calc/bladVersie";
 import { normaliseerExemplaren } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
 import { SPREADSHEET_BLAD, type SpreadsheetBestand } from "./spreadsheetBlad";
+import { CANVAS_BLAD } from "./canvasBlad";
 
 const STORE_KEY = "projectState";
 
@@ -136,6 +137,8 @@ interface ProjectState {
   voegSpreadsheetToe: (naam: string, xlsx: SpreadsheetBestand) => string;
   /** De werkmap van een spreadsheet-blad; opeenvolgende bewerkingen tellen als één stap ongedaan maken. */
   zetSpreadsheet: (id: string, xlsx: SpreadsheetBestand) => void;
+  /** Een leeg canvas-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegCanvasToe: (naam: string) => string;
   dupliceer: (id: string) => string | null;
   hernoem: (id: string, naam: string) => void;
   verwijder: (id: string) => void;
@@ -359,6 +362,20 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         dirty: true,
       };
     }),
+
+  voegCanvasToe: (naam) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: CANVAS_BLAD, source: "", waarden: {} },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
 
   dupliceer: (id) => {
     const bron = get().exemplaren.find((e) => e.id === id);

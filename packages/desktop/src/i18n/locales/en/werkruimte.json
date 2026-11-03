@@ -319,6 +319,21 @@
     "exporteren": "Export…",
     "exporterenUitleg": "Write this workbook to a separate XLSX file."
   },
+  "canvas": {
+    "toevoegen": "Add canvas",
+    "toevoegenUitleg": "Add an empty canvas to the project as a sheet: formulas as separate units, placed freely on a page. It calculates from top to bottom, and at equal height from left to right.",
+    "nieuweNaam": "Canvas",
+    "tab": "Canvas",
+    "paneel": "Canvas",
+    "rij": "Canvas sheet: formulas placed freely on a page",
+    "uitleg": "Click an empty spot to place a formula.",
+    "invoerVoorbeeld": "a = 2 m",
+    "invoerLabel": "Calculation text of this unit",
+    "eenheidUitleg": "Click to edit, drag to move.",
+    "overDeVouw": "No longer fits on the page here: on paper this unit starts on the next one.",
+    "verwijderen": "Delete unit",
+    "pagina": "Page {{nummer}}"
+  },
   "welkom": {
     "titel": "Welcome to Open CalcSheet Studio",
     "intro": "Structural calculations as readable sheets: you write the calculation, the app works it out, draws it and assembles the structural report.",

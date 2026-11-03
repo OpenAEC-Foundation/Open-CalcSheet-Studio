@@ -14,6 +14,7 @@ import {
 } from "../../../rapport/opzet";
 import type { Invulwaarden } from "../../../rapport/invullen";
 import { rekenBladDoor, zorgVoorKernstijlen } from "../../calc/bladDoorrekenen";
+import type { CanvasUitwerking } from "../../calc/canvasRekenen";
 import type { Resultaat } from "../../calc/bladResultaat";
 
 /*
@@ -29,6 +30,8 @@ export interface RapportBlad {
   ex: Exemplaar;
   html: string;
   resultaat: Resultaat;
+  /** Bij een canvas-blad: de uitwerking per eenheid, met zijn positie. */
+  eenheden?: CanvasUitwerking[];
 }
 
 export interface RapportWeergave {

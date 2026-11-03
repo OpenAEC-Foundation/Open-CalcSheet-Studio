@@ -6,7 +6,8 @@ import { MATEN } from "../../calc/paginering";
 import { PdfPaginas } from "../../calc/PdfBladWeergave";
 import { SpreadsheetVellen } from "../../calc/SpreadsheetBladWeergave";
 import { isSpreadsheetBlad } from "../../../store/spreadsheetBlad";
-import { UitwerkingHtml } from "../../calc/PrintBlad";
+import { isCanvasBlad } from "../../../store/canvasBlad";
+import { CanvasVellen, UitwerkingHtml } from "../../calc/PrintBlad";
 import { isPdfBlad } from "../../../store/pdfBijlage";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { Cel, Leeg, Rij, Tekst, Vlak } from "./raster";
@@ -130,7 +131,9 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
         // `print-blad` geeft de uitwerking dezelfde compacte opmaak als een
         // los blad; `rpa-inline` haalt de paginasprong van een los blad weg.
         <Vlak klasse="print-blad rpa-inline">
-          <UitwerkingHtml html={b.html} bladId={b.ex.id} />
+          {isCanvasBlad(b.ex) && b.eenheden
+            ? <CanvasVellen eenheden={b.eenheden} bladId={b.ex.id} />
+            : <UitwerkingHtml html={b.html} bladId={b.ex.id} />}
         </Vlak>
       ) : (
         blad.bijlage && <p className="rpa-tekst">Zie bijlage {blad.bijlage}.</p>

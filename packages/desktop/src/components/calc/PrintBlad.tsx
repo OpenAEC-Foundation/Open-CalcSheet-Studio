@@ -9,6 +9,10 @@ import { isPdfBlad } from "../../store/pdfBijlage";
 import { PdfBladAfdruk } from "./PdfBladWeergave";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
 import { SpreadsheetBladAfdruk } from "./SpreadsheetBladWeergave";
+import { isCanvasBlad, legOpVellen, maxBreedte } from "../../store/canvasBlad";
+import { useEenheidMaten } from "./canvasMaten";
+import type { CanvasUitwerking } from "./canvasRekenen";
+import "./CanvasBladWeergave.css";
 import { MATEN, type Maten } from "./paginering";
 import { useDrieDAfdruk } from "./drieDBlok";
 import { useIfcxAfdruk } from "./ifcxBlok";
@@ -49,6 +53,47 @@ export function UitwerkingHtml({ html, bladId }: { html: string; bladId?: string
   return <div ref={ref} className="ifc-calc" dangerouslySetInnerHTML={inhoud} />;
 }
 
+/**
+ * Een canvas-blad op papier: de eenheden op hun positie, verdeeld over de vellen.
+ * Elk vel is een blok met een eigen paginasprong, zo hoog als wat erop staat. De
+ * maten worden hier gemeten: op papier is de letter anders dan op een los vel
+ * zonder deze opmaak, en wat niet past, schuift (legOpVellen).
+ */
+export function CanvasVellen({ eenheden, bladId }: { eenheden: CanvasUitwerking[]; bladId?: string }) {
+  const wortel = useRef<HTMLDivElement>(null);
+  const maten = useEenheidMaten(wortel);
+  const maatVan = (id: string) => maten[id] ?? { b: 0, h: 0 };
+  const plekken = legOpVellen(eenheden.map((e) => ({ x: e.x, y: e.y, ...maatVan(e.id) })));
+  const vellen: { eenheid: CanvasUitwerking; x: number; y: number }[][] = [];
+  eenheden.forEach((eenheid, i) => {
+    const { vel, x, y } = plekken[i];
+    for (let v = vellen.length; v <= vel; v++) vellen.push([]);
+    vellen[vel].push({ eenheid, x, y });
+  });
+  return (
+    <div ref={wortel} className="print-canvas">
+      {vellen.map((vel, i) => (
+        <div
+          key={i}
+          className={i > 0 ? "print-canvas-vel print-nieuw-vel" : "print-canvas-vel"}
+          style={{ height: `${Math.max(0, ...vel.map(({ eenheid, y }) => y + maatVan(eenheid.id).h)).toFixed(2)}mm` }}
+        >
+          {vel.map(({ eenheid, x, y }) => (
+            <div
+              key={eenheid.id}
+              className="print-canvas-eenheid"
+              data-eenheid={eenheid.id}
+              style={{ left: `${x}mm`, top: `${y}mm`, maxWidth: `${maxBreedte(eenheid.x)}mm` }}
+            >
+              <UitwerkingHtml html={eenheid.html} bladId={bladId} />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Het oordeel als klein label: groen, rood of neutraal. */
 export function Oordeel({ r }: { r: Resultaat }) {
   if (r.voldoet === null) return <span className="print-oordeel neutraal">—</span>;
@@ -75,10 +120,13 @@ export function Oordeel({ r }: { r: Resultaat }) {
  * Een PDF-blad gaat naar PdfBladAfdruk: zijn pagina's elk op een eigen vel,
  * geschaald binnen de bladspiegel van `maten` (de losse bladen of het
  * rapport). Een projectregel heeft het niet; er is niets mee gerekend.
+ *
+ * Een canvas-blad heeft dezelfde kop, met onder de kop zijn eenheden op hun
+ * positie (`eenheden`, uit rekenBladDoor).
  */
-export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKop = false, maten = MATEN.bladen }: {
+export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKop = false, maten = MATEN.bladen, eenheden }: {
   ex: Exemplaar; html: string; nummer: number | string; resultaat: Resultaat; projectregel?: ReactNode;
-  titelInKop?: boolean; maten?: Maten;
+  titelInKop?: boolean; maten?: Maten; eenheden?: CanvasUitwerking[];
 }) {
   if (isPdfBlad(ex)) return <PdfBladAfdruk ex={ex} nummer={nummer} maten={maten} />;
   if (isSpreadsheetBlad(ex)) return <SpreadsheetBladAfdruk ex={ex} nummer={nummer} maten={maten} />;
@@ -110,7 +158,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
           </ExemplaarContext.Provider>
         </div>
       )}
-      <UitwerkingHtml html={html} bladId={ex.id} />
+      {isCanvasBlad(ex) && eenheden ? <CanvasVellen eenheden={eenheden} bladId={ex.id} /> : <UitwerkingHtml html={html} bladId={ex.id} />}
     </section>
   );
 }

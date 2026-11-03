@@ -27,8 +27,10 @@ import { BladVersieKop, BladVersieMelding } from "./components/calc/BladVersieKo
 import IfcViewerPanel from "./components/calc/IfcViewerPanel";
 import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
+import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
 import { isPdfBlad } from "./store/pdfBijlage";
 import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
+import { isCanvasBlad } from "./store/canvasBlad";
 import { getSetting } from "./store";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
 import { usePrintStore } from "./store/printStore";
@@ -100,6 +102,8 @@ export default function App() {
   const [theme, setTheme] = useState("light");
   // 2-pane werkruimte-modus: code+visueel / code+uitwerking / visueel+uitwerking
   const [splitMode, setSplitMode] = useState<"cv" | "cu" | "vu">("vu");
+  // Een canvas-blad opent op het canvas; zijn rekentekst is de tab ernaast.
+  const [canvasCode, setCanvasCode] = useState(false);
 
   useEffect(() => {
     getSetting<string>("theme", "light").then((saved) => {
@@ -256,6 +260,10 @@ export default function App() {
   const pdfBlad = actief !== null && isPdfBlad(actief);
   // Idem een spreadsheet-blad: alleen zijn werkmap.
   const spreadsheetBlad = actief !== null && isSpreadsheetBlad(actief);
+  // Een canvas-blad heeft gewone rekentekst: de weergaven van een blad, met het canvas ervoor.
+  const canvasBlad = actief !== null && isCanvasBlad(actief);
+  const toontCanvas = canvasBlad && !canvasCode;
+  useEffect(() => setCanvasCode(false), [activeId]);
   const mode = hasDesigner ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
@@ -279,6 +287,7 @@ export default function App() {
   const kiesWeergave = (m: "cv" | "cu" | "vu") => {
     sluitVoorbeeld();
     setSplitMode(m);
+    setCanvasCode(true);
   };
 
   // Het lint (tab CalcPAD) vraagt om de code: weg uit de IFC-weergave en het
@@ -289,6 +298,7 @@ export default function App() {
     setActiveView("default");
     sluitVoorbeeld();
     setSplitMode((m) => (m === "vu" ? "cv" : m));
+    setCanvasCode(true);
   }, [codeVerzoek, sluitVoorbeeld]);
   const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad) ? (
     <div className="split-tabs">
@@ -298,12 +308,23 @@ export default function App() {
   ) : actief && !toontProjectGegevens ? (
     <>
       <div className="split-tabs">
-        {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>{t("weergave.codeVisueel")}</button>
+        {canvasBlad && (
+          <button
+            className={`split-tab${!printVoorbeeld && toontCanvas ? " active" : ""}`}
+            onClick={() => {
+              sluitVoorbeeld();
+              setCanvasCode(false);
+            }}
+          >
+            {t("canvas.tab")}
+          </button>
         )}
-        <button className={`split-tab${!printVoorbeeld && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
         {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
+          <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>{t("weergave.codeVisueel")}</button>
+        )}
+        <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
+        {hasDesigner && (
+          <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
         )}
         <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
         <BladVersieKop ex={actief} />
@@ -397,6 +418,15 @@ export default function App() {
                 <Trans t={t} i18nKey="leeg.uitleg" components={{ b: <b /> }} />
               </p>
             </div>
+          ) : toontCanvas ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("canvas.paneel")} info={<UcInfo blad={actief.id} />}>
+                  <CanvasBladWeergave key={actief.id} ex={actief} />
+                </WerkPaneel>
+              </div>
+            </>
           ) : spreadsheetBlad ? (
             <>
               {tabBalk}

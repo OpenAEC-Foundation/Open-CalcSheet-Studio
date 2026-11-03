@@ -93,7 +93,7 @@ export default function RapportAfdruk() {
           Een PDF-blad krijgt zijn pagina's hier, elk op een eigen vel van het rapport. */}
       {inBijlage.map((b) => (
         <PrintBlad key={b.ex.id} ex={b.ex} html={b.html} nummer={b.nummer} resultaat={b.resultaat} titelInKop
-          maten={MATEN.rapport} />
+          maten={MATEN.rapport} eenheden={b.eenheden} />
       ))}
     </div>
   );

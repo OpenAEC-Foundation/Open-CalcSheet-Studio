@@ -22,6 +22,7 @@ import {
   searchIcon,
   blankSheetIcon,
   spreadsheetIcon,
+  canvasIcon,
 } from "./calcIcons";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../../store/projectStore";
 import { usePrintStore } from "../../store/printStore";
@@ -180,6 +181,12 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
             label={t("calc.spreadsheet", "Spreadsheet")}
             size="large"
             onClick={() => voegLeegSpreadsheetToe(useProjectStore.getState().voegSpreadsheetToe)}
+          />
+          <RibbonButton
+            icon={canvasIcon}
+            label={t("calc.canvas", "Canvas")}
+            size="large"
+            onClick={() => useProjectStore.getState().voegCanvasToe(t("werkruimte:canvas.nieuweNaam"))}
           />
         </RibbonGroup>
 

@@ -3,8 +3,8 @@ import i18next from "i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { projectScope, projectWaarde } from "../../store/projectGegevens";
 import { usePrintStore } from "../../store/printStore";
-import { ucTekst, type Resultaat } from "./bladResultaat";
-import { rekenBladDoor, zorgVoorKernstijlen } from "./bladDoorrekenen";
+import { ucTekst } from "./bladResultaat";
+import { rekenBladDoor, zorgVoorKernstijlen, type DoorgerekendBlad } from "./bladDoorrekenen";
 import { rekenversie } from "./bladVersie";
 import { Oordeel, PrintBlad } from "./PrintBlad";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
@@ -16,7 +16,7 @@ const op = (sleutel: string, opties?: Record<string, unknown>) => i18next.t(`bee
 /** Wat er op het voorblad en in de uitdraai staat. */
 export interface Uitdraai {
   projectNaam: string;
-  bladen: { ex: Exemplaar; html: string; resultaat: Resultaat }[];
+  bladen: ({ ex: Exemplaar } & DoorgerekendBlad)[];
   /** Alle bladen van het project, voor de keuze in het afdrukvoorbeeld. */
   alleBladen: Exemplaar[];
   /** Eén losse berekening: geen voorblad, wel een projectregel onder de bladkop. */
@@ -191,8 +191,8 @@ export function UitdraaiInhoud({ uitdraai }: { uitdraai: Uitdraai }) {
   return (
     <>
       {!enkel && <PrintVoorblad uitdraai={uitdraai} />}
-      {bladen.map(({ ex, html, resultaat }, i) => (
-        <PrintBlad key={ex.id} ex={ex} html={html} nummer={i + 1} resultaat={resultaat} titelInKop
+      {bladen.map(({ ex, html, resultaat, eenheden }, i) => (
+        <PrintBlad key={ex.id} ex={ex} html={html} nummer={i + 1} resultaat={resultaat} titelInKop eenheden={eenheden}
           projectregel={enkel ? <PrintProjectregel uitdraai={uitdraai} rekenversie={rekenversie(ex.source)} /> : undefined} />
       ))}
     </>

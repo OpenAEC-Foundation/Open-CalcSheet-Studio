@@ -129,10 +129,11 @@ export function houdtBijVolgende(el: Pick<Element, "tagName" | "classList">): bo
 }
 
 /**
- * Wikkels die alleen groeperen: `.ifc-calc` om de uitwerking van een blad en
- * `.rpa-vlak` om de regels van het rapport. Wat erin zit, wordt los verdeeld.
+ * Wikkels die alleen groeperen: `.ifc-calc` om de uitwerking van een blad,
+ * `.rpa-vlak` om de regels van het rapport en `.print-canvas` om de vellen van
+ * een canvas-blad. Wat erin zit, wordt los verdeeld.
  */
-const WIKKELS = ["ifc-calc", "rpa-vlak"];
+const WIKKELS = ["ifc-calc", "rpa-vlak", "print-canvas"];
 
 /**
  * Haalt de wikkels weg en levert de regels die erin zitten.
