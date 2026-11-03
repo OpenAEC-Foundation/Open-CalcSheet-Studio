@@ -44,7 +44,8 @@ Bij het bouwen zijn internet en Python nodig; bij de gebruiker niets.
 | waarvan JupyterLab | 16 |
 | waarvan Pyodide (kern, standaardbibliotheek) | 12 |
 | waarvan Python-pakketten | 36 |
-| extra in de installer (LZMA) | ongeveer 44 |
+| daarvan in de installer, gecomprimeerd | ongeveer 44 |
+| de hele NSIS-installer van Windows, gemeten | 56,5 |
 
 De omgeving zit in de installer en niet in een download bij het eerste gebruik: alles
 werkt dan meteen en zonder internet, ook numpy, scipy, pandas en matplotlib. `%pip
