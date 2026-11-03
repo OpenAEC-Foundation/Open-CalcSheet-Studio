@@ -9,6 +9,7 @@ import { templates } from "../../templates";
 import { heeftEigenCode, huidigeModuletekst, isVerouderd, rekenversie } from "./bladVersie";
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
+import { isCanvasBlad } from "../../store/canvasBlad";
 import { voegLeegSpreadsheetToe, voegWerkmapToe } from "./spreadsheetBlad";
 import { isMarkdownBlad } from "../../store/markdownBlad";
 import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
@@ -110,12 +111,15 @@ function ExemplaarRij({
   const pdf = isPdfBlad(ex);
   const spreadsheet = isSpreadsheetBlad(ex);
   const markdown = isMarkdownBlad(ex);
+  const canvas = isCanvasBlad(ex);
   const stip = pdf
     ? <Icoon id="report.cover" />
     : spreadsheet
     ? <Icoon id="data.table" />
     : markdown
     ? <Icoon id="report.template" />
+    : canvas
+    ? <Icoon id="report.workspace" uit="calculations" />
     : <span className={`pb-stip${status ? ` pb-status-${status}` : ""}`} aria-hidden="true" />;
   const uitleg = pdf
     ? `${ex.naam}\n${tw("pdf.rij", { bestand: ex.pdf?.bestandsnaam || "—" })}\n${tw("browser.dubbelklik")}`
@@ -123,6 +127,8 @@ function ExemplaarRij({
     ? `${ex.naam}\n${tw("spreadsheet.rij")}\n${tw("browser.dubbelklik")}`
     : markdown
     ? `${ex.naam}\n${tw("markdown.rij")}\n${tw("browser.dubbelklik")}`
+    : canvas
+    ? `${ex.naam}\n${tw("canvas.rij")}\n${tw("browser.dubbelklik")}`
     : `${ex.naam}${info ? ` — ${moduleNaam}` : ""}\n${versieRegel}` +
       (eigen ? `\n${t("bladVersie.eigenUitleg", { bron: ex.bronVersie })}` : "") +
       (verouderd ? `\n${t("bladVersie.rijVerouderd", { nieuw: nieuweVersie })}` : "") +
@@ -225,6 +231,7 @@ export default function ProjectBrowser() {
   const voegPdfToe = useProjectStore((s) => s.voegPdfToe);
   const voegSpreadsheetToe = useProjectStore((s) => s.voegSpreadsheetToe);
   const voegMarkdownToe = useProjectStore((s) => s.voegMarkdownToe);
+  const voegCanvasToe = useProjectStore((s) => s.voegCanvasToe);
 
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const activeId = useProjectStore((s) => s.activeId);
@@ -349,6 +356,12 @@ export default function ProjectBrowser() {
           <button className="pb-rij pb-toevoegen" onClick={() => void voegMarkdownBestandToe(voegMarkdownToe)} title={tw("markdown.importerenUitleg")}>
             <Icoon id="file.import" uit="calculations" />
             <span className="pb-naam">{tw("markdown.importeren")}</span>
+          </button>
+
+          {/* Formules als losse eenheden vrij op een vel. */}
+          <button className="pb-rij pb-toevoegen" onClick={() => voegCanvasToe(tw("canvas.nieuweNaam"))} title={tw("canvas.toevoegenUitleg")}>
+            <Icoon id="report.workspace" uit="calculations" />
+            <span className="pb-naam">{tw("canvas.toevoegen")}</span>
           </button>
 
           {/* Alleen als er iets bij te werken is; bijwerken gaat altijd via de vergelijking. */}

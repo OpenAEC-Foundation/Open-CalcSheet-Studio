@@ -16,6 +16,7 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import i18next from "i18next";
 import { setAngleMode, type AngleMode } from "@ifc-calc/core";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
+import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
 import { calcpadIncludes, calcpadImageUrls } from "../templates/calcpad-includes";
 
 export interface RekenVerzoek {
@@ -34,11 +35,14 @@ export interface RekenVerzoek {
 export interface RekenAntwoord {
   sleutel: string;
   html: string;
+  /** Bij een canvas-blad: de uitwerking per eenheid (components/calc/canvasRekenen.ts). */
+  eenheden?: CanvasUitwerking[];
   uitkomst: BladUitkomst | null;
 }
 
 export interface Doorrekening {
   html: string;
+  eenheden?: CanvasUitwerking[];
   uitkomst: BladUitkomst | null;
 }
 
@@ -62,8 +66,8 @@ function deWorker(): Worker {
   if (!worker) {
     worker = new Worker(new URL("./rekenWorker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (e: MessageEvent<RekenAntwoord>) => {
-      const { sleutel, html, uitkomst } = e.data;
-      uitkomsten.set(sleutel, { html, uitkomst });
+      const { sleutel, html, eenheden, uitkomst } = e.data;
+      uitkomsten.set(sleutel, { html, eenheden, uitkomst });
       while (uitkomsten.size > BEWAARD) uitkomsten.delete(uitkomsten.keys().next().value!);
       bezig = null;
       const volgende = wachtend;

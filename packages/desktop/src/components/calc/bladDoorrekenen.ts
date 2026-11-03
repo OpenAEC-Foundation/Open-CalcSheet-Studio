@@ -1,10 +1,11 @@
 import i18next from "i18next";
-import { parse, evaluate, render, defaultStyles } from "@ifc-calc/core";
+import { defaultStyles } from "@ifc-calc/core";
 import type { Exemplaar } from "../../store/projectStore";
 import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-includes";
 import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { bladSoortVan } from "./bladSoorten";
+import { rekenUitwerking, type CanvasUitwerking } from "./canvasRekenen";
 
 /*
  * Een rekenblad doorrekenen voor op papier.
@@ -31,6 +32,8 @@ export function zorgVoorKernstijlen() {
 export interface DoorgerekendBlad {
   html: string;
   resultaat: Resultaat;
+  /** Bij een canvas-blad: de uitwerking per eenheid, met zijn positie. */
+  eenheden?: CanvasUitwerking[];
 }
 
 /**
@@ -47,18 +50,20 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): Do
     return { html: "", resultaat: { titel: ex.naam, norm: soort.soortTekst(), uc: null, voldoet: null } };
   }
   let html: string;
+  let eenheden: CanvasUitwerking[] | undefined;
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
   try {
     const opties = { includes: calcpadIncludes, imageUrls: calcpadImageUrls };
     // De uitvoer volgt de taal van de app, ook op papier.
     const uitvoer = bronVoorUitvoer(ex.source, i18next.language);
-    const nodes = evaluate(parse(uitvoer.bron, opties), ex.waarden, scope);
-    html = render(nodes, { namen: uitvoer.namen });
-    resultaat = leesResultaat(nodes, ex.naam);
+    const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, scope, opties, uitvoer.namen);
+    html = uitwerking.html;
+    eenheden = uitwerking.eenheden;
+    resultaat = leesResultaat(uitwerking.nodes, ex.naam);
   } catch (err) {
     html = `<p class="calc-text" style="color:#b91c1c">${i18next.t("beelden:afdruk.nietDoorgerekend")} ${
       (err as Error).message
     }</p>`;
   }
-  return { html, resultaat };
+  return { html, resultaat, eenheden };
 }

@@ -11,6 +11,7 @@ import { normaliseerExemplaren } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
 import { SPREADSHEET_BLAD, type SpreadsheetBestand } from "./spreadsheetBlad";
 import { MARKDOWN_BLAD, type MarkdownBestand } from "./markdownBlad";
+import { CANVAS_BLAD } from "./canvasBlad";
 
 const STORE_KEY = "projectState";
 
@@ -146,6 +147,8 @@ interface ProjectState {
   voegMarkdownToe: (naam: string, md: MarkdownBestand) => string;
   /** De tekst van een Markdown-blad; doortypen telt als één stap ongedaan maken. */
   zetMarkdown: (id: string, md: MarkdownBestand) => void;
+  /** Een leeg canvas-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegCanvasToe: (naam: string) => string;
   dupliceer: (id: string) => string | null;
   hernoem: (id: string, naam: string) => void;
   verwijder: (id: string) => void;
@@ -393,6 +396,20 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         dirty: true,
       };
     }),
+
+  voegCanvasToe: (naam) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: CANVAS_BLAD, source: "", waarden: {} },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
 
   dupliceer: (id) => {
     const bron = get().exemplaren.find((e) => e.id === id);

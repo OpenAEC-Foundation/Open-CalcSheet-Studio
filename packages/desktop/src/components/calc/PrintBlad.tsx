@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import i18next from "i18next";
 import type { Exemplaar } from "../../store/projectStore";
 import { ExemplaarContext } from "../../store/actiefBlad";
@@ -6,6 +6,10 @@ import { designerVoor } from "./designerKeuze";
 import { ucTekst, type Resultaat } from "./bladResultaat";
 import { rekenversie } from "./bladVersie";
 import { bladSoortVan, LosBladAfdruk } from "./bladSoorten";
+import { isCanvasBlad, legOpVellen, maxBreedte } from "../../store/canvasBlad";
+import { useEenheidMaten } from "./canvasMaten";
+import type { CanvasUitwerking } from "./canvasRekenen";
+import "./CanvasBladWeergave.css";
 import { MATEN, type Maten } from "./paginering";
 import { UitwerkingHtml } from "./UitwerkingHtml";
 import "./PrintDocument.css";
@@ -22,6 +26,47 @@ import "./PrintDocument.css";
  * Voor een Nederlands rapport staat de app op Nederlands. Eerder was de afdruk altijd
  * Nederlands; die keuze is vervallen.
  */
+
+/**
+ * Een canvas-blad op papier: de eenheden op hun positie, verdeeld over de vellen.
+ * Elk vel is een blok met een eigen paginasprong, zo hoog als wat erop staat. De
+ * maten worden hier gemeten: op papier is de letter anders dan op een los vel
+ * zonder deze opmaak, en wat niet past, schuift (legOpVellen).
+ */
+export function CanvasVellen({ eenheden, bladId }: { eenheden: CanvasUitwerking[]; bladId?: string }) {
+  const wortel = useRef<HTMLDivElement>(null);
+  const maten = useEenheidMaten(wortel);
+  const maatVan = (id: string) => maten[id] ?? { b: 0, h: 0 };
+  const plekken = legOpVellen(eenheden.map((e) => ({ x: e.x, y: e.y, ...maatVan(e.id) })));
+  const vellen: { eenheid: CanvasUitwerking; x: number; y: number }[][] = [];
+  eenheden.forEach((eenheid, i) => {
+    const { vel, x, y } = plekken[i];
+    for (let v = vellen.length; v <= vel; v++) vellen.push([]);
+    vellen[vel].push({ eenheid, x, y });
+  });
+  return (
+    <div ref={wortel} className="print-canvas">
+      {vellen.map((vel, i) => (
+        <div
+          key={i}
+          className={i > 0 ? "print-canvas-vel print-nieuw-vel" : "print-canvas-vel"}
+          style={{ height: `${Math.max(0, ...vel.map(({ eenheid, y }) => y + maatVan(eenheid.id).h)).toFixed(2)}mm` }}
+        >
+          {vel.map(({ eenheid, x, y }) => (
+            <div
+              key={eenheid.id}
+              className="print-canvas-eenheid"
+              data-eenheid={eenheid.id}
+              style={{ left: `${x}mm`, top: `${y}mm`, maxWidth: `${maxBreedte(eenheid.x)}mm` }}
+            >
+              <UitwerkingHtml html={eenheid.html} bladId={bladId} />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /** Het oordeel als klein label: groen, rood of neutraal. */
 export function Oordeel({ r }: { r: Resultaat }) {
@@ -51,11 +96,14 @@ export function Oordeel({ r }: { r: Resultaat }) {
  * tekent zijn eigen onderdeel, binnen de bladspiegel van `maten` (de losse bladen
  * of het rapport). Een projectregel heeft het niet; er is niets mee gerekend.
  *
+ * Een canvas-blad heeft dezelfde kop, met onder de kop zijn eenheden op hun
+ * positie (`eenheden`, uit rekenBladDoor).
+ *
  * `anker`: de plek van de kop voor de inhoudsopgave van het rapport.
  */
-export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKop = false, maten = MATEN.bladen, anker }: {
+export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKop = false, maten = MATEN.bladen, anker, eenheden }: {
   ex: Exemplaar; html: string; nummer: number | string; resultaat: Resultaat; projectregel?: ReactNode;
-  titelInKop?: boolean; maten?: Maten; anker?: string;
+  titelInKop?: boolean; maten?: Maten; anker?: string; eenheden?: CanvasUitwerking[];
 }) {
   const soort = bladSoortVan(ex);
   if (soort) return <LosBladAfdruk soort={soort} ex={ex} nummer={nummer} maten={maten} anker={anker} />;
@@ -87,7 +135,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
           </ExemplaarContext.Provider>
         </div>
       )}
-      <UitwerkingHtml html={html} bladId={ex.id} />
+      {isCanvasBlad(ex) && eenheden ? <CanvasVellen eenheden={eenheden} bladId={ex.id} /> : <UitwerkingHtml html={html} bladId={ex.id} />}
     </section>
   );
 }
