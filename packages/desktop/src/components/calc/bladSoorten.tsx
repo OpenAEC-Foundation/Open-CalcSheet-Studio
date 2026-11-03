@@ -4,6 +4,7 @@ import { PDF_BLAD } from "../../store/pdfBijlage";
 import { SPREADSHEET_BLAD } from "../../store/spreadsheetBlad";
 import { MARKDOWN_BLAD } from "../../store/markdownBlad";
 import { GRAAF_BLAD } from "../../store/graafBlad";
+import { TEKEN_BLAD } from "../../store/tekenBlad";
 import type { Blad, BladPlek, Inhoudskop } from "../../rapport/opzet";
 import type { Maten } from "./paginering";
 import { papier, usePdfPaginas, usePdfVersie } from "./pdfBlad";
@@ -14,6 +15,7 @@ import { SpreadsheetVellen } from "./SpreadsheetBladWeergave";
 import { MarkdownPapier, MarkdownRapportKeuze } from "./MarkdownBladWeergave";
 import { koppenVoorInhoud } from "./markdownRegels";
 import { GraafVellen } from "../graaf/GraafAfdruk";
+import { TekenbladAfdruk, TekenvelOpPapier } from "./TekenbladWeergave";
 
 /*
  * De bladsoorten in de afdruk, op één plek.
@@ -40,6 +42,11 @@ export interface BladSoort {
    * `data-afdruk-laadt`, en verandert daarna `useVersie`.
    */
   Afdruk: ComponentType<{ ex: Exemplaar; maten: Maten }>;
+  /**
+   * Het hele blad zelf, zonder kop erboven: voor een blad op eigen papierformaat met
+   * zijn naam op het vel. Zonder: de kop met `Afdruk` eronder (LosBladAfdruk).
+   */
+  HeelBlad?: ComponentType<{ ex: Exemplaar; anker?: string }>;
   /** Wat er achter de soort onder de kop staat, zoals de bestandsnaam. Een haak: mag een stand lezen. */
   useOnderkop?: (ex: Exemplaar) => Array<string | undefined>;
   /** Verandert als er iets klaar is getekend: het afdrukvoorbeeld verdeelt dan opnieuw. */
@@ -91,6 +98,12 @@ const SOORTEN: readonly BladSoort[] = [
     templateId: GRAAF_BLAD,
     soortTekst: () => papier()("graafBlad.soort"),
     Afdruk: GraafVellen,
+  },
+  {
+    templateId: TEKEN_BLAD,
+    soortTekst: () => papier()("tekenBlad.soort"),
+    Afdruk: TekenvelOpPapier,
+    HeelBlad: TekenbladAfdruk,
   },
 ];
 

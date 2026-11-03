@@ -49,7 +49,13 @@
     "symbolen": "Symbols",
     "bibliotheek": "Library",
     "bibliotheekTip": "All parametric symbols: steel sections and timber at true size, structural scheme and setting out. Pick one and click or drag in the drawing.",
-    "schemaKort": "Quick scheme"
+    "schemaKort": "Quick scheme",
+    "view": "View",
+    "terugNaarVel": "Back to sheet",
+    "terugNaarVelTip": "Done with this view: back to the whole sheet. The drawing is already in the project.",
+    "constructie": "Floors",
+    "inViewTekenen": "Draw",
+    "inViewTekenenTip": "Draw in the selected view of this sheet."
   },
   "gereedschap": {
     "selecteer": "Select",
@@ -168,7 +174,9 @@
     "alleGelijkTip": "Ticked, a choice changes all equal symbols in this drawing, for example every HEB 240; otherwise only this one.",
     "eindteken": "End mark",
     "eindtekenRond": "Dot",
-    "eindtekenTik": "Oblique tick"
+    "eindtekenTik": "Oblique tick",
+    "maatLabelUitleg": "A number as label follows the real size. Your own text stays.",
+    "plaatsUitlegView": "Sizes in real mm. The scale is that of the view. R rotates and F mirrors at the cursor."
   },
   "venster": {
     "titel": "Drawing {{naam}}",
@@ -211,7 +219,11 @@
     "windverband": "Bracing",
     "stramien": "Grid line",
     "peil": "Level mark",
-    "paalpunt": "Pile toe level"
+    "paalpunt": "Pile toe level",
+    "wand": "Wall",
+    "kanaalplaat": "Hollow-core floor",
+    "kanaalplaatdoorsnede": "Hollow-core section",
+    "niveau": "Level"
   },
   "symboolTip": {
     "staal": "Cross-section of a steel section at true size (drawing scale). Pick the type; change size and type afterwards in the panel.",
@@ -226,7 +238,11 @@
     "windverband": "Bracing in a bay: cross or single diagonal.",
     "stramien": "A grid line with bubble and number or letter.",
     "peil": "A level mark with open or filled triangle.",
-    "paalpunt": "The pile toe level in a frame; the level may come from the sheet."
+    "paalpunt": "The pile toe level in a frame; the level may come from the sheet.",
+    "wand": "Two points on the centre line. Thickness in mm, to scale, with the hatch and colour of the material.",
+    "kanaalplaat": "Drag a field. Joints every 1200 mm, with an arrow in the span direction.",
+    "kanaalplaatdoorsnede": "Two points on the top. Slabs of 1200 mm with their cores, to scale.",
+    "niveau": "Two points: a dashed line at the height of the level, with the level mark at its start."
   },
   "familie": {
     "HEA": "HEA",
@@ -267,7 +283,10 @@
     "voor": "Text",
     "ref": "Reference",
     "niveau": "Level (m)",
-    "aanzicht": "View"
+    "aanzicht": "View",
+    "materiaal": "Material",
+    "dikteMm": "Thickness (mm)",
+    "hoogteMm": "Depth (mm)"
   },
   "veldTip": {
     "waarde": "A number, or a variable or formula from the sheet (q_Ed). It follows the sheet: change the sheet and the drawing changes.",
@@ -294,7 +313,9 @@
     },
     "richting": {
       "rechtsom": "Clockwise",
-      "linksom": "Anticlockwise"
+      "linksom": "Anticlockwise",
+      "x": "Horizontal",
+      "y": "Vertical"
     },
     "bollen": {
       "begin": "Start",
@@ -305,6 +326,19 @@
       "doorsnede": "Cross-section",
       "boven": "Top view",
       "zij": "Side view"
+    },
+    "materiaal": {
+      "metselwerk": "Masonry",
+      "kalkzandsteen": "Calcium silicate",
+      "prefab": "Precast concrete",
+      "beton": "Concrete (reinforced)",
+      "steenwol": "Rock wool",
+      "glaswol": "Glass wool",
+      "pir": "PIR",
+      "eps": "EPS",
+      "kooltherm": "Kooltherm",
+      "pur": "PUR",
+      "geen": "No hatch"
     }
   },
   "profiel": {
@@ -368,5 +402,23 @@
       "naam": "Erase",
       "tip": "Remove the selection. Command e, or the Delete key."
     }
+  },
+  "view": {
+    "kop": "View",
+    "titel": "Title",
+    "schaal": "Scale",
+    "schaalTip": "The scale of this view. What is drawn keeps its real size; lines and text stay the same size.",
+    "bereik": "This view shows {{b}} × {{h}} mm in real size.",
+    "uitleg": "You draw in real sizes: typing 5400 means 5400 mm. Set the frame and its place on paper on the sheet.",
+    "stramienKop": "Grid",
+    "veldenX": "Bays x (mm)",
+    "veldenY": "Bays y (mm)",
+    "veldenTip": "The bay sizes in mm, separated by a space: 5400 5400 7200, or 3x5400.",
+    "uitloop": "Extension (mm)",
+    "maatvoering": "Dimensions",
+    "pastNiet": "This grid is too large for this view. It fits at {{schaal}}, or make the view larger on the sheet.",
+    "pastNooit": "This grid is too large for this view, even at the smallest scale. Make the view larger on the sheet.",
+    "stramienPlaatsen": "Place grid",
+    "stramienUitleg": "Axes 1, 2, 3 … and A, B, C …, centred in the view, with the dimension chains. After that they are ordinary shapes you can move and change."
   }
 }

@@ -152,15 +152,22 @@ export default function AfdrukVoorbeeld() {
       const vel = document.createElement("div");
       vel.className = rapport ? "av-pagina print-opmaak rpa-wortel" : "av-pagina print-opmaak";
       if (huisstijl) vel.style.cssText = huisstijl;
+      // Een tekenblad staat op zijn eigen formaat, zonder marges, loopkop of voet.
+      const eigenVel = pagina.find((b) => b.el.dataset.velPagina)?.el.dataset;
 
       // De sectieklasse mee: de opmaakregels hangen eraan, en zonder die ouder
       // valt een losgeknipte regel terug op de schermopmaak.
       const inhoud = document.createElement("div");
       inhoud.className = `av-pagina-inhoud ${pagina[0]?.sectie ?? ""}`.trim();
-      inhoud.style.top = `${maten.marge.boven}mm`;
-      inhoud.style.left = `${maten.marge.links}mm`;
-      inhoud.style.width = `${maten.inhoud.breedte}mm`;
-      inhoud.style.height = `${maten.inhoud.hoogte}mm`;
+      inhoud.style.top = eigenVel ? "0" : `${maten.marge.boven}mm`;
+      inhoud.style.left = eigenVel ? "0" : `${maten.marge.links}mm`;
+      inhoud.style.width = eigenVel ? `${eigenVel.velBreedte}mm` : `${maten.inhoud.breedte}mm`;
+      inhoud.style.height = eigenVel ? `${eigenVel.velHoogte}mm` : `${maten.inhoud.hoogte}mm`;
+      if (eigenVel) {
+        vel.style.width = `${eigenVel.velBreedte}mm`;
+        vel.style.height = `${eigenVel.velHoogte}mm`;
+        vel.style.setProperty("page", eigenVel.velPagina ?? "");
+      }
       // Idem voor de wikkels waar de regels uit komen: de kern schrijft zijn
       // lettertype en regelafstand op `.ifc-calc`. Regels met dezelfde wikkels
       // gaan samen in één opgebouwde keten, zodat het er niet alleen goed
@@ -197,6 +204,10 @@ export default function AfdrukVoorbeeld() {
         for (const doel of inhoud.querySelectorAll<HTMLElement>("[data-inhoud-doel]")) {
           doel.textContent = String(nummers.get(doel.dataset.inhoudDoel ?? "") ?? "");
         }
+      }
+      if (eigenVel) {
+        vel.append(inhoud);
+      } else if (rapport) {
         // Geen loopkop: het rapport heeft alleen een voet.
         vel.append(inhoud, ...rapportVoet(i + 1, voetafbeelding, bureaunaam, maten));
       } else {

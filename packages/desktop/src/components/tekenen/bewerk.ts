@@ -14,7 +14,7 @@ import {
   zetMaat,
   type Vorm,
 } from "./model.ts";
-import { normaliseer, type SymboolId } from "./symbolen.ts";
+import { normaliseer, SCHAAL_SYMBOLEN, type SymboolId } from "./symbolen.ts";
 
 export interface Punt {
   x: number;
@@ -192,7 +192,7 @@ function pasToeSymbool(v: Vorm, om: Omzetting, w: (k: string) => number): Vorm {
       if (Number.isFinite(n) && n > 0) o[k] = String(rond(n * f));
     }
     // Een profiel of balk op ware grootte schaalt via zijn tekenschaal.
-    if (v.sym === "staal" || v.sym === "hout") o.schaal = String(rond((Number(o.schaal) || 10) / f));
+    if (SCHAAL_SYMBOLEN.includes(v.sym as SymboolId)) o.schaal = String(rond((Number(o.schaal) || 10) / f));
   }
   const grootte = f !== 1 && v.grootte ? { grootte: rond(v.grootte * f) } : {};
   const soort = plaatsingVan(v);

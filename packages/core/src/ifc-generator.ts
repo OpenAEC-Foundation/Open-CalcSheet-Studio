@@ -80,6 +80,8 @@ export interface IfcCalcSheet {
   md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
   /** Bij een grafblad: de graaf. */
   graaf?: GraafGegevens;
+  /** Alleen bij een tekenblad: het vel met zijn views (ocss::blad::tekenvel). */
+  tekenvel?: Record<string, unknown>;
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */

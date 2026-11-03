@@ -17,6 +17,7 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 | `components/calc/bladSoorten.tsx` | Bladen die niet rekenen (PDF, werkmap, Markdown): hier meldt een soort zich aan voor de afdruk en het rapport. Zie [bladsoorten.md](bladsoorten.md). |
 | `packages/desktop/src/graaf`, `components/graaf` | Het grafblad: grafisch programmeren met nodes en verbindingen. `graaf/` rekent zonder React (`model.ts`, `nodes.ts`, `rekenen.ts`, `scene.ts`, `papier.ts`), `components/graaf/` tekent het vlak, het 3D-voorbeeld en de afdruk. Het codeblok gebruikt `packages/core/src/rekenblok.ts`. Controle: `scripts/check-graaf.mjs`. |
 | `packages/desktop/src/store` | Project (exemplaren/bladen, projectgegevens, rapport), projectbestand, undo. |
+| `packages/desktop/src/components/tekenen` | De tekeneditor: tekeningen in een rekenblad (`@svg`-blok) en de views van een tekenblad. `vel.ts` rekent een view van echte maat naar papier; het vel staat in `store/tekenBlad.ts`. |
 | `scripts/check-*.mjs` | Controles; `node scripts/check-alles.mjs` draait ze allemaal (nu 26 controles). |
 
 ## 2. Afspraken in de bladen
@@ -100,6 +101,13 @@ De toetsing van de balklaag staat in [balklaag-toetsing.md](balklaag-toetsing.md
 de bewuste splitspunten tussen referentie-uitwerking en norm in
 [afwijkingen-referentie.md](afwijkingen-referentie.md). Toepassingsgebied en toetsset
 van de tweepaalspoer staan in [tweepaalspoer-toetsing.md](tweepaalspoer-toetsing.md).
+
+Naast de modules zijn er bladen zonder rekentekst: een PDF, een spreadsheet en een
+tekenblad (*Module toevoegen → Lege tekening*). Een tekenblad is een vel A4, A3 of A2 met
+views, elk met een eigen plek, schaal en titel. In een view is één eenheid één mm in het
+echt; lijndikte, tekst en de maat van een symbool staan in px op papier en veranderen
+niet met de schaal. Op papier staat het vel op zijn eigen formaat, ook in het rapport.
+Controle: `scripts/check-tekenblad.mjs`.
 
 Een nieuwe module bestaat uit een rekenblad in `packages/desktop/src/templates`
 (geregistreerd in `index.ts`), een regel in de catalogus (`projectTree.ts`), zo

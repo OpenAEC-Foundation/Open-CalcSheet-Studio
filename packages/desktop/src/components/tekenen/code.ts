@@ -688,6 +688,17 @@ export function schrijfTekening(t: Tekening, opties: SchrijfOpties): string {
   return regels.join("\n");
 }
 
+/**
+ * Meer groepen vormen met één `<defs>`, voor het vel van een tekenblad (vel.ts):
+ * elk symbool staat er één keer in, ook als het in meer groepen voorkomt.
+ */
+export function schrijfElementen(groepen: Element[][]): { defs: string[]; regels: string[][] } {
+  const b = new Bouwer("vel", null);
+  const regels = groepen.map((g) => g.flatMap((el) => elementRegels(el, b)));
+  const defs = [...b.defs].map(([id, kern]) => `<symbol id="${id}" overflow="visible">${kern.join("")}</symbol>`);
+  return { defs, regels };
+}
+
 /** Markup van één element zoals de uitwerking het straks tekent, voor het beeld van de editor. */
 export function beeldVan(
   el: Element,

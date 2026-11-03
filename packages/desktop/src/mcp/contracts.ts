@@ -15,6 +15,7 @@
  * Dit bestand en de andere kernbestanden importeren met `.ts`-extensie en
  * zonder React of stores, zodat Node ze rechtstreeks kan laden.
  */
+import type { TekenVel } from "../store/tekenBlad.ts";
 
 import type { Graaf } from "../graaf/model.ts";
 
@@ -36,6 +37,7 @@ export interface McpBlad {
   xlsx?: McpPdf;
   md?: { bestandsnaam: string; tekst: string };
   graaf?: Graaf;
+  tekenvel?: TekenVel;
 }
 
 /** De stand van het project op één moment. */

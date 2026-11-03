@@ -6,7 +6,7 @@ import IfcTab from "./IfcTab";
 import CalcPadTab from "./CalcPadTab";
 import SpreadsheetTab from "./SpreadsheetTab";
 import TekenenTab from "../tekenen/TekenenTab";
-import { toonTekenen, verbergTekenen } from "../tekenen/tekenStore";
+import { toonTekenen, useTeken, verbergTekenen } from "../tekenen/tekenStore";
 import { useEditorViewStore } from "../../store/editorViewStore";
 import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
 import { vraagCode } from "../../store/codeVerzoek";
@@ -98,6 +98,13 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
     if (spreadsheet) switchTab("spreadsheet");
     else if (activeTab === "spreadsheet") switchTab("calc");
   }, [spreadsheet, activeTab, switchTab]);
+
+  // Een view van een tekenblad gaat open: de tab Tekenen erbij.
+  const lintVerzoek = useTeken((s) => s.lintVerzoek);
+  useEffect(() => {
+    if (lintVerzoek > 0) switchTab("tekenen");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lintVerzoek]);
 
   useEffect(() => {
     updateHighlight();

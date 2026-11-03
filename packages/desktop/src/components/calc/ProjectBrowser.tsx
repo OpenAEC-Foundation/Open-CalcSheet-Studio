@@ -10,6 +10,7 @@ import { heeftEigenCode, huidigeModuletekst, isVerouderd, rekenversie } from "./
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
 import { isCanvasBlad } from "../../store/canvasBlad";
+import { isTekenBlad } from "../../store/tekenBlad";
 import { voegLeegSpreadsheetToe, voegWerkmapToe } from "./spreadsheetBlad";
 import { isMarkdownBlad } from "../../store/markdownBlad";
 import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
@@ -115,6 +116,7 @@ function ExemplaarRij({
   const markdown = isMarkdownBlad(ex);
   const canvas = isCanvasBlad(ex);
   const graaf = isGraafBlad(ex);
+  const tekenblad = isTekenBlad(ex);
   const stip = pdf
     ? <Icoon id="report.cover" />
     : spreadsheet
@@ -125,6 +127,8 @@ function ExemplaarRij({
     ? <Icoon id="report.workspace" uit="calculations" />
     : graaf
     ? <Icoon id="panel.model-tree" />
+    : tekenblad
+    ? <Icoon id="assistant.draw" uit="calculations" />
     : <span className={`pb-stip${status ? ` pb-status-${status}` : ""}`} aria-hidden="true" />;
   const uitleg = pdf
     ? `${ex.naam}\n${tw("pdf.rij", { bestand: ex.pdf?.bestandsnaam || "—" })}\n${tw("browser.dubbelklik")}`
@@ -136,6 +140,8 @@ function ExemplaarRij({
     ? `${ex.naam}\n${tw("canvas.rij")}\n${tw("browser.dubbelklik")}`
     : graaf
     ? `${ex.naam}\n${tw("graaf.rij")}\n${tw("browser.dubbelklik")}`
+    : tekenblad
+    ? `${ex.naam}\n${tw("tekenblad.rij")}\n${tw("browser.dubbelklik")}`
     : `${ex.naam}${info ? ` — ${moduleNaam}` : ""}\n${versieRegel}` +
       (eigen ? `\n${t("bladVersie.eigenUitleg", { bron: ex.bronVersie })}` : "") +
       (verouderd ? `\n${t("bladVersie.rijVerouderd", { nieuw: nieuweVersie })}` : "") +

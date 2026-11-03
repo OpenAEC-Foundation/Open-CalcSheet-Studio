@@ -31,6 +31,19 @@
 }
 
 /*
+ * Een tekenblad staat op zijn eigen formaat (TekenbladWeergave.tsx), zonder marges
+ * en zonder paginanummer: het vel draagt zijn eigen tekenrand en titelhoek. Deze
+ * regels moeten ná de algemene @page komen: een algemene regel in een later
+ * stijlbestand gaat in de browser boven een benoemde regel in een eerder bestand.
+ */
+@page tekenvel-a4-staand { size: 210mm 297mm; margin: 0; @bottom-center { content: none; } }
+@page tekenvel-a4-liggend { size: 297mm 210mm; margin: 0; @bottom-center { content: none; } }
+@page tekenvel-a3-staand { size: 297mm 420mm; margin: 0; @bottom-center { content: none; } }
+@page tekenvel-a3-liggend { size: 420mm 297mm; margin: 0; @bottom-center { content: none; } }
+@page tekenvel-a2-staand { size: 420mm 594mm; margin: 0; @bottom-center { content: none; } }
+@page tekenvel-a2-liggend { size: 594mm 420mm; margin: 0; @bottom-center { content: none; } }
+
+/*
  * Huisstijl van de uitdraai (OpenAEC-brandbook): Construction Amber als
  * accent, Deep Forge voor tekst en koppen, Space Grotesk voor de koppen en
  * Inter voor de lopende tekst.

@@ -109,6 +109,15 @@
       "verwijderen": "Verwijderen",
       "bijdragen": "Een module bijdragen…",
       "uitBibliotheek": "Uit de online modulebibliotheek"
+    },
+    "leeg": {
+      "kop": "Lege bladen",
+      "tekening": "Lege tekening",
+      "tekeningOnder": "Vel A4, A3 of A2 met views",
+      "tekeningUitleg": "Een leeg tekenvel als blad in het project: kies het papierformaat en zet er views op, elk met een eigen schaal. Met staal, vloeren, stramien, wanden en schematiseringen.",
+      "fem": "Open FEM Studio-project toevoegen",
+      "femLater": "Komt later",
+      "femUitleg": "Een project uit Open FEM Studio aan dit rapport toevoegen. Dit komt later; nu kan het nog niet."
     }
   },
   "normen": {
@@ -541,5 +550,39 @@
     "leegBladUitleg": "Schrijf je eigen berekening vanaf nul.",
     "bijStart": "Tonen bij opstarten",
     "beginnen": "Beginnen"
+  },
+  "tekenblad": {
+    "tab": "Tekenblad",
+    "paneel": "Tekenblad",
+    "rij": "Tekenblad — vel met views",
+    "ontbreekt": "Het vel van dit blad ontbreekt.",
+    "nieuwVel": "Nieuw vel maken",
+    "view": "View",
+    "viewNaam": "View {{n}}",
+    "aantalViews_one": "{{count}} view",
+    "aantalViews_other": "{{count}} views",
+    "bereik": "{{b}} × {{h}} mm in het echt",
+    "ligging": {
+      "staand": "Staand",
+      "liggend": "Liggend"
+    },
+    "liggingLabel": "Ligging",
+    "papier": "Papier",
+    "formaat": "Formaat",
+    "views": "Views",
+    "viewToevoegen": "View toevoegen",
+    "viewToevoegenTip": "Een nieuwe, lege view op een vrije plek op het vel.",
+    "viewTip": "{{naam}}: sleep om te verplaatsen, dubbelklik om erin te tekenen.",
+    "geenViews": "Nog geen views op dit vel.",
+    "tekenen": "Tekenen",
+    "verwijderen": "Verwijderen",
+    "verwijderVraag": "View \"{{naam}}\" met alles wat erin getekend staat verwijderen?",
+    "titel": "Titel",
+    "x": "Links (mm)",
+    "y": "Boven (mm)",
+    "breedte": "Breedte (mm)",
+    "hoogte": "Hoogte (mm)",
+    "plekUitleg": "Plek en maat op papier. Wat er in de view staat, verandert hierdoor niet.",
+    "uitleg": "Klik op een view om hem te kiezen, sleep om te verplaatsen, en dubbelklik om erin te tekenen."
   }
 }

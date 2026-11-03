@@ -36,6 +36,8 @@ import { isMarkdownBlad } from "./store/markdownBlad";
 import { isCanvasBlad } from "./store/canvasBlad";
 import { GraafBladInfo, GraafBladWeergave } from "./components/graaf/GraafBladWeergave";
 import { isGraafBlad } from "./store/graafBlad";
+import { TekenbladInfo, TekenbladWeergave } from "./components/calc/TekenbladWeergave";
+import { isTekenBlad } from "./store/tekenBlad";
 import { getSetting } from "./store";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
 import { usePrintStore } from "./store/printStore";
@@ -276,6 +278,8 @@ export default function App() {
   useEffect(() => setCanvasCode(false), [activeId]);
   // Idem een grafblad: alleen zijn vlak.
   const graafBlad = actief !== null && isGraafBlad(actief);
+  // En een tekenblad: alleen zijn vel.
+  const tekenBlad = actief !== null && isTekenBlad(actief);
   const mode = hasDesigner ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
@@ -312,9 +316,9 @@ export default function App() {
     setSplitMode((m) => (m === "vu" ? "cv" : m));
     setCanvasCode(true);
   }, [codeVerzoek, sluitVoorbeeld]);
-  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad) ? (
+  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad) ? (
     <div className="split-tabs">
-      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : graafBlad ? "graaf.tab" : spreadsheetBlad ? "spreadsheet.tab" : "markdown.tab")}</button>
+      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : tekenBlad ? "tekenblad.tab" : graafBlad ? "graaf.tab" : spreadsheetBlad ? "spreadsheet.tab" : "markdown.tab")}</button>
       <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
     </div>
   ) : actief && !toontProjectGegevens ? (
@@ -456,6 +460,15 @@ export default function App() {
                 {/* Papier, zoals een rekenblad en zijn 3D-beeld: in elk thema licht. */}
                 <WerkPaneel titel={t("graaf.paneel")} info={<GraafBladInfo ex={actief} />} papier>
                   <GraafBladWeergave key={actief.id} ex={actief} />
+                </WerkPaneel>
+              </div>
+            </>
+          ) : tekenBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("tekenblad.paneel")} info={<TekenbladInfo ex={actief} />}>
+                  <TekenbladWeergave ex={actief} />
                 </WerkPaneel>
               </div>
             </>

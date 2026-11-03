@@ -26,10 +26,11 @@ import {
   verwijderIcon,
 } from "../ribbon/calcIcons";
 import { useProjectStore } from "../../store/projectStore";
+import { isTekenBlad } from "../../store/tekenBlad";
 import { bladOpen } from "../../store/codeVerzoek";
 import { duimVan } from "./code";
 import type { Gereedschap } from "./model";
-import { GLYPH, OPLEGGING_KEUZES, STAAL_KEUZES, type SymboolId } from "./symbolen";
+import { GLYPH, OPLEGGING_KEUZES, STAAL_KEUZES, WAND_MATERIALEN, type SymboolId } from "./symbolen";
 import { SCHALEN } from "./staalprofielen";
 import type { CommandoNaam } from "./commando";
 import {
@@ -41,7 +42,9 @@ import {
   opnieuw,
   schrijfInCode,
   sluitTekenen,
+  sluitView,
   startCommando,
+  toonTekenen,
   useTeken,
   zetRaster,
   zetSchaal,
@@ -52,6 +55,8 @@ import "./Tekenen.css";
 const DIKTES = [0.5, 1, 1.5, 2, 3, 4, 6];
 const GROOTTES = [10, 11, 12, 14, 16, 18, 24];
 const RASTERS = [5, 10, 20, 25, 50];
+/** In een view staat het raster in mm in het echt. */
+const RASTERS_VIEW = [5, 10, 25, 50, 100, 250, 500, 1000];
 
 const boogIcon = glyph("⌒");
 const kopieerIcon = b2("edit.copy", "standard");
@@ -95,6 +100,12 @@ export default function TekenenTab() {
   const kanTerug = useTeken((s) => s.terug.length > 0);
   const kanVooruit = useTeken((s) => s.vooruit.length > 0);
   const bestaand = useTeken((s) => s.doel.soort === "blok");
+  const inView = useTeken((s) => !!s.vel);
+  // Op een tekenblad hoort de tekening bij een view, niet bij de code: geen nieuw blok en niets in te voegen.
+  const opTekenblad = useProjectStore((s) => {
+    const actief = s.exemplaren.find((e) => e.id === s.activeId);
+    return !!actief && isTekenBlad(actief);
+  });
   const uit = !blad || !open;
 
   const knop = (g: Gereedschap, icoon: string, size: "large" | "small") => (
@@ -165,16 +176,34 @@ export default function TekenenTab() {
         { sleutel: "schema", glyph: "△━△", naam: t("gereedschap.schema"), doe: () => kiesGereedschap("schema") },
       ],
     },
-    { kop: t("lint.peilen"), regels: [regel("stramien"), regel("peil"), regel("paalpunt")] },
+    { kop: t("lint.peilen"), regels: [regel("stramien"), regel("peil"), regel("niveau"), regel("paalpunt")] },
+    {
+      kop: t("lint.constructie"),
+      regels: [regel("kanaalplaat"), regel("kanaalplaatdoorsnede")],
+    },
+    {
+      kop: t("symbool.wand"),
+      regels: WAND_MATERIALEN.map((m) => regel("wand", { materiaal: m.id, dikteMm: m.id === "beton" || m.id === "prefab" ? "200" : "100" }, t(`optie.materiaal.${m.id}`))),
+    },
   ];
 
   return (
     <div className="ribbon-content">
       <div className="ribbon-groups">
-        <RibbonGroup label={t("lint.tekening")}>
-          <RibbonButton icon={tekeningNieuwIcon} label={t("lint.nieuw")} title={t("lint.nieuwTip")} size="large" disabled={!blad} onClick={nieuweTekening} />
-          <RibbonButton icon={tekeningBewerkenIcon} label={t("lint.bewerken")} title={t("lint.bewerkenTip")} size="large" disabled={!blad} onClick={bewerkTekening} />
-        </RibbonGroup>
+        {inView ? (
+          <RibbonGroup label={t("lint.view")}>
+            <RibbonButton icon={tekeningSluitenIcon} label={t("lint.terugNaarVel")} title={t("lint.terugNaarVelTip")} size="large" onClick={sluitView} />
+          </RibbonGroup>
+        ) : opTekenblad ? (
+          <RibbonGroup label={t("lint.view")}>
+            <RibbonButton icon={tekeningBewerkenIcon} label={t("lint.inViewTekenen")} title={t("lint.inViewTekenenTip")} size="large" onClick={toonTekenen} />
+          </RibbonGroup>
+        ) : (
+          <RibbonGroup label={t("lint.tekening")}>
+            <RibbonButton icon={tekeningNieuwIcon} label={t("lint.nieuw")} title={t("lint.nieuwTip")} size="large" disabled={!blad} onClick={nieuweTekening} />
+            <RibbonButton icon={tekeningBewerkenIcon} label={t("lint.bewerken")} title={t("lint.bewerkenTip")} size="large" disabled={!blad} onClick={bewerkTekening} />
+          </RibbonGroup>
+        )}
 
         <RibbonGroup label={t("lint.gereedschap")}>
           {knop("selecteer", selecteerIcon, "large")}
@@ -238,6 +267,28 @@ export default function TekenenTab() {
               onClick={() => kiesGereedschap("schema")}
             />
           </RibbonButtonStack>
+          {inView && (
+            <>
+              <RibbonButtonStack>
+                {symKnop("stramien", "small")}
+                {symKnop("niveau", "small")}
+                {symKnop("peil", "small")}
+              </RibbonButtonStack>
+              <RibbonButtonStack>
+                <MenuKnop
+                  icon={glyph(GLYPH.wand)}
+                  label={t("symbool.wand")}
+                  title={`${t("symbool.wand")}\n${t("symboolTip.wand")}`}
+                  size="small"
+                  active={isSym("wand")}
+                  disabled={uit}
+                  secties={bibliotheek.slice(-1)}
+                />
+                {symKnop("kanaalplaat", "small")}
+                {symKnop("kanaalplaatdoorsnede", "small")}
+              </RibbonButtonStack>
+            </>
+          )}
         </RibbonGroup>
 
         <RibbonGroup label={t("lint.opmaak")}>
@@ -266,17 +317,20 @@ export default function TekenenTab() {
           </RibbonButtonStack>
         </RibbonGroup>
 
-        <RibbonGroup label={t("lint.uitvoer")}>
-          <RibbonButton
-            icon={tekeningInvoegenIcon}
-            label={t(bestaand ? "lint.bijwerken" : "lint.invoegen")}
-            title={t(bestaand ? "lint.bijwerkenTip" : "lint.invoegenTip")}
-            size="large"
-            disabled={uit}
-            onClick={schrijfInCode}
-          />
-          <RibbonButton icon={tekeningSluitenIcon} label={t("lint.sluiten")} title={t("lint.sluitenTip")} size="large" disabled={uit} onClick={sluitTekenen} />
-        </RibbonGroup>
+        {/* Een view staat al in het project: daar is niets in te voegen of te sluiten. */}
+        {!inView && !opTekenblad && (
+          <RibbonGroup label={t("lint.uitvoer")}>
+            <RibbonButton
+              icon={tekeningInvoegenIcon}
+              label={t(bestaand ? "lint.bijwerken" : "lint.invoegen")}
+              title={t(bestaand ? "lint.bijwerkenTip" : "lint.invoegenTip")}
+              size="large"
+              disabled={uit}
+              onClick={schrijfInCode}
+            />
+            <RibbonButton icon={tekeningSluitenIcon} label={t("lint.sluiten")} title={t("lint.sluitenTip")} size="large" disabled={uit} onClick={sluitTekenen} />
+          </RibbonGroup>
+        )}
       </div>
     </div>
   );
@@ -407,6 +461,10 @@ function SchaalVeld({ uit }: { uit: boolean }) {
 function StijlVelden({ uit }: { uit: boolean }) {
   const { t } = useTranslation("tekenen");
   const stijl = useTeken((s) => s.stijl);
+  const opTekenblad = useProjectStore((s) => {
+    const actief = s.exemplaren.find((e) => e.id === s.activeId);
+    return !!actief && isTekenBlad(actief);
+  });
   return (
     <>
       <div className="tk-lint-stapel">
@@ -439,7 +497,7 @@ function StijlVelden({ uit }: { uit: boolean }) {
             {GROOTTES.map((g) => <option key={g} value={g}>{g} px</option>)}
           </select>
         </label>
-        <SchaalVeld uit={uit} />
+        {!opTekenblad && <SchaalVeld uit={uit} />}
       </div>
     </>
   );
@@ -448,6 +506,8 @@ function StijlVelden({ uit }: { uit: boolean }) {
 function RasterVelden({ uit }: { uit: boolean }) {
   const { t } = useTranslation("tekenen");
   const raster = useTeken((s) => s.raster);
+  const inView = useTeken((s) => !!s.vel);
+  const lijst = inView ? RASTERS_VIEW : RASTERS;
   return (
     <>
       <RibbonButtonStack>
@@ -458,7 +518,8 @@ function RasterVelden({ uit }: { uit: boolean }) {
         <label className={`tk-lint-rij${uit ? " uit" : ""}`} title={t("lint.rastermaatTip")}>
           <span>{t("lint.rastermaat")}</span>
           <select value={raster.maat} disabled={uit} onChange={(e) => zetRaster({ maat: Number(e.target.value) })}>
-            {RASTERS.map((r) => <option key={r} value={r}>{r} px</option>)}
+            {!lijst.includes(raster.maat) && <option value={raster.maat}>{raster.maat} {inView ? "mm" : "px"}</option>}
+            {lijst.map((r) => <option key={r} value={r}>{r} {inView ? "mm" : "px"}</option>)}
           </select>
         </label>
       </RibbonButtonStack>

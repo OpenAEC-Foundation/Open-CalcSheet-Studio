@@ -61,9 +61,16 @@ export type SymboolId =
   | "windverband"
   | "stramien"
   | "peil"
-  | "paalpunt";
+  | "paalpunt"
+  | "wand"
+  | "kanaalplaat"
+  | "kanaalplaatdoorsnede"
+  | "niveau";
 
-export type SymboolGroep = "profielen" | "schema" | "peilen";
+export type SymboolGroep = "profielen" | "schema" | "peilen" | "constructie";
+
+/** De symbolen die op ware grootte tekenen: ze hebben een tekenschaal (`schaal`). */
+export const SCHAAL_SYMBOLEN: readonly SymboolId[] = ["staal", "hout", "wand", "kanaalplaat", "kanaalplaatdoorsnede"];
 
 /** Een veld in het eigenschappenpaneel; het label is `veld.<k>` in tekenen.json. */
 export type Veld =
@@ -628,6 +635,211 @@ function paalpuntTeken(c: Teken): Beeld {
   };
 }
 
+// ─── Wanden en vloeren ───────────────────────────────────────────────────────
+
+/** Hoe een materiaal arceert: lijnen onder 45° (ook als paar) of de zigzag van isolatie. */
+type Arcering = "paar" | "dicht" | "links" | "rechts" | "zigzag" | "geen";
+
+export interface WandMateriaal {
+  id: string;
+  /** De achtergrondkleur; null: geen vlak. */
+  vlak: string | null;
+  /** De kleur van de arcering. */
+  lijn: string;
+  arcering: Arcering;
+}
+
+/**
+ * De materialen van een wand, met de arceerkleuren van Open PDF Studio (de
+ * NEN 47-regels daar): een vlak in de materiaalkleur met een lijnpatroon erover.
+ * De steek van het patroon ligt vast op papier en loopt met de wand mee.
+ */
+export const WAND_MATERIALEN: readonly WandMateriaal[] = [
+  { id: "metselwerk", vlak: "#CD7C61", lijn: "#000000", arcering: "paar" },
+  { id: "kalkzandsteen", vlak: "#C0C0C0", lijn: "#000000", arcering: "dicht" },
+  { id: "prefab", vlak: "#808080", lijn: "#000000", arcering: "links" },
+  { id: "beton", vlak: "#9C9C9C", lijn: "#000000", arcering: "rechts" },
+  { id: "steenwol", vlak: "#B3A04A", lijn: "#6F6328", arcering: "zigzag" },
+  { id: "glaswol", vlak: "#FBE98A", lijn: "#B3A14E", arcering: "zigzag" },
+  { id: "pir", vlak: "#F2EEC9", lijn: "#B0A978", arcering: "zigzag" },
+  { id: "eps", vlak: "#DBDBE3", lijn: "#94949F", arcering: "zigzag" },
+  { id: "kooltherm", vlak: "#D98D7D", lijn: "#96544A", arcering: "zigzag" },
+  { id: "pur", vlak: "#CCD4B4", lijn: "#8B9470", arcering: "zigzag" },
+  { id: "geen", vlak: null, lijn: "#000000", arcering: "geen" },
+];
+
+/** De steek van een arcering loodrecht op de lijnen, in px op papier. */
+const STEEK: Partial<Record<Arcering, number>> = { paar: 11, dicht: 3.5, links: 6, rechts: 6 };
+/** De afstand tussen de twee lijnen van een paar (metselwerk). */
+const PAAR_GAT = 2.2;
+const ARCEERLIJN = 0.35;
+
+/**
+ * Lijnen onder 45° door een band (0 … L, y0 … y0 + t), analytisch afgekapt op de
+ * band; `om` spiegelt de richting. Eén pad: dat scheelt veel elementen.
+ */
+function schuineLijnen(L: number, y0: number, t: number, steek: number, om: boolean, verschuif = 0): string {
+  const stap = steek * Math.SQRT2;
+  const d: string[] = [];
+  for (let c = verschuif; c < L + t; c += stap) {
+    // Punt op de lijn: (c − s, y0 + s) voor s in 0 … t, binnen 0 … L.
+    const s0 = Math.max(0, c - L);
+    const s1 = Math.min(t, c);
+    if (s1 <= s0) continue;
+    const y = (s: number) => (om ? y0 + t - s : y0 + s);
+    d.push(`M ${fmt(c - s0)} ${fmt(y(s0))} L ${fmt(c - s1)} ${fmt(y(s1))}`);
+  }
+  return d.join(" ");
+}
+
+/** De zigzag van isolatie: benen onder 60° over de hele dikte, de punten net binnen de rand. */
+function zigzag(L: number, t: number): string {
+  const amp = t * 0.46;
+  const stap = Math.max(t / Math.tan(Math.PI / 3), 0.5);
+  const d = [`M 0 ${fmt(-amp)}`];
+  let x = 0;
+  let kant = 1;
+  while (x < L) {
+    const volgende = x + stap;
+    if (volgende >= L) {
+      // Het laatste been stopt op het eind van de wand.
+      const f = (L - x) / stap;
+      d.push(`L ${fmt(L)} ${fmt(kant * amp * (2 * f - 1))}`);
+      break;
+    }
+    d.push(`L ${fmt(volgende)} ${fmt(kant * amp)}`);
+    x = volgende;
+    kant = -kant;
+  }
+  return d.join(" ");
+}
+
+/** De schatting voor wat alleen als getal kan: een arcering rekent niet mee met het blad. */
+const lengteNu = (c: Teken) => (isGetal(c.kader.L) ? c.kader.L.n : c.kader.Lschat);
+
+/** Een wand: een band om zijn hartlijn, dikte in mm op schaal, met de arcering van zijn materiaal. */
+function wandTeken(c: Teken): Beeld {
+  const k = profielSchaal(c.v.o ?? {});
+  const t = Math.max(0.5, c.n("dikteMm", 100) * k);
+  const mat = WAND_MATERIALEN.find((m) => m.id === c.o("materiaal")) ?? WAND_MATERIALEN[0];
+  const L = lengteNu(c);
+  const kern: string[] = [];
+  const band = (stijl: string) => `<rect x="0" y="${fmt(-t / 2)}" width="${c.g(c.kader.L)}" height="${fmt(t)}" style="${stijl}"/>`;
+  if (mat.vlak) kern.push(band(`fill:${mat.vlak}; stroke:none`));
+  const steek = STEEK[mat.arcering];
+  let d = "";
+  if (mat.arcering === "zigzag") d = zigzag(L, t);
+  else if (steek) {
+    d = schuineLijnen(L, -t / 2, t, steek, mat.arcering === "rechts");
+    if (mat.arcering === "paar") d += ` ${schuineLijnen(L, -t / 2, t, steek, false, PAAR_GAT * Math.SQRT2)}`;
+  }
+  if (d) kern.push(`<path d="${d}" style="fill:none; stroke:${mat.lijn}; stroke-width:${ARCEERLIJN}; stroke-dasharray:none"/>`);
+  kern.push(band("fill:none"));
+  return { kern };
+}
+
+/** Een kanaalplaat in doorsnede: de hoogte, het aantal kanalen en hun maat, in mm. */
+export interface Kanaalplaat {
+  h: number;
+  kanalen: number;
+  breed: number;
+  hoog: number;
+  steek: number;
+}
+
+/** De gangbare standaardplaat van 1200 mm per hoogte, zoals Open PDF Studio ze tekent. */
+export const KANAALPLATEN: readonly Kanaalplaat[] = [
+  { h: 150, kanalen: 11, breed: 65, hoog: 80, steek: 100 },
+  { h: 200, kanalen: 7, breed: 117, hoog: 129, steek: 157 },
+  { h: 260, kanalen: 7, breed: 117, hoog: 180, steek: 157 },
+  { h: 320, kanalen: 5, breed: 166, hoog: 237, steek: 221 },
+  { h: 400, kanalen: 5, breed: 164, hoog: 317, steek: 221 },
+  { h: 500, kanalen: 5, breed: 164, hoog: 417, steek: 221 },
+];
+
+/** De breedte van een plaat, in mm. */
+const PLAATBREEDTE = 1200;
+/** Beton in doorsnede: grijs met een donkere arcering, de kanalen wit. */
+const BETON_VLAK = "#8A8A8A";
+const BETON_LIJN = "#3C3C3C";
+const kanaalplaatVan = (o: Record<string, string>) => KANAALPLATEN.find((p) => String(p.h) === o.hoogteMm) ?? KANAALPLATEN[1];
+
+/**
+ * Een kanaalplaatvloer in bovenaanzicht: het veld met de naden tussen de platen
+ * (evenwijdig aan de overspanning, om de 1200 mm) en een pijl in de
+ * overspanningsrichting.
+ */
+function kanaalplaatTeken(c: Teken): Beeld {
+  const o = c.v.o ?? {};
+  const k = profielSchaal(o);
+  const W = c.u.schatting("w"), H = c.u.schatting("h");
+  const langsX = c.o("richting") !== "y";
+  const strook = Math.max(0.5, PLAATBREEDTE * k);
+  const kern = [`<rect x="0" y="0" width="${c.g(c.u.maat("w"))}" height="${c.g(c.u.maat("h"))}"/>`];
+  const naden: string[] = [];
+  const dwars = langsX ? H : W;
+  for (let a = strook; a < dwars - 0.01 && naden.length < 400; a += strook) {
+    naden.push(langsX ? `M 0 ${fmt(a)} H ${fmt(W)}` : `M ${fmt(a)} 0 V ${fmt(H)}`);
+  }
+  if (naden.length > 0) kern.push(`<path d="${naden.join(" ")}" style="fill:none; ${dun(c)}"/>`);
+  // De overspanningspijl: een lijn met twee open punten, midden in het veld.
+  const langs = langsX ? W : H;
+  const mid = (langsX ? H : W) / 2;
+  const kop = Math.min(9, langs * 0.08);
+  const p = (a: number, b: number) => (langsX ? `${fmt(a)} ${fmt(mid + b)}` : `${fmt(mid + b)} ${fmt(a)}`);
+  const a0 = langs * 0.08, a1 = langs * 0.92;
+  kern.push(
+    `<path d="M ${p(a0, 0)} L ${p(a1, 0)} M ${p(a0 + kop, -kop * 0.4)} L ${p(a0, 0)} L ${p(a0 + kop, kop * 0.4)} M ${p(a1 - kop, -kop * 0.4)} L ${p(a1, 0)} L ${p(a1 - kop, kop * 0.4)}" style="fill:none"/>`,
+  );
+  const inhoud = c.o("tekst") || `KP ${kanaalplaatVan(o).h}`;
+  const [lx, ly] = c.kader.globaal(langsX ? W / 2 : mid + 4, langsX ? mid - 4 : H / 2);
+  return { kern, los: [tekst(c, lx, ly, inhoud, langsX ? { anker: "middle" } : {})] };
+}
+
+/**
+ * Een kanaalplaatvloer in doorsnede: de lijn is de bovenkant, de platen liggen
+ * eronder met hun kanalen. Beton is grijs gearceerd, de kanalen zijn wit.
+ */
+function kanaalplaatDoorsnedeTeken(c: Teken): Beeld {
+  const o = c.v.o ?? {};
+  const k = profielSchaal(o);
+  const plaat = kanaalplaatVan(o);
+  const h = plaat.h * k;
+  const L = lengteNu(c);
+  const kern = [
+    `<rect x="0" y="0" width="${c.g(c.kader.L)}" height="${fmt(h)}" style="fill:${BETON_VLAK}; stroke:none"/>`,
+    `<path d="${schuineLijnen(L, 0, h, 6, false)}" style="fill:none; stroke:${BETON_LIJN}; stroke-width:${ARCEERLIJN}; stroke-dasharray:none"/>`,
+  ];
+  const bk = plaat.breed * k, hk = plaat.hoog * k;
+  const y = (h - hk) / 2;
+  const breed = PLAATBREEDTE * k;
+  const n = Math.min(400, Math.ceil(L / Math.max(breed, 0.5) - 1e-6));
+  const kanalen: string[] = [];
+  const naden: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const x0 = i * breed;
+    if (i > 0) naden.push(`M ${fmt(x0)} 0 V ${fmt(h)}`);
+    for (let j = 0; j < plaat.kanalen; j++) {
+      const x = x0 + (PLAATBREEDTE / 2 + (j - (plaat.kanalen - 1) / 2) * plaat.steek - plaat.breed / 2) * k;
+      if (x + bk > L) continue;
+      kanalen.push(`<rect x="${fmt(x)}" y="${fmt(y)}" width="${fmt(bk)}" height="${fmt(hk)}" rx="${fmt(bk / 2)}"/>`);
+    }
+  }
+  if (kanalen.length > 0) kern.push(`<g style="fill:#FFFFFF; stroke-width:${ARCEERLIJN}">${kanalen.join("")}</g>`);
+  if (naden.length > 0) kern.push(`<path d="${naden.join(" ")}" style="fill:none; ${dun(c)}"/>`);
+  kern.push(`<rect x="0" y="0" width="${c.g(c.kader.L)}" height="${fmt(h)}" style="fill:none"/>`);
+  return { kern };
+}
+
+/** Een niveau: een streeplijn op de hoogte van het niveau, met het peilteken aan het begin. */
+function niveauTeken(c: Teken): Beeld {
+  const p = peilTeken(c);
+  return {
+    kern: [lijn(c, 0, 0, c.kader.L, 0, `${dun(c)}; stroke-dasharray:${fmt(6 + 2 * c.d)} ${fmt(2 + c.d)}`), ...p.kern],
+    los: p.los,
+  };
+}
+
 // ─── De lijst ────────────────────────────────────────────────────────────────
 
 const HOEKEN = ["0", "90", "180", "270"];
@@ -822,6 +1034,55 @@ export const SYMBOLEN: Record<SymboolId, SymboolDef> = {
     tekst: true,
     teken: paalpuntTeken,
   },
+  wand: {
+    id: "wand",
+    groep: "constructie",
+    plaatsing: "lijn",
+    o: { materiaal: "metselwerk", dikteMm: "100", schaal: "10" },
+    velden: [
+      { k: "materiaal", soort: "keuze", opties: WAND_MATERIALEN.map((m) => m.id), vertaal: true },
+      { k: "dikteMm", soort: "getal", min: 1, stap: 10 },
+    ],
+    dikte: 0.75,
+    teken: wandTeken,
+  },
+  kanaalplaat: {
+    id: "kanaalplaat",
+    groep: "constructie",
+    plaatsing: "vak",
+    o: { hoogteMm: "200", richting: "x", tekst: "", schaal: "10" },
+    velden: [
+      { k: "hoogteMm", soort: "keuze", opties: KANAALPLATEN.map((p) => String(p.h)) },
+      { k: "richting", soort: "keuze", opties: ["x", "y"], vertaal: true },
+      { k: "tekst", soort: "tekst" },
+    ],
+    dikte: 0.75,
+    vulling: null,
+    tekst: true,
+    teken: kanaalplaatTeken,
+  },
+  kanaalplaatdoorsnede: {
+    id: "kanaalplaatdoorsnede",
+    groep: "constructie",
+    plaatsing: "lijn",
+    o: { hoogteMm: "200", schaal: "10" },
+    velden: [{ k: "hoogteMm", soort: "keuze", opties: KANAALPLATEN.map((p) => String(p.h)) }],
+    dikte: 0.75,
+    teken: kanaalplaatDoorsnedeTeken,
+  },
+  niveau: {
+    id: "niveau",
+    groep: "peilen",
+    plaatsing: "lijn",
+    o: { tekst: "P = 0", gevuld: "0" },
+    velden: [
+      { k: "tekst", soort: "tekst" },
+      { k: "gevuld", soort: "vink" },
+    ],
+    dikte: 1,
+    tekst: true,
+    teken: niveauTeken,
+  },
 };
 
 export const symboolDef = (sym: string | undefined): SymboolDef | undefined =>
@@ -867,6 +1128,10 @@ export function symboolSlug(v: Vorm): string {
     if (isAanzicht(o)) delen.push(o.aanzicht);
   } else if (v.sym === "hout") {
     delen.push(o.maat || "eigen", `1op${o.schaal || 10}`);
+  } else if (v.sym === "wand") {
+    delen.push(o.materiaal, o.dikteMm, `1op${o.schaal || 10}`);
+  } else if (v.sym === "kanaalplaat" || v.sym === "kanaalplaatdoorsnede") {
+    delen.push(o.hoogteMm, `1op${o.schaal || 10}`);
   } else if (v.sym === "oplegging") {
     delen.push(o.type || "scharnier");
   }
@@ -1156,4 +1421,8 @@ export const GLYPH: Record<SymboolId, string> = {
   stramien: "Ⓐ",
   peil: "▽",
   paalpunt: "⊥",
+  wand: "▥",
+  kanaalplaat: "▤",
+  kanaalplaatdoorsnede: "◍",
+  niveau: "▽",
 };

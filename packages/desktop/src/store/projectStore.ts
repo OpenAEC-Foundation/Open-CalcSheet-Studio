@@ -14,6 +14,7 @@ import { MARKDOWN_BLAD, type MarkdownBestand } from "./markdownBlad";
 import { CANVAS_BLAD } from "./canvasBlad";
 import { GRAAF_BLAD } from "./graafBlad";
 import { legeGraaf, type Graaf } from "../graaf/model";
+import { TEKEN_BLAD, type TekenVel } from "./tekenBlad";
 
 const STORE_KEY = "projectState";
 
@@ -96,6 +97,11 @@ export interface Exemplaar {
    * graaf/rekenen.ts bij elke wijziging opnieuw uit.
    */
   graaf?: Graaf;
+  /**
+   * Alleen bij een tekenblad (`templateId` TEKEN_BLAD, zie store/tekenBlad.ts):
+   * het vel met zijn views.
+   */
+  tekenvel?: TekenVel;
 }
 
 /**
@@ -164,6 +170,10 @@ interface ProjectState {
    * in een veld, de schuif) is één stap ongedaan maken; zonder is het een eigen stap.
    */
   zetGraaf: (id: string, graaf: Graaf, sleutel?: string) => void;
+  /** Een tekenblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegTekenbladToe: (naam: string, tekenvel: TekenVel) => string;
+  /** Het vel van een tekenblad; opeenvolgende bewerkingen tellen als één stap ongedaan maken. */
+  zetTekenVel: (id: string, tekenvel: TekenVel) => void;
   dupliceer: (id: string) => string | null;
   hernoem: (id: string, naam: string) => void;
   verwijder: (id: string) => void;
@@ -445,6 +455,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         ...metGeschiedenis(s, sleutel ? `graaf:${id}:${sleutel}` : null),
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, graaf } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegTekenbladToe: (naam, tekenvel) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: TEKEN_BLAD, source: "", waarden: {}, tekenvel },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetTekenVel: (id, tekenvel) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, `tekenvel:${id}`),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, tekenvel } : e)),
         dirty: true,
       };
     }),

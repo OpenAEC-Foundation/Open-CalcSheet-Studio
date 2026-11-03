@@ -10,6 +10,7 @@ import { isSpreadsheetBlad, leesSpreadsheetBestand } from "./spreadsheetBlad.ts"
 import { isMarkdownBlad, leesMarkdownBestand } from "./markdownBlad.ts";
 import { isGraafBlad } from "./graafBlad.ts";
 import { leesGraaf } from "../graaf/model.ts";
+import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -114,6 +115,7 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       xlsx: ex.xlsx,
       md: ex.md,
       graaf: ex.graaf,
+      ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
     })),
   });
   return JSON.stringify(doc, null, 2);
@@ -210,6 +212,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (md) ex.md = md;
   const graaf = isGraafBlad(ex) ? leesGraaf(e.graaf) : undefined;
   if (graaf) ex.graaf = graaf;
+  const tekenvel = isTekenBlad(ex) ? leesTekenVel(e.tekenvel) : undefined;
+  if (tekenvel) ex.tekenvel = tekenvel;
   return ex;
 }
 

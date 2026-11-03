@@ -106,6 +106,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
   titelInKop?: boolean; maten?: Maten; anker?: string; eenheden?: CanvasUitwerking[];
 }) {
   const soort = bladSoortVan(ex);
+  if (soort?.HeelBlad) return <soort.HeelBlad ex={ex} anker={anker} />;
   if (soort) return <LosBladAfdruk soort={soort} ex={ex} nummer={nummer} maten={maten} anker={anker} />;
   // Het beeld tekent zichzelf uit de waarden van dít exemplaar, niet uit het
   // blad dat toevallig openstaat. `alleenLezen` houdt tegen dat het afdrukken
