@@ -26,15 +26,19 @@ import {
   plaatsingKeuze,
   profielMaten,
   profielSchaal,
+  SCHAAL_SYMBOLEN,
   symboolDef,
   zetAanzichtLengte,
   zetOptie,
   zetProfielMaat,
+  type SymboolId,
   type Veld,
 } from "./symbolen";
 import { FAMILIES, HOUTMATEN, PX_PER_MM, SCHALEN, familie } from "./staalprofielen";
 import { kopieerSelectie, maakReeks, useTeken, verwijderSelectie, wijzig, wijzigVorm, zetOptieGelijk } from "./tekenStore";
 import type { Koppeling, Proef } from "./waarden";
+import ViewPaneel from "./ViewPaneel";
+import { vormOpPapier } from "./vel";
 
 const LIJST = "tk-variabelen";
 const isHex = (s: string | null | undefined) => !!s && /^#[0-9a-f]{6}$/i.test(s);
@@ -50,6 +54,7 @@ export default function TekenPaneel({ proef, opgelost }: Props) {
   const tekening = useTeken((s) => s.tekening);
   const gekozen = useTeken((s) => s.gekozen);
   const plaatst = useTeken((s) => s.gereedschap === "symbool");
+  const inView = useTeken((s) => !!s.vel);
   const el = gekozen.length === 1 ? tekening.elementen.find((e) => e.id === gekozen[0]) : undefined;
 
   return (
@@ -70,7 +75,7 @@ export default function TekenPaneel({ proef, opgelost }: Props) {
       ) : plaatst && !el ? (
         <PlaatsKeuzes proef={proef} />
       ) : !el ? (
-        <TekeningEigenschappen tekening={tekening} proef={proef} opgelost={opgelost} />
+        inView ? <ViewPaneel /> : <TekeningEigenschappen tekening={tekening} proef={proef} opgelost={opgelost} />
       ) : isVorm(el) ? (
         <VormEigenschappen v={el} proef={proef} opgelost={opgelost} />
       ) : (
@@ -127,6 +132,7 @@ const VLAK = ["rechthoek", "cirkel", "polylijn"];
 function VormEigenschappen({ v, proef, opgelost }: { v: Vorm } & Props) {
   const { t } = useTranslation("tekenen");
   const focus = useTeken((s) => s.focus);
+  const inView = useTeken((s) => !!s.vel);
   const tekstVeld = useRef<HTMLTextAreaElement>(null);
   // Een oude maatlijn krijgt de nieuwe vorm zodra je hem wijzigt.
   const zet = (deel: Partial<Vorm>, sleutel: string) =>
@@ -222,10 +228,11 @@ function VormEigenschappen({ v, proef, opgelost }: { v: Vorm } & Props) {
           <>
             <div className="tk-rij tk-rij-hoog">
               <label>{isTekst ? t("paneel.tekst") : t("paneel.label")}</label>
-              <textarea ref={tekstVeld} className="tk-veld" rows={2} value={v.tekst ?? ""}
+              {/* In een view volgt een getal als label de echte maat: dat getal staat hier ook. */}
+              <textarea ref={tekstVeld} className="tk-veld" rows={2} value={(inView ? vormOpPapier(v, 1).tekst : v.tekst) ?? ""}
                 onChange={(e) => zet({ tekst: e.target.value.replace(/\n/g, " ") }, "tekst")} />
             </div>
-            <p className="tk-uitleg tk-zacht">{t("paneel.tekstUitleg", { o: "{{", s: "}}" })}</p>
+            <p className="tk-uitleg tk-zacht">{inView ? t("paneel.maatLabelUitleg") : t("paneel.tekstUitleg", { o: "{{", s: "}}" })}</p>
             <div className="tk-rij">
               <label>{t("paneel.grootte")}</label>
               <GetalVeld waarde={v.grootte ?? 0} min={0} stap={1} leeg={!v.grootte}
@@ -258,8 +265,8 @@ function VormEigenschappen({ v, proef, opgelost }: { v: Vorm } & Props) {
         <div className="tk-maten">
           <div className="tk-maten-kop">
             <span />
-            <span>{t("paneel.px")}</span>
-            <span>{t("paneel.koppeling")}</span>
+            <span>{t(inView ? "paneel.mm" : "paneel.px")}</span>
+            {!inView && <span>{t("paneel.koppeling")}</span>}
           </div>
           {sleutels(v).map((k) => (
             <MaatRij
@@ -269,7 +276,7 @@ function VormEigenschappen({ v, proef, opgelost }: { v: Vorm } & Props) {
               proef={proef}
               opgelost={opgelost}
               sleutel={`${v.id}-${k}`}
-              koppelbaar={!(v.soort === "boog" && (k === "a1" || k === "a2"))}
+              koppelbaar={!inView && !(v.soort === "boog" && (k === "a1" || k === "a2"))}
               onZet={(m, sleutel) =>
                 wijzigVorm(v.id, (o) => {
                   const n = { ...o, p: { ...o.p, [k]: m } };
@@ -279,7 +286,7 @@ function VormEigenschappen({ v, proef, opgelost }: { v: Vorm } & Props) {
             />
           ))}
         </div>
-        <p className="tk-uitleg tk-zacht">{t("paneel.koppelKort")}</p>
+        {!inView && <p className="tk-uitleg tk-zacht">{t("paneel.koppelKort")}</p>}
       </section>
 
       <ReeksSectie />
@@ -314,6 +321,7 @@ function PlaatsKeuzes({ proef }: { proef: Proef }) {
   const symbool = useTeken((s) => s.symbool);
   const schaal = useTeken((s) => s.schaal);
   const stijl = useTeken((s) => s.stijl);
+  const inView = useTeken((s) => !!s.vel);
   const v = useMemo(() => {
     const plekken: Record<string, Record<string, number>> = {
       punt: { x: 0, y: 0 },
@@ -321,7 +329,7 @@ function PlaatsKeuzes({ proef }: { proef: Proef }) {
       vak: { x: 0, y: 0, w: 1, h: 1 },
     };
     const plek = plekken[plaatsingKeuze(symbool.sym, symbool.o)];
-    const extra: Record<string, string> = symbool.sym === "staal" || symbool.sym === "hout" ? { schaal: String(schaal) } : {};
+    const extra: Record<string, string> = SCHAAL_SYMBOLEN.includes(symbool.sym) ? { schaal: String(schaal) } : {};
     return nieuwSymbool(symbool.sym, plek, stijl, { ...symbool.o, ...extra });
   }, [symbool, schaal, stijl]);
   const zet = (k: string, w: string) => {
@@ -332,7 +340,7 @@ function PlaatsKeuzes({ proef }: { proef: Proef }) {
     <section className="tk-sectie">
       <div className="tk-sectie-kop"><span>{t("paneel.plaatsen", { naam: t(`symbool.${symbool.sym}`) })}</span></div>
       <SymboolVelden v={v} proef={proef} zet={zet} />
-      <p className="tk-uitleg tk-zacht">{t("paneel.plaatsUitleg")}</p>
+      <p className="tk-uitleg tk-zacht">{t(inView ? "paneel.plaatsUitlegView" : "paneel.plaatsUitleg")}</p>
     </section>
   );
 }
@@ -342,6 +350,7 @@ function SymboolVelden({ v, proef, zet }: { v: Vorm; proef: Proef; zet?: (k: str
   const { t } = useTranslation("tekenen");
   const def = symboolDef(v.sym);
   const focus = useTeken((s) => s.focus);
+  const inView = useTeken((s) => !!s.vel);
   const waardeVeld = useRef<HTMLInputElement>(null);
   const o = v.o ?? {};
   // Standaard wijzigt alleen dit exemplaar; aangevinkt alle gelijke symbolen in de tekening.
@@ -411,7 +420,8 @@ function SymboolVelden({ v, proef, zet }: { v: Vorm; proef: Proef; zet?: (k: str
           <Duim v={v} />
         </div>
       )}
-      {(v.sym === "staal" || v.sym === "hout") && (
+      {/* In een view is de schaal die van de view; daar kiest een symbool hem niet zelf. */}
+      {SCHAAL_SYMBOLEN.includes(v.sym as SymboolId) && !inView && (
         <>
           <div className="tk-rij">
             <label>{t("veld.schaal")}</label>
@@ -420,7 +430,7 @@ function SymboolVelden({ v, proef, zet }: { v: Vorm; proef: Proef; zet?: (k: str
               {SCHALEN.map((n) => <option key={n} value={n}>1 : {n}</option>)}
             </select>
           </div>
-          {plaatsingVan(v) === "punt" && (
+          {plaatsingVan(v) === "punt" && (v.sym === "staal" || v.sym === "hout") && (
             <p className="tk-uitleg tk-zacht">
               {t("paneel.opPapier", {
                 b: kernGetal(Math.round((waardeVan(v.p.b) / schaal) * 10) / 10),
@@ -517,6 +527,7 @@ function VeldRij({
 /** De maten van een profiel of balk in mm: uit de tabel, met de hand, of gekoppeld aan het blad. */
 function ProfielMaten({ v, proef, opgelost }: { v: Vorm } & Props) {
   const { t } = useTranslation("tekenen");
+  const inView = useTeken((s) => !!s.vel);
   return (
     <section className="tk-sectie">
       <div className="tk-sectie-kop"><span>{t("paneel.profielmaten")}</span></div>
@@ -524,7 +535,7 @@ function ProfielMaten({ v, proef, opgelost }: { v: Vorm } & Props) {
         <div className="tk-maten-kop">
           <span />
           <span>{t("paneel.mm")}</span>
-          <span>{t("paneel.koppeling")}</span>
+          {!inView && <span>{t("paneel.koppeling")}</span>}
         </div>
         {profielMaten(v).map((k) => (
           <MaatRij
@@ -535,6 +546,7 @@ function ProfielMaten({ v, proef, opgelost }: { v: Vorm } & Props) {
             opgelost={opgelost}
             sleutel={`${v.id}-${k}`}
             mm
+            koppelbaar={!inView}
             onZet={(m, sleutel) => wijzigVorm(v.id, (o) => zetProfielMaat(o, k, m), sleutel)}
           />
         ))}
@@ -546,11 +558,12 @@ function ProfielMaten({ v, proef, opgelost }: { v: Vorm } & Props) {
             opgelost={opgelost}
             sleutel={`${v.id}-lengte`}
             mm
+            koppelbaar={!inView}
             onZet={(m, sleutel) => wijzigVorm(v.id, (o) => zetAanzichtLengte(o, m), sleutel)}
           />
         )}
       </div>
-      <p className="tk-uitleg tk-zacht">{t("paneel.profielUitleg", { px: kernGetal(Math.round(PX_PER_MM * 1000) / 1000) })}</p>
+      {!inView && <p className="tk-uitleg tk-zacht">{t("paneel.profielUitleg", { px: kernGetal(Math.round(PX_PER_MM * 1000) / 1000) })}</p>}
     </section>
   );
 }
@@ -642,7 +655,7 @@ function MaatRij({
 }
 
 /** Een getalveld dat tijdens het typen zijn eigen tekst houdt. */
-function GetalVeld({
+export function GetalVeld({
   waarde,
   onZet,
   min,

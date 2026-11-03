@@ -18,7 +18,7 @@ import { designerVoor } from "./components/calc/designerKeuze";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
 import PrintDocument from "./components/calc/PrintDocument";
-import { wachtOpVellen, wachtTotGetekend, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { wachtOpDrukbeelden, wachtOpVellen, wachtTotGetekend, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
 import BladBijwerken from "./components/calc/BladBijwerken";
@@ -26,7 +26,20 @@ import TekenEditor from "./components/tekenen/TekenEditor";
 import { BladVersieKop, BladVersieMelding } from "./components/calc/BladVersieKop";
 import IfcViewerPanel from "./components/calc/IfcViewerPanel";
 import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
+import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
+import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
+import FeedbackDialog from "./components/FeedbackDialog";
+import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
 import { isPdfBlad } from "./store/pdfBijlage";
+import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
+import { isMarkdownBlad } from "./store/markdownBlad";
+import { isCanvasBlad } from "./store/canvasBlad";
+import { GraafBladInfo, GraafBladWeergave } from "./components/graaf/GraafBladWeergave";
+import { isGraafBlad } from "./store/graafBlad";
+import { TekenbladInfo, TekenbladWeergave } from "./components/calc/TekenbladWeergave";
+import { isTekenBlad } from "./store/tekenBlad";
+import { JupyterBladInfo, JupyterBladWeergave, JupyterHouder } from "./components/calc/JupyterBladWeergave";
+import { isJupyterBlad } from "./store/jupyterBlad";
 import { getSetting } from "./store";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
 import { usePrintStore } from "./store/printStore";
@@ -83,6 +96,7 @@ let startbestandGeopend = false;
 export default function App() {
   const { t } = useTranslation("werkruimte");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState("general");
   const [helpOpen, setHelpOpen] = useState(false);
   // Het welkomstvenster bij het opstarten, tot je het uitzet (Welkom.tsx).
@@ -99,6 +113,8 @@ export default function App() {
   const [theme, setTheme] = useState("light");
   // 2-pane werkruimte-modus: code+visueel / code+uitwerking / visueel+uitwerking
   const [splitMode, setSplitMode] = useState<"cv" | "cu" | "vu">("vu");
+  // Een canvas-blad opent op het canvas; zijn rekentekst is de tab ernaast.
+  const [canvasCode, setCanvasCode] = useState(false);
 
   useEffect(() => {
     getSetting<string>("theme", "light").then((saved) => {
@@ -174,10 +190,11 @@ export default function App() {
     useProjectStore.getState().selecteer(RAPPORT_ID);
     toonVoorbeeld(null, "rapport");
     wachtOpVellen()
-      .then((vellen) => {
+      .then(async (vellen) => {
         if (afgebroken) return;
         const opruimen = zetDrukvellenKlaar(vellen);
         try {
+          await wachtOpDrukbeelden();
           window.print();
         } finally {
           opruimen();
@@ -253,6 +270,20 @@ export default function App() {
   const hasDesigner = designerPane !== null && !toontProjectGegevens;
   // Een PDF-blad heeft geen code, beeld of uitwerking: alleen zijn pagina's.
   const pdfBlad = actief !== null && isPdfBlad(actief);
+  // Idem een spreadsheet-blad: alleen zijn werkmap.
+  const spreadsheetBlad = actief !== null && isSpreadsheetBlad(actief);
+  // Idem een Markdown-blad: zijn tekst, als bron en opgemaakt.
+  const markdownBlad = actief !== null && isMarkdownBlad(actief);
+  // Een canvas-blad heeft gewone rekentekst: de weergaven van een blad, met het canvas ervoor.
+  const canvasBlad = actief !== null && isCanvasBlad(actief);
+  const toontCanvas = canvasBlad && !canvasCode;
+  useEffect(() => setCanvasCode(false), [activeId]);
+  // Idem een grafblad: alleen zijn vlak.
+  const graafBlad = actief !== null && isGraafBlad(actief);
+  // En een tekenblad: alleen zijn vel.
+  const tekenBlad = actief !== null && isTekenBlad(actief);
+  // Idem een Jupyter-blad: alleen zijn omgeving.
+  const jupyterBlad = actief !== null && isJupyterBlad(actief);
   const mode = hasDesigner ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
@@ -276,6 +307,7 @@ export default function App() {
   const kiesWeergave = (m: "cv" | "cu" | "vu") => {
     sluitVoorbeeld();
     setSplitMode(m);
+    setCanvasCode(true);
   };
 
   // Het lint (tab CalcPAD) vraagt om de code: weg uit de IFC-weergave en het
@@ -286,21 +318,33 @@ export default function App() {
     setActiveView("default");
     sluitVoorbeeld();
     setSplitMode((m) => (m === "vu" ? "cv" : m));
+    setCanvasCode(true);
   }, [codeVerzoek, sluitVoorbeeld]);
-  const tabBalk = actief && !toontProjectGegevens && pdfBlad ? (
+  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad || jupyterBlad) ? (
     <div className="split-tabs">
-      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t("pdf.tab")}</button>
+      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : jupyterBlad ? "jupyter.tab" : tekenBlad ? "tekenblad.tab" : graafBlad ? "graaf.tab" : spreadsheetBlad ? "spreadsheet.tab" : "markdown.tab")}</button>
       <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
     </div>
   ) : actief && !toontProjectGegevens ? (
     <>
       <div className="split-tabs">
-        {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>{t("weergave.codeVisueel")}</button>
+        {canvasBlad && (
+          <button
+            className={`split-tab${!printVoorbeeld && toontCanvas ? " active" : ""}`}
+            onClick={() => {
+              sluitVoorbeeld();
+              setCanvasCode(false);
+            }}
+          >
+            {t("canvas.tab")}
+          </button>
         )}
-        <button className={`split-tab${!printVoorbeeld && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
         {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
+          <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>{t("weergave.codeVisueel")}</button>
+        )}
+        <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
+        {hasDesigner && (
+          <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
         )}
         <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
         <BladVersieKop ex={actief} />
@@ -354,7 +398,7 @@ export default function App() {
 
   return (
     <>
-      <TitleBar onSettingsClick={() => openSettings()} />
+      <TitleBar onSettingsClick={() => openSettings()} onFeedbackClick={() => setFeedbackOpen(true)} />
       <Ribbon
         onFileTabClick={() => setBackstageOpen(true)}
         onSettingsClick={openSettings}
@@ -394,6 +438,62 @@ export default function App() {
                 <Trans t={t} i18nKey="leeg.uitleg" components={{ b: <b /> }} />
               </p>
             </div>
+          ) : markdownBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <SplitPane
+                  left={<WerkPaneel titel={t("markdown.bron")} info={<MarkdownBladInfo ex={actief} />}><MarkdownBron key={actief.id} ex={actief} /></WerkPaneel>}
+                  right={<WerkPaneel titel={t("markdown.weergave")} papier><MarkdownWeergave ex={actief} /></WerkPaneel>}
+                />
+              </div>
+            </>
+          ) : toontCanvas ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("canvas.paneel")} info={<UcInfo blad={actief.id} />}>
+                  <CanvasBladWeergave key={actief.id} ex={actief} />
+                </WerkPaneel>
+              </div>
+            </>
+          ) : graafBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                {/* Papier, zoals een rekenblad en zijn 3D-beeld: in elk thema licht. */}
+                <WerkPaneel titel={t("graaf.paneel")} info={<GraafBladInfo ex={actief} />} papier>
+                  <GraafBladWeergave key={actief.id} ex={actief} />
+                </WerkPaneel>
+              </div>
+            </>
+          ) : tekenBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("tekenblad.paneel")} info={<TekenbladInfo ex={actief} />}>
+                  <TekenbladWeergave ex={actief} />
+                </WerkPaneel>
+              </div>
+            </>
+          ) : jupyterBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("jupyter.paneel")} info={<JupyterBladInfo ex={actief} />}>
+                  <JupyterBladWeergave />
+                </WerkPaneel>
+              </div>
+            </>
+          ) : spreadsheetBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("spreadsheet.paneel")} info={<SpreadsheetBladInfo ex={actief} />}>
+                  <SpreadsheetBladWeergave />
+                </WerkPaneel>
+              </div>
+            </>
           ) : pdfBlad ? (
             <>
               {tabBalk}
@@ -415,6 +515,9 @@ export default function App() {
       </main>
       {welkomOpen && <Welkom onSluit={() => setWelkomOpen(false)} />}
       <StatusBar />
+      <SpreadsheetHouder />
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <JupyterHouder />
       {afdrukmodus && <PrintDocument />}
       <Backstage
         open={backstageOpen}

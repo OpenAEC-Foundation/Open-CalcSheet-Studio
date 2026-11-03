@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useProjectStore } from "../store/projectStore";
 import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../store/projectBestand";
 import { bladenVoorIfc } from "../store/projectIfcx";
+import { bewaarOpenWerkmappen } from "../store/spreadsheetBlad";
 import {
   openCalculationFile,
   saveCalculationFile,
@@ -75,6 +76,7 @@ export function useBestandActies() {
   /** Altijd met de dialoog: een nieuwe naam of een andere map. */
   const opslaanAls = useCallback(async () => {
     try {
+      await bewaarOpenWerkmappen();
       const { projectNaam, bestandspad } = useProjectStore.getState();
       const pad = await saveCalculationFile(projectInhoud(), projectNaam, bestandspad);
       if (!pad) return;
@@ -95,6 +97,7 @@ export function useBestandActies() {
     const pad = useProjectStore.getState().bestandspad;
     if (!kanDirectOpslaan(pad)) return opslaanAls();
     try {
+      await bewaarOpenWerkmappen();
       await schrijfCalculationFile(pad, projectInhoud());
       useProjectStore.getState().markeerOpgeslagen(pad);
     } catch (err) {

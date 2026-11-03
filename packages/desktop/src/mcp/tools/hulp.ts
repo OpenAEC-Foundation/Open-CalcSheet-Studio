@@ -7,6 +7,11 @@ import { projectScope } from "../../store/projectGegevens.ts";
 import { invoervelden, type Invoerveld } from "../../components/calc/bladVersie.ts";
 import type { Resultaat } from "../../components/calc/bladLezen.ts";
 import { isPdfBlad, lijktOpPdf, PDF_GROOT_BYTES, base64Bytes } from "../../store/pdfBijlage.ts";
+import { isLosBlad, isSpreadsheetBlad } from "../../store/spreadsheetBlad.ts";
+import { isMarkdownBlad } from "../../store/markdownBlad.ts";
+import { isGraafBlad } from "../../store/graafBlad.ts";
+import { isTekenBlad } from "../../store/tekenBlad.ts";
+import { isJupyterBlad } from "../../store/jupyterBlad.ts";
 import { jsonGetal, leesBron, rekenDoor, type Doorrekening } from "../rekenen.ts";
 
 // ── Resultaten ──────────────────────────────────────────────────────────────
@@ -75,11 +80,16 @@ export function bladUit(
   return blad ? { blad, stand } : { fout: geenBlad(stand, id) };
 }
 
-/** Een rekenblad, geen PDF-blad: een PDF-blad heeft geen rekentekst en geen invoer. */
+/** Een rekenblad, geen PDF-, spreadsheet-, Markdown-, graaf-, teken- of Jupyter-blad: die hebben geen rekentekst en geen invoer. */
 export function geenPdfBlad(blad: McpBlad): McpToolResultaat | null {
-  return isPdfBlad(blad)
-    ? fout("VALIDATION", `Sheet "${blad.naam}" is a PDF sheet: it has no calculation text or inputs.`)
+  return isLosBlad(blad)
+    ? fout("VALIDATION", `Sheet "${blad.naam}" is a ${isPdfBlad(blad) ? "PDF" : isMarkdownBlad(blad) ? "Markdown" : isGraafBlad(blad) ? "graph" : isTekenBlad(blad) ? "drawing" : isJupyterBlad(blad) ? "Jupyter" : "spreadsheet"} sheet: it has no calculation text or inputs.`)
     : null;
+}
+
+/** De soort van een blad, zoals de API die noemt. */
+export function bladSoort(blad: McpBlad): "pdf" | "spreadsheet" | "markdown" | "graph" | "drawing" | "jupyter" | "calculation" {
+  return isPdfBlad(blad) ? "pdf" : isSpreadsheetBlad(blad) ? "spreadsheet" : isMarkdownBlad(blad) ? "markdown" : isGraafBlad(blad) ? "graph" : isTekenBlad(blad) ? "drawing" : isJupyterBlad(blad) ? "jupyter" : "calculation";
 }
 
 /** Een invoerwaarde als tekst: getallen zoals de app ze bewaart. */

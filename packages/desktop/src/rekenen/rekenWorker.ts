@@ -7,8 +7,9 @@
  * bevroor het venster daarom bij elke toetsaanslag. Zie rekenen/doorrekening.ts
  * voor wie de verzoeken stuurt.
  */
-import { parse, evaluate, render, setAngleMode, type AngleMode } from "@ifc-calc/core";
+import { setAngleMode, type AngleMode } from "@ifc-calc/core";
 import { leesGetallen, leesResultaat, metRefNamen } from "../components/calc/bladLezen";
+import { rekenUitwerking } from "../components/calc/canvasRekenen";
 import { bronVoorUitvoer } from "../templates/vertalingen";
 import type { RekenVerzoek, RekenAntwoord } from "./doorrekening";
 
@@ -19,11 +20,12 @@ self.onmessage = (e: MessageEvent<RekenVerzoek>) => {
     setAngleMode(v.hoekmodus as AngleMode);
     // De uitvoer in de taal van de app; de getallen en het oordeel lezen hetzelfde.
     const uitvoer = bronVoorUitvoer(v.source, v.taal);
-    const ast = parse(uitvoer.bron, { includes: new Map(v.includes), imageUrls: new Map(v.imageUrls) });
-    const nodes = evaluate(ast, v.waarden, v.scope);
+    const opties = { includes: new Map(v.includes), imageUrls: new Map(v.imageUrls) };
+    const { nodes, html, eenheden } = rekenUitwerking(uitvoer.bron, v.waarden, v.scope, opties, uitvoer.namen);
     antwoord = {
       sleutel: v.sleutel,
-      html: render(nodes, { namen: uitvoer.namen }),
+      html,
+      eenheden,
       uitkomst: {
         resultaat: leesResultaat(nodes, v.naam),
         getallen: metRefNamen(leesGetallen(nodes), v.source),

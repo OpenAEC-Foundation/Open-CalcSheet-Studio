@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { templates } from "../templates";
 import { useProjectStore } from "./projectStore";
+import { nieuwVel } from "../components/tekenen/vel";
 
 /**
  * Het scherm "Module toevoegen" en het blad dat daar net mee is ingevoegd.
@@ -25,6 +26,8 @@ interface ModuleKiezerState {
   naamKlaar: () => void;
   /** Voegt een blad uit de catalogus toe, selecteert het en sluit het scherm. */
   voegToe: (templateId: string, label: string) => void;
+  /** Voegt een leeg tekenblad toe, met één lege view, en sluit het scherm. */
+  voegTekenbladToe: (naam: string, viewTitel: string) => void;
 }
 
 export const useModuleKiezer = create<ModuleKiezerState>((set) => ({
@@ -42,6 +45,10 @@ export const useModuleKiezer = create<ModuleKiezerState>((set) => ({
     // toch maar een voorstel.
     const kort = label.replace(/\s*\([^)]*\)\s*$/, "").trim() || label;
     const id = useProjectStore.getState().voegToe(templateId, kort, bron);
+    set({ nieuwId: id, open: false });
+  },
+  voegTekenbladToe: (naam, viewTitel) => {
+    const id = useProjectStore.getState().voegTekenbladToe(naam, nieuwVel(viewTitel));
     set({ nieuwId: id, open: false });
   },
 }));

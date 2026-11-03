@@ -15,8 +15,9 @@ import { useBestandActies } from "./useBestandActies";
  * Uitzondering: staat de cursor in een gewoon invoerveld — een naam die je aan
  * het typen bent, een veld in de projectgegevens — dan laat de browser zijn
  * eigen ongedaan-gedrag doen. Anders zou één toetsaanslag zowel het woord als
- * de vorige projectwijziging terugdraaien. De bestandstoetsen gelden wél
- * overal: opslaan terwijl je nog in een veld staat moet gewoon werken.
+ * de vorige projectwijziging terugdraaien. Hetzelfde in een spreadsheet: die
+ * heeft zijn eigen geschiedenis. De bestandstoetsen gelden wél overal: opslaan
+ * terwijl je nog in een veld staat moet gewoon werken.
  */
 export function useSneltoetsen(): void {
   const ongedaan = useProjectStore((s) => s.ongedaan);
@@ -41,6 +42,7 @@ export function useSneltoetsen(): void {
       const doel = e.target as HTMLElement | null;
       const tag = doel?.tagName;
       if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+      if (doel?.closest?.(".spreadsheet-editor")) return;
 
       const toets = e.key.toLowerCase();
       if (toets === "p") {

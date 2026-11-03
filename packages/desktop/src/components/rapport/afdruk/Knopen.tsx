@@ -3,11 +3,12 @@ import type { Rapportknoop } from "../../../rapport/opzet";
 import { vulIn } from "../../../rapport/invullen";
 import { samenvatting } from "../../calc/bladResultaat";
 import { MATEN } from "../../calc/paginering";
-import { PdfPaginas } from "../../calc/PdfBladWeergave";
-import { UitwerkingHtml } from "../../calc/PrintBlad";
-import { isPdfBlad } from "../../../store/pdfBijlage";
+import { bladSoortVan } from "../../calc/bladSoorten";
+import { UitwerkingHtml } from "../../calc/UitwerkingHtml";
+import { isCanvasBlad } from "../../../store/canvasBlad";
+import { CanvasVellen } from "../../calc/PrintBlad";
 import type { RapportWeergave } from "./useRapportWeergave";
-import { Cel, Leeg, Rij, Tekst, Vlak } from "./raster";
+import { Cel, Leeg, PaginaCel, Rij, Tekst, Vlak } from "./raster";
 import { Bestaand, Bouwwerk, Brand, Conservering, Factoren, Materialen, Vervormingen } from "./Uitgangspunten";
 import { Groep, Sneeuw, Veranderlijk, Wind } from "./Belastingen";
 
@@ -49,13 +50,14 @@ type Blad = NonNullable<Rapportknoop["blad"]>;
 function Kop({ knoop, plaats }: { knoop: Rapportknoop; plaats: Plaats }) {
   const tekst = knoop.nummer ? `${knoop.nummer} ${knoop.titel}` : knoop.titel;
   const direct = plaats.direct ? " rpa-direct" : "";
-  if (knoop.blad) return <h2 className="rpa-hb">{tekst}</h2>;
+  // `data-inhoud`: de plek voor de inhoudsopgave (paginaVanAnkers in paginering.ts).
+  if (knoop.blad) return <h2 className="rpa-hb" data-inhoud={knoop.id}>{tekst}</h2>;
   // Een hoofdstuk dat binnen een sectie doorloopt krijgt een extra lege regel
   // boven zich; bovenaan een vel begint het blok van drie regels meteen.
-  if (knoop.niveau === 1) return <h1 className={plaats.begin ? "rpa-h1" : "rpa-h1 rpa-vervolg"}>{tekst}</h1>;
-  if (knoop.niveau === 2) return <h2 className={`rpa-h2${direct}`}>{tekst}</h2>;
-  if (knoop.niveau === 3) return <h3 className={`rpa-h3${direct}`}>{tekst}</h3>;
-  return <h4 className={`rpa-h4${direct}`}>{tekst}</h4>;
+  if (knoop.niveau === 1) return <h1 className={plaats.begin ? "rpa-h1" : "rpa-h1 rpa-vervolg"} data-inhoud={knoop.id}>{tekst}</h1>;
+  if (knoop.niveau === 2) return <h2 className={`rpa-h2${direct}`} data-inhoud={knoop.id}>{tekst}</h2>;
+  if (knoop.niveau === 3) return <h3 className={`rpa-h3${direct}`} data-inhoud={knoop.id}>{tekst}</h3>;
+  return <h4 className={`rpa-h4${direct}`} data-inhoud={knoop.id}>{tekst}</h4>;
 }
 
 /** 2.2 Rol binnen het project: de openingszin, dan de rol, de architect en de datum van de onderlegger. */
@@ -82,8 +84,8 @@ function RolInhoud({ w }: { w: RapportWeergave }) {
 
 /**
  * Het begin van hoofdstuk Berekeningen: een eigen inhoudsopgave van de
- * paragrafen (die staan niet in de inhoud voorin), met een lijn onder elke
- * regel en twee lege regels erna. Zonder rekenbladen is er geen hoofdstuk
+ * paragrafen, met een lijn onder elke regel, het paginanummer van de paragraaf
+ * rechts en twee lege regels erna. Zonder rekenbladen is er geen hoofdstuk
  * Berekeningen (bouwOpzet laat het weg).
  */
 function BerekeningenInhoud({ knoop }: { knoop: Rapportknoop }) {
@@ -95,6 +97,7 @@ function BerekeningenInhoud({ knoop }: { knoop: Rapportknoop }) {
       {paragrafen.map((k) => (
         <Rij key={k.id} klasse="rpa-tt">
           <Cel k={1} n={3} o>{k.nummer} {k.titel}</Cel>
+          <PaginaCel anker={k.id} />
         </Rij>
       ))}
       <Leeg />
@@ -106,13 +109,14 @@ function BerekeningenInhoud({ knoop }: { knoop: Rapportknoop }) {
  * Eén blad in hoofdstuk Berekeningen: de automatische samenvatting uit de
  * bladkop, daaronder de eigen toelichting als die er is; dan de verwijzing
  * naar bijlage A, of — als het blad in het hoofdstuk zelf hoort — de
- * uitwerking hier. Bij een PDF-blad is die uitwerking de PDF: elke pagina op
- * een eigen vel, onder de paragraafkop.
+ * uitwerking hier. Bij een aangemelde soort (bladSoorten.tsx) is die uitwerking zijn
+ * eigen afdrukonderdeel, onder de paragraafkop.
  */
 function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
   const b = w.bladen.find((x) => x.ex.id === blad.id);
   const toelichting = w.rapport.toelichting[blad.id] ?? "";
-  const inHoofdstuk = w.rapport.inHoofdstuk[blad.id] === true;
+  const inHoofdstuk = blad.bijlage === "";
+  const soort = b && bladSoortVan(b.ex);
   return (
     <>
       {/* Zonder UC of oordeel zegt de samenvatting niets meer dan de kop. */}
@@ -120,13 +124,15 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
         <p className="rpa-tekst">{samenvatting(b.resultaat)}</p>
       )}
       {toelichting.trim() && <Tekst tekst={toelichting} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />}
-      {inHoofdstuk && b && isPdfBlad(b.ex) ? (
-        <PdfPaginas ex={b.ex} maten={MATEN.rapport} />
+      {inHoofdstuk && b && soort ? (
+        <soort.Afdruk ex={b.ex} maten={MATEN.rapport} />
       ) : inHoofdstuk && b ? (
         // `print-blad` geeft de uitwerking dezelfde compacte opmaak als een
         // los blad; `rpa-inline` haalt de paginasprong van een los blad weg.
         <Vlak klasse="print-blad rpa-inline">
-          <UitwerkingHtml html={b.html} bladId={b.ex.id} />
+          {isCanvasBlad(b.ex) && b.eenheden
+            ? <CanvasVellen eenheden={b.eenheden} bladId={b.ex.id} />
+            : <UitwerkingHtml html={b.html} bladId={b.ex.id} />}
         </Vlak>
       ) : (
         blad.bijlage && <p className="rpa-tekst">Zie bijlage {blad.bijlage}.</p>

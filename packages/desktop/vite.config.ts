@@ -8,6 +8,11 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react()],
 
+  // De spreadsheetkern laadt zijn WASM en worker relatief aan import.meta.url;
+  // prebundelen verbreekt die paden.
+  worker: { format: "es" as const },
+  optimizeDeps: { exclude: ["@betteroffice/xlsx", "@betteroffice/xlsx-react"] },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

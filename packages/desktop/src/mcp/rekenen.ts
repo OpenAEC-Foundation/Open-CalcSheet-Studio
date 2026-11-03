@@ -19,6 +19,8 @@ import { parse, evaluate } from "@ifc-calc/core";
 import type { AstNode, EvaluatedNode } from "@ifc-calc/core";
 import { calcpadIncludes, calcpadImageUrls } from "../templates/calcpad-includes.ts";
 import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../components/calc/bladLezen.ts";
+import { rekenEenhedenDoor } from "../components/calc/canvasRekenen.ts";
+import { heeftEenheden } from "../store/canvasBlad.ts";
 
 /** Leest een rekentekst in, met dezelfde includes en afbeeldingen als de uitwerking. */
 export function leesBron(source: string): AstNode[] {
@@ -39,7 +41,10 @@ export function rekenDoor(
   scope: Record<string, unknown>,
   naam: string,
 ): Doorrekening {
-  const nodes = evaluate(leesBron(source), waarden, scope);
+  // Een canvas-blad langs dezelfde route als op het scherm: een fout blijft bij zijn eenheid.
+  const nodes = heeftEenheden(source)
+    ? rekenEenhedenDoor(source, waarden, scope, { includes: calcpadIncludes, imageUrls: calcpadImageUrls }).flatMap((u) => u.nodes)
+    : evaluate(leesBron(source), waarden, scope);
   return {
     nodes,
     resultaat: leesResultaat(nodes, naam),

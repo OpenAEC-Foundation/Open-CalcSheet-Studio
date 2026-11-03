@@ -9,6 +9,13 @@ import { standaardTeksten } from "../rapport/standaardteksten";
 import { rekenversie } from "../components/calc/bladVersie";
 import { normaliseerExemplaren } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
+import { SPREADSHEET_BLAD, type SpreadsheetBestand } from "./spreadsheetBlad";
+import { MARKDOWN_BLAD, type MarkdownBestand } from "./markdownBlad";
+import { CANVAS_BLAD } from "./canvasBlad";
+import { GRAAF_BLAD } from "./graafBlad";
+import { legeGraaf, type Graaf } from "../graaf/model";
+import { TEKEN_BLAD, type TekenVel } from "./tekenBlad";
+import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
 
 const STORE_KEY = "projectState";
 
@@ -75,6 +82,32 @@ export interface Exemplaar {
    * van het blad.
    */
   pdf?: PdfBijlage;
+  /**
+   * Alleen bij een spreadsheet-blad (`templateId` SPREADSHEET_BLAD, zie
+   * store/spreadsheetBlad.ts): de werkmap zelf, base64-gecodeerd.
+   */
+  xlsx?: SpreadsheetBestand;
+  /**
+   * Alleen bij een Markdown-blad (`templateId` MARKDOWN_BLAD, zie
+   * store/markdownBlad.ts): de tekst, met de afbeeldingen die erbij horen.
+   */
+  md?: MarkdownBestand;
+  /**
+   * Alleen bij een grafblad (`templateId` GRAAF_BLAD, zie store/graafBlad.ts):
+   * de nodes en verbindingen. De uitkomsten staan er niet in; die rekent
+   * graaf/rekenen.ts bij elke wijziging opnieuw uit.
+   */
+  graaf?: Graaf;
+  /**
+   * Alleen bij een tekenblad (`templateId` TEKEN_BLAD, zie store/tekenBlad.ts):
+   * het vel met zijn views.
+   */
+  tekenvel?: TekenVel;
+  /**
+   * Alleen bij een Jupyter-blad (`templateId` JUPYTER_BLAD, zie store/jupyterBlad.ts):
+   * de werkmap als ZIP, base64-gecodeerd.
+   */
+  jupyter?: JupyterWerkmap;
 }
 
 /**
@@ -126,6 +159,31 @@ interface ProjectState {
   voegPdfToe: (naam: string, pdf: PdfBijlage) => string;
   /** Een ander PDF-bestand voor een PDF-blad; naam en plaats blijven. */
   zetPdf: (id: string, pdf: PdfBijlage) => void;
+  /** Een spreadsheet-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegSpreadsheetToe: (naam: string, xlsx: SpreadsheetBestand) => string;
+  /** De werkmap van een spreadsheet-blad; opeenvolgende bewerkingen tellen als één stap ongedaan maken. */
+  zetSpreadsheet: (id: string, xlsx: SpreadsheetBestand) => void;
+  /** Een Markdown-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegMarkdownToe: (naam: string, md: MarkdownBestand) => string;
+  /** De tekst van een Markdown-blad; doortypen telt als één stap ongedaan maken. */
+  zetMarkdown: (id: string, md: MarkdownBestand) => void;
+  /** Een leeg canvas-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegCanvasToe: (naam: string) => string;
+  /** Een leeg grafblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegGraafToe: (naam: string) => string;
+  /**
+   * De graaf van een grafblad. `sleutel`: doorgaan met dezelfde bewerking (typen
+   * in een veld, de schuif) is één stap ongedaan maken; zonder is het een eigen stap.
+   */
+  zetGraaf: (id: string, graaf: Graaf, sleutel?: string) => void;
+  /** Een tekenblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegTekenbladToe: (naam: string, tekenvel: TekenVel) => string;
+  /** Het vel van een tekenblad; opeenvolgende bewerkingen tellen als één stap ongedaan maken. */
+  zetTekenVel: (id: string, tekenvel: TekenVel) => void;
+  /** Een Jupyter-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegJupyterToe: (naam: string, jupyter: JupyterWerkmap) => string;
+  /** De werkmap van een Jupyter-blad; opeenvolgende wijzigingen tellen als één stap ongedaan maken. */
+  zetJupyter: (id: string, jupyter: JupyterWerkmap) => void;
   dupliceer: (id: string) => string | null;
   hernoem: (id: string, naam: string) => void;
   verwijder: (id: string) => void;
@@ -322,6 +380,139 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         ...metGeschiedenis(s, null),
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, pdf } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegSpreadsheetToe: (naam, xlsx) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: SPREADSHEET_BLAD, source: "", waarden: {}, xlsx },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetSpreadsheet: (id, xlsx) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, `xlsx:${id}`),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, xlsx } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegMarkdownToe: (naam, md) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: MARKDOWN_BLAD, source: "", waarden: {}, md },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetMarkdown: (id, md) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, `md:${id}`),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, md } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegCanvasToe: (naam) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: CANVAS_BLAD, source: "", waarden: {} },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+  voegGraafToe: (naam) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: GRAAF_BLAD, source: "", waarden: {}, graaf: legeGraaf() },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetGraaf: (id, graaf, sleutel) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, sleutel ? `graaf:${id}:${sleutel}` : null),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, graaf } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegTekenbladToe: (naam, tekenvel) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: TEKEN_BLAD, source: "", waarden: {}, tekenvel },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetTekenVel: (id, tekenvel) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, `tekenvel:${id}`),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, tekenvel } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegJupyterToe: (naam, jupyter) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: JUPYTER_BLAD, source: "", waarden: {}, jupyter },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetJupyter: (id, jupyter) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, `jupyter:${id}`),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, jupyter } : e)),
         dirty: true,
       };
     }),

@@ -8,9 +8,10 @@ import "./TitleBar.css";
 
 interface TitleBarProps {
   onSettingsClick?: () => void;
+  onFeedbackClick?: () => void;
 }
 
-function TitleBar({ onSettingsClick }: TitleBarProps) {
+function TitleBar({ onSettingsClick, onFeedbackClick }: TitleBarProps) {
   const { t } = useTranslation();
   const { t: tw } = useTranslation("werkruimte");
   const afdrukken = useAfdrukken();
@@ -127,6 +128,9 @@ function TitleBar({ onSettingsClick }: TitleBarProps) {
       </span>
 
       <div className="titlebar-controls">
+        <button className="send-feedback-btn" onClick={() => onFeedbackClick?.()} tabIndex={-1}>
+          {t("sendFeedback")}
+        </button>
         <button className="titlebar-button titlebar-minimize" onClick={handleMinimize} aria-label={t("minimize")} tabIndex={-1}>
           <Icoon id="window.minimize" />
         </button>

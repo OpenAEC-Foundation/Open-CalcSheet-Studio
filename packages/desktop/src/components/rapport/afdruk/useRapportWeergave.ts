@@ -5,6 +5,7 @@ import { useBureauStore } from "../../../store/bureauProfiel";
 import { projectScope, type ProjectGegevens } from "../../../store/projectGegevens";
 import type { BureauProfiel, Rapport } from "../../../rapport/model";
 import {
+  bijlageRegels,
   bijlagen as bijlagenVan,
   bouwOpzet,
   inhoudsopgave,
@@ -14,6 +15,8 @@ import {
 } from "../../../rapport/opzet";
 import type { Invulwaarden } from "../../../rapport/invullen";
 import { rekenBladDoor, zorgVoorKernstijlen } from "../../calc/bladDoorrekenen";
+import { bladVoorOpzet } from "../../calc/bladSoorten";
+import type { CanvasUitwerking } from "../../calc/canvasRekenen";
 import type { Resultaat } from "../../calc/bladResultaat";
 
 /*
@@ -29,6 +32,8 @@ export interface RapportBlad {
   ex: Exemplaar;
   html: string;
   resultaat: Resultaat;
+  /** Bij een canvas-blad: de uitwerking per eenheid, met zijn positie. */
+  eenheden?: CanvasUitwerking[];
 }
 
 export interface RapportWeergave {
@@ -42,6 +47,8 @@ export interface RapportWeergave {
   /** De hoofdstukindeling van dit rapport: genummerd, zonder wat wegvalt. */
   knopen: Rapportknoop[];
   inhoud: Inhoudsregel[];
+  /** De bladen in bijlage A voor in de inhoudsopgave; leeg zonder opmaak.bladenInInhoud. */
+  inhoudBijlage: Inhoudsregel[];
   bijlagen: Bijlage[];
   /** Waarden voor de invulvelden in de teksten. */
   invul: Invulwaarden;
@@ -81,9 +88,15 @@ export function useRapportWeergave(): RapportWeergave {
   }, [exemplaren, gegevens, i18next.language]);
 
   const opzet = useMemo(() => {
-    const lijst = exemplaren.map((ex) => ({ id: ex.id, naam: ex.naam }));
+    const lijst = exemplaren.map(bladVoorOpzet);
     const knopen = bouwOpzet(rapport, lijst);
-    return { knopen, inhoud: inhoudsopgave(knopen), bijlagen: bijlagenVan(rapport, lijst) };
+    const metBladen = rapport.opmaak.bladenInInhoud;
+    return {
+      knopen,
+      inhoud: inhoudsopgave(knopen, metBladen),
+      inhoudBijlage: metBladen ? bijlageRegels(knopen) : [],
+      bijlagen: bijlagenVan(rapport, lijst),
+    };
   }, [rapport, exemplaren]);
 
   const invul = useMemo<Invulwaarden>(

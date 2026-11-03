@@ -35,6 +35,15 @@ Compatibiliteit met voorbeeldbestanden voor de ondersteunde rekensyntax.
 - **`@iframe https://… hoogte=120mm`** — een externe pagina, laadt pas na bevestiging, in een sandbox
 - **`@js hoogte=90mm titel="…" bibliotheek=three … @end`** — JavaScript met de waarden van het blad als `calc`, pas na bevestiging, afgeschermd en zonder netwerk; een draaibaar model kan met `calc.wereld3d()`, en een knop met `addEventListener` (geen `onclick=`)
 
+### Bladsoorten
+Naast het rekenblad kan een project ook deze bladen bevatten. Ze komen allemaal in hetzelfde rapport, met de inhoudsopgave en de paginanummering die over alle bladen doorloopt. Zie [docs/bladsoorten.md](docs/bladsoorten.md).
+- **Spreadsheet** — een werkmap met formules, cellen aanwijzen, kopiëren en vullen; de paginagrenzen zijn te zien
+- **Canvas** — formules als losse eenheden op een vlak, met dezelfde rekenkern als het rekenblad, van boven naar beneden
+- **Graaf** — knopen verbinden tot een berekening, met lijsten, codeblokken en een 3D-voorbeeld op de achtergrond
+- **Tekenblad** — een lege tekening op A4, A3 of A2 met meerdere aanzichten op schaal: staalprofielen, kanaalplaatvloeren, stramienen, peilen, wanden en schematiseringen
+- **Jupyter** — een notebook met Python, afgeschermd en zonder installatie; zie [docs/jupyter-blad.md](docs/jupyter-blad.md)
+- **Markdown** en **PDF** — bestaande tekst en documenten mee in het rapport
+
 ### IFC export
 Live IFCX (JSON-LD draft) en IFC4x3 STEP-SPF generatie. Opslaan schrijft het
 **hele project** weg: alle rekenbladen in één ruimtelijke boom, met een element
@@ -217,12 +226,15 @@ const ast = parse(source, {
 - **CodeMirror 6** — editor met `.cpd` syntax highlighting + autocomplete
 - **React 19** — desktop UI
 - **Tauri 2** — Rust shell met file-system + dialog plugins
+- **JupyterLite + Pyodide** — Python in een Jupyter-blad, afgeschermd en zonder installatie; zie [`docs/jupyter-blad.md`](docs/jupyter-blad.md)
 - **Vite** — bundler met `?raw` imports voor samples
 - **npm workspaces** — monorepo
 
 ## Licentie
 
 LGPL-3.0, zie [`LICENSE`](LICENSE).
+
+De Jupyter-omgeving levert software mee onder eigen licenties (BSD, MIT, MPL-2.0, PSF): zie [`packages/desktop/jupyter-omgeving/LICENTIES.md`](packages/desktop/jupyter-omgeving/LICENTIES.md).
 
 ## Status
 

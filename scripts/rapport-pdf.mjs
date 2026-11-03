@@ -12,7 +12,7 @@
  * Gebruik:
  *   node scripts/rapport-pdf.mjs <projectbestand> <uit.pdf>
  *        [--bureau profiel.json] [--url http://localhost:3021] [--browser <pad>]
- *        [--beginwaarden]
+ *        [--beginwaarden] [--vellen vellen.json] [--knop knop.json]
  *
  *   --bureau   een bureauprofiel (JSON in de vorm van BureauProfiel); komt in
  *              rapport.bureau, zodat huisstijl en voet van dat profiel gelden.
@@ -22,6 +22,10 @@
  *   --beginwaarden  opent eerst elk blad een keer, zodat een parametrisch beeld
  *              zijn beginwaarden invult. Nodig voor een proefproject dat alleen
  *              templateId's heeft; een opgeslagen project heeft zijn invoer al.
+ *   --vellen   schrijft per vel uit het voorbeeld het nummer, de tekst en of er
+ *              iets afvalt naar een JSON-bestand, om met de PDF te vergelijken.
+ *   --knop     gaat eerst de weg van de knop "Rapport (PDF)" in de app, tot aan de
+ *              printdialoog, en schrijft naar een JSON-bestand wat daar klaarstaat.
  *
  * Vereist:
  *   • een draaiende dev-server: npm --prefix packages/desktop run dev. Het script
@@ -56,7 +60,7 @@ const BROWSERS = [
 ];
 const GEBRUIK =
   "gebruik: node scripts/rapport-pdf.mjs <projectbestand> <uit.pdf> " +
-  "[--bureau profiel.json] [--url http://localhost:3021] [--browser <pad>] [--beginwaarden]";
+  "[--bureau profiel.json] [--url http://localhost:3021] [--browser <pad>] [--beginwaarden] [--vellen vellen.json] [--knop knop.json]";
 
 /** Een fout met een uitleg voor de gebruiker: gemeld zonder stacktrace. */
 class Stop extends Error {}
@@ -71,12 +75,12 @@ const meldingen = [];
 
 function leesArgumenten(argv) {
   const los = [];
-  const opties = { bureau: null, url: "http://localhost:3021", browser: null, help: false, beginwaarden: false };
+  const opties = { bureau: null, url: "http://localhost:3021", browser: null, help: false, beginwaarden: false, vellen: null, knop: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--help" || a === "-h") opties.help = true;
     else if (a === "--beginwaarden") opties.beginwaarden = true;
-    else if (a === "--bureau" || a === "--url" || a === "--browser") {
+    else if (a === "--bureau" || a === "--url" || a === "--browser" || a === "--vellen" || a === "--knop") {
       const w = argv[++i];
       if (w === undefined || w.startsWith("--")) stop(`${a} verwacht een waarde.\n${GEBRUIK}`);
       opties[a.slice(2)] = w;
@@ -128,7 +132,8 @@ async function controleerVooraf(o) {
 
   const raw = readFileSync(o.project, "utf8");
   try {
-    if (!JSON.parse(raw).project) log(`let op: ${basename(o.project)} heeft geen "project"; de app opent het als los blad.`);
+    const inhoud = JSON.parse(raw);
+    if (!inhoud.project && !inhoud.data) log(`let op: ${basename(o.project)} heeft geen project; de app opent het als los blad.`);
   } catch {
     log(`let op: ${basename(o.project)} is geen JSON; de app opent het als losse rekentekst.`);
   }
@@ -351,6 +356,37 @@ async function hoofd() {
       log(`${gevuld} bladen geopend voor de beginwaarden van hun beeld`);
     }
 
+    if (o.knop) {
+      // De weg van de knop zelf, vanuit een koude start: de printdialoog wordt hier
+      // een stand opnemen, en een melding komt niet op het scherm maar in het bestand.
+      const knop = await evalueer(`(async () => {
+        const { usePrintStore } = window.__ocs;
+        const oudePrint = window.print;
+        const oudeAlert = window.alert;
+        const uitkomst = await new Promise((klaar) => {
+          window.alert = (melding) => klaar({ melding: String(melding) });
+          window.print = () => {
+            const vellen = [...document.querySelectorAll(".rpa-drukvellen .av-pagina")];
+            const beelden = [...document.querySelectorAll(".rpa-drukvellen img")];
+            klaar({
+              melding: null,
+              nummers: vellen.map((v) => v.querySelector(".av-rapport-nummer")?.textContent ?? ""),
+              inhoud: vellen[1] ? [...vellen[1].querySelectorAll("[data-inhoud-doel]")].map((e) => e.textContent) : [],
+              beeldenNietKlaar: beelden.filter((b) => !b.complete).length,
+              laadt: document.querySelectorAll(".rpa-drukvellen [data-afdruk-laadt]").length,
+            });
+          };
+          usePrintStore.getState().afdrukken(null, "rapport");
+        });
+        // Het opruimen na de printdialoog afwachten; daarna opent het voorbeeld gewoon weer.
+        for (let i = 0; i < 50 && usePrintStore.getState().bezig; i++) await new Promise((r) => setTimeout(r, 100));
+        window.print = oudePrint;
+        window.alert = oudeAlert;
+        return uitkomst;
+      })()`, "de weg van de knop");
+      writeFileSync(resolve(o.knop), JSON.stringify(knop));
+    }
+
     // Zelfde weg als "Rapport (PDF)" in de app: het afdrukvoorbeeld bouwt de
     // vellen, en een kopie daarvan gaat naar de printer (drukvellen.ts).
     await evalueer(`(async () => {
@@ -365,8 +401,7 @@ async function hoofd() {
 
     const staat = await evalueer(`(async () => {
       await document.fonts.ready;
-      await Promise.all([...document.querySelectorAll(".rpa-drukvellen img")]
-        .map((b) => (b.complete ? null : b.decode().catch(() => null))));
+      await window.__ocs.wachtOpDrukbeelden();
       // De parametrische beelden meten zich met een ResizeObserver: die vuurt
       // pas na een opmaakronde. Twee frames plus een halve seconde; zonder
       // zichtbaar venster valt requestAnimationFrame terug op de timer.
@@ -383,6 +418,19 @@ async function hoofd() {
     if (!staat.afdrukmodus) stop("html.rapportdruk staat niet aan: de vellen staan niet klaar.");
     if (staat.tekens === 0) stop("de afdrukweergave van het rapport is leeg.");
     log(`vellen klaar: ${staat.secties} vellen, lettertypen ${staat.lettertypen.join(", ") || "(systeem)"}`);
+
+    if (o.vellen) {
+      const vellen = await evalueer(`[...document.querySelectorAll(".rpa-drukvellen .av-pagina")].map((vel) => {
+        const inhoud = vel.querySelector(".av-pagina-inhoud");
+        return {
+          nummer: vel.querySelector(".av-rapport-nummer")?.textContent ?? "",
+          tekst: inhoud?.textContent ?? "",
+          formules: inhoud?.querySelector(".katex") !== null,
+          loopt: inhoud ? inhoud.scrollHeight - inhoud.clientHeight : 0,
+        };
+      })`, "de vellen lezen");
+      writeFileSync(resolve(o.vellen), JSON.stringify(vellen));
+    }
 
     // Als stroom: een rapport met twintig bladen en beelden past niet prettig
     // in één base64-antwoord.

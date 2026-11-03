@@ -11,7 +11,7 @@
  *   │        └─ geometrie van een blad
  *   ├─ Rekenbladen
  *   │  └─ blad (IfcGroup)                 ocss::blad, ::rekentekst, ::invoer,
- *   │     │                               ::elementen, ::pdf, ::uitkomst
+ *   │     │                               ::elementen, ::pdf, ::xlsx, ::markdown, ::uitkomst
  *   │     └─ figuur                       ocss::figuur
  *   └─ Constructierapport                 ocss::rapport
  *
@@ -21,10 +21,10 @@
  *
  * Teruglezen gebruikt alleen wat hieronder als bron telt: projectnaam, gegevens,
  * verborgen onderdelen, rapport en per blad naam, id, templateId, bronVersie,
- * rekentekst, invoer, elementen en PDF. Uitkomsten, figuren en elementen zijn
+ * rekentekst, invoer, elementen, PDF, werkmap en Markdown. Uitkomsten, figuren en elementen zijn
  * afgeleid: de app rekent ze opnieuw uit bij het openen en opslaan.
  */
-import type { ElementRef, IfcCalcSheet, IfcGenerationOptions } from '../ifc-generator.js';
+import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions } from '../ifc-generator.js';
 import type { IfcxBestand, IfcxKnoop, IfcxSchema } from './typen.js';
 import { padVanElement, uuidVan } from './identiteit.js';
 import { ATTR, IFCX_VERSIE, OCSS_SCHEMAS, beschrijfWaarde, ifcKlasse, importsVoor, isGeimporteerd } from './namespace.js';
@@ -33,6 +33,14 @@ import { leesFiguren, leesUitkomst, type UitkomstStatus } from './uitkomst.js';
 
 const APP_NAAM = 'Open CalcSheet Studio';
 const PDF_SOORT = 'pdf';
+const SPREADSHEET_SOORT = 'spreadsheet';
+const TEKENBLAD_SOORT = 'tekenblad';
+const XLSX_MEDIATYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const MARKDOWN_SOORT = 'markdown';
+const MARKDOWN_MEDIATYPE = 'text/markdown';
+const GRAAF_SOORT = 'graaf';
+const JUPYTER_SOORT = 'jupyter';
+const ZIP_MEDIATYPE = 'application/zip';
 
 export interface IfcxProjectInvoer {
   naam: string;
@@ -55,6 +63,11 @@ export interface IfcxGelezenBlad {
   elementen: ElementRef[];
   bronVersie?: string;
   pdf?: { bestandsnaam: string; data: string };
+  xlsx?: { bestandsnaam: string; data: string };
+  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
+  graaf?: GraafGegevens;
+  tekenvel?: Record<string, unknown>;
+  jupyter?: { bestandsnaam: string; data: string; metCode: boolean };
 }
 
 export interface IfcxGelezenProject {
@@ -90,6 +103,29 @@ function pdfBytes(data: string): number {
 
 const paren = (r: Record<string, string> | undefined) =>
   Object.entries(r ?? {}).map(([naam, waarde]) => ({ naam, waarde: String(waarde) }));
+
+/** De graaf als attribuut: de velden van een node als paren, zoals de invoer van een rekenblad. */
+function graafAttribuut(g: GraafGegevens) {
+  return {
+    versie: g.versie,
+    nodes: g.nodes.map(({ invoer, ...n }) => ({ ...n, ...(invoer ? { invoer: paren(invoer) } : {}) })),
+    verbindingen: g.verbindingen,
+  };
+}
+
+/** De graaf uit een attribuut; het model leest hem daarna nog na (leesGraaf). */
+function graafUitAttribuut(x: unknown): GraafGegevens | undefined {
+  const g = x as { versie?: unknown; nodes?: unknown; verbindingen?: unknown } | undefined;
+  if (!g || !Array.isArray(g.nodes)) return undefined;
+  return {
+    versie: typeof g.versie === 'number' ? g.versie : 1,
+    nodes: g.nodes.map((n) => {
+      const { invoer, ...rest } = n as Omit<GraafGegevens['nodes'][number], 'invoer'> & { invoer?: unknown };
+      return { ...rest, ...(invoer ? { invoer: uitParen(invoer) } : {}) };
+    }),
+    verbindingen: Array.isArray(g.verbindingen) ? (g.verbindingen as GraafGegevens['verbindingen']) : [],
+  };
+}
 
 /** Maten van een herkend element, in meter: de eenheid van de voorbeelden van buildingSMART. */
 function maten(e: HerkendElement): Record<string, number> {
@@ -146,9 +182,16 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     const sleutel = blad.id || `blad-${i + 1}`;
     const pad = onder(`blad/${sleutel}`);
     const isPdf = blad.templateId === PDF_SOORT;
+    const isSpreadsheet = blad.templateId === SPREADSHEET_SOORT;
+    const isMarkdown = blad.templateId === MARKDOWN_SOORT;
+    const isGraaf = blad.templateId === GRAAF_SOORT;
+    const isTekenblad = blad.templateId === TEKENBLAD_SOORT;
+    const isJupyter = blad.templateId === JUPYTER_SOORT;
+    // Een PDF, werkmap, Markdown-tekst, graaf, tekening of Jupyter-werkmap heeft geen rekentekst, geen invoer en geen oordeel.
+    const isLos = isPdf || isSpreadsheet || isMarkdown || isGraaf || isTekenblad || isJupyter;
     bladKinderen[kindNaam(`B${String(i + 1).padStart(3, '0')}_${blad.naam}`, bladNamen)] = pad;
 
-    const uitkomst = leesUitkomst(blad.nodes, blad.naam, isPdf ? { voldoet: null, uc: null } : blad.resultaat, blad.fout);
+    const uitkomst = leesUitkomst(blad.nodes, blad.naam, isLos ? { voldoet: null, uc: null } : blad.resultaat, blad.fout);
     const toetsing = {
       ref: pad,
       blad: blad.naam,
@@ -163,14 +206,14 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         id: sleutel,
         volgorde: i,
         templateId: blad.templateId ?? '',
-        soort: isPdf ? 'pdf' : 'rekenblad',
+        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isMarkdown ? 'markdown' : isGraaf ? 'graaf' : isTekenblad ? 'tekenblad' : isJupyter ? 'jupyter' : 'rekenblad',
         ...(blad.module ? { module: blad.module } : {}),
         ...(blad.bronVersie ? { bronVersie: blad.bronVersie } : {}),
       },
     };
     if (uitkomst.norm) attributes[ATTR.omschrijving] = uitkomst.norm;
-    if (!isPdf || blad.source) attributes[ATTR.rekentekst] = blad.source ?? '';
-    if (!isPdf || Object.keys(blad.waarden ?? {}).length > 0) attributes[ATTR.invoer] = paren(blad.waarden);
+    if (!isLos || blad.source) attributes[ATTR.rekentekst] = blad.source ?? '';
+    if (!isLos || Object.keys(blad.waarden ?? {}).length > 0) attributes[ATTR.invoer] = paren(blad.waarden);
     if (blad.elementen && blad.elementen.length > 0) attributes[ATTR.elementen] = blad.elementen;
     if (blad.pdf) {
       attributes[ATTR.pdf] = {
@@ -178,6 +221,35 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         mediaType: 'application/pdf',
         grootte: pdfBytes(blad.pdf.data),
         data: blad.pdf.data,
+      };
+    }
+    if (blad.xlsx) {
+      attributes[ATTR.xlsx] = {
+        bestandsnaam: blad.xlsx.bestandsnaam,
+        mediaType: XLSX_MEDIATYPE,
+        grootte: pdfBytes(blad.xlsx.data),
+        data: blad.xlsx.data,
+      };
+    }
+    if (blad.md) {
+      attributes[ATTR.markdown] = {
+        bestandsnaam: blad.md.bestandsnaam,
+        mediaType: MARKDOWN_MEDIATYPE,
+        grootte: new TextEncoder().encode(blad.md.tekst).length,
+        tekst: blad.md.tekst,
+        ...(blad.md.beelden ? { beelden: blad.md.beelden } : {}),
+        ...(blad.md.koppenUit ? { koppenUit: true } : {}),
+      };
+    }
+    if (blad.graaf) attributes[ATTR.graaf] = graafAttribuut(blad.graaf);
+    if (blad.tekenvel) attributes[ATTR.tekenvel] = blad.tekenvel;
+    if (blad.jupyter) {
+      attributes[ATTR.jupyter] = {
+        bestandsnaam: blad.jupyter.bestandsnaam,
+        mediaType: ZIP_MEDIATYPE,
+        grootte: pdfBytes(blad.jupyter.data),
+        data: blad.jupyter.data,
+        metCode: blad.jupyter.metCode,
       };
     }
     attributes[ATTR.uitkomst] = uitkomst;
@@ -470,6 +542,11 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     const a = k.attributes!;
     const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown };
     const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown } | undefined;
+    const xlsx = a[ATTR.xlsx] as { bestandsnaam?: unknown; data?: unknown } | undefined;
+    const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown } | undefined;
+    const graaf = graafUitAttribuut(a[ATTR.graaf]);
+    const tekenvel = a[ATTR.tekenvel];
+    const jupyter = a[ATTR.jupyter] as { bestandsnaam?: unknown; data?: unknown; metCode?: unknown } | undefined;
     const blad: IfcxGelezenBlad = {
       id: tekstVan(b.id),
       naam: tekstVan(a[ATTR.naam]),
@@ -480,6 +557,20 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     };
     if (typeof b.bronVersie === 'string') blad.bronVersie = b.bronVersie;
     if (pdf && typeof pdf.data === 'string') blad.pdf = { bestandsnaam: tekstVan(pdf.bestandsnaam), data: pdf.data };
+    if (xlsx && typeof xlsx.data === 'string') blad.xlsx = { bestandsnaam: tekstVan(xlsx.bestandsnaam), data: xlsx.data };
+    if (md && typeof md.tekst === 'string') {
+      blad.md = {
+        bestandsnaam: tekstVan(md.bestandsnaam),
+        tekst: md.tekst,
+        ...(md.beelden && typeof md.beelden === 'object' ? { beelden: md.beelden as Record<string, string> } : {}),
+        ...(md.koppenUit === true ? { koppenUit: true } : {}),
+      };
+    }
+    if (graaf) blad.graaf = graaf;
+    if (tekenvel && typeof tekenvel === 'object' && !Array.isArray(tekenvel)) blad.tekenvel = tekenvel as Record<string, unknown>;
+    if (jupyter && typeof jupyter.data === 'string') {
+      blad.jupyter = { bestandsnaam: tekstVan(jupyter.bestandsnaam), data: jupyter.data, metCode: jupyter.metCode !== false };
+    }
     return blad;
   });
 

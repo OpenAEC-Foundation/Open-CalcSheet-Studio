@@ -1,10 +1,13 @@
 import i18next from "i18next";
-import { parse, evaluate, render, defaultStyles } from "@ifc-calc/core";
+import { defaultStyles } from "@ifc-calc/core";
 import type { Exemplaar } from "../../store/projectStore";
 import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-includes";
 import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
-import { isPdfBlad } from "../../store/pdfBijlage";
+import { bladSoortVan } from "./bladSoorten";
+import { rekenUitwerking, type CanvasUitwerking } from "./canvasRekenen";
+import { isJupyterBlad } from "../../store/jupyterBlad";
+import { werkmapHtml } from "./jupyterPapier";
 import { papier } from "./pdfBlad";
 
 /*
@@ -32,6 +35,8 @@ export function zorgVoorKernstijlen() {
 export interface DoorgerekendBlad {
   html: string;
   resultaat: Resultaat;
+  /** Bij een canvas-blad: de uitwerking per eenheid, met zijn positie. */
+  eenheden?: CanvasUitwerking[];
 }
 
 /**
@@ -41,24 +46,39 @@ export interface DoorgerekendBlad {
  * krijgt een rode regel met de fout, en de andere bladen komen gewoon op papier.
  */
 export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): DoorgerekendBlad {
-  // Een PDF-blad rekent niets: geen uitwerking, geen UC. "PDF-bijlage" staat
-  // in de kolom grondslag van het overzicht; de pagina's tekent PdfBladWeergave.tsx.
-  if (isPdfBlad(ex)) {
-    return { html: "", resultaat: { titel: ex.naam, norm: papier()("pdfBlad.soort"), uc: null, voldoet: null } };
+  // Een aangemelde soort rekent niets: geen uitwerking, geen UC. De naam van de soort
+  // staat in de kolom grondslag van het overzicht; de inhoud tekent de soort zelf.
+  const soort = bladSoortVan(ex);
+  if (soort) {
+    return { html: "", resultaat: { titel: ex.naam, norm: soort.soortTekst(), uc: null, voldoet: null } };
+  }
+  // Een Jupyter-blad rekent hier ook niets: de uitwerking komt uit de opgeslagen uitvoer.
+  if (isJupyterBlad(ex)) {
+    const t = papier();
+    const html = ex.jupyter
+      ? werkmapHtml(ex.jupyter, {
+        leeg: t("jupyterBlad.leeg"),
+        fout: (bestand) => t("jupyterBlad.notebookFout", { bestand }),
+        kapot: (fout) => t("jupyterBlad.fout", { fout }),
+      })
+      : `<p class="nb-tekst-los">${t("jupyterBlad.ontbreekt")}</p>`;
+    return { html, resultaat: { titel: ex.naam, norm: t("jupyterBlad.soort"), uc: null, voldoet: null } };
   }
   let html: string;
+  let eenheden: CanvasUitwerking[] | undefined;
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
   try {
     const opties = { includes: calcpadIncludes, imageUrls: calcpadImageUrls };
     // De uitvoer volgt de taal van de app, ook op papier.
     const uitvoer = bronVoorUitvoer(ex.source, i18next.language);
-    const nodes = evaluate(parse(uitvoer.bron, opties), ex.waarden, scope);
-    html = render(nodes, { namen: uitvoer.namen });
-    resultaat = leesResultaat(nodes, ex.naam);
+    const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, scope, opties, uitvoer.namen);
+    html = uitwerking.html;
+    eenheden = uitwerking.eenheden;
+    resultaat = leesResultaat(uitwerking.nodes, ex.naam);
   } catch (err) {
     html = `<p class="calc-text" style="color:#b91c1c">${i18next.t("beelden:afdruk.nietDoorgerekend")} ${
       (err as Error).message
     }</p>`;
   }
-  return { html, resultaat };
+  return { html, resultaat, eenheden };
 }

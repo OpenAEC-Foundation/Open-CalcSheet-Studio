@@ -387,6 +387,22 @@
   color: var(--rpa-accent);
 }
 
+/* Een lange titel loopt niet over het paginanummer heen. */
+.rpa-wortel .rpa-io-titel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Een kop uit een blad, onder de naam van dat blad. */
+.rpa-wortel .rpa-io-kop3 {
+  padding-left: calc(var(--rpa-cel) + 3mm);
+}
+
+/* Het paginanummer: rechts in de laatste kolom, op de regel zelf. */
+.rpa-wortel .rpa-io-pagina {
+  text-align: right;
+}
+
 /* ─── Voorblad ────────────────────────────────────────────────── */
 
 /* De titel: 22 pt in de hoofdkleur, in kolom 2, basislijn 83,8 pt. */

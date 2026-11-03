@@ -98,8 +98,8 @@ export function PdfBladInfo({ ex }: { ex: Exemplaar }) {
  * liggende pagina doorloopt. Een pagina die nog getekend wordt draagt
  * `data-afdruk-laadt`; het printen wacht daarop.
  *
- * Los te gebruiken: in hoofdstuk Berekeningen staan de pagina's onder de
- * paragraafkop, in de losse uitdraai en bijlage A onder de kop van het blad.
+ * Het afdrukonderdeel van een PDF-blad (bladSoorten.tsx): in hoofdstuk Berekeningen
+ * onder de paragraafkop, in de losse uitdraai en bijlage A onder de kop van het blad.
  */
 export function PdfPaginas({ ex, maten }: { ex: Exemplaar; maten: Maten }) {
   const stand = usePdfPaginas(ex.pdf?.data);
@@ -138,32 +138,5 @@ export function PdfPaginas({ ex, maten }: { ex: Exemplaar; maten: Maten }) {
         );
       })}
     </>
-  );
-}
-
-/**
- * Een PDF-blad als eigen onderdeel van de uitdraai: de kop met nummer en naam
- * (losse bladen: 1, 2, …; bijlage A: A.1, A.2, …), daaronder de pagina's.
- * PrintBlad geeft een PDF-blad hieraan door.
- */
-export function PdfBladAfdruk({ ex, nummer, maten }: { ex: Exemplaar; nummer: number | string; maten: Maten }) {
-  const stand = usePdfPaginas(ex.pdf?.data);
-  const t = papier();
-  const onderkop = [
-    t("pdfBlad.soort"),
-    ex.pdf?.bestandsnaam,
-    stand && stand.paginas.length > 0 ? t("pdfBlad.paginas", { count: stand.paginas.length }) : "",
-  ].filter(Boolean).join(" · ");
-  return (
-    <section className="print-blad print-pdf">
-      <header className="print-blad-kop">
-        <span className="print-blad-nr">{nummer}</span>
-        <span className="print-blad-titel">
-          <span className="print-blad-naam">{ex.naam}</span>
-          <span className="print-blad-norm">{onderkop}</span>
-        </span>
-      </header>
-      <PdfPaginas ex={ex} maten={maten} />
-    </section>
   );
 }

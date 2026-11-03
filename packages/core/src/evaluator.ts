@@ -1338,6 +1338,44 @@ export function evaluate(
 }
 
 /**
+ * Rekent een document door en geeft ook de scope aan het eind terug: de waarden
+ * met hun eenheid, voor wie er verder mee rekent (een codeblok, rekenblok.ts).
+ */
+export function evaluateMetScope(
+  nodes: AstNode[],
+  selectValues?: SelectValues,
+  initialScope?: Scope,
+): { nodes: EvaluatedNode[]; scope: Scope } {
+  const scope: Scope = { ...(initialScope ?? {}) };
+  const appModus = currentAngleMode;
+  try {
+    return { nodes: evaluateNodes(nodes, scope, selectValues || {}, nieuweStand()), scope };
+  } finally {
+    currentAngleMode = appModus;
+  }
+}
+
+/** Rekent één uitdrukking uit met de betekenis van de rekentaal. Werpt bij een fout. */
+export function rekenUitdrukking(expr: string, scope: Scope = {}): unknown {
+  return reken(expr, scope);
+}
+
+/** Een waarde zoals een uitkomst op het blad: `4.5 m`, `12`. */
+export function uitkomstTekst(value: unknown): string {
+  return formatResult(value);
+}
+
+/** De mathjs-boom van een uitdrukking, zoals de rekenkern hem leest. */
+export function uitdrukkingBoom(expr: string): MathNode {
+  return ontleedExpr(expr);
+}
+
+/** Is dit een eenheid zonder waarde, zoals mathjs de naam leest? */
+export function isEenheidNaam(naam: string): boolean {
+  return math.Unit.isValuelessUnit(naam);
+}
+
+/**
  * De stand van de afdrukopdrachten tijdens het doorrekenen. Een opdracht geldt
  * vanaf zijn regel tot het eind van het blad of tot een andere opdracht van
  * dezelfde soort, zoals in CalcPAD:

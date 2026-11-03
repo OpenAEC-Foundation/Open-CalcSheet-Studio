@@ -23,3 +23,6 @@ scripts/last-render.html
 # Editor / IDE local state
 .vscode/
 .idea/
+
+# Jupyter-omgeving: gemaakt door scripts/bouw-jupyter-omgeving.mjs
+packages/desktop/src-tauri/jupyter-omgeving/omgeving.*
