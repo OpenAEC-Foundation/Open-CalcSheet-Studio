@@ -174,6 +174,8 @@ class Venster {
       netwerk: inhoud.netwerk,
       bibliotheken: inhoud.bibliotheken,
       opPapier,
+      // In een gewone browser is er geen opstartscript dat WebRTC weghaalt (jsLooptijd.js).
+      webrtcToets: !import.meta.env.DEV,
     }, inhoud.titel);
     this.iframe = iframe;
   }
