@@ -64,6 +64,7 @@
   },
   "kiezer": {
     "titel": "Add module",
+    "documenten": "Documents",
     "tabs": {
       "modules": "Modules",
       "bibliotheek": "Library",
@@ -318,6 +319,29 @@
     "vervangenVraag": "Replace the workbook of \"{{naam}}\" with the chosen file?",
     "exporteren": "Export…",
     "exporterenUitleg": "Write this workbook to a separate XLSX file."
+  },
+  "markdown": {
+    "toevoegen": "Add Markdown",
+    "toevoegenUitleg": "Add an empty Markdown text to the project as a sheet, for a note or explanation. In the report it takes its place in the Calculations chapter, in the report layout.",
+    "importeren": "Import Markdown…",
+    "importerenUitleg": "Add an existing .md file to the project as a sheet. The text and the images next to it go into the project file.",
+    "nieuweNaam": "Markdown",
+    "kiesTitel": "Choose a Markdown file",
+    "filter": "Markdown files",
+    "geenTekst": "\"{{naam}}\" is not a text file.",
+    "groot": "\"{{naam}}\" is {{grootte}}. The text goes into the project file, which becomes at least that large and slower to open and save. Add it anyway?",
+    "lezenMislukt": "Importing Markdown failed: {{fout}}",
+    "schrijvenMislukt": "Exporting Markdown failed: {{fout}}",
+    "tab": "Markdown",
+    "bron": "Source",
+    "weergave": "Preview",
+    "rij": "Markdown — stored in the project",
+    "leeg": "Type Markdown here: # heading, - list, | table |, ``` code",
+    "inlezen": "Replace…",
+    "inlezenUitleg": "Replace this text with a .md file. Name, position and notes in the report stay as they are.",
+    "vervangenVraag": "Replace the text of \"{{naam}}\" with the chosen file?",
+    "exporteren": "Export…",
+    "exporterenUitleg": "Save this text as a separate .md file. Images stored in the project do not go with it."
   },
   "welkom": {
     "titel": "Welcome to Open CalcSheet Studio",

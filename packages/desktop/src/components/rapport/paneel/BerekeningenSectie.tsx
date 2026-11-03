@@ -4,8 +4,10 @@ import { evaluate, parse } from "@ifc-calc/core";
 import { calcpadImageUrls, calcpadIncludes } from "../../../templates/calcpad-includes";
 import { projectScope } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
+import { staatInHoofdstuk } from "../../../rapport/opzet";
 import { leesResultaat, samenvatting, type Resultaat } from "../../calc/bladResultaat";
-import { GroeiVeld, Sectie, SubkopMelding, useOpzetStand, useRapport } from "./velden";
+import { bladSoortVan, bladVoorOpzet } from "../../calc/bladSoorten";
+import { GroeiVeld, Sectie, SubkopMelding, useOpzetStand, useRapport, Vink } from "./velden";
 
 interface Uitkomst {
   resultaat: Resultaat;
@@ -61,13 +63,22 @@ export default function BerekeningenSectie() {
       intro={t("berekeningen.intro")}
     >
       {exemplaren.length === 0 && <p className="rapport-hint">{t("berekeningen.geenBladen")}</p>}
+      {exemplaren.length > 0 && (
+        <Vink
+          label={t("berekeningen.bladenInInhoud")}
+          pad="opmaak.bladenInInhoud"
+          aan={rapport.opmaak.bladenInInhoud}
+          hint={t("berekeningen.bladenInInhoudUitleg")}
+        />
+      )}
       {exemplaren.map((ex) => {
         const uitkomst = uitkomsten.get(ex.id);
         const r = uitkomst?.resultaat;
         // Zonder UC, oordeel of eigen kop zegt de samenvatting niets meer dan de naam.
         const zegtIets = !!r && (r.titel !== ex.naam || r.uc !== null || r.voldoet !== null);
         const plaats = stand.blad(ex.id);
-        const inHoofdstuk = rapport.inHoofdstuk[ex.id] ?? false;
+        const inHoofdstuk = staatInHoofdstuk(rapport, bladVoorOpzet(ex));
+        const RapportKeuze = bladSoortVan(ex)?.RapportKeuze;
         const toelichting = rapport.toelichting[ex.id] ?? "";
         // Het exemplaar-id staat in het pad; ids van de vorm "ex-…" bevatten
         // geen punt, dus leesPad knipt ze niet in stukken.
@@ -109,6 +120,7 @@ export default function BerekeningenSectie() {
                   : t("berekeningen.staatInBijlage", { letter: plaats?.bijlage || "A" })}
               </span>
             </div>
+            {RapportKeuze && <div className="rapport-kaart-voet"><RapportKeuze ex={ex} /></div>}
           </div>
         );
       })}

@@ -22,12 +22,14 @@ import {
   searchIcon,
   blankSheetIcon,
   spreadsheetIcon,
+  markdownIcon,
 } from "./calcIcons";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../../store/projectStore";
 import { usePrintStore } from "../../store/printStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { useEditorViewStore } from "../../store/editorViewStore";
 import { voegLeegSpreadsheetToe } from "../calc/spreadsheetBlad";
+import { voegLeegMarkdownToe } from "../calc/markdownBlad";
 
 interface CalcTabProps {
   /** Opent de instellingen, eventueel op een bepaalde tab ("about"). */
@@ -180,6 +182,12 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
             label={t("calc.spreadsheet", "Spreadsheet")}
             size="large"
             onClick={() => voegLeegSpreadsheetToe(useProjectStore.getState().voegSpreadsheetToe)}
+          />
+          <RibbonButton
+            icon={markdownIcon}
+            label={t("calc.markdown", "Markdown")}
+            size="large"
+            onClick={() => voegLeegMarkdownToe(useProjectStore.getState().voegMarkdownToe)}
           />
         </RibbonGroup>
 

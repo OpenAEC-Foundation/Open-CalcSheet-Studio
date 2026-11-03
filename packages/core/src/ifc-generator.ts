@@ -76,6 +76,8 @@ export interface IfcCalcSheet {
   pdf?: { bestandsnaam: string; data: string };
   /** Bij een spreadsheet-blad: de werkmap, als base64. */
   xlsx?: { bestandsnaam: string; data: string };
+  /** Bij een Markdown-blad: de tekst, met de afbeeldingen die erbij horen. */
+  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */

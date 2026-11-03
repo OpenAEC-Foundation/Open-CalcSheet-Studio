@@ -11,6 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { tekstRegels } from "../../../rapport/invullen";
 import { bouwOpzet, titelVan, type Rapportknoop } from "../../../rapport/opzet";
+import { bladVoorOpzet } from "../../calc/bladSoorten";
 import { PROJECT_ID, useProjectStore } from "../../../store/projectStore";
 import { vindKnoop } from "./hulp";
 
@@ -82,7 +83,7 @@ export function OpzetBron({ children }: { children: ReactNode }) {
         loop(k.kinderen);
       }
     };
-    loop(bouwOpzet(rapport, exemplaren.map((e) => ({ id: e.id, naam: e.naam }))));
+    loop(bouwOpzet(rapport, exemplaren.map(bladVoorOpzet)));
     return {
       nummer: (id) => nummers.get(id) ?? "",
       valtWeg: (id) => !nummers.has(id),

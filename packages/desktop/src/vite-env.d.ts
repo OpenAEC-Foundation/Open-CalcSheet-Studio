@@ -18,5 +18,6 @@ interface Window {
     leesProjectBestand: typeof import("./store/projectBestand").leesProjectBestand;
     wachtOpVellen: typeof import("./components/rapport/afdruk/drukvellen").wachtOpVellen;
     zetDrukvellenKlaar: typeof import("./components/rapport/afdruk/drukvellen").zetDrukvellenKlaar;
+    wachtOpDrukbeelden: typeof import("./components/rapport/afdruk/drukvellen").wachtOpDrukbeelden;
   };
 }

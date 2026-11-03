@@ -1,20 +1,13 @@
-import { useMemo, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import i18next from "i18next";
 import type { Exemplaar } from "../../store/projectStore";
 import { ExemplaarContext } from "../../store/actiefBlad";
 import { designerVoor } from "./designerKeuze";
 import { ucTekst, type Resultaat } from "./bladResultaat";
 import { rekenversie } from "./bladVersie";
-import { isPdfBlad } from "../../store/pdfBijlage";
-import { PdfBladAfdruk } from "./PdfBladWeergave";
-import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
-import { SpreadsheetBladAfdruk } from "./SpreadsheetBladWeergave";
+import { bladSoortVan, LosBladAfdruk } from "./bladSoorten";
 import { MATEN, type Maten } from "./paginering";
-import { useDrieDAfdruk } from "./drieDBlok";
-import { useIfcxAfdruk } from "./ifcxBlok";
-import { useIframeAfdruk } from "./iframeBlok";
-import { useJsAfdruk } from "./jsBlok";
-import { schoonUitwerking } from "./uitwerkingOpschonen";
+import { UitwerkingHtml } from "./UitwerkingHtml";
 import "./PrintDocument.css";
 
 /*
@@ -29,25 +22,6 @@ import "./PrintDocument.css";
  * Voor een Nederlands rapport staat de app op Nederlands. Eerder was de afdruk altijd
  * Nederlands; die keuze is vervallen.
  */
-
-/**
- * De uitwerking van een blad op papier. Een 3D-blok (`@3d`, `@ifcx`) wordt hier een
- * stilstaande afbeelding (drieDBlok.ts, ifcxBlok.ts) en een bevestigde `@iframe`
- * de pagina (iframeBlok.ts), en een uitgevoerd `@js` zijn afbeelding of venster
- * (jsBlok.ts); het afdrukken wacht daarop. `bladId`: van welk blad dit is, want
- * alleen wat op dat blad is bevestigd, wordt uitgevoerd.
- */
-export function UitwerkingHtml({ html, bladId }: { html: string; bladId?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useDrieDAfdruk(ref, html);
-  useIfcxAfdruk(ref, html);
-  useIframeAfdruk(ref, html);
-  useJsAfdruk(ref, html, bladId);
-  // Hetzelfde object zolang de html gelijk blijft: React 19 zet de html bij
-  // elk nieuw object opnieuw neer, en dan was de afbeelding weer weg.
-  const inhoud = useMemo(() => ({ __html: schoonUitwerking(html) }), [html]);
-  return <div ref={ref} className="ifc-calc" dangerouslySetInnerHTML={inhoud} />;
-}
 
 /** Het oordeel als klein label: groen, rood of neutraal. */
 export function Oordeel({ r }: { r: Resultaat }) {
@@ -72,16 +46,18 @@ export function Oordeel({ r }: { r: Resultaat }) {
  * naam en grondslag noemt (bijlage A van het rapport). Alleen als er een
  * grondslag is: zonder staat de titel van de module nergens anders.
  *
- * Een PDF-blad gaat naar PdfBladAfdruk: zijn pagina's elk op een eigen vel,
- * geschaald binnen de bladspiegel van `maten` (de losse bladen of het
- * rapport). Een projectregel heeft het niet; er is niets mee gerekend.
+ * Een blad van een aangemelde soort (bladSoorten.tsx, zoals een PDF of werkmap)
+ * tekent zijn eigen onderdeel, binnen de bladspiegel van `maten` (de losse bladen
+ * of het rapport). Een projectregel heeft het niet; er is niets mee gerekend.
+ *
+ * `anker`: de plek van de kop voor de inhoudsopgave van het rapport.
  */
-export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKop = false, maten = MATEN.bladen }: {
+export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKop = false, maten = MATEN.bladen, anker }: {
   ex: Exemplaar; html: string; nummer: number | string; resultaat: Resultaat; projectregel?: ReactNode;
-  titelInKop?: boolean; maten?: Maten;
+  titelInKop?: boolean; maten?: Maten; anker?: string;
 }) {
-  if (isPdfBlad(ex)) return <PdfBladAfdruk ex={ex} nummer={nummer} maten={maten} />;
-  if (isSpreadsheetBlad(ex)) return <SpreadsheetBladAfdruk ex={ex} nummer={nummer} maten={maten} />;
+  const soort = bladSoortVan(ex);
+  if (soort) return <LosBladAfdruk soort={soort} ex={ex} nummer={nummer} maten={maten} anker={anker} />;
   // Het beeld tekent zichzelf uit de waarden van dít exemplaar, niet uit het
   // blad dat toevallig openstaat. `alleenLezen` houdt tegen dat het afdrukken
   // standaardwaarden aanvult of iets anders aan het project verandert.
@@ -91,7 +67,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
     .join(" · ");
   return (
     <section className={titelInKop && resultaat.norm ? "print-blad print-titel-in-kop" : "print-blad"}>
-      <header className="print-blad-kop">
+      <header className="print-blad-kop" data-inhoud={anker}>
         <span className="print-blad-nr">{nummer}</span>
         <span className="print-blad-titel">
           <span className="print-blad-naam">{ex.naam}</span>

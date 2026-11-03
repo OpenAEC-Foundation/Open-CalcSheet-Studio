@@ -60,6 +60,19 @@ export function Cel({ k, n = 1, o, b, l, r, klasse, children }: CelProps) {
   );
 }
 
+/**
+ * Het paginanummer van een regel in een inhoudsopgave, rechts in de laatste kolom.
+ * Het getal komt er op de vellen in, als de verdeling bekend is (AfdrukVoorbeeld):
+ * het neemt geen ruimte die er niet al is, dus de verdeling verandert er niet door.
+ */
+export function PaginaCel({ anker }: { anker: string }) {
+  return (
+    <Cel k={10} klasse="rpa-io-pagina">
+      <span data-inhoud-doel={anker} />
+    </Cel>
+  );
+}
+
 /** Lege regels. */
 export function Leeg({ n = 1 }: { n?: number }) {
   return <div className="rpa-leeg" style={n === 1 ? undefined : { height: `calc(${n} * var(--rpa-rij))` }} />;

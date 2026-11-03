@@ -7,6 +7,7 @@ import { standaardTeksten } from "../rapport/standaardteksten.ts";
 import { leesRekenversie } from "../components/calc/bladVersie.ts";
 import { isPdfBlad, leesPdfBijlage } from "./pdfBijlage.ts";
 import { isSpreadsheetBlad, leesSpreadsheetBestand } from "./spreadsheetBlad.ts";
+import { isMarkdownBlad, leesMarkdownBestand } from "./markdownBlad.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -21,7 +22,7 @@ import { isSpreadsheetBlad, leesSpreadsheetBestand } from "./spreadsheetBlad.ts"
  *
  * Wat telt bij het openen: projectnaam, gegevens, verborgen onderdelen, rapport
  * en per blad naam, id, templateId, bronVersie, rekentekst, invoer, elementen
- * en PDF. De uitkomsten, figuren en elementen in het bestand zijn afgeleid, voor
+ * en het bestand van een PDF-, spreadsheet- of Markdown-blad. De uitkomsten, figuren en elementen in het bestand zijn afgeleid, voor
  * andere lezers: de app rekent ze opnieuw uit de tekst en de invoer.
  *
  * Eerdere vormen blijven openen; bij opnieuw opslaan worden ze versie 2:
@@ -108,6 +109,8 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       bronVersie: ex.bronVersie,
       elementen: ex.elementen,
       pdf: ex.pdf,
+      xlsx: ex.xlsx,
+      md: ex.md,
     })),
   });
   return JSON.stringify(doc, null, 2);
@@ -200,6 +203,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (pdf) ex.pdf = pdf;
   const xlsx = isSpreadsheetBlad(ex) ? leesSpreadsheetBestand(e.xlsx) : undefined;
   if (xlsx) ex.xlsx = xlsx;
+  const md = isMarkdownBlad(ex) ? leesMarkdownBestand(e.md) : undefined;
+  if (md) ex.md = md;
   return ex;
 }
 

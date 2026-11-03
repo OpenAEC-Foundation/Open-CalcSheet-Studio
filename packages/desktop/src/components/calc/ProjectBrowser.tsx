@@ -10,6 +10,8 @@ import { heeftEigenCode, huidigeModuletekst, isVerouderd, rekenversie } from "./
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
 import { voegLeegSpreadsheetToe, voegWerkmapToe } from "./spreadsheetBlad";
+import { isMarkdownBlad } from "../../store/markdownBlad";
+import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
 import { voegPdfBladToe } from "./pdfBlad";
 import Icoon from "../Icoon";
 import LibrarySectie from "./LibrarySectie";
@@ -107,15 +109,20 @@ function ExemplaarRij({
   // Een PDF-blad heeft geen module en geen rekenversie: een eigen icoon.
   const pdf = isPdfBlad(ex);
   const spreadsheet = isSpreadsheetBlad(ex);
+  const markdown = isMarkdownBlad(ex);
   const stip = pdf
     ? <Icoon id="report.cover" />
     : spreadsheet
     ? <Icoon id="data.table" />
+    : markdown
+    ? <Icoon id="report.template" />
     : <span className={`pb-stip${status ? ` pb-status-${status}` : ""}`} aria-hidden="true" />;
   const uitleg = pdf
     ? `${ex.naam}\n${tw("pdf.rij", { bestand: ex.pdf?.bestandsnaam || "—" })}\n${tw("browser.dubbelklik")}`
     : spreadsheet
     ? `${ex.naam}\n${tw("spreadsheet.rij")}\n${tw("browser.dubbelklik")}`
+    : markdown
+    ? `${ex.naam}\n${tw("markdown.rij")}\n${tw("browser.dubbelklik")}`
     : `${ex.naam}${info ? ` — ${moduleNaam}` : ""}\n${versieRegel}` +
       (eigen ? `\n${t("bladVersie.eigenUitleg", { bron: ex.bronVersie })}` : "") +
       (verouderd ? `\n${t("bladVersie.rijVerouderd", { nieuw: nieuweVersie })}` : "") +
@@ -217,6 +224,7 @@ export default function ProjectBrowser() {
   const openModuleKiezer = useModuleKiezer((s) => s.openen);
   const voegPdfToe = useProjectStore((s) => s.voegPdfToe);
   const voegSpreadsheetToe = useProjectStore((s) => s.voegSpreadsheetToe);
+  const voegMarkdownToe = useProjectStore((s) => s.voegMarkdownToe);
 
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const activeId = useProjectStore((s) => s.activeId);
@@ -331,6 +339,16 @@ export default function ProjectBrowser() {
           <button className="pb-rij pb-toevoegen" onClick={() => void voegWerkmapToe(voegSpreadsheetToe)} title={tw("spreadsheet.importerenUitleg")}>
             <Icoon id="data.table" />
             <span className="pb-naam">{tw("spreadsheet.importeren")}</span>
+          </button>
+
+          {/* Een Markdown-tekst als blad: nieuw en leeg, of een bestaand .md-bestand. */}
+          <button className="pb-rij pb-toevoegen" onClick={() => voegLeegMarkdownToe(voegMarkdownToe)} title={tw("markdown.toevoegenUitleg")}>
+            <Icoon id="report.template" />
+            <span className="pb-naam">{tw("markdown.toevoegen")}</span>
+          </button>
+          <button className="pb-rij pb-toevoegen" onClick={() => void voegMarkdownBestandToe(voegMarkdownToe)} title={tw("markdown.importerenUitleg")}>
+            <Icoon id="file.import" uit="calculations" />
+            <span className="pb-naam">{tw("markdown.importeren")}</span>
           </button>
 
           {/* Alleen als er iets bij te werken is; bijwerken gaat altijd via de vergelijking. */}

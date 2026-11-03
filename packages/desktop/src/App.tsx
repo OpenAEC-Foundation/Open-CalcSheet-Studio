@@ -18,7 +18,7 @@ import { designerVoor } from "./components/calc/designerKeuze";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
 import PrintDocument from "./components/calc/PrintDocument";
-import { wachtOpVellen, wachtTotGetekend, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { wachtOpDrukbeelden, wachtOpVellen, wachtTotGetekend, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
 import BladBijwerken from "./components/calc/BladBijwerken";
@@ -27,8 +27,10 @@ import { BladVersieKop, BladVersieMelding } from "./components/calc/BladVersieKo
 import IfcViewerPanel from "./components/calc/IfcViewerPanel";
 import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
+import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
 import { isPdfBlad } from "./store/pdfBijlage";
 import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
+import { isMarkdownBlad } from "./store/markdownBlad";
 import { getSetting } from "./store";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
 import { usePrintStore } from "./store/printStore";
@@ -175,10 +177,11 @@ export default function App() {
     useProjectStore.getState().selecteer(RAPPORT_ID);
     toonVoorbeeld(null, "rapport");
     wachtOpVellen()
-      .then((vellen) => {
+      .then(async (vellen) => {
         if (afgebroken) return;
         const opruimen = zetDrukvellenKlaar(vellen);
         try {
+          await wachtOpDrukbeelden();
           window.print();
         } finally {
           opruimen();
@@ -256,6 +259,8 @@ export default function App() {
   const pdfBlad = actief !== null && isPdfBlad(actief);
   // Idem een spreadsheet-blad: alleen zijn werkmap.
   const spreadsheetBlad = actief !== null && isSpreadsheetBlad(actief);
+  // Idem een Markdown-blad: zijn tekst, als bron en opgemaakt.
+  const markdownBlad = actief !== null && isMarkdownBlad(actief);
   const mode = hasDesigner ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
@@ -290,9 +295,9 @@ export default function App() {
     sluitVoorbeeld();
     setSplitMode((m) => (m === "vu" ? "cv" : m));
   }, [codeVerzoek, sluitVoorbeeld]);
-  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad) ? (
+  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad) ? (
     <div className="split-tabs">
-      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : "spreadsheet.tab")}</button>
+      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : spreadsheetBlad ? "spreadsheet.tab" : "markdown.tab")}</button>
       <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
     </div>
   ) : actief && !toontProjectGegevens ? (
@@ -397,6 +402,16 @@ export default function App() {
                 <Trans t={t} i18nKey="leeg.uitleg" components={{ b: <b /> }} />
               </p>
             </div>
+          ) : markdownBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <SplitPane
+                  left={<WerkPaneel titel={t("markdown.bron")} info={<MarkdownBladInfo ex={actief} />}><MarkdownBron key={actief.id} ex={actief} /></WerkPaneel>}
+                  right={<WerkPaneel titel={t("markdown.weergave")} papier><MarkdownWeergave ex={actief} /></WerkPaneel>}
+                />
+              </div>
+            </>
           ) : spreadsheetBlad ? (
             <>
               {tabBalk}

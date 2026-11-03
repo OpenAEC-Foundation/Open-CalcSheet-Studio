@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { BIJLAGE_A } from "../../../rapport/opzet";
+import { BIJLAGE_A, staatInHoofdstuk } from "../../../rapport/opzet";
 import { useProjectStore } from "../../../store/projectStore";
+import { bladVoorOpzet } from "../../calc/bladSoorten";
 import { bijlageLetter, verplaatst } from "./hulp";
 import { Sectie } from "./velden";
 
@@ -12,7 +13,7 @@ import { Sectie } from "./velden";
 export default function BijlagenSectie() {
   const { t } = useTranslation("rapport");
   const bijlagen = useProjectStore((s) => s.rapport.bijlagen);
-  const inHoofdstuk = useProjectStore((s) => s.rapport.inHoofdstuk);
+  const rapport = useProjectStore((s) => s.rapport);
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
@@ -21,7 +22,7 @@ export default function BijlagenSectie() {
     werkBij((r) => ({ ...r, bijlagen: fn(r.bijlagen) }));
 
   // Bijlage A bestaat alleen als er minstens één uitwerking in staat.
-  const metA = exemplaren.some((e) => !inHoofdstuk[e.id]);
+  const metA = exemplaren.some((e) => !staatInHoofdstuk(rapport, bladVoorOpzet(e)));
 
   // Zelfde telling als bijlagen() in rapport/opzet.ts: een bijlage zonder titel telt niet mee.
   let volgnummer = 0;

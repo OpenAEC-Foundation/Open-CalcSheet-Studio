@@ -19,24 +19,38 @@ const VELLEN = ".av-vellen-binnen .av-pagina";
  */
 const LAADT = "[data-afdruk-laadt]";
 
-/** Zo lang mag het tekenen van PDF-bladen hooguit duren voordat de afdruk opgeeft. */
+/** Zo lang mag het tekenen van PDF-bladen hooguit stilstaan voordat de afdruk opgeeft. */
 const MAX_LADEN_MS = 180000;
+
+/** Een langere stilte tussen twee keer kijken: de hoofdthread was bezig, dus er gebeurt iets. */
+const BEZIG_MS = 1000;
 
 /**
  * Wacht tot het voorbeeld zijn vellen heeft gebouwd en het aantal stil staat,
- * en tot er in de meetopstelling en op de vellen niets meer wordt getekend.
- * Zolang PDF-pagina's laden, geldt de ruimere grens MAX_LADEN_MS.
+ * tot er in de meetopstelling en op de vellen niets meer wordt getekend, en tot er
+ * geen nieuwe verdeling op komst is (`data-opnieuw`, AfdrukVoorbeeld.tsx): anders
+ * gaat er een kopie van vellen naar de printer die het voorbeeld net vervangt.
+ *
+ * `maxMs` is hoe lang er niets mag gebeuren, niet hoe lang het mag duren: de bladen
+ * doorrekenen zet de hoofdthread vast, en bij een groot project kost de eerste
+ * verdeling zo tien seconden. Zolang PDF-pagina's laden, geldt de ruimere grens
+ * MAX_LADEN_MS.
  */
 export function wachtOpVellen(maxMs = 10000): Promise<HTMLElement[]> {
   return new Promise((klaar, mis) => {
-    const begin = Date.now();
+    let beweging = Date.now();
+    let vorigeKeer = beweging;
     let vorige = -1;
     const kijk = () => {
+      const nu = Date.now();
       const vellen = [...document.querySelectorAll<HTMLElement>(VELLEN)];
       const laadt = document.querySelector(`.av-meet ${LAADT}, .av-vellen-binnen ${LAADT}`) !== null;
-      if (vellen.length > 0 && vellen.length === vorige && !laadt) return klaar(vellen);
+      const opnieuw = document.querySelector(".av-meet[data-opnieuw]") !== null;
+      if (vellen.length > 0 && vellen.length === vorige && !laadt && !opnieuw) return klaar(vellen);
+      if (opnieuw || vellen.length !== vorige || nu - vorigeKeer > BEZIG_MS) beweging = nu;
       vorige = vellen.length;
-      if (Date.now() - begin > (laadt ? MAX_LADEN_MS : maxMs)) {
+      vorigeKeer = nu;
+      if (nu - beweging > (laadt ? MAX_LADEN_MS : maxMs)) {
         return mis(new Error(laadt
           ? i18next.t("werkruimte:pdf.nietOpTijd")
           : "Het afdrukvoorbeeld van het rapport bouwde geen vellen."));
@@ -62,6 +76,16 @@ export function wachtTotGetekend(wortel: string, maxMs = MAX_LADEN_MS): Promise<
     };
     kijk();
   });
+}
+
+/**
+ * Wacht tot de afbeeldingen op de kopie er zijn: een PDF-pagina is een afbeelding,
+ * en die mag niet als leeg vak op papier komen. Een afbeelding die niet lukt, houdt
+ * de afdruk niet tegen.
+ */
+export async function wachtOpDrukbeelden(): Promise<void> {
+  await Promise.all([...document.querySelectorAll<HTMLImageElement>(".rpa-drukvellen img")]
+    .map((b) => (b.complete ? null : b.decode().catch(() => null))));
 }
 
 /**

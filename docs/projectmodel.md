@@ -108,6 +108,8 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 | Invoer | `ocss::blad::invoer` | bron |
 | Elementen uit een bronmodel | `ocss::blad::elementen` | bron |
 | PDF | `ocss::blad::pdf` | bron |
+| Werkmap | `ocss::blad::xlsx` | bron |
+| Markdown-tekst, met de afbeeldingen die naast het bestand stonden | `ocss::blad::markdown` | bron |
 | Uitkomsten, oordeel, unity checks | `ocss::blad::uitkomst` | afgeleid |
 | Tekeningen en 3D-beelden | `ocss::figuur` op een kind van het blad | afgeleid |
 | Elementen in de ruimtelijke boom | `ocss::element` | afgeleid |

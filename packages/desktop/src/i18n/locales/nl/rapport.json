@@ -246,7 +246,10 @@
     "toelichtingVoorbeeld": "Eigen toelichting bij deze berekening (optioneel).",
     "inHoofdstuk": "Uitwerking in dit hoofdstuk",
     "staatInHoofdstuk": "De volledige uitwerking staat direct onder de toelichting.",
-    "staatInBijlage": "De volledige uitwerking staat in bijlage {{letter}}."
+    "staatInBijlage": "De volledige uitwerking staat in bijlage {{letter}}.",
+    "koppenInInhoud": "Koppen uit de tekst in de inhoudsopgave",
+    "bladenInInhoud": "Bladen in de inhoudsopgave",
+    "bladenInInhoudUitleg": "De inhoudsopgave voorin noemt dan ook elk blad met zijn pagina: onder dit hoofdstuk of onder bijlage A. Staat dit uit, dan staan de bladen alleen in de inhoudsopgave van dit hoofdstuk."
   },
   "pdfBlad": {
     "soort": "PDF-bijlage",
@@ -256,6 +259,10 @@
     "paginaMislukt": "Pagina {{nummer}} kon niet worden getekend.",
     "fout": "Het PDF-bestand kon niet worden gelezen: {{fout}}",
     "ontbreekt": "Het PDF-bestand van dit blad ontbreekt."
+  },
+  "markdownBlad": {
+    "soort": "Markdown",
+    "ontbreekt": "De tekst van dit blad ontbreekt."
   },
   "spreadsheetBlad": {
     "soort": "Spreadsheet",

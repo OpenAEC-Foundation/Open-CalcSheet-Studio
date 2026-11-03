@@ -68,7 +68,7 @@ Project (IfcProject)                ocss::project
 │        ├─ BL-01 (IfcBeam)         ocss::element, met verwijzingen naar zijn toetsing
 │        └─ geometrie van een blad  zie hieronder
 ├─ Rekenbladen
-│  └─ blad (IfcGroup)               ocss::blad, ::rekentekst, ::invoer, ::elementen, ::pdf, ::uitkomst
+│  └─ blad (IfcGroup)               ocss::blad, ::rekentekst, ::invoer, ::elementen, ::pdf, ::xlsx, ::markdown, ::uitkomst
 │     └─ figuur                     ocss::figuur: svg, plot, 3d, afbeelding, iframe, ifcx
 └─ Constructierapport               ocss::rapport
 ```
@@ -87,7 +87,7 @@ constructeur een element heeft aangewezen.
 
 Bij het openen telt: de projectnaam, de gegevens, de verborgen onderdelen, het
 rapport, en per blad zijn naam, id, `templateId`, `bronVersie`, rekentekst,
-invoer, elementen en PDF.
+invoer, elementen, PDF, werkmap en Markdown-tekst.
 
 Afgeleid, en alleen voor andere lezers: `ocss::blad::uitkomst`, `ocss::figuur`,
 de elementen in de ruimtelijke boom en de geometrie. De app rekent die bij het

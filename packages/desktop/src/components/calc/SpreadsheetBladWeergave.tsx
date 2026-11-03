@@ -130,8 +130,9 @@ export function SpreadsheetBladInfo({ ex }: { ex: Exemplaar }) {
 /**
  * De werkbladen op papier, passend binnen de bladspiegel van `maten`. Een stuk
  * dat nog getekend wordt draagt `data-afdruk-laadt`; het printen wacht daarop.
- * Los te gebruiken: in hoofdstuk Berekeningen onder de paragraafkop, in de losse
- * uitdraai en bijlage A onder de kop van het blad.
+ * Het afdrukonderdeel van een spreadsheet-blad (bladSoorten.tsx): in hoofdstuk
+ * Berekeningen onder de paragraafkop, in de losse uitdraai en bijlage A onder de
+ * kop van het blad.
  */
 export function SpreadsheetVellen({ ex, maten }: { ex: Exemplaar; maten: Maten }) {
   // Rekenblad en rapport rekenen met de speling onderaan (AfdrukVoorbeeld).
@@ -153,26 +154,5 @@ export function SpreadsheetVellen({ ex, maten }: { ex: Exemplaar; maten: Maten }
       ))}
       {stand.afgekapt && <p className="print-pdf-melding">{t("spreadsheetBlad.afgekapt", { count: stand.vellen.length })}</p>}
     </>
-  );
-}
-
-/**
- * Een spreadsheet-blad als eigen onderdeel van de uitdraai: de kop met nummer en
- * naam, daaronder de werkbladen. PrintBlad geeft zo'n blad hieraan door.
- */
-export function SpreadsheetBladAfdruk({ ex, nummer, maten }: { ex: Exemplaar; nummer: number | string; maten: Maten }) {
-  const t = papier();
-  const onderkop = [t("spreadsheetBlad.soort"), ex.xlsx?.bestandsnaam].filter(Boolean).join(" · ");
-  return (
-    <section className="print-blad print-pdf">
-      <header className="print-blad-kop">
-        <span className="print-blad-nr">{nummer}</span>
-        <span className="print-blad-titel">
-          <span className="print-blad-naam">{ex.naam}</span>
-          <span className="print-blad-norm">{onderkop}</span>
-        </span>
-      </header>
-      <SpreadsheetVellen ex={ex} maten={maten} />
-    </section>
   );
 }

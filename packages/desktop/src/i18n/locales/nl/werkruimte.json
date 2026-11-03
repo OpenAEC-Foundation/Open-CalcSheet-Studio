@@ -64,6 +64,7 @@
   },
   "kiezer": {
     "titel": "Module toevoegen",
+    "documenten": "Documenten",
     "tabs": {
       "modules": "Modules",
       "bibliotheek": "Bibliotheek",
@@ -318,6 +319,29 @@
     "vervangenVraag": "De werkmap van \"{{naam}}\" vervangen door het gekozen bestand?",
     "exporteren": "Exporteren…",
     "exporterenUitleg": "Deze werkmap wegschrijven als los XLSX-bestand."
+  },
+  "markdown": {
+    "toevoegen": "Markdown toevoegen",
+    "toevoegenUitleg": "Een lege Markdown-tekst als blad aan het project toevoegen, voor een toelichting of notitie. In het rapport staat hij op zijn plek in hoofdstuk Berekeningen, in de opmaak van het rapport.",
+    "importeren": "Markdown inlezen…",
+    "importerenUitleg": "Een bestaand .md-bestand als blad aan het project toevoegen. De tekst en de afbeeldingen ernaast komen in het projectbestand.",
+    "nieuweNaam": "Markdown",
+    "kiesTitel": "Kies een Markdown-bestand",
+    "filter": "Markdown-bestanden",
+    "geenTekst": "\"{{naam}}\" is geen tekstbestand.",
+    "groot": "\"{{naam}}\" is {{grootte}}. De tekst komt in het projectbestand, dat daardoor minstens zo groot wordt en trager opent en opslaat. Toch toevoegen?",
+    "lezenMislukt": "Markdown inlezen mislukt: {{fout}}",
+    "schrijvenMislukt": "Markdown wegschrijven mislukt: {{fout}}",
+    "tab": "Markdown",
+    "bron": "Bron",
+    "weergave": "Weergave",
+    "rij": "Markdown — staat in het project",
+    "leeg": "Typ hier Markdown: # kop, - lijst, | tabel |, ``` code",
+    "inlezen": "Vervangen…",
+    "inlezenUitleg": "Deze tekst vervangen door een .md-bestand. Naam, plaats en toelichting in het rapport blijven staan.",
+    "vervangenVraag": "De tekst van \"{{naam}}\" vervangen door het gekozen bestand?",
+    "exporteren": "Exporteren…",
+    "exporterenUitleg": "Deze tekst wegschrijven als los .md-bestand. Afbeeldingen in het project gaan niet mee."
   },
   "welkom": {
     "titel": "Welkom in Open CalcSheet Studio",

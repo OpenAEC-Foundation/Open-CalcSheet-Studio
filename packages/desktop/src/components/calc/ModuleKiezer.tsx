@@ -9,6 +9,8 @@ import {
 } from "./projectTree";
 import { templates } from "../../templates";
 import { useModuleKiezer, type KiezerTab } from "../../store/moduleKiezer";
+import { useProjectStore } from "../../store/projectStore";
+import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
 import {
   useModuleBibliotheek,
   vergelijkVersie,
@@ -225,6 +227,27 @@ function GroepBlok({ groep, niveau, gekozen, onKies, onVoegToe }: {
   );
 }
 
+/** Bladen zonder rekentekst: nieuw of uit een bestand. Een klik voegt toe en sluit het scherm. */
+function DocumentenGroep({ onKlaar }: { onKlaar: () => void }) {
+  const { t: tw } = useTranslation("werkruimte");
+  const voegToe = useProjectStore((s) => s.voegMarkdownToe);
+  return (
+    <section className="mk-groep mk-niveau-0">
+      <h3>{tw("kiezer.documenten")} <span className="mk-aantal">2</span></h3>
+      <div className="mk-tegels">
+        <button type="button" className="mk-tegel" title={tw("markdown.toevoegenUitleg")}
+          onClick={() => { voegLeegMarkdownToe(voegToe); onKlaar(); }}>
+          <span className="mk-kop"><span className="mk-naam">{tw("markdown.toevoegen")}</span></span>
+        </button>
+        <button type="button" className="mk-tegel" title={tw("markdown.importerenUitleg")}
+          onClick={() => { void voegMarkdownBestandToe(voegToe); onKlaar(); }}>
+          <span className="mk-kop"><span className="mk-naam">{tw("markdown.importeren")}</span></span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 /** De betekenis van de statusbolletjes en van "gepubliceerd", onder in het scherm. */
 function Legenda() {
   const { t } = useTranslation();
@@ -286,6 +309,9 @@ export default function ModuleKiezer() {
   };
 
   const kiest = tab === "modules" || tab === "bibliotheek";
+  // Geen module, maar wel een blad in het project: hier zoekt iemand ernaar.
+  const z = zoek.trim().toLowerCase();
+  const documenten = tab === "modules" && (!z || `${tw("kiezer.documenten")} markdown md`.toLowerCase().includes(z));
   const footer = (
     <>
       {kiest && <Legenda />}
@@ -341,7 +367,7 @@ export default function ModuleKiezer() {
           />
           {tab === "normbestanden" ? <LokaleNormen zoek={zoek} /> : tab === "online" ? <OnlineBibliotheek zoek={zoek} /> : (
             <div className="mk-lijst">
-              {groepen.length === 0 && <p className="mk-leeg">{tw("kiezer.nietsGevonden", { zoek })}</p>}
+              {groepen.length === 0 && !documenten && <p className="mk-leeg">{tw("kiezer.nietsGevonden", { zoek })}</p>}
               {groepen.map((g) => (
                 <GroepBlok
                   key={g.id}
@@ -352,6 +378,7 @@ export default function ModuleKiezer() {
                   onVoegToe={toevoegen}
                 />
               ))}
+              {documenten && <DocumentenGroep onKlaar={afbreken} />}
             </div>
           )}
         </div>

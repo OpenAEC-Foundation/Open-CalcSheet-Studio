@@ -5,9 +5,8 @@ import { useProjectStore } from "../../store/projectStore";
 import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
-import { meetBlokken, verdeelPerSectie, pxPerMm, MATEN, SPELING, type Maten } from "./paginering";
-import { usePdfVersie } from "./pdfBlad";
-import { useWerkmapVersie } from "./spreadsheetBlad";
+import { meetBlokken, paginaVanAnkers, verdeelPerSectie, pxPerMm, MATEN, SPELING, type Maten } from "./paginering";
+import { useBladSoortenVersie } from "./bladSoorten";
 import { useDrieDVersie } from "./drieDBlok";
 import { useIfcxVersie } from "./ifcxBlok";
 import { useIframeVersie, vulIframesIn } from "./iframeBlok";
@@ -93,11 +92,9 @@ export default function AfdrukVoorbeeld() {
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const voetafbeelding = bureau.voetafbeelding;
   const bureaunaam = bureau.naam;
-  // Een getekende PDF-pagina verandert de hoogte niet (de maat staat vooraf
-  // vast), maar moet wel op de vellen komen: dan opnieuw verdelen.
-  const pdfVersie = usePdfVersie();
-  // Een getekende werkmap verandert de hoogte juist wel.
-  const werkmapVersie = useWerkmapVersie();
+  // Een PDF-pagina, werkmap of afbeelding die klaar is, moet op de vellen komen:
+  // dan opnieuw verdelen (bladSoorten.tsx).
+  const soortenVersie = useBladSoortenVersie();
   // Idem voor een 3D-blok: zijn afbeelding komt in de plaats van de projectie
   // (drieDBlok.ts), vaak zonder dat de hoogte verandert.
   const drieDVersie = useDrieDVersie();
@@ -127,6 +124,7 @@ export default function AfdrukVoorbeeld() {
     const bron = meetRef.current;
     const host = vellenRef.current;
     if (!bron || !host) return;
+    delete bron.dataset.opnieuw;
     // Tijdens het printen verdwijnt de hoofdweergave, en daarmee dit paneel.
     // Meten levert dan overal nul op en de hele uitdraai zou op één pagina
     // belanden. Niets doen is beter: zodra het paneel terug is meet de
@@ -144,6 +142,8 @@ export default function AfdrukVoorbeeld() {
     // De huisstijl van het rapport staat als CSS-variabelen op de wortel in de
     // meetopstelling. Een vel staat los van die wortel, dus krijgt hij ze mee.
     const huisstijl = rapport ? bron.querySelector<HTMLElement>(".rpa-wortel")?.style.cssText ?? "" : "";
+    // De paginanummers van de inhoudsopgave, uit dezelfde verdeling als de vellen.
+    const nummers = paginaVanAnkers(paginas);
 
     iframesWeg.current?.();
     scriptsWeg.current?.();
@@ -194,6 +194,9 @@ export default function AfdrukVoorbeeld() {
       }
 
       if (rapport) {
+        for (const doel of inhoud.querySelectorAll<HTMLElement>("[data-inhoud-doel]")) {
+          doel.textContent = String(nummers.get(doel.dataset.inhoudDoel ?? "") ?? "");
+        }
         // Geen loopkop: het rapport heeft alleen een voet.
         vel.append(inhoud, ...rapportVoet(i + 1, voetafbeelding, bureaunaam, maten));
       } else {
@@ -253,7 +256,9 @@ export default function AfdrukVoorbeeld() {
     setBezig(true);
 
     let timer = 0;
+    // `data-opnieuw`: er komt een nieuwe verdeling; de afdruk wacht daarop (drukvellen.ts).
     const plan = () => {
+      bron.dataset.opnieuw = "";
       window.clearTimeout(timer);
       timer = window.setTimeout(bouwPaginas, 120);
     };
@@ -266,7 +271,7 @@ export default function AfdrukVoorbeeld() {
       ro.disconnect();
       window.clearTimeout(timer);
     };
-  }, [bouwPaginas, bladen, rapportGegevens, gegevens, exemplaren, bureau, pdfVersie, werkmapVersie, drieDVersie, ifcxVersie, iframeVersie, jsVersie]);
+  }, [bouwPaginas, bladen, rapportGegevens, gegevens, exemplaren, bureau, soortenVersie, drieDVersie, ifcxVersie, iframeVersie, jsVersie]);
 
   useEffect(() => () => {
     iframesWeg.current?.();

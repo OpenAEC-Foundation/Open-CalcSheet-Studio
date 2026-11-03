@@ -11,7 +11,7 @@
  *   │        └─ geometrie van een blad
  *   ├─ Rekenbladen
  *   │  └─ blad (IfcGroup)                 ocss::blad, ::rekentekst, ::invoer,
- *   │     │                               ::elementen, ::pdf, ::uitkomst
+ *   │     │                               ::elementen, ::pdf, ::xlsx, ::markdown, ::uitkomst
  *   │     └─ figuur                       ocss::figuur
  *   └─ Constructierapport                 ocss::rapport
  *
@@ -21,7 +21,7 @@
  *
  * Teruglezen gebruikt alleen wat hieronder als bron telt: projectnaam, gegevens,
  * verborgen onderdelen, rapport en per blad naam, id, templateId, bronVersie,
- * rekentekst, invoer, elementen en PDF. Uitkomsten, figuren en elementen zijn
+ * rekentekst, invoer, elementen, PDF, werkmap en Markdown. Uitkomsten, figuren en elementen zijn
  * afgeleid: de app rekent ze opnieuw uit bij het openen en opslaan.
  */
 import type { ElementRef, IfcCalcSheet, IfcGenerationOptions } from '../ifc-generator.js';
@@ -35,6 +35,8 @@ const APP_NAAM = 'Open CalcSheet Studio';
 const PDF_SOORT = 'pdf';
 const SPREADSHEET_SOORT = 'spreadsheet';
 const XLSX_MEDIATYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const MARKDOWN_SOORT = 'markdown';
+const MARKDOWN_MEDIATYPE = 'text/markdown';
 
 export interface IfcxProjectInvoer {
   naam: string;
@@ -58,6 +60,7 @@ export interface IfcxGelezenBlad {
   bronVersie?: string;
   pdf?: { bestandsnaam: string; data: string };
   xlsx?: { bestandsnaam: string; data: string };
+  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
 }
 
 export interface IfcxGelezenProject {
@@ -150,8 +153,9 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     const pad = onder(`blad/${sleutel}`);
     const isPdf = blad.templateId === PDF_SOORT;
     const isSpreadsheet = blad.templateId === SPREADSHEET_SOORT;
-    // Een PDF of werkmap heeft geen rekentekst, geen invoer en geen oordeel.
-    const isLos = isPdf || isSpreadsheet;
+    const isMarkdown = blad.templateId === MARKDOWN_SOORT;
+    // Een PDF, werkmap of Markdown-tekst heeft geen rekentekst, geen invoer en geen oordeel.
+    const isLos = isPdf || isSpreadsheet || isMarkdown;
     bladKinderen[kindNaam(`B${String(i + 1).padStart(3, '0')}_${blad.naam}`, bladNamen)] = pad;
 
     const uitkomst = leesUitkomst(blad.nodes, blad.naam, isLos ? { voldoet: null, uc: null } : blad.resultaat, blad.fout);
@@ -169,7 +173,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         id: sleutel,
         volgorde: i,
         templateId: blad.templateId ?? '',
-        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : 'rekenblad',
+        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isMarkdown ? 'markdown' : 'rekenblad',
         ...(blad.module ? { module: blad.module } : {}),
         ...(blad.bronVersie ? { bronVersie: blad.bronVersie } : {}),
       },
@@ -192,6 +196,16 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         mediaType: XLSX_MEDIATYPE,
         grootte: pdfBytes(blad.xlsx.data),
         data: blad.xlsx.data,
+      };
+    }
+    if (blad.md) {
+      attributes[ATTR.markdown] = {
+        bestandsnaam: blad.md.bestandsnaam,
+        mediaType: MARKDOWN_MEDIATYPE,
+        grootte: new TextEncoder().encode(blad.md.tekst).length,
+        tekst: blad.md.tekst,
+        ...(blad.md.beelden ? { beelden: blad.md.beelden } : {}),
+        ...(blad.md.koppenUit ? { koppenUit: true } : {}),
       };
     }
     attributes[ATTR.uitkomst] = uitkomst;
@@ -485,6 +499,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown };
     const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown } | undefined;
     const xlsx = a[ATTR.xlsx] as { bestandsnaam?: unknown; data?: unknown } | undefined;
+    const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown } | undefined;
     const blad: IfcxGelezenBlad = {
       id: tekstVan(b.id),
       naam: tekstVan(a[ATTR.naam]),
@@ -496,6 +511,14 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     if (typeof b.bronVersie === 'string') blad.bronVersie = b.bronVersie;
     if (pdf && typeof pdf.data === 'string') blad.pdf = { bestandsnaam: tekstVan(pdf.bestandsnaam), data: pdf.data };
     if (xlsx && typeof xlsx.data === 'string') blad.xlsx = { bestandsnaam: tekstVan(xlsx.bestandsnaam), data: xlsx.data };
+    if (md && typeof md.tekst === 'string') {
+      blad.md = {
+        bestandsnaam: tekstVan(md.bestandsnaam),
+        tekst: md.tekst,
+        ...(md.beelden && typeof md.beelden === 'object' ? { beelden: md.beelden as Record<string, string> } : {}),
+        ...(md.koppenUit === true ? { koppenUit: true } : {}),
+      };
+    }
     return blad;
   });
 
