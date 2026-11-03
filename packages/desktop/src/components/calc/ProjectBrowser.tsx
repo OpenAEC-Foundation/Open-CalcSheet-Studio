@@ -13,6 +13,8 @@ import { isCanvasBlad } from "../../store/canvasBlad";
 import { voegLeegSpreadsheetToe, voegWerkmapToe } from "./spreadsheetBlad";
 import { isMarkdownBlad } from "../../store/markdownBlad";
 import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
+import { isGraafBlad } from "../../store/graafBlad";
+import { voegLeegGrafbladToe } from "../graaf/grafbladToevoegen";
 import { voegPdfBladToe } from "./pdfBlad";
 import Icoon from "../Icoon";
 import LibrarySectie from "./LibrarySectie";
@@ -112,6 +114,7 @@ function ExemplaarRij({
   const spreadsheet = isSpreadsheetBlad(ex);
   const markdown = isMarkdownBlad(ex);
   const canvas = isCanvasBlad(ex);
+  const graaf = isGraafBlad(ex);
   const stip = pdf
     ? <Icoon id="report.cover" />
     : spreadsheet
@@ -120,6 +123,8 @@ function ExemplaarRij({
     ? <Icoon id="report.template" />
     : canvas
     ? <Icoon id="report.workspace" uit="calculations" />
+    : graaf
+    ? <Icoon id="panel.model-tree" />
     : <span className={`pb-stip${status ? ` pb-status-${status}` : ""}`} aria-hidden="true" />;
   const uitleg = pdf
     ? `${ex.naam}\n${tw("pdf.rij", { bestand: ex.pdf?.bestandsnaam || "—" })}\n${tw("browser.dubbelklik")}`
@@ -129,6 +134,8 @@ function ExemplaarRij({
     ? `${ex.naam}\n${tw("markdown.rij")}\n${tw("browser.dubbelklik")}`
     : canvas
     ? `${ex.naam}\n${tw("canvas.rij")}\n${tw("browser.dubbelklik")}`
+    : graaf
+    ? `${ex.naam}\n${tw("graaf.rij")}\n${tw("browser.dubbelklik")}`
     : `${ex.naam}${info ? ` — ${moduleNaam}` : ""}\n${versieRegel}` +
       (eigen ? `\n${t("bladVersie.eigenUitleg", { bron: ex.bronVersie })}` : "") +
       (verouderd ? `\n${t("bladVersie.rijVerouderd", { nieuw: nieuweVersie })}` : "") +
@@ -362,6 +369,12 @@ export default function ProjectBrowser() {
           <button className="pb-rij pb-toevoegen" onClick={() => voegCanvasToe(tw("canvas.nieuweNaam"))} title={tw("canvas.toevoegenUitleg")}>
             <Icoon id="report.workspace" uit="calculations" />
             <span className="pb-naam">{tw("canvas.toevoegen")}</span>
+          </button>
+
+          {/* Een rekening als graaf van nodes. */}
+          <button className="pb-rij pb-toevoegen" onClick={voegLeegGrafbladToe} title={tw("graaf.toevoegenUitleg")}>
+            <Icoon id="panel.model-tree" />
+            <span className="pb-naam">{tw("graaf.toevoegen")}</span>
           </button>
 
           {/* Alleen als er iets bij te werken is; bijwerken gaat altijd via de vergelijking. */}

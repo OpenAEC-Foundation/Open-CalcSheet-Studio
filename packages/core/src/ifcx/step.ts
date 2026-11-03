@@ -434,7 +434,7 @@ export function bouwProjectStep(doc: IfcxBestand, opties: StepOpties = {}): stri
     const pdf = (a[ATTR.pdf] ?? a[ATTR.xlsx] ?? a[ATTR.markdown]) as { bestandsnaam?: string; mediaType?: string; grootte?: number } | undefined;
     const invoer = (a[ATTR.invoer] as Array<{ naam: string; waarde: string }> | undefined) ?? [];
     const naam = naamVan(k) || blad.id;
-    const isBijlage = blad.soort === 'pdf' || blad.soort === 'spreadsheet' || blad.soort === 'markdown';
+    const isBijlage = blad.soort === 'pdf' || blad.soort === 'spreadsheet' || blad.soort === 'markdown' || blad.soort === 'graaf';
 
     const groep = voeg(`IFCGROUP(${guid(k.path)},${oh},${label(naam)},${optTekst(uitkomst?.norm)},'Rekenblad')`);
     const elementen = elementenVanBlad.get(k.path) ?? [];
@@ -445,7 +445,7 @@ export function bouwProjectStep(doc: IfcxBestand, opties: StepOpties = {}): stri
     const docInfo = voeg(
       `IFCDOCUMENTINFORMATION(${label(blad.id)},${label(naam)},${optTekst(uitkomst?.titel)},` +
       `${stepTekst(`urn:uuid:${isUuid(k.path) ? k.path : ifcGuid(k.path)}`)},${isBijlage ? "'Bijlage'" : "'Constructieve toetsing'"},$,$,` +
-      `${optLabel(blad.bronVersie)},$,$,$,$,${isBijlage && pdf?.mediaType ? stepTekst(pdf.mediaType) : "'text/plain'"},$,$,$,$)`,
+      `${optLabel(blad.bronVersie)},$,$,$,$,${blad.soort === 'graaf' ? "'application/json'" : isBijlage && pdf?.mediaType ? stepTekst(pdf.mediaType) : "'text/plain'"},$,$,$,$)`,
     );
     const op = [groep, ...elementen];
     voeg(`IFCRELASSOCIATESDOCUMENT(${rolGuid(k.path, 'document')},${oh},$,$,(${op.join(',')}),${docInfo})`);

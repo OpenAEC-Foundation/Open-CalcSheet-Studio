@@ -16,6 +16,8 @@
  * zonder React of stores, zodat Node ze rechtstreeks kan laden.
  */
 
+import type { Graaf } from "../graaf/model.ts";
+
 /** Het PDF-bestand van een PDF-blad (zie store/pdfBijlage.ts). */
 export interface McpPdf {
   bestandsnaam: string;
@@ -33,6 +35,7 @@ export interface McpBlad {
   pdf?: McpPdf;
   xlsx?: McpPdf;
   md?: { bestandsnaam: string; tekst: string };
+  graaf?: Graaf;
 }
 
 /** De stand van het project op één moment. */

@@ -273,6 +273,14 @@
     "afgekapt_one": "Alleen het eerste vel is afgedrukt; de werkmap is langer.",
     "afgekapt_other": "Alleen de eerste {{count}} vellen zijn afgedrukt; de werkmap is langer."
   },
+  "graafBlad": {
+    "soort": "Grafblad",
+    "ontbreekt": "De graaf van dit blad ontbreekt.",
+    "leeg": "Deze graaf is leeg.",
+    "naam": "Naam",
+    "uitkomst": "Uitkomst",
+    "zonderNaam": "Zonder naam"
+  },
   "bijlagen": {
     "intro": "Eigen bijlagen staan met hun titel in de inhoudsopgave; het document zelf voeg je buiten de app toe.",
     "vervalt": "vervalt: er staat geen uitwerking in de bijlage",

@@ -8,6 +8,8 @@ import { leesRekenversie } from "../components/calc/bladVersie.ts";
 import { isPdfBlad, leesPdfBijlage } from "./pdfBijlage.ts";
 import { isSpreadsheetBlad, leesSpreadsheetBestand } from "./spreadsheetBlad.ts";
 import { isMarkdownBlad, leesMarkdownBestand } from "./markdownBlad.ts";
+import { isGraafBlad } from "./graafBlad.ts";
+import { leesGraaf } from "../graaf/model.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -111,6 +113,7 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       pdf: ex.pdf,
       xlsx: ex.xlsx,
       md: ex.md,
+      graaf: ex.graaf,
     })),
   });
   return JSON.stringify(doc, null, 2);
@@ -205,6 +208,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (xlsx) ex.xlsx = xlsx;
   const md = isMarkdownBlad(ex) ? leesMarkdownBestand(e.md) : undefined;
   if (md) ex.md = md;
+  const graaf = isGraafBlad(ex) ? leesGraaf(e.graaf) : undefined;
+  if (graaf) ex.graaf = graaf;
   return ex;
 }
 

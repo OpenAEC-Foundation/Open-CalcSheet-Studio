@@ -28,6 +28,7 @@ import { projectScope } from "./projectGegevens.ts";
 import type { PdfBijlage } from "./pdfBijlage.ts";
 import { isLosBlad, type SpreadsheetBestand } from "./spreadsheetBlad.ts";
 import type { MarkdownBestand } from "./markdownBlad.ts";
+import type { Graaf } from "../graaf/model.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 
 /** Wat dit bestand van een blad nodig heeft; een uittreksel van `Exemplaar`. */
@@ -42,6 +43,7 @@ export interface BladVoorIfc {
   pdf?: PdfBijlage;
   xlsx?: SpreadsheetBestand;
   md?: MarkdownBestand;
+  graaf?: Graaf;
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -72,6 +74,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
     pdf: ex.pdf,
     xlsx: ex.xlsx,
     md: ex.md,
+    graaf: ex.graaf,
     nodes: [],
   };
   if (!isLosBlad(ex)) {

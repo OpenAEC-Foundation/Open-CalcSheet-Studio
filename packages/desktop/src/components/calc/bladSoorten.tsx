@@ -3,6 +3,7 @@ import type { Exemplaar } from "../../store/projectStore";
 import { PDF_BLAD } from "../../store/pdfBijlage";
 import { SPREADSHEET_BLAD } from "../../store/spreadsheetBlad";
 import { MARKDOWN_BLAD } from "../../store/markdownBlad";
+import { GRAAF_BLAD } from "../../store/graafBlad";
 import type { Blad, BladPlek, Inhoudskop } from "../../rapport/opzet";
 import type { Maten } from "./paginering";
 import { papier, usePdfPaginas, usePdfVersie } from "./pdfBlad";
@@ -12,6 +13,7 @@ import { PdfPaginas } from "./PdfBladWeergave";
 import { SpreadsheetVellen } from "./SpreadsheetBladWeergave";
 import { MarkdownPapier, MarkdownRapportKeuze } from "./MarkdownBladWeergave";
 import { koppenVoorInhoud } from "./markdownRegels";
+import { GraafVellen } from "../graaf/GraafAfdruk";
 
 /*
  * De bladsoorten in de afdruk, op één plek.
@@ -84,6 +86,11 @@ const SOORTEN: readonly BladSoort[] = [
     plek: "hoofdstuk",
     inhoudsKoppen: (ex) => (ex.md && !ex.md.koppenUit ? koppenVoorInhoud(ex.md.tekst, ex) : []),
     RapportKeuze: MarkdownRapportKeuze,
+  },
+  {
+    templateId: GRAAF_BLAD,
+    soortTekst: () => papier()("graafBlad.soort"),
+    Afdruk: GraafVellen,
   },
 ];
 

@@ -15,6 +15,7 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 | `packages/desktop/src/components/calc` | Parametrische beelden (`*Designer.tsx`), koppeling blad↔beeld (`designerKeuze.tsx`, via een herkenningstekst uit de titel), modulecatalogus met status (`projectTree.ts`), uitkomst van een blad (`bladResultaat.ts`), afdruk (`PrintDocument.tsx/.css`, `PrintBlad.tsx`, `paginering.ts`), rekenversie en bijwerken van bladen (`bladVersie.ts`, `BladBijwerken.tsx`). |
 | `packages/desktop/src/rapport`, `components/rapport` | Constructierapport (hoofdstukken, uitgangspunten, belastingen met opbouwen en gewichtenbibliotheek `gewichten.ts`, bijlage A met de rekenbladen). |
 | `components/calc/bladSoorten.tsx` | Bladen die niet rekenen (PDF, werkmap, Markdown): hier meldt een soort zich aan voor de afdruk en het rapport. Zie [bladsoorten.md](bladsoorten.md). |
+| `packages/desktop/src/graaf`, `components/graaf` | Het grafblad: grafisch programmeren met nodes en verbindingen. `graaf/` rekent zonder React (`model.ts`, `nodes.ts`, `rekenen.ts`, `scene.ts`, `papier.ts`), `components/graaf/` tekent het vlak, het 3D-voorbeeld en de afdruk. Het codeblok gebruikt `packages/core/src/rekenblok.ts`. Controle: `scripts/check-graaf.mjs`. |
 | `packages/desktop/src/store` | Project (exemplaren/bladen, projectgegevens, rapport), projectbestand, undo. |
 | `scripts/check-*.mjs` | Controles; `node scripts/check-alles.mjs` draait ze allemaal (nu 26 controles). |
 

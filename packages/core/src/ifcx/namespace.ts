@@ -41,6 +41,7 @@ export const ATTR = {
   pdf: 'ocss::blad::pdf',
   xlsx: 'ocss::blad::xlsx',
   markdown: 'ocss::blad::markdown',
+  graaf: 'ocss::blad::graaf',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -185,7 +186,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       id: TEKST,
       volgorde: GEHEEL,
       templateId: TEKST,
-      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown'),
+      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown', 'graaf'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
     }),
@@ -223,6 +224,26 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       beelden: opt(VRIJ),
       // De koppen uit de tekst blijven uit de inhoudsopgave van het rapport.
       koppenUit: opt(JANEE),
+    }),
+  },
+  [ATTR.graaf]: {
+    value: object({
+      versie: GEHEEL,
+      nodes: lijst(object({
+        id: TEKST,
+        soort: TEKST,
+        x: GETAL,
+        y: GETAL,
+        naam: opt(TEKST),
+        invoer: opt(lijst(PAAR)),
+        geheel: opt(lijst(TEKST)),
+      })),
+      verbindingen: lijst(object({
+        vanNode: TEKST,
+        vanPoort: TEKST,
+        naarNode: TEKST,
+        naarPoort: TEKST,
+      })),
     }),
   },
   [ATTR.uitkomst]: {

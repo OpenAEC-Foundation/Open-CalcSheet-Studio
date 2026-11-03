@@ -24,6 +24,7 @@ import {
   spreadsheetIcon,
   markdownIcon,
   canvasIcon,
+  graafIcon,
 } from "./calcIcons";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../../store/projectStore";
 import { usePrintStore } from "../../store/printStore";
@@ -34,6 +35,7 @@ import { voegLeegSpreadsheetToe } from "../calc/spreadsheetBlad";
 import { voegLeegMarkdownToe } from "../calc/markdownBlad";
 import { kopieer as kopieerCellen, plakKlembord } from "../calc/spreadsheetKlembord";
 import { ongedaan as cellenOngedaan, opnieuw as cellenOpnieuw, uitvoeren } from "../calc/spreadsheetOpdrachten";
+import { voegLeegGrafbladToe } from "../graaf/grafbladToevoegen";
 
 interface CalcTabProps {
   /** Opent de instellingen, eventueel op een bepaalde tab ("about"). */
@@ -203,6 +205,7 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
             size="large"
             onClick={() => useProjectStore.getState().voegCanvasToe(t("werkruimte:canvas.nieuweNaam"))}
           />
+          <RibbonButton icon={graafIcon} label={t("calc.graaf", "Grafblad")} size="large" onClick={voegLeegGrafbladToe} />
         </RibbonGroup>
 
         <RibbonGroup label={t("calc.output", "Uitvoer")}>
