@@ -78,11 +78,12 @@ Een project is een lijst bladen. Elke soort staat beschreven in [de documentatie
 
 Modules zijn kant-en-klare bladen met een invoerscherm: een **houten balklaag** en een **ligger van hout of staal** volgens EN 1995-1-1 en EN 1993-1-1, en een **tweepaalspoer** volgens EN 1992-1-1, met de Nederlandse nationale bijlage. De [online modulebibliotheek](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) kan modules toevoegen zonder nieuwe release; voorlopig staat daar de balklaag. Zie [hoe de toetsing van de balklaag werkt](docs/balklaag-toetsing.md) en [die van de poer](docs/tweepaalspoer-toetsing.md).
 
-De formulebibliotheek heeft 137 formules die je met een klik invoegt. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release.
+De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met een schets die laat zien waar het over gaat. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release.
 
 | | |
 |---|---|
 | ![Een voorbeeld over knik uit de bibliotheek, uitgewerkt naast het paneel, met Invoegen en Nieuw blad](docs/images/readme/library.png) **Een uitgewerkt voorbeeld uit de bibliotheek** | ![Het invoerscherm van een tweepaalspoer met de wapeningstekening](docs/images/readme/two-pile-cap.png) **Tweepaalspoer met wapeningstekening** |
+| ![De formulebibliotheek met een schets naast elke formule](docs/images/readme/formula-library.png) **Formulebibliotheek met een schets per formule** | |
 
 ## Uitwisseling
 
@@ -105,7 +106,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **53 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **54 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **121 uitkomsten tegen een handberekening**: 53 in `scripts/check-formules.mjs` en 68 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad en `scripts/proef-jupyter-venster.mjs` voor notebooks. Beide tellen met een luisterpost wat er naar buiten gaat.

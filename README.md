@@ -76,11 +76,12 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 
 Modules are ready-made sheets with an input screen: a **timber joist floor** and a **beam in timber or steel** to EN 1995-1-1 and EN 1993-1-1, and a **two-pile cap** to EN 1992-1-1, with the Dutch national annex. The [online module library](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) can add modules without a new release; so far it holds the floor. See [how the floor check works](docs/balklaag-toetsing.md) and [the pile cap check](docs/tweepaalspoer-toetsing.md).
 
-The formula library holds 137 formulas you can insert with a click. The library in the project panel adds 15 worked examples from the Eurocodes and classical mechanics. Those examples are not in the installer: the app fetches them from this repository when it starts, so [a correction reaches everyone](docs/library.md) without a new release.
+The formula library holds 137 formulas you can insert with a click, each with a sketch that shows what it is about. The library in the project panel adds 15 worked examples from the Eurocodes and classical mechanics. Those examples are not in the installer: the app fetches them from this repository when it starts, so [a correction reaches everyone](docs/library.md) without a new release.
 
 | | |
 |---|---|
 | ![A library example on buckling worked out next to the panel, with Insert and New sheet](docs/images/readme/library.png) **A worked example from the library** | ![The input screen of a two-pile cap with its reinforcement drawing](docs/images/readme/two-pile-cap.png) **Two-pile cap with reinforcement drawing** |
+| ![The formula library with a sketch next to every formula](docs/images/readme/formula-library.png) **Formula library with a sketch per formula** | |
 
 ## Interoperability
 
@@ -103,7 +104,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **53 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **54 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **121 results against hand calculations**: 53 in `scripts/check-formules.mjs` and 68 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet and `scripts/proef-jupyter-venster.mjs` for notebooks. Both use a listening post to count what gets out.

@@ -41,7 +41,7 @@ const V = await import("../packages/desktop/src/components/tekenen/vel.ts");
 const Y = await import("../packages/desktop/src/components/tekenen/symbolen.ts");
 const M = await import("../packages/desktop/src/components/tekenen/model.ts");
 const { maakWerkmap } = await import("./lib/gemengd-project.mjs");
-const { startApp } = await import("./lib/jupyter-venster.mjs");
+const { NOTEBOOK_KLAAR, startApp } = await import("./lib/jupyter-venster.mjs");
 
 const [exe, ...alleen] = process.argv.slice(2);
 if (!exe) {
@@ -349,7 +349,7 @@ try {
         }
         return null;
       }, { tekst: "de omgeving", ms: 120000 });
-      await s.wachtOp(() => s.voerUit(`(() => { const w = window.jupyterapp?.shell.currentWidget; return w?.sessionContext?.session?.kernel?.status === 'idle' ? 1 : 0; })()`, frame), { tekst: "de kernel", ms: 180000 });
+      await s.wachtOp(() => s.voerUit(NOTEBOOK_KLAAR, frame), { tekst: "de kernel", ms: 180000 });
       await s.voerUit(`window.jupyterapp.commands.execute('notebook:run-all-cells')`, frame);
       await s.wachtOp(() => s.voerUit(`document.querySelector('.jp-RenderedImage img') && document.querySelector('.jp-RenderedHTMLCommon table.dataframe') ? 1 : 0`, frame), { tekst: "de uitvoer", ms: 240000 });
       await s.voerUit(`document.querySelector('.jp-RenderedImage').scrollIntoView({ block: "center" })`, frame);
@@ -361,7 +361,14 @@ try {
       await s.wachtOp(() => s.voerUit(`document.querySelector('.lib-vak svg') ? 1 : 0`), { tekst: "het voorbeeld", ms: 15000 });
       await wacht(800);
     },
+    "formula-library": async () => {
+      await s.voerUit(`document.querySelector('.lib-vak-sluit')?.click()`);
+      await klik(`document.querySelector('.lib-lijst .pb-toevoegen')`);
+      await s.wachtOp(() => s.voerUit(`document.querySelectorAll('.fv-rij .fb').length > 100 ? 1 : 0`), { tekst: "het formulevenster", ms: 15000 });
+      await wacht(600);
+    },
     ifc: async () => {
+      await s.voerUit(`document.querySelector('.formule-venster .settings-btn-secondary')?.click()`);
       await s.voerUit(`document.querySelector('.lib-vak-sluit')?.click()`);
       await kiesBlad(NAAM.vloer);
       await lint(/^IFC$/);
