@@ -6,10 +6,10 @@ import RibbonButton from "./RibbonButton";
 import RibbonButtonStack from "./RibbonButtonStack";
 import { Uitklap } from "./CalcPadTab";
 import {
-  autoSomIcon, copyIcon, cutIcon, functieIcon, kolomInvoegenIcon, kolomPassendIcon, omlaagIcon, pasteIcon, rechtsIcon,
+  autoSomIcon, copyIcon, cutIcon, functieIcon, kolomInvoegenIcon, kolomPassendIcon, omlaagIcon, papierrandIcon, pasteIcon, rechtsIcon,
   rijInvoegenIcon, rijPassendIcon, sorteerIcon, vastzettenIcon, verwijderIcon,
 } from "./calcIcons";
-import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
+import { useSpreadsheetEditor, zetVelLijnen } from "../../store/spreadsheetEditor";
 import { kopieer, plakKlembord } from "../calc/spreadsheetKlembord";
 import { FUNCTIES, type Functie } from "../calc/spreadsheetLogica";
 import {
@@ -70,6 +70,7 @@ function MenuKnop<T extends string>({ icon, label, title, uit, keuzes, kies }: {
 export default function SpreadsheetTab() {
   const { t } = useTranslation("ribbon");
   const klaar = useSpreadsheetEditor((s) => s.api !== null);
+  const papierrand = useSpreadsheetEditor((s) => s.velLijnen);
   const uit = !klaar;
   const functies = FUNCTIES.map((f) => ({ id: f, naam: f, uitleg: t(`spreadsheet.functie.${f}`) }));
   return (
@@ -142,6 +143,14 @@ export default function SpreadsheetTab() {
             uit={uit}
             keuzes={VASTZETTEN.map((id) => ({ id, naam: t(`spreadsheet.vast.${id}`) }))}
             kies={(soort) => uitvoeren(() => vastzetten(soort))}
+          />
+          <RibbonButton
+            icon={papierrandIcon}
+            label={t("spreadsheet.papierrand")}
+            title={t("spreadsheet.papierrandUitleg")}
+            size="large"
+            active={papierrand}
+            onClick={() => zetVelLijnen(!papierrand)}
           />
         </RibbonGroup>
       </div>

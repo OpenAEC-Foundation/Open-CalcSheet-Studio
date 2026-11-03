@@ -12,7 +12,9 @@
  *   • het gereedschap, met de hand nagerekend: =A1*B1, PRODUCT en de andere
  *     functies, relatieve verwijzingen na kopiëren en doorvoeren, verwijzingen na
  *     rijen en kolommen invoegen en verwijderen, sorteren, cellen aanwijzen, het
- *     klembord en de maten, en dat elke bewerking één stap ongedaan maken is.
+ *     klembord en de maten, en dat elke bewerking één stap ongedaan maken is;
+ *   • de vellen: de lijnen in het raster en de afdruk rekenen hetzelfde, en elke
+ *     getekende afbeelding past op zijn vel.
  *
  * Draaien:  node scripts/check-spreadsheet.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -32,6 +34,8 @@ import {
   hoogtePx, invoerVoorKern, leesHtmlTabel, leesNederlands, leesTsv, magVerwijzingHier, naarHtml, naarTsv, ontleedAdres, ontleedBereik,
   richtingNaar, somPlan, sorteerVolgorde, verschuifFormule, verwijzingenIn, vulLijn, zelfdeTekst, zetVerwijzing,
 } from "../packages/desktop/src/components/calc/spreadsheetLogica.ts";
+import { KOP_RUIMTE, MAX_VELLEN, MM_PER_PX, NAAM_RUIMTE, velLijnen, verdeelRijen, verdeelWerkmap } from "../packages/desktop/src/components/calc/spreadsheetVellen.ts";
+import { MATEN, SPELING } from "../packages/desktop/src/components/calc/paginering.ts";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const pakket = join(hier, "../node_modules/@betteroffice/xlsx/dist");
@@ -350,6 +354,118 @@ const opgeslagen = proef.save();
 const heropend = await exportXlsxStructured(new Uint8Array(opgeslagen));
 meld(heropend.sheets[0].cells.find((c) => c.anchor.a1 === "D1").formula === "PRODUCT(A1:B2)", "na opslaan en openen staat de formule er nog");
 proef.dispose();
+
+console.log("\nDe vellen op papier en in het raster");
+const SPIEGEL = { breedte: MATEN.bladen.inhoud.breedte, hoogte: MATEN.bladen.inhoud.hoogte - SPELING };
+meld(SPIEGEL.breedte === 178 && SPIEGEL.hoogte === 249, "de losse uitdraai: 210 − 2 × 16 = 178 mm breed, 297 − 24 − 20 − 4 = 249 mm hoog");
+const pngGrootte = (png) => { const v = new DataView(png.buffer, png.byteOffset, png.byteLength); return { b: v.getUint32(16), h: v.getUint32(20) }; };
+const nieuweWerkmap = (vul) => { const w = openWorkbook(leeg); vul(w); return w; };
+const stukkenTekst = (blad) => blad.stukken.map((s) => `${s.van + 1}-${s.tot + 1}`).join(" ");
+
+/**
+ * Tekent elk stuk zoals spreadsheetBlad.ts dat doet en legt het naast de berekening: de
+ * afbeelding past op het vel, en er had geen rij meer bij gepast.
+ */
+function tegenAfbeeldingen(w, spiegel) {
+  const verdeling = verdeelWerkmap(w, spiegel);
+  let vel = 0;
+  let klopt = true;
+  for (const blad of verdeling.bladen) {
+    w.setActiveSheet(blad.index);
+    const metNaam = verdeling.bladen.length > 1;
+    blad.stukken.forEach((stuk, i) => {
+      const png = pngGrootte(w.renderRangePng({ range: bereikA1({ ...blad.bereik, top: stuk.van, bottom: stuk.tot }), scale: blad.tekenschaal }));
+      const mm = (px) => (px / blad.tekenschaal) * MM_PER_PX * blad.schaal;
+      const ruimte = spiegel.hoogte - (vel === 0 ? KOP_RUIMTE : 0) - (metNaam ? NAAM_RUIMTE : 0);
+      // De afbeelding rondt op hele pixels af, ten hoogste 0,13 mm; daarvoor is de speling van 4 mm er.
+      if (mm(png.h) > ruimte + 0.2 || mm(png.b) > spiegel.breedte + 0.2) klopt = false;
+      if (i < blad.stukken.length - 1) {
+        const metVolgende = w.renderRangePng({ range: bereikA1({ ...blad.bereik, top: stuk.van, bottom: stuk.tot + 1 }), scale: blad.tekenschaal });
+        if (mm(pngGrootte(metVolgende).h) <= ruimte - 0.2) klopt = false;
+      }
+      vel++;
+    });
+  }
+  return { verdeling, klopt, vellen: vel };
+}
+
+// Een vel met kop: (249 − 20) / (25,4/96) = 865,5 px, dus 43 rijen van 20 px (860 px). Een
+// volgend vel: 249 / (25,4/96) = 941,1 px, dus 47 rijen (940 px). 100 rijen: 43 + 47 + 10.
+const lang = nieuweWerkmap((w) => { for (let r = 0; r < 100; r++) w.editCell(0, r, 0, String(r)); });
+const langUit = tegenAfbeeldingen(lang, SPIEGEL);
+meld(stukkenTekst(langUit.verdeling.bladen[0]) === "1-43 44-90 91-100", "100 rijen: 43 op het eerste vel (met kop), 47 op het tweede, 10 op het derde");
+meld(langUit.klopt, "elke getekende afbeelding past op zijn vel, en er had geen rij meer bij gepast");
+const langLijnen = velLijnen(lang, 0, SPIEGEL);
+meld(langLijnen.vellen[0].tot + 1 === 43 && langLijnen.vellen[1].tot + 1 === 90, "het raster zet zijn lijnen op dezelfde rijen: na rij 43 en rij 90");
+meld(langLijnen.vellen[2].metInhoud && !langLijnen.vellen[3].metInhoud && langLijnen.vellen[2].tot + 1 === 137, "vel 3 loopt door tot rij 137 (90 + 47) en vel 4 is nog leeg");
+meld(langLijnen.vol && langLijnen.vellen.length === MAX_VELLEN, "het raster stopt bij de grens van de afdruk");
+// De rand rechts: 178 / (25,4/96) = 672,76 px; kolommen van 64,01 px: in kolom K (index 10), op 32,6 px.
+meld(langLijnen.rechtsKolom === 10 && Math.abs(langLijnen.rechtsBinnen - (672.756 - 10 * 64.01172)) < 0.01 && langLijnen.schaal === 1, "de rand rechts valt 178 mm verder: in kolom K, op 32,6 px, en er wordt niet verkleind");
+lang.editCell(0, 500, 0, "verder");
+const langVerder = verdeelWerkmap(lang, SPIEGEL).bladen[0];
+meld(stukkenTekst(langVerder).startsWith("1-43 44-90 91-137"), "wat onderaan bijkomt, verschuift de grenzen erboven niet");
+lang.applyOps([{ type: "setFreezePane", sheet: 0, pane: { rows: 3, cols: 1, top_left: { row: 3, col: 1 } } }]);
+meld(stukkenTekst(verdeelWerkmap(lang, SPIEGEL).bladen[0]) === stukkenTekst(langVerder), "vastgezette rijen veranderen niets aan het papier");
+lang.dispose();
+
+// Meer rijen dan de rekenkern in één afbeelding tekent (16384 px bij schaal 2 is 8192 px).
+const heelLang = nieuweWerkmap((w) => { for (let r = 0; r < 1000; r++) w.editCell(0, r, 0, String(r)); });
+const heelLangUit = tegenAfbeeldingen(heelLang, SPIEGEL);
+meld(heelLangUit.klopt && heelLangUit.vellen === 1 + Math.ceil((1000 - 43) / 47), "1000 rijen komen op papier: 1 + ⌈957 / 47⌉ = 22 vellen, ook al past dat niet in één afbeelding");
+heelLang.dispose();
+
+// Te breed: 14 kolommen van 64,01 px is 896,16 px, als afbeelding 896,5 px. 672,76 / 896,5 = 0,7504.
+// Een vel met kop is dan 865,5 / 0,7504 = 1153,4 px: 57 rijen.
+const breed = nieuweWerkmap((w) => { for (let k = 0; k < 14; k++) for (let r = 0; r < 70; r++) w.editCell(0, r, k, "1"); });
+const breedUit = tegenAfbeeldingen(breed, SPIEGEL);
+const breedBlad = breedUit.verdeling.bladen[0];
+meld(Math.abs(breedBlad.schaal - 672.756 / 896.5) < 1e-3 && breedBlad.stukken[0].tot + 1 === 57, "te breed: verkleind tot 75%, en daardoor passen er 57 rijen op het eerste vel");
+meld(breedUit.klopt, "ook verkleind passen de afbeeldingen, precies binnen de breedte");
+const breedLijnen = velLijnen(breed, 0, SPIEGEL);
+meld(breedLijnen.vellen[0].tot + 1 === 57 && breedLijnen.schaal === breedBlad.schaal, "het raster rekent met dezelfde verkleining");
+meld(breedLijnen.rechtsKolom === 14 || (breedLijnen.rechtsKolom === 13 && breedLijnen.rechtsBinnen > 63), "de rand rechts valt op het eind van de laatste kolom: er is geen tweede kolom vellen");
+const breedVoor = breedLijnen.vellen[0].tot;
+breed.applyOps([{ type: "setColWidth", sheet: 0, col: 0, width: 60 }]);
+meld(velLijnen(breed, 0, SPIEGEL).vellen[0].tot > breedVoor, "een bredere kolom verkleint verder, en de lijnen volgen");
+breed.undo();
+breed.dispose();
+
+// Zo breed dat een afbeelding op schaal 2 niet meer kan: 300 kolommen is 19200 px, keer 2 boven de grens.
+const heelBreed = nieuweWerkmap((w) => { for (let k = 0; k < 300; k++) w.editCell(0, 0, k, "1"); });
+const heelBreedUit = tegenAfbeeldingen(heelBreed, SPIEGEL);
+meld(heelBreedUit.klopt && heelBreedUit.verdeling.bladen[0].tekenschaal < 1, "te breed voor de afbeelding: de tekenschaal gaat omlaag, het formaat op papier niet");
+heelBreed.dispose();
+
+// Meer werkbladen: alleen het eerste vel heeft de kop, en elk werkblad zijn naam.
+const meer = nieuweWerkmap((w) => {
+  w.applyOps([{ type: "addSheet", index: 1, name: "Leeg" }, { type: "addSheet", index: 2, name: "Tweede" }]);
+  for (let r = 0; r < 50; r++) { w.editCell(0, r, 0, "1"); w.editCell(2, r + 1, 1, "2"); }
+});
+const meerUit = tegenAfbeeldingen(meer, SPIEGEL);
+// Met naam: (249 − 20 − 7) / (25,4/96) = 839,1 px: 41 rijen. Zonder kop: (249 − 7) → 914,6 px: 45 rijen.
+const [meerEen, meerTwee] = meerUit.verdeling.bladen;
+meld(meerUit.verdeling.bladen.length === 2 && meerEen.naam === "Sheet1" && meerTwee.naam === "Tweede", "een leeg werkblad komt niet op papier, de andere met hun naam");
+meld(stukkenTekst(meerEen) === "1-41 42-50" && stukkenTekst(meerTwee) === "2-46 47-51", "met naam 41 rijen op het eerste vel (met kop), daarna 45 per vel; het tweede begint bij zijn eigen eerste rij");
+meld(meerUit.klopt, "en ook die afbeeldingen passen");
+meld(velLijnen(meer, 2, SPIEGEL).vellen[0].nummer === 3 && velLijnen(meer, 2, SPIEGEL).vellen[0].tot + 1 === 46, "het raster van het tweede werkblad telt door: vel 3, tot rij 46");
+const legeLijnen = velLijnen(meer, 1, SPIEGEL);
+meld(legeLijnen.boven === 0 && legeLijnen.links === 0 && !legeLijnen.vellen[0].metInhoud, "een leeg werkblad toont het vel vanaf A1, zonder inhoud");
+meer.dispose();
+
+// Meer dan MAX_VELLEN: de melding op papier, en het raster stopt op dezelfde plek.
+const teVeel = nieuweWerkmap((w) => { w.editCell(0, 0, 0, "1"); w.editCell(0, 3000, 0, "2"); });
+const teVeelUit = verdeelWerkmap(teVeel, SPIEGEL);
+meld(teVeelUit.afgekapt && teVeelUit.bladen[0].stukken.length === MAX_VELLEN, "meer dan 60 vellen: afgekapt, zoals de melding op papier zegt");
+meld(velLijnen(teVeel, 0, SPIEGEL).vellen.length === MAX_VELLEN && velLijnen(teVeel, 0, SPIEGEL).vellen[MAX_VELLEN - 1].tot === teVeelUit.bladen[0].stukken[MAX_VELLEN - 1].tot, "het raster stopt op dezelfde rij");
+teVeel.dispose();
+
+meld(JSON.stringify(verdeelRijen((r) => r * 30, 0, 9, () => 100, 60)) === JSON.stringify([{ van: 0, tot: 2 }, { van: 3, tot: 5 }, { van: 6, tot: 8 }, { van: 9, tot: 9 }]), "rijen van 30 px op vellen van 100 px: drie per vel");
+meld(JSON.stringify(verdeelRijen((r) => (r === 0 ? 0 : 500 + r), 0, 2, () => 100, 60)[0]) === JSON.stringify({ van: 0, tot: 0 }), "een rij hoger dan een vel krijgt toch een vel");
+
+const afdrukBron = readFileSync(join(hier, "../packages/desktop/src/components/calc/spreadsheetBlad.ts"), "utf8");
+const laagBron = readFileSync(join(hier, "../packages/desktop/src/components/calc/spreadsheetLaag.tsx"), "utf8");
+meld(afdrukBron.includes("verdeelWerkmap(wb, { breedte, hoogte })") && !/KOP_RUIMTE|NAAM_RUIMTE|MAX_VELLEN/.test(afdrukBron), "de afdruk rekent met deze verdeling, niet met een eigen kopie");
+meld(laagBron.includes("velLijnen(kern, blad, UITDRAAI)") && laagBron.includes("MATEN.bladen.inhoud.hoogte - SPELING"), "het raster gebruikt dezelfde verdeling en de bladspiegel van de uitdraai");
 
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

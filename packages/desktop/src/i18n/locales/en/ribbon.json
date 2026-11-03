@@ -53,6 +53,8 @@
     "sorteerUitleg": "Sort by the column of the active cell. On a single cell the whole table around it; a header row stays in place.",
     "vastzetten": "Freeze",
     "vastzettenUitleg": "Keep rows or columns in view while scrolling.",
+    "papierrand": "Page edges",
+    "papierrandUitleg": "Show in the grid where a printed A4 page ends, on the right and at the bottom, as in the print preview of this sheet.",
     "vast": {
       "rij": "Top row",
       "kolom": "First column",

@@ -161,6 +161,58 @@
   touch-action: none;
 }
 
+/* De rand van het papier in het raster (spreadsheetVellen.ts). */
+.spreadsheet-vellijnen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --vel-kleur: #2563eb;
+}
+
+.spreadsheet-vellijn {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.spreadsheet-vellijn.staand {
+  border-left: 1.5px dashed var(--vel-kleur);
+}
+
+.spreadsheet-vellijn.liggend {
+  border-top: 1.5px dashed var(--vel-kleur);
+}
+
+.spreadsheet-velhoek {
+  position: absolute;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: solid var(--vel-kleur);
+  border-width: 0 2px 2px 0;
+}
+
+.spreadsheet-veltekst {
+  position: absolute;
+  padding: 0 3px;
+  transform: translateX(-100%);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--vel-kleur);
+  font: 10px / 13px var(--oa-font-body, system-ui, sans-serif);
+  white-space: nowrap;
+}
+
+/* De naam van een vel staat op dat vel, boven zijn onderrand. */
+.spreadsheet-veltekst.boven {
+  transform: translate(-100%, -100%);
+}
+
+.spreadsheet-velhoek.zonder-inhoud,
+.spreadsheet-veltekst.zonder-inhoud,
+.spreadsheet-vellijn.zonder-inhoud {
+  opacity: 0.45;
+}
+
 /* Hierin plakt de browser bij Ctrl+V; buiten beeld, maar wel focusbaar. */
 .spreadsheet-plakvang {
   position: fixed;

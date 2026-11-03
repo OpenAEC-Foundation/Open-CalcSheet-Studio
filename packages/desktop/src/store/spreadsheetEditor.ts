@@ -19,6 +19,26 @@ export interface Markering {
   aangewezen: boolean;
 }
 
+const VELLIJNEN = "openaec.spreadsheet.vellijnen";
+
+function leesVelLijnen(): boolean {
+  try {
+    return localStorage.getItem(VELLIJNEN) !== "uit";
+  } catch {
+    return true;
+  }
+}
+
+/** De papierrand in het raster aan of uit; een voorkeur, geen deel van het project. */
+export function zetVelLijnen(aan: boolean): void {
+  useSpreadsheetEditor.setState({ velLijnen: aan });
+  try {
+    localStorage.setItem(VELLIJNEN, aan ? "aan" : "uit");
+  } catch {
+    // Alleen een gemak.
+  }
+}
+
 /** Het bereik op het klembord, met het lopende kader eromheen. */
 export interface KopieKader {
   sheetId: string;
@@ -44,6 +64,8 @@ interface SpreadsheetEditorStaat {
   kopie: KopieKader | null;
   kanOngedaan: boolean;
   kanOpnieuw: boolean;
+  /** Tekent het raster waar een afgedrukt vel eindigt? */
+  velLijnen: boolean;
 }
 
 export const useSpreadsheetEditor = create<SpreadsheetEditorStaat>(() => ({
@@ -57,4 +79,5 @@ export const useSpreadsheetEditor = create<SpreadsheetEditorStaat>(() => ({
   kopie: null,
   kanOngedaan: false,
   kanOpnieuw: false,
+  velLijnen: leesVelLijnen(),
 }));

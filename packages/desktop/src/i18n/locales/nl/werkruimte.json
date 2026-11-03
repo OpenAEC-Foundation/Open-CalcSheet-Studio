@@ -322,6 +322,8 @@
     "kolomTip": "Kolom {{naam}}, breedte {{breedte}} tekens. Sleep de rand voor de breedte; dubbelklik op de rand maakt hem passend.",
     "rijTip": "Rij {{naam}}, hoogte {{hoogte}} punten. Sleep de rand voor de hoogte; dubbelklik op de rand maakt hem passend.",
     "allesSelecteren": "Alles selecteren",
+    "vel": "Vel {{nummer}}",
+    "schaalOpPapier": "Op papier {{procent}}%",
     "melding": {
       "geenEditor": "De spreadsheet is nog niet klaar met laden.",
       "kiesCel": "Selecteer eerst een cel.",

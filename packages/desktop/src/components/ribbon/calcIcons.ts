@@ -65,6 +65,7 @@ export const kolomPassendIcon = b2("view.fit-width", "spreadsheet");
 export const rijPassendIcon = b2("view.fit-height", "spreadsheet");
 export const sorteerIcon = b2("list.sort-fields", "spreadsheet");
 export const vastzettenIcon = b2("object.lock", "spreadsheet");
+export const papierrandIcon = b2("view.fit-page", "spreadsheet");
 
 // Tekenen
 export const tekeningNieuwIcon = b2("file.new");

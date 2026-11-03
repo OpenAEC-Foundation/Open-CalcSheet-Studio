@@ -53,6 +53,8 @@
     "sorteerUitleg": "Sorteren op de kolom van de actieve cel. Op één cel de hele tabel eromheen; een kopregel blijft staan.",
     "vastzetten": "Vastzetten",
     "vastzettenUitleg": "Rijen of kolommen in beeld houden bij het scrollen.",
+    "papierrand": "Papierrand",
+    "papierrandUitleg": "Toon in het raster waar een afgedrukt A4-vel eindigt, rechts en onder, zoals in het afdrukvoorbeeld van dit blad.",
     "vast": {
       "rij": "Bovenste rij",
       "kolom": "Eerste kolom",

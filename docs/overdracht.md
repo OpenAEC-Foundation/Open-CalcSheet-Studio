@@ -85,7 +85,10 @@ voeren uit op de rekenkern, `spreadsheetAanwijzen.ts` en `spreadsheetLaag.tsx`
 horen bij het raster, en `components/ribbon/SpreadsheetTab.tsx` is de lint-tab die
 verschijnt zolang een spreadsheet-blad in beeld is. `api.version()` en andere
 gewone API-aanroepen sluiten een open cel: de bewaartimer gebruikt daarom
-`api.handle` rechtstreeks.
+`api.handle` rechtstreeks. Hoe een werkmap over de vellen papier valt, staat in
+`spreadsheetVellen.ts`; de afdruk en de papierrand in het raster rekenen daarmee, en
+`check-spreadsheet.mjs` legt de uitkomst naast de getekende afbeeldingen. Het raster
+volgt de losse uitdraai (`MATEN.bladen`); in het rapport is de bladspiegel anders.
 
 De toetsing van de balklaag staat in [balklaag-toetsing.md](balklaag-toetsing.md),
 de bewuste splitspunten tussen referentie-uitwerking en norm in

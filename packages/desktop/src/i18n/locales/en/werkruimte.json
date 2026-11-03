@@ -322,6 +322,8 @@
     "kolomTip": "Column {{naam}}, width {{breedte}} characters. Drag the edge for the width; double-click the edge to fit.",
     "rijTip": "Row {{naam}}, height {{hoogte}} points. Drag the edge for the height; double-click the edge to fit.",
     "allesSelecteren": "Select all",
+    "vel": "Page {{nummer}}",
+    "schaalOpPapier": "On paper {{procent}}%",
     "melding": {
       "geenEditor": "The spreadsheet has not finished loading.",
       "kiesCel": "Select a cell first.",
