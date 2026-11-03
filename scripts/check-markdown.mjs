@@ -181,6 +181,8 @@ const metKop = papier("# Blad\n\nTekst\n\n# Tweede\n", "Blad");
 meld(metKop.querySelector("h1")?.textContent === "Tweede", "een eerste kop gelijk aan de naam van het blad vervalt: die staat er al boven");
 meld(metKop.querySelector("h1")?.getAttribute("data-inhoud") === "ex#1", "een kop krijgt zijn plek voor de inhoudsopgave");
 meld(papier("Tekst\n\n# Blad\n", "Blad").querySelector("h1") !== null, "een kop verderop met die naam blijft staan");
+meld(papier("<div>blok</div> los\n\nTekst\n").textContent.includes("los") && papier("<!-- notitie -->\n\nTekst\n").querySelector("p")?.textContent === "Tekst",
+  "losse tekst naast een html-blok blijft op papier staan");
 meld(!papier(`<img src=x onerror="window.x = 1">`).innerHTML.includes("onerror"), "ook op papier opgeschoond");
 meld(papier("![c](foto.png)\n").querySelector(".md-beeld-weg")?.textContent === "foto.png", "ook op papier een melding bij een ontbrekende afbeelding");
 
@@ -191,6 +193,8 @@ meld(JSON.stringify(titels("# Een\n## Twee\n### Drie\n#### Vier\n")) === JSON.st
 meld(JSON.stringify(titels("## Twee\n### Drie\n#### Vier\n")) === JSON.stringify(["Twee", "Drie"]), "ook als het bestand met ## begint");
 meld(JSON.stringify(titels("# Notitie\n## Twee\n")) === JSON.stringify(["Twee"]), "een eerste kop gelijk aan de naam telt niet");
 meld(JSON.stringify(titels("Tekst\n\n# Notitie\n")) === JSON.stringify(["Notitie"]), "een kop verderop met die naam wel");
+meld(JSON.stringify(titels("<!-- notitie -->\n\n# Notitie\n\n## Twee\n")) === JSON.stringify(["Twee"]) && papier("<!-- notitie -->\n\n# Notitie\n", "Notitie").querySelector("h1") === null,
+  "de inhoudsopgave en het papier zijn het eens over die eerste kop, ook na een commentaar");
 meld(JSON.stringify(koppenVoorInhoud("# Een\n## Twee\n", blad).map((k) => k.anker)) === JSON.stringify(["ex#0", "ex#1"]), "het anker is het volgnummer van de kop");
 meld(titels("Alleen tekst\n").length === 0, "zonder koppen geen regels");
 // Dezelfde ankers op papier en in de inhoudsopgave, ook als de eerste kop wegvalt.

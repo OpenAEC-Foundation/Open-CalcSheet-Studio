@@ -260,18 +260,30 @@ export function markdownVoorPapier(
   const doc = lees(schoon(leesMarkdown(md.tekst).html));
   zetEigenBeelden(doc.body, md.beelden, doc);
 
-  const eerste = doc.body.firstElementChild;
-  if (eerste?.hasAttribute("data-md-kop") && zelfdeTekst(eerste.textContent ?? "", blad.naam)) eerste.remove();
+  if (eersteKopIsNaam(doc, blad.naam)) doc.body.firstElementChild?.remove();
   for (const kop of doc.body.querySelectorAll("[data-md-kop]")) {
     kop.setAttribute("data-inhoud", kopAnker(blad.id, Number(kop.getAttribute("data-md-kop"))));
   }
 
+  // Losse tekst naast een html-blok is geen element, maar moet wel op papier.
+  for (const knoop of [...doc.body.childNodes]) {
+    if (knoop.nodeType !== 3 || !knoop.textContent?.trim()) continue;
+    const alinea = doc.createElement("p");
+    knoop.replaceWith(alinea);
+    alinea.appendChild(knoop);
+  }
   const stukken = [...doc.body.children].flatMap((el) => stukkenVan(el, doc));
   doc.body.replaceChildren(...stukken);
   return schoon(doc.body.innerHTML);
 }
 
 const zelfdeTekst = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/** Is het eerste blok een kop met de naam van het blad? Die naam staat er op papier al boven. */
+function eersteKopIsNaam(doc: Document, naam: string): boolean {
+  const eerste = doc.body.firstElementChild;
+  return eerste !== null && eerste.hasAttribute("data-md-kop") && zelfdeTekst(eerste.textContent ?? "", naam);
+}
 
 const kopAnker = (bladId: string, nummer: number) => `${bladId}#${nummer}`;
 
@@ -288,8 +300,7 @@ export interface InhoudKop {
  */
 export function koppenVoorInhoud(tekst: string, blad: { id: string; naam: string }): InhoudKop[] {
   const { koppen, html } = leesMarkdown(tekst);
-  const eersteIsKop = /^\s*<h[1-6]\s/.test(html);
-  const zonderNaam = koppen.filter((k) => !(k.nummer === 0 && eersteIsKop && zelfdeTekst(k.tekst, blad.naam)));
+  const zonderNaam = eersteKopIsNaam(lees(html), blad.naam) ? koppen.slice(1) : koppen;
   const niveaus = [...new Set(zonderNaam.map((k) => k.niveau))].sort((a, b) => a - b).slice(0, 2);
   return zonderNaam
     .filter((k) => niveaus.includes(k.niveau) && k.tekst !== "")
@@ -310,13 +321,12 @@ const MAX_BEELDEN_BYTES = 40 * 1024 * 1024;
 export function beeldAdressen(tekst: string): string[] {
   const doc = lees(leesMarkdown(tekst).html);
   const adressen = [...doc.querySelectorAll("img")].map((i) => i.getAttribute("src") ?? "");
-  return [...new Set(adressen.filter((a) => isRelatiefAdres(a) && beeldSleutel(a) in soortenPerAdres(a)))];
+  return [...new Set(adressen.filter((a) => isRelatiefAdres(a) && beeldSoort(a) !== undefined))];
 }
 
-/** Alleen een bestand met de extensie van een afbeelding wordt gelezen. */
-function soortenPerAdres(adres: string): Record<string, string> {
-  const soort = SOORT_VAN[adres.split(/[?#]/)[0].split(".").pop()?.toLowerCase() ?? ""];
-  return soort ? { [beeldSleutel(adres)]: soort } : {};
+/** Het type van een afbeelding, uit de extensie. Alleen zo'n bestand wordt gelezen. */
+function beeldSoort(adres: string): string | undefined {
+  return SOORT_VAN[adres.split(/[?#]/)[0].split(".").pop()?.toLowerCase() ?? ""];
 }
 
 /**
@@ -339,7 +349,7 @@ export async function verzamelBeelden(
       const bytes = await leesBestand(pad);
       if (bytes.length > MAX_BEELD_BYTES || totaal + bytes.length > MAX_BEELDEN_BYTES) continue;
       totaal += bytes.length;
-      uit[beeldSleutel(adres)] = `data:${soortenPerAdres(adres)[beeldSleutel(adres)]};base64,${await naarBase64(bytes)}`;
+      uit[beeldSleutel(adres)] = `data:${beeldSoort(adres)};base64,${await naarBase64(bytes)}`;
     } catch (err) {
       console.warn(`Afbeelding ${pad} niet gelezen:`, err);
     }
