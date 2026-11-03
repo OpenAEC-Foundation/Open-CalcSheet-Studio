@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import Modal from "../Modal";
 import { FORMULES, FORMULE_GROEPEN, codeVan, type Formule, type Tekst } from "./formules";
 import { voegFormuleIn } from "./formuleInvoegen";
+import { formuleBeeld } from "./formuleBeeld";
 import { useLibrary } from "../../store/library";
 import "../settings/SettingsDialog.css";
 import "./FormuleVenster.css";
@@ -69,11 +70,14 @@ export default function FormuleVenster({ open, onSluit }: { open: boolean; onSlu
             {lijst.map((f) => (
               <button key={f.id} type="button" className={`fv-rij${gekozen?.id === f.id ? " gekozen" : ""}`}
                 onClick={() => setGekozen(f)} onDoubleClick={() => invoegen(f)}>
-                <span className="fv-kop">
-                  <strong>{taal(f.naam)}</strong>
-                  {f.bron && <span className="fv-bron">{f.bron}</span>}
+                <span className="fv-beeld" dangerouslySetInnerHTML={{ __html: formuleBeeld(f) ?? "" }} />
+                <span className="fv-tekst">
+                  <span className="fv-kop">
+                    <strong>{taal(f.naam)}</strong>
+                    {f.bron && <span className="fv-bron">{f.bron}</span>}
+                  </span>
+                  {f.uitleg && <span className="fv-uitleg">{taal(f.uitleg)}</span>}
                 </span>
-                {f.uitleg && <span className="fv-uitleg">{taal(f.uitleg)}</span>}
                 {gekozen?.id === f.id && <pre className="fv-code">{codeVan(f, i18n.language)}</pre>}
               </button>
             ))}

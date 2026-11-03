@@ -32,6 +32,7 @@ er toen is ingevoegd.
 | `voorbeelden[].naam`, `uitleg` | in `nl` en `en`; de naam past op een smal paneel |
 | `voorbeelden[].bron` | herkomst, bijvoorbeeld `NEN-EN 1993-1-1 6.2.5` |
 | `voorbeelden[].soort` | `grafiek` of `tekening`, voor het icoon; anders weglaten |
+| `voorbeelden[].beeld` | de schets uit `formuleBeeld.ts` die erbij hoort; een onbekende naam geeft geen schets |
 | `voorbeelden[].nl`, `en` | de bladen, relatief aan `library/` |
 
 Een nieuw voorbeeld of een nieuwe groep vraagt geen nieuwe app, zolang `formaat` gelijk

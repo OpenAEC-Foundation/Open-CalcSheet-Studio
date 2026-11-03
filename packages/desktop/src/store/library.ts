@@ -60,6 +60,7 @@ function isRegel(x: unknown, groepen: Set<string>): x is IndexRegel {
     && (r.uitleg === undefined || isTekst(r.uitleg))
     && (r.projectvariabelen === undefined || isTekstLijst(r.projectvariabelen))
     && isSoort(r.soort)
+    && (r.beeld === undefined || (typeof r.beeld === "string" && ID.test(r.beeld)))
     && typeof r.nl === "string" && PAD.test(r.nl)
     && typeof r.en === "string" && PAD.test(r.en);
 }

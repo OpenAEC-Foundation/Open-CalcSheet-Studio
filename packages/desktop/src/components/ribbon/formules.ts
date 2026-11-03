@@ -69,6 +69,8 @@ export interface Formule {
   library?: string;
   /** Het voorbeeld tekent ook iets; bepaalt het icoon in de Library. */
   soort?: "grafiek" | "tekening";
+  /** Welk plaatje erbij hoort (formuleBeeld.ts), als dat niet het plaatje van `id` is. */
+  beeld?: string;
 }
 
 /** Regels van een fragment, onder elkaar. */

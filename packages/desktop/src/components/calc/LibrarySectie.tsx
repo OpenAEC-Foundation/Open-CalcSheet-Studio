@@ -10,6 +10,7 @@ import { werkLibraryBij } from "../../store/libraryLaden";
 import Icoon from "../Icoon";
 import FormuleVenster from "../ribbon/FormuleVenster";
 import { codeVan, type Formule, type Tekst } from "../ribbon/formules";
+import { formuleBeeld } from "../ribbon/formuleBeeld";
 import { nieuwBladMetFormule, voegFormuleIn } from "../ribbon/formuleInvoegen";
 import { schoonUitwerking } from "./uitwerkingOpschonen";
 import "katex/dist/katex.min.css";
@@ -141,6 +142,7 @@ function VoorbeeldVak({ f, anker, onSluit }: { f: Formule; anker: HTMLElement | 
 
   const { html, fout } = useMemo(() => rekenDoor(codeVan(f, i18n.language), scope), [f, i18n.language, scope]);
   const inhoud = useMemo(() => ({ __html: html }), [html]);
+  const plaatje = useMemo(() => formuleBeeld(f), [f]);
 
   return createPortal(
     <div className="lib-vak" ref={vak} role="dialog" aria-label={taal(f.naam)} style={plek}>
@@ -150,6 +152,7 @@ function VoorbeeldVak({ f, anker, onSluit }: { f: Formule; anker: HTMLElement | 
           <Icoon id="ui.close" />
         </button>
       </div>
+      {plaatje && <div className="lib-vak-beeld" dangerouslySetInnerHTML={{ __html: plaatje }} />}
       {/* Papier, net als de uitwerking: in elk thema licht. */}
       <div className="lib-papier calc-preview-content" data-oa-theme="light">
         {fout ? <p className="calc-text">{t("rekenfout", { fout })}</p> : <div dangerouslySetInnerHTML={inhoud} />}

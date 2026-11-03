@@ -29,6 +29,13 @@
   scrollbar-width: thin;
 }
 
+.lib-vak-beeld {
+  flex-shrink: 0;
+  width: 176px;
+  margin: 6px auto 0;
+  color: var(--theme-text);
+}
+
 .lib-melding {
   margin: 0;
   padding: 4px 10px;

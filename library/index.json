@@ -50,6 +50,7 @@
         "nl": "Van sterkteklasse naar rekenwaarde, met het spanning-rekdiagram waarmee het beton op druk wordt gerekend.",
         "en": "From strength class to design value, with the stress-strain diagram used for concrete in compression."
       },
+      "beeld": "en1992-fcd",
       "nl": "ec2/rekenwaarden.nl.cpd",
       "en": "ec2/rekenwaarden.en.cpd"
     },
@@ -67,6 +68,7 @@
         "nl": "Horizontaal evenwicht geeft de drukzone, de hefboomsarm geeft de capaciteit. De tekening volgt de invoer: verander het aantal staven en hij rekent mee.",
         "en": "Horizontal equilibrium gives the compression zone, the lever arm gives the resistance. The drawing follows the input: change the number of bars and it recalculates."
       },
+      "beeld": "en1992-momentcapaciteit-rechthoek",
       "nl": "ec2/momentcapaciteit.nl.cpd",
       "en": "ec2/momentcapaciteit.en.cpd"
     },
@@ -83,6 +85,7 @@
         "nl": "Andersom gerekend: uit het moment volgt de wapening, en het blad kiest zelf het aantal staven.",
         "en": "The other way round: the moment gives the reinforcement, and the sheet picks the number of bars itself."
       },
+      "beeld": "en1992-buigwapening-rechthoek",
       "nl": "ec2/buigwapening.nl.cpd",
       "en": "ec2/buigwapening.en.cpd"
     },
@@ -99,6 +102,7 @@
         "nl": "Wat de balk zonder dwarskrachtwapening opneemt, met de aanbevolen waarden en de ondergrens.",
         "en": "The shear the beam resists without shear reinforcement, with the recommended values and the lower bound."
       },
+      "beeld": "en1992-dwarskracht-zonder-wapening",
       "nl": "ec2/dwarskracht.nl.cpd",
       "en": "ec2/dwarskracht.en.cpd"
     },
@@ -116,6 +120,7 @@
         "nl": "De hoek van de drukdiagonaal is een keuze: een schuinere diagonaal geeft de beugels meer capaciteit en het beton minder. De grafiek laat die afweging zien.",
         "en": "The angle of the compression strut is a choice: a flatter strut gives the links more capacity and the concrete less. The chart shows that trade-off."
       },
+      "beeld": "en1992-dwarskrachtwapening",
       "nl": "ec2/beugels.nl.cpd",
       "en": "ec2/beugels.en.cpd"
     },
@@ -132,6 +137,7 @@
         "nl": "Een IPE 300 met vier boutgaten: bij trek telt de kleinste van de bruto en de netto doorsnede, bij druk de bruto doorsnede.",
         "en": "An IPE 300 with four bolt holes: in tension the lower of the gross and the net section governs, in compression the gross section."
       },
+      "beeld": "en1993-trek",
       "nl": "ec3/normaalkracht.nl.cpd",
       "en": "ec3/normaalkracht.en.cpd"
     },
@@ -149,6 +155,7 @@
         "nl": "Eerst de doorsnedeklasse uit de slankheid van lijf en flens, dan de weerstand. De tekening toont het profiel op schaal met de plastische spanningen.",
         "en": "First the section class from the slenderness of web and flange, then the resistance. The drawing shows the section to scale with the plastic stresses."
       },
+      "beeld": "en1993-buiging",
       "nl": "ec3/moment.nl.cpd",
       "en": "ec3/moment.en.cpd"
     },
@@ -165,6 +172,7 @@
         "nl": "Het afschuifoppervlak van een gewalst profiel en de plastische capaciteit, plus twee vervolgvragen: plooit het lijf en moet de momentcapaciteit omlaag?",
         "en": "The shear area of a rolled section and the plastic resistance, plus two follow-up questions: does the web buckle and must the moment resistance be reduced?"
       },
+      "beeld": "en1993-dwarskracht",
       "nl": "ec3/dwarskracht.nl.cpd",
       "en": "ec3/dwarskracht.en.cpd"
     },
@@ -182,6 +190,7 @@
         "nl": "Een HEB 200 om de zwakke as. De reductiefactor staat als eigen functie in het blad, en dezelfde functie tekent alle vijf de knikkrommen.",
         "en": "An HEB 200 about the minor axis. The reduction factor is a function in the sheet, and the same function draws all five buckling curves."
       },
+      "beeld": "en1993-knik",
       "nl": "ec3/knik.nl.cpd",
       "en": "ec3/knik.en.cpd"
     },
@@ -199,6 +208,7 @@
         "nl": "IPE 300 met vorkopleggingen en een verdeelde last op het dwarskrachtmiddelpunt; het kritieke moment volgt uit de elastische stabiliteitstheorie. Alles is een functie van de vrije lengte, dus de grafiek toont hoe ver de ligger zonder steun kan.",
         "en": "IPE 300 with fork supports and a distributed load at the shear centre; the critical moment comes from elastic stability theory. Everything is a function of the free length, so the chart shows how far the beam can span unbraced."
       },
+      "beeld": "en1993-kip-algemeen",
       "nl": "ec3/kip.nl.cpd",
       "en": "ec3/kip.en.cpd"
     },
@@ -216,6 +226,7 @@
         "nl": "De schuifspanning over de hoogte van een I-doorsnede uit platen: klein in de flenzen, groot en bijna constant in het lijf, met een sprong op de overgang.",
         "en": "The shear stress over the depth of an I-section made of plates: small in the flanges, large and almost constant in the web, with a jump at the transition."
       },
+      "beeld": "schuifspanning-algemeen",
       "nl": "vandepitte/schuifspanning.nl.cpd",
       "en": "vandepitte/schuifspanning.en.cpd"
     },
@@ -233,6 +244,7 @@
         "nl": "Het momentenvlak M/EI wordt de belasting op een hulpligger: de reactie daarvan is de hoekverdraaiing, het moment de doorbuiging. Het blad integreert dat numeriek en vergelijkt met de bekende formule.",
         "en": "The M/EI diagram becomes the load on an auxiliary beam: its reaction is the rotation, its moment the deflection. The sheet integrates this numerically and compares it with the known formula."
       },
+      "beeld": "ligger-twee-steunpunten-q",
       "nl": "vandepitte/mohr.nl.cpd",
       "en": "vandepitte/mohr.en.cpd"
     },
@@ -250,6 +262,7 @@
         "nl": "De kritieke kracht bij de vier klassieke opleggingen, en de hyperbool van Euler die de vloeigrens snijdt bij een bepaalde slankheid.",
         "en": "The critical force for the four classic end conditions, and the Euler hyperbola that crosses the yield strength at a certain slenderness."
       },
+      "beeld": "euler-knikkracht",
       "nl": "vandepitte/euler.nl.cpd",
       "en": "vandepitte/euler.en.cpd"
     },
@@ -267,6 +280,7 @@
         "nl": "Twee gevallen op dezelfde ligger: een puntmassa in het midden en een verdeelde massa. De frequentie volgt uit stijfheid en massa, of uit de statische doorbuiging.",
         "en": "Two cases on the same beam: a point mass at midspan and a distributed mass. The frequency follows from stiffness and mass, or from the static deflection."
       },
+      "beeld": "eigenfrequentie-ligger-twee-steunpunten",
       "nl": "vandepitte/eigenfrequentie.nl.cpd",
       "en": "vandepitte/eigenfrequentie.en.cpd"
     },
@@ -283,6 +297,7 @@
         "nl": "De doorbuiging aan het eind van een uitkraging: de werkelijke momenten en dwarskrachten maal die van een eenheidslast op die plek. Zo tel je ook de dwarskrachtvervorming mee.",
         "en": "The deflection at the end of a cantilever: the actual moments and shear forces times those of a unit load at that point. That also picks up the shear deformation."
       },
+      "beeld": "uitkraging-q",
       "nl": "vandepitte/virtuele-arbeid.nl.cpd",
       "en": "vandepitte/virtuele-arbeid.en.cpd"
     }
