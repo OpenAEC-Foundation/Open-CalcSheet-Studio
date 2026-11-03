@@ -1,0 +1,102 @@
+name: Release-concept
+
+# Zet de artifacts van desktop-ondertekend.yml als concept-release klaar, met
+# SHA256SUMS.txt en een handtekening daarop. Een concept is niet openbaar en heeft
+# nog geen tag. Publiceren gebeurt door de aanroeper, na release-controleren.yml.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'De tag van het concept'
+        type: string
+        required: true
+      sha:
+        description: 'De commit waar de tag op komt'
+        type: string
+        required: true
+      versie:
+        description: 'Het nummer in de bestandsnamen'
+        type: string
+        required: true
+      naam:
+        description: 'De titel van de release'
+        type: string
+        required: true
+      tekst:
+        description: 'De tekst van de release'
+        type: string
+        required: true
+      prerelease:
+        type: boolean
+        default: false
+    outputs:
+      release_id:
+        description: 'Het ID van het concept'
+        value: ${{ jobs.concept.outputs.release_id }}
+
+permissions:
+  contents: read
+
+jobs:
+  concept:
+    name: Concept-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.maak.outputs.release_id }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.sha }}
+
+      - name: Download de artifacts
+        uses: actions/download-artifact@v5
+        with:
+          pattern: open-calcsheet-studio-*
+          merge-multiple: true
+          path: artefacten
+
+      - name: Zet de bestanden klaar
+        env:
+          VERSIE: ${{ inputs.versie }}
+        run: bash scripts/release/assets-klaarzetten.sh artefacten assets "$VERSIE"
+
+      - name: Sign checksums
+        env:
+          OPENAEC_GPG_PRIVATE_KEY: ${{ secrets.OPENAEC_GPG_PRIVATE_KEY }}
+          OPENAEC_GPG_PASSPHRASE: ${{ secrets.OPENAEC_GPG_PASSPHRASE }}
+          OPENAEC_GPG_FINGERPRINT: ${{ vars.OPENAEC_GPG_FINGERPRINT }}
+        run: bash scripts/release/linux-ondertekenen.sh assets
+
+      - name: Controleer de handtekeningen
+        run: bash scripts/release/linux-controleren.sh assets
+
+      # Een eerder mislukte poging met dezelfde tag laat een concept achter. Drafts
+      # kunnen weg zonder gevolgen; een gepubliceerde release wordt niet aangeraakt.
+      - name: Maak het concept
+        id: maak
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          SHA: ${{ inputs.sha }}
+          NAAM: ${{ inputs.naam }}
+          TEKST: ${{ inputs.tekst }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            --jq ".[] | select(.draft and .tag_name == \"$TAG\") | .id" |
+            while read -r id; do gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"; done
+          OPTIES=()
+          if [ "$PRERELEASE" = "true" ]; then OPTIES+=(--prerelease); fi
+          printf '%s\n' "$TEKST" > release-tekst.md
+          gh release create "$TAG" assets/* --draft --target "$SHA" --title "$NAAM" \
+            --notes-file release-tekst.md "${OPTIES[@]}"
+          ID="$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            --jq "[.[] | select(.draft and .tag_name == \"$TAG\")] | map(.id) | .[]")"
+          test "$(wc -l <<<"$ID")" -eq 1 || { echo "::error::verwachtte één concept voor $TAG"; exit 1; }
+          echo "release_id=$ID" >> "$GITHUB_OUTPUT"

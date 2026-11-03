@@ -321,6 +321,7 @@ export function Kop({ titel, badge, staat }: { titel: string; badge: ReactNode; 
 export function UitkomstKop({ titel, uitkomst }: { titel: string; uitkomst: BladUitkomst | null }) {
   const { t } = useTranslation("beelden");
   const r = uitkomst?.resultaat;
+  if (r?.nietGetoetst) return <Kop titel={titel} badge={t("kit.nietGetoetst")} />;
   if (!r || (r.uc === null && r.voldoet === null)) return <Kop titel={titel} badge="—" />;
   return (
     <Kop

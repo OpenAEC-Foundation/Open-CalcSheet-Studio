@@ -22,6 +22,12 @@ export interface Resultaat {
   uc: number | null;
   /** Het eindoordeel van het blad; null als het blad er geen geeft. */
   voldoet: boolean | null;
+  /**
+   * Het blad zegt zelf dat het niet is getoetst: een verplichte toets ontbreekt, de
+   * invoer is ongeldig of het geval valt buiten het blad. `voldoet` is dan null. Zo is
+   * dat te onderscheiden van een blad dat gewoon geen oordeel kent.
+   */
+  nietGetoetst?: boolean;
 }
 
 /** Twee decimalen in de notatie van de taal van de app; een oneindige UC als ∞. */
@@ -85,7 +91,12 @@ export function leesResultaat(nodes: EvaluatedNode[], naam: string): Resultaat {
   } else if (uc !== null) {
     voldoet = uc <= 1;
   }
-  return { titel, norm, uc, voldoet };
+  const r: Resultaat = { titel, norm, uc, voldoet };
+  // Alleen zonder slotzin: "Maatgevende UC … voldoet niet" gaat altijd voor.
+  if (slot < 0 && /Eindoordeel: (?:ongeldige invoer, )?niet getoetst|Overall result: (?:invalid input, )?not verified/.test(tekst)) {
+    r.nietGetoetst = true;
+  }
+  return r;
 }
 
 /**

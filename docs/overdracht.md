@@ -20,7 +20,7 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 ## 2. Afspraken in de bladen
 
 - **Tekst en rekenen**: regels met `'` zijn tekst/HTML, `#if/#else if/#else/#end if`, `#hide/#show`, `@select` voor keuzelijsten, `x = ?` voor invoer. mathjs kan geen tekst met `+` samenvoegen: gebruik `#if`-takken of losse tekstregels.
-- **Slotregel**: `Maatgevende UC = … → … voldoet / voldoet niet`. `bladResultaat.leesResultaat` leest daaruit UC en oordeel voor de rapportkop. Kan het blad niet toetsen (onvolledige invoer), dan geen UC en een duidelijke melding; nooit een onterecht 'voldoet'.
+- **Slotregel**: `Maatgevende UC = … → … voldoet / voldoet niet`. `bladResultaat.leesResultaat` leest daaruit UC en oordeel voor de rapportkop. Kan het blad niet toetsen (onvolledige invoer), dan geen UC en een duidelijke melding; nooit een onterecht 'voldoet'. De slotregel `Eindoordeel: niet getoetst` (Engels `Overall result: not verified`) maakt dat zichtbaar: `Resultaat.nietGetoetst`, in de kop, op de afdruk en in de samenvatting op het voorblad.
 - **Uitdraai kaal houden** (afdruk en rapportbijlage): koppen, invoer, formules met ingevulde waarden, tabellen, lijnen, UC's. Geen uitleg op papier.
   - Een prozaregel die helemaal cursief staat (`'<i>…</i>`) is uitleg: de kern geeft hem de klasse `calc-uitleg` en de afdruk laat hem weg. Een toelichting achter een formule langer dan 60 tekens ook.
   - `<i class="ook-afdruk">…</i>` houdt een cursieve regel op papier: gebruik dat voor *niet getoetst*, aannames en *buiten dit blad*.
@@ -59,8 +59,9 @@ cd packages/desktop && npx tsc --noEmit -p .
 
 ## 5. Bouwen en uitbrengen
 
-- Versie (jaar.week.volgnummer) op zeven plekken: `packages/desktop/package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, de desktop-regel in `package-lock.json`, de app-regel in `src-tauri/Cargo.lock`, en de versieregel in `src/i18n/locales/{nl,en}/common.json`.
-- Installer: `npm run tauri build` in `packages/desktop`. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`).
+- Versie (jaar.week.volgnummer): zetten met `node scripts/versie.mjs zet JJJJ.W.N`, niet met de hand. `check-versie.mjs` zakt als de velden uit elkaar lopen.
+- Uitbrengen en ondertekenen: zie [ondertekening.md](ondertekening.md). Een release start met *Run workflow* op `release.yml`; die kiest het nummer, ondertekent en publiceert pas als alle controles groen zijn.
+- Installer: `npm run tauri build` in `packages/desktop`; lokaal zonder ondertekening. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`).
 - Draait de gebouwde app nog, dan houdt die `target/release/WebView2Loader.dll` vast en faalt de build: bouw dan met een eigen `CARGO_TARGET_DIR` (bijvoorbeeld `src-tauri/target-installer`, niet in git).
 
 ## 6. Modules
@@ -71,11 +72,13 @@ Status in de catalogus: *gereed* (gecalibreerd op referentiebladen), *controlere
 |---|---|
 | Algemeen | Ligger (hout of staal: twee tot vier steunpunten of een uitkraging, overstekken, inklemming, gerberscharnieren; tot zes lasten; omhullende, kip, doorbuiging) |
 | Hout | Balklaag (houten vloerbalken: enkelvoudige ligger, overstek, twee velden, raveelbalk; vijf belastinggevallen, omhullende M- en V-lijn, trillingen, oplegdruk, kip) |
+| Beton | Tweepaalspoer (staafwerkmodel; knopen, trekband, splijtkrachten, verankering, scheurwijdte, detaillering; tekening met de gekozen staven) |
 | Bibliotheek | CalcPAD-syntaxdemo |
 
 De toetsing van de balklaag staat in [balklaag-toetsing.md](balklaag-toetsing.md),
 de bewuste splitspunten tussen referentie-uitwerking en norm in
-[afwijkingen-referentie.md](afwijkingen-referentie.md).
+[afwijkingen-referentie.md](afwijkingen-referentie.md). Toepassingsgebied en toetsset
+van de tweepaalspoer staan in [tweepaalspoer-toetsing.md](tweepaalspoer-toetsing.md).
 
 Een nieuwe module bestaat uit een rekenblad in `packages/desktop/src/templates`
 (geregistreerd in `index.ts`), een regel in de catalogus (`projectTree.ts`), zo

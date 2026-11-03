@@ -66,6 +66,7 @@ function WerkPaneel({ titel, info, papier, children }: { titel: string; info?: R
 function UcInfo({ blad }: { blad: string }) {
   const { t, i18n } = useTranslation("werkruimte");
   const r = useBladResultaat(blad);
+  if (r?.nietGetoetst) return <span className="werk-uc">{t("browser.nietGetoetst")}</span>;
   if (!r || r.uc === null) return null;
   const voldoet = r.voldoet ?? r.uc <= 1;
   const getal = Number.isFinite(r.uc)

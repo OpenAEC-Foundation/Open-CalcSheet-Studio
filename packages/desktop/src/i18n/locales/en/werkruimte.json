@@ -44,6 +44,7 @@
     "verwijderen": "Remove",
     "verwijderenVraag": "Remove \"{{naam}}\" from the project?",
     "bladen": "Sheets",
+    "nietGetoetst": "Not verified",
     "ucVoldoet": "Governing UC {{uc}} — passes",
     "ucVoldoetNiet": "Governing UC {{uc}} — does not pass",
     "gegevensToevoegen": "Add project data",
@@ -54,11 +55,13 @@
     "groepen": {
       "cat-algemeen": "General",
       "cat-hout": "Timber",
+      "cat-beton": "Concrete",
       "calcpad-samples": "Examples"
     },
     "modules": {
       "ligger": "Beam (timber or steel)",
       "balklaag": "Timber joist floor",
+      "tweepaalspoer": "Two-pile cap (reinforced concrete)",
       "calcpad-demo": "Open CalcSheet Studio demo"
     }
   },

@@ -14,3 +14,4 @@ personen, logo's of watermerken. Illustratief, geen uitvoeringsdetail.
 |---|---|
 | `ligger` | Vrij opgelegde ligger met gelijkmatig verdeelde belasting |
 | `balklaag` | Houten balklaag met vloerplaat in doorsnede |
+| `tweepaalspoer` | Poer op twee palen met kolom, wapeningskorf zichtbaar. Dit beeld is niet gegenereerd maar getekend (SVG naar WebP) in dezelfde stijl. |

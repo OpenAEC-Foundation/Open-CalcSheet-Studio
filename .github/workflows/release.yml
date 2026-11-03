@@ -1,5 +1,14 @@
 name: Build and Release
 
+# Twee manieren om een release te starten, allebei vanaf main:
+#   - Run workflow, zonder invoer: het volgende nummer voor deze week. De workflow
+#     zet het overal, commit dat op main en bouwt die commit.
+#   - Een tag vJJJJ.W.N pushen: de bestanden op die commit moeten dat nummer al dragen
+#     (node scripts/versie.mjs zet JJJJ.W.N), anders stopt de run voordat er iets
+#     gebouwd wordt.
+# Bouwen, ondertekenen en controleren gaan eerst; pas als dat op elk platform groen
+# is, ook op de bestanden van het concept, wordt de release openbaar.
+
 on:
   push:
     tags:
@@ -7,177 +16,149 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., v1.0.0)'
-        required: true
-        default: 'v0.1.0'
+        description: 'Versie JJJJ.W.N zonder v; leeg is het volgende nummer voor deze week'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+# Twee releases tegelijk zouden hetzelfde volgnummer kunnen kiezen.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  create-release:
-    permissions:
-      contents: write
+  voorbereiden:
+    name: Nummer bepalen
     runs-on: ubuntu-latest
-    outputs:
-      release_id: ${{ steps.create-release.outputs.result }}
-      version: ${{ steps.get-version.outputs.version }}
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Get version
-        id: get-version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create release
-        id: create-release
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const version = '${{ steps.get-version.outputs.version }}';
-            const { data } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: version,
-              name: `Open CalcSheet Studio ${version}`,
-              body: `## What's New in ${version}\n\nOpen desktop app for structural calculations using CalcPAD syntax, with direct IFC 4x3 / IFCX export.\n\n### Downloads\n- **Windows (System)**: Download the \`*_x64-setup.exe\` installer for system-wide installation (requires admin)\n- **Windows (User)**: Download the \`*_x64_user-setup.exe\` installer for current user only (no admin required)\n- **macOS**: Download the \`.dmg\` file (universal - supports Intel and Apple Silicon)\n- **Linux**: Download the \`.deb\` package or \`.AppImage\``,
-              draft: true,
-              prerelease: false
-            });
-            return data.id;
-
-  build:
-    needs: create-release
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'ubuntu-22.04'
-            args: ''
-            target: 'linux'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
-            target: 'macos'
-          - platform: 'windows-latest'
-            args: ''
-            target: 'windows-system'
-          - platform: 'windows-latest'
-            args: ''
-            target: 'windows-user'
-
-    runs-on: ${{ matrix.platform }}
-
+    outputs:
+      versie: ${{ steps.nummer.outputs.versie }}
+      tag: ${{ steps.nummer.outputs.tag }}
+      sha: ${{ steps.nummer.outputs.sha }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 20
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Rust targets (macOS universal)
-        if: matrix.target == 'macos'
-        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
-
-      - name: Install dependencies (Ubuntu only)
-        if: matrix.target == 'linux'
+      # Invoer en tagnaam zijn vrije tekst en gaan daarom via env, nooit via ${{ }}
+      # in het script. versie.mjs laat alleen JJJJ.W.N door.
+      - name: Bepaal en controleer het nummer
+        id: nummer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INVOER: ${{ inputs.version }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "::error::Een release start vanaf main, niet vanaf $GITHUB_REF."
+              exit 1
+            fi
+            VERSIE="${INVOER:-$(node scripts/versie.mjs volgende)}"
+            if [ -n "$(git ls-remote --tags origin "refs/tags/v$VERSIE")" ]; then
+              echo "::error::De tag v$VERSIE bestaat al."
+              exit 1
+            fi
+            node scripts/versie.mjs zet "$VERSIE"
+          else
+            VERSIE="${GITHUB_REF_NAME#v}"
+          fi
+          node scripts/versie.mjs controleer "$VERSIE"
 
-      - name: Install workspace dependencies
-        run: npm install
-
-      - name: Build core package
-        run: npm run build --workspace=@ifc-calc/core
-
-      - name: Set user install mode (Windows user installer)
-        if: matrix.target == 'windows-user'
-        shell: pwsh
-        working-directory: packages/desktop
-        run: |
-          $conf = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
-          $conf.bundle.windows.nsis.installMode = "currentUser"
-          $conf | ConvertTo-Json -Depth 10 | Set-Content src-tauri/tauri.conf.json
-
-      - name: Pre-build cargo (Windows) to materialize WebView2Loader.dll
-        if: contains(matrix.target, 'windows')
-        shell: pwsh
-        working-directory: packages/desktop/src-tauri
-        run: |
-          cargo build --release
-          $dll = Get-ChildItem -Path 'target/release/build' -Recurse -Filter 'WebView2Loader.dll' -ErrorAction SilentlyContinue |
-            Where-Object { $_.FullName -like '*\x64\*' } |
-            Select-Object -First 1
-          if ($dll) {
-            Copy-Item -Path $dll.FullName -Destination 'target/release/WebView2Loader.dll' -Force
-            Write-Output "Copied WebView2Loader.dll from $($dll.FullName)"
-          }
-          if (-not (Test-Path 'target/release/WebView2Loader.dll')) {
-            Write-Error "WebView2Loader.dll missing from target/release - NSIS bundle will not include it"
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/v$VERSIE" --silent 2>/dev/null; then
+            echo "::error::Release v$VERSIE bestaat al; die wordt niet vervangen."
             exit 1
-          }
+          fi
 
-      - name: Build Tauri app (with release upload)
-        if: matrix.target != 'windows-user'
-        uses: tauri-apps/tauri-action@action-v0.6.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: packages/desktop
-          args: ${{ matrix.args }}
-          releaseId: ${{ needs.create-release.outputs.release_id }}
-          includeUpdaterJson: false
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit --all --message "Versie $VERSIE"
+            git push origin HEAD:main
+          fi
 
-      - name: Build Tauri app (user installer)
-        if: matrix.target == 'windows-user'
-        uses: tauri-apps/tauri-action@action-v0.6.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: packages/desktop
-          args: ${{ matrix.args }}
+          {
+            echo "versie=$VERSIE"
+            echo "tag=v$VERSIE"
+            echo "sha=$(git rev-parse 'HEAD^{commit}')"
+          } >> "$GITHUB_OUTPUT"
+          echo "Release v$VERSIE vanaf $(git rev-parse --short HEAD)"
 
-      - name: Upload user installer to release
-        if: matrix.target == 'windows-user'
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $VERSION = "${{ needs.create-release.outputs.version }}"
-          $NSIS_DIR = "packages/desktop/src-tauri/target/release/bundle/nsis"
-          $EXE = Get-ChildItem "$NSIS_DIR/*-setup.exe" | Select-Object -First 1
-          $NEW_NAME = $EXE.Name -replace '_x64-setup\.exe$', '_x64_user-setup.exe'
-          $NEW_PATH = Join-Path $EXE.DirectoryName $NEW_NAME
-          Rename-Item $EXE.FullName $NEW_PATH
-          gh release upload $VERSION "$NEW_PATH" --clobber --repo "${{ github.repository }}"
-          Write-Host "Uploaded user installer: $NEW_NAME"
+  bouwen:
+    needs: voorbereiden
+    uses: ./.github/workflows/desktop-ondertekend.yml
+    with:
+      ref: ${{ needs.voorbereiden.outputs.sha }}
+      versie: ${{ needs.voorbereiden.outputs.versie }}
+    secrets: inherit
 
-  publish-release:
+  concept:
+    needs: [voorbereiden, bouwen]
     permissions:
       contents: write
-    runs-on: ubuntu-latest
-    needs: [create-release, build]
+    uses: ./.github/workflows/release-concept.yml
+    with:
+      tag: ${{ needs.voorbereiden.outputs.tag }}
+      sha: ${{ needs.voorbereiden.outputs.sha }}
+      versie: ${{ needs.voorbereiden.outputs.versie }}
+      naam: Open CalcSheet Studio ${{ needs.voorbereiden.outputs.tag }}
+      tekst: |
+        ## What's New in ${{ needs.voorbereiden.outputs.tag }}
 
+        Open desktop app for structural calculations using CalcPAD syntax, with direct IFC 4x3 / IFCX export.
+
+        ### Downloads
+        - **Windows (System)**: Download the `*_x64-setup.exe` installer for system-wide installation (requires admin)
+        - **Windows (User)**: Download the `*_x64_user-setup.exe` installer for current user only (no admin required)
+        - **macOS**: Download the `.dmg` file (universal - supports Intel and Apple Silicon)
+        - **Linux**: Download the `.deb` package or `.AppImage`
+
+        ### Verification
+        Windows installers carry an Authenticode signature with timestamp, the macOS app and `.dmg` a Developer ID signature with a notarization ticket. Linux packages and `SHA256SUMS.txt` have detached OpenPGP signatures (`.asc`); the public key is `openaec-release-key.asc`, fingerprint `13F6D414ADEE4ED4CD09AC60601D86C93C504D29`. How to verify: [docs/ondertekening.md](https://github.com/${{ github.repository }}/blob/main/docs/ondertekening.md).
+    secrets: inherit
+
+  controleren:
+    needs: [voorbereiden, concept]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-controleren.yml
+    with:
+      tag: ${{ needs.voorbereiden.outputs.tag }}
+      sha: ${{ needs.voorbereiden.outputs.sha }}
+    secrets: inherit
+
+  publiceren:
+    name: Publiceren
+    needs: [voorbereiden, concept, controleren]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Publish release
-        uses: actions/github-script@v8
+      - name: Publiceer de release
         env:
-          release_id: ${{ needs.create-release.outputs.release_id }}
-        with:
-          script: |
-            github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: process.env.release_id,
-              draft: false,
-              prerelease: false
-            });
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ needs.concept.outputs.release_id }}
+        run: |
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            -F draft=false -F prerelease=false -f make_latest=true \
+            --jq '"Gepubliceerd: " + .html_url'
+
+  # De werkelijk aangeboden downloads nog een keer. Dit kan niets meer tegenhouden,
+  # maar een rode run hier betekent dat er iets mis is met wat openbaar staat.
+  na-publicatie:
+    needs: [voorbereiden, publiceren]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-controleren.yml
+    with:
+      tag: ${{ needs.voorbereiden.outputs.tag }}
+      sha: ${{ needs.voorbereiden.outputs.sha }}
+    secrets: inherit
