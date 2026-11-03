@@ -144,7 +144,8 @@ afdrukbaar document: een voorblad uit de projectgegevens, een inhoudsopgave,
 daarna elk blad op een eigen pagina — met **het parametrische beeld** erboven en
 de uitwerking eronder. Drie balklagen leveren dus drie hoofdstukken op, niet
 alleen degene die toevallig openstond. In de printdialoog kies je "Opslaan als
-PDF".
+PDF". De knop Rapport slaat die dialoog in de app op Windows over: je kiest een
+bestandsnaam en de PDF staat er.
 
 Met **Voorbeeld** zie je diezelfde weergave op het scherm. Dat is geen luxe: de
 afdrukopmaak hangt aan een klasse (`html.afdrukmodus`) in plaats van aan

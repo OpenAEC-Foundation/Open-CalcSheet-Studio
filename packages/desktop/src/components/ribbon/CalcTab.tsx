@@ -30,6 +30,7 @@ import { useModuleKiezer } from "../../store/moduleKiezer";
 import { useEditorViewStore } from "../../store/editorViewStore";
 import { voegLeegSpreadsheetToe } from "../calc/spreadsheetBlad";
 import { voegLeegMarkdownToe } from "../calc/markdownBlad";
+import { kanRapportPdfSchrijven, kiesRapportPdf } from "../../tauri/rapportPdf";
 
 interface CalcTabProps {
   /** Opent de instellingen, eventueel op een bepaalde tab ("about"). */
@@ -54,6 +55,7 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
   const kanOngedaan = useProjectStore((s) => s.verleden.length > 0);
   const kanOpnieuw = useProjectStore((s) => s.toekomst.length > 0);
   const afdrukken = usePrintStore((s) => s.afdrukken);
+  const rapportNaarPdf = usePrintStore((s) => s.rapportNaarPdf);
   const toonVoorbeeld = usePrintStore((s) => s.toonVoorbeeld);
   const activeId = useProjectStore((s) => s.activeId);
   const openModuleKiezer = useModuleKiezer((s) => s.openen);
@@ -100,16 +102,29 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
    * over, dus daar komt geen enkele tekening uit. Bovendien is die engine een
    * pad-afhankelijkheid naar de `openaec-reports`-repo; zonder die repo is de
    * app niet eens te bouwen. Deze weg print exact wat de uitwerking toont —
-   * formules, tekeningen en afbeeldingen — en in de printdialoog kies je
-   * "Opslaan als PDF". Zie docs/backlog.md.
+   * formules, tekeningen en afbeeldingen. Zie docs/backlog.md.
+   *
+   * In de app op Windows is dat één klik plus een bestandsnaam: de PDF komt er
+   * zonder printdialoog (tauri/rapportPdf.ts). Elders opent de printdialoog en
+   * kies je daar "Opslaan als PDF".
    *
    * Ook zonder rekenbladen: dan is het rapport een uitgangspuntendocument,
    * zonder hoofdstuk Berekeningen en zonder bijlage A (rapport/opzet.ts).
    */
-  const handlePrint = useCallback(() => {
+  const handlePrint = useCallback(async () => {
+    try {
+      if (await kanRapportPdfSchrijven()) {
+        const { projectNaam, bestandspad } = useProjectStore.getState();
+        const pad = await kiesRapportPdf(projectNaam, bestandspad);
+        if (pad) rapportNaarPdf(pad);
+        return;
+      }
+    } catch (err) {
+      console.warn("Geen bestandsnaam gekozen; de printdialoog neemt het over:", err);
+    }
     // Het hele project is het rapport: voorblad, hoofdstukken en bijlage A.
     afdrukken(null, "rapport");
-  }, [afdrukken]);
+  }, [afdrukken, rapportNaarPdf]);
 
   /** Alleen de berekening die openstaat, als losse uitdraai met een titelblok. */
   const bladOpen = exemplaren.some((e) => e.id === activeId);

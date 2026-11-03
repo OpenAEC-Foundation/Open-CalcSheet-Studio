@@ -299,7 +299,11 @@
     "ontbreekt": "Dit PDF-blad heeft geen bestand. Kies er een met Vervangen…",
     "vervangen": "Vervangen…",
     "vervangenUitleg": "Een ander PDF-bestand voor dit blad kiezen, bijvoorbeeld een nieuwe export van het FEM-rapport. Naam, plaats en toelichting in het rapport blijven staan.",
-    "nietOpTijd": "De PDF-bladen werden niet op tijd getekend; het afdrukken is afgebroken."
+    "nietOpTijd": "De PDF-bladen werden niet op tijd getekend; het afdrukken is afgebroken.",
+    "opslaanTitel": "Rapport opslaan als PDF",
+    "schrijven": "PDF wordt gemaakt…",
+    "geschreven": "PDF opgeslagen: {{bestand}}",
+    "schrijvenMislukt": "De PDF is niet opgeslagen in {{pad}}. Staat dat bestand open in een ander programma?\n\nDe printdialoog opent nu; daar kun je een andere plek kiezen.\n\nTechnische melding: {{fout}}"
   },
   "spreadsheet": {
     "toevoegen": "Spreadsheet toevoegen",
