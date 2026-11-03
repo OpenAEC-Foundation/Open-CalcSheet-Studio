@@ -12,8 +12,9 @@
  *   van de app    waarden, ping, afdruk, bibliotheek
  *
  * Wat de app ervan aanneemt, staat in `leesBericht` in jsRegels.ts. Alles hier is
- * gemak voor het script, geen beveiliging: de afscherming zit in de sandbox, de CSP
- * en de twee vensters.
+ * gemak voor het script, geen beveiliging: de afscherming zit in de sandbox, de CSP,
+ * de twee vensters en het opstartscript van de app (src-tauri/src/geen_webrtc.js). Of
+ * dat laatste heeft gedraaid, wordt hier nagekeken: anders start de code niet.
  */
 (function () {
   "use strict";
@@ -49,13 +50,18 @@
   ["__TAURI__", "__TAURI_INTERNALS__", "__TAURI_IPC__", "__TAURI_INVOKE__", "ipc", "__ocs"].forEach(function (naam) {
     try { delete window[naam]; } catch (e) { /* niets */ }
   });
-  // WebRTC maakt een verbinding buiten de CSP om, naar elke host. Weg dus, ook met `netwerk=`.
-  ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChannel", "RTCSessionDescription"].forEach(function (naam) {
-    try { delete window[naam]; window[naam] = undefined; } catch (e) { /* niets */ }
+  // WebRTC maakt een verbinding buiten de CSP om, naar elke host, ook met `netwerk=`. Het
+  // opstartscript van de app heeft het hier en in elk ander frame al weggehaald. Staat het
+  // er nog, dan heeft dat script niet gedraaid en is "geen netwerk" niet waar: dan start de
+  // code niet (onderaan). In dit venster gaat het in elk geval weg.
+  var webrtcNamen = Object.getOwnPropertyNames(window).filter(function (naam) { return /^(webkit)?RTC/.test(naam); });
+  webrtcNamen.forEach(function (naam) {
+    try { delete window[naam]; } catch (e) { /* niets */ }
   });
-  // Vanaf nu geen inline script meer. Zo draait er ook niets in een frame dat het script
-  // zelf maakt, en daar zou WebRTC er weer wel zijn: dat frame erft deze regel, en kan een
-  // blob van dit venster niet lezen (een eigen herkomst). De code hieronder komt als blob.
+  // Vanaf nu geen inline script meer. Zo draait er zonder `netwerk=` niets in een frame dat
+  // het script zelf maakt: dat erft deze regel, en kan een blob van dit venster niet lezen
+  // (een eigen herkomst). De code hieronder komt als blob. Script van een host uit `netwerk=`
+  // mag zo'n frame wel laden; daar houdt alleen het opstartscript WebRTC tegen.
   var regel = document.createElement("meta");
   regel.httpEquiv = "Content-Security-Policy";
   regel.content = "script-src blob:" + start.netwerk.map(function (h) { return " https://" + h; }).join("");
@@ -533,7 +539,10 @@
   // Pas als de pagina helemaal geladen is. Een tweede `load` betekent dan altijd dat het
   // script is weggegaan, ook als het dat meteen probeert (jsRegels.ts).
   window.addEventListener("load", function () {
-    if (start.bibliotheken.indexOf("three") >= 0) {
+    if (webrtcNamen.length > 0 && start.webrtcToets !== false) {
+      meldFout("Dit blok start niet: WebRTC is in dit venster niet uitgezet, en daarmee kan een script buiten de afscherming om het netwerk op.");
+      stuur({ soort: "klaar", luistert: false });
+    } else if (start.bibliotheken.indexOf("three") >= 0) {
       new Promise(function (klaar) {
         bibliotheek = klaar;
         stuur({ soort: "vraag-bibliotheek", naam: "three" });

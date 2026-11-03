@@ -53,6 +53,7 @@ cd packages/desktop && npx tsc --noEmit -p .
 
 - Een module heeft een eigen check met handberekeningen (als commentaar bij de verwachting) en vaak een onafhankelijke uitwerking in het script zelf. Verwachtingen alleen aanpassen met een handberekening die aantoont dat de nieuwe waarde juist is.
 - `check-renders.mjs` rekent elk blad met elke keuze uit de keuzelijsten; `check-designerkeuze.mjs` controleert blad↔beeld; `check-blad-bijwerken.mjs` het bijwerken.
+- WebRTC in een `@js`-blok gaat buiten de CSP om. Een opstartscript haalt het uit elk document (`src-tauri/src/geen_webrtc.js`), en zonder dat script start een blok niet. Meten in de echte build, met een luisterpost: `node scripts/proef-js-webrtc.mjs <exe> <map>`; zie de kop van het script. Na een sprong in de versie van WebView2 of Tauri is dit de proef die je opnieuw draait.
 - Afdruk als PDF (dev-server `npm run dev --workspace=@openaec/calcsheet-studio`, poort 3021): `node scripts/rapport-pdf.mjs <project.json> <uit.pdf>`. Voor een proefproject met alleen `templateId`'s: `--beginwaarden`, anders rekenen bladen met een beeld met lege invoer.
 - Prestaties van de rekenkern en de volgende matrixproef: [rekenkern-prestaties.md](rekenkern-prestaties.md). Herhaal de warme meting met `node scripts/bench-rekenkern.mjs` na het bouwen van de core.
 - Werkwijze die fouten vond die de eigen checks misten: na het bouwen van een module rekent een tweede, onafhankelijke controle minstens twee gevallen met de hand na en zoekt gericht naar een onterecht 'voldoet'.

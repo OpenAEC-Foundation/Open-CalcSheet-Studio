@@ -15,7 +15,7 @@
  *      geeft alleen de afgesproken berichten door, van de juiste kant;
  *   5. welke berichten uit het venster worden aangenomen;
  *   6. `calc`: waarden met eenheid, omrekenen, fouten (de omgeving draait hier in jsdom),
- *      en wat de omgeving dichtzet voordat de code begint;
+ *      en wat de omgeving dichtzet voordat de code begint: geen WebRTC, of de code start niet;
  *   7. de opschoning: kwaadaardige tekstregels en SVG gaan weg;
  *   8. wat de bladen gebruiken, blijft: opmaak, SVG met `<symbol>` en `<use>`,
  *      formules, invoervelden en onze eigen blokken;
@@ -24,7 +24,8 @@
  *  10. de sjablonen: de zichtbare tekst van elk blad staat er na de opschoning nog.
  *
  * Wat echt in een browser moet (de CSP, de `frame-src` van de ouder, `window.parent`,
- * opslag, netwerk) staat niet hier: jsdom kent geen sandbox.
+ * opslag, netwerk) staat niet hier: jsdom kent geen sandbox. WebRTC in het echte venster,
+ * met een luisterpost: scripts/proef-js-webrtc.mjs.
  *
  * Draaien:  node scripts/check-js-blok.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -44,6 +45,9 @@ import { magLaden } from "../packages/desktop/src/components/calc/iframeRegels.t
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const looptijd = readFileSync(join(hier, "../packages/desktop/src/components/calc/jsLooptijd.js"), "utf8");
+const geenWebrtc = readFileSync(join(hier, "../packages/desktop/src-tauri/src/geen_webrtc.js"), "utf8");
+const tauriLib = readFileSync(join(hier, "../packages/desktop/src-tauri/src/lib.rs"), "utf8");
+const jsBlokBron = readFileSync(join(hier, "../packages/desktop/src/components/calc/jsBlok.ts"), "utf8");
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -352,20 +356,68 @@ window.__bevroren = Object.isFrozen(calc);
   meld(!/__calcStart/.test(Object.keys(dom.window).join()), "de startgegevens staan niet meer op window");
   dom.window.close();
 
-  // Wat dicht is voordat de code begint, met en zonder netwerk=.
+  // WebRTC gaat buiten de CSP om, en een frame dat het script zelf maakt, heeft het opnieuw.
+  // Daarom haalt een opstartscript het weg uit elk document, en start de code anders niet.
+  // De namen zijn gemeten in WebView2 156; ook een nieuwe naam met RTC moet weg.
+  const RTC_NAMEN = ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChannel", "RTCSessionDescription", "RTCIceCandidate", "RTCIceTransport", "RTCDtlsTransport", "RTCSctpTransport",
+    "RTCRtpSender", "RTCRtpReceiver", "RTCRtpTransceiver", "RTCCertificate", "RTCStatsReport", "RTCError", "RTCErrorEvent", "RTCTrackEvent", "RTCDataChannelEvent", "RTCPeerConnectionIceEvent",
+    "RTCPeerConnectionIceErrorEvent", "RTCDTMFSender", "RTCDTMFToneChangeEvent", "RTCEncodedAudioFrame", "RTCEncodedVideoFrame", "RTCRtpScriptTransform", "RTCNogNietBedacht"];
+  const zetWebrtc = (w) => { for (const n of RTC_NAMEN) w[n] = class {}; };
+  const webrtcOver = (w) => Object.getOwnPropertyNames(w).filter((n) => RTC_NAMEN.includes(n));
+  // Precies zoals Tauri een script van een plugin in elk document zet (PluginStore::initialization_script).
+  const opstartscript = (w) => w.eval(`(function () { ${geenWebrtc} })();`);
+
+  const leeg = new JSDOM("<!doctype html>", { runScripts: "dangerously" });
+  zetWebrtc(leeg.window);
+  const abort = leeg.window.AbortController;
+  leeg.window.CrashReportContext = class {};
+  opstartscript(leeg.window);
+  meld(webrtcOver(leeg.window).length === 0, "het opstartscript haalt alle namen van WebRTC weg", webrtcOver(leeg.window).join());
+  meld(leeg.window.AbortController === abort && !!leeg.window.CrashReportContext && !!leeg.window.document, "en niets anders, ook niet wat toevallig rtc bevat");
+  opstartscript(leeg.window);
+  meld(webrtcOver(leeg.window).length === 0, "een tweede keer in hetzelfde document kan ook");
+  leeg.window.close();
+  meld(/\.js_init_script_on_all_frames\(include_str!\("geen_webrtc\.js"\)\)/.test(tauriLib), "het draait in alle frames, niet alleen in het hoofdvenster");
+  const libRegels = tauriLib.split(/\r?\n/);
+  const regelPlugin = libRegels.findIndex((r) => /\.plugin\(geen_webrtc\(\)\)/.test(r));
+  meld(regelPlugin >= 0 && !/cfg/.test(libRegels.slice(regelPlugin - 1, regelPlugin + 1).join()), "en de app zet het aan, op elk platform");
+
+  const code = "window.__rtc = [typeof RTCPeerConnection, typeof webkitRTCPeerConnection, typeof RTCDataChannel].join();";
+  const berichtenVan = (lijst) => (w) => { w.postMessage = (b) => lijst.push(b); };
   for (const netwerk of [[], ["x.nl"]]) {
-    const proef = await draaiBinnen({ code: "window.__rtc = [typeof RTCPeerConnection, typeof webkitRTCPeerConnection, typeof RTCDataChannel].join();", waarden: {}, netwerk, bibliotheken: [], opPapier: false }, (w) => {
-      w.RTCPeerConnection = class {};
-      w.webkitRTCPeerConnection = class {};
-      w.RTCDataChannel = class {};
-    });
     const naam = netwerk.length ? "met netwerk=" : "zonder netwerk=";
-    meld(proef.window.__rtc === "undefined,undefined,undefined", `WebRTC is weg, ${naam}`, proef.window.__rtc);
+    const proef = await draaiBinnen({ code, waarden: {}, netwerk, bibliotheken: [], opPapier: false }, (w) => {
+      zetWebrtc(w);
+      opstartscript(w);
+    });
+    meld(proef.window.__rtc === "undefined,undefined,undefined", `het opstartscript heeft gedraaid: de code start, zonder WebRTC, ${naam}`, proef.window.__rtc);
+
+    // Het opstartscript heeft niet gedraaid: dan is de belofte niet waar, en start de code niet.
+    const berichten = [];
+    const zonder = await draaiBinnen({ code, waarden: {}, netwerk, bibliotheken: [], opPapier: false }, (w) => {
+      zetWebrtc(w);
+      berichtenVan(berichten)(w);
+    });
+    meld(zonder.window.__rtc === undefined, `het opstartscript heeft niet gedraaid: de code start niet, ${naam}`, zonder.window.__rtc);
+    meld(berichten.some((b) => b.soort === "fout" && /WebRTC/.test(b.tekst)), "en dat staat in beeld", JSON.stringify(berichten));
+    meld(berichten.some((b) => b.soort === "klaar" && b.luistert === false), "en het venster meldt zich klaar: een afdruk wacht er niet op", JSON.stringify(berichten));
+    meld(webrtcOver(zonder.window).length === 0, "ook dan haalt de omgeving zelf weg wat ze kan", webrtcOver(zonder.window).join());
+    zonder.window.close();
+
     const regels = [...proef.window.document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]')].map((m) => m.getAttribute("content"));
     const verwacht = `script-src blob:${netwerk.map((h) => ` https://${h}`).join("")}`;
     meld(regels.at(-1) === verwacht, `daarna geen inline script meer, ${naam}: ${verwacht}`, regels.at(-1));
     proef.window.close();
   }
+  // Alleen een ontwikkelversie in een gewone browser start zonder opstartscript.
+  const berichtenDev = [];
+  const dev = await draaiBinnen({ code, waarden: {}, netwerk: [], bibliotheken: [], opPapier: false, webrtcToets: false }, (w) => {
+    zetWebrtc(w);
+    berichtenVan(berichtenDev)(w);
+  });
+  meld(dev.window.__rtc === "undefined,undefined,undefined" && !berichtenDev.some((b) => b.soort === "fout"), "webrtcToets: false: de code start, en haalt WebRTC uit dit venster", dev.window.__rtc);
+  dev.window.close();
+  meld(/webrtcToets: !import\.meta\.env\.DEV\b/.test(jsBlokBron) && (jsBlokBron.match(/webrtcToets/g) ?? []).length === 1, "de app zet de toets alleen uit in een ontwikkelversie");
   const volgorde = await draaiBinnen({ code: "window.__stand = document.readyState;", waarden: {}, netwerk: [], bibliotheken: [], opPapier: false });
   meld(volgorde.window.__stand === "complete", "de code begint pas als de pagina geladen is: een tweede `load` is dan altijd een navigatie", volgorde.window.__stand);
   volgorde.window.close();

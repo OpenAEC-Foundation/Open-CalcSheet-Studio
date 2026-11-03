@@ -103,6 +103,23 @@ fn navigatie_bewaker() -> tauri::plugin::TauriPlugin<tauri::Wry> {
         .build()
 }
 
+/// Haalt WebRTC weg uit elk document van de app, ook uit een frame dat een script
+/// zelf maakt. De app gebruikt het zelf niet.
+///
+/// WebRTC gaat buiten de CSP om, naar elke host: een `@js`-blok met `netwerk=` kan in een
+/// eigen srcdoc script van die host laden, en daar is WebRTC er weer. In WebView2 houdt
+/// `webrtc 'block'` in de CSP dat niet tegen. De startvlag
+/// `--force-webrtc-ip-handling-policy` ook niet, en de voorkeur `webrtc.ip_handling_policy`
+/// alleen UDP: TURN over TCP blijft werken. De API moet dus weg, en dat kan alleen met een
+/// script dat in elk document als eerste draait. Heeft dat hier niet gedraaid, dan start
+/// een blok niet (jsLooptijd.js). Gemeten op Windows met scripts/proef-js-webrtc.mjs; op
+/// de andere platformen is dat niet getest.
+fn geen_webrtc() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::new("geen-webrtc")
+        .js_init_script_on_all_frames(include_str!("geen_webrtc.js"))
+        .build()
+}
+
 /// Zet voorspellende verbindingen in WebView2 uit, vóór het venster start.
 ///
 /// Chromium opent al een verbinding voordat `frame-src` een navigatie weigert.
@@ -151,6 +168,7 @@ pub fn run() {
     #[cfg(windows)]
     let bouwer = bouwer.plugin(navigatie_bewaker());
     bouwer
+        .plugin(geen_webrtc())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
