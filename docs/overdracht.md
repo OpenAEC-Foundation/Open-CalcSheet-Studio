@@ -59,8 +59,9 @@ cd packages/desktop && npx tsc --noEmit -p .
 
 ## 5. Bouwen en uitbrengen
 
-- Versie (jaar.week.volgnummer) op zeven plekken: `packages/desktop/package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, de desktop-regel in `package-lock.json`, de app-regel in `src-tauri/Cargo.lock`, en de versieregel in `src/i18n/locales/{nl,en}/common.json`.
-- Installer: `npm run tauri build` in `packages/desktop`. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`).
+- Versie (jaar.week.volgnummer): zetten met `node scripts/versie.mjs zet JJJJ.W.N`, niet met de hand. `check-versie.mjs` zakt als de velden uit elkaar lopen.
+- Uitbrengen en ondertekenen: zie [ondertekening.md](ondertekening.md). Een release start met *Run workflow* op `release.yml`; die kiest het nummer, ondertekent en publiceert pas als alle controles groen zijn.
+- Installer: `npm run tauri build` in `packages/desktop`; lokaal zonder ondertekening. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`).
 - Draait de gebouwde app nog, dan houdt die `target/release/WebView2Loader.dll` vast en faalt de build: bouw dan met een eigen `CARGO_TARGET_DIR` (bijvoorbeeld `src-tauri/target-installer`, niet in git).
 
 ## 6. Modules
