@@ -10,6 +10,8 @@ import { heeftEigenCode, huidigeModuletekst, isVerouderd, rekenversie } from "./
 import { isPdfBlad } from "../../store/pdfBijlage";
 import { isSpreadsheetBlad } from "../../store/spreadsheetBlad";
 import { voegLeegSpreadsheetToe, voegWerkmapToe } from "./spreadsheetBlad";
+import { isGraafBlad } from "../../store/graafBlad";
+import { voegLeegGrafbladToe } from "../graaf/grafbladToevoegen";
 import { voegPdfBladToe } from "./pdfBlad";
 import Icoon from "../Icoon";
 import LibrarySectie from "./LibrarySectie";
@@ -107,15 +109,20 @@ function ExemplaarRij({
   // Een PDF-blad heeft geen module en geen rekenversie: een eigen icoon.
   const pdf = isPdfBlad(ex);
   const spreadsheet = isSpreadsheetBlad(ex);
+  const graaf = isGraafBlad(ex);
   const stip = pdf
     ? <Icoon id="report.cover" />
     : spreadsheet
     ? <Icoon id="data.table" />
+    : graaf
+    ? <Icoon id="panel.model-tree" />
     : <span className={`pb-stip${status ? ` pb-status-${status}` : ""}`} aria-hidden="true" />;
   const uitleg = pdf
     ? `${ex.naam}\n${tw("pdf.rij", { bestand: ex.pdf?.bestandsnaam || "—" })}\n${tw("browser.dubbelklik")}`
     : spreadsheet
     ? `${ex.naam}\n${tw("spreadsheet.rij")}\n${tw("browser.dubbelklik")}`
+    : graaf
+    ? `${ex.naam}\n${tw("graaf.rij")}\n${tw("browser.dubbelklik")}`
     : `${ex.naam}${info ? ` — ${moduleNaam}` : ""}\n${versieRegel}` +
       (eigen ? `\n${t("bladVersie.eigenUitleg", { bron: ex.bronVersie })}` : "") +
       (verouderd ? `\n${t("bladVersie.rijVerouderd", { nieuw: nieuweVersie })}` : "") +
@@ -331,6 +338,12 @@ export default function ProjectBrowser() {
           <button className="pb-rij pb-toevoegen" onClick={() => void voegWerkmapToe(voegSpreadsheetToe)} title={tw("spreadsheet.importerenUitleg")}>
             <Icoon id="data.table" />
             <span className="pb-naam">{tw("spreadsheet.importeren")}</span>
+          </button>
+
+          {/* Een rekening als graaf van nodes. */}
+          <button className="pb-rij pb-toevoegen" onClick={voegLeegGrafbladToe} title={tw("graaf.toevoegenUitleg")}>
+            <Icoon id="panel.model-tree" />
+            <span className="pb-naam">{tw("graaf.toevoegen")}</span>
           </button>
 
           {/* Alleen als er iets bij te werken is; bijwerken gaat altijd via de vergelijking. */}

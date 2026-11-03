@@ -13,6 +13,7 @@
  * controlescripts laden dat rechtstreeks in Node.
  */
 import { isPdfBlad, leesPdfBijlage } from "./pdfBijlage.ts";
+import { isGraafBlad } from "./graafBlad.ts";
 
 /** `templateId` van een spreadsheet-blad. Geen module: er is geen sjabloon met deze naam. */
 export const SPREADSHEET_BLAD = "spreadsheet";
@@ -33,9 +34,9 @@ export function isSpreadsheetBlad(ex: { templateId?: string }): boolean {
   return ex.templateId === SPREADSHEET_BLAD;
 }
 
-/** Een blad zonder rekentekst en invoer: een PDF of een werkmap. */
+/** Een blad zonder rekentekst en invoer: een PDF, een werkmap of een graaf. */
 export function isLosBlad(ex: { templateId?: string }): boolean {
-  return isPdfBlad(ex) || isSpreadsheetBlad(ex);
+  return isPdfBlad(ex) || isSpreadsheetBlad(ex) || isGraafBlad(ex);
 }
 
 /** De werkmap uit een bestand of de opgeslagen staat van de app; zelfde vorm als een PDF. */

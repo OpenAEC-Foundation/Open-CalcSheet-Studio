@@ -266,6 +266,14 @@
     "afgekapt_one": "Only the first {{count}} sheet of paper is printed; the workbook is longer.",
     "afgekapt_other": "Only the first {{count}} sheets of paper are printed; the workbook is longer."
   },
+  "graafBlad": {
+    "soort": "Graph sheet",
+    "ontbreekt": "The graph of this sheet is missing.",
+    "leeg": "This graph is empty.",
+    "naam": "Name",
+    "uitkomst": "Result",
+    "zonderNaam": "Unnamed"
+  },
   "bijlagen": {
     "intro": "Custom appendices are listed by title in the table of contents; you add the document itself outside the app.",
     "vervalt": "omitted: the appendix contains no output",

@@ -29,6 +29,8 @@ import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave"
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
 import { isPdfBlad } from "./store/pdfBijlage";
 import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
+import { GraafBladInfo, GraafBladWeergave } from "./components/graaf/GraafBladWeergave";
+import { isGraafBlad } from "./store/graafBlad";
 import { getSetting } from "./store";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
 import { usePrintStore } from "./store/printStore";
@@ -256,6 +258,8 @@ export default function App() {
   const pdfBlad = actief !== null && isPdfBlad(actief);
   // Idem een spreadsheet-blad: alleen zijn werkmap.
   const spreadsheetBlad = actief !== null && isSpreadsheetBlad(actief);
+  // Idem een grafblad: alleen zijn vlak.
+  const graafBlad = actief !== null && isGraafBlad(actief);
   const mode = hasDesigner ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
@@ -290,9 +294,9 @@ export default function App() {
     sluitVoorbeeld();
     setSplitMode((m) => (m === "vu" ? "cv" : m));
   }, [codeVerzoek, sluitVoorbeeld]);
-  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad) ? (
+  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || graafBlad) ? (
     <div className="split-tabs">
-      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : "spreadsheet.tab")}</button>
+      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : graafBlad ? "graaf.tab" : "spreadsheet.tab")}</button>
       <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
     </div>
   ) : actief && !toontProjectGegevens ? (
@@ -397,6 +401,16 @@ export default function App() {
                 <Trans t={t} i18nKey="leeg.uitleg" components={{ b: <b /> }} />
               </p>
             </div>
+          ) : graafBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                {/* Papier, zoals een rekenblad en zijn 3D-beeld: in elk thema licht. */}
+                <WerkPaneel titel={t("graaf.paneel")} info={<GraafBladInfo ex={actief} />} papier>
+                  <GraafBladWeergave key={actief.id} ex={actief} />
+                </WerkPaneel>
+              </div>
+            </>
           ) : spreadsheetBlad ? (
             <>
               {tabBalk}

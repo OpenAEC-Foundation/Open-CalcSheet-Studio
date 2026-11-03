@@ -10,6 +10,8 @@ import { rekenversie } from "../components/calc/bladVersie";
 import { normaliseerExemplaren } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
 import { SPREADSHEET_BLAD, type SpreadsheetBestand } from "./spreadsheetBlad";
+import { GRAAF_BLAD } from "./graafBlad";
+import { legeGraaf, type Graaf } from "../graaf/model";
 
 const STORE_KEY = "projectState";
 
@@ -81,6 +83,12 @@ export interface Exemplaar {
    * store/spreadsheetBlad.ts): de werkmap zelf, base64-gecodeerd.
    */
   xlsx?: SpreadsheetBestand;
+  /**
+   * Alleen bij een grafblad (`templateId` GRAAF_BLAD, zie store/graafBlad.ts):
+   * de nodes en verbindingen. De uitkomsten staan er niet in; die rekent
+   * graaf/rekenen.ts bij elke wijziging opnieuw uit.
+   */
+  graaf?: Graaf;
 }
 
 /**
@@ -136,6 +144,13 @@ interface ProjectState {
   voegSpreadsheetToe: (naam: string, xlsx: SpreadsheetBestand) => string;
   /** De werkmap van een spreadsheet-blad; opeenvolgende bewerkingen tellen als één stap ongedaan maken. */
   zetSpreadsheet: (id: string, xlsx: SpreadsheetBestand) => void;
+  /** Een leeg grafblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegGraafToe: (naam: string) => string;
+  /**
+   * De graaf van een grafblad. `sleutel`: doorgaan met dezelfde bewerking (typen
+   * in een veld, de schuif) is één stap ongedaan maken; zonder is het een eigen stap.
+   */
+  zetGraaf: (id: string, graaf: Graaf, sleutel?: string) => void;
   dupliceer: (id: string) => string | null;
   hernoem: (id: string, naam: string) => void;
   verwijder: (id: string) => void;
@@ -356,6 +371,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         ...metGeschiedenis(s, `xlsx:${id}`),
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, xlsx } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegGraafToe: (naam) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: GRAAF_BLAD, source: "", waarden: {}, graaf: legeGraaf() },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetGraaf: (id, graaf, sleutel) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, sleutel ? `graaf:${id}:${sleutel}` : null),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, graaf } : e)),
         dirty: true,
       };
     }),

@@ -22,12 +22,14 @@ import {
   searchIcon,
   blankSheetIcon,
   spreadsheetIcon,
+  graafIcon,
 } from "./calcIcons";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../../store/projectStore";
 import { usePrintStore } from "../../store/printStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { useEditorViewStore } from "../../store/editorViewStore";
 import { voegLeegSpreadsheetToe } from "../calc/spreadsheetBlad";
+import { voegLeegGrafbladToe } from "../graaf/grafbladToevoegen";
 
 interface CalcTabProps {
   /** Opent de instellingen, eventueel op een bepaalde tab ("about"). */
@@ -181,6 +183,7 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
             size="large"
             onClick={() => voegLeegSpreadsheetToe(useProjectStore.getState().voegSpreadsheetToe)}
           />
+          <RibbonButton icon={graafIcon} label={t("calc.graaf", "Grafblad")} size="large" onClick={voegLeegGrafbladToe} />
         </RibbonGroup>
 
         <RibbonGroup label={t("calc.output", "Uitvoer")}>
