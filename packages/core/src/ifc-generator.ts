@@ -76,10 +76,27 @@ export interface IfcCalcSheet {
   pdf?: { bestandsnaam: string; data: string };
   /** Bij een spreadsheet-blad: de werkmap, als base64. */
   xlsx?: { bestandsnaam: string; data: string };
+  /** Bij een grafblad: de graaf. */
+  graaf?: GraafGegevens;
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */
   fout?: string;
+}
+
+/** De graaf van een grafblad, zoals hij in een project staat: nodes en verbindingen, geen uitkomsten. */
+export interface GraafGegevens {
+  versie: number;
+  nodes: {
+    id: string;
+    soort: string;
+    x: number;
+    y: number;
+    naam?: string;
+    invoer?: Record<string, string>;
+    geheel?: string[];
+  }[];
+  verbindingen: { vanNode: string; vanPoort: string; naarNode: string; naarPoort: string }[];
 }
 
 export interface IfcGenerationResult {

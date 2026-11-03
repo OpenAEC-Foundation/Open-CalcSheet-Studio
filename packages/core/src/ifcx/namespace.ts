@@ -40,6 +40,7 @@ export const ATTR = {
   elementen: 'ocss::blad::elementen',
   pdf: 'ocss::blad::pdf',
   xlsx: 'ocss::blad::xlsx',
+  graaf: 'ocss::blad::graaf',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -184,7 +185,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       id: TEKST,
       volgorde: GEHEEL,
       templateId: TEKST,
-      soort: keuze('rekenblad', 'pdf', 'spreadsheet'),
+      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'graaf'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
     }),
@@ -209,6 +210,26 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       mediaType: TEKST,
       grootte: GEHEEL,
       data: TEKST,
+    }),
+  },
+  [ATTR.graaf]: {
+    value: object({
+      versie: GEHEEL,
+      nodes: lijst(object({
+        id: TEKST,
+        soort: TEKST,
+        x: GETAL,
+        y: GETAL,
+        naam: opt(TEKST),
+        invoer: opt(lijst(PAAR)),
+        geheel: opt(lijst(TEKST)),
+      })),
+      verbindingen: lijst(object({
+        vanNode: TEKST,
+        vanPoort: TEKST,
+        naarNode: TEKST,
+        naarPoort: TEKST,
+      })),
     }),
   },
   [ATTR.uitkomst]: {

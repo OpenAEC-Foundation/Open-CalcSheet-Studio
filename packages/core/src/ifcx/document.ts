@@ -24,7 +24,7 @@
  * rekentekst, invoer, elementen en PDF. Uitkomsten, figuren en elementen zijn
  * afgeleid: de app rekent ze opnieuw uit bij het openen en opslaan.
  */
-import type { ElementRef, IfcCalcSheet, IfcGenerationOptions } from '../ifc-generator.js';
+import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions } from '../ifc-generator.js';
 import type { IfcxBestand, IfcxKnoop, IfcxSchema } from './typen.js';
 import { padVanElement, uuidVan } from './identiteit.js';
 import { ATTR, IFCX_VERSIE, OCSS_SCHEMAS, beschrijfWaarde, ifcKlasse, importsVoor, isGeimporteerd } from './namespace.js';
@@ -35,6 +35,7 @@ const APP_NAAM = 'Open CalcSheet Studio';
 const PDF_SOORT = 'pdf';
 const SPREADSHEET_SOORT = 'spreadsheet';
 const XLSX_MEDIATYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const GRAAF_SOORT = 'graaf';
 
 export interface IfcxProjectInvoer {
   naam: string;
@@ -58,6 +59,7 @@ export interface IfcxGelezenBlad {
   bronVersie?: string;
   pdf?: { bestandsnaam: string; data: string };
   xlsx?: { bestandsnaam: string; data: string };
+  graaf?: GraafGegevens;
 }
 
 export interface IfcxGelezenProject {
@@ -93,6 +95,29 @@ function pdfBytes(data: string): number {
 
 const paren = (r: Record<string, string> | undefined) =>
   Object.entries(r ?? {}).map(([naam, waarde]) => ({ naam, waarde: String(waarde) }));
+
+/** De graaf als attribuut: de velden van een node als paren, zoals de invoer van een rekenblad. */
+function graafAttribuut(g: GraafGegevens) {
+  return {
+    versie: g.versie,
+    nodes: g.nodes.map(({ invoer, ...n }) => ({ ...n, ...(invoer ? { invoer: paren(invoer) } : {}) })),
+    verbindingen: g.verbindingen,
+  };
+}
+
+/** De graaf uit een attribuut; het model leest hem daarna nog na (leesGraaf). */
+function graafUitAttribuut(x: unknown): GraafGegevens | undefined {
+  const g = x as { versie?: unknown; nodes?: unknown; verbindingen?: unknown } | undefined;
+  if (!g || !Array.isArray(g.nodes)) return undefined;
+  return {
+    versie: typeof g.versie === 'number' ? g.versie : 1,
+    nodes: g.nodes.map((n) => {
+      const { invoer, ...rest } = n as Omit<GraafGegevens['nodes'][number], 'invoer'> & { invoer?: unknown };
+      return { ...rest, ...(invoer ? { invoer: uitParen(invoer) } : {}) };
+    }),
+    verbindingen: Array.isArray(g.verbindingen) ? (g.verbindingen as GraafGegevens['verbindingen']) : [],
+  };
+}
 
 /** Maten van een herkend element, in meter: de eenheid van de voorbeelden van buildingSMART. */
 function maten(e: HerkendElement): Record<string, number> {
@@ -150,8 +175,9 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     const pad = onder(`blad/${sleutel}`);
     const isPdf = blad.templateId === PDF_SOORT;
     const isSpreadsheet = blad.templateId === SPREADSHEET_SOORT;
-    // Een PDF of werkmap heeft geen rekentekst, geen invoer en geen oordeel.
-    const isLos = isPdf || isSpreadsheet;
+    const isGraaf = blad.templateId === GRAAF_SOORT;
+    // Een PDF, werkmap of graaf heeft geen rekentekst, geen invoer en geen oordeel.
+    const isLos = isPdf || isSpreadsheet || isGraaf;
     bladKinderen[kindNaam(`B${String(i + 1).padStart(3, '0')}_${blad.naam}`, bladNamen)] = pad;
 
     const uitkomst = leesUitkomst(blad.nodes, blad.naam, isLos ? { voldoet: null, uc: null } : blad.resultaat, blad.fout);
@@ -169,7 +195,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         id: sleutel,
         volgorde: i,
         templateId: blad.templateId ?? '',
-        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : 'rekenblad',
+        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isGraaf ? 'graaf' : 'rekenblad',
         ...(blad.module ? { module: blad.module } : {}),
         ...(blad.bronVersie ? { bronVersie: blad.bronVersie } : {}),
       },
@@ -194,6 +220,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         data: blad.xlsx.data,
       };
     }
+    if (blad.graaf) attributes[ATTR.graaf] = graafAttribuut(blad.graaf);
     attributes[ATTR.uitkomst] = uitkomst;
 
     // Figuren: de tekeningen en 3D-beelden staan ook in de rekentekst; hier zijn ze als zodanig te vinden.
@@ -485,6 +512,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown };
     const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown } | undefined;
     const xlsx = a[ATTR.xlsx] as { bestandsnaam?: unknown; data?: unknown } | undefined;
+    const graaf = graafUitAttribuut(a[ATTR.graaf]);
     const blad: IfcxGelezenBlad = {
       id: tekstVan(b.id),
       naam: tekstVan(a[ATTR.naam]),
@@ -496,6 +524,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     if (typeof b.bronVersie === 'string') blad.bronVersie = b.bronVersie;
     if (pdf && typeof pdf.data === 'string') blad.pdf = { bestandsnaam: tekstVan(pdf.bestandsnaam), data: pdf.data };
     if (xlsx && typeof xlsx.data === 'string') blad.xlsx = { bestandsnaam: tekstVan(xlsx.bestandsnaam), data: xlsx.data };
+    if (graaf) blad.graaf = graaf;
     return blad;
   });
 
