@@ -26,6 +26,7 @@
    * wijzigingstijd van de map verandert. Die is op /drive altijd 0, dus een script dat
    * er na de eerste import bijkomt, bleef onvindbaar (ModuleNotFoundError). Deze
    * terugval komt pas aan de beurt als een import mislukt, en zoekt dan nog één keer.
+   * De laatste regel houdt de nummers van de cellen gelijk: dit telt niet als cel.
    */
   const ZOEK_OPNIEUW = `def _ocss_zoek_opnieuw():
     import importlib, importlib.machinery, sys
@@ -37,7 +38,8 @@
     if not any(getattr(f, "__name__", "") == "ZoekOpnieuw" for f in sys.meta_path):
         sys.meta_path.append(ZoekOpnieuw)
 _ocss_zoek_opnieuw()
-del _ocss_zoek_opnieuw`;
+del _ocss_zoek_opnieuw
+get_ipython().execution_count -= 1`;
 
   let app = null;
   let bezig = false;
@@ -199,8 +201,13 @@ del _ocss_zoek_opnieuw`;
     lab.serviceManager.contents.fileChanged.connect(() => {
       if (!bezig) stuur({ soort: "gewijzigd" });
     });
-    lab.shell.currentChanged.connect((_, { newValue }) => volgKernel(newValue));
-    volgKernel(lab.shell.currentWidget);
+    // Alle tabbladen, niet alleen het actieve: zonder focus in het venster is dat leeg.
+    const volgAlles = () => {
+      for (const widget of lab.shell.widgets("main")) volgKernel(widget);
+    };
+    lab.shell.layoutModified.connect(volgAlles);
+    lab.shell.currentChanged.connect(volgAlles);
+    volgAlles();
     stuur({ soort: "gereed" });
   }
 
