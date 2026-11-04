@@ -20,7 +20,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { closeSync, cpSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync, writeSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, sep } from "node:path";
+import { delimiter, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const hier = dirname(fileURLToPath(import.meta.url));
@@ -31,7 +31,8 @@ const STEMPEL = join(UITMAP, "omgeving.stempel");
 const WERK = join(tmpdir(), "ocss-jupyter-bouw");
 
 const MARIMO_VERSIE = "0.25.2";
-const PIP = ["jupyterlite-core==0.8.7", "jupyterlite-pyodide-kernel==0.8.6", `marimo==${MARIMO_VERSIE}`];
+// `uv` gebruikt de export van Marimo; het staat vast, en komt uit deze omgeving in plaats van de computer.
+const PIP = ["jupyterlite-core==0.8.7", "jupyterlite-pyodide-kernel==0.8.6", `marimo==${MARIMO_VERSIE}`, "uv==0.9.15"];
 const PYODIDE = {
   versie: "314.0.0",
   kern: "https://github.com/pyodide/pyodide/releases/download/314.0.0/pyodide-core-314.0.0.tar.bz2",
@@ -263,7 +264,7 @@ async function bouw() {
   writeFileSync(join(marimoWerk, "leeg.py"), MARIMO_LEEG);
   draai(python, ["-m", "marimo", "export", "html-wasm", "leeg.py", "-o", "uit", "--mode", "edit", "--show-code"], {
     cwd: marimoWerk,
-    env: { ...process.env, PYTHONUTF8: "1" },
+    env: { ...process.env, PATH: `${bin}${delimiter}${process.env.PATH ?? process.env.Path ?? ""}`, PYTHONUTF8: "1" },
   });
   const marimoSite = join(site, "marimo");
   cpSync(join(marimoWerk, "uit"), marimoSite, { recursive: true });

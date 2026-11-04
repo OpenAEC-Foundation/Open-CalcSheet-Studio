@@ -55,8 +55,7 @@ Bij het bouwen zijn internet en Python nodig; bij de gebruiker niets.
 |---|---|
 | `omgeving.pak` op schijf, na installatie | 96 |
 | waarvan Marimo (pagina's) | 27 |
-| daarvan in de installer, gecomprimeerd | ongeveer 44 |
-| de hele NSIS-installer van Windows, gemeten | 56,5 |
+| de hele NSIS-installer van Windows, gemeten | 64,1 |
 
 De omgeving zit in de installer en niet in een download bij het eerste gebruik: alles
 werkt dan meteen en zonder internet, ook numpy, scipy, pandas en matplotlib. `%pip
