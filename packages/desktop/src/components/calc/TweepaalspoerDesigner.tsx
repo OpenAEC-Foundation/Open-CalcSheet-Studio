@@ -40,8 +40,12 @@ const DEFAULTS: Record<string, number> = {
 
 const DIAMETERS = [8, 10, 12, 16, 20, 25, 32];
 
-/** Onder deze paneelbreedte past de invoerkolom niet meer naast de tekening. */
-const SMAL_PANEEL = 560;
+/**
+ * Onder deze paneelbreedte past de invoerkolom niet meer naast de tekening. Laag genoeg
+ * voor het venster waarmee de app opent (paneel 518): invoer en model horen samen in beeld,
+ * anders zie je het model niet bewegen als je iets aanpast.
+ */
+const SMAL_PANEEL = 500;
 /** Onder deze paneelbreedte krijgt de invoerkolom deze breedte. */
 const KRAP_PANEEL = 680;
 const KRAP_INVOER = 220;
