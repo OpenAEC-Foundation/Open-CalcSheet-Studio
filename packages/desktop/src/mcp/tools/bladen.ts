@@ -533,7 +533,7 @@ export const BLADTOOLS: McpToolDef[] = [
       else if (plekArg === "start") na = 0;
       else if (typeof plekArg === "number" && Number.isInteger(plekArg) && plekArg >= 0) na = Math.min(plekArg, regelsNu.length);
       else return fout("VALIDATION", "position must be 'end', 'start' or a line number >= 0.");
-      // Alleen een voorbeeld met tekst heeft twee talen; "auto" volgt het systeem, zoals de app.
+      // Alleen een fragment met tekst heeft twee talen; "auto" volgt het systeem, zoals de app.
       const ingesteld = formule.codeEn && typeof args.language !== "string" ? (await ctx.omgeving.instellingen.lees()).language : "";
       const taal = typeof args.language === "string" ? args.language : ingesteld === "auto" ? globalThis.navigator?.language : ingesteld;
       const tekst = codeVan(formule, taal);

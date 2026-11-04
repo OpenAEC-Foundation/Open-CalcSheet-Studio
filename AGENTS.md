@@ -10,6 +10,9 @@ rekenbladen, controles, bouwen en de stand van de modules.
   project-, klant- of persoonsgegevens; geen verwijzingen naar gesprekken met
   een assistent. Normtekst niet overnemen: alleen artikel-, formule- en
   tabelnummers.
+- Eén uitzondering op die namen: Calcpad mag genoemd worden, alleen als eervolle
+  vermelding zoals in de README's. Alle andere namen blijven verboden. In de app,
+  de code, de release-tekst en de repo-beschrijving blijft de neutrale term staan.
 - Een rekenblad mag nooit onterecht 'voldoet' geven. Bij twijfel: veilige kant,
   of 'niet getoetst' op het blad.
 - Rekenwaarden alleen wijzigen met een handberekening; leg die vast als

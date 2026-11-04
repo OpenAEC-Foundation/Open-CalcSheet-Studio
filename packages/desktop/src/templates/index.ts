@@ -1,4 +1,4 @@
-import { calcpadDemo } from "./calcpad-demo";
+import { rekentaalDemo } from "./rekentaal-demo";
 import { balklaag } from "./balklaag";
 import { ligger } from "./ligger";
 import { tweepaalspoer } from "./tweepaalspoer";
@@ -9,5 +9,5 @@ export const templates: Record<string, string> = {
   "ligger": ligger,
   "tweepaalspoer": tweepaalspoer,
   "doorsnede-spanningen": doorsnedeSpanningen,
-  "calcpad-demo": calcpadDemo,
+  "rekentaal-demo": rekentaalDemo,
 };

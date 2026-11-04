@@ -17,7 +17,7 @@ import i18next from "i18next";
 import { setAngleMode, type AngleMode } from "@ifc-calc/core";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
-import { calcpadIncludes, calcpadImageUrls } from "../templates/calcpad-includes";
+import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
 
 export interface RekenVerzoek {
   sleutel: string;
@@ -142,7 +142,7 @@ export function useDoorrekening(
     if (!source.trim()) return;
     vraag({
       sleutel, source, waarden, scope, naam, hoekmodus, taal,
-      includes: [...calcpadIncludes], imageUrls: [...calcpadImageUrls],
+      includes: [...rekentaalIncludes], imageUrls: [...rekentaalImageUrls],
     });
   }, [sleutel, source, waarden, scope, naam, taal]);
 

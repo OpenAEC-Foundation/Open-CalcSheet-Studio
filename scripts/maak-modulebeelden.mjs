@@ -310,7 +310,7 @@ function markdownImport() {
 }
 
 /** De demo van Open CalcSheet Studio: een rekenblad met een formule, een M-lijn en het oordeel. */
-function calcpadDemo() {
+function rekentaalDemo() {
   const b = beeld();
   const [x, y, dx, dy] = [-104, -86, 208, 252];
   b.schaduw(x, y, dx, dy, 30);
@@ -386,7 +386,7 @@ const BEELDEN = {
   marimo,
   markdown,
   "markdown-import": markdownImport,
-  "calcpad-demo": calcpadDemo,
+  "rekentaal-demo": rekentaalDemo,
 };
 
 const [uitvoer = MAP, ...alleen] = process.argv.slice(2);

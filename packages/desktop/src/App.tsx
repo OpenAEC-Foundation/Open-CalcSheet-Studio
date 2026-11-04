@@ -278,7 +278,7 @@ export default function App() {
     setCanvasCode(true);
   };
 
-  // Het lint (tab CalcPAD) vraagt om de code: weg uit de IFC-weergave en het
+  // Het lint (tab Rekentaal) vraagt om de code: weg uit de IFC-weergave en het
   // afdrukvoorbeeld, en een weergave mét editor.
   const codeVerzoek = useCodeVerzoek((s) => s.teller);
   useEffect(() => {

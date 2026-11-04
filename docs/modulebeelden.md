@@ -38,7 +38,7 @@ opnieuw. Dat script gebruikt de kleuren van `tweepaalspoer.webp`.
 | `marimo` | Marimo-notebook | Een schuif die via lijnen de cellen en de grafiek stuurt |
 | `markdown` | Markdown toevoegen | Een pagina met koppen, tekst en een lijst, met een plusteken erbij |
 | `markdown-import` | Markdown inlezen | Dezelfde pagina die met een pijl in een bak zakt |
-| `calcpad-demo` | Open CalcSheet Studio-demo (Library) | Een rekenblad met invoervelden, een formule, een momentenlijn en een vinkje |
+| `rekentaal-demo` | Open CalcSheet Studio-demo (Library) | Een rekenblad met invoervelden, een formule, een momentenlijn en een vinkje |
 
 De naam van het bestand is het `templateId` van de tegel. Staat een tegel buiten de
 catalogus, dan staat de naam in `TEGEL_BEELD` in `ModuleKiezer.tsx`.

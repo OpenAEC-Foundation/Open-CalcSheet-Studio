@@ -357,12 +357,12 @@
 }
 
 /* ════════════════════════════════════════════════════════════════
-   Open CalcSheet Studio — tabblad CalcPAD.
+   Open CalcSheet Studio — tabblad Rekentaal.
    Alles hierboven is de sjabloon van de OpenAEC Blueprint.
    ════════════════════════════════════════════════════════════════ */
 
 /* Een teken van de rekentaal in het icoonvak, waar B2 geen icoon heeft. */
-.calcpad-glyph {
+.rekentaal-glyph {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -375,22 +375,22 @@
   white-space: nowrap;
 }
 
-.ribbon-btn.small .calcpad-glyph {
+.ribbon-btn.small .rekentaal-glyph {
   min-width: 16px;
   height: 16px;
   font-size: 11px;
 }
 
-.ribbon-btn:disabled .calcpad-glyph {
+.ribbon-btn:disabled .rekentaal-glyph {
   color: var(--theme-text-muted);
 }
 
-.calcpad-menu-anker {
+.rekentaal-menu-anker {
   display: contents;
 }
 
 /* Het uitklapmenu: secties naast elkaar, zoals een galerij. */
-.calcpad-menu {
+.rekentaal-menu {
   position: fixed;
   z-index: 1000;
   display: flex;
@@ -406,13 +406,13 @@
   font-size: var(--oa-size-body);
 }
 
-.calcpad-menu-sectie {
+.rekentaal-menu-sectie {
   display: flex;
   flex-direction: column;
   min-width: 170px;
 }
 
-.calcpad-menu-kop {
+.rekentaal-menu-kop {
   padding: 2px 8px 4px;
   font-size: var(--oa-size-label);
   font-weight: 600;
@@ -420,7 +420,7 @@
   color: var(--theme-text-secondary);
 }
 
-.calcpad-menu-rij {
+.rekentaal-menu-rij {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -435,29 +435,29 @@
   cursor: default;
 }
 
-.calcpad-menu-rij:hover,
-.calcpad-menu-teken:hover {
+.rekentaal-menu-rij:hover,
+.rekentaal-menu-teken:hover {
   background: var(--theme-hover);
 }
 
-.calcpad-menu-glyph {
+.rekentaal-menu-glyph {
   min-width: 64px;
   font-family: var(--oa-font-mono);
   color: var(--theme-accent);
 }
 
-.calcpad-menu-naam {
+.rekentaal-menu-naam {
   color: var(--theme-text-secondary);
 }
 
-.calcpad-menu-raster {
+.rekentaal-menu-raster {
   display: grid;
   grid-template-columns: repeat(8, 28px);
   gap: 2px;
   padding: 0 4px;
 }
 
-.calcpad-menu-teken {
+.rekentaal-menu-teken {
   width: 28px;
   height: 28px;
   background: transparent;
@@ -484,17 +484,17 @@
 
 /* Een lang teken (#include, $Plot) krijgt de ruimte die het nodig heeft, in
    plaats van over het woord ernaast heen te lopen. */
-.ribbon-btn.small .ribbon-btn-icon:has(> .calcpad-glyph) {
+.ribbon-btn.small .ribbon-btn-icon:has(> .rekentaal-glyph) {
   width: auto;
   min-width: 16px;
 }
 
-.ribbon-btn.small .calcpad-glyph {
+.ribbon-btn.small .rekentaal-glyph {
   justify-content: flex-start;
 }
 
 /* Een ingeklapte groep: de groep zelf in een paneel onder de knop. */
-.calcpad-groep-paneel {
+.rekentaal-groep-paneel {
   position: fixed;
   z-index: 1000;
   display: flex;
@@ -505,7 +505,7 @@
   box-shadow: var(--oa-shadow-popup);
 }
 
-.calcpad-groep-paneel .ribbon-group-content {
+.rekentaal-groep-paneel .ribbon-group-content {
   display: flex;
   align-items: flex-start;
   gap: 2px;

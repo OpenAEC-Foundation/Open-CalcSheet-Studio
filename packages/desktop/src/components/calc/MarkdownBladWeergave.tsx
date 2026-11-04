@@ -56,7 +56,7 @@ export function MarkdownBron({ ex }: { ex: Exemplaar }) {
  * (iframeBlok.ts): wat al bevestigd is, laadt meteen.
  */
 export function MarkdownWeergave({ ex }: { ex: Exemplaar }) {
-  const { t } = useTranslation("calcpad");
+  const { t } = useTranslation("rekentaal");
   const tRef = useRef(t);
   tRef.current = t;
   const tekst = useDeferredValue(ex.md?.tekst ?? "");

@@ -22,7 +22,7 @@ const { vertalingVoor, bronVoorUitvoer } = await import("../packages/desktop/src
 const { leesResultaat, leesGetallen } = await import("../packages/desktop/src/components/calc/bladLezen.ts");
 const { balklaagEn } = await import("../packages/desktop/src/templates/balklaag.en.ts");
 const { liggerEn } = await import("../packages/desktop/src/templates/ligger.en.ts");
-const { calcpadDemoEn } = await import("../packages/desktop/src/templates/calcpad-demo.en.ts");
+const { rekentaalDemoEn } = await import("../packages/desktop/src/templates/rekentaal-demo.en.ts");
 const { tweepaalspoerEn } = await import("../packages/desktop/src/templates/tweepaalspoer.en.ts");
 const { doorsnedeSpanningenEn } = await import("../packages/desktop/src/templates/doorsnede-spanningen.en.ts");
 
@@ -40,7 +40,7 @@ const blad = (bestand, kop) => {
 const MODULES = [
   { naam: "balklaag", bron: blad("balklaag.ts", '"Balklaag —'), v: balklaagEn },
   { naam: "ligger", bron: blad("ligger.ts", '"Ligger van hout of staal'), v: liggerEn },
-  { naam: "demoblad", bron: blad("calcpad-demo.ts", '"Open CalcSheet Studio demo'), v: calcpadDemoEn },
+  { naam: "demoblad", bron: blad("rekentaal-demo.ts", '"Open CalcSheet Studio demo'), v: rekentaalDemoEn },
   { naam: "tweepaalspoer", bron: blad("tweepaalspoer.ts", '"Tweepaalspoer —'), v: tweepaalspoerEn },
   { naam: "doorsnede", bron: blad("doorsnede-spanningen.ts", '"Spanningen in een doorsnede —'), v: doorsnedeSpanningenEn },
 ];

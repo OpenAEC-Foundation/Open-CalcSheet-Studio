@@ -1,9 +1,9 @@
 /**
- * CalcPAD-compatible node types.
+ * Node types of the calculation language.
  *
  * Visibility model: each renderable node may carry `hidden: true` (set by parser
  * inside #hide…#show ranges). Hidden assignments still execute (variable binds
- * to scope) but the renderer skips them. Compatible with CalcPAD's `#hide`/`#show`
+ * to scope) but the renderer skips them. Follows the language's `#hide`/`#show`
  * directives.
  */
 
@@ -12,23 +12,23 @@ export interface HeadingNode {
   level: number;
   text: string;
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
 export interface TextNode {
   type: 'text';
   text: string;
-  /** True when text came from a CalcPAD prose line (`'...`) — content is passed
+  /** True when text came from a prose line (`'...`) — content is passed
    *  through as HTML without escaping. False (default) for derived/safe text. */
   html?: boolean;
-  /** Optional template parts for CalcPAD prose interpolation. When present,
+  /** Optional template parts for prose interpolation. When present,
    *  the renderer should concat literal segments with evaluated expressions.
    *  Example: `'<svg viewbox="'-xx' '-yy'" ...>` becomes
    *    [{lit:'<svg viewbox="'}, {expr:'-xx'}, {lit:' '}, {expr:'-yy'}, {lit:'" ...>'}] */
   parts?: Array<{ kind: 'literal'; value: string } | { kind: 'expr'; value: string; formaat?: string }>;
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
   /** Toelichting die op dezelfde bronregel achter een rekendeel stond; de
    *  renderer zet hem naast de formule in plaats van eronder. */
@@ -45,15 +45,15 @@ export interface AssignmentNode {
    * `A.(i; j) = …`): de index, in mathjs-notatie (`i, j`), 1-gebaseerd.
    */
   index?: string;
-  /** Opmaak van de uitkomst achter de expressie, CalcPAD `:F2` (zie evaluator: formatGetal). */
+  /** Opmaak van de uitkomst achter de expressie, `:F2` (zie evaluator: formatGetal). */
   formaat?: string;
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
 /**
- * Cascading conditional with CalcPAD-style `#else if`.
+ * Cascading conditional with `#else if`.
  * `branches[0]` is the primary `#if`; subsequent are `#else if`.
  * `elseBody` is the final `#else` (or empty).
  */
@@ -62,7 +62,7 @@ export interface ConditionalNode {
   branches: { condition: string; body: AstNode[] }[];
   elseBody: AstNode[];
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
   /** Backwards-compat shims (renderer/legacy code may still reference these). */
   condition?: string;
@@ -70,10 +70,10 @@ export interface ConditionalNode {
 }
 
 /**
- * CalcPAD `?` input prompt — `F = ? kN` prompts user for a numeric value.
+ * `?` input prompt — `F = ? kN` prompts user for a numeric value.
  * Interactive: renderer emits an <input>, value flows back via SelectValues.
  * Een standaardwaarde staat tussen accolades achter het vraagteken, zoals in
- * CalcPAD: `L = ?{5000}mm`, `F = ? {3} kN`.
+ * Met standaardwaarde: `L = ?{5000}mm`, `F = ? {3} kN`.
  */
 export interface InputPromptNode {
   type: 'input-prompt';
@@ -83,12 +83,12 @@ export interface InputPromptNode {
   defaultValue: string;
   unit: string;
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
 /**
- * CalcPAD user-defined function: `f(x) = x^2 + 1` or `g(a, b) = sqrt(a^2 + b^2)`.
+ * User-defined function: `f(x) = x^2 + 1` or `g(a, b) = sqrt(a^2 + b^2)`.
  * Evaluator passes the full assignment string verbatim to mathjs which supports
  * function definitions natively (`f = (x) -> x^2 + 1`).
  */
@@ -99,7 +99,7 @@ export interface UserFunctionNode {
   expression: string;
   raw: string;
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -112,15 +112,15 @@ export interface VarDisplayNode {
   name: string;
   /** Omrekenen naar deze eenheid: `x|kN*m` of `x to kN*m` op een eigen regel. */
   omrekening?: string;
-  /** Opmaak van de uitkomst, CalcPAD `x:F2`. */
+  /** Opmaak van de uitkomst, `x:F2`. */
   formaat?: string;
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
 /**
- * CalcPAD `#repeat n … #end repeat` loop. The body is evaluated `count` times;
+ * `#repeat n … #end repeat` loop. The body is evaluated `count` times;
  * scope is shared across iterations so values accumulate (e.g. running totals).
  *
  * Iteration index is bound to the variable `_i` (1-based) within the body.
@@ -133,12 +133,12 @@ export interface RepeatNode {
   conditie?: string;
   body: AstNode[];
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
 /**
- * CalcPAD `$Plot{curve1 & curve2 @ var = lo : hi}` inline 2D plot.
+ * `$Plot{curve1 & curve2 @ var = lo : hi}` inline 2D plot.
  * Each curve is either `yExpr` (implicit x) or `xExpr|yExpr` (parametric).
  * The parameter (variable name + range) is shared across all curves.
  *
@@ -152,14 +152,14 @@ export interface PlotNode {
   hi: string;           // expression for upper bound
   samples?: number;     // default 100
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
 export interface EvaluatedPlot {
   type: 'plot';
   svg: string;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -167,7 +167,7 @@ export interface SvgNode {
   type: 'svg';
   content: string;
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -204,7 +204,7 @@ export interface DrieDNode {
   /** Meldingen van het inlezen: een onbekend element, te weinig maten. */
   fouten: string[];
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -222,7 +222,7 @@ export interface IframeNode {
   /** Meldingen van het inlezen: geen adres, een onbekende optie. */
   fouten: string[];
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -237,7 +237,7 @@ export interface IfcxBlokNode {
   taal?: string;
   fouten: string[];
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -254,7 +254,7 @@ export interface JsBlokNode {
   netwerk: string[];
   fouten: string[];
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -262,7 +262,7 @@ export interface ImageNode {
   type: 'image';
   src: string;
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -277,7 +277,7 @@ export interface SelectNode {
   label: string;
   options: SelectOption[];
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -285,12 +285,12 @@ export interface GefUploadNode {
   type: 'gef-upload';
   name: string;  // variable prefix, e.g. "sondering1"
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
 /**
- * Een CalcPAD-opdracht die vanaf die regel geldt, voor de rest van het blad
+ * Een rekentaal-opdracht die vanaf die regel geldt, voor de rest van het blad
  * (of tot een andere opdracht van dezelfde soort):
  *   `#deg`, `#rad`, `#gra`   hoekeenheid van sin, cos, … (daarna weer de app-stand)
  *   `#equ`, `#val`, `#noc`   formule en uitkomst / alleen de uitkomst / alleen de formule
@@ -307,13 +307,13 @@ export interface OpdrachtNode {
   hidden?: boolean;
 }
 
-/** CalcPAD `#break` — early exit from the enclosing #repeat / #for loop. */
+/** `#break` — early exit from the enclosing #repeat / #for loop. */
 export interface BreakNode {
   type: 'break';
   /** `#continue`: alleen de rest van deze ronde overslaan. */
   doorgaan?: boolean;
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -342,7 +342,7 @@ export interface EvaluatedHeading {
   type: 'heading';
   level: number;
   text: string;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -352,7 +352,7 @@ export interface EvaluatedText {
   html?: boolean;
   /** Zie TextNode.inline. */
   inline?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -364,7 +364,7 @@ export interface EvaluatedText {
 export interface MatrixUitkomst {
   /** De getoonde elementen per rij. Een vector heeft één rij. */
   rijen: string[][];
-  /** Een vector (één index) en geen matrix; CalcPAD toont hem liggend. */
+  /** Een vector (één index) en geen matrix; de rekentaal toont hem liggend. */
   vector: boolean;
   /**
    * De eenheid die alle elementen delen; die staat dan één keer achter de
@@ -398,12 +398,12 @@ export interface EvaluatedAssignment {
    */
   getoond?: string;
   /**
-   * Wat de regel toont (CalcPAD `#val`, `#noc`, `#nosub`, `#novar`); zonder
+   * Wat de regel toont (`#val`, `#noc`, `#nosub`, `#novar`); zonder
    * dit veld: formule, invulling en uitkomst (`#equ` met `#varsub`).
    */
   weergave?: 'val' | 'noc' | 'nosub' | 'novar';
   hidden?: boolean;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -416,7 +416,7 @@ export interface EvaluatedInputPrompt {
   currentValue: string;
   /** De standaardwaarde van het veld (`?{5000}`, anders "0"); placeholder van een leeg veld. */
   standaard?: string;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -425,7 +425,7 @@ export interface EvaluatedUserFunction {
   name: string;
   params: string[];
   expression: string;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -441,7 +441,7 @@ export interface EvaluatedVarDisplay {
   matrix?: MatrixUitkomst;
   /** Zie EvaluatedAssignment.getoond. */
   getoond?: string;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -453,14 +453,14 @@ export interface EvaluatedConditionalBranch {
 export interface EvaluatedSvg {
   type: 'svg';
   content: string;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
 export interface EvaluatedImage {
   type: 'image';
   src: string;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -508,7 +508,7 @@ export interface EvaluatedDrieD {
   scene: DrieDScene;
   /** Wat niet te tekenen was, per regel van het blok; staat boven het beeld. */
   meldingen: string[];
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -520,7 +520,7 @@ export interface EvaluatedIframe {
   scripts: boolean;
   titel?: string;
   meldingen: string[];
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -533,7 +533,7 @@ export interface EvaluatedIfcxBlok {
   /** Ook op de uitdraai. */
   papier: boolean;
   meldingen: string[];
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -559,7 +559,7 @@ export interface EvaluatedJsBlok {
   netwerk: string[];
   waarden: Record<string, JsWaarde>;
   meldingen: string[];
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -569,7 +569,7 @@ export interface EvaluatedSelect {
   label: string;
   options: SelectOption[];
   selectedValue: string;
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 
@@ -577,7 +577,7 @@ export interface EvaluatedGefUpload {
   type: 'gef-upload';
   name: string;
   data: null;  // data comes from runtime upload
-  /** Alleen op het scherm, niet op papier (CalcPAD `#pre`). */
+  /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
 

@@ -639,7 +639,7 @@ console.log("\n10. De sjablonen door de opschoning");
     E_beschot: "7000", b_vloer: "3", G_k: "1", Q_k: "1.75", F_k: "2", belastingcat: "2", controleer: "1", grensfactor: "0.004", grens_bij: "0.003", controleer_trilling: "1",
     "ζ": "0.01", a_tril: "1", b_tril: "120", g_bl: "0", a_steun: "0", a_over: "0", L_veld2: "0", b_sparing: "0", l_staart: "0", b_ond: "0", b_zelf: "0", h_zelf: "0", "ψ_0_zelf": "0", "ψ_2_zelf": "0",
   };
-  for (const [naam, bestand, waarden] of [["balklaag", "balklaag.ts", BALKLAAG], ["ligger", "ligger.ts", {}], ["voorbeeldblad", "calcpad-demo.ts", {}]]) {
+  for (const [naam, bestand, waarden] of [["balklaag", "balklaag.ts", BALKLAAG], ["ligger", "ligger.ts", {}], ["voorbeeldblad", "rekentaal-demo.ts", {}]]) {
     const html = render(evaluate(parse(laadTemplate(bestand)), waarden, SCOPE));
     const voor = venster.document.createElement("template");
     voor.innerHTML = html;

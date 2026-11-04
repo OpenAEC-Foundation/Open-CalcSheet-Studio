@@ -10,8 +10,8 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 
 | Deel | Wat |
 |---|---|
-| `packages/core` | Rekenkern op mathjs: `parser.ts` (CalcPAD-achtige syntax), `evaluator.ts` (rekent, registreert de eigen functies), `renderer.ts` (HTML). Eigen oplossers: `ligger.ts` (ligger op 1–4 steunpunten, overstek, inklemming, gerber; Timoshenko optioneel), `raamwerk.ts` (vlakke raamwerken, α_cr), `doorsnede.ts` (samengestelde doorsneden). Bouwen: `npm --prefix packages/core run build`; desktop en scripts gebruiken `dist`. |
-| `packages/desktop/src/templates` | De rekenbladen, elk als tekst (CalcPAD-achtig) in een TypeScript-string. Registratie in `index.ts`. |
+| `packages/core` | Rekenkern op mathjs: `parser.ts` (de rekentaal, zie `rekentaal.md`), `evaluator.ts` (rekent, registreert de eigen functies), `renderer.ts` (HTML). Eigen oplossers: `ligger.ts` (ligger op 1–4 steunpunten, overstek, inklemming, gerber; Timoshenko optioneel), `raamwerk.ts` (vlakke raamwerken, α_cr), `doorsnede.ts` (samengestelde doorsneden). Bouwen: `npm --prefix packages/core run build`; desktop en scripts gebruiken `dist`. |
+| `packages/desktop/src/templates` | De rekenbladen, elk als rekentekst in een TypeScript-string. Registratie in `index.ts`. |
 | `packages/desktop/src/components/calc` | Parametrische beelden (`*Designer.tsx`), koppeling blad↔beeld (`designerKeuze.tsx`, via een herkenningstekst uit de titel), modulecatalogus met status (`projectTree.ts`), uitkomst van een blad (`bladResultaat.ts`), afdruk (`PrintDocument.tsx/.css`, `PrintBlad.tsx`, `paginering.ts`), rekenversie en bijwerken van bladen (`bladVersie.ts`, `BladBijwerken.tsx`). |
 | `packages/desktop/src/rapport`, `components/rapport` | Constructierapport (hoofdstukken, uitgangspunten, belastingen met opbouwen en gewichtenbibliotheek `gewichten.ts`, bijlage A met de rekenbladen). |
 | `components/calc/bladSoorten.tsx` | Bladen die niet rekenen (PDF, werkmap, Markdown): hier meldt een soort zich aan voor de afdruk en het rapport. Zie [bladsoorten.md](bladsoorten.md). |
@@ -70,6 +70,7 @@ cd packages/desktop && npx tsc --noEmit -p .
 ## 5. Bouwen en uitbrengen
 
 - Versie (jaar.week.volgnummer): zetten met `node scripts/versie.mjs zet JJJJ.W.N`, niet met de hand. `check-versie.mjs` zakt als de velden uit elkaar lopen.
+- Wijzigingen: zet elke wijziging die de gebruiker merkt in [CHANGELOG.md](CHANGELOG.md) onder "Nog niet uitgebracht". Het zetten van een versie maakt daar de sectie van dat nummer van; de release-tekst neemt die over, en zonder wijzigingen stopt de release. De website telt en toont de opsommingen uit de release-tekst. `check-wijzigingen.mjs` bewaakt dit.
 - Uitbrengen en ondertekenen: zie [ondertekening.md](ondertekening.md). Een release start met *Run workflow* op `release.yml`; die kiest het nummer, ondertekent en publiceert pas als alle controles groen zijn.
 - Installer: `npm run tauri build` in `packages/desktop`; lokaal zonder ondertekening. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`). Daarvoor bouwt `beforeBuildCommand` de Jupyter-omgeving als die er nog niet is (`scripts/bouw-jupyter-omgeving.mjs --als-nodig`); dat vraagt eenmalig internet en Python. Een `tauri dev` zonder pakbestand start gewoon, en een Jupyter-blad meldt dan dat de omgeving ontbreekt.
 - Draait de gebouwde app nog, dan houdt die `target/release/WebView2Loader.dll` vast en faalt de build: bouw dan met een eigen `CARGO_TARGET_DIR` (bijvoorbeeld `src-tauri/target-installer`, niet in git).
@@ -83,7 +84,7 @@ Status in de catalogus: *gereed* (gecalibreerd op referentiebladen), *controlere
 | Algemeen | Ligger (hout of staal: twee tot vier steunpunten of een uitkraging, overstekken, inklemming, gerberscharnieren; tot zes lasten; omhullende, kip, doorbuiging); Spanningen in een doorsnede (mechanica, geen normtoets: I of H, rechthoek, rond, buis, koker, T, U; spanningsveld, neutrale lijn, σ en τ langs de assen, vergelijkingsspanning) |
 | Hout | Balklaag (houten vloerbalken: enkelvoudige ligger, overstek, twee velden, raveelbalk; vijf belastinggevallen, omhullende M- en V-lijn, trillingen, oplegdruk, kip) |
 | Beton | Tweepaalspoer (staafwerkmodel; knopen, trekband, splijtkrachten, verankering, scheurwijdte, detaillering; tekening met de gekozen staven) |
-| Bibliotheek | CalcPAD-syntaxdemo |
+| Bibliotheek | Rekentaal-demo |
 
 Een **spreadsheet-blad** is een werkmap (XLSX) als blad in het project, op de
 editor `@betteroffice/xlsx-react`. Die draait hier met `legacySyncApi`: de

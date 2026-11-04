@@ -17,14 +17,14 @@
  */
 import { parse, evaluate } from "@ifc-calc/core";
 import type { AstNode, EvaluatedNode } from "@ifc-calc/core";
-import { calcpadIncludes, calcpadImageUrls } from "../templates/calcpad-includes.ts";
+import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
 import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../components/calc/bladLezen.ts";
 import { rekenEenhedenDoor } from "../components/calc/canvasRekenen.ts";
 import { heeftEenheden } from "../store/canvasBlad.ts";
 
 /** Leest een rekentekst in, met dezelfde includes en afbeeldingen als de uitwerking. */
 export function leesBron(source: string): AstNode[] {
-  return parse(source, { includes: calcpadIncludes, imageUrls: calcpadImageUrls });
+  return parse(source, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls });
 }
 
 export interface Doorrekening {
@@ -43,7 +43,7 @@ export function rekenDoor(
 ): Doorrekening {
   // Een canvas-blad langs dezelfde route als op het scherm: een fout blijft bij zijn eenheid.
   const nodes = heeftEenheden(source)
-    ? rekenEenhedenDoor(source, waarden, scope, { includes: calcpadIncludes, imageUrls: calcpadImageUrls }).flatMap((u) => u.nodes)
+    ? rekenEenhedenDoor(source, waarden, scope, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }).flatMap((u) => u.nodes)
     : evaluate(leesBron(source), waarden, scope);
   return {
     nodes,

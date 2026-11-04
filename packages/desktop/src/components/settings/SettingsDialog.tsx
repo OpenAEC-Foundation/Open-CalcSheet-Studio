@@ -37,7 +37,7 @@ export function themeId(theme?: string): string {
 // "mcp": API en AI-assistent (McpTab.tsx). Die tab werkt direct, niet via Opslaan.
 const TAB_IDS = ["general", "appearance", "units", "bureau", "mcp", "about"] as const;
 
-/** Persisted under the "units" settings key. Defaults match CalcPAD's. */
+/** Persisted under the "units" settings key. Defaults match the calculation language. */
 export interface UnitsSettings {
   angleMode: "deg" | "rad" | "gra";
   defaultLength: "mm" | "cm" | "m";
@@ -407,7 +407,7 @@ function ThemeDropdown({
 }
 
 /* ─── Units Tab ─────────────────────────────────────────────
-   Mirrors the CalcPAD `#deg`/`#rad`/`#gra` switches plus default display
+   Mirrors the `#deg`/`#rad`/`#gra` switches of the language plus default display
    units. Saved values are picked up by the evaluator (angle mode) and
    shown in the preview.
    ─────────────────────────────────────────────────────────── */

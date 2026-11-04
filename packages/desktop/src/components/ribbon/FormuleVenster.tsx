@@ -26,7 +26,7 @@ const BRON_EN: [RegExp, string][] = [
  * (store/library.ts) staan hier ook, zodra ze zijn opgehaald.
  */
 export default function FormuleVenster({ open, onSluit }: { open: boolean; onSluit: () => void }) {
-  const { t, i18n } = useTranslation("calcpad");
+  const { t, i18n } = useTranslation("rekentaal");
   const { t: tc } = useTranslation();
   const taal = (w: Tekst) => (i18n.language?.startsWith("en") ? w.en : w.nl) || w.nl;
   const bronTekst = (b: string) => (i18n.language?.startsWith("en") ? BRON_EN.reduce((s, [nl, en]) => s.replace(nl, en), b) : b);

@@ -43,11 +43,15 @@ The release workflow refuses to publish files that are not signed: Windows with 
 
 - **Free and open.** LGPL-3.0. No licence fees, no account.
 - **You can check every step.** A result shows its name, formula, filled-in values and outcome, with units.
-- **One project, one report.** Cover, table of contents and page numbers run through all sheets, whatever kind they are.
+- **One project, one report.** Cover, table of contents and page numbers run through all sheets, whatever kind they are. The side panel shows the contents and all numbers as you work.
 - **The right sheet for each part.** Text, canvas, spreadsheet, node graph, drawing, notebook, Markdown or PDF, side by side in one project.
 - **Change a number, the check follows.** Sheets recalculate while you type, and a drawing or a 3D model can take its sizes from the sheet.
 - **Your data stays open.** The project file is IFCX, and you can export IFC4x3.
 - **Works with an AI assistant.** A built-in MCP server and REST API run on your own computer, behind a token.
+
+## Inspired by Calcpad
+
+Open CalcSheet Studio is hugely inspired by [Calcpad](https://calcpad.eu/) by Ned Ganchovski; that idea is what led to this app. You write a calculation as plain text and read back every step worked out, and we are grateful for it. The app has its own calculation kernel and also opens your `.cpd` files. The open-source line of Calcpad continues in the community edition [CalcpadCE](https://github.com/imartincei/CalcpadCE).
 
 ## Screenshots
 
@@ -72,7 +76,8 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 | **Drawing** | A4, A3 or A2 with views to scale: grids, levels, walls, steel sections, hollow-core floors and schemes |
 | **Jupyter** | A [notebook with Python](docs/jupyter-blad.md), numpy, scipy, pandas and matplotlib, without installing anything. Optionally it runs again after every change |
 | **Marimo** | A reactive Python notebook: move a slider and everything that depends on it follows |
-| **Markdown, PDF** | Existing text and documents, as part of the report |
+| **PDF** | An existing PDF as part of the report. Zoom in, and add notes, highlights, arrows, boxes and revision clouds, on screen and on paper |
+| **Markdown** | Existing text, as part of the report |
 
 ## Modules and library
 
@@ -82,7 +87,7 @@ The two-pile cap has a 3D study model next to its drawing. It shows the cap, the
 
 **Section stresses** is mechanics, not a code check: choose an I or H section, rectangle, circle, tube, box, T or U, set the axial force, moments and shear forces in two directions, and see the stress field in the section, the neutral axis and the diagrams of σ and τ follow at once. See [what the sheet calculates](docs/doorsnede-spanningen.md).
 
-The formula library holds 137 formulas you can insert with a click, each with a sketch that shows what it is about. The library in the project panel adds 15 worked examples from the Eurocodes and classical mechanics. Those examples are not in the installer: the app fetches them from this repository when it starts, so [a correction reaches everyone](docs/library.md) without a new release. The examples guard their own limits: required reinforcement warns when a section is over-reinforced or the bars do not fit, and the links example keeps cot θ within its limits and checks spacing and minimum reinforcement.
+The formula library holds 137 formulas you can insert with a click, each with a sketch that shows what it is about. The beams and section properties also bring a drawing into the sheet that follows your input: the moment diagram to scale, or the section to scale with its dimensions. The library in the project panel adds 15 worked examples from the Eurocodes and classical mechanics. Those examples are not in the installer: the app fetches them from this repository when it starts, so [a correction reaches everyone](docs/library.md) without a new release. The examples guard their own limits: required reinforcement warns when a section is over-reinforced or the bars do not fit, and the links example keeps cot θ within its limits and checks spacing and minimum reinforcement.
 
 | | |
 |---|---|
@@ -110,8 +115,8 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **57 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
-- **121 results against hand calculations**: 53 in `scripts/check-formules.mjs` and 68 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
+- **59 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
 - **Builds on all three platforms** on every push to `main`, with the signatures checked.

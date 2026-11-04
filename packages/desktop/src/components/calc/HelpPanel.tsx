@@ -4,7 +4,7 @@ import { useActieveBron, useZetActieveBron } from "../../store/actiefBlad";
 import "./HelpPanel.css";
 
 /**
- * Shown in the preview pane when the editor is empty. Mirrors the CalcPAD
+ * Shown in the preview pane when the editor is empty. A short
  * "How it works" reference card so users discover the language without
  * leaving the app. Sections with a `+` prefix can be expanded.
  *
@@ -13,14 +13,14 @@ import "./HelpPanel.css";
 
 /**
  * Zichtbare tekst: letterlijk (code, tekens; in elke taal gelijk) of een
- * sleutel onder calcpad:help. Het fragment in `insert` is rekentaal en wordt
+ * sleutel onder rekentaal:help. Het fragment in `insert` is rekentaal en wordt
  * nooit vertaald.
  */
 type Tekst = string | { sleutel: string };
 const vt = (sleutel: string): Tekst => ({ sleutel });
 
 interface Section {
-  /** Sleutel van de titel (calcpad:help.sectie.…); ook de React-key. */
+  /** Sleutel van de titel (rekentaal:help.sectie.…); ook de React-key. */
   id: string;
   /** When set, items render as a collapsible list. */
   items?: Item[];
@@ -161,7 +161,7 @@ const SECTIONS: Section[] = [
 ];
 
 export default function HelpPanel() {
-  const { t } = useTranslation("calcpad");
+  const { t } = useTranslation("rekentaal");
   const tekst = (x: Tekst) => (typeof x === "string" ? x : t(`help.${x.sleutel}`));
   const source = useActieveBron();
   const setSource = useZetActieveBron();

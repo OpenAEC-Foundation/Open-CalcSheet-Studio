@@ -161,7 +161,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     description:
       "Search the formula library: standard formulas from mechanics and the Eurocodes (EN 1990, 1991, 1992, 1993, 1995) as ready-to-run calculation text. " +
       "query searches names, explanations, sources and code; group limits to one group. includeCode=true adds the calculation text. Insert one with sheet_insert_formula. " +
-      "Formulas with library are the worked examples of the app's Library panel: their text lines are Dutch in code and English in codeEn.",
+      "Formulas with library are the worked examples of the app's Library panel; these and the beams and sections, whose drawing follows the input, have their text lines in Dutch in code and in English in codeEn.",
     inputSchema: objectSchema({
       query: { type: "string", description: "Search text." },
       group: { type: "string", enum: FORMULE_GROEPEN.map((g) => g.id), description: "Group id." },

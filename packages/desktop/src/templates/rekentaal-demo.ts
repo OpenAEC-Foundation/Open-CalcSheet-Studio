@@ -1,6 +1,6 @@
 /**
  * Open CalcSheet Studio demo — een voorbeeldblad dat laat zien wat
- * de rekentaal (in CalcPAD-stijl) kan, met uitleg per onderdeel. De rode draad
+ * de rekentaal kan, met uitleg per onderdeel. De rode draad
  * is een stalen ligger op twee steunpunten.
  *
  * Hoofdstukken: tekst en koppen; variabelen en eenheden; invoervelden en
@@ -8,7 +8,7 @@
  * voorwaarden (EN 1990, EN 1993-1-1); herhalingen (#for, #repeat, #break);
  * matrices en het oplossen van een stelsel; een doorgaande ligger op drie
  * steunpunten met ligger(); grafieken en oplossers; parametrische tekeningen;
- * een afbeelding (@img, uit calcpad-includes.ts); een ruimtelijk beeld
+ * een afbeelding (@img, uit rekentaal-includes.ts); een ruimtelijk beeld
  * (@3d: de ligger op twee kolommen, draaibaar); een externe pagina (@iframe, laadt
  * pas na een klik); een parametrische balk in JavaScript (@js, loopt pas na een
  * klik); een spiekbriefje.
@@ -25,9 +25,9 @@
  * dollarteken, &#124; voor een verticale streep en &#123; voor een accolade.
  */
 
-export const calcpadDemo = `"Open CalcSheet Studio demo
+export const rekentaalDemo = `"Open CalcSheet Studio demo
 
-'<i>Dit blad is zelf het voorbeeld: in de editor staat de rekentaal (in CalcPAD-stijl), in de uitwerking wat daaruit volgt. Elk hoofdstuk behandelt één onderdeel, met eerst een korte uitleg en de schrijfwijze (in <code>deze letter</code>) en daarna het werkende voorbeeld. De rode draad is een stalen ligger op twee steunpunten. Verander gerust iets in de editor of in de invoervelden en kijk wat er meebeweegt.</i>
+'<i>Dit blad is zelf het voorbeeld: in de editor staat de rekentaal, in de uitwerking wat daaruit volgt. Elk hoofdstuk behandelt één onderdeel, met eerst een korte uitleg en de schrijfwijze (in <code>deze letter</code>) en daarna het werkende voorbeeld. De rode draad is een stalen ligger op twee steunpunten. Verander gerust iets in de editor of in de invoervelden en kijk wat er meebeweegt.</i>
 '<i class="ook-afdruk">Dit blad laat zien wat de rekentaal kan, met een stalen ligger als rode draad. De uitleg en de hoofdstukken over alleen de schrijfwijze staan alleen op het scherm.</i>
 
 '<h1>1. Tekst en koppen<span class="alleen-scherm"></span></h1>

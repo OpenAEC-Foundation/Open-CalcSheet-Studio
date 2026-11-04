@@ -51,7 +51,7 @@ export interface PdfStand {
  * 84 % zo groot afgedrukt, dus effectief zo'n 170 dpi: scherp genoeg voor
  * tekst en tekeningen, zonder dat een PDF van vijftig pagina's minuten kost.
  */
-const TEKENSCHAAL = 2;
+export const TEKENSCHAAL = 2;
 /** Een grote tekening (A0) wordt niet groter getekend dan dit aantal pixels. */
 const MAX_PIXELS = 8_000_000;
 /** Zoveel PDF's blijven getekend bewaard als niets ze meer toont. */
@@ -179,6 +179,54 @@ async function tekenPagina(doc: PDFDocumentProxy, nummer: number): Promise<strin
     canvas.height = 0;
     pagina.cleanup();
   }
+}
+
+// ── Scherp tekenen bij inzoomen ───────────────────────────────────────────────
+
+/** Het laatst gebruikte document voor het scherp tekenen: bij inzoomen is dat vrijwel altijd hetzelfde. */
+let scherp: { data: string; doc: Promise<PDFDocumentProxy> } | null = null;
+
+function scherpDocument(data: string): Promise<PDFDocumentProxy> {
+  if (scherp?.data === data) return scherp.doc;
+  sluitScherp();
+  const doc = pdfjs().then((lib) => lib.getDocument({ data: base64NaarBytes(data), verbosity: lib.VerbosityLevel.ERRORS }).promise);
+  scherp = { data, doc };
+  return doc;
+}
+
+/** Geeft het document van het scherp tekenen vrij; de viewer roept dit aan als hij dichtgaat. */
+export function sluitScherp() {
+  if (!scherp) return;
+  void scherp.doc.then((doc) => doc.loadingTask.destroy()).catch(() => undefined);
+  scherp = null;
+}
+
+/**
+ * Tekent een pagina op `schaal` pixels per punt in `doel`. Het oude beeld blijft staan tot het
+ * nieuwe klaar is. `nogNodig` zegt of de uitkomst nog gewenst is: tijdens het zoomen verandert de
+ * schaal sneller dan pdf.js kan tekenen.
+ */
+export function tekenScherp(data: string, nummer: number, schaal: number, doel: HTMLCanvasElement, nogNodig: () => boolean): Promise<void> {
+  return inRij(async () => {
+    if (!nogNodig()) return;
+    const doc = await scherpDocument(data);
+    const pagina = await doc.getPage(nummer + 1);
+    const viewport = pagina.getViewport({ scale: schaal });
+    const tijdelijk = document.createElement("canvas");
+    tijdelijk.width = Math.max(1, Math.ceil(viewport.width));
+    tijdelijk.height = Math.max(1, Math.ceil(viewport.height));
+    try {
+      await pagina.render({ canvas: tijdelijk, viewport, background: "#ffffff" }).promise;
+      if (!nogNodig()) return;
+      doel.width = tijdelijk.width;
+      doel.height = tijdelijk.height;
+      doel.getContext("2d")?.drawImage(tijdelijk, 0, 0);
+    } finally {
+      tijdelijk.width = 0;
+      tijdelijk.height = 0;
+      pagina.cleanup();
+    }
+  });
 }
 
 async function laad(data: string, ingang: Ingang) {

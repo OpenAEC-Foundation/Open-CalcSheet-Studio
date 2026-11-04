@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { evaluate, parse } from "@ifc-calc/core";
-import { calcpadImageUrls, calcpadIncludes } from "../../../templates/calcpad-includes";
+import { rekentaalImageUrls, rekentaalIncludes } from "../../../templates/rekentaal-includes";
 import { projectScope } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
 import { staatInHoofdstuk } from "../../../rapport/opzet";
@@ -25,7 +25,7 @@ function useUitkomsten(): Map<string, Uitkomst> {
   const gegevens = useProjectStore((s) => s.gegevens);
   return useMemo(() => {
     const scope = projectScope(gegevens);
-    const opties = { includes: calcpadIncludes, imageUrls: calcpadImageUrls };
+    const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls };
     const uit = new Map<string, Uitkomst>();
     for (const ex of exemplaren) {
       try {

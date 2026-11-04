@@ -8,9 +8,10 @@
     "calc": "Start",
     "insert": "Invoegen",
     "view": "Weergave",
-    "calcpad": "CalcPAD syntax",
+    "rekentaal": "Rekentaal",
     "tekenen": "Tekenen",
-    "spreadsheet": "Spreadsheet"
+    "spreadsheet": "Spreadsheet",
+    "pdf": "PDF"
   },
   "spreadsheet": {
     "groep": {
@@ -61,6 +62,47 @@
       "cel": "Tot de actieve cel",
       "uit": "Opheffen"
     }
+  },
+  "pdf": {
+    "groep": {
+      "pagina": "Pagina",
+      "zoom": "Zoomen",
+      "aantekenen": "Aantekenen",
+      "stijl": "Stijl",
+      "bewerken": "Bewerken"
+    },
+    "vorige": "Vorige",
+    "volgende": "Volgende",
+    "paginaVeld": "Paginanummer",
+    "zoomIn": "Inzoomen",
+    "zoomUit": "Uitzoomen",
+    "zoomUitleg": "Zoomen kan ook met Ctrl en scrollen",
+    "breedte": "Breedte",
+    "helePagina": "Hele pagina",
+    "gereedschap": {
+      "kies": "Kiezen",
+      "pen": "Pen",
+      "markeer": "Markeren",
+      "tekst": "Tekst",
+      "pijl": "Pijl",
+      "kader": "Kader",
+      "wolk": "Wolk"
+    },
+    "uitleg": {
+      "kies": "Klik op een aantekening om hem te kiezen en te verplaatsen; slepen op de pagina schuift het beeld",
+      "pen": "Vrij tekenen",
+      "markeer": "Tekst of een onderdeel markeren",
+      "tekst": "Klik op de pagina en typ een opmerking",
+      "pijl": "Trek een pijl naar wat je bedoelt",
+      "kader": "Trek een kader",
+      "wolk": "Trek een wijzigingswolk"
+    },
+    "kleur": "Kleur",
+    "dikte": "Lijndikte",
+    "verwijderen": "Verwijderen",
+    "allesWissen": "Alles wissen",
+    "opPapier": "Op papier",
+    "opPapierUitleg": "De aantekeningen ook afdrukken en in het rapport zetten"
   },
   "calc": {
     "file": "Bestand",

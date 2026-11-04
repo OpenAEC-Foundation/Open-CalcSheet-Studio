@@ -43,11 +43,15 @@ De releaseworkflow weigert bestanden te publiceren die niet ondertekend zijn: Wi
 
 - **Gratis en open.** LGPL-3.0. Geen licentiekosten, geen account.
 - **Je kunt elke stap nalopen.** Een uitkomst toont naam, formule, ingevulde waarden en resultaat, met eenheden.
-- **Eén project, één rapport.** Voorblad, inhoudsopgave en paginanummers lopen door over alle bladen, van welke soort ook.
+- **Eén project, één rapport.** Voorblad, inhoudsopgave en paginanummers lopen door over alle bladen, van welke soort ook. Het zijpaneel toont de inhoud en alle nummers terwijl je werkt.
 - **Het juiste blad voor elk onderdeel.** Tekst, canvas, spreadsheet, nodegraaf, tekening, notebook, Markdown of PDF, naast elkaar in één project.
 - **Verander een getal en de toets volgt.** Bladen rekenen door terwijl je typt, en een tekening of 3D-model kan zijn maten uit het blad halen.
 - **Je gegevens blijven open.** Het projectbestand is IFCX, en je kunt IFC4x3 exporteren.
 - **Werkt met een AI-assistent.** Een ingebouwde MCP-server en REST-API draaien op je eigen computer, achter een token.
+
+## Geïnspireerd door Calcpad
+
+Open CalcSheet Studio is enorm geïnspireerd door [Calcpad](https://calcpad.eu/) van Ned Ganchovski; dat idee heeft eigenlijk tot deze app geleid. Een berekening schrijf je als gewone tekst en je leest elke stap uitgewerkt terug, en daar zijn we dankbaar voor. De app heeft een eigen rekenkern en opent ook je `.cpd`-bestanden. De open-source lijn van Calcpad loopt door in de community-versie [CalcpadCE](https://github.com/imartincei/CalcpadCE).
 
 ## Schermafbeeldingen
 
@@ -74,7 +78,8 @@ Een project is een lijst bladen. Elke soort staat beschreven in [de documentatie
 | **Tekening** | A4, A3 of A2 met aanzichten op schaal: stramienen, peilen, wanden, staalprofielen, kanaalplaatvloeren en schematiseringen |
 | **Jupyter** | Een [notebook met Python](docs/jupyter-blad.md), numpy, scipy, pandas en matplotlib, zonder iets te installeren. Op verzoek rekent het opnieuw na elke wijziging |
 | **Marimo** | Een reactief Python-notebook: verschuif een schuif en alles wat daarvan afhangt, volgt |
-| **Markdown, PDF** | Bestaande tekst en documenten, als onderdeel van het rapport |
+| **PDF** | Een bestaande PDF als onderdeel van het rapport. Inzoomen, en opmerkingen, markeringen, pijlen, kaders en wijzigingswolken toevoegen, op het scherm en op papier |
+| **Markdown** | Bestaande tekst, als onderdeel van het rapport |
 
 ## Modules en bibliotheek
 
@@ -84,7 +89,7 @@ De tweepaalspoer heeft naast de tekening een 3D-studiemodel. Dat toont de poer, 
 
 **Spanningen in een doorsnede** is mechanica, geen normtoets: kies een I of H, rechthoek, rond, buis, koker, T of U, stel de normaalkracht, de momenten en de dwarskrachten in twee richtingen in, en zie het spanningsveld in de doorsnede, de neutrale lijn en de diagrammen van σ en τ meteen meebewegen. Zie [wat het blad rekent](docs/doorsnede-spanningen.md).
 
-De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met een schets die laat zien waar het over gaat. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release. De voorbeelden bewaken hun eigen grenzen: de buigwapening waarschuwt bij een overwapende doorsnede of staven die niet passen, en het voorbeeld van de beugels houdt cot θ binnen de grenzen en toetst afstand en minimumwapening.
+De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met een schets die laat zien waar het over gaat. De liggers en de doorsnedegrootheden zetten ook een tekening in het blad die je invoer volgt: de momentenlijn op schaal, of de doorsnede op schaal met haar maten. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release. De voorbeelden bewaken hun eigen grenzen: de buigwapening waarschuwt bij een overwapende doorsnede of staven die niet passen, en het voorbeeld van de beugels houdt cot θ binnen de grenzen en toetst afstand en minimumwapening.
 
 | | |
 |---|---|
@@ -112,8 +117,8 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **57 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
-- **121 uitkomsten tegen een handberekening**: 53 in `scripts/check-formules.mjs` en 68 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
+- **59 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.
 - **Bouwen op alle drie de platforms** bij elke push naar `main`, met controle van de handtekeningen.

@@ -19,7 +19,7 @@ import type { PoerDefinitie } from "./poerDefinitie";
  */
 export default function PoerModel({ poer, hoogte, naast }: { poer: PoerDefinitie; hoogte: number; naast: boolean }) {
   const { t } = useTranslation("beelden");
-  const { t: tc } = useTranslation("calcpad");
+  const { t: tc } = useTranslation("rekentaal");
   const exemplaar = useActiefExemplaar();
   const bladId = exemplaar?.id;
   const naam = exemplaar?.naam ?? "";

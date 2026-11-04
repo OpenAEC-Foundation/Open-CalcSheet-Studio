@@ -68,7 +68,7 @@ function n(node: MathNode): AnyNode {
 
 function escapeText(s: string): string {
   // KaTeX's `\text{}` is text-mode: `_` and `^` and `\` and `{}` need escaping
-  // to render literally. CalcPAD identifiers fold multi-comma subscripts to
+  // to render literally. Identifiers in the language fold multi-comma subscripts to
   // `_` (e.g. `V_b_0`), so the sub-string commonly contains underscores.
   return s.replace(/\\/g, '\\backslash{}').replace(/[_^{}#$%&]/g, '\\$&');
 }
@@ -207,7 +207,7 @@ function nodeToLatex(node: MathNode): string {
 
 /**
  * Een vector of matrix als literaal. Een matrix (rijen) staat als blok tussen
- * rechte haken; een vector liggend, zoals CalcPAD hem toont: [1 2 3].
+ * rechte haken; een vector liggend, zoals de rekentaal hem toont: [1 2 3].
  */
 function arrayToLatex(node: MathNode): string {
   const items = (node as unknown as { items?: MathNode[] }).items ?? [];
