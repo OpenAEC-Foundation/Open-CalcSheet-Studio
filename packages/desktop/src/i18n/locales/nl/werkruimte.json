@@ -71,7 +71,9 @@
       "marimo": "Marimo-notebook",
       "marimoBestand": "Marimo-notebook…",
       "grafBestand": "Grafblad uit bestand (.dyn)…"
-    }
+    },
+    "inhoud": "Inhoud",
+    "inhoudZonderPaginas": "De paginanummers komen erbij zodra je het afdrukvoorbeeld van het rapport opent."
   },
   "catalogus": {
     "groepen": {

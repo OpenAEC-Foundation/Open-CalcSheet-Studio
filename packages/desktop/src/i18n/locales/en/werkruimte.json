@@ -71,7 +71,9 @@
       "marimo": "Marimo notebook",
       "marimoBestand": "Marimo notebook…",
       "grafBestand": "Graph file (.dyn)…"
-    }
+    },
+    "inhoud": "Contents",
+    "inhoudZonderPaginas": "The page numbers appear once you open the print preview of the report."
   },
   "catalogus": {
     "groepen": {
