@@ -80,7 +80,7 @@
         "nl": "Benodigde buigwapening",
         "en": "Required reinforcement"
       },
-      "bron": "NEN-EN 1992-1-1 3.1.7(3) (3.19); 9.2.1.1(1) (9.1N)",
+      "bron": "NEN-EN 1992-1-1 3.1.7(3) (3.19); 8.2(2); 9.2.1.1(1) (9.1N)",
       "uitleg": {
         "nl": "Andersom gerekend: uit het moment volgt de wapening, en het blad kiest zelf het aantal staven.",
         "en": "The other way round: the moment gives the reinforcement, and the sheet picks the number of bars itself."
@@ -115,7 +115,7 @@
         "nl": "Beugels en drukdiagonaal",
         "en": "Links and compression strut"
       },
-      "bron": "NEN-EN 1992-1-1 6.2.2(6) (6.6N); 6.2.3 (6.7N), (6.8), (6.9)",
+      "bron": "NEN-EN 1992-1-1 6.2.2(6) (6.6N); 6.2.3 (6.7N), (6.8), (6.9), (6.18); 9.2.2 (9.4), (9.5N)",
       "uitleg": {
         "nl": "De hoek van de drukdiagonaal is een keuze: een schuinere diagonaal geeft de beugels meer capaciteit en het beton minder. De grafiek laat die afweging zien.",
         "en": "The angle of the compression strut is a choice: a flatter strut gives the links more capacity and the concrete less. The chart shows that trade-off."

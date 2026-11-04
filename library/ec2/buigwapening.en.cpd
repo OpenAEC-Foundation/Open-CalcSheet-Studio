@@ -1,16 +1,23 @@
 ## Required reinforcement
-'<small>Source: NEN-EN 1992-1-1 3.1.7(3) (3.19); 9.2.1.1(1) (9.1N)</small>
-'<i>The other way round: the moment gives the reinforcement, and the sheet picks the number of bars itself.</i>
+'<small>Source: NEN-EN 1992-1-1 3.1.7(3) (3.19); 8.2(2); 9.2.1.1(1) (9.1N)</small>
+'<i>The other way round: the moment gives the reinforcement, and the sheet picks the number of bars itself. That only works while the steel yields and the bars fit.</i>
 M_Ed = 150 kN*m'<span class="kolom-3"></span>'
 b = 300 mm'<span class="kolom-3"></span>'
 d = 450 mm'<span class="kolom-3"></span>'
 φ_s = 20 mm', bar diameter<span class="kolom-3"></span>'
+c_s = 40 mm', edge to bar, with the link<span class="kolom-3"></span>'
+d_g = 16 mm', largest aggregate size<span class="kolom-3"></span>'
 f_ck = 30 N/mm^2'<span class="kolom-3"></span>'
 f_yk = 500 N/mm^2'<span class="kolom-3"></span>'
 λ = 0.8', (3.19)<span class="kolom-3"></span>'
 f_cd = f_ck/1.5
 f_yd = f_yk/1.15
 f_ctm = 0.30*(f_ck/MPa)^(2/3)*MPa to N/mm^2
+ε_yd = f_yd/(200000 N/mm^2)
+x_lim = d*0.0035/(0.0035 + ε_yd) to mm', here the steel just starts to yield'
+M_lim = λ*x_lim*b*f_cd*(d - λ*x_lim/2) to kN*m
+UC_x = M_Ed/M_lim', above 1 the steel does not yield'
+#if M_Ed ≤ M_lim
 x = (d - sqrt(d^2 - 2*M_Ed/(b*f_cd)))/λ to mm', from moment equilibrium'
 z = d - λ*x/2 to mm
 A_s,req = M_Ed/(z*f_yd) to mm^2
@@ -19,4 +26,13 @@ A_1 = π*φ_s^2/4 to mm^2', per bar'
 n_s = ceil(max(A_s,req; A_s,min)/A_1)', number of bars, rounded up'
 A_s,prov = n_s*A_1 to mm^2
 UC_As = max(A_s,req; A_s,min)/A_s,prov
+a_s = max(φ_s; d_g + 5 mm; 20 mm)', clear distance, 8.2(2)'
+n_max = floor((b - 2*c_s + a_s)/(φ_s + a_s))', bars in one layer'
+#if n_s ≤ n_max
 '<b>Use 'n_s' × Ø'φ_s/mm'</b>
+#else
+'These bars do not fit in one layer. Take a larger diameter, a wider section or two layers; two layers make d smaller, so run this sheet again.
+#end if
+#else
+'The moment exceeds M<sub>lim</sub>: the section is over-reinforced and the steel does not yield. Make the section larger or the concrete stronger. This sheet does not calculate compression reinforcement.
+#end if
