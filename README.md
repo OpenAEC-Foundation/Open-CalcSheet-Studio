@@ -80,6 +80,8 @@ Modules are ready-made sheets with an input screen: a **timber joist floor** and
 
 The two-pile cap has a 3D study model next to its drawing. It shows the cap, the piles, the column and every bar, and follows each field and blue dimension at once. **Add module** shows a picture for every choice, from a blank drawing to a Marimo notebook.
 
+**Section stresses** is mechanics, not a code check: choose an I or H section, rectangle, circle, tube, box, T or U, set the axial force, moments and shear forces in two directions, and see the stress field in the section, the neutral axis and the diagrams of σ and τ follow at once. See [what the sheet calculates](docs/doorsnede-spanningen.md).
+
 The formula library holds 137 formulas you can insert with a click, each with a sketch that shows what it is about. The library in the project panel adds 15 worked examples from the Eurocodes and classical mechanics. Those examples are not in the installer: the app fetches them from this repository when it starts, so [a correction reaches everyone](docs/library.md) without a new release. The examples guard their own limits: required reinforcement warns when a section is over-reinforced or the bars do not fit, and the links example keeps cot θ within its limits and checks spacing and minimum reinforcement.
 
 | | |
@@ -108,7 +110,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **56 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **57 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **121 results against hand calculations**: 53 in `scripts/check-formules.mjs` and 68 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
@@ -118,7 +120,7 @@ Count sources: the files named above and `ls scripts/check-*.mjs`. A module stat
 
 ## Current limitations
 
-- **Check the results yourself.** The beam and the two-pile cap have the status *to be checked*. The app does not replace the judgment of a structural engineer.
+- **Check the results yourself.** The beam, the two-pile cap and section stresses have the status *to be checked*. The app does not replace the judgment of a structural engineer.
 - **Jupyter and Marimo are only tested on Windows.** On macOS and Linux the sheet will probably not start a kernel, because the webview there limits service workers. Saved files and printing do work.
 - **Notebooks have no network.** `%pip install` does not work, and libraries that rely on JavaScript in their output (plotly, bokeh, ipywidgets) show nothing. That is a deliberate choice for now.
 - **A running cell cannot be stopped.** Marimo also has no SQL cells and follows the dark or light theme only when it loads.

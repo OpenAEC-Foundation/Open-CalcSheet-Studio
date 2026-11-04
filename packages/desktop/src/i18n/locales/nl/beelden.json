@@ -128,6 +128,76 @@
       "verdieping": "Verdieping"
     }
   },
+  "doorsnede": {
+    "titel": "Parametrisch beeld — spanningen in een doorsnede",
+    "koppen": {
+      "vorm": "Vorm",
+      "maten": "Maten",
+      "krachten": "Snedekrachten en grenswaarde"
+    },
+    "vormen": {
+      "i": "I of H",
+      "rechthoek": "Rechthoek",
+      "rond": "Rond",
+      "buis": "Buis",
+      "koker": "Koker",
+      "t": "T",
+      "u": "U"
+    },
+    "vormenLang": {
+      "i": "I- of H-profiel, met afrondingen: uit de lijst of met eigen maten",
+      "rechthoek": "Massieve rechthoek",
+      "rond": "Massieve ronde doorsnede",
+      "buis": "Ronde buis",
+      "koker": "Rechthoekige koker, zonder afrondingen",
+      "t": "T met de flens boven, zonder afrondingen",
+      "u": "U met de rug links en evenwijdige flenzen, zonder afrondingen"
+    },
+    "velden": {
+      "profiel": "Profiel",
+      "eigen": "Eigen maten",
+      "b": "breedte",
+      "flensbreedte": "flensbreedte",
+      "h": "hoogte",
+      "D": "diameter",
+      "t": "wanddikte",
+      "t_w": "lijf",
+      "t_wKoker": "staande wand",
+      "t_wU": "rug",
+      "t_f": "flens",
+      "t_fKoker": "liggende wand",
+      "r": "afronding",
+      "N_x": "trek +",
+      "M_y": "trek bij +z",
+      "M_z": "trek bij +y",
+      "V_y": "langs +y",
+      "V_z": "langs +z",
+      "f_y": "grens, 0 = geen"
+    },
+    "noot": "Mechanica, geen normtoets. Wringing en lokale effecten zitten er niet in. De uitwerking staat in het rekenblad.",
+    "klik": "Wijzig een veld of klik op een blauwe maat: het veld en de diagrammen volgen meteen.",
+    "bewaarSvg": "Bewaar als SVG",
+    "tekening": {
+      "komma": ",",
+      "ongeldig": "Deze maten geven geen doorsnede: zie de melding in het rekenblad.",
+      "nogNiet": "Het rekenblad rekent…",
+      "sigmaZ": "σ op y = 0",
+      "sigmaY": "σ op z = 0",
+      "tauZ": "τ uit V_z",
+      "tauY": "τ uit V_y",
+      "eenheid": "N/mm²",
+      "neutraal": "n.l.",
+      "neutraalBuiten": "Neutrale lijn buiten de doorsnede.",
+      "geenMoment": "Geen moment: geen neutrale lijn.",
+      "maxLegenda": "σ_max",
+      "minLegenda": "σ_min",
+      "vLegenda": "σ_v,max",
+      "tauZLegenda": "τ_z,max",
+      "tauYLegenda": "τ_y,max",
+      "afspraak1": "y naar rechts, z omlaag, oorsprong in het zwaartepunt. Rood is trek (+), blauw is druk (−).",
+      "afspraak2": "M_y: trek bij +z. M_z: trek bij +y. V_y en V_z in de richting van +y en +z."
+    }
+  },
   "balklaag": {
     "titel": "Parametrisch beeld — balklaag",
     "nietAangetoond": "✗ niet aangetoond (f₁ ≤ 8 Hz)",

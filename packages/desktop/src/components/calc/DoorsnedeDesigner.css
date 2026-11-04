@@ -1,0 +1,52 @@
+/* Het beeld van Spanningen in een doorsnede: zie DoorsnedeDesigner.tsx. */
+
+/* De vormen: vier op een rij in de invoerkolom, alle zeven als de invoer boven de tekening staat.
+   Dit gaat boven de regel voor een smalle .vd-iconkeuze: twee per rij zou hier te hoog worden. */
+.ds-vormen .vd-iconkeuze-rij {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ds-smal .ds-vormen .vd-iconkeuze-rij {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.ds-vormen .vd-iconkeuze-optie {
+  padding: 3px 2px;
+}
+.ds-vormen .vd-iconkeuze-optie svg {
+  max-width: 44px;
+}
+.ds-noot {
+  margin-top: 6px;
+}
+
+/* Boven de tekening: invoer en tekening horen samen in beeld, dus de invoer is laag. Symbool en
+   eenheid blijven staan; de omschrijving staat in de tooltip. */
+.vd-compact.ds-smal {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  column-gap: 12px;
+  flex: none;
+}
+.ds-smal .ds-vormen,
+.ds-smal .vd-ctrl-h {
+  grid-column: 1 / -1;
+}
+.ds-smal .ds-noot,
+.ds-smal .ds-lang,
+.ds-smal .vd-iconkeuze-label {
+  display: none;
+}
+.ds-smal .vd-iconkeuze {
+  padding: 0 0 4px;
+  border-bottom: none;
+}
+.ds-smal .vd-ctrl-h {
+  margin-top: 4px;
+}
+.ds-smal label > input {
+  flex: 0 0 68px;
+  width: 68px;
+}
+.ds-smal label > select {
+  flex: 0 0 102px;
+  width: 102px;
+}

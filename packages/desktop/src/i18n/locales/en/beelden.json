@@ -128,6 +128,76 @@
       "verdieping": "Storey"
     }
   },
+  "doorsnede": {
+    "titel": "Parametric view — section stresses",
+    "koppen": {
+      "vorm": "Shape",
+      "maten": "Dimensions",
+      "krachten": "Internal forces and limit"
+    },
+    "vormen": {
+      "i": "I or H",
+      "rechthoek": "Rectangle",
+      "rond": "Circle",
+      "buis": "Tube",
+      "koker": "Box",
+      "t": "T",
+      "u": "U"
+    },
+    "vormenLang": {
+      "i": "I or H section with root radii: from the list or with your own dimensions",
+      "rechthoek": "Solid rectangle",
+      "rond": "Solid circle",
+      "buis": "Circular tube",
+      "koker": "Rectangular box, without corner radii",
+      "t": "T with the flange on top, without radii",
+      "u": "U with the web on the left and parallel flanges, without radii"
+    },
+    "velden": {
+      "profiel": "Section",
+      "eigen": "Own dimensions",
+      "b": "width",
+      "flensbreedte": "flange width",
+      "h": "depth",
+      "D": "diameter",
+      "t": "wall thickness",
+      "t_w": "web",
+      "t_wKoker": "vertical wall",
+      "t_wU": "web",
+      "t_f": "flange",
+      "t_fKoker": "horizontal wall",
+      "r": "root radius",
+      "N_x": "tension +",
+      "M_y": "tension at +z",
+      "M_z": "tension at +y",
+      "V_y": "along +y",
+      "V_z": "along +z",
+      "f_y": "limit, 0 = none"
+    },
+    "noot": "Mechanics, not a code check. Torsion and local effects are not included. The working is in the calculation sheet.",
+    "klik": "Change a field or click a blue dimension: the field and the diagrams follow at once.",
+    "bewaarSvg": "Save as SVG",
+    "tekening": {
+      "komma": ".",
+      "ongeldig": "These dimensions do not make a section: see the message in the calculation sheet.",
+      "nogNiet": "The sheet is calculating…",
+      "sigmaZ": "σ at y = 0",
+      "sigmaY": "σ at z = 0",
+      "tauZ": "τ from V_z",
+      "tauY": "τ from V_y",
+      "eenheid": "N/mm²",
+      "neutraal": "n.a.",
+      "neutraalBuiten": "Neutral axis outside the section.",
+      "geenMoment": "No moment: no neutral axis.",
+      "maxLegenda": "σ_max",
+      "minLegenda": "σ_min",
+      "vLegenda": "σ_v,max",
+      "tauZLegenda": "τ_z,max",
+      "tauYLegenda": "τ_y,max",
+      "afspraak1": "y to the right, z downwards, origin at the centroid. Red is tension (+), blue is compression (−).",
+      "afspraak2": "M_y: tension at +z. M_z: tension at +y. V_y and V_z in the direction of +y and +z."
+    }
+  },
   "balklaag": {
     "titel": "Parametric view — timber joist floor",
     "nietAangetoond": "✗ not demonstrated (f₁ ≤ 8 Hz)",

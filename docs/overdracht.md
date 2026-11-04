@@ -80,7 +80,7 @@ Status in de catalogus: *gereed* (gecalibreerd op referentiebladen), *controlere
 
 | Groep | Modules |
 |---|---|
-| Algemeen | Ligger (hout of staal: twee tot vier steunpunten of een uitkraging, overstekken, inklemming, gerberscharnieren; tot zes lasten; omhullende, kip, doorbuiging) |
+| Algemeen | Ligger (hout of staal: twee tot vier steunpunten of een uitkraging, overstekken, inklemming, gerberscharnieren; tot zes lasten; omhullende, kip, doorbuiging); Spanningen in een doorsnede (mechanica, geen normtoets: I of H, rechthoek, rond, buis, koker, T, U; spanningsveld, neutrale lijn, σ en τ langs de assen, vergelijkingsspanning) |
 | Hout | Balklaag (houten vloerbalken: enkelvoudige ligger, overstek, twee velden, raveelbalk; vijf belastinggevallen, omhullende M- en V-lijn, trillingen, oplegdruk, kip) |
 | Beton | Tweepaalspoer (staafwerkmodel; knopen, trekband, splijtkrachten, verankering, scheurwijdte, detaillering; tekening met de gekozen staven) |
 | Bibliotheek | CalcPAD-syntaxdemo |
@@ -105,7 +105,8 @@ volgt de losse uitdraai (`MATEN.bladen`); in het rapport is de bladspiegel ander
 De toetsing van de balklaag staat in [balklaag-toetsing.md](balklaag-toetsing.md),
 de bewuste splitspunten tussen referentie-uitwerking en norm in
 [afwijkingen-referentie.md](afwijkingen-referentie.md). Toepassingsgebied en toetsset
-van de tweepaalspoer staan in [tweepaalspoer-toetsing.md](tweepaalspoer-toetsing.md).
+van de tweepaalspoer staan in [tweepaalspoer-toetsing.md](tweepaalspoer-toetsing.md), wat het blad over
+spanningen in een doorsnede rekent in [doorsnede-spanningen.md](doorsnede-spanningen.md).
 
 Naast de modules zijn er bladen zonder rekentekst: een PDF, een spreadsheet en een
 tekenblad (*Module toevoegen → Lege tekening*). Een tekenblad is een vel A4, A3 of A2 met

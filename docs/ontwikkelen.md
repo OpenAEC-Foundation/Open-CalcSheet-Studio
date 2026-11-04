@@ -84,7 +84,7 @@ Open-CalcSheet-Studio/
 │   │       └── index.ts               # Openbare API
 │   └── desktop/                       # @openaec/calcsheet-studio: de Tauri-app
 │       ├── src/                       # React: lint, panelen, bladen
-│       │   ├── templates/             # Rekenbladen (balklaag, ligger, tweepaalspoer)
+│       │   ├── templates/             # Rekenbladen (balklaag, ligger, tweepaalspoer, spanningen in een doorsnede)
 │       │   └── store/                 # Project, bladsoorten, Library
 │       └── src-tauri/                 # Rust-schil (Tauri 2)
 ├── scripts/                           # Controles (npm run check) en hulpscripts

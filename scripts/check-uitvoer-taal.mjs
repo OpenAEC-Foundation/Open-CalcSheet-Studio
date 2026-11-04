@@ -24,6 +24,7 @@ const { balklaagEn } = await import("../packages/desktop/src/templates/balklaag.
 const { liggerEn } = await import("../packages/desktop/src/templates/ligger.en.ts");
 const { calcpadDemoEn } = await import("../packages/desktop/src/templates/calcpad-demo.en.ts");
 const { tweepaalspoerEn } = await import("../packages/desktop/src/templates/tweepaalspoer.en.ts");
+const { doorsnedeSpanningenEn } = await import("../packages/desktop/src/templates/doorsnede-spanningen.en.ts");
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -41,6 +42,7 @@ const MODULES = [
   { naam: "ligger", bron: blad("ligger.ts", '"Ligger van hout of staal'), v: liggerEn },
   { naam: "demoblad", bron: blad("calcpad-demo.ts", '"Open CalcSheet Studio demo'), v: calcpadDemoEn },
   { naam: "tweepaalspoer", bron: blad("tweepaalspoer.ts", '"Tweepaalspoer —'), v: tweepaalspoerEn },
+  { naam: "doorsnede", bron: blad("doorsnede-spanningen.ts", '"Spanningen in een doorsnede —'), v: doorsnedeSpanningenEn },
 ];
 
 // ── 1. Het mechanisme ─────────────────────────────────────────────────────
@@ -202,6 +204,27 @@ const LIGGER_GEVALLEN = [
   meld(rNiet.nietGetoetst === true && rNiet.voldoet === null && rNiet.uc === null, "tweepaalspoer: 'niet getoetst' in het Engels", JSON.stringify(rNiet));
   const rFout = leesResultaat(evaluate(parse(v.bron), { ...POER, n_t: "2" }, PROJECT), "x");
   meld(rFout.voldoet === false, "tweepaalspoer: 'voldoet niet' in het Engels", JSON.stringify(rFout));
+
+  // Spanningen in een doorsnede: elke vorm, zonder en met grenswaarde, en de meldingen.
+  const LAST = { N_x: "-200", M_y: "100", M_z: "10", V_y: "10", V_z: "80", f_y: "0" };
+  const DOORSNEDE_GEVALLEN = [
+    { vorm: "1", profiel: "24" }, { vorm: "1", profiel: "0", h: "300", b: "150", t_w: "7", t_f: "11", r: "15" },
+    { vorm: "2", b: "100", h: "200" }, { vorm: "3", D: "100" }, { vorm: "4", D: "100", t: "10" },
+    { vorm: "5", b: "100", h: "200", t_w: "5", t_f: "8" }, { vorm: "6", b: "150", h: "200", t_w: "10", t_f: "15" }, { vorm: "7", b: "100", h: "200", t_w: "8", t_f: "12" },
+    { vorm: "2", b: "100", h: "200", f_y: "235" }, { vorm: "2", b: "1000", h: "1000", f_y: "235" }, { vorm: "2", b: "100", h: "200", M_y: "0", M_z: "0" },
+    { vorm: "2", b: "1000", h: "1000", N_x: "5000" }, { vorm: "2", b: "1000", h: "1000", N_x: "-5000" },
+    { vorm: "1", profiel: "0", h: "0", b: "150", t_w: "7", t_f: "11", r: "15" }, { vorm: "2", b: "0", h: "200" }, { vorm: "3", D: "0" }, { vorm: "4", D: "100", t: "60" },
+    { vorm: "5", b: "100", h: "200", t_w: "60", t_f: "8" }, { vorm: "6", b: "150", h: "200", t_w: "10", t_f: "200" }, { vorm: "7", b: "100", h: "200", t_w: "8", t_f: "120" },
+    { vorm: "2", b: "100", h: "200", f_y: "-1" },
+  ];
+  const ds = new Map();
+  const vd = bronVoorUitvoer(MODULES[4].bron, "en");
+  for (const invoer of DOORSNEDE_GEVALLEN) {
+    const html = render(evaluate(parse(vd.bron), { ...LAST, ...invoer }, PROJECT), { namen: vd.namen });
+    for (const r of zoekNederlands(html)) if (!ds.has(r)) ds.set(r, JSON.stringify(invoer));
+  }
+  meld(ds.size === 0, `doorsnede: ${DOORSNEDE_GEVALLEN.length} gevallen, geen Nederlandse woorden`,
+    [...ds].map(([r, g]) => `${r}   (${g})`).join("\n         "));
 }
 
 // ── 4. De uitkomsten ──────────────────────────────────────────────────────

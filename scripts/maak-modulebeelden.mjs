@@ -346,7 +346,40 @@ function calcpadDemo() {
   return b.svg();
 }
 
+/** Spanningen in een doorsnede: een stuk I-profiel met het spanningsveld op de snede, en de spanningsdriehoeken ernaast. */
+function doorsnedeSpanningen() {
+  const b = beeld();
+  const [L, x0, h, tf, tw, bf] = [-150, -24, 150, 16, 18, 104];
+  const [yv, xm] = [86, x0 + bf / 2];
+  b.schaduw(x0, L, bf, yv - L, 46);
+  // Het profiel, van achter naar voor: onderflens, lijf, bovenflens.
+  b.blok(x0, L, 0, bf, yv - L, tf, LEI);
+  b.blok(xm - tw / 2, L, tf, tw, yv - L, h - 2 * tf, LEI);
+  b.blok(x0, L, h - tf, bf, yv - L, tf, LICHT);
+  // Het veld op de snede: van leisteen onder naar turkoois boven.
+  const meng = (t) => {
+    const a = [0x2a, 0x42, 0x5b];
+    const c = [0x74, 0xc3, 0xb7];
+    return `rgb(${a.map((w, i) => Math.round(w + (c[i] - w) * t)).join(",")})`;
+  };
+  const stukken = 24;
+  for (let i = 0; i < stukken; i++) {
+    const [z0, z1] = [(h * i) / stukken, (h * (i + 1)) / stukken];
+    const mid = (z0 + z1) / 2;
+    const breed = mid < tf || mid > h - tf ? bf : tw;
+    const x = xm - breed / 2;
+    b.vlak([[x, yv, z0], [x + breed, yv, z0], [x + breed, yv, z1 + 0.4], [x, yv, z1 + 0.4]], meng(mid / h));
+  }
+  // De spanningsdiagrammen voor de snede: de as, trek in turkoois, druk in leisteen.
+  const xa = x0 - 58;
+  b.vlak([[xa, yv, h / 2], [xa, yv, h], [xa - 70, yv, h]], TURKOOIS.boven, TURKOOIS.rechts, 1.2);
+  b.vlak([[xa, yv, h / 2], [xa, yv, 0], [xa + 44, yv, 0]], LEI.boven, LEI.rechts, 1.2);
+  b.lijn([[xa, yv, -8], [xa, yv, h + 8]], LIJN, 1.8);
+  return b.svg();
+}
+
 const BEELDEN = {
+  "doorsnede-spanningen": doorsnedeSpanningen,
   tekenblad,
   "fem-project": femProject,
   jupyter,
