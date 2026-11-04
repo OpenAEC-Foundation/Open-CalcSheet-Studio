@@ -7,6 +7,11 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- PDF-blad: zoomen, schuiven en aantekenen met pen, markeerstift, pijl, kader, wolk en tekst. De aantekeningen gaan mee in het project en, als je dat kiest, op papier
+- Zijpaneel: de inhoud van het rapport met alle nummers terwijl je werkt, en de paginanummers uit het laatste afdrukvoorbeeld
+- Eurocode 3, moment I-profiel: lineair-elastische toets met de spanning in de doorsnede, en de tekening toont het profiel met zijn afrondingen
+- Formulebibliotheek: parametrische tekeningen bij de doorsnede-eigenschappen, en momentenlijnen bij de standaardgevallen van liggers
+
 ## v2026.45.2 — 2026-11-04
 
 - Tweepaalspoer: een draaibaar 3D-studiemodel met de poer, de palen, de kolom en de wapeningskorf. Het volgt elke wijziging in de invoer en gaat mee in het projectbestand en de IFC-uitvoer, met elke staaf als `IfcReinforcingBar`.

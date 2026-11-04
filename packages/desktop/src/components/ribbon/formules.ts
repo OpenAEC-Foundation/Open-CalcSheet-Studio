@@ -24,7 +24,27 @@
  * De voorbeelden van de Library staan hier niet: die komen bij het opstarten uit de
  * map library/ van de repository (store/library.ts, docs/library.md). Ze hebben
  * tekstregels, dus twee talen: `code` en `codeEn`.
+ *
+ * De liggers en de doorsnedegrootheden hebben ook een tekening die in het blad met de
+ * invoer meebeweegt, en daarom ook twee talen; zie formuleTekening.ts.
  */
+
+import {
+  buisTekening,
+  cirkelTekening,
+  doorbuiging,
+  driehoekTekening,
+  iProfielTekening,
+  kokerTekening,
+  liggerTekening,
+  rechthoekTekening,
+  samengesteldTekening,
+  steinerTekening,
+  traagheidsstraalTekening,
+  tweetalig,
+  type Oplegging,
+  type Taal,
+} from "./formuleTekening.ts";
 
 export interface Tekst {
   nl: string;
@@ -96,6 +116,16 @@ export const FORMULE_GROEPEN: FormuleGroep[] = [
 // Voorbeeldprofiel in de mechanica: IPE 300, staal.
 const STAAL_EI = ["E = 210000 N/mm^2", "I_y = 8356 cm^4"];
 
+// De liggers met hun tekening (formuleTekening.ts): wat vaak terugkomt.
+const TWEE_STEUNPUNTEN: Oplegging[] = [{ x: 0, soort: "scharnier", naam: "A" }, { x: 1, soort: "rol", naam: "B" }];
+const TWEE_INKLEMMINGEN: Oplegging[] = [{ x: 0, soort: "klem", naam: "A" }, { x: 1, soort: "klem", naam: "B" }];
+const KLEM_EN_ROL: Oplegging[] = [{ x: 0, soort: "klem", naam: "A" }, { x: 1, soort: "rol", naam: "B" }];
+const VOLLE_LAST = { q: "q" };
+const MAAT_L = [{ van: 0, tot: 1, naam: "L", waarde: "L" }];
+
+/** Een melding in het blad, in plaats van een uitkomst die niet kan: een deling door 0 geeft anders NaN. */
+const melding = (t: Taal, nl: string, en: string) => `'${t === "nl" ? nl : en}`;
+
 export const FORMULES: Formule[] = [
   // ════════════════════════════════════════════════════════════════════
   // Mechanica — liggers
@@ -109,7 +139,7 @@ export const FORMULES: Formule[] = [
       nl: "Oplegreacties, grootste dwarskracht, moment en doorbuiging in het midden onder een volle last q.",
       en: "Support reactions, maximum shear force, midspan moment and midspan deflection under a full load q.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "q = 5 kN/m",
       "L = 6 m",
       ...STAAL_EI,
@@ -117,8 +147,17 @@ export const FORMULES: Formule[] = [
       "R_B = q*L/2",
       "V_max = q*L/2",
       "M_max = q*L^2/8 to kN*m",
-      "w_max = 5*q*L^4/(384*E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = 5*q*L^4/(384*E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl1",
+        lengte: "L",
+        steunen: TWEE_STEUNPUNTEN,
+        last: VOLLE_LAST,
+        maten: MAAT_L,
+        lijn: [{ x: 0 }, { x: 1, via: [{ x: 0.5, M: "2*M_max" }] }],
+        getallen: [{ x: 0.5, M: "M_max", naam: "M_max" }],
+      }),
+    )),
   },
   {
     id: "ligger-twee-steunpunten-f-midden",
@@ -129,15 +168,24 @@ export const FORMULES: Formule[] = [
       nl: "Oplegreacties, moment onder de last en doorbuiging in het midden.",
       en: "Support reactions, moment under the load and midspan deflection.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "F = 20 kN",
       "L = 6 m",
       ...STAAL_EI,
       "R_A = F/2",
       "R_B = F/2",
       "M_max = F*L/4 to kN*m",
-      "w_max = F*L^3/(48*E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = F*L^3/(48*E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl2",
+        lengte: "L",
+        steunen: TWEE_STEUNPUNTEN,
+        last: { F: "F", op: [0.5] },
+        maten: MAAT_L,
+        lijn: [{ x: 0 }, { x: 0.5, M: "M_max" }, { x: 1 }],
+        getallen: [{ x: 0.5, M: "M_max", naam: "M_max" }],
+      }),
+    )),
   },
   {
     id: "ligger-twee-steunpunten-f-willekeurig",
@@ -148,18 +196,34 @@ export const FORMULES: Formule[] = [
       nl: "Puntlast op afstand a van A (b = L − a): reacties, moment en doorbuiging onder de last en de grootste doorbuiging, die aan de kant van het langste deel ligt.",
       en: "Point load at distance a from A (b = L − a): reactions, moment and deflection under the load and the maximum deflection, which lies on the side of the longer part.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "F = 20 kN",
       "L = 6 m",
       "a = 2 m",
       "b = L - a",
       ...STAAL_EI,
+      "#if L > 0 m and a ≥ 0 m and b ≥ 0 m",
       "R_A = F*b/L",
       "R_B = F*a/L",
       "M_max = F*a*b/L to kN*m",
-      "w_F = F*a^2*b^2/(3*E*I_y*L) to mm",
-      "w_max = F*min(a; b)*(L^2 - min(a; b)^2)^(3/2)/(9*sqrt(3)*E*I_y*L) to mm",
-    ),
+      ...doorbuiging(
+        t,
+        "w_F = F*a^2*b^2/(3*E*I_y*L) to mm",
+        "w_max = F*min(a; b)*(L^2 - min(a; b)^2)^(3/2)/(9*sqrt(3)*E*I_y*L) to mm",
+      ),
+      ...liggerTekening(t, {
+        p: "tl3",
+        lengte: "L",
+        steunen: TWEE_STEUNPUNTEN,
+        last: { F: "F", op: ["a"] },
+        maten: [{ van: 0, tot: "a", naam: "a", waarde: "a" }, { van: "a", tot: 1, naam: "b", waarde: "b" }],
+        lijn: [{ x: 0 }, { x: "a", M: "M_max" }, { x: 1 }],
+        getallen: [{ x: "a", M: "M_max", naam: "M_max" }],
+      }),
+      "#else",
+      melding(t, "a moet tussen 0 en L liggen, en L moet groter zijn dan 0.", "a must lie between 0 and L, and L must be greater than 0."),
+      "#end if",
+    )),
   },
   {
     id: "ligger-twee-steunpunten-twee-f",
@@ -170,7 +234,7 @@ export const FORMULES: Formule[] = [
       nl: "Twee puntlasten F op afstand a van elk steunpunt: constant moment F·a tussen de lasten en doorbuiging in het midden.",
       en: "Two point loads F at distance a from each support: constant moment F·a between the loads and midspan deflection.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "F = 10 kN",
       "L = 6 m",
       "a = 2 m",
@@ -178,8 +242,19 @@ export const FORMULES: Formule[] = [
       "R_A = F",
       "R_B = F",
       "M_max = F*a to kN*m",
-      "w_max = F*a*(3*L^2 - 4*a^2)/(24*E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = F*a*(3*L^2 - 4*a^2)/(24*E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl4",
+        lengte: "L",
+        steunen: TWEE_STEUNPUNTEN,
+        last: { F: "F", op: ["a", "L - a"] },
+        maten: [{ van: 0, tot: "a", naam: "a", waarde: "a" }, { van: "L - a", tot: 1, naam: "a", waarde: "a" }],
+        lijn: [{ x: 0 }, { x: "a", M: "M_max" }, { x: "L - a", M: "M_max" }, { x: 1 }],
+        getallen: [{ x: 0.5, M: "M_max", naam: "M_max" }],
+        geldig: "a ≥ 0 m and 2*a ≤ L",
+        reden: { nl: "Geen tekening: a moet tussen 0 en L/2 liggen.", en: "No drawing: a must lie between 0 and L/2." },
+      }),
+    )),
   },
   {
     id: "ligger-twee-steunpunten-driehoekslast",
@@ -190,7 +265,7 @@ export const FORMULES: Formule[] = [
       nl: "Last oplopend van 0 bij A tot q bij B: reacties, grootste moment op x = L/√3 van A en grootste doorbuiging.",
       en: "Load increasing from 0 at A to q at B: reactions, maximum moment at x = L/√3 from A and maximum deflection.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "q = 5 kN/m",
       "L = 6 m",
       ...STAAL_EI,
@@ -198,8 +273,18 @@ export const FORMULES: Formule[] = [
       "R_B = q*L/3",
       "x_M = L/sqrt(3) to m",
       "M_max = q*L^2/(9*sqrt(3)) to kN*m",
-      "w_max = 0.00652*q*L^4/(E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = 0.00652*q*L^4/(E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl5",
+        lengte: "L",
+        steunen: TWEE_STEUNPUNTEN,
+        last: { q: "q", driehoek: true },
+        maten: MAAT_L,
+        // M = M_max·(3√3/2)·(s − s³) met s = x/L: de stuurpunten volgen uit de hellingen bij A en B.
+        lijn: [{ x: 0 }, { x: 1, via: [{ x: 1 / 3, M: "M_max*sqrt(3)/2" }, { x: 2 / 3, M: "M_max*sqrt(3)" }] }],
+        getallen: [{ x: "x_M", M: "M_max", naam: "M_max" }],
+      }),
+    )),
   },
   {
     id: "ligger-ingeklemd-q",
@@ -210,7 +295,7 @@ export const FORMULES: Formule[] = [
       nl: "Inklemmingsmoment qL²/12 (negatief), veldmoment qL²/24 en doorbuiging in het midden.",
       en: "Fixed-end moment qL²/12 (hogging), span moment qL²/24 and midspan deflection.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "q = 5 kN/m",
       "L = 6 m",
       ...STAAL_EI,
@@ -218,8 +303,21 @@ export const FORMULES: Formule[] = [
       "R_B = q*L/2",
       "M_steun = q*L^2/12 to kN*m",
       "M_veld = q*L^2/24 to kN*m",
-      "w_max = q*L^4/(384*E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = q*L^4/(384*E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl6",
+        lengte: "L",
+        steunen: TWEE_INKLEMMINGEN,
+        last: VOLLE_LAST,
+        maten: MAAT_L,
+        lijn: [{ x: 0, M: "-M_steun" }, { x: 1, M: "-M_steun", via: [{ x: 0.5, M: "2*M_veld + M_steun" }] }],
+        getallen: [
+          { x: 0, M: "-M_steun", naam: "M_steun", kant: "links" },
+          { x: 1, M: "-M_steun", naam: "M_steun", kant: "rechts" },
+          { x: 0.5, M: "M_veld", naam: "M_veld" },
+        ],
+      }),
+    )),
   },
   {
     id: "ligger-ingeklemd-f-midden",
@@ -230,7 +328,7 @@ export const FORMULES: Formule[] = [
       nl: "Inklemmingsmoment en veldmoment zijn beide FL/8; doorbuiging in het midden.",
       en: "Fixed-end moment and span moment are both FL/8; midspan deflection.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "F = 20 kN",
       "L = 6 m",
       ...STAAL_EI,
@@ -238,8 +336,21 @@ export const FORMULES: Formule[] = [
       "R_B = F/2",
       "M_steun = F*L/8 to kN*m",
       "M_veld = F*L/8 to kN*m",
-      "w_max = F*L^3/(192*E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = F*L^3/(192*E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl7",
+        lengte: "L",
+        steunen: TWEE_INKLEMMINGEN,
+        last: { F: "F", op: [0.5] },
+        maten: MAAT_L,
+        lijn: [{ x: 0, M: "-M_steun" }, { x: 0.5, M: "M_veld" }, { x: 1, M: "-M_steun" }],
+        getallen: [
+          { x: 0, M: "-M_steun", naam: "M_steun", kant: "links" },
+          { x: 1, M: "-M_steun", naam: "M_steun", kant: "rechts" },
+          { x: 0.5, M: "M_veld", naam: "M_veld" },
+        ],
+      }),
+    )),
   },
   {
     id: "ligger-eenzijdig-ingeklemd-q",
@@ -250,7 +361,7 @@ export const FORMULES: Formule[] = [
       nl: "A ingeklemd, B scharnierend: inklemmingsmoment qL²/8, veldmoment 9qL²/128 op 3L/8 van B en grootste doorbuiging op 0,42L van B.",
       en: "A fixed, B pinned: fixed-end moment qL²/8, span moment 9qL²/128 at 3L/8 from B and maximum deflection at 0.42L from B.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "q = 5 kN/m",
       "L = 6 m",
       ...STAAL_EI,
@@ -258,8 +369,21 @@ export const FORMULES: Formule[] = [
       "R_B = 3*q*L/8",
       "M_A = q*L^2/8 to kN*m",
       "M_veld = 9*q*L^2/128 to kN*m",
-      "w_max = q*L^4/(185*E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = q*L^4/(185*E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl8",
+        lengte: "L",
+        steunen: KLEM_EN_ROL,
+        last: VOLLE_LAST,
+        maten: MAAT_L,
+        // De parabool door −M_A, M_A/2 in het midden en 0 bij B.
+        lijn: [{ x: 0, M: "-M_A" }, { x: 1, via: [{ x: 0.5, M: "3*M_A/2" }] }],
+        getallen: [
+          { x: 0, M: "-M_A", naam: "M_A", kant: "links" },
+          { x: 5 / 8, M: "M_veld", naam: "M_veld" },
+        ],
+      }),
+    )),
   },
   {
     id: "ligger-eenzijdig-ingeklemd-f-midden",
@@ -270,7 +394,7 @@ export const FORMULES: Formule[] = [
       nl: "A ingeklemd, B scharnierend: inklemmingsmoment 3FL/16, moment onder de last 5FL/32 en grootste doorbuiging op 0,447L van B.",
       en: "A fixed, B pinned: fixed-end moment 3FL/16, moment under the load 5FL/32 and maximum deflection at 0.447L from B.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "F = 20 kN",
       "L = 6 m",
       ...STAAL_EI,
@@ -278,8 +402,20 @@ export const FORMULES: Formule[] = [
       "R_B = 5*F/16",
       "M_A = 3*F*L/16 to kN*m",
       "M_F = 5*F*L/32 to kN*m",
-      "w_max = F*L^3/(48*sqrt(5)*E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = F*L^3/(48*sqrt(5)*E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl9",
+        lengte: "L",
+        steunen: KLEM_EN_ROL,
+        last: { F: "F", op: [0.5] },
+        maten: MAAT_L,
+        lijn: [{ x: 0, M: "-M_A" }, { x: 0.5, M: "M_F" }, { x: 1 }],
+        getallen: [
+          { x: 0, M: "-M_A", naam: "M_A", kant: "links" },
+          { x: 0.5, M: "M_F", naam: "M_F" },
+        ],
+      }),
+    )),
   },
   {
     id: "uitkraging-q",
@@ -290,15 +426,28 @@ export const FORMULES: Formule[] = [
       nl: "Inklemmingsreactie en -moment, doorbuiging en hoekverdraaiing (rad) aan het vrije einde.",
       en: "Support reaction and moment at the fixed end, deflection and rotation (rad) at the free end.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "q = 5 kN/m",
       "L = 2 m",
       ...STAAL_EI,
       "R_A = q*L",
       "M_A = q*L^2/2 to kN*m",
-      "w_max = q*L^4/(8*E*I_y) to mm",
-      "θ_max = q*L^3/(6*E*I_y)",
-    ),
+      ...doorbuiging(
+        t,
+        "w_max = q*L^4/(8*E*I_y) to mm",
+        "θ_max = q*L^3/(6*E*I_y)",
+      ),
+      ...liggerTekening(t, {
+        p: "tl10",
+        lengte: "L",
+        steunen: [{ x: 0, soort: "klem", naam: "A" }],
+        last: VOLLE_LAST,
+        maten: MAAT_L,
+        // Aan het vrije einde loopt de parabool horizontaal uit: het stuurpunt ligt op de nullijn.
+        lijn: [{ x: 0, M: "-M_A" }, { x: 1, via: [{ x: 0.5 }] }],
+        getallen: [{ x: 0, M: "-M_A", naam: "M_A", kant: "links" }],
+      }),
+    )),
   },
   {
     id: "uitkraging-f",
@@ -309,15 +458,27 @@ export const FORMULES: Formule[] = [
       nl: "Inklemmingsreactie en -moment, doorbuiging en hoekverdraaiing (rad) aan het vrije einde.",
       en: "Support reaction and moment at the fixed end, deflection and rotation (rad) at the free end.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "F = 10 kN",
       "L = 2 m",
       ...STAAL_EI,
       "R_A = F",
       "M_A = F*L to kN*m",
-      "w_max = F*L^3/(3*E*I_y) to mm",
-      "θ_max = F*L^2/(2*E*I_y)",
-    ),
+      ...doorbuiging(
+        t,
+        "w_max = F*L^3/(3*E*I_y) to mm",
+        "θ_max = F*L^2/(2*E*I_y)",
+      ),
+      ...liggerTekening(t, {
+        p: "tl11",
+        lengte: "L",
+        steunen: [{ x: 0, soort: "klem", naam: "A" }],
+        last: { F: "F", op: [1] },
+        maten: MAAT_L,
+        lijn: [{ x: 0, M: "-M_A" }, { x: 1 }],
+        getallen: [{ x: 0, M: "-M_A", naam: "M_A", kant: "links" }],
+      }),
+    )),
   },
   {
     id: "ligger-overstek-q",
@@ -328,16 +489,34 @@ export const FORMULES: Formule[] = [
       nl: "Steunpunten A en B op afstand L, overstek a voorbij B, q over de hele lengte: reacties, steunmoment bij B en grootste veldmoment op x_M van A (a < L).",
       en: "Supports A and B at distance L, overhang a beyond B, q over the full length: reactions, support moment at B and maximum span moment at x_M from A (a < L).",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "q = 5 kN/m",
       "L = 6 m",
       "a = 1.5 m",
+      "#if L > 0 m and a ≥ 0 m",
       "R_A = q*(L^2 - a^2)/(2*L)",
       "R_B = q*(L + a)^2/(2*L)",
       "M_B = q*a^2/2 to kN*m",
-      "x_M = R_A/q to m",
+      "x_M = (L^2 - a^2)/(2*L) to m",
       "M_veld = q*(L + a)^2*(L - a)^2/(8*L^2) to kN*m",
-    ),
+      ...liggerTekening(t, {
+        p: "tl12",
+        lengte: "L + a",
+        steunen: [{ x: 0, soort: "scharnier", naam: "A" }, { x: "L", soort: "rol", naam: "B" }],
+        last: VOLLE_LAST,
+        maten: [{ van: 0, tot: "L", naam: "L", waarde: "L" }, { van: "L", tot: 1, naam: "a", waarde: "a" }],
+        // De raaklijn bij A heeft helling R_A, en de overstek loopt aan zijn eind horizontaal uit.
+        lijn: [{ x: 0 }, { x: "L", M: "-M_B", via: [{ x: "L/2", M: "R_A*L/2" }] }, { x: 1, via: [{ x: "L + a/2" }] }],
+        getallen: [
+          // Bij a ≥ L is het hele veld negatief en is er geen veldmoment.
+          { x: "x_M", M: "M_veld", naam: "M_veld", als: "a < L" },
+          { x: "L", M: "-M_B", naam: "M_B" },
+        ],
+      }),
+      "#else",
+      melding(t, "L moet groter zijn dan 0 en a mag niet negatief zijn.", "L must be greater than 0 and a must not be negative."),
+      "#end if",
+    )),
   },
   {
     id: "ligger-twee-velden-q",
@@ -348,7 +527,7 @@ export const FORMULES: Formule[] = [
       nl: "Twee gelijke velden L, beide belast: reacties, dwarskracht en steunmoment bij het middensteunpunt B, veldmoment en grootste doorbuiging.",
       en: "Two equal spans L, both loaded: reactions, shear force and support moment at the middle support B, span moment and maximum deflection.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "q = 5 kN/m",
       "L = 6 m",
       ...STAAL_EI,
@@ -358,8 +537,22 @@ export const FORMULES: Formule[] = [
       "V_B = 5*q*L/8",
       "M_B = q*L^2/8 to kN*m",
       "M_veld = 9*q*L^2/128 to kN*m",
-      "w_max = q*L^4/(185*E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = q*L^4/(185*E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl13",
+        lengte: "2*L",
+        steunen: [{ x: 0, soort: "scharnier", naam: "A" }, { x: 0.5, soort: "rol", naam: "B" }, { x: 1, soort: "rol", naam: "C" }],
+        last: VOLLE_LAST,
+        maten: [{ van: 0, tot: 0.5, naam: "L", waarde: "L" }, { van: 0.5, tot: 1, naam: "L", waarde: "L" }],
+        // In elk veld een parabool; de raaklijn aan het eind heeft helling R_A.
+        lijn: [{ x: 0 }, { x: 0.5, M: "-M_B", via: [{ x: 0.25, M: "R_A*L/2" }] }, { x: 1, via: [{ x: 0.75, M: "R_A*L/2" }] }],
+        getallen: [
+          { x: 3 / 16, M: "M_veld", naam: "M_veld" },
+          { x: 0.5, M: "-M_B", naam: "M_B" },
+          { x: 13 / 16, M: "M_veld", naam: "M_veld" },
+        ],
+      }),
+    )),
   },
   {
     id: "ligger-twee-velden-f-midden",
@@ -370,7 +563,7 @@ export const FORMULES: Formule[] = [
       nl: "Twee gelijke velden L met elk een puntlast F in het midden: reacties, steunmoment 3FL/16, moment onder de last 5FL/32 en grootste doorbuiging.",
       en: "Two equal spans L, each with a point load F at midspan: reactions, support moment 3FL/16, moment under the load 5FL/32 and maximum deflection.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "F = 20 kN",
       "L = 6 m",
       ...STAAL_EI,
@@ -379,8 +572,21 @@ export const FORMULES: Formule[] = [
       "R_C = 5*F/16",
       "M_B = 3*F*L/16 to kN*m",
       "M_F = 5*F*L/32 to kN*m",
-      "w_max = F*L^3/(48*sqrt(5)*E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = F*L^3/(48*sqrt(5)*E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl14",
+        lengte: "2*L",
+        steunen: [{ x: 0, soort: "scharnier", naam: "A" }, { x: 0.5, soort: "rol", naam: "B" }, { x: 1, soort: "rol", naam: "C" }],
+        last: { F: "F", op: [0.25, 0.75] },
+        maten: [{ van: 0, tot: 0.5, naam: "L", waarde: "L" }, { van: 0.5, tot: 1, naam: "L", waarde: "L" }],
+        lijn: [{ x: 0 }, { x: 0.25, M: "M_F" }, { x: 0.5, M: "-M_B" }, { x: 0.75, M: "M_F" }, { x: 1 }],
+        getallen: [
+          { x: 0.25, M: "M_F", naam: "M_F" },
+          { x: 0.5, M: "-M_B", naam: "M_B" },
+          { x: 0.75, M: "M_F", naam: "M_F" },
+        ],
+      }),
+    )),
   },
   {
     id: "ligger-drie-velden-q",
@@ -391,7 +597,7 @@ export const FORMULES: Formule[] = [
       nl: "Drie gelijke velden L, alle belast: reacties, steunmoment bij B, veldmoment in eind- en middenveld en grootste doorbuiging (in het eindveld).",
       en: "Three equal spans L, all loaded: reactions, support moment at B, span moments in the end and middle span and maximum deflection (end span).",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "q = 5 kN/m",
       "L = 6 m",
       ...STAAL_EI,
@@ -400,8 +606,37 @@ export const FORMULES: Formule[] = [
       "M_B = 0.1*q*L^2 to kN*m",
       "M_veld,1 = 0.08*q*L^2 to kN*m",
       "M_veld,2 = 0.025*q*L^2 to kN*m",
-      "w_max = 0.0069*q*L^4/(E*I_y) to mm",
-    ),
+      ...doorbuiging(t, "w_max = 0.0069*q*L^4/(E*I_y) to mm"),
+      ...liggerTekening(t, {
+        p: "tl15",
+        lengte: "3*L",
+        steunen: [
+          { x: 0, soort: "scharnier", naam: "A" },
+          { x: 1 / 3, soort: "rol", naam: "B" },
+          { x: 2 / 3, soort: "rol", naam: "C" },
+          { x: 1, soort: "rol", naam: "D" },
+        ],
+        last: VOLLE_LAST,
+        maten: [
+          { van: 0, tot: 1 / 3, naam: "L", waarde: "L" },
+          { van: 1 / 3, tot: 2 / 3, naam: "L", waarde: "L" },
+          { van: 2 / 3, tot: 1, naam: "L", waarde: "L" },
+        ],
+        lijn: [
+          { x: 0 },
+          { x: 1 / 3, M: "-M_B", via: [{ x: 1 / 6, M: "R_A*L/2" }] },
+          { x: 2 / 3, M: "-M_B", via: [{ x: 0.5, M: "2*M_veld,2 + M_B" }] },
+          { x: 1, via: [{ x: 5 / 6, M: "R_A*L/2" }] },
+        ],
+        getallen: [
+          { x: 0.4 / 3, M: "M_veld,1", naam: "M_veld,1" },
+          { x: 1 / 3, M: "-M_B", naam: "M_B" },
+          { x: 0.5, M: "M_veld,2", naam: "M_veld,2" },
+          { x: 2 / 3, M: "-M_B", naam: "M_B" },
+          { x: 2.6 / 3, M: "M_veld,1", naam: "M_veld,1" },
+        ],
+      }),
+    )),
   },
   {
     id: "ligger-twee-steunpunten-q-op-x",
@@ -412,13 +647,26 @@ export const FORMULES: Formule[] = [
       nl: "Moment- en dwarskrachtlijn van een ligger op twee steunpunten onder een volle last q, op afstand x van A.",
       en: "Bending moment and shear force of a simply supported beam under a full load q, at distance x from A.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "q = 5 kN/m",
       "L = 6 m",
       "x = 1.5 m",
       "M_x = q*x*(L - x)/2 to kN*m",
       "V_x = q*(L/2 - x)",
-    ),
+      "M_max = q*L^2/8 to kN*m",
+      ...liggerTekening(t, {
+        p: "tl16",
+        lengte: "L",
+        steunen: TWEE_STEUNPUNTEN,
+        last: VOLLE_LAST,
+        maten: [{ van: 0, tot: "x", naam: "x", waarde: "x" }, { van: "x", tot: 1, naam: "L − x", waarde: "L - x" }],
+        lijn: [{ x: 0 }, { x: 1, via: [{ x: 0.5, M: "2*M_max" }] }],
+        getallen: [{ x: 0.5, M: "M_max", naam: "M_max" }],
+        snede: { x: "x", M: "M_x", V: "V_x" },
+        geldig: "x ≥ 0 m and x ≤ L",
+        reden: { nl: "Geen tekening: x moet tussen 0 en L liggen.", en: "No drawing: x must lie between 0 and L." },
+      }),
+    )),
   },
 
   // ════════════════════════════════════════════════════════════════════
@@ -433,7 +681,7 @@ export const FORMULES: Formule[] = [
       nl: "Oppervlak, traagheidsmomenten, elastische en plastische weerstandsmomenten en traagheidsstralen van een rechthoek b × h.",
       en: "Area, second moments of area, elastic and plastic section moduli and radii of gyration of a rectangle b × h.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "b = 100 mm",
       "h = 200 mm",
       "A = b*h to mm^2",
@@ -444,7 +692,8 @@ export const FORMULES: Formule[] = [
       "W_pl,y = b*h^2/4 to mm^3",
       "i_y = h/sqrt(12) to mm",
       "i_z = b/sqrt(12) to mm",
-    ),
+      ...rechthoekTekening(t),
+    )),
   },
   {
     id: "doorsnede-cirkel",
@@ -455,14 +704,15 @@ export const FORMULES: Formule[] = [
       nl: "Oppervlak, traagheidsmoment, elastisch en plastisch weerstandsmoment en traagheidsstraal van een cirkel met diameter d.",
       en: "Area, second moment of area, elastic and plastic section modulus and radius of gyration of a circle with diameter d.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "d = 100 mm",
       "A = π*d^2/4 to mm^2",
       "I_y = π*d^4/64 to mm^4",
       "W_el,y = π*d^3/32 to mm^3",
       "W_pl,y = d^3/6 to mm^3",
       "i_y = d/4 to mm",
-    ),
+      ...cirkelTekening(t),
+    )),
   },
   {
     id: "doorsnede-buis",
@@ -473,16 +723,21 @@ export const FORMULES: Formule[] = [
       nl: "Doorsnedegrootheden van een buis met buitendiameter D en wanddikte t.",
       en: "Section properties of a tube with outside diameter D and wall thickness t.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "D = 168.3 mm",
       "t = 8 mm",
       "d_i = D - 2*t",
+      "#if D > 0 mm and t > 0 mm and d_i ≥ 0 mm",
       "A = π*(D^2 - d_i^2)/4 to mm^2",
       "I_y = π*(D^4 - d_i^4)/64 to mm^4",
       "W_el,y = 2*I_y/D to mm^3",
       "W_pl,y = (D^3 - d_i^3)/6 to mm^3",
       "i_y = sqrt(I_y/A) to mm",
-    ),
+      ...buisTekening(t),
+      "#else",
+      melding(t, "D en t moeten groter zijn dan 0, en t hoogstens D/2.", "D and t must be greater than 0, and t at most D/2."),
+      "#end if",
+    )),
   },
   {
     id: "doorsnede-koker",
@@ -493,16 +748,21 @@ export const FORMULES: Formule[] = [
       nl: "Koker b × h met wanddikte t, met scherpe hoeken gerekend (de afrondingen van een gewalst profiel zijn verwaarloosd).",
       en: "Box b × h with wall thickness t, computed with sharp corners (the corner radii of a rolled section are ignored).",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "b = 100 mm",
       "h = 200 mm",
       "t = 8 mm",
+      "#if b > 0 mm and h > 0 mm and t > 0 mm and 2*t ≤ min(b; h)",
       "A = b*h - (b - 2*t)*(h - 2*t) to mm^2",
       "I_y = (b*h^3 - (b - 2*t)*(h - 2*t)^3)/12 to mm^4",
       "W_el,y = 2*I_y/h to mm^3",
       "W_pl,y = (b*h^2 - (b - 2*t)*(h - 2*t)^2)/4 to mm^3",
       "i_y = sqrt(I_y/A) to mm",
-    ),
+      ...kokerTekening(t),
+      "#else",
+      melding(t, "b, h en t moeten groter zijn dan 0, en t hoogstens de helft van de kleinste zijde.", "b, h and t must be greater than 0, and t at most half the shortest side."),
+      "#end if",
+    )),
   },
   {
     id: "doorsnede-i-profiel",
@@ -510,14 +770,16 @@ export const FORMULES: Formule[] = [
     naam: { nl: "Dubbelsymmetrisch I-profiel", en: "Doubly symmetric I-section" },
     bron: "mechanica",
     uitleg: {
-      nl: "I-profiel uit platen (hoogte h, flensbreedte b, lijfdikte t_w, flensdikte t_f), zonder de afrondingen tussen lijf en flens.",
-      en: "I-section made of plates (depth h, flange width b, web thickness t_w, flange thickness t_f), without the root radii.",
+      nl: "I- of H-profiel uit platen (hoogte h, flensbreedte b, lijfdikte t_w, flensdikte t_f). De afronding r tussen lijf en flens staat in de tekening, maar rekent niet mee in de grootheden.",
+      en: "I or H section made of plates (depth h, flange width b, web thickness t_w, flange thickness t_f). The root radius r is in the drawing but does not count in the properties.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "h = 300 mm",
       "b = 150 mm",
       "t_w = 7.1 mm",
       "t_f = 10.7 mm",
+      t === "nl" ? "r = 15 mm', alleen voor de tekening'" : "r = 15 mm', for the drawing only'",
+      "#if h > 0 mm and b > 0 mm and t_w > 0 mm and t_f > 0 mm and t_w ≤ b and 2*t_f < h",
       "A = 2*b*t_f + (h - 2*t_f)*t_w to mm^2",
       "I_y = (b*h^3 - (b - t_w)*(h - 2*t_f)^3)/12 to mm^4",
       "I_z = (2*t_f*b^3 + (h - 2*t_f)*t_w^3)/12 to mm^4",
@@ -525,7 +787,11 @@ export const FORMULES: Formule[] = [
       "W_pl,y = b*t_f*(h - t_f) + t_w*(h - 2*t_f)^2/4 to mm^3",
       "i_y = sqrt(I_y/A) to mm",
       "i_z = sqrt(I_z/A) to mm",
-    ),
+      ...iProfielTekening(t),
+      "#else",
+      melding(t, "De maten moeten groter zijn dan 0, met t_w hoogstens b en 2·t_f kleiner dan h.", "The dimensions must be greater than 0, with t_w at most b and 2·t_f less than h."),
+      "#end if",
+    )),
   },
   {
     id: "doorsnede-driehoek",
@@ -536,13 +802,14 @@ export const FORMULES: Formule[] = [
       nl: "Oppervlak, ligging van het zwaartepunt (vanaf de basis) en traagheidsmoment om de zwaartelijn evenwijdig aan de basis.",
       en: "Area, centroid position (from the base) and second moment of area about the centroidal axis parallel to the base.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "b = 300 mm",
       "h = 200 mm",
       "A = b*h/2 to mm^2",
       "z_c = h/3 to mm",
       "I_y = b*h^3/36 to mm^4",
-    ),
+      ...driehoekTekening(t),
+    )),
   },
   {
     id: "doorsnede-steiner",
@@ -553,12 +820,13 @@ export const FORMULES: Formule[] = [
       nl: "Traagheidsmoment om een as op afstand a van de zwaartelijn: eigen traagheidsmoment plus A·a².",
       en: "Second moment of area about an axis at distance a from the centroidal axis: own value plus A·a².",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "I_0 = 1000 cm^4",
       "A = 50 cm^2",
       "a = 100 mm",
       "I_y = I_0 + A*a^2 to cm^4",
-    ),
+      ...steinerTekening(t),
+    )),
   },
   {
     id: "doorsnede-samengesteld",
@@ -569,16 +837,21 @@ export const FORMULES: Formule[] = [
       nl: "Zwaartepunt en traagheidsmoment van twee delen (hier de flens en het lijf van een T-balk), met z vanaf de bovenkant en I_1, I_2 om de eigen zwaartelijn.",
       en: "Centroid and second moment of area of two parts (here the flange and web of a T-beam), with z from the top and I_1, I_2 about their own centroidal axes.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "A_1 = 4000 mm^2",
       "z_1 = 10 mm",
       "I_1 = 133333 mm^4",
       "A_2 = 1800 mm^2",
       "z_2 = 110 mm",
       "I_2 = 4860000 mm^4",
+      "#if A_1 + A_2 > 0 mm^2",
       "z_c = (A_1*z_1 + A_2*z_2)/(A_1 + A_2) to mm",
       "I_y = I_1 + A_1*(z_1 - z_c)^2 + I_2 + A_2*(z_2 - z_c)^2 to mm^4",
-    ),
+      ...samengesteldTekening(t),
+      "#else",
+      melding(t, "Minstens één van de oppervlakken moet groter zijn dan 0.", "At least one of the areas must be greater than 0."),
+      "#end if",
+    )),
   },
   {
     id: "doorsnede-traagheidsstraal",
@@ -589,11 +862,16 @@ export const FORMULES: Formule[] = [
       nl: "Traagheidsstraal i = √(I/A), bijvoorbeeld om de zwakke as van een HEB 200.",
       en: "Radius of gyration i = √(I/A), for example about the minor axis of an HEB 200.",
     },
-    code: c(
+    ...tweetalig((t) => c(
       "I_z = 2003 cm^4",
       "A = 78.1 cm^2",
+      "#if A > 0 mm^2 and I_z > 0 mm^4",
       "i_z = sqrt(I_z/A) to mm",
-    ),
+      ...traagheidsstraalTekening(t),
+      "#else",
+      melding(t, "A en I_z moeten groter zijn dan 0.", "A and I_z must be greater than 0."),
+      "#end if",
+    )),
   },
 
   // ════════════════════════════════════════════════════════════════════
