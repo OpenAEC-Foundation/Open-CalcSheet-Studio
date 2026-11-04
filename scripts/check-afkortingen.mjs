@@ -1,7 +1,7 @@
 /**
  * Wachtpost bij de puntafkortingen in de rekentaal.
  *
- * De parser vouwt `naam.i` naar een vectorindex `naam[i]` voor CalcPAD. Zonder
+ * De parser vouwt `naam.i` naar een vectorindex `naam[i]`. Zonder
  * bescherming sloopt die regel elke Nederlandse afkorting met een enkele
  * letter: `t.o.v.` werd `t[o].v.` en `u.c.` werd `u[c].` — zichtbaar in de
  * uitvoer van bladen die op GEREED staan.
@@ -37,7 +37,7 @@ const VOUWEN = [
 /**
  * BEKENDE BEPERKING. De bescherming grijpt aan op de afsluitende punt. Een
  * verwijzing zonder punt erachter — "zie Tabel NB.3 hierboven" — is voor de
- * parser niet te onderscheiden van CalcPAD-vectorindexering `cc.3` en wordt
+ * parser niet te onderscheiden van rekentaal-vectorindexering `cc.3` en wordt
  * dus nog steeds `NB[3]`. Schrijf zulke verwijzingen mét punt, of anders
  * (bijv. "Tabel NB 3"). Deze regel legt dat vast zodat de beperking bekend
  * blijft in plaats van ooit als verrassing terug te komen.

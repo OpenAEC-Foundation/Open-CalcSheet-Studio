@@ -113,7 +113,7 @@ jobs:
       tekst: |
         ## What's New in ${{ needs.voorbereiden.outputs.tag }}
 
-        Open desktop app for structural calculations using CalcPAD syntax, with direct IFC 4x3 / IFCX export.
+        Open desktop app for structural calculations written as calculation text, with direct IFC 4x3 / IFCX export.
 
         ### Downloads
         - **Windows (System)**: Download the `*_x64-setup.exe` installer for system-wide installation (requires admin)

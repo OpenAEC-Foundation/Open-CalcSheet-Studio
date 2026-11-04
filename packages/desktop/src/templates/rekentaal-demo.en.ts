@@ -1,12 +1,12 @@
 import type { BladVertaling } from "../components/calc/uitvoerTaal";
 
 /** Het demoblad in het Engels; zie balklaag.en.ts. */
-export const calcpadDemoEn: BladVertaling = {
+export const rekentaalDemoEn: BladVertaling = {
   marker: "\"Open CalcSheet Studio demo",
   tekst: {
     "Balk in 3D": "Beam in 3D",
     "Voorbeeldpagina": "Example page",
-    "Dit blad is zelf het voorbeeld: in de editor staat de rekentaal (in CalcPAD-stijl), in de uitwerking wat daaruit volgt. Elk hoofdstuk behandelt één onderdeel, met eerst een korte uitleg en de schrijfwijze (in <code>deze letter</code>) en daarna het werkende voorbeeld. De rode draad is een stalen ligger op twee steunpunten. Verander gerust iets in de editor of in de invoervelden en kijk wat er meebeweegt":
+    "Dit blad is zelf het voorbeeld: in de editor staat de rekentaal, in de uitwerking wat daaruit volgt. Elk hoofdstuk behandelt één onderdeel, met eerst een korte uitleg en de schrijfwijze (in <code>deze letter</code>) en daarna het werkende voorbeeld. De rode draad is een stalen ligger op twee steunpunten. Verander gerust iets in de editor of in de invoervelden en kijk wat er meebeweegt":
       "This sheet is itself the example: the editor holds the calculation language, the worked-out sheet shows what follows from it. Each chapter covers one topic, first with a short explanation and the notation (in <code>deze letter</code>), then the working example. The common thread is a steel beam on two supports. Feel free to change something in the editor or in the input fields and see what changes with it",
     "Dit blad laat zien wat de rekentaal kan, met een stalen ligger als rode draad. De uitleg en de hoofdstukken over alleen de schrijfwijze staan alleen op het scherm":
       "This sheet shows what the calculation language can do, with a steel beam as the common thread. The explanations and the chapters on notation alone appear on screen only",

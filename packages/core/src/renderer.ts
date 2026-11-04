@@ -52,7 +52,7 @@ function flattenBranches(nodes: EvaluatedNode[]): EvaluatedNode[] {
 
 /**
  * Coalesce consecutive HTML text nodes that together form an `<svg>...</svg>`
- * block into a single `svg` node. This is needed because CalcPAD's SVG macros
+ * block into a single `svg` node. This is needed because the language's SVG macros
  * emit one prose line per element (`'<line .../>`, `'<rect .../>`, etc.), and
  * the default text renderer wraps each in `<p>`, which breaks SVG nesting.
  */
@@ -145,7 +145,7 @@ function isUitleg(html: string): boolean {
   return cursief;
 }
 
-/** Is de knoop alleen voor het scherm (CalcPAD `#pre`)? */
+/** Is de knoop alleen voor het scherm (`#pre`)? */
 function alleenScherm(node: EvaluatedNode): boolean {
   return 'scherm' in node && node.scherm === true;
 }
@@ -218,7 +218,7 @@ function maakHtml(nodes: EvaluatedNode[]): string {
     }
     if (!(node.type === 'text' && node.inline)) open = [];
     // Een toelichting van dezelfde bronregel komt naast de formule of het
-    // invoerveld, zoals in CalcPAD: `x = 5 mm, uitleg`. Als losse alinea eronder
+    // invoerveld, zoals in de rekentaal: `x = 5 mm, uitleg`. Als losse alinea eronder
     // kostte elke toelichting een eigen regel, en dat telde in een uitdraai op.
     const vorige = parts[parts.length - 1];
     if (
@@ -250,7 +250,7 @@ function renderNode(node: EvaluatedNode): string {
       return `<h${node.level}>${escapeHtml(node.text)}</h${node.level}>`;
 
     case 'text':
-      // CalcPAD prose lines (`'…`) come through with `html: true` and may contain
+      // prose lines (`'…`) come through with `html: true` and may contain
       // inline tags like <i>, <b>, <hr/>, <sub>. Pass them through unescaped.
       return node.html
         ? `<p class="calc-text">${node.text}</p>`
@@ -430,17 +430,17 @@ function renderAssignment(node: {
   let fullLatex: string;
 
   if (node.weergave === 'val') {
-    // CalcPAD #val: alleen de uitkomst.
+    // #val: alleen de uitkomst.
     fullLatex = `${nameTex} = ${uitkomst}`;
   } else if (node.weergave === 'noc') {
-    // CalcPAD #noc: alleen de formule, zonder uitkomst.
+    // #noc: alleen de formule, zonder uitkomst.
     fullLatex = `${nameTex} = ${exprTex}`;
   } else if (node.weergave === 'nosub') {
-    // CalcPAD #nosub: formule en uitkomst, zonder invulling (een losse waarde
+    // #nosub: formule en uitkomst, zonder invulling (een losse waarde
     // zonder namen blijft `naam = waarde`).
     fullLatex = node.substitution ? `${nameTex} = ${exprTex} = ${uitkomst}` : `${nameTex} = ${uitkomst}`;
   } else if (node.weergave === 'novar' && !isDirectValue) {
-    // CalcPAD #novar: de ingevulde formule en de uitkomst, zonder de namen.
+    // #novar: de ingevulde formule en de uitkomst, zonder de namen.
     fullLatex = `${nameTex} = ${subTex()} = ${uitkomst}`;
   } else if (node.matrix && node.substitution && node.substitution === node.expression) {
     // Een matrixuitkomst uit namen die niet ingevuld worden (C = A·B,
@@ -500,7 +500,7 @@ export const defaultStyles = `
 }
 
 .calc-line {
-  /* CalcPAD-stijl: geen achtergrond / linker streep — gewoon de formule. */
+  /* Stijl van de uitwerking: geen achtergrond / linker streep — gewoon de formule. */
   padding: 0.15em 0;
   margin: 0.25em 0;
   /* Verbergt overflow zonder slider; KaTeX past zich via .calc-line .katex aan.
@@ -733,7 +733,7 @@ export const defaultStyles = `
   box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
 }
 
-/* ─── CalcPAD ? Input Prompt ─────────────────────────────────────── */
+/* ─── ? Input Prompt ─────────────────────────────────────── */
 
 .calc-input-prompt {
   display: flex;

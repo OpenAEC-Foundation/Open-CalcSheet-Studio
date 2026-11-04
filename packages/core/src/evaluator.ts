@@ -26,7 +26,7 @@ const math: MathJsInstance = create(all, {});
  * mathjs handles the conversion itself.
  *
  * setAngleMode zet de stand van de app. Een blad kan hem met `#deg`, `#rad`
- * of `#gra` vanaf die regel veranderen, zoals in CalcPAD; aan het eind van
+ * of `#gra` vanaf die regel veranderen, zoals in de rekentaal; aan het eind van
  * evaluate() staat de stand van de app weer terug, zodat het volgende blad
  * er niet door geraakt wordt.
  */
@@ -59,7 +59,7 @@ const nativeAsin = math.asin, nativeAcos = math.acos, nativeAtan = math.atan;
 // hun inversen en atan2 zelf uit, buiten de wrappers hierboven om.
 const nativeCot = math.cot, nativeSec = math.sec, nativeCsc = math.csc;
 const nativeAcot = math.acot, nativeAsec = math.asec, nativeAcsc = math.acsc, nativeAtan2 = math.atan2;
-/** mathjs' eigen round, vóór de vervanging hieronder (zie `round` in de CalcPAD-functies). */
+/** mathjs' eigen round, vóór de vervanging hieronder (zie `round` in de functies van de rekentaal). */
 const nativeRound = math.round;
 math.import({
   sin: (v: unknown) => nativeSin(toRadians(v) as number),
@@ -75,12 +75,12 @@ math.import({
   asec: (v: unknown) => fromRadians(nativeAsec(v as number)),
   acsc: (v: unknown) => fromRadians(nativeAcsc(v as number)),
   atan2: (y: unknown, x: unknown) => fromRadians(nativeAtan2(y as number, x as number)),
-  // CalcPAD schrijft `ln` voor de natuurlijke logaritme; mathjs kent alleen
+  // De rekentaal schrijft `ln` voor de natuurlijke logaritme; mathjs kent alleen
   // `log` (dat zonder base-argument al natural log is).
   ln: (v: unknown) => math.log(v as number),
 }, { override: true });
 
-// CalcPAD-style helper functions that mathjs doesn't ship with.
+// Helper functions that mathjs doesn't ship with.
 
 // mathjs returns Matrix objects from `[…]` literals — Array.isArray(M) is
 // false, so our helpers must also handle the Matrix case. Normalize both
@@ -109,7 +109,7 @@ function asNumber(v: unknown): number {
 type Vergelijking = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge';
 
 /**
- * De CalcPAD-opzoekfuncties op een matrix in CalcPAD-oriëntatie (rij i is
+ * De opzoekfuncties van de rekentaal op een matrix, rij voor rij (rij i is
  * rij i, zie rewriteMatrixLiterals in parser.ts).
  *
  *   hlookup(M; x; i₁; i₂)  zoekt x in RIJ i₁ en geeft het element uit rij i₂
@@ -118,7 +118,7 @@ type Vergelijking = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge';
  *                          kolom j₂ in dezelfde rij — verticaal zoeken
  *   …_ge, _le, _gt, _lt, _ne  met een andere vergelijking dan "gelijk"
  *
- * Afwijking van CalcPAD, bewust en ongewijzigd: CalcPAD geeft een vector met
+ * Afwijking van andere rekentalen, bewust en ongewijzigd: die geven een vector met
  * alle treffers; deze functies geven één waarde — bij `eq` de eerste treffer,
  * anders de treffer die het dichtst bij x ligt (`hlookup_ge`: de kleinste
  * waarde ≥ x). De bladen rekenen daarmee als met een getal
@@ -211,12 +211,12 @@ math.import(
     if: function (cond: unknown, t: unknown, f: unknown) {
       return Boolean(cond) ? t : f;
     },
-    // CalcPAD `take(n; a; b; c…)`: het n-de element van de lijst, waarin
+    // `take(n; a; b; c…)`: het n-de element van de lijst, waarin
     // vectoren en matrices (rij voor rij) zijn uitgevouwen: `take(2; [10; 20;
     // 30])` → 20. `take(x; y; M)` met een matrix M: het element in rij x,
     // kolom y. Een index wordt afgerond op een geheel getal.
     //
-    // Ruimer dan CalcPAD, voor oudere bladen: `take(vec)` geeft het eerste
+    // Ruimer dan gebruikelijk, voor oudere bladen: `take(vec)` geeft het eerste
     // element, `take(vec; n)` mag ook, en een index buiten de lijst valt op
     // het eerste of laatste element. `take(1; hlookup_ge(M; h; 1; 1))` werkt
     // ook als de opzoekfunctie één getal teruggeeft.
@@ -243,11 +243,11 @@ math.import(
       const i = Math.min(Math.max(indexGetal(args[0], 'take'), 1), lijst.length) - 1;
       return lijst[i];
     },
-    // Boolean → 0/1 (CalcPAD uses `(cond) * value` patterns)
+    // Boolean → 0/1 (the language uses `(cond) * value` patterns)
     bool: function (cond: unknown) {
       return Boolean(cond) ? 1 : 0;
     },
-    // CalcPAD-opzoekfuncties; zie zoekOp.
+    // rekentaal-opzoekfuncties; zie zoekOp.
     hlookup: function (...args: unknown[]) { return zoekOp(args, 'h', 'eq'); },
     hlookup_eq: function (...args: unknown[]) { return zoekOp(args, 'h', 'eq'); },
     hlookup_ne: function (...args: unknown[]) { return zoekOp(args, 'h', 'ne'); },
@@ -288,7 +288,7 @@ math.import(
       }
       return rowVal;
     },
-    // CalcPAD `row(M; i)` / `col(M; j)`: rij i of kolom j als PLATTE vector
+    // `row(M; i)` / `col(M; j)`: rij i of kolom j als PLATTE vector
     // (1-based). mathjs' eigen row() geeft een 1×N-matrix, waarna
     // vector-indexering (`r.3` → r[3]) stukloopt op "Dimension mismatch".
     // Bij een vector geven ze het element op die plaats.
@@ -310,7 +310,7 @@ math.import(
         return rr ? rr[Math.min(idx, rr.length - 1)] : r;
       }) as number[]);
     },
-    // CalcPAD logische functies — hoofdletter-varianten met variadische
+    // logische functies — hoofdletter-varianten met variadische
     // argumenten (`#if Or(uc_1 > 1; uc_2 > 1; …)`).
     Or: function (...args: unknown[]) {
       return args.some((a) => Boolean(a)) ? 1 : 0;
@@ -801,12 +801,12 @@ math.import(
   { override: true },
 );
 
-// ── CalcPAD: vectoren en matrices ───────────────────────────────────────────
-// Een matrix staat in mathjs zoals in CalcPAD: rij i is rij i. Een vector is
+// ── Rekentaal: vectoren en matrices ───────────────────────────────────────────
+// Een matrix staat in mathjs zoals in de rekentaal: rij i is rij i. Een vector is
 // eendimensionaal; in een product met een matrix telt hij als kolom.
 //
 // Functienamen die mathjs zelf ook kent maar anders bedoelt (lsolve, matrix,
-// sum, count), krijgen hun CalcPAD-betekenis via vertaalCalcpad: die zet ze in
+// sum, count), krijgen hun betekenis in de rekentaal via vertaalRekentaal: die zet ze in
 // de expressie om naar de functies hieronder met `_cp_` ervoor. Zo blijft de
 // mathjs-functie zelf ongemoeid; lusolve bijvoorbeeld rekent intern met
 // mathjs' lsolve voor een onderdriehoeksmatrix.
@@ -914,7 +914,7 @@ function losEenOp(a: unknown[][], b: unknown[], functie: string): unknown[] {
 }
 
 /**
- * CalcPAD lsolve, clsolve en slsolve (één rechterlid, uitkomst een platte
+ * lsolve, clsolve en slsolve (één rechterlid, uitkomst een platte
  * vector) en msolve, cmsolve en smsolve (de kolommen van B zijn de
  * rechterleden, uitkomst een matrix met per kolom de oplossing). Alle zes met
  * dezelfde algemene oplosser (LU met rijpivotering): die werkt voor elke
@@ -955,7 +955,7 @@ function getallenMatrix(M: unknown, functie: string): { getallen: number[][]; ee
   return { getallen, eenheid };
 }
 
-/** Eigenwaarden van een symmetrische matrix, met het aantal n_e zoals in CalcPAD. */
+/** Eigenwaarden van een symmetrische matrix, met het aantal n_e zoals in de rekentaal. */
 function eigenKeuze(M: unknown, ne: unknown, functie: string): { waarden: unknown[]; vectoren: number[][] } {
   vierkant(M, functie);
   const { getallen, eenheid } = getallenMatrix(M, functie);
@@ -1000,8 +1000,8 @@ function alsVector(v: unknown, functie: string): unknown[] {
 
 math.import(
   {
-    // Bouwstenen van een literaal (zie vertaalCalcpad): `[a; b; c]` vouwt een
-    // vector of matrix als element uit, zoals in CalcPAD (`[0; a; 6]`); een
+    // Bouwstenen van een literaal (zie vertaalRekentaal): `[a; b; c]` vouwt een
+    // vector of matrix als element uit, zoals in de rekentaal (`[0; a; 6]`); een
     // matrix `[r1 | r2]` vult kortere rijen met nullen aan.
     _cp_vector_lit: function (...items: unknown[]) {
       return math.matrix(plat(items) as number[]);
@@ -1231,10 +1231,10 @@ function lineairIn(lijst: unknown[], t: number): unknown {
 }
 
 /**
- * CalcPAD-namen die mathjs zelf ook kent maar anders bedoelt. Een aanroep
+ * Namen uit de rekentaal die mathjs zelf ook kent maar anders bedoelt. Een aanroep
  * met dit aantal parameters gaat naar de `_cp_`-functie; de rest blijft mathjs.
  */
-const CALCPAD_NAMEN: Record<string, (aantal: number) => string | null> = {
+const REKENTAAL_NAMEN: Record<string, (aantal: number) => string | null> = {
   lsolve: () => '_cp_lsolve',
   matrix: (n) => (n === 2 ? '_cp_matrix' : null),
   sum: (n) => (n >= 2 ? '_cp_sum' : null),
@@ -1242,30 +1242,30 @@ const CALCPAD_NAMEN: Record<string, (aantal: number) => string | null> = {
 };
 
 /**
- * Zet een mathjs-boom om naar CalcPAD-betekenis voordat hij wordt berekend:
+ * Zet een mathjs-boom om naar de betekenis in de rekentaal voordat hij wordt berekend:
  *   • een literaal `[[a, b], [c, d]]` wordt `_cp_matrix_lit(_cp_rij(a, b), …)`
  *     en `[a, b]` wordt `_cp_vector_lit(a, b)`, zodat een vector als element
  *     wordt uitgevouwen en kortere rijen met nullen worden aangevuld;
- *   • de namen uit CALCPAD_NAMEN gaan naar hun `_cp_`-functie.
+ *   • de namen uit REKENTAAL_NAMEN gaan naar hun `_cp_`-functie.
  * De weergave van de formule (latex.ts) gebruikt de boom zonder deze stap.
  */
-function vertaalCalcpad(boom: MathNode): MathNode {
+function vertaalRekentaal(boom: MathNode): MathNode {
   return boom.transform((nd: MathNode) => {
     if (math.isArrayNode(nd)) {
       const items = (nd as unknown as { items: MathNode[] }).items;
       if (items.length > 0 && items.every((it) => math.isArrayNode(it))) {
         return new math.FunctionNode('_cp_matrix_lit', items.map((rij) =>
-          new math.FunctionNode('_cp_rij', (rij as unknown as { items: MathNode[] }).items.map(vertaalCalcpad)),
+          new math.FunctionNode('_cp_rij', (rij as unknown as { items: MathNode[] }).items.map(vertaalRekentaal)),
         ));
       }
-      return new math.FunctionNode('_cp_vector_lit', items.map(vertaalCalcpad));
+      return new math.FunctionNode('_cp_vector_lit', items.map(vertaalRekentaal));
     }
     if (math.isFunctionNode(nd)) {
       const f = nd as unknown as { fn: MathNode; args: MathNode[] };
       if (math.isSymbolNode(f.fn)) {
         const naam = (f.fn as unknown as { name: string }).name;
-        const nieuw = Object.prototype.hasOwnProperty.call(CALCPAD_NAMEN, naam) ? CALCPAD_NAMEN[naam](f.args.length) : null;
-        if (nieuw) return new math.FunctionNode(nieuw, f.args.map(vertaalCalcpad));
+        const nieuw = Object.prototype.hasOwnProperty.call(REKENTAAL_NAMEN, naam) ? REKENTAAL_NAMEN[naam](f.args.length) : null;
+        if (nieuw) return new math.FunctionNode(nieuw, f.args.map(vertaalRekentaal));
       }
     }
     return nd;
@@ -1278,7 +1278,7 @@ const gecompileerd = new Map<string, { evaluate: (scope?: unknown) => unknown }>
 const ontleed = new Map<string, MathNode>();
 const CACHE_MAX = 20000;
 
-/** De mathjs-boom van een expressie (zonder vertaalCalcpad), uit de cache. */
+/** De mathjs-boom van een expressie (zonder vertaalRekentaal), uit de cache. */
 function ontleedExpr(expr: string): MathNode {
   let boom = ontleed.get(expr);
   if (!boom) {
@@ -1289,11 +1289,11 @@ function ontleedExpr(expr: string): MathNode {
   return boom;
 }
 
-/** Berekent een expressie met CalcPAD-betekenis (zie vertaalCalcpad). */
+/** Berekent een expressie met de betekenis in de rekentaal (zie vertaalRekentaal). */
 function reken(expr: string, scope: Scope): unknown {
   let c = gecompileerd.get(expr);
   if (!c) {
-    c = vertaalCalcpad(ontleedExpr(expr)).compile();
+    c = vertaalRekentaal(ontleedExpr(expr)).compile();
     if (gecompileerd.size >= CACHE_MAX) gecompileerd.clear();
     gecompileerd.set(expr, c);
   }
@@ -1307,7 +1307,7 @@ export interface Scope {
 /**
  * Values supplied at runtime for interactive nodes:
  *   - @select blocks  → keyed by `name`, value is one of the option `value`s
- *   - `?` input prompts (CalcPAD) → keyed by `name`, value is a number+unit string
+ *   - `?` input prompts → keyed by `name`, value is a number+unit string
  */
 export interface SelectValues {
   [key: string]: string;
@@ -1378,11 +1378,11 @@ export function isEenheidNaam(naam: string): boolean {
 /**
  * De stand van de afdrukopdrachten tijdens het doorrekenen. Een opdracht geldt
  * vanaf zijn regel tot het eind van het blad of tot een andere opdracht van
- * dezelfde soort, zoals in CalcPAD:
+ * dezelfde soort, zoals in de rekentaal:
  *   weergave  `#equ` formule, invulling en uitkomst (standaard)
  *             `#val` alleen de uitkomst: `x = 5`
  *             `#noc` alleen de formule, zonder uitkomst: `x = a + b` (er wordt
- *                    wel gerekend; CalcPAD "no calculation" in de weergave)
+ *                    wel gerekend; "no calculation" in de weergave)
  *   invullen  `#varsub` formule en invulling (standaard)
  *             `#nosub` zonder invulling: `x = a + b = 5`
  *             `#novar` alleen de invulling: `x = 2 + 3 = 5`
@@ -1481,7 +1481,7 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
       case 'text':
         if (node.hidden) break;
         if (node.parts && node.parts.length > 0) {
-          // Resolve CalcPAD prose interpolation — eval each `expr` part and
+          // Resolve prose interpolation — eval each `expr` part and
           // concat with literal parts. Failed exprs fall back to the source.
           const out: string[] = [];
           for (const p of node.parts) {
@@ -1515,7 +1515,7 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
       }
 
       case 'input-prompt': {
-        // CalcPAD `?` prompt — pick the user-supplied value or fall back to the default.
+        // `?` prompt — pick the user-supplied value or fall back to the default.
         // Het veld toont wat er is ingetypt; gerekend wordt met een punt. Een
         // komma is hier altijd een decimaalteken: "0,42" is 0,42.
         //
@@ -1568,7 +1568,7 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
       case 'user-function': {
         // mathjs supports the `f(x) = expr` form natively via its parser, maar
         // wel in zíjn eigen notatie. Daarom de genormaliseerde body gebruiken
-        // en niet de rauwe regel: die staat er nog in CalcPAD-notatie, met
+        // en niet de rauwe regel: die staat er nog in rekentaal-notatie, met
         // puntkomma's in `if(a; b; c)` en tekens als ≤ en ≡. mathjs slikte dat
         // niet, de definitie mislukte, en omdat de fout bij een verborgen regel
         // wordt ingeslikt bleef de aanroep verderop stilzwijgend als tekst in
@@ -1915,10 +1915,10 @@ function evaluateAssignment(
 
 /**
  * Kent `waarde` toe aan één element van de vector of matrix `naam`
- * (`v.(i) = …`, `A.(i; j) = …`), 1-gebaseerd zoals in CalcPAD. De matrix
+ * (`v.(i) = …`, `A.(i; j) = …`), 1-gebaseerd zoals in de rekentaal. De matrix
  * wordt eerst gekopieerd: een eerdere `B = A` deelt anders hetzelfde object
  * en zou mee veranderen. Een index buiten de afmetingen is een fout, zoals in
- * CalcPAD ("Index out of range"); de matrix groeit niet stil mee.
+ * de rekentaal ("Index out of range"); de matrix groeit niet stil mee.
  * Geeft de naam voor de weergave, met de berekende index: `v.(3)`.
  */
 function kenElementToe(naam: string, index: string, waarde: unknown, scope: Scope): string {
@@ -2168,7 +2168,7 @@ function formatNumber(n: number): string {
 }
 
 /**
- * De opmaak van een getal in beeld, naar CalcPAD:
+ * De opmaak van een getal in beeld:
  *   `formaat` achter een uitdrukking (`x = a/b:F2`), als in .NET:
  *     F n  vast n decimalen, met nullen achteraan (F = F2): 3.14159:F2 → 3.14
  *     N n  als F; zonder scheiding van duizendtallen, want een komma of punt
@@ -2462,8 +2462,8 @@ function renderPlotSvg(
 
   // Pre-compile each curve's expressions
   const compiled = node.curves.map((c) => ({
-    x: c.xExpr ? vertaalCalcpad(ontleedExpr(c.xExpr)).compile() : null,
-    y: vertaalCalcpad(ontleedExpr(c.yExpr)).compile(),
+    x: c.xExpr ? vertaalRekentaal(ontleedExpr(c.xExpr)).compile() : null,
+    y: vertaalRekentaal(ontleedExpr(c.yExpr)).compile(),
   }));
 
   // Sample
@@ -2507,7 +2507,7 @@ function renderPlotSvg(
   const yPad = (yMax - yMin) * 0.08;
   xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
 
-  // CalcPAD-variabelen PlotWidth en PlotHeight (pixels) bepalen de maat.
+  // De variabelen PlotWidth en PlotHeight (pixels) bepalen de maat.
   const maat = (naam: string, standaard: number): number => {
     const v = scope[naam];
     const n = typeof v === 'number' ? v : Number.NaN;

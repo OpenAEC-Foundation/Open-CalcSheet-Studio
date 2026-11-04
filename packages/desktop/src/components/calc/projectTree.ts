@@ -8,7 +8,7 @@
  *
  *   - `moduleCatalogus` — rekenmodules, gegroepeerd per materiaal. Invoegen
  *     maakt er een exemplaar van.
- *   - `bibliotheek` — naslag, zoals de CalcPAD-voorbeelden. Ook invoegbaar.
+ *   - `bibliotheek` — naslag, zoals de rekentaal-voorbeelden. Ook invoegbaar.
  *
  * `templateId` matcht een sleutel in `src/templates/index.ts`.
  *
@@ -103,12 +103,12 @@ export const moduleCatalogus: TreeNode[] = [
 export const bibliotheek: TreeNode[] = [
   {
     kind: "category",
-    id: "calcpad-samples",
+    id: "rekentaal-samples",
     label: "Voorbeelden",
     defaultExpanded: false,
     count: 1,
     children: [
-      { kind: "item", id: "cpd-calcpad-demo", label: "Open CalcSheet Studio demo", templateId: "calcpad-demo" },
+      { kind: "item", id: "cpd-rekentaal-demo", label: "Open CalcSheet Studio demo", templateId: "rekentaal-demo" },
     ],
   },
 ];

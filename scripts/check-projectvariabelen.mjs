@@ -35,7 +35,7 @@ const PROJECT = projectVariabelen();
 const botsingen = [];
 
 // ── Rekenbladen: @select-blokken en `?`-prompts ────────────────────────────
-const OVERSLAAN = new Set(["index.ts", "calcpad-samples.ts", "calcpad-includes.ts"]);
+const OVERSLAAN = new Set(["index.ts", "rekentaal-includes.ts"]);
 for (const bestand of readdirSync(TPL_DIR).filter((f) => f.endsWith(".ts") && !OVERSLAAN.has(f))) {
   const regels = readFileSync(join(TPL_DIR, bestand), "utf8").split("\n");
   regels.forEach((regel, i) => {

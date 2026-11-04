@@ -47,7 +47,7 @@ function laadWeergave(): Promise<Weergave> {
   return laden;
 }
 
-/** De teksten van het beeld, in de taal van de app (calcpad.json, drieD en ifcx). */
+/** De teksten van het beeld, in de taal van de app (rekentaal.json, drieD en ifcx). */
 export function ifcxTeksten(vt: (sleutel: string, opties?: { defaultValue: string }) => string): IfcxTeksten {
   return {
     hint: vt("drieD.hint"),

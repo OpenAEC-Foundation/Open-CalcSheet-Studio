@@ -5,7 +5,7 @@ import { useEditorViewStore } from "./editorViewStore";
 
 /**
  * Het lint vraagt de werkruimte om de code van het open blad in beeld te
- * zetten: de tab CalcPAD staat er altijd, ook als de werkruimte Visueel +
+ * zetten: de tab Rekentaal staat er altijd, ook als de werkruimte Visueel +
  * Uitwerking of de IFC-weergave toont. App.tsx luistert naar de teller.
  */
 export const useCodeVerzoek = create<{ teller: number }>(() => ({ teller: 0 }));

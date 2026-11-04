@@ -25,7 +25,7 @@
     <tspan fill="#36363E">Open </tspan><tspan fill="#D97706">Calculations</tspan> <tspan fill="#36363E">Studio</tspan>
   </text>
 
-  <text x="60" y="54" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#A1A1AA" letter-spacing="0.18em">CALCPAD · EUROCODE · IFC · PDF</text>
+  <text x="60" y="54" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#A1A1AA" letter-spacing="0.18em">REKENTAAL · EUROCODE · IFC · PDF</text>
 
   <defs>
     <linearGradient id="wmGrad" x1="0" x2="1">

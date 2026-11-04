@@ -5,7 +5,7 @@ import i18next from "../../i18n/config";
 import RibbonGroup from "./RibbonGroup";
 import RibbonButton from "./RibbonButton";
 import RibbonButtonStack from "./RibbonButtonStack";
-import { CALCPAD_LINT, type LintGroep, type LintItem, type MenuSectie, type SyntaxKnop } from "./calcpadLint";
+import { REKENTAAL_LINT, type LintGroep, type LintItem, type MenuSectie, type SyntaxKnop } from "./rekentaalLint";
 import { b2, glyph } from "./calcIcons";
 import { voegIn } from "./invoegen";
 import FormuleVenster from "./FormuleVenster";
@@ -15,11 +15,11 @@ import { bladOpen, metEditor } from "../../store/codeVerzoek";
 const icoon = (k: SyntaxKnop) => (k.icoon ? b2(k.icoon.id, k.icoon.sprite) : glyph(k.glyph));
 
 /**
- * De woorden van het lint in de gekozen taal. calcpadLint.ts bewaart alleen
- * sleutels (calcpad:lint.…); het fragment zelf blijft rekentaal.
+ * De woorden van het lint in de gekozen taal. rekentaalLint.ts bewaart alleen
+ * sleutels (rekentaal:lint.…); het fragment zelf blijft rekentaal.
  */
 function useLintWoorden() {
-  const { t } = useTranslation("calcpad");
+  const { t } = useTranslation("rekentaal");
   const naam = (k: SyntaxKnop) => (k.naam ? t(`lint.knop.${k.naam}`) : k.glyph);
   return {
     naam,
@@ -52,7 +52,7 @@ const GROTE_SVG = 1_000_000;
  * Geeft null als er niets ingevoegd wordt.
  */
 async function tekeningAlsSvg(bestand: File): Promise<string | null> {
-  const t = (sleutel: string, opties?: Record<string, unknown>) => i18next.t(`calcpad:lint.dxf.${sleutel}`, opties);
+  const t = (sleutel: string, opties?: Record<string, unknown>) => i18next.t(`rekentaal:lint.dxf.${sleutel}`, opties);
   if (/\.dwg$/i.test(bestand.name)) {
     alert(t("dwg"));
     return null;
@@ -100,7 +100,7 @@ function kiesAfbeelding() {
       tekst = `@svg\n${svg}\n@end`;
     } else {
       const mb = (bestand.size / 1_000_000).toFixed(1);
-      if (bestand.size > GROOT_BEELD && !confirm(i18next.t("calcpad:lint.grootBeeld", { mb }))) return;
+      if (bestand.size > GROOT_BEELD && !confirm(i18next.t("rekentaal:lint.grootBeeld", { mb }))) return;
       const data = await new Promise<string>((klaar) => {
         const lezer = new FileReader();
         lezer.onload = () => klaar(String(lezer.result));
@@ -114,7 +114,7 @@ function kiesAfbeelding() {
 }
 
 /**
- * Het tabblad CalcPAD: de rekentaal als knoppen. Staat altijd in het lint;
+ * Het tabblad Rekentaal: de rekentaal als knoppen. Staat altijd in het lint;
  * een klik zet het fragment op de cursor in de editor. Zonder open rekenblad
  * is er geen code om in te schrijven en zijn de knoppen grijs.
  *
@@ -122,9 +122,9 @@ function kiesAfbeelding() {
  * tot één knop met de hele groep in een uitklappaneel; bij een breder venster
  * klappen ze weer uit.
  */
-export default function CalcPadTab() {
+export default function RekentaalTab() {
   const w = useLintWoorden();
-  const { t, i18n } = useTranslation("calcpad");
+  const { t, i18n } = useTranslation("rekentaal");
   const open = useProjectStore(bladOpen);
   const [formules, setFormules] = useState(false);
   const balk = useRef<HTMLDivElement>(null);
@@ -134,7 +134,7 @@ export default function CalcPadTab() {
   useLayoutEffect(() => {
     const paneel = balk.current?.closest(".ribbon-content-panel");
     if (!paneel) return;
-    if (paneel.scrollWidth > paneel.clientWidth + 1 && ingeklapt < CALCPAD_LINT.length) setIngeklapt((n) => n + 1);
+    if (paneel.scrollWidth > paneel.clientWidth + 1 && ingeklapt < REKENTAAL_LINT.length) setIngeklapt((n) => n + 1);
   });
 
   // Een andere vensterbreedte of taal: alles uit en opnieuw passen.
@@ -152,7 +152,7 @@ export default function CalcPadTab() {
   }, []);
   useEffect(() => setIngeklapt(0), [i18n.language]);
 
-  const grens = CALCPAD_LINT.length - ingeklapt;
+  const grens = REKENTAAL_LINT.length - ingeklapt;
   return (
     <div className="ribbon-content" ref={balk}>
       <div className="ribbon-groups">
@@ -161,7 +161,7 @@ export default function CalcPadTab() {
           <RibbonButton icon={b2("data.table", "standard")} label={t("lint.knop.formules")} title={t("formules.titel")}
             size="large" disabled={!open} onClick={() => setFormules(true)} />
         </RibbonGroup>
-        {CALCPAD_LINT.map((groep, i) =>
+        {REKENTAAL_LINT.map((groep, i) =>
           i < grens ? (
             <RibbonGroup key={groep.label} label={w.groep(groep.label)}>
               {groep.items.map((item, j) => <Item key={j} item={item} uit={!open} />)}
@@ -189,12 +189,12 @@ function IngeklapteGroep({ groep, uit }: { groep: LintGroep; uit: boolean }) {
   const anker = useRef<HTMLSpanElement>(null);
   return (
     <RibbonGroup label={w.groep(groep.label)}>
-      <span ref={anker} className="calcpad-menu-anker">
+      <span ref={anker} className="rekentaal-menu-anker">
         <RibbonButton icon={glyph(groepsTeken(groep))} label={`${w.groep(groep.label)} ▾`} size="large"
           active={open} disabled={uit} onClick={() => setOpen((o) => !o)} />
         {open && anker.current &&
           createPortal(
-            <Uitklap anker={anker.current} onSluit={() => setOpen(false)} className="calcpad-groep-paneel">
+            <Uitklap anker={anker.current} onSluit={() => setOpen(false)} className="rekentaal-groep-paneel">
               <div className="ribbon-group-content">
                 {groep.items.map((item, j) => <Item key={j} item={item} uit={uit} />)}
               </div>
@@ -208,7 +208,7 @@ function IngeklapteGroep({ groep, uit }: { groep: LintGroep; uit: boolean }) {
 
 /**
  * Een paneel onder een lintknop: binnen het venster geplaatst, en dicht bij
- * een klik erbuiten of Escape. Een klik in een ander CalcPAD-paneel (een menu
+ * een klik erbuiten of Escape. Een klik in een ander rekentaal-paneel (een menu
  * binnen een ingeklapte groep) telt als binnen.
  */
 export function Uitklap({ anker, onSluit, className, children }: {
@@ -234,7 +234,7 @@ export function Uitklap({ anker, onSluit, className, children }: {
     const buiten = (e: MouseEvent) => {
       const doel = e.target as Element;
       if (paneel.current?.contains(doel) || anker.contains(doel)) return;
-      if (doel.closest?.(".calcpad-menu, .calcpad-groep-paneel") && !paneel.current?.classList.contains("calcpad-menu")) return;
+      if (doel.closest?.(".rekentaal-menu, .rekentaal-groep-paneel") && !paneel.current?.classList.contains("rekentaal-menu")) return;
       onSluit();
     };
     const toets = (e: KeyboardEvent) => { if (e.key === "Escape") onSluit(); };
@@ -274,7 +274,7 @@ function MenuKnop({ item, uit }: { item: Menu; uit: boolean }) {
   const anker = useRef<HTMLSpanElement>(null);
 
   return (
-    <span ref={anker} className="calcpad-menu-anker">
+    <span ref={anker} className="rekentaal-menu-anker">
       <RibbonButton
         icon={glyph(item.glyph)}
         label={`${w.menu(item)} ▾`}
@@ -295,14 +295,14 @@ function MenuPaneel({ item, anker, onSluit }: { item: Menu; anker: HTMLElement; 
   const kies = (k: SyntaxKnop) => { invoegen(k); onSluit(); };
 
   return (
-    <Uitklap anker={anker} onSluit={onSluit} className="calcpad-menu">
+    <Uitklap anker={anker} onSluit={onSluit} className="rekentaal-menu">
       {item.secties.map((sectie) => (
-        <section key={sectie.kop} className="calcpad-menu-sectie">
-          <div className="calcpad-menu-kop">{w.kop(sectie)}</div>
+        <section key={sectie.kop} className="rekentaal-menu-sectie">
+          <div className="rekentaal-menu-kop">{w.kop(sectie)}</div>
           {sectie.raster ? (
-            <div className="calcpad-menu-raster">
+            <div className="rekentaal-menu-raster">
               {sectie.knoppen.map((k) => (
-                <button key={sleutel(k)} type="button" role="menuitem" className="calcpad-menu-teken"
+                <button key={sleutel(k)} type="button" role="menuitem" className="rekentaal-menu-teken"
                   title={w.tip(k)} aria-label={w.naam(k)} onMouseDown={(e) => e.preventDefault()} onClick={() => kies(k)}>
                   {k.glyph}
                 </button>
@@ -310,10 +310,10 @@ function MenuPaneel({ item, anker, onSluit }: { item: Menu; anker: HTMLElement; 
             </div>
           ) : (
             sectie.knoppen.map((k) => (
-              <button key={sleutel(k)} type="button" role="menuitem" className="calcpad-menu-rij"
+              <button key={sleutel(k)} type="button" role="menuitem" className="rekentaal-menu-rij"
                 title={w.tip(k)} onMouseDown={(e) => e.preventDefault()} onClick={() => kies(k)}>
-                <span className="calcpad-menu-glyph">{k.glyph}</span>
-                <span className="calcpad-menu-naam">{w.naam(k)}</span>
+                <span className="rekentaal-menu-glyph">{k.glyph}</span>
+                <span className="rekentaal-menu-naam">{w.naam(k)}</span>
               </button>
             ))
           )}

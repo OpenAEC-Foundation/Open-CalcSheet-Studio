@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import RibbonTab from "./RibbonTab";
 import CalcTab from "./CalcTab";
 import IfcTab from "./IfcTab";
-import CalcPadTab from "./CalcPadTab";
+import RekentaalTab from "./RekentaalTab";
 import SpreadsheetTab from "./SpreadsheetTab";
 import TekenenTab from "../tekenen/TekenenTab";
 import { toonTekenen, useTeken, verbergTekenen } from "../tekenen/tekenStore";
@@ -22,14 +22,14 @@ interface RibbonProps {
   onViewChange: (view: string) => void;
 }
 
-const TABS = ["calc", "calcpad", "tekenen", "ifc"] as const;
+const TABS = ["calc", "rekentaal", "tekenen", "ifc"] as const;
 /** Spreadsheet is er alleen als een spreadsheet-blad openstaat. */
 const MET_SPREADSHEET = [...TABS, "spreadsheet"] as const;
 type TabId = (typeof MET_SPREADSHEET)[number];
 
 export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, onWelkomClick, onViewChange }: RibbonProps) {
   const { t, i18n } = useTranslation("ribbon");
-  // De tab CalcPAD staat er altijd; zijn knoppen voegen in op de cursor in de
+  // De tab Rekentaal staat er altijd; zijn knoppen voegen in op de cursor in de
   // editor. Wie de tab kiest, wil code schrijven: staat die niet in beeld, dan
   // zet de werkruimte hem erbij (store/codeVerzoek.ts).
   const spreadsheet = useSpreadsheetEditor((s) => s.zichtbaar);
@@ -84,7 +84,7 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
 
     // IFC tab → switch main view to IFC code panel
     onViewChange(newTab === "ifc" ? "ifc" : "default");
-    if (newTab === "calcpad" && !useEditorViewStore.getState().view) vraagCode();
+    if (newTab === "rekentaal" && !useEditorViewStore.getState().view) vraagCode();
     // Tekenen: de tekeneditor komt over de uitwerking; weg van de tab gaat hij uit beeld.
     if (newTab === "tekenen") toonTekenen();
     else if (activeTab === "tekenen") verbergTekenen();
@@ -131,7 +131,7 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
     switch (tab) {
       case "calc": return <CalcTab onSettingsClick={onSettingsClick} onHelpClick={onHelpClick} onWelkomClick={onWelkomClick} />;
       case "ifc": return <IfcTab />;
-      case "calcpad": return <CalcPadTab />;
+      case "rekentaal": return <RekentaalTab />;
       case "tekenen": return <TekenenTab />;
       case "spreadsheet": return <SpreadsheetTab />;
     }
@@ -144,7 +144,7 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
         {tabs.map((tab) => (
           <RibbonTab
             key={tab}
-            label={t(`tabs.${tab}`, tab === "calcpad" ? "CalcPAD" : tab)}
+            label={t(`tabs.${tab}`, tab === "rekentaal" ? "Rekentaal" : tab)}
             isActive={activeTab === tab}
             onClick={() => switchTab(tab)}
           />

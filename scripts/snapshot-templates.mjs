@@ -27,7 +27,7 @@ const hier = dirname(fileURLToPath(import.meta.url));
 const TPL_DIR = join(hier, "../packages/desktop/src/templates");
 
 /** Vite-specifieke imports (`?raw`, `?url`) zijn buiten de bundler niet te laden. */
-const OVERSLAAN = new Set(["index.ts", "calcpad-samples.ts", "calcpad-includes.ts"]);
+const OVERSLAAN = new Set(["index.ts", "rekentaal-includes.ts"]);
 
 /**
  * Laadt een templatebestand als ES-module via een data-URL. De bestanden zijn

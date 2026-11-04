@@ -247,8 +247,8 @@ console.log("\n6. De teksten");
   const doc = poerIfcxDocument(poerVan(GEMEEN), { teksten: talen.en.model });
   const namen = doc.data.map((k) => k.attributes?.["bsi::ifc::prop::Name"]).filter(Boolean).join(" ");
   waar("het document in het Engels is Engels", !/Poer|Paal|Kolom|Beugel|Trekband|Haarspeld|Wapening/.test(namen), namen.slice(0, 200));
-  const calcpad = (taal) => JSON.parse(readFileSync(new URL(`../packages/desktop/src/i18n/locales/${taal}/calcpad.json`, import.meta.url), "utf8")).ifcx.attribuut;
-  waar("het paneel kent de nieuwe attributen in beide talen", ["diameter", "aantalStaven"].every((k) => calcpad("nl")[k] && calcpad("en")[k]));
+  const rekentaal = (taal) => JSON.parse(readFileSync(new URL(`../packages/desktop/src/i18n/locales/${taal}/rekentaal.json`, import.meta.url), "utf8")).ifcx.attribuut;
+  waar("het paneel kent de nieuwe attributen in beide talen", ["diameter", "aantalStaven"].every((k) => rekentaal("nl")[k] && rekentaal("en")[k]));
   const inhoud = JSON.stringify(poerIfcxDocument(poerVan(GEMEEN)));
   waar("geen uitkomst of oordeel in het document", !/unityCheck|toetsen|voldoet/.test(inhoud));
 }

@@ -19,7 +19,7 @@ const keuze = readFileSync(join(SRC, "components/calc/designerKeuze.tsx"), "utf8
 const markers = [...keuze.matchAll(/marker: "([^"]+)"/g)].map((m) => m[1]);
 if (markers.length === 0) throw new Error("geen herkenningsteksten gevonden in designerKeuze.tsx");
 
-const OVERSLAAN = new Set(["index.ts", "calcpad-samples.ts", "calcpad-includes.ts"]);
+const OVERSLAAN = new Set(["index.ts", "rekentaal-includes.ts"]);
 const TPL_DIR = join(SRC, "templates");
 let fouten = 0, gekoppeld = 0;
 for (const bestand of readdirSync(TPL_DIR).filter((f) => f.endsWith(".ts") && !OVERSLAAN.has(f))) {

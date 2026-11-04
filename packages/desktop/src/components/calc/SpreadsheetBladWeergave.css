@@ -224,7 +224,7 @@
 }
 
 /* Het menu van de functies: naam met uitleg ernaast. */
-.spreadsheet-menu .calcpad-menu-rij {
+.spreadsheet-menu .rekentaal-menu-rij {
   display: flex;
   gap: 12px;
   justify-content: space-between;

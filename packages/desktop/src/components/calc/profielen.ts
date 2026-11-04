@@ -9,7 +9,7 @@
  *     oppervlak in mm², weerstandsmoment in mm³, traagheidsmoment in mm⁴,
  *     welvingsconstante in mm⁶.
  *   • profielMatrix() met profielOpzoeking(), en hoekstaalMatrix() met
- *     hoekstaalOpzoeking(), voor de rekenbladen: een CalcPAD-matrix in de
+ *     hoekstaalOpzoeking(), voor de rekenbladen: een rekentaal-matrix in de
  *     eenheden van de profieltabel (mm, cm², cm⁴, …) plus de hlookup-regels die
  *     er de grootheden mét eenheid uithalen. Zie de toelichting bij
  *     profielMatrix() voor het gebruik in een blad.
@@ -188,7 +188,7 @@ export const hoekstaal = (id: number, terugval = 3): Hoekstaal =>
 export const hoekstaalOpties = (ids?: number[]) =>
   (ids ?? Object.keys(HOEKSTALEN).map(Number)).map((id) => ({ v: id, label: HOEKSTALEN[id].naam }));
 
-// ── CalcPAD-matrix voor de rekenbladen ───────────────────────────────────────
+// ── Rekentaal-matrix voor de rekenbladen ───────────────────────────────────────
 
 /** Grootheden van een I-profiel, in de rijvolgorde van profielMatrix() (rij 1 = id). */
 export type ProfielGrootheid =
@@ -206,7 +206,7 @@ interface Kolom<G extends string> {
   veld: G;
   /** Standaardnaam van de variabele in het blad. */
   naam: string;
-  /** CalcPAD-eenheid van de matrixwaarde. */
+  /** Eenheid van de matrixwaarde in de rekentaal. */
   eenheid: string;
   /** Matrixwaarde = tabelwaarde · factor (alleen I_w: tabel in 10³ cm⁶). */
   factor?: number;
@@ -288,7 +288,7 @@ function opzoeking<G extends string>(
 }
 
 /**
- * CalcPAD-matrix met de I- en H-profielen: een kopregel (tekst, hoort binnen
+ * Rekentaal-matrix met de I- en H-profielen: een kopregel (tekst, hoort binnen
  * #hide) en de regel `naam = [...]`. Rij 1 bevat het id, de overige rijen de
  * grootheden in de volgorde van ProfielGrootheid en in de eenheden van de
  * profieltabel: h, b, t_w, t_f, r in mm; A en A_v,z in cm²; I_y, I_z, I_t in

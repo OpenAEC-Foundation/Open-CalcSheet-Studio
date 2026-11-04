@@ -91,7 +91,7 @@
 .calc-preview-content h4 { font-size: 1.05rem; margin: 1.0em 0 0.4em; padding-left: 0.6em; }
 .calc-preview-content h5 { font-size: 0.98rem; margin: 0.9em 0 0.3em; padding-left: 1.0em; }
 .calc-preview-content h6 {
-  /* CalcPAD-prose-h6 zoals "5.1 Load take down" — was te klein. Iets groter
+  /* prose-h6 zoals "5.1 Load take down" — was te klein. Iets groter
    * dan body + duidelijke indent zodat sub-secties hiërarchisch leesbaar zijn. */
   font-size: 0.95rem;
   margin: 0.8em 0 0.3em;

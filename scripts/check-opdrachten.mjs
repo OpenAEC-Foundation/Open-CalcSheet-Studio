@@ -2,7 +2,7 @@
  * Wachtpost bij wat het lint aanbiedt: invoervelden met een standaardwaarde,
  * de afdrukopdrachten en een reeks kleinere fouten in de rekenkern.
  *
- *   1. Standaardwaarde van een invoerveld, zoals in CalcPAD: `L = ?{5000}mm`,
+ *   1. Standaardwaarde van een invoerveld, zoals in de rekentaal: `L = ?{5000}mm`,
  *      `F_k = ?{3} kN`, `a = ? {2}`, `q = ?{2.5}*(kN/m)`. Zonder invoer van de
  *      gebruiker rekent het veld met de standaardwaarde en toont het hem; wat
  *      de gebruiker typt, wint. Een leeggemaakt veld rekent met de
