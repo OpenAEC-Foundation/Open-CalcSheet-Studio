@@ -49,6 +49,10 @@ De releaseworkflow weigert bestanden te publiceren die niet ondertekend zijn: Wi
 - **Je gegevens blijven open.** Het projectbestand is IFCX, en je kunt IFC4x3 exporteren.
 - **Werkt met een AI-assistent.** Een ingebouwde MCP-server en REST-API draaien op je eigen computer, achter een token.
 
+## Geïnspireerd door Calcpad
+
+Open CalcSheet Studio is enorm geïnspireerd door [Calcpad](https://calcpad.eu/) van Ned Ganchovski; dat idee heeft eigenlijk tot deze app geleid. Een berekening schrijf je als gewone tekst en je leest elke stap uitgewerkt terug, en daar zijn we dankbaar voor. De app heeft een eigen rekenkern en opent ook je `.cpd`-bestanden. De open-source lijn van Calcpad loopt door in de community-versie [CalcpadCE](https://github.com/imartincei/CalcpadCE).
+
 ## Schermafbeeldingen
 
 De beelden tonen de Engelse versie van de app.
