@@ -10,7 +10,8 @@
     "view": "View",
     "calcpad": "CalcPAD syntax",
     "tekenen": "Drawing",
-    "spreadsheet": "Spreadsheet"
+    "spreadsheet": "Spreadsheet",
+    "pdf": "PDF"
   },
   "spreadsheet": {
     "groep": {
@@ -61,6 +62,47 @@
       "cel": "Up to the active cell",
       "uit": "Unfreeze"
     }
+  },
+  "pdf": {
+    "groep": {
+      "pagina": "Page",
+      "zoom": "Zoom",
+      "aantekenen": "Annotate",
+      "stijl": "Style",
+      "bewerken": "Edit"
+    },
+    "vorige": "Previous",
+    "volgende": "Next",
+    "paginaVeld": "Page number",
+    "zoomIn": "Zoom in",
+    "zoomUit": "Zoom out",
+    "zoomUitleg": "You can also zoom with Ctrl and scroll",
+    "breedte": "Width",
+    "helePagina": "Whole page",
+    "gereedschap": {
+      "kies": "Select",
+      "pen": "Pen",
+      "markeer": "Highlight",
+      "tekst": "Text",
+      "pijl": "Arrow",
+      "kader": "Box",
+      "wolk": "Cloud"
+    },
+    "uitleg": {
+      "kies": "Click an annotation to select and move it; dragging on the page moves the view",
+      "pen": "Draw freely",
+      "markeer": "Highlight text or a detail",
+      "tekst": "Click on the page and type a remark",
+      "pijl": "Drag an arrow to what you mean",
+      "kader": "Drag a box",
+      "wolk": "Drag a revision cloud"
+    },
+    "kleur": "Colour",
+    "dikte": "Line width",
+    "verwijderen": "Delete",
+    "allesWissen": "Clear all",
+    "opPapier": "On paper",
+    "opPapierUitleg": "Also print the annotations and put them in the report"
   },
   "calc": {
     "file": "File",

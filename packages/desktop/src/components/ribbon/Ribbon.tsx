@@ -5,10 +5,12 @@ import CalcTab from "./CalcTab";
 import IfcTab from "./IfcTab";
 import CalcPadTab from "./CalcPadTab";
 import SpreadsheetTab from "./SpreadsheetTab";
+import PdfTab from "./PdfTab";
 import TekenenTab from "../tekenen/TekenenTab";
 import { toonTekenen, useTeken, verbergTekenen } from "../tekenen/tekenStore";
 import { useEditorViewStore } from "../../store/editorViewStore";
 import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
+import { usePdfViewer } from "../../store/pdfViewer";
 import { vraagCode } from "../../store/codeVerzoek";
 import "./Ribbon.css";
 
@@ -25,7 +27,9 @@ interface RibbonProps {
 const TABS = ["calc", "calcpad", "tekenen", "ifc"] as const;
 /** Spreadsheet is er alleen als een spreadsheet-blad openstaat. */
 const MET_SPREADSHEET = [...TABS, "spreadsheet"] as const;
-type TabId = (typeof MET_SPREADSHEET)[number];
+/** PDF is er alleen als een PDF-blad openstaat. */
+const MET_PDF = [...TABS, "pdf"] as const;
+type TabId = (typeof MET_SPREADSHEET)[number] | (typeof MET_PDF)[number];
 
 export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, onWelkomClick, onViewChange }: RibbonProps) {
   const { t, i18n } = useTranslation("ribbon");
@@ -33,7 +37,8 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
   // editor. Wie de tab kiest, wil code schrijven: staat die niet in beeld, dan
   // zet de werkruimte hem erbij (store/codeVerzoek.ts).
   const spreadsheet = useSpreadsheetEditor((s) => s.zichtbaar);
-  const tabs: readonly TabId[] = spreadsheet ? MET_SPREADSHEET : TABS;
+  const pdf = usePdfViewer((s) => s.zichtbaar);
+  const tabs: readonly TabId[] = spreadsheet ? MET_SPREADSHEET : pdf ? MET_PDF : TABS;
   const [activeTab, setActiveTab] = useState<TabId>("calc");
   const [prevTab, setPrevTab] = useState<TabId | null>(null);
   const [animating, setAnimating] = useState(false);
@@ -99,6 +104,15 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
     else if (activeTab === "spreadsheet") switchTab("calc");
   }, [spreadsheet, activeTab, switchTab]);
 
+  // Een PDF-blad open: meteen zijn gereedschap; weg ervan: terug naar Start.
+  const vorigePdf = useRef(pdf);
+  useEffect(() => {
+    if (vorigePdf.current === pdf) return;
+    vorigePdf.current = pdf;
+    if (pdf) switchTab("pdf");
+    else if (activeTab === "pdf") switchTab("calc");
+  }, [pdf, activeTab, switchTab]);
+
   // Een view van een tekenblad gaat open: de tab Tekenen erbij.
   const lintVerzoek = useTeken((s) => s.lintVerzoek);
   useEffect(() => {
@@ -109,7 +123,7 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
   useEffect(() => {
     updateHighlight();
     requestAnimationFrame(updateHighlight);
-  }, [activeTab, spreadsheet, i18n.language, updateHighlight]);
+  }, [activeTab, spreadsheet, pdf, i18n.language, updateHighlight]);
 
   useEffect(() => {
     window.addEventListener("resize", updateHighlight);
@@ -134,6 +148,7 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
       case "calcpad": return <CalcPadTab />;
       case "tekenen": return <TekenenTab />;
       case "spreadsheet": return <SpreadsheetTab />;
+      case "pdf": return <PdfTab />;
     }
   };
 

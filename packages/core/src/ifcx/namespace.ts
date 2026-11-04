@@ -207,6 +207,25 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       grootte: GEHEEL,
       // Base64. IFCX kent het type Blob wel, maar de lezer van buildingSMART kan er nog niets mee.
       data: TEKST,
+      // Aantekeningen op de pagina's, in punten van de pagina. De PDF in `data` verandert niet.
+      aantekeningen: opt(lijst(object({
+        id: TEKST,
+        pagina: GEHEEL,
+        soort: TEKST,
+        kleur: TEKST,
+        dikte: GETAL,
+        punten: opt(lijst(lijst(GETAL))),
+        van: opt(lijst(GETAL)),
+        naar: opt(lijst(GETAL)),
+        x: opt(GETAL),
+        y: opt(GETAL),
+        b: opt(GETAL),
+        h: opt(GETAL),
+        tekst: opt(TEKST),
+        grootte: opt(GETAL),
+      }))),
+      // Alleen `false` staat in het bestand: de aantekeningen blijven dan op het scherm.
+      opPapier: opt({ dataType: 'Boolean' }),
     }),
   },
   [ATTR.xlsx]: {
