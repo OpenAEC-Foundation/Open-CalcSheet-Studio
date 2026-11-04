@@ -70,6 +70,7 @@ cd packages/desktop && npx tsc --noEmit -p .
 ## 5. Bouwen en uitbrengen
 
 - Versie (jaar.week.volgnummer): zetten met `node scripts/versie.mjs zet JJJJ.W.N`, niet met de hand. `check-versie.mjs` zakt als de velden uit elkaar lopen.
+- Wijzigingen: zet elke wijziging die de gebruiker merkt in [CHANGELOG.md](CHANGELOG.md) onder "Nog niet uitgebracht". Het zetten van een versie maakt daar de sectie van dat nummer van; de release-tekst neemt die over, en zonder wijzigingen stopt de release. De website telt en toont de opsommingen uit de release-tekst. `check-wijzigingen.mjs` bewaakt dit.
 - Uitbrengen en ondertekenen: zie [ondertekening.md](ondertekening.md). Een release start met *Run workflow* op `release.yml`; die kiest het nummer, ondertekent en publiceert pas als alle controles groen zijn.
 - Installer: `npm run tauri build` in `packages/desktop`; lokaal zonder ondertekening. WebView2 wordt meegebundeld (`webviewInstallMode` embedBootstrapper, `WebView2Loader.dll` in `bundle.resources`). Daarvoor bouwt `beforeBuildCommand` de Jupyter-omgeving als die er nog niet is (`scripts/bouw-jupyter-omgeving.mjs --als-nodig`); dat vraagt eenmalig internet en Python. Een `tauri dev` zonder pakbestand start gewoon, en een Jupyter-blad meldt dan dat de omgeving ontbreekt.
 - Draait de gebouwde app nog, dan houdt die `target/release/WebView2Loader.dll` vast en faalt de build: bouw dan met een eigen `CARGO_TARGET_DIR` (bijvoorbeeld `src-tauri/target-installer`, niet in git).

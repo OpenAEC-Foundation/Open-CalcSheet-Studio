@@ -6,6 +6,9 @@ name: Build and Release
 #   - Een tag vJJJJ.W.N pushen: de bestanden op die commit moeten dat nummer al dragen
 #     (node scripts/versie.mjs zet JJJJ.W.N), anders stopt de run voordat er iets
 #     gebouwd wordt.
+# De wijzigingen van de versie komen uit docs/CHANGELOG.md in de release-tekst; zonder
+# wijzigingen stopt de run ook. Run workflow maakt van "Nog niet uitgebracht" de sectie
+# van het nieuwe nummer, net als node scripts/versie.mjs zet.
 # Bouwen, ondertekenen en controleren gaan eerst; pas als dat op elk platform groen
 # is, ook op de bestanden van het concept, wordt de release openbaar.
 
@@ -38,6 +41,7 @@ jobs:
       versie: ${{ steps.nummer.outputs.versie }}
       tag: ${{ steps.nummer.outputs.tag }}
       sha: ${{ steps.nummer.outputs.sha }}
+      wijzigingen: ${{ steps.nummer.outputs.wijzigingen }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -72,6 +76,7 @@ jobs:
             VERSIE="${GITHUB_REF_NAME#v}"
           fi
           node scripts/versie.mjs controleer "$VERSIE"
+          WIJZIGINGEN="$(node scripts/wijzigingen.mjs tekst "$VERSIE")"
 
           if gh api "repos/$GITHUB_REPOSITORY/releases/tags/v$VERSIE" --silent 2>/dev/null; then
             echo "::error::Release v$VERSIE bestaat al; die wordt niet vervangen."
@@ -85,10 +90,14 @@ jobs:
             git push origin HEAD:main
           fi
 
+          EINDE="EINDE_$(openssl rand -hex 8)"
           {
             echo "versie=$VERSIE"
             echo "tag=v$VERSIE"
             echo "sha=$(git rev-parse 'HEAD^{commit}')"
+            echo "wijzigingen<<$EINDE"
+            printf '%s\n' "$WIJZIGINGEN"
+            echo "$EINDE"
           } >> "$GITHUB_OUTPUT"
           echo "Release v$VERSIE vanaf $(git rev-parse --short HEAD)"
 
@@ -114,6 +123,8 @@ jobs:
         ## What's New in ${{ needs.voorbereiden.outputs.tag }}
 
         Open desktop app for structural calculations written as calculation text, with direct IFC 4x3 / IFCX export.
+
+        ${{ needs.voorbereiden.outputs.wijzigingen }}
 
         ### Downloads
         - **Windows (System)**: Download the `*_x64-setup.exe` installer for system-wide installation (requires admin)
