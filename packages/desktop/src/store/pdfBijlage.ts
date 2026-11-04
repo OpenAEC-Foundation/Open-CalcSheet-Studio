@@ -21,11 +21,17 @@ export const PDF_BLAD = "pdf";
 export const PDF_GROOT_BYTES = 20 * 1024 * 1024;
 
 /** Het PDF-bestand van een PDF-blad. */
+import { leesAantekeningen, type PdfAantekening } from "./pdfAantekeningen.ts";
+
 export interface PdfBijlage {
   /** De oorspronkelijke bestandsnaam, met extensie (bv. "hal-fem-rapport.pdf"). */
   bestandsnaam: string;
   /** De inhoud van het bestand, base64-gecodeerd (zonder `data:`-voorvoegsel). */
   data: string;
+  /** Aantekeningen op de pagina's (store/pdfAantekeningen.ts); de PDF zelf verandert niet. */
+  aantekeningen?: PdfAantekening[];
+  /** `false`: de aantekeningen staan alleen op het scherm, niet op papier. */
+  opPapier?: boolean;
 }
 
 /** Is dit blad een PDF-blad? Ook als het bestand ontbreekt (zie leesPdfBijlage). */
@@ -46,7 +52,11 @@ export function leesPdfBijlage(x: unknown): PdfBijlage | undefined {
   if (typeof p.data !== "string") return undefined;
   const data = /\s/.test(p.data) ? p.data.replace(/\s+/g, "") : p.data;
   if (data === "") return undefined;
-  return { bestandsnaam: typeof p.bestandsnaam === "string" ? p.bestandsnaam : "", data };
+  const uit: PdfBijlage = { bestandsnaam: typeof p.bestandsnaam === "string" ? p.bestandsnaam : "", data };
+  const aantekeningen = leesAantekeningen(p.aantekeningen);
+  if (aantekeningen.length > 0) uit.aantekeningen = aantekeningen;
+  if (p.opPapier === false) uit.opPapier = false;
+  return uit;
 }
 
 /** Het aantal bytes dat een base64-tekst voorstelt. */

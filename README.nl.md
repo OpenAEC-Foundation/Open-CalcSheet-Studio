@@ -74,7 +74,8 @@ Een project is een lijst bladen. Elke soort staat beschreven in [de documentatie
 | **Tekening** | A4, A3 of A2 met aanzichten op schaal: stramienen, peilen, wanden, staalprofielen, kanaalplaatvloeren en schematiseringen |
 | **Jupyter** | Een [notebook met Python](docs/jupyter-blad.md), numpy, scipy, pandas en matplotlib, zonder iets te installeren. Op verzoek rekent het opnieuw na elke wijziging |
 | **Marimo** | Een reactief Python-notebook: verschuif een schuif en alles wat daarvan afhangt, volgt |
-| **Markdown, PDF** | Bestaande tekst en documenten, als onderdeel van het rapport |
+| **PDF** | Een bestaande PDF als onderdeel van het rapport. Inzoomen, en opmerkingen, markeringen, pijlen, kaders en wijzigingswolken toevoegen, op het scherm en op papier |
+| **Markdown** | Bestaande tekst, als onderdeel van het rapport |
 
 ## Modules en bibliotheek
 
@@ -110,7 +111,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **56 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **57 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **121 uitkomsten tegen een handberekening**: 53 in `scripts/check-formules.mjs` en 68 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.

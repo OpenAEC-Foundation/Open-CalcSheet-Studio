@@ -334,7 +334,10 @@
     "opslaanTitel": "Rapport opslaan als PDF",
     "schrijven": "PDF wordt gemaakt…",
     "geschreven": "PDF opgeslagen: {{bestand}}",
-    "schrijvenMislukt": "De PDF is niet opgeslagen in {{pad}}. Staat dat bestand open in een ander programma?\n\nDe printdialoog opent nu; daar kun je een andere plek kiezen.\n\nTechnische melding: {{fout}}"
+    "schrijvenMislukt": "De PDF is niet opgeslagen in {{pad}}. Staat dat bestand open in een ander programma?\n\nDe printdialoog opent nu; daar kun je een andere plek kiezen.\n\nTechnische melding: {{fout}}",
+    "vervangenAantekeningen": "Dit blad heeft aantekeningen. Die horen bij deze PDF en vervallen als je hem vervangt. Toch vervangen?",
+    "allesWissenVraag": "Alle aantekeningen op dit blad wissen?",
+    "tekstVeld": "Opmerking"
   },
   "spreadsheet": {
     "toevoegenUitleg": "Een lege spreadsheet als blad aan het project toevoegen, voor een staaflijst of een hoeveelhedenoverzicht. Het komt op zijn plek in hoofdstuk Berekeningen van het rapport.",

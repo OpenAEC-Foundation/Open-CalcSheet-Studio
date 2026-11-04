@@ -72,7 +72,8 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 | **Drawing** | A4, A3 or A2 with views to scale: grids, levels, walls, steel sections, hollow-core floors and schemes |
 | **Jupyter** | A [notebook with Python](docs/jupyter-blad.md), numpy, scipy, pandas and matplotlib, without installing anything. Optionally it runs again after every change |
 | **Marimo** | A reactive Python notebook: move a slider and everything that depends on it follows |
-| **Markdown, PDF** | Existing text and documents, as part of the report |
+| **PDF** | An existing PDF as part of the report. Zoom in, and add notes, highlights, arrows, boxes and revision clouds, on screen and on paper |
+| **Markdown** | Existing text, as part of the report |
 
 ## Modules and library
 
@@ -108,7 +109,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **56 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **57 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **121 results against hand calculations**: 53 in `scripts/check-formules.mjs` and 68 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.

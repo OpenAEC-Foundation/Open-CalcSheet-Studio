@@ -334,7 +334,10 @@
     "opslaanTitel": "Save report as PDF",
     "schrijven": "Creating PDF…",
     "geschreven": "PDF saved: {{bestand}}",
-    "schrijvenMislukt": "The PDF was not saved to {{pad}}. Is that file open in another program?\n\nThe print dialog opens now; you can choose another location there.\n\nTechnical message: {{fout}}"
+    "schrijvenMislukt": "The PDF was not saved to {{pad}}. Is that file open in another program?\n\nThe print dialog opens now; you can choose another location there.\n\nTechnical message: {{fout}}",
+    "vervangenAantekeningen": "This sheet has annotations. They belong to this PDF and are removed when you replace it. Replace anyway?",
+    "allesWissenVraag": "Clear all annotations on this sheet?",
+    "tekstVeld": "Remark"
   },
   "spreadsheet": {
     "toevoegenUitleg": "Add an empty spreadsheet to the project as a sheet, for a bar schedule or a quantity list. It takes its place in the Calculations chapter of the report.",

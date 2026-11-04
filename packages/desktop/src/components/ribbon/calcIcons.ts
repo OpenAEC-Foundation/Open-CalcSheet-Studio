@@ -5,12 +5,12 @@
  * public/icons/calculations.svg die van Calculations; beide komen ongewijzigd
  * uit `web/icons/` van de Blueprint. public/icons/spreadsheet.svg bevat alleen de
  * symbolen voor de tab Spreadsheet, ongewijzigd uit andere sprites daar, omdat die
- * sprites zelf een megabyte zijn. Elk icoon staat er in 16 en 24 px in: een
+ * sprites zelf een megabyte zijn; public/icons/pdf.svg doet hetzelfde voor de tab PDF. Elk icoon staat er in 16 en 24 px in: een
  * grote knop toont het 24 px-ontwerp, een kleine het 16 px-ontwerp (zie
  * Ribbon.css). Een nieuw icoon: kies het id uit de Blueprint, niet zelf tekenen.
  */
 
-export type Sprite = "standard" | "calculations" | "spreadsheet";
+export type Sprite = "standard" | "calculations" | "spreadsheet" | "pdf";
 
 export const sprite = (naam: Sprite) => `${import.meta.env.BASE_URL}icons/${naam}.svg`;
 
