@@ -1,0 +1,38 @@
+name: Webversie uitrollen
+
+# Zet de browser-preview van main op https://open-calculations-studio.open-aec.com/.
+# De host houdt zijn oude naam; de website verwijst ernaar. In de browser werken
+# bestandsdialogen, de opslag van instellingen en het Jupyter-blad niet
+# (docs/ontwikkelen.md). De desktop-app wordt hier niet gebouwd of gepubliceerd.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    uses: OpenAEC-Foundation/github/.github/workflows/deploy-site.yml@main
+    with:
+      deploy_host: ${{ vars.DEPLOY_HOST }}
+      deploy_port: ${{ vars.DEPLOY_PORT }}
+      deploy_user: ${{ vars.DEPLOY_USER }}
+      deploy_path: /var/www/open-calculations-studio.open-aec.com
+      deploy_source: packages/desktop/dist
+      node_version: "24"
+      install_command: npm ci
+      # De vrijwillige bezoekersstatistieken horen alleen bij de website, niet bij de desktop-app.
+      build_command: >-
+        npm run build --workspace=@ifc-calc/core &&
+        npm run build --workspace=@openaec/calcsheet-studio &&
+        sed -i 's#</head>#<script id="openaec-analytics-loader" src="https://open-aec.com/shared/analytics.js?v=20261026" defer></script></head>#' packages/desktop/dist/index.html
+    secrets:
+      deploy_ssh_key: ${{ secrets.DEPLOY_SSH_KEY }}
