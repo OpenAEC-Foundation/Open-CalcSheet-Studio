@@ -89,6 +89,7 @@
   },
   "kiezer": {
     "titel": "Add module",
+    "notebooks": "Notebooks",
     "documenten": "Documents",
     "tabs": {
       "modules": "Modules",
@@ -725,7 +726,6 @@
       "titel": "Example"
     },
     "kiezer": {
-      "kop": "Work folder of its own",
       "naam": "Jupyter notebook"
     }
   },
@@ -814,6 +814,9 @@
     "paneel": "Marimo",
     "rij": "Marimo — reactive Python notebook, stored in the project",
     "exporterenUitleg": "Write this notebook to a separate .py file.",
+    "kiezer": {
+      "naam": "Marimo notebook"
+    },
     "start": {
       "kop": "Reactive notebook",
       "uitleg": "Press Run to start. Then move a slider: every cell that uses its value follows. Numpy, scipy, pandas and matplotlib are ready."

@@ -9,12 +9,13 @@ import {
 } from "./projectTree";
 import { templates } from "../../templates";
 import { TEKEN_BLAD } from "../../store/tekenBlad";
-import Icoon from "../Icoon";
 import { useModuleKiezer, type KiezerTab } from "../../store/moduleKiezer";
 import { useProjectStore } from "../../store/projectStore";
 import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
 import { JUPYTER_BLAD } from "../../store/jupyterBlad";
 import { voegLeegJupyterToe } from "./jupyterBlad";
+import { MARIMO_BLAD } from "../../store/marimoBlad";
+import { voegLeegMarimoToe } from "./marimoBlad";
 import {
   useModuleBibliotheek,
   vergelijkVersie,
@@ -98,6 +99,19 @@ async function openNormBron(url: string) {
   }
 }
 
+/**
+ * De beelden van de tegels buiten de catalogus: de naam van het bestand in
+ * assets/module-beelden. scripts/check-modulebeelden.mjs leest deze lijst.
+ */
+const TEGEL_BEELD = {
+  tekening: "tekenblad",
+  fem: "fem-project",
+  jupyter: "jupyter",
+  marimo: "marimo",
+  markdown: "markdown",
+  markdownImport: "markdown-import",
+} as const;
+
 /** De tabbladen; hun namen staan in werkruimte.json onder kiezer.tabs. */
 const TABS: readonly KiezerTab[] = ["modules", "bibliotheek", "online", "normbestanden"];
 type TabId = KiezerTab;
@@ -171,7 +185,7 @@ function Tegel({ item, gekozen, onKies, onVoegToe }: {
       }}
       title={uitleg}
     >
-      {status && item.templateId && <ModuleAfbeelding templateId={item.templateId} beeldUrl={item.beeldUrl} />}
+      {item.templateId && <ModuleAfbeelding templateId={item.templateId} beeldUrl={item.beeldUrl} />}
       <span className="mk-kop">
         {status && (
           <span className={`tree-item-icon tree-status-${status}`}>{status === "concept" ? "○" : "●"}</span>
@@ -179,7 +193,7 @@ function Tegel({ item, gekozen, onKies, onVoegToe }: {
         <span className="mk-naam">{naam}</span>
       </span>
       {(status || item.gepubliceerd) && (
-        <span className="mk-onder">
+        <span className={`mk-onder${status ? "" : " zonder-stip"}`}>
           {status && <span className="mk-status">{t(`bladVersie.status.${status}`)}</span>}
           {item.gepubliceerd && <span className="tree-vlag">{tw("kiezer.gepubliceerd")}</span>}
           {item.versie && <span className="mk-versie" title={tw("kiezer.online.uitBibliotheek")}>v{item.versie}</span>}
@@ -241,10 +255,12 @@ function DocumentenGroep({ onKlaar }: { onKlaar: () => void }) {
       <div className="mk-tegels">
         <button type="button" className="mk-tegel" title={tw("markdown.toevoegenUitleg")}
           onClick={() => { voegLeegMarkdownToe(voegToe); onKlaar(); }}>
+          <ModuleAfbeelding templateId={TEGEL_BEELD.markdown} />
           <span className="mk-kop"><span className="mk-naam">{tw("markdown.toevoegen")}</span></span>
         </button>
         <button type="button" className="mk-tegel" title={tw("markdown.importerenUitleg")}
           onClick={() => { void voegMarkdownBestandToe(voegToe); onKlaar(); }}>
+          <ModuleAfbeelding templateId={TEGEL_BEELD.markdownImport} />
           <span className="mk-kop"><span className="mk-naam">{tw("markdown.importeren")}</span></span>
         </button>
       </div>
@@ -290,20 +306,16 @@ function LegeBladen({ zoek, gekozen, onKies, onVoegToe }: {
             }}
             title={tw("kiezer.leeg.tekeningUitleg")}
           >
-            <span className="mk-kop">
-              <span className="mk-leeg-icoon"><Icoon id="assistant.draw" uit="calculations" /></span>
-              <span className="mk-naam">{tekening}</span>
-            </span>
-            <span className="mk-onder"><span className="mk-status">{tw("kiezer.leeg.tekeningOnder")}</span></span>
+            <ModuleAfbeelding templateId={TEGEL_BEELD.tekening} />
+            <span className="mk-kop"><span className="mk-naam">{tekening}</span></span>
+            <span className="mk-onder zonder-stip"><span className="mk-status">{tw("kiezer.leeg.tekeningOnder")}</span></span>
           </button>
         )}
         {toon(fem) && (
           <button type="button" className="mk-tegel uit" disabled aria-disabled="true" title={tw("kiezer.leeg.femUitleg")}>
-            <span className="mk-kop">
-              <span className="mk-leeg-icoon"><Icoon id="file.new" uit="calculations" /></span>
-              <span className="mk-naam">{fem}</span>
-            </span>
-            <span className="mk-onder"><span className="mk-status">{tw("kiezer.leeg.femLater")}</span></span>
+            <ModuleAfbeelding templateId={TEGEL_BEELD.fem} />
+            <span className="mk-kop"><span className="mk-naam">{fem}</span></span>
+            <span className="mk-onder zonder-stip"><span className="mk-status">{tw("kiezer.leeg.femLater")}</span></span>
           </button>
         )}
       </div>
@@ -330,37 +342,64 @@ function Legenda() {
   );
 }
 
-/** De keuze Jupyter: geen module uit de catalogus, wel op dezelfde manier te kiezen. */
+/** De keuzes Jupyter en Marimo: geen module uit de catalogus, wel op dezelfde manier te kiezen. */
 const JUPYTER_KEUZE: Item = { kind: "item", id: "jupyter-blad", label: "Jupyter", templateId: JUPYTER_BLAD };
+const MARIMO_KEUZE: Item = { kind: "item", id: "marimo-blad", label: "Marimo", templateId: MARIMO_BLAD };
 
-function JupyterGroep({ zoek, gekozen, onKies, onVoegToe }: { zoek: string; gekozen: boolean; onKies: () => void; onVoegToe: () => void }) {
+/** Een notebook-tegel: een klik kiest, een dubbelklik of Enter voegt toe. */
+function NotebookTegel({ beeld, naam, uitleg, gekozen, onKies, onVoegToe }: {
+  beeld: string;
+  naam: string;
+  uitleg: string;
+  gekozen: boolean;
+  onKies: () => void;
+  onVoegToe: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`mk-tegel${gekozen ? " gekozen" : ""}`}
+      aria-pressed={gekozen}
+      title={uitleg}
+      onClick={onKies}
+      onDoubleClick={onVoegToe}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onVoegToe();
+        }
+      }}
+    >
+      <ModuleAfbeelding templateId={beeld} />
+      <span className="mk-kop"><span className="mk-naam">{naam}</span></span>
+    </button>
+  );
+}
+
+function NotebookGroep({ zoek, gekozen, onKies, onVoegToe }: {
+  zoek: string;
+  gekozen: Item | null;
+  onKies: (item: Item) => void;
+  onVoegToe: (item: Item) => void;
+}) {
   const { t: tw } = useTranslation("werkruimte");
-  const naam = tw("jupyter.kiezer.naam");
+  const jupyter = tw("jupyter.kiezer.naam");
+  const marimo = tw("marimo.kiezer.naam");
   const z = zoek.trim().toLowerCase();
-  if (z && !naam.toLowerCase().includes(z)) return null;
+  const toon = (naam: string) => !z || naam.toLowerCase().includes(z);
+  if (!toon(jupyter) && !toon(marimo)) return null;
   return (
     <section className="mk-groep mk-niveau-0">
-      <h3>{tw("jupyter.kiezer.kop")}</h3>
+      <h3>{tw("kiezer.notebooks")}</h3>
       <div className="mk-tegels">
-        <button
-          type="button"
-          className={`mk-tegel${gekozen ? " gekozen" : ""}`}
-          aria-pressed={gekozen}
-          title={tw("jupyter.toevoegenUitleg")}
-          onClick={onKies}
-          onDoubleClick={onVoegToe}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              onVoegToe();
-            }
-          }}
-        >
-          <span className="mk-kop">
-            <Icoon id="file.structure" uit="calculations" />
-            <span className="mk-naam">{naam}</span>
-          </span>
-        </button>
+        {toon(jupyter) && (
+          <NotebookTegel beeld={TEGEL_BEELD.jupyter} naam={jupyter} uitleg={tw("jupyter.toevoegenUitleg")}
+            gekozen={gekozen === JUPYTER_KEUZE} onKies={() => onKies(JUPYTER_KEUZE)} onVoegToe={() => onVoegToe(JUPYTER_KEUZE)} />
+        )}
+        {toon(marimo) && (
+          <NotebookTegel beeld={TEGEL_BEELD.marimo} naam={marimo} uitleg={tw("marimo.toevoegenUitleg")}
+            gekozen={gekozen === MARIMO_KEUZE} onKies={() => onKies(MARIMO_KEUZE)} onVoegToe={() => onVoegToe(MARIMO_KEUZE)} />
+        )}
       </div>
     </section>
   );
@@ -403,6 +442,11 @@ export default function ModuleKiezer() {
     }
     if (item === JUPYTER_KEUZE) {
       voegLeegJupyterToe(useProjectStore.getState().voegJupyterToe);
+      afbreken();
+      return;
+    }
+    if (item === MARIMO_KEUZE) {
+      voegLeegMarimoToe(useProjectStore.getState().voegMarimoToe);
       afbreken();
       return;
     }
@@ -487,12 +531,7 @@ export default function ModuleKiezer() {
                 />
               )}
               {tab === "modules" && (
-                <JupyterGroep
-                  zoek={zoek}
-                  gekozen={gekozen === JUPYTER_KEUZE}
-                  onKies={() => setGekozen(JUPYTER_KEUZE)}
-                  onVoegToe={() => toevoegen(JUPYTER_KEUZE)}
-                />
+                <NotebookGroep zoek={zoek} gekozen={gekozen} onKies={setGekozen} onVoegToe={toevoegen} />
               )}
               {groepen.length === 0 && !documenten && <p className="mk-leeg">{tw("kiezer.nietsGevonden", { zoek })}</p>}
               {groepen.map((g) => (
