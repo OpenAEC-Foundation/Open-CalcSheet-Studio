@@ -261,6 +261,11 @@
   flex-wrap: wrap;
 }
 
+/* Zonder statusbolletje in de kop begint de onderregel gewoon links. */
+.mk-onder.zonder-stip {
+  padding-left: 0;
+}
+
 @media (max-width: 600px) {
   .module-kiezer .settings-sidebar { width: 88px; }
   .mk-tegels { grid-template-columns: minmax(0, 1fr); }

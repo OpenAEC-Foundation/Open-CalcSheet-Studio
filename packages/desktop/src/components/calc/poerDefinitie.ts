@@ -1,7 +1,7 @@
 /*
  * Eén vastgelegde definitie van een tweepaalspoer: de maten en de gekozen staven,
  * met de plaats van elke staaf. Het beeld, de afdruk en de SVG-download tekenen
- * hieruit (poerTekening.ts); een latere koppeling met CAD of IFC kan hetzelfde doen.
+ * hieruit (poerTekening.ts), en het 3D-model en de IFC-uitvoer komen er ook uit (poerIfcx.ts).
  *
  * Hier staan geen rekenregels: alleen de opbouw van de wapeningskorf uit de invoer.
  * Wat de toetsing uitrekent (hefboomsarm, hoek) komt onafgerond uit het blad

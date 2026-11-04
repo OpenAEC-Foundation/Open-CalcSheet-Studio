@@ -34,6 +34,8 @@ import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
 import type { JupyterWerkmap } from "./jupyterBlad.ts";
 import type { MarimoNotebook } from "./marimoBlad.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
+import { maakPoer } from "../components/calc/poerDefinitie.ts";
+import { poerIfcxKnopen } from "../components/calc/poerIfcx.ts";
 
 /** Wat dit bestand van een blad nodig heeft; een uittreksel van `Exemplaar`. */
 export interface BladVoorIfc {
@@ -96,6 +98,14 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
       if (ex.templateId === "balklaag") {
         const scope = extractScope(leesBron(ex.source), ex.waarden, projectScope(gegevens));
         blad.geometrie = balklaagIfcxKnopenUitScope(ex.id, scope) ?? undefined;
+      }
+      // Een tweepaalspoer: uit de invoer, via dezelfde definitie als de tekening.
+      if (ex.templateId === "tweepaalspoer") {
+        const lees = (naam: string) => {
+          const n = parseFloat(String(ex.waarden[naam] ?? "").replace(",", "."));
+          return Number.isFinite(n) ? n : 0;
+        };
+        blad.geometrie = poerIfcxKnopen(maakPoer(lees), ex.id) ?? undefined;
       }
     } catch (err) {
       blad.fout = (err as Error).message;

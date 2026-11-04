@@ -192,6 +192,13 @@ toetsing van dat blad. In de STEP wordt zo'n knoop een element, met
 samenstelling via `IfcRelAggregates`. Een klasse die niet in de lijst in `step.ts`
 staat, wordt een proxy met de klasse als `ObjectType`.
 
+Twee modules leveren geometrie: de balklaag (`packages/core/src/balklaagIfcx.ts`) en
+de tweepaalspoer (`components/calc/poerIfcx.ts`). De poer is een `IfcFooting` met twee
+`IfcPile`, een `IfcColumn` en een samenstelling met de korf: elke staaf een
+`IfcReinforcingBar` met zijn diameter (`NominalDiameter`). Palen en kolom zijn alleen
+de aanzet; hun lengte staat niet in het blad. Merken en een buiglijst staan er niet in.
+Hetzelfde document is het 3D-model in het beeld van de poer.
+
 ## Koppelen aan een bestaand model
 
 Een exemplaar kan vastleggen over wélke elementen in een bronmodel het gaat:

@@ -1,20 +1,29 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDesigner, Dim, UitkomstKop } from "./designerKit";
 import { useBladUitkomst } from "./bladResultaat";
 import { maakPoer } from "./poerDefinitie";
-import { tekenPoer, type TekeningTeksten } from "./poerTekening";
+import { tekenPoer, TEKENING_MIN_BREEDTE, type TekeningTeksten } from "./poerTekening";
+import PoerModel from "./PoerModel";
 import { useActiefExemplaar, useAlleenLezen } from "../../store/actiefBlad";
 import { bewaarAls } from "../../store/ifcInhoud";
 import "./VoetplaatDesigner.css";
 
 /**
  * Parametrisch beeld bij het blad "Tweepaalspoer" (templates/tweepaalspoer.ts):
- * bovenaanzicht, langsdoorsnede en dwarsdoorsnede met de gekozen staven.
+ * bovenaanzicht, langsdoorsnede en dwarsdoorsnede met de gekozen staven, en op het scherm
+ * een draaibaar 3D-model (PoerModel.tsx) uit dezelfde definitie.
  *
  * Het beeld rekent niet: de staven komen uit de invoer via de poerdefinitie
  * (poerDefinitie.ts), het staafwerk en het oordeel uit het doorgerekende blad. De SVG
  * op het scherm, op papier en in de download is dezelfde tekst (poerTekening.ts).
+ *
+ * De indeling hangt af van de maat van het paneel; de tekening staat in rust altijd
+ * helemaal in beeld:
+ *   breed    tekening en model naast elkaar;
+ *   gewoon   het model onder de tekening, de invoer links;
+ *   krap     idem, met een smallere invoerkolom; past de tekening dan nog niet, dan schaalt hij;
+ *   smal     de invoerkolom laat te weinig over: alles onder elkaar, en het paneel scrollt.
  */
 const MARKER = "Tweepaalspoer";
 
@@ -30,6 +39,36 @@ const DEFAULTS: Record<string, number> = {
 };
 
 const DIAMETERS = [8, 10, 12, 16, 20, 25, 32];
+
+/**
+ * Onder deze paneelbreedte past de invoerkolom niet meer naast de tekening. Laag genoeg
+ * voor het venster waarmee de app opent (paneel 518): invoer en model horen samen in beeld,
+ * anders zie je het model niet bewegen als je iets aanpast.
+ */
+const SMAL_PANEEL = 500;
+/** Onder deze paneelbreedte krijgt de invoerkolom deze breedte. */
+const KRAP_PANEEL = 680;
+const KRAP_INVOER = 220;
+/** Vanaf deze kolombreedte staan tekening en model naast elkaar; de tekening krijgt dan dit deel. */
+const NAAST_KOLOM = 720;
+const NAAST_DEEL = 0.5;
+const MODEL_MIN = 200;
+const MODEL_KOP = 20;
+const TUSSENRUIMTE = 14;
+
+/** De breedte waarbij de tekening niet hoger is dan `maxHoogte`, en hooguit `maxBreedte` breed. */
+function breedteBijHoogte(hoogteBij: (breedte: number) => number, maxBreedte: number, maxHoogte: number): number {
+  if (maxBreedte <= TEKENING_MIN_BREEDTE || hoogteBij(maxBreedte) <= maxHoogte) return maxBreedte;
+  if (hoogteBij(TEKENING_MIN_BREEDTE) >= maxHoogte) return TEKENING_MIN_BREEDTE;
+  let klein = TEKENING_MIN_BREEDTE;
+  let groot = maxBreedte;
+  for (let i = 0; i < 7; i++) {
+    const midden = (klein + groot) / 2;
+    if (hoogteBij(midden) <= maxHoogte) klein = midden;
+    else groot = midden;
+  }
+  return Math.floor(klein);
+}
 
 export default function TweepaalspoerDesigner() {
   const ctx = useDesigner(MARKER, DEFAULTS);
@@ -63,13 +102,39 @@ export default function TweepaalspoerDesigner() {
     staafwerk: t("tweepaalspoer.staafwerk"),
   }), [t]);
 
+  // De breedte van het hele paneel: die hangt niet af van de indeling, de maat van de
+  // tekeningkolom wel. Daarop kiezen zou de indeling heen en weer laten springen.
+  const paneelRef = useRef<HTMLDivElement>(null);
+  const [paneelBreedte, setPaneelBreedte] = useState(0);
+  useEffect(() => {
+    const el = paneelRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => setPaneelBreedte(entries[0].contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ctx.actief]);
+
   if (!ctx.actief) return null;
   const { d, set, box, wrapRef } = ctx;
 
   const poer = maakPoer(d, uitkomst?.getallen ?? {});
+  const smal = !alleenLezen && paneelBreedte > 0 && paneelBreedte < SMAL_PANEEL;
+  const krap = !alleenLezen && !smal && paneelBreedte > 0 && paneelBreedte < KRAP_PANEEL;
+  const naast = !alleenLezen && !smal && box.w >= NAAST_KOLOM;
+  const hoogteBij = (breedte: number) => tekenPoer(poer, teksten, breedte, true).hoogte;
   // Op papier kleiner dan de bladbreedte: de afdruk moet kort blijven.
-  const tekening = tekenPoer(poer, teksten, alleenLezen ? Math.min(box.w, 430) : box.w, !alleenLezen);
+  const beschikbaar = alleenLezen ? Math.min(box.w, 430)
+    : smal ? box.w
+    : naast ? breedteBijHoogte(hoogteBij, Math.round(box.w * NAAST_DEEL), box.h)
+    : breedteBijHoogte(hoogteBij, box.w, box.h - MODEL_MIN - MODEL_KOP - TUSSENRUIMTE);
+  const tekening = tekenPoer(poer, teksten, beschikbaar, !alleenLezen);
+  // Is de kolom smaller dan de kleinste tekening, dan schaalt het hele vak mee: anders valt er iets weg.
+  const schaal = Math.min(1, beschikbaar / tekening.breedte);
   const inhoud = { __html: tekening.svg };
+  // Naast elkaar even hoog als de tekening: een hoger vak voegt niets toe, de poer is laag.
+  const modelHoogte = naast ? Math.max(MODEL_MIN, Math.min(box.h, tekening.hoogte * schaal) - MODEL_KOP)
+    : smal ? Math.min(380, Math.max(240, Math.round(box.w * 0.62)))
+    : Math.max(MODEL_MIN, Math.floor(box.h - tekening.hoogte * schaal - MODEL_KOP - TUSSENRUIMTE));
 
   const getal = (naam: string, stap = 10) => (
     <input type="number" step={stap} value={d(naam)}
@@ -89,11 +154,12 @@ export default function TweepaalspoerDesigner() {
   };
 
   return (
-    <div className="vd-panel" data-afdrukhoogte="inhoud">
+    <div ref={paneelRef} className="vd-panel" data-afdrukhoogte="inhoud">
       <UitkomstKop titel={t("tweepaalspoer.titel")} uitkomst={uitkomst} />
 
-      <div className="vd-body" style={{ flex: 1, minHeight: 0, alignItems: "stretch" }}>
-        <div className="vd-controls vd-compact" style={{ alignSelf: "stretch", overflowY: "auto", minHeight: 0 }}>
+      <div className="vd-body" style={smal ? { flex: "none", flexDirection: "column", alignItems: "stretch" } : { flex: 1, minHeight: 0, alignItems: "stretch" }}>
+        <div className="vd-controls vd-compact" style={smal ? { order: 1, width: "auto" }
+          : { alignSelf: "stretch", overflowY: "auto", minHeight: 0, ...(krap ? { width: KRAP_INVOER } : {}) }}>
           <span className="vd-ctrl-h">{t("tweepaalspoer.koppen.geometrie")}</span>
           <label>{t("tweepaalspoer.velden.paalvorm")}
             <select value={Math.round(d("paalvorm"))} onChange={(e) => set("paalvorm", parseInt(e.target.value))}>
@@ -153,15 +219,20 @@ export default function TweepaalspoerDesigner() {
           <span className="gd-note">{t("tweepaalspoer.noot")}</span>
         </div>
 
-        <div ref={wrapRef} className="vd-canvases" style={{ flex: 1, minWidth: 0, borderLeft: "1px solid var(--theme-border-subtle, #d1d5db)", paddingLeft: 18 }}>
-          <div className="vd-canvas">
-            <div className="vd-stage" style={{ width: tekening.breedte, height: tekening.hoogte, background: "transparent", border: "none", borderRadius: 0 }}>
-              <div className="vd-svg" dangerouslySetInnerHTML={inhoud} />
+        <div ref={wrapRef} className="vd-canvases" style={{
+          ...(smal ? { flex: "none", overflow: "visible" } : { flex: 1, borderLeft: "1px solid var(--theme-border-subtle, #d1d5db)", paddingLeft: 18 }),
+          ...(naast ? { flexDirection: "row", alignItems: "flex-start" } : {}),
+          minWidth: 0,
+        }}>
+          <div className="vd-canvas" style={{ flex: "none" }}>
+            <div className="vd-stage" style={{ width: tekening.breedte * schaal, height: tekening.hoogte * schaal, background: "transparent", border: "none", borderRadius: 0 }}>
+              <div className="vd-svg vd-svg-pas" dangerouslySetInnerHTML={inhoud} />
               {!alleenLezen && tekening.maten.map((m) => (
-                <Dim key={m.naam} ctx={ctx} name={m.naam} value={m.waarde} x={m.x} y={m.y} label={m.label} />
+                <Dim key={m.naam} ctx={ctx} name={m.naam} value={m.waarde} x={m.x * schaal} y={m.y * schaal} label={m.label} />
               ))}
             </div>
           </div>
+          {!alleenLezen && <PoerModel poer={poer} hoogte={modelHoogte} naast={naast} />}
         </div>
       </div>
 

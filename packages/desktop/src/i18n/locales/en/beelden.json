@@ -101,7 +101,27 @@
     },
     "noot": "The other input and the checks are in the calculation sheet. Without confirmation of the transverse stability the sheet gives no overall result.",
     "klik": "Click a blue dimension to change it — it flows straight back into the calculation sheet.",
-    "bewaarSvg": "Save detail as SVG"
+    "bewaarSvg": "Save detail as SVG",
+    "modelKop": "3D study model",
+    "modelBeperkt": "The model shows {{getoond}} of the {{totaal}} bars: more cannot usefully be drawn.",
+    "model": {
+      "tweepaalspoer": "Two-pile cap",
+      "hartOpHart": "piles c/c",
+      "poer": "Pile cap",
+      "paal": "Pile",
+      "kolom": "Column",
+      "korf": "Reinforcement cage",
+      "trekband": "Tie bar",
+      "beugel": "Link",
+      "zijstaaf": "Side bar",
+      "bovenstaaf": "Top bar",
+      "haarspeld": "Hairpin",
+      "alleenAanzet": "Only the starter is drawn; the length is outside this sheet.",
+      "project": "Project",
+      "terrein": "Site",
+      "gebouw": "Building",
+      "verdieping": "Storey"
+    }
   },
   "balklaag": {
     "titel": "Parametric view — timber joist floor",

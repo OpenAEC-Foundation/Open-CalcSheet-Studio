@@ -218,7 +218,10 @@ export function bouwModel(scene: DrieDScene, tekstSchaal = 1): Model {
         // Een lichaam uit een IFCX-document onthoudt zijn element (ifcxWeergave.ts).
         if (el.soort === "vlakken" && el.pad) mesh.userData.pad = el.pad;
         groep.add(mesh);
-        groep.add(new THREE.LineSegments(new THREE.EdgesGeometry(g, 20), rand(el.kleur)));
+        // Een lichaam zonder omtreklijn (een wapeningsstaaf, ifcxLezen.ts) ook hier zonder.
+        if (el.soort !== "vlakken" || el.vlakken.some((v) => v.rand)) {
+          groep.add(new THREE.LineSegments(new THREE.EdgesGeometry(g, 20), rand(el.kleur)));
+        }
       }
     }
   }

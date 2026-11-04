@@ -34,6 +34,7 @@ import type { BladUitkomstGegevens } from './uitkomst.js';
 const ELEMENT_KLASSEN = new Set([
   'IfcBeam', 'IfcColumn', 'IfcMember', 'IfcPlate', 'IfcSlab', 'IfcWall', 'IfcFooting', 'IfcPile',
   'IfcBuildingElementProxy', 'IfcCovering', 'IfcRoof', 'IfcRailing', 'IfcBearing', 'IfcElementAssembly',
+  'IfcReinforcingBar',
 ]);
 
 /** Wat van een element niet als eigenschap in STEP hoort: dat staat er al op een andere manier. */
@@ -273,7 +274,12 @@ export function bouwProjectStep(doc: IfcxBestand, opties: StepOpties = {}): stri
     const type = entiteit === 'IfcBeam' ? '.BEAM.'
       : entiteit === 'IfcFooting' ? '.PAD_FOOTING.'
       : '.NOTDEFINED.';
-    const slot = entiteit === 'IfcPile' ? `${type},$` : entiteit === 'IfcElementAssembly' ? `$,${type}` : type;
+    const diameter = k.attributes?.['ocss::calc::diameter'];
+    const slot = entiteit === 'IfcPile' ? `${type},$`
+      : entiteit === 'IfcElementAssembly' ? `$,${type}`
+      // SteelGrade, NominalDiameter, CrossSectionArea, BarLength, PredefinedType, BarSurface
+      : entiteit === 'IfcReinforcingBar' ? `$,${typeof diameter === 'number' ? reeel(diameter * 1000) : '$'},$,$,${type},$`
+      : type;
     const id = voeg(
       `${entiteit.toUpperCase()}(${elementGuid(k, plek)},${oh},${optLabel(naamVan(k))},${optTekst(k.attributes?.[ATTR.omschrijving])},${objectType},${plaats},${vorm},${tag},${slot})`,
     );
@@ -365,7 +371,7 @@ export function bouwProjectStep(doc: IfcxBestand, opties: StepOpties = {}): stri
     gegevens.map((g) => ({ naam: g.naam, waarde: tekstWaarde(g.waarde) })), [ifcProject], wortel.path);
 
   // De maten en overige gegevens van elk element. Lengtes in IFCX in meter, hier in millimeter.
-  const LENGTES = new Set<string>([ATTR.lengte, ATTR.breedte, ATTR.hoogte, 'bsi::ifc::prop::Depth']);
+  const LENGTES = new Set<string>([ATTR.lengte, ATTR.breedte, ATTR.hoogte, 'bsi::ifc::prop::Depth', 'ocss::calc::diameter']);
   for (const { pad, id, k } of elementEigenschappen) {
     const eigen: Eigenschap[] = [];
     for (const [a, w] of Object.entries(k.attributes ?? {})) {

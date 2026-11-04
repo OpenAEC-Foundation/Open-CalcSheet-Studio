@@ -89,6 +89,7 @@
   },
   "kiezer": {
     "titel": "Module toevoegen",
+    "notebooks": "Notebooks",
     "documenten": "Documenten",
     "tabs": {
       "modules": "Modules",
@@ -725,7 +726,6 @@
       "titel": "Voorbeeld"
     },
     "kiezer": {
-      "kop": "Eigen werkmap",
       "naam": "Jupyter-notebook"
     }
   },
@@ -814,6 +814,9 @@
     "paneel": "Marimo",
     "rij": "Marimo — reactief Python-notebook, staat in het project",
     "exporterenUitleg": "Schrijf dit notebook weg als los .py-bestand.",
+    "kiezer": {
+      "naam": "Marimo-notebook"
+    },
     "start": {
       "kop": "Reactief notebook",
       "uitleg": "Druk op Run om te starten. Verschuif daarna een schuif: elke cel die de waarde gebruikt, volgt. Numpy, scipy, pandas en matplotlib staan klaar."

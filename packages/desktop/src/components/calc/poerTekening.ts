@@ -67,6 +67,12 @@ const MAAT = "#2563eb";
 const MODEL = "#b45309";
 const TEKST = "#1f2937";
 
+/** Smaller wordt de tekening onleesbaar: de marges blijven. Een smaller vak schaalt de hele tekening (TweepaalspoerDesigner.tsx). */
+export const TEKENING_MIN_BREEDTE = 320;
+
+/** De kleuren van de tekening; het 3D-model (poerIfcx.ts) gebruikt dezelfde. */
+export const POER_KLEUREN = { paal: PAAL, kolom: KOLOM, trekband: TREK, beugel: BEUGEL, overig: OVERIG, haarspeld: HAARSPELD };
+
 const r = (w: number) => (Math.round(w * 100) / 100).toString();
 
 /** XML-veilig: een vertaling of een getal mag de tekening niet openbreken. */
@@ -105,7 +111,7 @@ function maatV(y0: number, y1: number, x: number, ext: number | null, t: string 
  */
 export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number, interactief = false): Tekening {
   const maten: Maat[] = [];
-  const W = Math.max(320, breedte);
+  const W = Math.max(TEKENING_MIN_BREEDTE, breedte);
   const mL = 46;
   const mR = 16;
   const tussen = 58;

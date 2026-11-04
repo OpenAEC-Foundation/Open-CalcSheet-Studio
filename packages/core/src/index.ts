@@ -13,7 +13,7 @@ export { jsHost, JS_BIBLIOTHEKEN } from './jsBlok.js';
 export { leesIfcx, ifcxNaarScene, type IfcxElement, type IfcxGelezen } from './ifcxLezen.js';
 export {
   balklaagIfcxDocument, balklaagIfcxKnopen, balklaagIfcxKnopenUitScope, balklaagInvoerUitScope, balklaagAantalBalken,
-  ifcxVoorBlad, BALKLAAG_IFCX_IMPORTS, BALKLAAG_IFCX_SCHEMAS, BALKLAAG_MAX_BALKEN,
+  ifcxBlokMesh, ifcxVoorBlad, BALKLAAG_IFCX_IMPORTS, BALKLAAG_IFCX_SCHEMAS, BALKLAAG_MAX_BALKEN,
   type BalklaagInvoer, type BalklaagDocumentOpties,
 } from './balklaagIfcx.js';
 export { parseGef, type GefData } from './gef-parser.js';
@@ -64,8 +64,8 @@ export {
   type IfcxProjectInvoer,
 } from './ifcx/document.js';
 export { bouwProjectStep, type StepOpties } from './ifcx/step.js';
-export { ATTR as IFCX_ATTR, OCSS_SCHEMAS } from './ifcx/namespace.js';
-export { ifcGuid, uuidUitIfcGuid } from './ifcx/identiteit.js';
+export { ATTR as IFCX_ATTR, OCSS_SCHEMAS, ifcKlasse } from './ifcx/namespace.js';
+export { ifcGuid, uuidUitIfcGuid, uuidVan } from './ifcx/identiteit.js';
 export type {
   BladFiguur,
   BladOordeel,

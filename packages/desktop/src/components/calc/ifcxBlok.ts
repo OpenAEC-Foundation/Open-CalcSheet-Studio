@@ -26,7 +26,7 @@ let weergave: Weergave | null = null;
 let laden: Promise<Weergave> | null = null;
 let geenWebGL: boolean | null = null;
 
-function heeftWebGL(): boolean {
+export function heeftWebGL(): boolean {
   if (geenWebGL === null) {
     const proef = document.createElement("canvas");
     const gl = proef.getContext("webgl2") ?? proef.getContext("webgl");
@@ -45,6 +45,23 @@ function laadWeergave(): Promise<Weergave> {
       throw err;
     });
   return laden;
+}
+
+/** De teksten van het beeld, in de taal van de app (calcpad.json, drieD en ifcx). */
+export function ifcxTeksten(vt: (sleutel: string, opties?: { defaultValue: string }) => string): IfcxTeksten {
+  return {
+    hint: vt("drieD.hint"),
+    passend: vt("drieD.passend"),
+    standpunt: {
+      iso: vt("drieD.standpunt.iso"),
+      voor: vt("drieD.standpunt.voor"),
+      boven: vt("drieD.standpunt.boven"),
+      zij: vt("drieD.standpunt.zij"),
+    },
+    opslaan: vt("ifcx.opslaan"),
+    sluiten: vt("ifcx.sluiten"),
+    attribuut: (kort) => vt(`ifcx.attribuut.${kort}`, { defaultValue: kort }),
+  };
 }
 
 /**
