@@ -24,19 +24,27 @@
  * ook; een fragment dat CC of K_FI gebruikt, rekent hier bovendien bij elke
  * gevolgklasse door.
  *
+ * Bij de liggers en de doorsnedegrootheden (formuleTekening.ts) bewaakt hij ook de
+ * tekening die in het blad met de invoer meebeweegt:
+ *
+ *   5. de ligger tegen een handberekening: het getal bij de momentenlijn en een
+ *      paar punten op de lijn, los van het fragment opgeschreven, en met het
+ *      positieve moment onder de ligger; de doorsnede op schaal met de zwaartelijn
+ *      op de plaats die de hand geeft;
+ *   6. beide talen: dezelfde rekenregels, dezelfde tekening, andere tekst;
+ *   7. invoer 0 en extreme verhoudingen: nergens NaN of `{{…}}`, en de tekening
+ *      blijft in zijn vak;
+ *   8. alles achter elkaar in één blad: de hulpvariabelen van een tekening raken
+ *      geen enkele waarde van een ander fragment.
+ *
  * Draaien:  node scripts/check-formules.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
-import { readFileSync } from "node:fs";
-import ts from "typescript";
-import { parse, evaluate } from "../packages/core/dist/index.js";
+import { parse, evaluate, render } from "../packages/core/dist/index.js";
+import { FORMULES, FORMULE_GROEPEN, codeVan } from "../packages/desktop/src/components/ribbon/formules.ts";
+import { buitenVak, getalInTekst, leesPad, leesSvg, omhullende, yOpPad } from "./lib/svg-maten.mjs";
 import { laadLibrary } from "./lib/library.mjs";
 
-const bron = readFileSync(new URL("../packages/desktop/src/components/ribbon/formules.ts", import.meta.url), "utf8");
-const js = ts.transpileModule(bron, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const { FORMULES, FORMULE_GROEPEN } = await import(`data:text/javascript,${encodeURIComponent(js)}`);
 // De voorbeelden van de Library staan in dezelfde groepen; check-library.mjs rekent ze na.
 const { voorbeelden: LIBRARY } = await laadLibrary();
 const inGroep = (g) => [...FORMULES, ...LIBRARY].filter((f) => f.groep === g.id);
@@ -239,6 +247,8 @@ const CONTROLES = [
   { id: "ligger-overstek-q", naam: "R_A", verwacht: (5 * 6 * 3 - (5 * 1.5 ** 2) / 2) / 6, eenheid: "kN" },
   { id: "ligger-overstek-q", naam: "R_B", verwacht: (5 * 7.5 * 3.75) / 6, eenheid: "kN" },
   { id: "ligger-overstek-q", naam: "M_veld", verwacht: ((5 * 6 * 3 - (5 * 1.5 ** 2) / 2) / 6) ** 2 / (2 * 5), eenheid: "kN m" },
+  // x_M = R_A/q, uit V(x) = R_A − q·x = 0; het fragment schrijft dat zonder q, zodat q = 0 geen 0/0 geeft.
+  { id: "ligger-overstek-q", naam: "x_M", verwacht: (5 * 6 * 3 - (5 * 1.5 ** 2) / 2) / 6 / 5, eenheid: "m" },
   // Drie velden: eindveld als ligger op twee steunpunten met q en steunmoment 0,1qL² bij B.
   {
     id: "ligger-drie-velden-q", naam: "w_max", eenheid: "mm", tol: 5e-3,
@@ -404,5 +414,403 @@ for (const c of CONTROLES) {
 }
 console.log(`  ${goed} van ${CONTROLES.length} uitkomsten kloppen met de handberekening`);
 
+// ─── 4. De tekeningen bij de liggers en de doorsneden ───────────────
+const LIGGER = "mechanica-ligger";
+const DOORSNEDE = "mechanica-doorsnede";
+const MET_TEKENING = FORMULES.filter((f) => f.groep === LIGGER || f.groep === DOORSNEDE);
+const opmaak = (code) => render(evaluate(parse(code), {}, { ...PROJECT[2] }));
+const tekeningUit = (html) => html.match(/<div class="calc-svg">\s*(<svg[\s\S]*?<\/svg>)/)?.[1] ?? "";
+/** KaTeX bewaart de LaTeX als annotatie; daar staan vanzelf dubbele accolades in. */
+const zonderLatex = (html) => html.replace(/<annotation[\s\S]*?<\/annotation>/g, "");
+
+/** Een invoerregel: een naam met alleen een getal en eventueel een eenheid. */
+const INVOER = /^([\p{L}_][\p{L}\p{N}_,]*) = (-?\d+(?:\.\d+)?)((?: [^']*)?)('.*)?$/u;
+const invoerVan = (code) => splitOpHide(code).zichtbaar.map((r) => r.match(INVOER)).filter(Boolean)
+  .map((m) => ({ naam: m[1], getal: Number(m[2]), eenheid: m[3] ?? "" }));
+/** Het fragment met andere invoer: naam → de nieuwe tekst achter het =-teken. */
+const metInvoer = (code, wijzig) => code.split("\n").map((r) => {
+  const m = r.match(INVOER);
+  return m && m[1] in wijzig ? `${m[1]} = ${wijzig[m[1]]}${m[4] ?? ""}` : r;
+}).join("\n");
+
+/**
+ * De ligger tegen een handberekening. `M(x)`, met x in meter vanaf het linker eind, is
+ * los van het fragment opgeschreven: uit de reacties en het evenwicht van een afgesneden
+ * deel. `getallen` staan zo in de tekening, `lasten` en `steunen` zijn de plaatsen in
+ * meter van de pijlen en de opleggingen. `verborgen`: die tekst hoort niet te zien te zijn.
+ */
+const veld = (q, L) => (x) => (q * x * (L - x)) / 2;
+const RA_OVERSTEK = (a) => (5 * (36 - a * a)) / 12;
+const overstek = (a) => (x) => (x <= 6 ? RA_OVERSTEK(a) * x - 2.5 * x * x : -2.5 * (6 + a - x) ** 2);
+const tweeVeldenQ = (x) => { const u = Math.min(x, 12 - x); return (3 * 5 * 6 * u) / 8 - 2.5 * u * u; };
+const tweeVeldenF = (x) => { const u = Math.min(x, 12 - x); return u <= 3 ? 6.25 * u : 6.25 * u - 20 * (u - 3); };
+const drieVelden = (x) => {
+  if (x <= 6) return 12 * x - 2.5 * x * x;
+  if (x <= 12) return -18 + 2.5 * (x - 6) * (12 - x);
+  return 12 * (18 - x) - 2.5 * (18 - x) ** 2;
+};
+const LIGGERS = [
+  { id: "ligger-twee-steunpunten-q", lengte: 6, M: veld(5, 6), punten: [0, 1.5, 3, 4.5, 6], getallen: { Mmax: 22.5, q: 5, L: 6 }, steunen: [0, 6] },
+  { id: "ligger-twee-steunpunten-q", invoer: { q: "8 kN/m", L: "4000 mm" }, lengte: 4, M: veld(8, 4), punten: [0, 1, 2, 4], getallen: { Mmax: 16, q: 8, L: 4 }, steunen: [0, 4] },
+  { id: "ligger-twee-steunpunten-f-midden", lengte: 6, M: (x) => 10 * Math.min(x, 6 - x), punten: [0, 1.5, 3, 4.5, 6], getallen: { Mmax: 30, F: 20, L: 6 }, lasten: [3], steunen: [0, 6] },
+  { id: "ligger-twee-steunpunten-f-willekeurig", lengte: 6, M: (x) => (x <= 2 ? (80 / 6) * x : (40 / 6) * (6 - x)), punten: [0, 1, 2, 4, 6], getallen: { Mmax: (20 * 2 * 4) / 6, F: 20, a: 2, b: 4 }, lasten: [2], steunen: [0, 6] },
+  { id: "ligger-twee-steunpunten-f-willekeurig", invoer: { a: "5 m" }, lengte: 6, M: (x) => (x <= 5 ? (20 / 6) * x : (100 / 6) * (6 - x)), punten: [0, 2.5, 5, 5.5, 6], getallen: { Mmax: (20 * 5 * 1) / 6, a: 5, b: 1 }, lasten: [5], steunen: [0, 6] },
+  { id: "ligger-twee-steunpunten-twee-f", lengte: 6, M: (x) => 10 * Math.min(x, 2, 6 - x), punten: [0, 1, 2, 3, 4, 5, 6], getallen: { Mmax: 20, F: 10, a: 2 }, lasten: [2, 4], steunen: [0, 6] },
+  { id: "ligger-twee-steunpunten-twee-f", invoer: { a: "1 m" }, lengte: 6, M: (x) => 10 * Math.min(x, 1, 6 - x), punten: [0, 1, 3, 5, 6], getallen: { Mmax: 10, a: 1 }, lasten: [1, 5], steunen: [0, 6] },
+  { id: "ligger-twee-steunpunten-driehoekslast", lengte: 6, M: (x) => (5 * 6 * x) / 6 - (5 * x ** 3) / (6 * 6), punten: [0, 1.5, 3, 6 / Math.sqrt(3), 4.5, 6], getallen: { Mmax: (5 * 36) / (9 * Math.sqrt(3)), q: 5, L: 6 }, steunen: [0, 6] },
+  { id: "ligger-ingeklemd-q", lengte: 6, M: (x) => -15 + 15 * x - 2.5 * x * x, punten: [0, 1.5, 3, 4.5, 6], getallen: { Msteun: -15, Mveld: 7.5, q: 5, L: 6 }, steunen: [0, 6] },
+  { id: "ligger-ingeklemd-f-midden", lengte: 6, M: (x) => -15 + 10 * Math.min(x, 6 - x), punten: [0, 1.5, 3, 4.5, 6], getallen: { Msteun: -15, Mveld: 15, F: 20, L: 6 }, lasten: [3], steunen: [0, 6] },
+  { id: "ligger-eenzijdig-ingeklemd-q", lengte: 6, M: (x) => -22.5 + 18.75 * x - 2.5 * x * x, punten: [0, 1.5, 3, 3.75, 4.5, 6], getallen: { MA: -22.5, Mveld: (9 * 5 * 36) / 128, q: 5, L: 6 }, steunen: [0, 6] },
+  { id: "ligger-eenzijdig-ingeklemd-f-midden", lengte: 6, M: (x) => (x <= 3 ? -22.5 + 13.75 * x : 6.25 * (6 - x)), punten: [0, 1.5, 3, 4.5, 6], getallen: { MA: -22.5, MF: 18.75, F: 20, L: 6 }, lasten: [3], steunen: [0, 6] },
+  { id: "uitkraging-q", lengte: 2, M: (x) => -2.5 * (2 - x) ** 2, punten: [0, 0.5, 1, 1.5, 2], getallen: { MA: -10, q: 5, L: 2 }, steunen: [0] },
+  { id: "uitkraging-f", lengte: 2, M: (x) => -10 * (2 - x), punten: [0, 1, 2], getallen: { MA: -20, F: 10, L: 2 }, lasten: [2], steunen: [0] },
+  { id: "ligger-overstek-q", lengte: 7.5, M: overstek(1.5), punten: [0, 1.5, RA_OVERSTEK(1.5) / 5, 4.5, 6, 6.75, 7.5], getallen: { Mveld: RA_OVERSTEK(1.5) ** 2 / 10, MB: -5.625, q: 5, L: 6, a: 1.5 }, steunen: [0, 6] },
+  // Een overstek langer dan het veld: A trekt, het hele veld is negatief, en dan hoort er geen veldmoment bij.
+  { id: "ligger-overstek-q", invoer: { a: "8 m" }, lengte: 14, M: overstek(8), punten: [0, 3, 6, 10, 14], getallen: { MB: -160, a: 8 }, steunen: [0, 6], verborgen: ["Mveld"] },
+  { id: "ligger-twee-velden-q", lengte: 12, M: tweeVeldenQ, punten: [0, 2.25, 3, 6, 9, 9.75, 12], getallen: { MB: -22.5, Mveld: (9 * 5 * 36) / 128, q: 5, L: 6 }, steunen: [0, 6, 12] },
+  { id: "ligger-twee-velden-f-midden", lengte: 12, M: tweeVeldenF, punten: [0, 1.5, 3, 4.5, 6, 9, 12], getallen: { MB: -22.5, MF: 18.75, F: 20, L: 6 }, lasten: [3, 9], steunen: [0, 6, 12] },
+  { id: "ligger-drie-velden-q", lengte: 18, M: drieVelden, punten: [0, 2.4, 6, 9, 12, 15.6, 18], getallen: { MB: -18, "Mveld,1": 14.4, "Mveld,2": 4.5, q: 5, L: 6 }, steunen: [0, 6, 12, 18] },
+  { id: "ligger-twee-steunpunten-q-op-x", lengte: 6, M: veld(5, 6), punten: [0, 1.5, 3, 6], getallen: { Mmax: 22.5, Mx: 16.875, Vx: 7.5, q: 5, x: 1.5 }, steunen: [0, 6] },
+  { id: "ligger-twee-steunpunten-q-op-x", invoer: { x: "4 m" }, lengte: 6, M: veld(5, 6), punten: [0, 2, 4, 6], getallen: { Mmax: 22.5, Mx: 20, Vx: -5, x: 4 }, steunen: [0, 6] },
+];
+
+/**
+ * De doorsnede op schaal, in mm: `breed` × `hoog` is de omhullende van de vorm,
+ * `zwaartelijn` de afstand van de bovenkant tot de zwaartelijn. De gesloten vormen hebben
+ * hun zwaartelijn in het midden; driehoek en samengestelde doorsnede volgen uit ΣA·z/ΣA.
+ * `as`: afstand van de zwaartelijn tot de as van Steiner. `gat`: breedte van de holte.
+ * `bogen`: het aantal bogen in de omtrek.
+ */
+const STEINER_H = Math.sqrt((12 * 1000e4) / 5000);
+const TRAAG_H = Math.sqrt((12 * 2003e4) / 7810);
+const DOORSNEDEN = [
+  { id: "doorsnede-rechthoek", breed: 100, hoog: 200, zwaartelijn: 100, getallen: { b: 100, h: 200 } },
+  { id: "doorsnede-rechthoek", invoer: { b: "300 mm", h: "30 cm" }, breed: 300, hoog: 300, zwaartelijn: 150, getallen: { b: 300, h: 300 } },
+  { id: "doorsnede-rechthoek", invoer: { b: "400 mm", h: "50 mm" }, breed: 400, hoog: 50, zwaartelijn: 25, getallen: { b: 400, h: 50 } },
+  { id: "doorsnede-cirkel", breed: 100, hoog: 100, zwaartelijn: 50, getallen: { d: 100 } },
+  { id: "doorsnede-buis", breed: 168.3, hoog: 168.3, zwaartelijn: 84.15, gat: 152.3, getallen: { D: 168.3, t: 8 } },
+  { id: "doorsnede-koker", breed: 100, hoog: 200, zwaartelijn: 100, gat: 84, getallen: { b: 100, h: 200, t: 8 } },
+  { id: "doorsnede-i-profiel", breed: 150, hoog: 300, zwaartelijn: 150, bogen: 4, getallen: { h: 300, b: 150, tw: 7.1, tf: 10.7, r: 15 } },
+  // HEB 200: een H-profiel loopt langs dezelfde weg.
+  { id: "doorsnede-i-profiel", invoer: { h: "200 mm", b: "200 mm", t_w: "9 mm", t_f: "15 mm", r: "18 mm" }, breed: 200, hoog: 200, zwaartelijn: 100, bogen: 4, getallen: { h: 200, b: 200, tw: 9, tf: 15, r: 18 } },
+  { id: "doorsnede-i-profiel", invoer: { r: "0 mm" }, breed: 150, hoog: 300, zwaartelijn: 150, getallen: { r: 0 } },
+  { id: "doorsnede-driehoek", breed: 300, hoog: 200, zwaartelijn: 200 - 200 / 3, getallen: { b: 300, h: 200, zc: 200 / 3 } },
+  { id: "doorsnede-driehoek", invoer: { h: "600 mm" }, breed: 300, hoog: 600, zwaartelijn: 400, getallen: { h: 600, zc: 200 } },
+  // Steiner rekent zonder vorm: de rechthoek met dezelfde A en I₀, dus h = √(12·I₀/A) en b = A/h.
+  { id: "doorsnede-steiner", breed: 5000 / STEINER_H, hoog: STEINER_H, zwaartelijn: STEINER_H / 2, as: 100, grootste: STEINER_H + 100, getallen: { a: 100, Iy: 1000 + 50 * 10 ** 2 } },
+  { id: "doorsnede-steiner", invoer: { a: "-50 mm" }, breed: 5000 / STEINER_H, hoog: STEINER_H, zwaartelijn: STEINER_H / 2, as: -50, grootste: STEINER_H + 50, getallen: { a: -50, Iy: 1000 + 50 * 5 ** 2 } },
+  // De T-balk uit het fragment: 200 × 20 en 10 × 180, zwaartelijn op (4000·10 + 1800·110)/5800.
+  { id: "doorsnede-samengesteld", breed: 200, hoog: 200, zwaartelijn: (4000 * 10 + 1800 * 110) / 5800, getallen: { zc: (4000 * 10 + 1800 * 110) / 5800, z1: 10, z2: 110 } },
+  { id: "doorsnede-traagheidsstraal", breed: 7810 / TRAAG_H, hoog: TRAAG_H, zwaartelijn: TRAAG_H / 2, getallen: { iz: Math.sqrt(2003e4 / 7810) } },
+];
+
+/** Klasse op een element in de tekening. */
+const metKlasse = (gelezen, klasse) => gelezen.elementen.filter((el) => el.klasse.split(" ").includes(klasse));
+let handTekening = 0;
+function getalKlopt(wat, gelezen, naam, verwacht) {
+  const g = getalInTekst(gelezen, naam);
+  if (!g) return meld(false, `${wat}: ${naam} in de tekening`, "die tekst staat er niet");
+  const ok = Math.abs(g.waarde - verwacht) <= 5e-3 * Math.max(Math.abs(verwacht), 1e-6);
+  if (meld(ok, `${wat}: ${naam} = ${g.waarde}`, `verwacht ${Number(verwacht.toPrecision(5))}, staat er ${g.waarde}`)) handTekening++;
+  return ok;
+}
+
+console.log("\nDe momentenlijn tegen een handberekening:");
+const perFormule = new Map(FORMULES.map((f) => [f.id, f]));
+{
+  const nu = handTekening;
+  for (const g of LIGGERS) {
+    const f = perFormule.get(g.id);
+    const wat = `${g.id}${g.invoer ? ` (${Object.entries(g.invoer).map(([n, w]) => `${n} = ${w}`).join(", ")})` : ""}`;
+    const code = g.invoer ? metInvoer(f.code, g.invoer) : f.code;
+    const svg = tekeningUit(opmaak(code));
+    if (!meld(svg !== "", `${wat}: tekening`, "geen tekening in de uitwerking")) continue;
+    const gelezen = leesSvg(svg);
+    const [lijn] = metKlasse(gelezen, "tk-moment");
+    const [nul] = metKlasse(gelezen, "tk-nul");
+    if (!meld(lijn && nul, `${wat}: momentenlijn en nullijn`, "niet gevonden")) continue;
+
+    // De lijn staat op schaal: de punten met het grootste moment geven de schaal, de rest moet daarop liggen.
+    const stukken = leesPad(lijn.attrs.d);
+    const x0 = Number(nul.attrs.x1);
+    const x1 = Number(nul.attrs.x2);
+    const y0 = Number(nul.attrs.y1);
+    const px = (x) => x0 + (x / g.lengte) * (x1 - x0);
+    const grootste = g.punten.reduce((a, b) => (Math.abs(g.M(b)) > Math.abs(g.M(a)) ? b : a));
+    const yMax = yOpPad(stukken, px(grootste));
+    const schaal = (yMax - y0) / g.M(grootste);
+    // Aan de trekzijde: een positief moment staat onder de ligger, en y loopt naar beneden.
+    if (!meld(schaal > 0, `${wat}: het moment staat aan de trekzijde`, `op x = ${grootste} is M = ${g.M(grootste)} maar de lijn staat ${y0 - yMax} px boven de nullijn`)) continue;
+    meld(Math.abs(yMax - y0) >= 30, `${wat}: de lijn benut zijn vak`, `grootste uitslag ${Math.abs(yMax - y0)} px`);
+    for (const x of g.punten) {
+      const y = yOpPad(stukken, px(x));
+      const verwacht = y0 + g.M(x) * schaal;
+      const ok = y !== null && Math.abs(y - verwacht) <= 0.6;
+      if (meld(ok, `${wat}: M(${x}) = ${g.M(x).toFixed(2)}`, `verwacht y = ${verwacht.toFixed(1)}, op de lijn ${y === null ? "geen punt" : y.toFixed(1)}`)) handTekening++;
+    }
+    for (const [naam, waarde] of Object.entries(g.getallen)) getalKlopt(wat, gelezen, naam, waarde);
+    for (const naam of g.verborgen ?? []) {
+      const el = getalInTekst(gelezen, naam)?.element;
+      meld(!el || /opacity:\s*0\b/.test(el.attrs.style ?? ""), `${wat}: ${naam} staat niet in beeld`);
+    }
+    // De pijlen en de opleggingen staan op hun plaats.
+    const op = (klasse, xs) => {
+      const gevonden = metKlasse(gelezen, klasse).map((el) => el.matrix[4]);
+      const ok = gevonden.length === xs.length && xs.every((x, i) => Math.abs(gevonden[i] - px(x)) <= 0.6);
+      meld(ok, `${wat}: ${klasse} op ${xs.join(", ")} m`, `verwacht ${xs.map((x) => px(x).toFixed(1)).join(", ")}, staat op ${gevonden.join(", ")}`);
+    };
+    if (g.lasten) op("tk-puntlast", g.lasten);
+    op("tk-steun", g.steunen);
+  }
+  console.log(`  ${LIGGERS.length} gevallen, ${handTekening - nu} getallen en punten kloppen met de handberekening`);
+
+  // De tekening verzint geen eigen getal: verander de formule in het fragment, en getal en lijn volgen.
+  const andereFormule = (id, regel, nieuw) => perFormule.get(id).code.split("\n").map((r) => (r === regel ? nieuw : r)).join("\n");
+  {
+    const wat = "ligger-ingeklemd-q met een ander steunmoment";
+    const gelezen = leesSvg(tekeningUit(opmaak(andereFormule("ligger-ingeklemd-q", "M_steun = q*L^2/12 to kN*m", "M_steun = 30 kN*m"))));
+    getalKlopt(wat, gelezen, "Msteun", -30);
+    const y0 = Number(metKlasse(gelezen, "tk-nul")[0].attrs.y1);
+    const stukken = leesPad(metKlasse(gelezen, "tk-moment")[0].attrs.d);
+    const verhouding = (y0 - yOpPad(stukken, 40)) / (yOpPad(stukken, 200) - y0);
+    meld(Math.abs(verhouding - 30 / 7.5) <= 0.1, `${wat}: de lijn volgt`, `verhouding ${verhouding.toFixed(2)}, verwacht 4`);
+  }
+  {
+    const wat = "uitkraging-f met een ander inklemmingsmoment";
+    const gelezen = leesSvg(tekeningUit(opmaak(andereFormule("uitkraging-f", "M_A = F*L to kN*m", "M_A = 7 kN*m"))));
+    getalKlopt(wat, gelezen, "MA", -7);
+  }
+}
+
+console.log("\nDe doorsnede op schaal tegen de hand:");
+{
+  const nu = handTekening;
+  for (const d of DOORSNEDEN) {
+    const f = perFormule.get(d.id);
+    const wat = `${d.id}${d.invoer ? ` (${Object.entries(d.invoer).map(([n, w]) => `${n} = ${w}`).join(", ")})` : ""}`;
+    const code = d.invoer ? metInvoer(f.code, d.invoer) : f.code;
+    const svg = tekeningUit(opmaak(code));
+    if (!meld(svg !== "", `${wat}: tekening`, "geen tekening in de uitwerking")) continue;
+    const gelezen = leesSvg(svg);
+    const vorm = metKlasse(gelezen, "tk-vorm");
+    const [zw] = metKlasse(gelezen, "tk-zwaartelijn");
+    if (!meld(vorm.length > 0 && zw, `${wat}: vorm en zwaartelijn`, "niet gevonden")) continue;
+    const [l, b, r, o] = omhullende(vorm);
+    const schaal = Math.max((r - l) / d.breed, (o - b) / d.hoog);
+    const px = (mm) => mm * schaal;
+    // Op schaal, en de grootste maat vult het vak.
+    if (meld(Math.abs(r - l - px(d.breed)) <= 0.6 && Math.abs(o - b - px(d.hoog)) <= 0.6, `${wat}: ${d.breed} × ${d.hoog} op schaal`, `${(r - l).toFixed(1)} × ${(o - b).toFixed(1)} px bij schaal ${schaal.toFixed(4)}`)) handTekening++;
+    const grootste = d.grootste ?? Math.max(d.breed, d.hoog);
+    meld(Math.abs(px(grootste) - 150) <= 0.6, `${wat}: de grootste maat is 150 px`, `${px(grootste).toFixed(1)} px`);
+    const zy = zw.punten[0][1];
+    if (meld(Math.abs(zy - b - px(d.zwaartelijn)) <= 0.6, `${wat}: zwaartelijn op ${d.zwaartelijn.toFixed(2)} mm van boven`, `op ${((zy - b) / schaal).toFixed(2)} mm`)) handTekening++;
+    if (d.as !== undefined) {
+      const [as] = metKlasse(gelezen, "tk-as");
+      if (meld(as && Math.abs(as.punten[0][1] - zy - px(d.as)) <= 0.6, `${wat}: de as op ${d.as} mm van de zwaartelijn`, as ? `op ${((as.punten[0][1] - zy) / schaal).toFixed(1)} mm` : "geen as")) handTekening++;
+    }
+    if (d.gat !== undefined) {
+      const holte = leesPad(vorm[0].attrs.d).filter((s) => s.soort !== "Z").flatMap((s) => [s.van[0], s.naar[0]]).filter((x) => x > l + 0.5 && x < r - 0.5);
+      const breedte = Math.max(...holte) - Math.min(...holte);
+      if (meld(Math.abs(breedte - px(d.gat)) <= 0.6, `${wat}: de holte is ${d.gat} mm breed`, `${(breedte / schaal).toFixed(1)} mm`)) handTekening++;
+    }
+    if (d.bogen !== undefined) {
+      const stukken = leesPad(vorm[0].attrs.d ?? "");
+      meld(vorm.length === 1 && vorm[0].tag === "path", `${wat}: één pad, geen losse rechthoeken`);
+      meld(stukken.filter((s) => s.soort === "A").length === d.bogen, `${wat}: ${d.bogen} bogen in de omtrek`, `${stukken.filter((s) => s.soort === "A").length}`);
+    }
+    for (const [naam, waarde] of Object.entries(d.getallen)) getalKlopt(wat, gelezen, naam, waarde);
+    meld(metKlasse(gelezen, "tk-hartlijn").length === 1, `${wat}: een hartlijn`);
+  }
+  console.log(`  ${DOORSNEDEN.length} gevallen, ${handTekening - nu} maten en getallen kloppen met de handberekening`);
+}
+
+// ─── 5. Twee talen ──────────────────────────────────────────────────
+console.log("\nDe tekeningen in twee talen:");
+{
+  const WOORDEN_NL = /zwaartelijn|hartlijn|momentenlijn|trekzijde|rechthoek|tekening|doorbuiging|invoer/i;
+  const WOORDEN_EN = /centroid|centre line|bending moment|tension side|rectangle|drawing|deflection|\binput\b/i;
+  /** Wat overblijft zonder tekst en toelichting: dat moet in beide talen hetzelfde zijn. */
+  const rekenregels = (code) => code.split("\n")
+    .filter((r) => !r.startsWith("'") && !r.startsWith("//") && !r.trim().startsWith("<text"))
+    .map((r) => r.replace(/', [^']*'$/, ""));
+  const tekst = (code) => code.split("\n").filter((r) => r.startsWith("'") || r.startsWith("//") || r.trim().startsWith("<text") || /', [^']*'$/.test(r))
+    .map((r) => r.replace(/<\/?[a-zA-Z][^>]*>/g, " ").replace(/\{\{\w+\}\}/g, " ")).join("\n");
+  let goed2 = 0;
+  for (const f of MET_TEKENING) {
+    let ok = meld(typeof f.codeEn === "string" && f.codeEn !== f.code, `${f.id}: heeft een Engels fragment`);
+    if (!ok) continue;
+    ok = meld(codeVan(f, "en") === f.codeEn && codeVan(f, "nl") === f.code, `${f.id}: codeVan volgt de taal`) && ok;
+    ok = meld(rekenregels(f.code).join("\n") === rekenregels(f.codeEn).join("\n"), `${f.id}: dezelfde rekenregels in beide talen`) && ok;
+    ok = meld(!WOORDEN_EN.test(tekst(f.code)), `${f.id}: geen Engels in de Nederlandse tekst`, tekst(f.code).match(WOORDEN_EN)?.[0]) && ok;
+    ok = meld(!WOORDEN_NL.test(tekst(f.codeEn)), `${f.id}: geen Nederlands in de Engelse tekst`, tekst(f.codeEn).match(WOORDEN_NL)?.[0]) && ok;
+    const zonderTekst = (svg) => svg.replace(/>[^<]+</g, "><").replace(/<text[\s\S]*?<\/text>/g, "<text/>");
+    ok = meld(zonderTekst(tekeningUit(opmaak(f.code))) === zonderTekst(tekeningUit(opmaak(f.codeEn))), `${f.id}: dezelfde tekening in beide talen`) && ok;
+    if (ok) goed2++;
+  }
+  console.log(`  ${goed2} van ${MET_TEKENING.length} fragmenten rekenen en tekenen in beide talen gelijk`);
+}
+
+// ─── 6. Invoer 0 en extreme verhoudingen ────────────────────────────
+console.log("\nInvoer 0 en extreme verhoudingen:");
+{
+  const SLECHT = /NaN|undefined|\{\{/;
+  let gevallen = 0;
+  let getekend = 0;
+  const controleer = (f, taal, wat, wijzig) => {
+    const code = metInvoer(codeVan(f, taal), wijzig);
+    let html;
+    try {
+      html = zonderLatex(opmaak(code));
+    } catch (err) {
+      return meld(false, `${f.id} (${taal}) ${wat}`, `rekenkern gooit: ${err.message}`);
+    }
+    gevallen++;
+    const svg = tekeningUit(html);
+    let ok = meld(!SLECHT.test(html), `${f.id} (${taal}) ${wat}: geen NaN of {{…}}`, html.match(/.{40}(?:NaN|undefined|\{\{).{40}/s)?.[0]);
+    if (svg) {
+      getekend++;
+      ok = meld(!/∞/.test(svg), `${f.id} (${taal}) ${wat}: geen ∞ in de tekening`) && ok;
+      const buiten = buitenVak(leesSvg(svg));
+      ok = meld(buiten.length === 0, `${f.id} (${taal}) ${wat}: in het vak`, buiten.join("; ")) && ok;
+    }
+    return ok;
+  };
+  for (const f of MET_TEKENING) {
+    for (const taal of ["nl", "en"]) {
+      const inv = invoerVan(codeVan(f, taal));
+      const met = (fn) => Object.fromEntries(inv.map((i) => [i.naam, fn(i)]));
+      controleer(f, taal, "alles 0", met((i) => `0${i.eenheid}`));
+      controleer(f, taal, "alles 0 zonder eenheid", met(() => "0"));
+      for (const a of inv) {
+        controleer(f, taal, `${a.naam} = 0`, { [a.naam]: `0${a.eenheid}` });
+        controleer(f, taal, `${a.naam} = 0 zonder eenheid`, { [a.naam]: "0" });
+        controleer(f, taal, `${a.naam} × 1000`, { [a.naam]: `${a.getal * 1000}${a.eenheid}` });
+        controleer(f, taal, `${a.naam} / 1000`, { [a.naam]: `${a.getal / 1000}${a.eenheid}` });
+        controleer(f, taal, `${a.naam} × 1e6`, { [a.naam]: `${a.getal * 1e6}${a.eenheid}` });
+        controleer(f, taal, `${a.naam} negatief`, { [a.naam]: `${-a.getal}${a.eenheid}` });
+        for (const b of inv) {
+          if (a.naam < b.naam) controleer(f, taal, `${a.naam} = ${b.naam} = 0`, { [a.naam]: `0${a.eenheid}`, [b.naam]: `0${b.eenheid}` });
+        }
+      }
+    }
+  }
+  console.log(`  ${gevallen} gevallen doorgerekend, ${getekend} met een tekening`);
+
+  // Een extreme verhouding is geen fout in de invoer: de tekening hoort er dan gewoon te staan.
+  const MOET = [
+    ["doorsnede-rechthoek", { b: "1 mm", h: "10000 mm" }],
+    ["doorsnede-rechthoek", { b: "10000 mm", h: "1 mm" }],
+    ["doorsnede-cirkel", { d: "100000 mm" }],
+    ["doorsnede-buis", { D: "1000 mm", t: "1 mm" }],
+    ["doorsnede-buis", { D: "100 mm", t: "50 mm" }],
+    ["doorsnede-koker", { b: "20 mm", h: "2000 mm", t: "2 mm" }],
+    ["doorsnede-koker", { b: "2000 mm", h: "20 mm", t: "2 mm" }],
+    ["doorsnede-i-profiel", { h: "3000 mm", b: "50 mm", t_w: "2 mm", t_f: "3 mm", r: "1 mm" }],
+    ["doorsnede-i-profiel", { h: "30 mm", b: "3000 mm", t_w: "2 mm", t_f: "3 mm", r: "100 mm" }],
+    ["doorsnede-i-profiel", { r: "1000 mm" }],
+    ["doorsnede-driehoek", { b: "1 mm", h: "10000 mm" }],
+    ["doorsnede-driehoek", { b: "10000 mm", h: "1 mm" }],
+    ["doorsnede-steiner", { a: "100000 mm" }],
+    ["doorsnede-steiner", { I_0: "1 cm^4", A: "1000 cm^2" }],
+    ["doorsnede-steiner", { I_0: "100000 cm^4", A: "1 cm^2" }],
+    ["doorsnede-samengesteld", { A_1: "1 mm^2" }],
+    ["doorsnede-samengesteld", { z_2: "100000 mm" }],
+    ["doorsnede-traagheidsstraal", { I_z: "1 cm^4", A: "1000 cm^2" }],
+    ["doorsnede-traagheidsstraal", { I_z: "100000 cm^4", A: "1 cm^2" }],
+    ["ligger-twee-steunpunten-q", { q: "100000 kN/m", L: "1 mm" }],
+    ["ligger-twee-steunpunten-q", { q: "0.0001 kN/m", L: "1000 m" }],
+    ["ligger-twee-steunpunten-f-willekeurig", { L: "1000 m", a: "0.001 m" }],
+    ["ligger-twee-steunpunten-f-willekeurig", { L: "1000 m", a: "999.999 m" }],
+    ["ligger-twee-steunpunten-twee-f", { L: "1000 m", a: "0.001 m" }],
+    ["ligger-twee-steunpunten-twee-f", { L: "6 m", a: "3 m" }],
+    ["ligger-overstek-q", { L: "1 m", a: "1000 m" }],
+    ["ligger-overstek-q", { L: "1000 m", a: "1 m" }],
+    ["ligger-overstek-q", { a: "0 m" }],
+    ["ligger-twee-steunpunten-q-op-x", { L: "1000 m", x: "1000 m" }],
+    ["ligger-twee-steunpunten-q-op-x", { x: "0 m" }],
+  ];
+  let staat = 0;
+  for (const [id, wijzig] of MOET) {
+    const f = perFormule.get(id);
+    for (const taal of ["nl", "en"]) {
+      const wat = Object.entries(wijzig).map(([n, w]) => `${n} = ${w}`).join(", ");
+      controleer(f, taal, wat, wijzig);
+      if (meld(tekeningUit(opmaak(metInvoer(codeVan(f, taal), wijzig))) !== "", `${id} (${taal}) ${wat}: de tekening staat er`)) staat++;
+    }
+  }
+  console.log(`  ${staat} van ${MOET.length * 2} extreme verhoudingen hebben een tekening binnen het vak`);
+
+  // Schaal op de grootste maat: bij een extreme verhouding blijft de grootste maat 150 px.
+  for (const [id, wijzig] of MOET.filter(([id]) => id.startsWith("doorsnede-"))) {
+    const svg = tekeningUit(opmaak(metInvoer(perFormule.get(id).code, wijzig)));
+    if (!svg) continue;
+    const [l, b, r, o] = omhullende(metKlasse(leesSvg(svg), "tk-vorm"));
+    const wat = Object.entries(wijzig).map(([n, w]) => `${n} = ${w}`).join(", ");
+    // Bij Steiner en de samengestelde doorsnede kan de grootste maat ook de afstand zijn.
+    meld(Math.max(r - l, o - b) <= 150.6, `${id} ${wat}: niet groter dan 150 px`, `${Math.max(r - l, o - b).toFixed(1)} px`);
+  }
+}
+
+// ─── 7. Alles achter elkaar in één blad ─────────────────────────────
+console.log("\nAlles achter elkaar in één blad:");
+{
+  /** Alle namen die een fragment zet, met of zonder #hide. */
+  const namenIn = (code) => new Set(code.split("\n")
+    .map((r) => r.match(/^\s*([\p{L}_][\p{L}\p{N}_,]*)\s*=/u)?.[1])
+    .filter(Boolean).map((n) => n.replaceAll(",", "_")));
+  const hulpNamen = (code) => new Set(splitOpHide(code).verborgen
+    .map((r) => r.match(/^\s*([\p{L}_][\p{L}\p{N}_,]*)\s*=/u)?.[1]).filter(Boolean));
+  const voorvoegsels = new Map();
+  for (const f of MET_TEKENING) {
+    const namen = [...hulpNamen(f.code)];
+    meld(namen.length > 0, `${f.id}: hulpvariabelen achter #hide`);
+    const voor = namen[0]?.split("_")[0] ?? "";
+    meld(voor !== "" && namen.every((n) => n.startsWith(`${voor}_`)), `${f.id}: één voorvoegsel voor de hulpvariabelen`, namen.filter((n) => !n.startsWith(`${voor}_`)).join(", "));
+    meld(!voorvoegsels.has(voor), `${f.id}: eigen voorvoegsel ${voor}`, `ook bij ${voorvoegsels.get(voor)}`);
+    voorvoegsels.set(voor, f.id);
+    // Geen ander fragment, ook niet uit de Library, zet of leest een naam met dit voorvoegsel.
+    for (const ander of [...FORMULES, ...LIBRARY]) {
+      if (ander.id === f.id) continue;
+      for (const code of [ander.code, ander.codeEn ?? ""]) {
+        const botst = namen.filter((n) => new RegExp(`(?<![\\p{L}\\p{N}_])${n}(?![\\p{L}\\p{N}_])`, "u").test(code));
+        if (botst.length) meld(false, `${f.id}: ${botst.join(", ")} komt ook voor in ${ander.id}`);
+      }
+    }
+    // En een fragment zet zijn eigen hulpnaam niet buiten #hide.
+    const zichtbaar = namenIn(splitOpHide(f.code).zichtbaar.join("\n"));
+    meld(namen.every((n) => !zichtbaar.has(n)), `${f.id}: hulpvariabelen alleen achter #hide`);
+  }
+
+  const volgordes = [
+    ["voor naar achter", [...FORMULES]],
+    ["achter naar voor", [...FORMULES].reverse()],
+    ["alleen de tekeningen", MET_TEKENING],
+  ];
+  for (const [naam, lijst] of volgordes) {
+    for (const taal of ["nl", "en"]) {
+      const samen = lijst.map((f) => codeVan(f, taal)).join("\n");
+      const v = reken(samen, PROJECT[2]);
+      const nu = v.filter((n) => n.type === "assignment");
+      let i = 0;
+      let gelijk = true;
+      for (const f of lijst) {
+        for (const n of reken(codeVan(f, taal), PROJECT[2]).filter((m) => m.type === "assignment")) {
+          const hier = nu[i++];
+          if (!hier || hier.name !== n.name || hier.result !== n.result || hier.unit !== n.unit) {
+            gelijk = meld(false, `${naam} (${taal}): ${f.id}: ${n.name}`, `los ${n.result} ${n.unit}, in het blad ${hier?.name} = ${hier?.result} ${hier?.unit}`) && gelijk;
+          }
+        }
+      }
+      // De tekening is hetzelfde als los, tot op de laatste letter.
+      const tekeningen = (knopen) => knopen.filter((n) => n.type === "svg").map((n) => n.content);
+      const inHetBlad = tekeningen(v);
+      const los = lijst.flatMap((f) => tekeningen(reken(codeVan(f, taal), PROJECT[2])));
+      gelijk = meld(inHetBlad.length === MET_TEKENING.length && inHetBlad.join("\n") === los.join("\n"), `${naam} (${taal}): de tekeningen zijn gelijk aan los`, `${inHetBlad.length} en ${los.length} tekeningen, verwacht ${MET_TEKENING.length}`) && gelijk;
+      if (gelijk) console.log(`  ${naam} (${taal}): ${nu.length} uitkomsten en ${los.length} tekeningen gelijk aan los`);
+    }
+  }
+}
+
+console.log(`\nIn totaal ${goed + handTekening} uitkomsten tegen een handberekening: ${goed} uit de formules, ${handTekening} uit de tekeningen.`);
 console.log(fouten === 0 ? "\nFormulebibliotheek in orde." : `\n${fouten} fout(en) in de formulebibliotheek.`);
 process.exit(fouten === 0 ? 0 : 1);

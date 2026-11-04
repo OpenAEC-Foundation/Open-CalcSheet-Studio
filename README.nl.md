@@ -82,7 +82,7 @@ Modules zijn kant-en-klare bladen met een invoerscherm: een **houten balklaag** 
 
 De tweepaalspoer heeft naast de tekening een 3D-studiemodel. Dat toont de poer, de palen, de kolom en elke staaf, en volgt elk veld en elke blauwe maat meteen. **Add module** toont bij elke keuze een plaatje, van een leeg tekenblad tot een Marimo-notebook.
 
-De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met een schets die laat zien waar het over gaat. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release. De voorbeelden bewaken hun eigen grenzen: de buigwapening waarschuwt bij een overwapende doorsnede of staven die niet passen, en het voorbeeld van de beugels houdt cot θ binnen de grenzen en toetst afstand en minimumwapening.
+De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met een schets die laat zien waar het over gaat. De liggers en de doorsnedegrootheden zetten ook een tekening in het blad die je invoer volgt: de momentenlijn op schaal, of de doorsnede op schaal met haar maten. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release. De voorbeelden bewaken hun eigen grenzen: de buigwapening waarschuwt bij een overwapende doorsnede of staven die niet passen, en het voorbeeld van de beugels houdt cot θ binnen de grenzen en toetst afstand en minimumwapening.
 
 | | |
 |---|---|
@@ -111,7 +111,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 ## Testen en betrouwbaarheid
 
 - **56 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
-- **121 uitkomsten tegen een handberekening**: 53 in `scripts/check-formules.mjs` en 68 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
+- **381 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 68 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.
 - **Bouwen op alle drie de platforms** bij elke push naar `main`, met controle van de handtekeningen.
