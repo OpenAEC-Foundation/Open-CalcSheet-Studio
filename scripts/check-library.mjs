@@ -409,5 +409,83 @@ console.log(`  ${goed} van ${CONTROLES.length} uitkomsten kloppen met de handber
 const somOk = meld(Math.abs(schuifSom - 100) < 0.01, `∫τ·b dy over de doorsnede = ${schuifSom.toFixed(2)} kN`, "moet 100 kN zijn");
 if (somOk) console.log(`  ∫τ·b dy over de doorsnede = ${schuifSom.toFixed(2)} kN, gelijk aan V_Ed`);
 
+// ─── 6. Invoer buiten de grens ──────────────────────────────────────
+console.log("\nInvoer buiten de grens:");
+{
+  /** Het voorbeeld met andere invoer, in beide talen: de regel `naam = …` krijgt een andere waarde. */
+  const metInvoer = (code, wijzig) => code.split("\n").map((r) => {
+    const m = r.match(/^(\S+) = ([^']*)(.*)$/);
+    return m && m[1] in wijzig ? `${m[1]} = ${wijzig[m[1]]}${m[3]}` : r;
+  }).join("\n");
+  const geval = (id, wijzig) => ["nl", "en"].map((taal) => {
+    const code = metInvoer(codeVan(perId.get(id), taal), wijzig);
+    return { taal, uit: uitkomsten(code), html: render(knopen(code)) };
+  });
+  const is = (wat, u, naam, verwacht) => meld(Math.abs(u.uit[naam]?.waarde - verwacht) <= 1e-3 * Math.abs(verwacht), `${wat} (${u.taal}): ${naam}`, `verwacht ${verwacht}, kreeg ${u.uit[naam]?.waarde}`);
+
+  // Buigwapening, 300 × 450, C30/37, B500: het staal vloeit tot x/d = 0,0035/(0,0035 + ε_yd).
+  // ε_yd = 434,78/200000 = 0,002174; x_lim = 277,6 mm; M_lim = 0,8·277,6·300·20·(450 − 0,4·277,6) = 451,6 kNm.
+  const xLim = (450 * 0.0035) / (0.0035 + fyd / 200000);
+  const MLim = (0.8 * xLim * 300 * fcd * (450 - 0.4 * xLim)) / 1e6;
+  const OVER = { nl: /overwapend/, en: /over-reinforced/ };
+  const KIES = { nl: /<b>Kies /, en: /<b>Use / };
+  const PAST = { nl: /passen niet/, en: /do not fit/ };
+  for (const u of geval("library-ec2-buigwapening", {})) {
+    is("150 kNm", u, "M_lim", MLim);
+    // Vrije ruimte max(20; 16 + 5; 20) = 21. In 300 − 2·40 = 220 passen ⌊(220 + 21)/(20 + 21)⌋ = 5 staven Ø20.
+    is("150 kNm", u, "n_max", 5);
+    is("150 kNm", u, "UC_x", 150 / MLim);
+    meld(KIES[u.taal].test(u.html) && !OVER[u.taal].test(u.html) && !PAST[u.taal].test(u.html), `150 kNm (${u.taal}): gewoon een keuze`);
+  }
+  for (const M of [500, 600, 700]) {
+    for (const u of geval("library-ec2-buigwapening", { M_Ed: `${M} kN*m` })) {
+      meld(OVER[u.taal].test(u.html), `${M} kNm (${u.taal}): boven M_lim staat de waarschuwing`);
+      meld(!KIES[u.taal].test(u.html), `${M} kNm (${u.taal}): geen staven gekozen`);
+      meld(!/NaN/.test(u.html) && u.uit.n_s === undefined, `${M} kNm (${u.taal}): geen NaN en geen aantal`);
+      is(`${M} kNm`, u, "UC_x", M / MLim);
+    }
+  }
+  // 440 kNm: √(450² − 2·440e6/(300·20)) = 236,3; x = 267,1 < x_lim. z = 343,1; A_s = 2949 mm²: 10 Ø20, en er passen er 5.
+  for (const u of geval("library-ec2-buigwapening", { M_Ed: "440 kN*m" })) {
+    is("440 kNm", u, "n_s", 10);
+    meld(PAST[u.taal].test(u.html) && !KIES[u.taal].test(u.html) && !OVER[u.taal].test(u.html), `440 kNm (${u.taal}): de staven passen niet, geen keuze`);
+  }
+
+  // Beugels Ø8-200 tweesnedig in 300 × 450: ρ_w = 100,53/(200·300) = 0,001676; ρ_w,min = 0,08·√30/500 = 0,000876.
+  const rhoMin = (0.08 * Math.sqrt(30)) / 500;
+  const BUITEN = { nl: /buiten 1 tot en met 2,5/, en: /outside 1 to 2\.5/ };
+  for (const u of geval("library-ec2-beugels", {})) {
+    is("standaard", u, "cot_θ_r", 2.5);
+    is("standaard", u, "s_l_max", 300);
+    is("standaard", u, "ρ_w", Asw / (200 * 300));
+    is("standaard", u, "ρ_w_min", rhoMin);
+    is("standaard", u, "UC_sl", 200 / 300);
+    is("standaard", u, "UC_ρ", rhoMin / (Asw / (200 * 300)));
+    // ΔF_td = 0,5·180·2,5 = 225 kN.
+    is("standaard", u, "ΔF_td", 225);
+    meld(!BUITEN[u.taal].test(u.html), `standaard (${u.taal}): geen melding over cot θ`);
+  }
+  // cot θ = 3,5 mag geen gunstiger uitkomst geven dan 2,5: UC = 180/221,3 = 0,813, niet 0,58.
+  for (const u of geval("library-ec2-beugels", { cot_θ: "3.5" })) {
+    is("cot θ 3,5", u, "cot_θ_r", 2.5);
+    is("cot θ 3,5", u, "UC_V", 180 / VRds);
+    is("cot θ 3,5", u, "ΔF_td", 225);
+    meld(BUITEN[u.taal].test(u.html), `cot θ 3,5 (${u.taal}): de melding staat er`);
+  }
+  // cot θ = 0,8 rekent met 1: V_Rd,s = 221,3/2,5 = 88,5 kN; UC = 2,03.
+  for (const u of geval("library-ec2-beugels", { cot_θ: "0.8" })) {
+    is("cot θ 0,8", u, "cot_θ_r", 1);
+    is("cot θ 0,8", u, "UC_V", 180 / (VRds / 2.5));
+    meld(BUITEN[u.taal].test(u.html), `cot θ 0,8 (${u.taal}): de melding staat er`);
+  }
+  // Ø6-500: ρ_w = 56,55/(500·300) = 0,000377, onder het minimum; s_l 500 boven 300.
+  for (const u of geval("library-ec2-beugels", { φ_w: "6 mm", s_l: "500 mm" })) {
+    is("Ø6-500", u, "UC_ρ", rhoMin / ((2 * Math.PI * 9) / (500 * 300)));
+    is("Ø6-500", u, "UC_sl", 500 / 300);
+  }
+  // Lage ligger: 0,75·300 = 225 mm is de kleinste van de twee.
+  for (const u of geval("library-ec2-beugels", { d: "300 mm" })) is("d = 300", u, "s_l_max", 225);
+}
+
 console.log(fouten === 0 ? "\nLibrary in orde." : `\n${fouten} fout(en) in de Library.`);
 process.exit(fouten === 0 ? 0 : 1);

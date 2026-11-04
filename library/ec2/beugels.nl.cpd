@@ -1,5 +1,5 @@
 ## Beugels en drukdiagonaal
-'<small>Bron: NEN-EN 1992-1-1 6.2.2(6) (6.6N); 6.2.3 (6.7N), (6.8), (6.9)</small>
+'<small>Bron: NEN-EN 1992-1-1 6.2.2(6) (6.6N); 6.2.3 (6.7N), (6.8), (6.9), (6.18); 9.2.2 (9.4), (9.5N)</small>
 '<i>De hoek van de drukdiagonaal is een keuze: een schuinere diagonaal geeft de beugels meer capaciteit en het beton minder. De grafiek laat die afweging zien.</i>
 V_Ed = 180 kN'<span class="kolom-3"></span>'
 b_w = 300 mm'<span class="kolom-3"></span>'
@@ -8,18 +8,32 @@ d = 450 mm'<span class="kolom-3"></span>'
 n_w = 2', sneden per beugel<span class="kolom-3"></span>'
 s_l = 200 mm', beugelafstand<span class="kolom-3"></span>'
 f_ck = 30 N/mm^2'<span class="kolom-3"></span>'
-f_ywd = 500 N/mm^2/1.15'<span class="kolom-3"></span>'
+f_yk = 500 N/mm^2'<span class="kolom-3"></span>'
 α_cw = 1.0'<span class="kolom-3"></span>'
 cot_θ = 2.5', tussen 1 en 2,5 (6.7N)<span class="kolom-3"></span>'
 f_cd = f_ck/1.5
+f_ywd = f_yk/1.15
 A_sw = n_w*π*φ_w^2/4 to mm^2
 z = 0.9*d to mm
 ν_1 = 0.6*(1 - f_ck/(250 MPa))', (6.6N)'
 V_s(c) = A_sw/s_l*z*f_ywd*c
 V_max(c) = α_cw*b_w*z*ν_1*f_cd/(c + 1/c)
-V_Rd,s = V_s(cot_θ) to kN', (6.8)'
-V_Rd,max = V_max(cot_θ) to kN', (6.9)'
+cot_θ,r = max(1; min(cot_θ; 2.5))', cot θ binnen de grenzen van (6.7N)'
+#if cot_θ,r ≠ cot_θ
+'cot θ ligt buiten 1 tot en met 2,5: het blad rekent met de dichtstbijzijnde grens.
+#end if
+V_Rd,s = V_s(cot_θ,r) to kN', (6.8)'
+V_Rd,max = V_max(cot_θ,r) to kN', (6.9)'
 UC_V = V_Ed/min(V_Rd,s; V_Rd,max)
+s_l,max = min(0.75*d; 300 mm) to mm', 9.2.2(6) (NB)'
+UC_sl = s_l/s_l,max
+ρ_w = A_sw/(s_l*b_w)', (9.4)'
+ρ_w,min = 0.08*sqrt(f_ck/MPa)/(f_yk/MPa)', (9.5N)'
+UC_ρ = ρ_w,min/ρ_w
+#if max(UC_sl; UC_ρ) > 1
+'Deze beugels voldoen niet aan 9.2.2: te ver uit elkaar of te weinig.
+#end if
+ΔF_td = 0.5*V_Ed*cot_θ,r to kN', (6.18), extra trekkracht die de langswapening moet dragen; toets die apart'
 #hide
 PlotHeight = 220
 #show

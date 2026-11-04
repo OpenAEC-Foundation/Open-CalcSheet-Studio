@@ -27,7 +27,7 @@ De app draait op Windows, macOS en Linux en is volop in ontwikkeling: zie [Huidi
 
 ## Downloaden
 
-Er is nog geen stabiele release. De [nightly build](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/tag/nightly) wordt elke dag gemaakt vanaf `main`.
+Download de [nieuwste release](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/latest). De [nightly build](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/tag/nightly) wordt elke dag gemaakt vanaf `main`.
 
 | Platform | Installatiebestand |
 |----------|-----------|
@@ -45,7 +45,7 @@ De releaseworkflow weigert bestanden te publiceren die niet ondertekend zijn: Wi
 - **Je kunt elke stap nalopen.** Een uitkomst toont naam, formule, ingevulde waarden en resultaat, met eenheden.
 - **Eén project, één rapport.** Voorblad, inhoudsopgave en paginanummers lopen door over alle bladen, van welke soort ook.
 - **Het juiste blad voor elk onderdeel.** Tekst, canvas, spreadsheet, nodegraaf, tekening, notebook, Markdown of PDF, naast elkaar in één project.
-- **Verander een getal en de toets volgt.** Bladen rekenen door terwijl je typt, en een tekening kan haar maten uit het blad halen.
+- **Verander een getal en de toets volgt.** Bladen rekenen door terwijl je typt, en een tekening of 3D-model kan zijn maten uit het blad halen.
 - **Je gegevens blijven open.** Het projectbestand is IFCX, en je kunt IFC4x3 exporteren.
 - **Werkt met een AI-assistent.** Een ingebouwde MCP-server en REST-API draaien op je eigen computer, achter een token.
 
@@ -80,12 +80,14 @@ Een project is een lijst bladen. Elke soort staat beschreven in [de documentatie
 
 Modules zijn kant-en-klare bladen met een invoerscherm: een **houten balklaag** en een **ligger van hout of staal** volgens EN 1995-1-1 en EN 1993-1-1, en een **tweepaalspoer** volgens EN 1992-1-1, met de Nederlandse nationale bijlage. De [online modulebibliotheek](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) kan modules toevoegen zonder nieuwe release; voorlopig staat daar de balklaag. Zie [hoe de toetsing van de balklaag werkt](docs/balklaag-toetsing.md) en [die van de poer](docs/tweepaalspoer-toetsing.md).
 
-De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met een schets die laat zien waar het over gaat. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release.
+De tweepaalspoer heeft naast de tekening een 3D-studiemodel. Dat toont de poer, de palen, de kolom en elke staaf, en volgt elk veld en elke blauwe maat meteen. **Add module** toont bij elke keuze een plaatje, van een leeg tekenblad tot een Marimo-notebook.
+
+De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met een schets die laat zien waar het over gaat. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release. De voorbeelden bewaken hun eigen grenzen: de buigwapening waarschuwt bij een overwapende doorsnede of staven die niet passen, en het voorbeeld van de beugels houdt cot θ binnen de grenzen en toetst afstand en minimumwapening.
 
 | | |
 |---|---|
-| ![Een voorbeeld over knik uit de bibliotheek, uitgewerkt naast het paneel, met Invoegen en Nieuw blad](docs/images/readme/library.png) **Een uitgewerkt voorbeeld uit de bibliotheek** | ![Het invoerscherm van een tweepaalspoer met de wapeningstekening](docs/images/readme/two-pile-cap.png) **Tweepaalspoer met wapeningstekening** |
-| ![De formulebibliotheek met een schets naast elke formule](docs/images/readme/formula-library.png) **Formulebibliotheek met een schets per formule** | |
+| ![Een voorbeeld over knik uit de bibliotheek, uitgewerkt naast het paneel, met Invoegen en Nieuw blad](docs/images/readme/library.png) **Een uitgewerkt voorbeeld uit de bibliotheek** | ![Het invoerscherm van een tweepaalspoer met de wapeningstekening en een 3D-studiemodel](docs/images/readme/two-pile-cap.png) **Tweepaalspoer met tekening en 3D-studiemodel** |
+| ![De formulebibliotheek met een schets naast elke formule](docs/images/readme/formula-library.png) **Formulebibliotheek met een schets per formule** | ![Het venster Add module met een plaatje bij elke soort blad en module](docs/images/readme/add-module.png) **Add module, met een plaatje bij elke keuze** |
 
 ## Uitwisseling
 
@@ -100,7 +102,7 @@ De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met ee
 | **PDF** | Als blad | Ja, het rapport |
 | **DXF** | Omgezet naar een tekening in een blad | Nee |
 
-Elk blad staat met tekst, invoer en uitkomsten in het IFCX-bestand. Tekeningen die het invoerscherm van een module tekent, staan er niet als figuur in, alleen wat de rekentekst zelf tekent. De meeste bladen weten niet waar hun onderdeel in het gebouw zit, dus elementen zonder geometrie staan op de oorsprong van de bouwlaag. Zie [de IFC-documentatie](docs/ifc-export.md).
+Elk blad staat met tekst, invoer en uitkomsten in het IFCX-bestand. Tekeningen die het invoerscherm van een module tekent, staan er niet als figuur in, alleen wat de rekentekst zelf tekent. De tweepaalspoer voegt wel zijn 3D-model toe: in IFC4x3 is elke staaf van de korf een `IfcReinforcingBar`. De meeste bladen weten niet waar hun onderdeel in het gebouw zit, dus elementen zonder geometrie staan op de oorsprong van de bouwlaag. Zie [de IFC-documentatie](docs/ifc-export.md).
 
 ## MCP
 

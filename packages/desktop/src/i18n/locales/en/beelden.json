@@ -55,6 +55,7 @@
     "zijstaven": "Side bars",
     "bovenstaven": "Top bars",
     "haarspelden": "Hairpins",
+    "dwarsstaven": "Transverse bars",
     "laag": "layer",
     "lagen": "layers",
     "hoh": "c/c",
@@ -65,6 +66,7 @@
     "sneden": "legs",
     "perZijvlak": "per side face",
     "perPaal": "per pile",
+    "perHelft": "per half strut",
     "geen": "none",
     "dekkingOnder": "Soffit to link",
     "dekkingZij": "cover at sides and top",
@@ -90,6 +92,8 @@
       "zijDiameter": "Side bar diameter",
       "haarspelden": "Hairpins per pile",
       "haarspeldDiameter": "Hairpin diameter",
+      "dwarsstaven": "Transverse bars per half strut",
+      "dwarsstaafDiameter": "Transverse bar diameter",
       "dwars": "Transverse stability, H and M"
     },
     "keuzes": {
@@ -116,6 +120,7 @@
       "zijstaaf": "Side bar",
       "bovenstaaf": "Top bar",
       "haarspeld": "Hairpin",
+      "dwarsstaaf": "Transverse bar",
       "alleenAanzet": "Only the starter is drawn; the length is outside this sheet.",
       "project": "Project",
       "terrein": "Site",

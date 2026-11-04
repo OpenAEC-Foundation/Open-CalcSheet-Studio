@@ -29,7 +29,7 @@ en bepaalt de constructieklasse.
 - Beton C20/25 t/m C50/60, betonstaal B500B of B500C.
 - Gekozen wapening, alle staven ten hoogste Ø32: trekband (ten minste Ø8) in één of twee
   lagen, rechte of omgebogen staven; beugels (ten minste Ø5); zijstaven en bovenstaven (ten
-  minste Ø6); haarspelden om de trekband (ten minste Ø8).
+  minste Ø6); haarspelden om de trekband (ten minste Ø8); dwarsstaven op de diagonalen (ten minste Ø8).
 
 **Niet: dan geen eindoordeel 'voldoet'**
 
@@ -55,9 +55,13 @@ een symmetrisch staafwerk in het vlak door de palen: twee drukdiagonalen van de 
 naar de paalknopen, één trekband onderin, een horizontale drukstaaf bovenin.
 
 - **Inwendige hefboomsarm UGT:** kleinste waarde uit de drukzone onder de kolom bij de
-  knoopgrens en 0,9 · d. De grens 0,9 · d is een eigen keuze. Hij ligt aan de veilige kant
-  van de drukzone, maar niet per se van de lineair-elastische arm: bij een hoge poer rekent
-  de UGT dus plastisch met een grotere arm dan de BGT.
+  knoopgrens, 0,9 · d en de arm bij een diagonaal van 55° (l_t · tan 55°). De grenzen 0,9 · d
+  en 55° zijn eigen keuzes, geen normtekst. Een hogere poer verlaagt de trekkracht boven 55°
+  niet verder: de plastische herverdeling die daarvoor nodig is, toont dit blad niet aan. Het
+  bereik van 45° tot 55° komt uit de oudere literatuur over poeren op twee palen; die
+  verwijzing is uit het hoofd en niet aan de bron getoetst. Bij een gewone poer doet de grens
+  niets. De drukzone en de knopen houden hun maat zonder deze grens. De UGT rekent nog steeds
+  met een grotere arm dan de BGT als de elastische arm kleiner is.
 - **Hefboomsarm BGT:** 5.6.4(2) eist voor scheurwijdte een staafwerk dat ongeveer de
   lineair-elastische spanningen volgt. Daarom hier de kleinste van de UGT-arm en de
   elastische arm van een hoge ligger uit de literatuur (0,6 · a bij a/h < 1,
@@ -102,7 +106,7 @@ uit de slotregel.
 | Trekband | 6.5.3(1) | |
 | Minimum- en maximumwapening | 9.2.1.1 (NB), 9.8.1(3) | A_s,min = kleinste van A_s,min1 (M_E,min = f_ctm·W) en 1,25 · A_s,nodig; A_s,max = 0,04·A_c |
 | Knoop onder de kolom (CCC) | 6.5.4(4)a, (6.60) | k₁ = 1,0; ν′ = 1 − f_ck/250 |
-| Paalknoop (CCT) | 6.5.4(4)b, (6.61) | k₂ = 0,85 alleen met haarspelden (NB) |
+| Paalknoop (CCT) | 6.5.4(4)b, (6.61) | k₂ = 0,85 alleen met ten minste twee haarspelden per paal, die met de onderbenen boven de paal T_sp dragen (NB, met een eigen eis) |
 | Drukdiagonaal | 6.5.2(2), (6.56) | ν′ als boven |
 | Splijtkracht in het vlak en dwars | 6.5.3(3), (6.58), (6.59), figuur 6.25 | in (6.59) h vervangen door H (NB) |
 | Dwarskracht, bovengrens | 6.2.2(6), (6.5) | ν = 0,6(1 − f_ck/250) |
@@ -110,19 +114,22 @@ uit de slotregel.
 
 Keuzes aan de veilige kant, geen normeis:
 
-- zonder haarspelden rekent de paalknoop met k₃ = 0,75: de NB noemt daar geen waarde voor k₂;
+- zonder die haarspelden rekent de paalknoop met k₃ = 0,75: de NB noemt daar geen waarde voor k₂;
 - de vergroting met 10 % van 6.5.4(5) en de drie-assige druk van 6.5.4(6) worden niet gebruikt;
 - de drukdiagonaal wordt halverwege getoetst met 0,6·ν′·f_cd: in het vlak het gemiddelde van de
   breedten aan de twee knopen, dwars b_ef uit figuur 6.25, begrensd op de poerbreedte. Die
-  verbreding mag omdat de splijtkracht dwars apart wordt getoetst;
+  verbreding mag alleen met dwarsstaven, omdat die de splijtkracht dwars dragen. Zonder
+  dwarsstaven rekent de diagonaal met de kleinste knoopbreedte en telt de splijtkracht dwars niet;
 - in het vlak tellen alleen de beugels in a_v, niet die aan de uiteinden van de diagonaal. De
   splijtkracht T uit figuur 6.25 geldt per helft van de diagonaal, er zijn er twee: daarom telt
   de helft van die beugels en zijstaven. Dat volgt uit de figuur en is dus geen keuze;
-- dwars op het vlak staat (6.59) letterlijk, ook als de poer smaller is dan b_ef. Aan de
-  paalzijde tellen de haarspelden en de onderbenen van de beugels boven de paal en tot
-  halverwege a_v; aan de kolomzijde de bovenbenen. 6.5.3(3) vraagt spreiding over de lengte
-  waarover de trajectoriën gekromd zijn; deze staven liggen aan het eind van die lengte. Dat
-  is een benadering;
+- dwars op het vlak staat (6.59) letterlijk, ook als de poer smaller is dan b_ef. Het blad
+  noemt op het scherm de sprong naar (6.58) op b = H/2;
+- de splijtkracht dwars dragen alleen de dwarsstaven: 5.6.4(4) en 6.5.3(3) vragen wapening op
+  de plaats van T, verdeeld over de lengte waarover de trajectoriën gekromd zijn. De onderbenen
+  liggen onder de paalknoop en de bovenbenen in de drukzone, dus die tellen niet. De dwarsstaven
+  liggen op de lijn van de diagonaal, `n` in de paalhelft en `n` in de kolomhelft, en worden
+  verankerd als een beugel om de zijstaven (8.5);
 - de haarspeld moet zijn volle l_b,rqd kwijt in de hoogte van de poer;
 - bij de pons rekent de kolom met β = 1,15 en de paal met β = 1,4 (naar 6.4.3(6), figuur 6.21N,
   als analogie: die voorwaarden gaan over vloeren). Langs de kolom tellen alleen de twee vlakken
@@ -181,7 +188,7 @@ Het voorstel vraagt expliciet te bepalen of aanvullende controles vereist zijn.
 | Splijtkrachten | getoetst | Niet door het staafwerk zelf afgedekt: staan apart op het blad, in het vlak en dwars. |
 | Betondruk in de BGT (7.2(2)) | niet van toepassing | Alleen aanbevolen bij XD, XF en XS zonder andere maatregelen; beugels en haarspelden sluiten het beton op. |
 | Lineaire kruip (7.2(3)) | niet van toepassing | Er wordt geen kruipvervorming berekend. |
-| Staalspanning in de BGT (7.2(5)) | niet van toepassing | De NB zet k₃, k₄ en k₅ op 0,0. Dit blad leest dat als: geen aparte toets. **Interpretatie, zie §6.** Wel moet σ_s onder f_yk blijven, omdat (7.9) daarboven niet geldt. |
+| Staalspanning in de BGT (7.2(5)) | niet van toepassing | De NB zet k₃, k₄ en k₅ op 0,0. Dit blad leest dat als: geen aparte toets. **Interpretatie, zie §6.** Wel moet σ_s onder f_yk blijven: (7.9) geldt daarboven niet, en 7.2(4)P blijft gelden. Daarom ook bij de karakteristieke last, afgeschat als F_Ed/1,3. |
 | Doorbuiging (7.4) | niet van toepassing | Een gedrongen poer buigt niet relevant door; zakking hoort bij de palen. |
 | Bovenwapening | constructief | 9.8.1(3): bij een centrische last geen trek bovenin. Staat in de tekening, telt niet mee in de toetsing. |
 | Minimumwapening voor scheurbeheersing (7.3.2) | niet van toepassing | NB-opmerking bij 7.3.2(1)P onder a): krimp en temperatuur zijn op twee palen nauwelijks belemmerd. |
@@ -198,15 +205,17 @@ kon worden vastgesteld:
 | Punt | Stand |
 |---|---|
 | **ρ_w,min (9.2.2(5))** | **Niet aan de NB getoetst.** De formule ontbreekt in de lokale kopie; er staat alleen dat de waarde 'gelijk aan' een lege plek moet zijn. Het blad neemt de grootste van 0,08·√f_ck/f_yk (9.5N) en 0,16·f_ctm/f_yk. Dat laatste komt uit het geheugen, niet uit de kopie. |
-| **k₃, k₄, k₅ = 0,0 (7.2(5))** | De waarde staat zo in de NB. Een spanningsgrens van nul is niet uitvoerbaar: dit blad leest dat als 'geen toets'. **Interpretatie, graag bevestigen.** |
-| **A_cd in 9.7(1)** | De NB schrijft A_cd; de symbolenlijst definieert het niet. Dit blad leest: de betondoorsnede per meter, per zijvlak en per richting, dus b mm²/m. Dat is de strengste lezing. |
+| **k₃, k₄, k₅ = 0,0 (7.2(5))** | De waarde staat zo in de NB. Een spanningsgrens van nul is niet uitvoerbaar: dit blad leest dat als 'geen toets' op k₃·f_yk, en toetst wel f_yk (7.2(4)P). Lezing bevestigd door de eigenaar. |
+| **A_cd in 9.7(1)** | De NB schrijft A_cd; de symbolenlijst definieert het niet. Dit blad leest: de betondoorsnede per meter, per zijvlak en per richting, dus b mm²/m. Dat is de strengste lezing. Bevestigd door de eigenaar. |
 | **E_cm** | Rij van tabel 3.1 in de kopie deels onleesbaar; waarden uit het geheugen (30, 31, 33, 34, 35, 36, 37 GPa). Weegt alleen via α_e licht mee in de scheurwijdte. |
 | **Tabel 4.3N, kolommen XD en XS** | Afgesneden in de NB-kopie; niet nodig, want de reductie op de sterkteklasse wordt niet gebruikt. |
-| **(6.59) bij H/2 < b < b_ef** | Letterlijk toegepast. Uit figuur 6.25 volgt voor een poer die de spreiding tot b_ef niet toelaat een kleinere kracht, T = F·(b − a)/(2H), die aansluit op (6.58). Die verfijning is niet gebruikt; de norm zegt 'mag zijn verkregen uit', dus zij zou kunnen, maar dat is een keuze voor de gebruiker. |
-| **Elastische hefboomsarm, 0,9·d, θ ≥ 45°** | Eigen keuzes. Geen normtekst om tegen te toetsen. |
-| **k₂ = 0,85: hoeveel haarspelden** | De NB zegt 'haarspelden', geen aantal. Dit blad vraagt er één per paal, ten minste Ø8, en toetst de splijtkracht dwars. **Interpretatie, graag bevestigen.** |
+| **(6.59) bij H/2 < b < b_ef** | Letterlijk toegepast. Uit figuur 6.25 volgt voor een poer die de spreiding tot b_ef niet toelaat een kleinere kracht, T = F·(b − a)/(2H), die aansluit op (6.58). Die verfijning is niet gebruikt, op keuze van de eigenaar. Bij b = H/2 springt de splijtkracht daardoor sterk; het blad meldt dat. Onder H/2 is er geen reserve. |
+| **Elastische hefboomsarm, 0,9·d, 45° ≤ θ ≤ 55°** | Eigen keuzes. Geen normtekst om tegen te toetsen. |
+| **k₂ = 0,85: hoeveel haarspelden** | De NB zegt 'haarspelden', geen aantal. Dit blad vraagt er ten minste twee per paal, die samen met de onderbenen binnen de paalmaat T_sp dragen. Eigen eis, op keuze van de eigenaar; de EN beveelt 0,85 zonder voorwaarde aan. |
 | **Zone boven de paal bij een dwars verschoven paal** | De paalafwijking telt mee in de afstand tot de rand, niet in de zone boven de paal: de norm geeft daar geen getal voor. |
 | **Zijstaven door de diagonaal** | Rekenen op f_yd zonder aparte toets van hun verankering voorbij de diagonaal. |
+| **Karakteristieke last** | Afgeschat als F_Ed/1,3, omdat het blad die last niet vraagt. Dat is een eigen keuze. |
+| **Geen spreiding zonder dwarsstaven** | Eigen lezing: een diagonaal die niet breder wordt dan de knoop, heeft geen dwarstrek. Gerekend met dezelfde grens 0,6·ν′·f_cd. Niet aan proeven getoetst. |
 
 De handberekeningen zijn fictief. **Er is niet vergeleken met praktijkrapporten of
 proefresultaten.** Daarom staat de module in de catalogus op *controleren*.

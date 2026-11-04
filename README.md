@@ -27,7 +27,7 @@ It runs on Windows, macOS and Linux. It is under active development: see [Curren
 
 ## Download
 
-There is no stable release yet. The [nightly build](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/tag/nightly) is made from `main` every day.
+Get the [latest release](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/latest). The [nightly build](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/tag/nightly) is made from `main` every day.
 
 | Platform | Installer |
 |----------|-----------|
@@ -45,7 +45,7 @@ The release workflow refuses to publish files that are not signed: Windows with 
 - **You can check every step.** A result shows its name, formula, filled-in values and outcome, with units.
 - **One project, one report.** Cover, table of contents and page numbers run through all sheets, whatever kind they are.
 - **The right sheet for each part.** Text, canvas, spreadsheet, node graph, drawing, notebook, Markdown or PDF, side by side in one project.
-- **Change a number, the check follows.** Sheets recalculate while you type, and a drawing can take its sizes from the sheet.
+- **Change a number, the check follows.** Sheets recalculate while you type, and a drawing or a 3D model can take its sizes from the sheet.
 - **Your data stays open.** The project file is IFCX, and you can export IFC4x3.
 - **Works with an AI assistant.** A built-in MCP server and REST API run on your own computer, behind a token.
 
@@ -78,12 +78,14 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 
 Modules are ready-made sheets with an input screen: a **timber joist floor** and a **beam in timber or steel** to EN 1995-1-1 and EN 1993-1-1, and a **two-pile cap** to EN 1992-1-1, with the Dutch national annex. The [online module library](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) can add modules without a new release; so far it holds the floor. See [how the floor check works](docs/balklaag-toetsing.md) and [the pile cap check](docs/tweepaalspoer-toetsing.md).
 
-The formula library holds 137 formulas you can insert with a click, each with a sketch that shows what it is about. The library in the project panel adds 15 worked examples from the Eurocodes and classical mechanics. Those examples are not in the installer: the app fetches them from this repository when it starts, so [a correction reaches everyone](docs/library.md) without a new release.
+The two-pile cap has a 3D study model next to its drawing. It shows the cap, the piles, the column and every bar, and follows each field and blue dimension at once. **Add module** shows a picture for every choice, from a blank drawing to a Marimo notebook.
+
+The formula library holds 137 formulas you can insert with a click, each with a sketch that shows what it is about. The library in the project panel adds 15 worked examples from the Eurocodes and classical mechanics. Those examples are not in the installer: the app fetches them from this repository when it starts, so [a correction reaches everyone](docs/library.md) without a new release. The examples guard their own limits: required reinforcement warns when a section is over-reinforced or the bars do not fit, and the links example keeps cot θ within its limits and checks spacing and minimum reinforcement.
 
 | | |
 |---|---|
-| ![A library example on buckling worked out next to the panel, with Insert and New sheet](docs/images/readme/library.png) **A worked example from the library** | ![The input screen of a two-pile cap with its reinforcement drawing](docs/images/readme/two-pile-cap.png) **Two-pile cap with reinforcement drawing** |
-| ![The formula library with a sketch next to every formula](docs/images/readme/formula-library.png) **Formula library with a sketch per formula** | |
+| ![A library example on buckling worked out next to the panel, with Insert and New sheet](docs/images/readme/library.png) **A worked example from the library** | ![The input screen of a two-pile cap with its reinforcement drawing and a 3D study model](docs/images/readme/two-pile-cap.png) **Two-pile cap with drawing and 3D study model** |
+| ![The formula library with a sketch next to every formula](docs/images/readme/formula-library.png) **Formula library with a sketch per formula** | ![The Add module window with a picture for every kind of sheet and module](docs/images/readme/add-module.png) **Add module, with a picture for every choice** |
 
 ## Interoperability
 
@@ -98,7 +100,7 @@ The formula library holds 137 formulas you can insert with a click, each with a 
 | **PDF** | As a sheet | Yes, the report |
 | **DXF** | Converted to a drawing in a sheet | No |
 
-Every sheet with its text, input and results is in the IFCX file. Drawings that a module's input screen draws are not stored as figures, only what the calculation text draws itself. Most sheets do not know where their part sits in the building, so elements without geometry are placed at the origin of the storey. See [the IFC documentation](docs/ifc-export.md).
+Every sheet with its text, input and results is in the IFCX file. Drawings that a module's input screen draws are not stored as figures, only what the calculation text draws itself. The two-pile cap does add its 3D model: in IFC4x3 every bar of the cage is an `IfcReinforcingBar`. Most sheets do not know where their part sits in the building, so elements without geometry are placed at the origin of the storey. See [the IFC documentation](docs/ifc-export.md).
 
 ## MCP
 

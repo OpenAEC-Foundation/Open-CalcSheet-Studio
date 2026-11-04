@@ -1,16 +1,23 @@
 ## Benodigde buigwapening
-'<small>Bron: NEN-EN 1992-1-1 3.1.7(3) (3.19); 9.2.1.1(1) (9.1N)</small>
-'<i>Andersom gerekend: uit het moment volgt de wapening, en het blad kiest zelf het aantal staven.</i>
+'<small>Bron: NEN-EN 1992-1-1 3.1.7(3) (3.19); 8.2(2); 9.2.1.1(1) (9.1N)</small>
+'<i>Andersom gerekend: uit het moment volgt de wapening, en het blad kiest zelf het aantal staven. Dat kan alleen zolang het staal vloeit en de staven passen.</i>
 M_Ed = 150 kN*m'<span class="kolom-3"></span>'
 b = 300 mm'<span class="kolom-3"></span>'
 d = 450 mm'<span class="kolom-3"></span>'
 φ_s = 20 mm', staafdiameter<span class="kolom-3"></span>'
+c_s = 40 mm', rand tot staaf, met de beugel<span class="kolom-3"></span>'
+d_g = 16 mm', grootste korrel<span class="kolom-3"></span>'
 f_ck = 30 N/mm^2'<span class="kolom-3"></span>'
 f_yk = 500 N/mm^2'<span class="kolom-3"></span>'
 λ = 0.8', (3.19)<span class="kolom-3"></span>'
 f_cd = f_ck/1.5
 f_yd = f_yk/1.15
 f_ctm = 0.30*(f_ck/MPa)^(2/3)*MPa to N/mm^2
+ε_yd = f_yd/(200000 N/mm^2)
+x_lim = d*0.0035/(0.0035 + ε_yd) to mm', hier begint het staal net te vloeien'
+M_lim = λ*x_lim*b*f_cd*(d - λ*x_lim/2) to kN*m
+UC_x = M_Ed/M_lim', boven de 1 vloeit het staal niet'
+#if M_Ed ≤ M_lim
 x = (d - sqrt(d^2 - 2*M_Ed/(b*f_cd)))/λ to mm', uit het momentenevenwicht'
 z = d - λ*x/2 to mm
 A_s,req = M_Ed/(z*f_yd) to mm^2
@@ -19,4 +26,13 @@ A_1 = π*φ_s^2/4 to mm^2', per staaf'
 n_s = ceil(max(A_s,req; A_s,min)/A_1)', aantal staven, naar boven afgerond'
 A_s,prov = n_s*A_1 to mm^2
 UC_As = max(A_s,req; A_s,min)/A_s,prov
+a_s = max(φ_s; d_g + 5 mm; 20 mm)', vrije ruimte, 8.2(2)'
+n_max = floor((b - 2*c_s + a_s)/(φ_s + a_s))', staven in één laag'
+#if n_s ≤ n_max
 '<b>Kies 'n_s' × Ø'φ_s/mm'</b>
+#else
+'Deze staven passen niet in één laag. Neem een grotere diameter, een bredere doorsnede of twee lagen; met twee lagen wordt d kleiner en moet dit blad opnieuw.
+#end if
+#else
+'Het moment is groter dan M<sub>lim</sub>: de doorsnede is overwapend en het staal vloeit niet. Maak de doorsnede groter of het beton sterker. Dit blad rekent niet met drukwapening.
+#end if

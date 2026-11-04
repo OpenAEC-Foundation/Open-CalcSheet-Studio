@@ -416,6 +416,13 @@ try {
       await lint(/^IFC$/);
       await wacht(1500);
     },
+    "add-module": async () => {
+      await s.voerUit(`document.querySelector('.formule-venster .settings-btn-secondary')?.click()`);
+      await lint(/^Home$/);
+      await klik(`[...document.querySelectorAll('.ribbon-content-wrapper button')].find((e) => /^Module/.test(e.textContent.trim()))`);
+      await s.wachtOp(() => s.voerUit(`document.querySelectorAll('.modal-overlay .mk-tegel img').length > 4 ? 1 : 0`), { tekst: "de tegels", ms: 20000 });
+      await wacht(900);
+    },
   };
 
   if (alleen.includes("--lijst")) {

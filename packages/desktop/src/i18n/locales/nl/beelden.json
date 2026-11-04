@@ -55,6 +55,7 @@
     "zijstaven": "Zijstaven",
     "bovenstaven": "Bovenstaven",
     "haarspelden": "Haarspelden",
+    "dwarsstaven": "Dwarsstaven",
     "laag": "laag",
     "lagen": "lagen",
     "hoh": "h.o.h.",
@@ -65,6 +66,7 @@
     "sneden": "sneden",
     "perZijvlak": "per zijvlak",
     "perPaal": "per paal",
+    "perHelft": "per helft diagonaal",
     "geen": "geen",
     "dekkingOnder": "Onder tot beugel",
     "dekkingZij": "dekking zij en boven",
@@ -90,6 +92,8 @@
       "zijDiameter": "Diameter zijstaaf",
       "haarspelden": "Haarspelden per paal",
       "haarspeldDiameter": "Diameter haarspeld",
+      "dwarsstaven": "Dwarsstaven per helft diagonaal",
+      "dwarsstaafDiameter": "Diameter dwarsstaaf",
       "dwars": "Dwarsstabiliteit, H en M"
     },
     "keuzes": {
@@ -116,6 +120,7 @@
       "zijstaaf": "Zijstaaf",
       "bovenstaaf": "Bovenstaaf",
       "haarspeld": "Haarspeld",
+      "dwarsstaaf": "Dwarsstaaf",
       "alleenAanzet": "Alleen de aanzet is getekend; de lengte valt buiten dit blad.",
       "project": "Project",
       "terrein": "Terrein",

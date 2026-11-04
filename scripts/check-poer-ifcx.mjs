@@ -43,12 +43,12 @@ const GEMEEN = {
   l_poer: "2100", b_poer: "580", h_poer: "900", a_hoh: "1400", e_p: "50", t_in: "50",
   paalvorm: "1", p_x: "350", p_y: "350", kolomvorm: "1", c_x: "400", c_y: "400",
   d_g: "16", c_o: "60", c_z: "40", n_t: "6", d_t: "25", s_t: "70", lagen: "1", vorm_t: "2", l_op: "600", D_m: "125",
-  d_s: "12", s_s: "100", n_s: "4", n_z: "5", d_z: "12", n_b: "3", d_b: "12", n_hp: "2", d_hp: "12",
+  d_s: "12", s_s: "100", n_s: "4", n_z: "5", d_z: "12", n_b: "3", d_b: "12", n_hp: "2", d_hp: "12", n_dw: "3", d_dw: "16",
 };
 const GEVALLEN = {
   "geval 1, vierkant en omgebogen": GEMEEN,
   "geval 2, rond en twee lagen": { ...GEMEEN, paalvorm: "2", kolomvorm: "2", n_t: "8", lagen: "2", h_poer: "1100", l_poer: "2600", a_hoh: "1800", p_x: "450", c_x: "500" },
-  "geval 3, rechte staaf": { ...GEMEEN, vorm_t: "1", n_t: "4", n_s: "3", n_hp: "0", n_z: "0", n_b: "0" },
+  "geval 3, rechte staaf": { ...GEMEEN, vorm_t: "1", n_t: "4", n_s: "3", n_hp: "0", n_z: "0", n_b: "0", n_dw: "0" },
 };
 const lees = (bron) => (naam) => {
   const w = bron[naam];
@@ -133,6 +133,11 @@ function vergelijk(naam, invoer) {
   waar(`${naam}: ${t.haarspelden} haarspelden, gelijk aan de tekening`, hp.length === t.haarspelden && hp.length === inSvg("haarspeld"));
   waar(`${naam}: de haarspelden op de x van de definitie`, hp.every((e, i) => dichtbij(midden(e, 0), p.haarspelden.x[i] / 1000, 1e-5)));
 
+  const dw = metNaam(els, NL.dwarsstaaf);
+  waar(`${naam}: ${t.dwarsstaven} dwarsstaven, gelijk aan de tekening`, dw.length === t.dwarsstaven && dw.length === inSvg("dwarsstaaf") && dw.length === inSvg("dwarsstaaf-langs"), `${dw.length}, ${inSvg("dwarsstaaf")}`);
+  waar(`${naam}: de dwarsstaven op de x en z van de definitie, dwars door de poer`, dw.every((e, i) => dichtbij(midden(e, 0), p.dwarsstaven.x[i] / 1000, 1e-5) && dichtbij(midden(e, 2), p.dwarsstaven.z[i] / 1000, 1e-5)
+    && dichtbij(e.grenzen.max[1], p.dwarsstaven.y / 1000, 1e-4) && dichtbij(e.grenzen.min[1], -p.dwarsstaven.y / 1000, 1e-4)));
+  waar(`${naam}: de dwarsstaven in hun eigen kleur`, dw.every((e) => e.kleur === kleurVan(POER_KLEUREN.dwarsstaaf)));
   waar(`${naam}: de staven in de kleuren van de tekening`,
     trek.every((e) => e.kleur === kleurVan(POER_KLEUREN.trekband)) && beugels.every((e) => e.kleur === kleurVan(POER_KLEUREN.beugel))
     && [...zij, ...boven].every((e) => e.kleur === kleurVan(POER_KLEUREN.overig)) && hp.every((e) => e.kleur === kleurVan(POER_KLEUREN.haarspeld)));
@@ -160,15 +165,20 @@ console.log("\n3. Een wijziging");
   waar("gelijke invoer geeft een gelijk document", zelfde === JSON.stringify(poerIfcxDocument(poerVan({ ...GEMEEN }))));
   waar("andere invoer geeft een ander document", zelfde !== JSON.stringify(poerIfcxDocument(poerVan({ ...GEMEEN, n_t: "5" }))));
   // De uitkomst van het blad hoort niet in het document: een herberekening bouwt niets opnieuw.
-  const metUitkomst = maakPoer(lees(GEMEEN), { z_u: 734, θ_g: 48, d_eff: 816, x_c: 100, l_t: 700 });
-  waar("de uitkomsten van het blad veranderen het document niet", metUitkomst.model !== null && JSON.stringify(poerIfcxDocument(metUitkomst)) === zelfde);
+  // Alleen de dwarsstaven volgen de diagonaal; bij een andere arm schuiven die mee.
+  const uitkomst = { z_u: 734, θ_g: 48, d_eff: 816, x_c: 100, l_t: 700 };
+  const zonderDw = { ...GEMEEN, n_dw: "0" };
+  waar("de uitkomsten van het blad veranderen de rest van het document niet", maakPoer(lees(zonderDw), uitkomst).model !== null && JSON.stringify(poerIfcxDocument(maakPoer(lees(zonderDw), uitkomst))) === JSON.stringify(poerIfcxDocument(poerVan(zonderDw))));
+  const dwMetUitkomst = maakPoer(lees(GEMEEN), uitkomst).dwarsstaven;
+  // Op 1/12 van de diagonaal: x = 100 + 700·11/12 = 741,67; z = 84,5 + 734/12 = 145,67.
+  waar("de dwarsstaven volgen de arm uit het blad", dichtbij(dwMetUitkomst.x[6], 741.67, 0.01) && dichtbij(dwMetUitkomst.z[6], 145.67, 0.01), `${dwMetUitkomst.x[6]}, ${dwMetUitkomst.z[6]}`);
 }
 
 // ── 4. Onzin tijdens het typen ───────────────────────────────────────────────
 console.log("\n4. Invoer die niet klopt");
 {
   waar("geen volume: geen document", poerIfcxDocument(poerVan({ ...GEMEEN, l_poer: "0" })) === null && poerIfcxKnopen(poerVan({ ...GEMEEN, h_poer: "" }), "x") === null);
-  const dicht = poerVan({ ...GEMEEN, s_s: "1", n_t: "900", n_z: "300", n_b: "500", n_hp: "400", n_s: "60" });
+  const dicht = poerVan({ ...GEMEEN, s_s: "1", n_t: "900", n_z: "300", n_b: "500", n_hp: "400", n_s: "60", n_dw: "400" });
   const doc = poerIfcxDocument(dicht);
   const uit = leesIfcx(JSON.parse(JSON.stringify(doc)));
   const telling = poerModelTelling(dicht);
@@ -180,8 +190,8 @@ console.log("\n4. Invoer die niet klopt");
   for (const [naam, invoer] of [
     ["klein been en grote doorn", { ...GEMEEN, l_op: "10", D_m: "500" }],
     ["dekking groter dan de poer", { ...GEMEEN, c_z: "2000", c_o: "2000" }],
-    ["geen staven", { ...GEMEEN, n_t: "0", n_s: "0", n_z: "0", n_b: "0", n_hp: "0" }],
-    ["diameter nul", { ...GEMEEN, d_t: "0", d_s: "0", d_z: "0", d_b: "0", d_hp: "0" }],
+    ["geen staven", { ...GEMEEN, n_t: "0", n_s: "0", n_z: "0", n_b: "0", n_hp: "0", n_dw: "0" }],
+    ["diameter nul", { ...GEMEEN, d_t: "0", d_s: "0", d_z: "0", d_b: "0", d_hp: "0", d_dw: "0" }],
     ["geen palen of kolom", { ...GEMEEN, p_x: "0", p_y: "0", c_x: "0", c_y: "0" }],
     ["twee sneden", { ...GEMEEN, n_s: "2" }],
     ["één snede", { ...GEMEEN, n_s: "1" }],
