@@ -343,7 +343,7 @@ const STAAL_DUIMEN: Record<string, string> = Object.fromEntries(
 
 /**
  * Een lintknop met een uitklaplijst, in de stijl van de galerijen op het
- * tabblad CalcPAD: kies het soort (HEB, koker …) en het gereedschap plaatst het.
+ * tabblad Rekentaal: kies het soort (HEB, koker …) en het gereedschap plaatst het.
  */
 function MenuKnop({
   icon,
@@ -411,27 +411,27 @@ function MenuKnop({
       </button>
       {plek &&
         createPortal(
-          <div ref={menu} className="calcpad-menu tk-menu" style={plek} role="menu">
+          <div ref={menu} className="rekentaal-menu tk-menu" style={plek} role="menu">
             {secties.map((sectie) => (
-              <section key={sectie.kop} className="calcpad-menu-sectie">
-                <div className="calcpad-menu-kop">{sectie.kop}</div>
+              <section key={sectie.kop} className="rekentaal-menu-sectie">
+                <div className="rekentaal-menu-kop">{sectie.kop}</div>
                 {sectie.regels.map((r) => (
                   <button
                     key={r.sleutel}
                     type="button"
                     role="menuitem"
-                    className="calcpad-menu-rij"
+                    className="rekentaal-menu-rij"
                     onClick={() => {
                       r.doe();
                       setPlek(null);
                     }}
                   >
                     {r.duim ? (
-                      <span className="calcpad-menu-glyph tk-menu-duim" dangerouslySetInnerHTML={{ __html: r.duim }} />
+                      <span className="rekentaal-menu-glyph tk-menu-duim" dangerouslySetInnerHTML={{ __html: r.duim }} />
                     ) : (
-                      <span className="calcpad-menu-glyph">{r.glyph}</span>
+                      <span className="rekentaal-menu-glyph">{r.glyph}</span>
                     )}
-                    <span className="calcpad-menu-naam">{r.naam}</span>
+                    <span className="rekentaal-menu-naam">{r.naam}</span>
                   </button>
                 ))}
               </section>

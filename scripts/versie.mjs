@@ -6,7 +6,10 @@
  * Draaien:
  *   node scripts/versie.mjs controleer             alle velden gelijk en geldig?
  *   node scripts/versie.mjs controleer 2026.45.0   alle velden gelijk aan dit nummer?
- *   node scripts/versie.mjs zet 2026.45.0          zet het nummer overal
+ *   node scripts/versie.mjs zet 2026.45.0          zet het nummer overal en maakt
+ *                                                  van "Nog niet uitgebracht" in
+ *                                                  docs/CHANGELOG.md de sectie van
+ *                                                  dit nummer (zie wijzigingen.mjs)
  *   node scripts/versie.mjs volgende               het nummer van de volgende release
  *
  * Alleen eigen pakketvelden staan in het register: de versies van afhankelijkheden,
@@ -17,6 +20,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { bereidUitbrengenVoor, schrijfChangelog } from "./wijzigingen.mjs";
 
 const repoMap = fileURLToPath(new URL("..", import.meta.url));
 
@@ -163,7 +167,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (opdracht === "controleer") {
       console.log(`Alle versievelden staan op ${controleerVelden(nummer)}.`);
     } else if (opdracht === "zet" && nummer) {
+      // De changelog eerst voorbereiden: geen wijzigingen, dan blijft ook het nummer staan.
+      const changelog = bereidUitbrengenVoor(nummer, new Date().toISOString().slice(0, 10));
       zetVersie(nummer);
+      schrijfChangelog(changelog);
       console.log(`Alle versievelden staan nu op ${controleerVelden(nummer)}.`);
     } else if (opdracht === "volgende" && !nummer) {
       const vandaag = new Date().toISOString().slice(0, 10);

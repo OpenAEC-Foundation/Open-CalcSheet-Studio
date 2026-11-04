@@ -4,6 +4,7 @@ import { usePrintStore } from "../../store/printStore";
 import { useProjectStore } from "../../store/projectStore";
 import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
+import { useInhoudPaginas } from "../../store/inhoudPaginas";
 import { huisstijlVariabelen } from "../../rapport/model";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import { meetBlokken, paginaVanAnkers, verdeelPerSectie, pxPerMm, MATEN, SPELING, type Maten } from "./paginering";
@@ -144,6 +145,8 @@ export default function AfdrukVoorbeeld() {
     );
     // De paginanummers van de inhoudsopgave, uit dezelfde verdeling als de vellen.
     const nummers = paginaVanAnkers(paginas);
+    // Ook voor het zijpaneel, zodat de inhoud daar de pagina's kent (InhoudLijst.tsx).
+    if (rapport) useInhoudPaginas.setState({ paginas: Object.fromEntries(nummers) });
 
     iframesWeg.current?.();
     scriptsWeg.current?.();

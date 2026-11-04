@@ -1,7 +1,7 @@
 import i18next from "i18next";
 import { defaultStyles } from "@ifc-calc/core";
 import type { Exemplaar } from "../../store/projectStore";
-import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-includes";
+import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal-includes";
 import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { bladSoortVan } from "./bladSoorten";
@@ -68,7 +68,7 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): Do
   let eenheden: CanvasUitwerking[] | undefined;
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
   try {
-    const opties = { includes: calcpadIncludes, imageUrls: calcpadImageUrls };
+    const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls };
     // De uitvoer volgt de taal van de app, ook op papier.
     const uitvoer = bronVoorUitvoer(ex.source, i18next.language);
     const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, scope, opties, uitvoer.namen);

@@ -46,7 +46,7 @@ import {
   noemtVorigeProductnaam, STANDAARD_IN_NIEUW_RAPPORT, STANDAARD_TEKSTEN, standaardTeksten, VORIGE_PRODUCTNAAM,
 } from "../packages/desktop/src/rapport/standaardteksten.ts";
 import {
-  beschrijftBestaand, bijlageAnker, bijlageBladAnker, bijlageRegels, bijlagen, bouwOpzet, inhoudsopgave, OPZET,
+  beschrijftBestaand, bijlageAnker, bijlageBladAnker, bijlageRegels, bijlagen, bouwOpzet, inhoudsopgave, inhoudVoorPaneel, OPZET,
   staatInHoofdstuk, TEKST_IDS, titelVan,
 } from "../packages/desktop/src/rapport/opzet.ts";
 import {
@@ -322,6 +322,21 @@ kop("model.ts en opzet.ts — een opgeslagen rapport van vóór versie 4: de inh
   toets("zonder bladen in de bijlage geen regels", bijlageRegels(bouwOpzet(nieuw, [bladen[0]])).length === 0);
   gelijk("elk hoofdstuk en elke paragraaf heeft een anker", inhoudsopgave(k).slice(0, 2).map((i) => i.anker), ["inleiding", "projectgegevens"]);
   gelijk("het anker van een bijlage", bijlageAnker("A"), "bijlage-A");
+
+  // Het zijpaneel: alle nummers, ook als de bladen niet in de inhoudsopgave op papier staan.
+  const metKoppen = [{ ...bladen[0], koppen: [{ titel: "Een kop", anker: "ex-a#0" }] }, { ...bladen[1], koppen: [{ titel: "Twee", anker: "ex-b#1" }] }];
+  const paneel = inhoudVoorPaneel(nieuw, metKoppen);
+  gelijk("zijpaneel: het blad in het hoofdstuk, met het blad dat het opent",
+    paneel.find((r) => r.anker === "ex-a"), { nummer: "6.1", titel: "Blad in het hoofdstuk", niveau: 2, anker: "ex-a", bladId: "ex-a" });
+  gelijk("zijpaneel: de bijlage als eigen regel, zonder blad",
+    paneel.find((r) => r.anker === bijlageAnker("A")), { nummer: "A", titel: "Uitgebreide uitwerking berekeningen", niveau: 1, anker: "bijlage-A" });
+  gelijk("zijpaneel: het blad in de bijlage",
+    paneel.find((r) => r.anker === bijlageBladAnker("ex-b")), { nummer: "A.1", titel: "Blad in de bijlage", niveau: 2, anker: bijlageBladAnker("ex-b"), bladId: "ex-b" });
+  toets("zijpaneel: geen koppen uit een blad", paneel.every((r) => r.niveau < 3));
+  toets("zijpaneel: een hoofdstuk opent geen blad", paneel.find((r) => r.anker === "inleiding")?.bladId === undefined);
+  gelijk("zijpaneel: elk anker één keer", new Set(paneel.map((r) => r.anker)).size, paneel.length);
+  const zonderKeuze = { ...nieuw, opmaak: { ...nieuw.opmaak, bladenInInhoud: false } };
+  toets("zijpaneel: de bladen staan er ook als ze niet op papier in de inhoud staan", inhoudVoorPaneel(zonderKeuze, metKoppen).some((r) => r.bladId === "ex-a"));
   gelijk("elke anker komt één keer voor", new Set([...regels, ...bijlageRegels(k)].map((i) => i.anker)).size,
     regels.length + bijlageRegels(k).length);
 }

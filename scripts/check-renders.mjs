@@ -38,9 +38,7 @@ const TPL_DIR = join(hier, "../packages/desktop/src/templates");
 /** Bestanden in de templatemap die geen rekenblad bevatten. */
 const GEEN_BLAD = new Set([
   "index.ts",            // register
-  "calcpad-includes.ts", // hulpbestanden voor #include
-  "calcpad-samples.ts",  // groot voorbeeldproject met eigen includes
-  "nl-windgebieden.ts",  // kaartgegevens
+  "rekentaal-includes.ts", // hulpbestanden voor #include  "nl-windgebieden.ts",  // kaartgegevens
 ]);
 
 /** Projectgegevens zoals de app ze vóór de eerste regel in de scope zet. */

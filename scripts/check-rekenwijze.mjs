@@ -25,7 +25,7 @@ import { dirname, join } from "node:path";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const TPL_DIR = join(hier, "../packages/desktop/src/templates");
-const OVERSLAAN = new Set(["index.ts", "calcpad-samples.ts", "calcpad-includes.ts"]);
+const OVERSLAAN = new Set(["index.ts", "rekentaal-includes.ts"]);
 
 /**
  * `X,ref` en `X_ref` tellen allebei: de evaluator vouwt de komma tot een

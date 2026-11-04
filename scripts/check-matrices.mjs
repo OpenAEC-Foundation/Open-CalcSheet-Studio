@@ -1,7 +1,7 @@
 /**
- * Vectoren en matrices volgens de rekentaal van CalcPAD.
+ * Vectoren en matrices volgens de rekentaal.
  *
- * In CalcPAD scheidt `|` de RIJEN van een matrix en `;` de elementen binnen
+ * In de rekentaal scheidt `|` de RIJEN van een matrix en `;` de elementen binnen
  * een rij: `[1; 2 | 3; 4]` heeft de rijen [1, 2] en [3, 4]. De kern las de
  * `|`-delen eerder als kolommen. Elke matrix stond daardoor gekanteld: A*B
  * en een niet-symmetrisch stelsel gaven een fout antwoord, en n_rows, n_cols,
@@ -10,8 +10,8 @@
  * ging `A.(i; j) = …` als tekst door, en stond een matrix als ruwe tekst in de
  * uitwerking.
  *
- * Deze controle legt de uitkomsten vast die CalcPAD geeft, met de hand of uit
- * de voorbeelden in de CalcPAD-handleiding nagerekend:
+ * Deze controle legt de uitkomsten vast die de rekentaal moet geven, met de hand of uit
+ * voorbeelden in een externe handleiding nagerekend:
  *   • A = [1; 2 | 3; 4], B = [5; 6 | 7; 8]:  A·B = [19; 22 | 43; 50],
  *     Aᵀ = [1; 3 | 2; 4], A·[1; 1] = [3; 7]
  *   • inverse([4; 7 | 2; 6]) = [0,6; −0,7 | −0,2; 0,4], det = 4·6 − 7·2 = 10
@@ -245,8 +245,8 @@ t4 = take(2; 3; [1; 2; 5 | 3; 6; 15 | 5; 10; 25])`);
   meld(s.t3 === 20 && s.t4 === 15, "take(n; vector) en take(i; j; M)", `${s.t3}, ${s.t4}`);
 }
 
-// ─── 7. CalcPAD-functienamen ─────────────────────────────────────────────
-kop("7. CalcPAD-functienamen");
+// ─── 7. Functienamen van de rekentaal ─────────────────────────────────────────────
+kop("7. Functienamen van de rekentaal");
 {
   const s = scopeVan(`v = [3; 1; 2]
 n = len(v)
@@ -278,7 +278,7 @@ L = sum([2 m; 3 m; 4 m])`);
   meld(s.c === 3 && gelijk(s.r, 3), "ceiling, root", `${s.c}, ${s.r}`);
   meld(s.sw === 2 && s.sw2 === 9, "switch", `${s.sw}, ${s.sw2}`);
   meld(s.mx === 3, "max blijft werken", String(s.mx));
-  meld(s.cnt === 2 && s.cnt1 === 3, "count(v; x; i) als in CalcPAD, count(v) als in mathjs", `${s.cnt}, ${s.cnt1}`);
+  meld(s.cnt === 2 && s.cnt1 === 3, "count(v; x; i) als in de rekentaal, count(v) als in mathjs", `${s.cnt}, ${s.cnt1}`);
   meld(s.se === 4, "search", String(s.se));
   meld(gelijk(s.L?.toNumber?.("m"), 9), "sum met eenheden", String(s.L));
 }
@@ -356,7 +356,7 @@ G = matrix(20; 15)`);
   meld(tex.some((l) => l.includes("\\cdots") && l.includes("\\vdots")), "een grote matrix wordt ingekort", "");
   meld(!html.includes("[["), "geen ruwe tekst [[…]]");
   const u = knopen.find((n) => n.name === "u");
-  meld(u?.result === "[0.6667; 0.3333]", "de tekstvorm in CalcPAD-notatie", u?.result);
+  meld(u?.result === "[0.6667; 0.3333]", "de tekstvorm in rekentaal-notatie", u?.result);
 }
 
 // ─── 11. Grafiek en numerieke blokken met eenheden ───────────────────────

@@ -277,6 +277,29 @@
   color: var(--theme-accent-tint);
 }
 
+/* De inhoud van het rapport (InhoudLijst.tsx): het nummer op een eigen kolom, zoals op papier. */
+.pb-inhoud {
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+}
+
+.pb-inhoud-1 {
+  font-weight: 600;
+}
+
+.pb-inhoud-2 {
+  padding-left: 18px;
+  color: var(--theme-text-secondary);
+}
+
+.pb-inhoud-nummer {
+  flex: none;
+  min-width: 26px;
+  font-family: var(--oa-font-numbers);
+  font-size: var(--oa-size-label);
+}
+
 .pb-naam {
   flex: 1;
   min-width: 0;

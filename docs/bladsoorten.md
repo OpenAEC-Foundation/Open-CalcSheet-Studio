@@ -72,6 +72,9 @@ inhoudsopgave zelf er niet door verschuift.
   bijlage A, met eventueel zijn koppen. Een rapport van vóór versie 4 van de
   rapportopbouw opent met die keuze uit: de inhoudsopgave blijft even lang en de vellen
   erna verschuiven niet.
+- **Inhoud in het zijpaneel:** alle hoofdstukken, paragrafen, bladen en bijlagen met hun nummer,
+  die elke wijziging meteen volgen (`inhoudVoorPaneel`). De paginanummers komen uit het laatste
+  afdrukvoorbeeld van het rapport: verdelen over vellen is te zwaar om bij elke toets te doen.
 - **Inhoudsopgave van hoofdstuk Berekeningen:** elke paragraaf met zijn pagina.
 - **Een eigen bijlage** (B, C, …) heeft geen nummer: het document zelf zit niet in het
   rapport.
@@ -119,6 +122,29 @@ tekst ongewijzigd; de afbeeldingen blijven in het project.
 De koppen uit de tekst komen standaard in de inhoudsopgave, de bovenste twee niveaus die
 erin voorkomen. Een eerste kop gelijk aan de naam van het blad vervalt, op papier en in
 de inhoudsopgave. Uitzetten kan per blad, op zijn kaart in het paneel Rapport.
+
+## PDF
+
+Een PDF-blad toont de pagina's onder elkaar, met een eigen tab PDF op het lint.
+
+- **Zoomen:** met de knoppen, met Ctrl en scrollen (de plek onder de muis blijft staan) of met
+  Ctrl+plus, Ctrl+min en Ctrl+0. Ver ingezoomd tekent `tekenScherp` de pagina's die in beeld zijn
+  opnieuw, tot 24 miljoen pixels per pagina; daarboven blijft de gewone afbeelding staan.
+- **Schuiven:** slepen op de pagina met het gereedschap Kiezen, of de middelste muisknop, of de
+  spatiebalk ingedrukt houden.
+- **Aantekenen:** pen, markeren, tekst, pijl, kader en wijzigingswolk, in vijf kleuren en drie
+  diktes. Met Kiezen verplaats je een aantekening, Delete verwijdert hem, dubbelklikken op een
+  tekst bewerkt hem. Elke wijziging is één stap ongedaan maken.
+
+De aantekeningen staan in `pdf.aantekeningen`, in punten van de pagina, dus de zoom raakt ze niet.
+De PDF zelf verandert niet: een aantekening is geen PDF-annotatie, en wie het oorspronkelijke
+bestand exporteert, krijgt hem niet mee. Op papier en in het rapport staan ze er wel, tenzij de
+knop Op papier uitstaat (`pdf.opPapier: false`). Vervangt iemand de PDF, dan vervallen ze na een
+vraag: ze horen bij de pagina's van het oude bestand.
+
+Een projectbestand kan van iemand anders komen en de laag gaat als markup de pagina in. Daarom
+laat `leesAantekeningen` (store/pdfAantekeningen.ts) alleen getallen, een kleurcode en een schoon
+id door, en is tekst altijd ontsnapt. `scripts/check-pdf-viewer.mjs` bewaakt dat.
 
 ## Huisstijl
 

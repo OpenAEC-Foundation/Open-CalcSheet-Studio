@@ -1,0 +1,74 @@
+/* Het lint van een PDF-blad (PdfTab.tsx): wat geen gewone knop is. */
+
+.pdf-lint-pagina {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text);
+  white-space: nowrap;
+}
+
+.pdf-lint-pagina input {
+  width: 44px;
+  height: 22px;
+  padding: 0 4px;
+  font: inherit;
+  color: var(--theme-text);
+  background: var(--theme-bg-lighter);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+}
+
+.pdf-lint-zoom {
+  align-self: center;
+  min-width: 44px;
+  font-size: var(--oa-size-label);
+  text-align: center;
+  color: var(--theme-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.pdf-lint-stijl {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.pdf-lint-rij {
+  display: flex;
+  gap: 4px;
+}
+
+.pdf-lint-kleur,
+.pdf-lint-dikte {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  cursor: default;
+}
+
+.pdf-lint-kleur.actief,
+.pdf-lint-dikte.actief {
+  outline: 2px solid var(--theme-accent, #d97706);
+  outline-offset: 1px;
+}
+
+.pdf-lint-dikte {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--theme-bg-lighter);
+}
+
+.pdf-lint-dikte span {
+  display: block;
+  width: 12px;
+  background: var(--theme-text);
+}

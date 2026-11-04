@@ -124,7 +124,7 @@ function zetBeelden(wortel: HTMLElement, knop?: { tekst: (host: string) => strin
 
 // ── De uitwerking ─────────────────────────────────────────────────────────────
 
-/** De teksten van de plaatshouder; ze volgen de taal van de app (calcpad.json, iframe). */
+/** De teksten van de plaatshouder; ze volgen de taal van de app (rekentaal.json, iframe). */
 export interface IframeTeksten {
   laden: string;
   uitleg: string;

@@ -63,7 +63,8 @@ export interface IfcxGelezenBlad {
   waarden: Record<string, string>;
   elementen: ElementRef[];
   bronVersie?: string;
-  pdf?: { bestandsnaam: string; data: string };
+  /** `aantekeningen` en `opPapier` beheert de app (store/pdfAantekeningen.ts); hier gaan ze ongezien door. */
+  pdf?: { bestandsnaam: string; data: string; aantekeningen?: unknown[]; opPapier?: boolean };
   xlsx?: { bestandsnaam: string; data: string };
   md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
   graaf?: GraafGegevens;
@@ -224,6 +225,8 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         mediaType: 'application/pdf',
         grootte: pdfBytes(blad.pdf.data),
         data: blad.pdf.data,
+        ...(blad.pdf.aantekeningen?.length ? { aantekeningen: blad.pdf.aantekeningen } : {}),
+        ...(blad.pdf.opPapier === false ? { opPapier: false } : {}),
       };
     }
     if (blad.xlsx) {
@@ -553,7 +556,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
   const exemplaren = bladKnopen.map((k): IfcxGelezenBlad => {
     const a = k.attributes!;
     const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown };
-    const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown } | undefined;
+    const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown; aantekeningen?: unknown; opPapier?: unknown } | undefined;
     const xlsx = a[ATTR.xlsx] as { bestandsnaam?: unknown; data?: unknown } | undefined;
     const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown } | undefined;
     const graaf = graafUitAttribuut(a[ATTR.graaf]);
@@ -569,7 +572,14 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
       elementen: Array.isArray(a[ATTR.elementen]) ? (a[ATTR.elementen] as ElementRef[]) : [],
     };
     if (typeof b.bronVersie === 'string') blad.bronVersie = b.bronVersie;
-    if (pdf && typeof pdf.data === 'string') blad.pdf = { bestandsnaam: tekstVan(pdf.bestandsnaam), data: pdf.data };
+    if (pdf && typeof pdf.data === 'string') {
+      blad.pdf = {
+        bestandsnaam: tekstVan(pdf.bestandsnaam),
+        data: pdf.data,
+        ...(Array.isArray(pdf.aantekeningen) ? { aantekeningen: pdf.aantekeningen } : {}),
+        ...(pdf.opPapier === false ? { opPapier: false } : {}),
+      };
+    };
     if (xlsx && typeof xlsx.data === 'string') blad.xlsx = { bestandsnaam: tekstVan(xlsx.bestandsnaam), data: xlsx.data };
     if (md && typeof md.tekst === 'string') {
       blad.md = {

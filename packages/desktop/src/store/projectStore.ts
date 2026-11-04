@@ -9,6 +9,7 @@ import { standaardTeksten } from "../rapport/standaardteksten";
 import { rekenversie } from "../components/calc/bladVersie";
 import { normaliseerExemplaren } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
+import type { PdfAantekening } from "./pdfAantekeningen";
 import { SPREADSHEET_BLAD, type SpreadsheetBestand } from "./spreadsheetBlad";
 import { MARKDOWN_BLAD, type MarkdownBestand } from "./markdownBlad";
 import { CANVAS_BLAD } from "./canvasBlad";
@@ -162,6 +163,10 @@ interface ProjectState {
   voegPdfToe: (naam: string, pdf: PdfBijlage) => string;
   /** Een ander PDF-bestand voor een PDF-blad; naam en plaats blijven. */
   zetPdf: (id: string, pdf: PdfBijlage) => void;
+  /** De aantekeningen op een PDF-blad; elke wijziging is één stap ongedaan maken. */
+  zetPdfAantekeningen: (id: string, aantekeningen: PdfAantekening[]) => void;
+  /** Of de aantekeningen op een PDF-blad ook op papier komen. */
+  zetPdfOpPapier: (id: string, aan: boolean) => void;
   /** Een spreadsheet-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
   voegSpreadsheetToe: (naam: string, xlsx: SpreadsheetBestand) => string;
   /** De werkmap van een spreadsheet-blad; opeenvolgende bewerkingen tellen als één stap ongedaan maken. */
@@ -387,6 +392,34 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         ...metGeschiedenis(s, null),
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, pdf } : e)),
+        dirty: true,
+      };
+    }),
+
+  zetPdfAantekeningen: (id, aantekeningen) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id && e.pdf)) return s;
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: s.exemplaren.map((e) => {
+          if (e.id !== id || !e.pdf) return e;
+          const { aantekeningen: _oud, ...rest } = e.pdf;
+          return { ...e, pdf: aantekeningen.length > 0 ? { ...rest, aantekeningen } : rest };
+        }),
+        dirty: true,
+      };
+    }),
+
+  zetPdfOpPapier: (id, aan) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id && e.pdf)) return s;
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: s.exemplaren.map((e) => {
+          if (e.id !== id || !e.pdf) return e;
+          const { opPapier: _oud, ...rest } = e.pdf;
+          return { ...e, pdf: aan ? rest : { ...rest, opPapier: false } };
+        }),
         dirty: true,
       };
     }),

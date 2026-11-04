@@ -11,7 +11,7 @@ import enSettings from "./locales/en/settings.json";
 import enFeedback from "./locales/en/feedback.json";
 import enWerkruimte from "./locales/en/werkruimte.json";
 import enRapport from "./locales/en/rapport.json";
-import enCalcpad from "./locales/en/calcpad.json";
+import enRekentaal from "./locales/en/rekentaal.json";
 import enBeelden from "./locales/en/beelden.json";
 import enTekenen from "./locales/en/tekenen.json";
 import enLibrary from "./locales/en/library.json";
@@ -23,7 +23,7 @@ import nlSettings from "./locales/nl/settings.json";
 import nlFeedback from "./locales/nl/feedback.json";
 import nlWerkruimte from "./locales/nl/werkruimte.json";
 import nlRapport from "./locales/nl/rapport.json";
-import nlCalcpad from "./locales/nl/calcpad.json";
+import nlRekentaal from "./locales/nl/rekentaal.json";
 import nlBeelden from "./locales/nl/beelden.json";
 import nlTekenen from "./locales/nl/tekenen.json";
 import nlLibrary from "./locales/nl/library.json";
@@ -42,9 +42,9 @@ export const STANDAARD_TAAL = "en";
 
 // Van de sjabloon: common, ribbon, backstage, settings, feedback. Van deze app:
 // werkruimte (project, panelen, modulekiezer), rapport (het rapportpaneel),
-// calcpad (tab CalcPAD, taalreferentie, editor), beelden (parametrische beelden)
+// rekentaal (tab Rekentaal, taalreferentie, editor), beelden (parametrische beelden)
 // tekenen (tab Tekenen, de tekeneditor) en library (de Library in het projectpaneel).
-const ns = ["common", "ribbon", "backstage", "settings", "feedback", "werkruimte", "rapport", "calcpad", "beelden", "tekenen", "library"];
+const ns = ["common", "ribbon", "backstage", "settings", "feedback", "werkruimte", "rapport", "rekentaal", "beelden", "tekenen", "library"];
 
 i18next
   .use(LanguageDetector)
@@ -53,11 +53,11 @@ i18next
     resources: {
       en: {
         common: enCommon, ribbon: enRibbon, backstage: enBackstage, settings: enSettings, feedback: enFeedback,
-        werkruimte: enWerkruimte, rapport: enRapport, calcpad: enCalcpad, beelden: enBeelden, tekenen: enTekenen, library: enLibrary,
+        werkruimte: enWerkruimte, rapport: enRapport, rekentaal: enRekentaal, beelden: enBeelden, tekenen: enTekenen, library: enLibrary,
       },
       nl: {
         common: nlCommon, ribbon: nlRibbon, backstage: nlBackstage, settings: nlSettings, feedback: nlFeedback,
-        werkruimte: nlWerkruimte, rapport: nlRapport, calcpad: nlCalcpad, beelden: nlBeelden, tekenen: nlTekenen, library: nlLibrary,
+        werkruimte: nlWerkruimte, rapport: nlRapport, rekentaal: nlRekentaal, beelden: nlBeelden, tekenen: nlTekenen, library: nlLibrary,
       },
     },
     ns,

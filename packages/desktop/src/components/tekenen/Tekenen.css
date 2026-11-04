@@ -546,11 +546,11 @@ textarea.tk-veld {
 }
 
 /* De uitklaplijst van een lintknop (staalprofiel, oplegging). */
-.tk-menu .calcpad-menu-sectie {
+.tk-menu .rekentaal-menu-sectie {
   min-width: 150px;
 }
 
-.tk-menu .calcpad-menu-glyph {
+.tk-menu .rekentaal-menu-glyph {
   min-width: 18px;
   text-align: center;
 }

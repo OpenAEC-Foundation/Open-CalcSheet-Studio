@@ -1,8 +1,8 @@
 /**
- * Numerieke matrixrekening voor de CalcPAD-functies lsolve, msolve, rank,
+ * Numerieke matrixrekening voor de rekentaal-functies lsolve, msolve, rank,
  * eigenvals en eigenvecs. Kale getallen; de eenheden regelt evaluator.ts.
  *
- * Een matrix is hier een lijst rijen (number[][]), zoals in CalcPAD: element
+ * Een matrix is hier een lijst rijen (number[][]), zoals in de rekentaal: element
  * (i, j) is rij i, kolom j.
  */
 
@@ -96,7 +96,7 @@ export function rangVan(A: number[][]): number {
 /**
  * Eigenwaarden en eigenvectoren van een symmetrische matrix (Jacobi). De
  * waarden oplopend; elke vector is een rij, genormeerd op lengte 1, in de
- * volgorde van de waarden — zoals eigenvals en eigenvecs in CalcPAD.
+ * volgorde van de waarden — zoals eigenvals en eigenvecs in de rekentaal.
  */
 export function eigenSymmetrisch(A: number[][], functie = 'eigenvals'): { waarden: number[]; vectoren: number[][] } {
   const n = A.length;

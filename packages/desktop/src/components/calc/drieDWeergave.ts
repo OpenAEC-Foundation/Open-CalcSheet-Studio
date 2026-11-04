@@ -38,7 +38,7 @@ const ASKLEUREN: [Punt3D, string, string][] = [
 
 export type Standpunt = DrieDScene["camera"];
 
-/** De teksten van de knoppen; ze volgen de taal van de app (calcpad.json, drieD). */
+/** De teksten van de knoppen; ze volgen de taal van de app (rekentaal.json, drieD). */
 export interface DrieDTeksten {
   hint: string;
   standpunt: Record<Standpunt, string>;

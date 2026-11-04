@@ -1,8 +1,8 @@
 /**
- * Het tabblad CalcPAD: alle knoppen van de rekentaal in één lintstrook, zoals
- * het toetsenblok van CalcPAD.
+ * Het tabblad Rekentaal: alle knoppen van de rekentaal in één lintstrook, als
+ * een toetsenblok.
  *
- * Alleen syntax die de rekenkern (packages/core) leest. CalcPAD kent meer
+ * Alleen syntax die de rekenkern (packages/core) leest. Andere rekentalen kennen meer
  * (`$Map`, `spline`, `∧`, …); zo'n knop komt er pas als de rekenkern het
  * ook kan, anders voegt hij code in die een fout geeft.
  *
@@ -11,9 +11,9 @@
  * editor komt; tussen ⟨ en ⟩ staat de plaats die je daarna invult (zie
  * invoegen.ts).
  *
- * De woorden zijn sleutels in locales/{nl,en}/calcpad.json, onder `lint`:
+ * De woorden zijn sleutels in locales/{nl,en}/rekentaal.json, onder `lint`:
  * `label` in lint.groep, de `naam` van een menu in lint.menu, `kop` in
- * lint.kop en de `naam` van een knop in lint.knop. CalcPadTab vertaalt ze bij
+ * lint.kop en de `naam` van een knop in lint.knop. RekentaalTab vertaalt ze bij
  * het tekenen. `tekst` en `glyph` zijn rekentaal en blijven in elke taal gelijk.
  */
 
@@ -115,7 +115,7 @@ const EENHEDEN: MenuSectie[] = [
   },
 ];
 
-export const CALCPAD_LINT: LintGroep[] = [
+export const REKENTAAL_LINT: LintGroep[] = [
   {
     label: "tekst",
     items: [

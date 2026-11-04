@@ -8,24 +8,32 @@
 /* Het werkvlak volgt het thema, net als het afdrukvoorbeeld; de pagina's zelf
    zijn altijd wit papier. */
 .pdf-weergave {
+  position: relative;
   overflow: auto;
   padding: 20px 16px 32px;
   background: var(--oa-workspace);
+  outline: none;
 }
 
+/* max-content: ingezoomd is de pagina breder dan het paneel en blijft de linkerkant bereikbaar. */
 .pdf-weergave-paginas {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  width: max-content;
+  min-width: 100%;
 }
 
 .pdf-weergave-pagina {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
   flex: none;
+  touch-action: none;
+  cursor: grab;
   background: #fff;
   color: #6b6b73;
   font-size: var(--oa-size-label);
@@ -37,6 +45,65 @@
   width: 100%;
   height: 100%;
   user-select: none;
+}
+
+.pdf-weergave[data-gereedschap="pen"] .pdf-weergave-pagina,
+.pdf-weergave[data-gereedschap="markeer"] .pdf-weergave-pagina,
+.pdf-weergave[data-gereedschap="pijl"] .pdf-weergave-pagina,
+.pdf-weergave[data-gereedschap="kader"] .pdf-weergave-pagina,
+.pdf-weergave[data-gereedschap="wolk"] .pdf-weergave-pagina {
+  cursor: crosshair;
+}
+
+.pdf-weergave[data-gereedschap="tekst"] .pdf-weergave-pagina {
+  cursor: text;
+}
+
+/* Scherp getekend bij inzoomen, boven de gewone afbeelding. */
+.pdf-scherp {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pdf-aantekeningen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pdf-aantekeningen svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Alleen met het gereedschap Kiezen zijn aantekeningen aan te klikken, en alleen op de lijn. */
+.pdf-aantekeningen.kies [data-aantekening] > * {
+  pointer-events: stroke;
+  cursor: move;
+}
+
+.pdf-aantekeningen.kies [data-aantekening] > text,
+.pdf-aantekeningen.kies [data-aantekening] > rect[fill="transparent"] {
+  pointer-events: all;
+}
+
+.pdf-tekst-invoer {
+  position: absolute;
+  z-index: 1;
+  box-sizing: content-box;
+  min-width: 12em;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.2;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px dashed currentColor;
+  outline: none;
+  resize: both;
 }
 
 .pdf-melding {
@@ -105,6 +172,21 @@
   width: 100%;
   height: 100%;
   max-width: none;
+}
+
+.print-opmaak figure.print-pdf-pagina {
+  position: relative;
+}
+
+.print-opmaak .print-pdf-aantekeningen {
+  position: absolute;
+  inset: 0;
+}
+
+.print-opmaak .print-pdf-aantekeningen svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* Elke volgende pagina op een eigen vel: bij het printen via de browser, en in

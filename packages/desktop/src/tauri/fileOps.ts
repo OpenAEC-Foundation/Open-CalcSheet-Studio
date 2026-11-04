@@ -29,7 +29,7 @@ function isTauri(): boolean {
 
 const SUPPORTED_FILTERS = [
   { name: "Calculations", extensions: ["ifccalculation", "ifcx", "ifc-calculation", "cpd", "cpdz"] },
-  { name: "CalcPAD bestanden", extensions: ["cpd", "cpdz"] },
+  { name: "Rekentekst", extensions: ["cpd", "cpdz"] },
   { name: "OpenAEC Calculations", extensions: ["ifccalculation", "ifcx", "ifc-calculation"] },
   { name: "Alle bestanden", extensions: ["*"] },
 ];

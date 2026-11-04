@@ -62,7 +62,7 @@ Deze waarden gaan als **`initialScope`** de evaluator in, vóór de eerste regel
 van het blad draait (`packages/core/src/evaluator.ts`). Een blad gebruikt ze
 gewoon als variabele:
 
-```calcpad
+```text
 γ_G = 1.2*K_FI
 #if CC ≡ 1
 ```

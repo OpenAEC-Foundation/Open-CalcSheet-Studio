@@ -18,6 +18,7 @@ import { isMarimoBlad } from "../../store/marimoBlad";
 import Icoon from "../Icoon";
 import BladToevoegen from "./BladToevoegen";
 import LibrarySectie from "./LibrarySectie";
+import InhoudLijst from "./InhoudLijst";
 import "./ProjectBrowser.css";
 import "./BladVersie.css";
 
@@ -357,6 +358,12 @@ export default function ProjectBrowser() {
             </button>
           )}
         </Sectie>
+
+        {!verborgen.rapport && (
+          <Sectie titel={tw("browser.inhoud")}>
+            <InhoudLijst />
+          </Sectie>
+        )}
       </div>
 
       {/* Onder de bladen, met een eigen schuifbalk: de lijst drukt ze niet weg. */}

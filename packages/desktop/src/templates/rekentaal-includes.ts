@@ -1,5 +1,5 @@
 /**
- * CalcPAD #include resolution table. Files referenced via `#include name.cpd`
+ * #include resolution table. Files referenced via `#include name.cpd`
  * in a calc source are looked up here and inlined at parse time.
  *
  * Add new entries by importing the raw file content via Vite's `?raw` suffix.
@@ -10,7 +10,7 @@
  */
 
 /**
- * Detail bij het voorbeeldblad (templates/calcpad-demo.ts, hoofdstuk 12): een
+ * Detail bij het voorbeeldblad (templates/rekentaal-demo.ts, hoofdstuk 12): een
  * ligger met kopplaat op een kolom, schematisch.
  */
 const detailOplegging = `<svg viewBox="0 0 480 250" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:560px; font-size:12px; font-family:sans-serif;">
@@ -45,7 +45,7 @@ const detailOplegging = `<svg viewBox="0 0 480 250" xmlns="http://www.w3.org/200
   <text x="470" y="244" text-anchor="end" style="fill:#64748b; font-size:10px">detail oplegging, schematisch</text>
 </svg>`;
 
-export const calcpadIncludes: ReadonlyMap<string, string> = new Map([
+export const rekentaalIncludes: ReadonlyMap<string, string> = new Map([
   ["detail-oplegging.svg", detailOplegging],
 ]);
 
@@ -53,4 +53,4 @@ export const calcpadIncludes: ReadonlyMap<string, string> = new Map([
  * Raster images referenced inline via `<img src="./Images/Picture0.png">`.
  * Looked up by basename (case-insensitive) at parse time.
  */
-export const calcpadImageUrls: ReadonlyMap<string, string> = new Map();
+export const rekentaalImageUrls: ReadonlyMap<string, string> = new Map();
