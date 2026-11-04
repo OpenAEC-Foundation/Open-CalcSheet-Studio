@@ -8,6 +8,16 @@ import { useLibrary } from "../../store/library";
 import "../settings/SettingsDialog.css";
 import "./FormuleVenster.css";
 
+/** De bron staat in formules.ts in het Nederlands; de normnummers blijven, de losse woorden niet. */
+const BRON_EN: [RegExp, string][] = [
+  [/\bmechanica\b/g, "mechanics"],
+  [/\belastische kipstabiliteit\b/g, "elastic lateral-torsional stability"],
+  [/\btabel\b/g, "table"],
+  [/\bfiguur\b/g, "figure"],
+  [/\bbijlage\b/g, "annex"],
+  [/\ben\b/g, "and"],
+];
+
 /**
  * De formulebibliotheek: mechanica en normformules (formules.ts), doorzoekbaar
  * per groep. Invoegen zet het fragment — invoer met voorbeeldwaarden en de
@@ -19,6 +29,7 @@ export default function FormuleVenster({ open, onSluit }: { open: boolean; onSlu
   const { t, i18n } = useTranslation("calcpad");
   const { t: tc } = useTranslation();
   const taal = (w: Tekst) => (i18n.language?.startsWith("en") ? w.en : w.nl) || w.nl;
+  const bronTekst = (b: string) => (i18n.language?.startsWith("en") ? BRON_EN.reduce((s, [nl, en]) => s.replace(nl, en), b) : b);
   const [groep, setGroep] = useState<string | null>(null);
   const [zoek, setZoek] = useState("");
   const [gekozen, setGekozen] = useState<Formule | null>(null);
@@ -74,7 +85,7 @@ export default function FormuleVenster({ open, onSluit }: { open: boolean; onSlu
                 <span className="fv-tekst">
                   <span className="fv-kop">
                     <strong>{taal(f.naam)}</strong>
-                    {f.bron && <span className="fv-bron">{f.bron}</span>}
+                    {f.bron && <span className="fv-bron">{bronTekst(f.bron)}</span>}
                   </span>
                   {f.uitleg && <span className="fv-uitleg">{taal(f.uitleg)}</span>}
                 </span>
