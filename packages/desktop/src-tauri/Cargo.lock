@@ -3022,7 +3022,7 @@ dependencies = [
 
 [[package]]
 name = "open-calcsheet-studio"
-version = "2026.45.1"
+version = "2026.45.2"
 dependencies = [
  "openaec-core",
  "serde",
