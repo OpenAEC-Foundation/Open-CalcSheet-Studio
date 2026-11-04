@@ -79,6 +79,8 @@ const HOEK_STRAAL = 2;
 export const POER_MAX_PER_SOORT = 60;
 /** Zoveel gesloten beugels hooguit op één plaats in de lengte. */
 const POER_MAX_LUSSEN = 8;
+/** Zoveel beugels hooguit in het hele model; een beugel kost de meeste vlakken. */
+const POER_MAX_BEUGELS = 120;
 
 const naarM = (mm: number) => Math.round(mm * 1e3) / 1e6;
 const getal = (w: number) => (Math.round(w * 100) / 100).toString();
@@ -216,9 +218,11 @@ function stavenVan(p: PoerDefinitie) {
   const tb = p.trekband;
   const bg = p.beugels;
   const lussen = Math.floor(bg.y.length / 2);
+  const perPlaats = Math.min(lussen, POER_MAX_LUSSEN) + bg.y.length % 2;
+  const beugelPlaatsen = Math.min(POER_MAX_PER_SOORT, Math.floor(POER_MAX_BEUGELS / Math.max(1, perPlaats)));
   return {
     trekband: tb.d > 0 ? tb.lagen.map((laag) => ({ totaal: laag.y.length, y: beperk(laag.y, POER_MAX_PER_SOORT) })) : [],
-    beugelX: bg.d > 0 ? beperk(bg.x, POER_MAX_PER_SOORT) : [],
+    beugelX: bg.d > 0 ? beperk(bg.x, beugelPlaatsen) : [],
     beugelXTotaal: bg.d > 0 ? bg.x.length : 0,
     lussenTotaal: lussen,
     lussen: Array.from({ length: Math.min(lussen, POER_MAX_LUSSEN) }, (_, i) => [bg.y[i], bg.y[bg.y.length - 1 - i]] as P2),

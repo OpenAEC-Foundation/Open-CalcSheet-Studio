@@ -169,13 +169,11 @@ console.log("\n4. Invoer die niet klopt");
 {
   waar("geen volume: geen document", poerIfcxDocument(poerVan({ ...GEMEEN, l_poer: "0" })) === null && poerIfcxKnopen(poerVan({ ...GEMEEN, h_poer: "" }), "x") === null);
   const dicht = poerVan({ ...GEMEEN, s_s: "1", n_t: "900", n_z: "300", n_b: "500", n_hp: "400", n_s: "60" });
-  const t0 = performance.now();
   const doc = poerIfcxDocument(dicht);
   const uit = leesIfcx(JSON.parse(JSON.stringify(doc)));
-  const ms = performance.now() - t0;
   const telling = poerModelTelling(dicht);
-  waar(`een hart-op-hart van 1 mm blijft te tekenen (${uit.elementen.length} elementen)`, uit.meldingen.length === 0 && uit.elementen.length < 5000 && telling.getoond < telling.totaal, `${telling.getoond} van ${telling.totaal}`);
-  waar(`en dat kost geen seconden (${Math.round(ms)} ms)`, ms < 3000);
+  waar(`een hart-op-hart van 1 mm blijft te tekenen (${uit.elementen.length} elementen)`, uit.meldingen.length === 0 && uit.elementen.length <= 500 && telling.getoond < telling.totaal, `${telling.getoond} van ${telling.totaal}`);
+  waar("hooguit 120 beugels in het model", metNaam(uit.elementen, NL.beugel).length <= 120, String(metNaam(uit.elementen, NL.beugel).length));
   waar("per soort hooguit de grens", metNaam(uit.elementen, NL.trekband).length <= POER_MAX_PER_SOORT * 2 && metNaam(uit.elementen, NL.bovenstaaf).length === POER_MAX_PER_SOORT);
   const korf = doc.data.find((k) => k.attributes?.["ocss::calc::aantalStaven"] !== undefined);
   waar("het document zegt hoeveel er getoond zijn", korf.attributes["ocss::calc::aantalStaven"] === telling.totaal && korf.attributes["ocss::calc::aantalGetoond"] === telling.getoond);
