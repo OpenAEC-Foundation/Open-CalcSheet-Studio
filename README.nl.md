@@ -59,6 +59,7 @@ De beelden tonen de Engelse versie van de app.
 | ![Een spreadsheetblad met een staaflijst en het gereedschap in het lint](docs/images/readme/spreadsheet.png) **Spreadsheet** | ![Formule-eenheden vrij op een canvas, met hun uitkomsten](docs/images/readme/canvas.png) **Formules op een canvas** |
 | ![Een nodegraaf die een portaal opbouwt, met een 3D-voorbeeld op de achtergrond](docs/images/readme/graph.png) **Nodegraaf met 3D-voorbeeld** | ![Een A3-tekenblad met een plattegrond en een doorsnede, elk met een eigen schaal](docs/images/readme/drawing-sheet.png) **Tekenblad met meerdere aanzichten** |
 | ![Een Jupyter-notebook met een grafiek en een tabel, met een Python-script uit de werkmap](docs/images/readme/jupyter.png) **Jupyter-notebook met Python** | ![Het tabblad IFC met de ruimtelijke boom en het gemaakte bestand](docs/images/readme/ifc.png) **IFC en IFCX** |
+| ![Een reactief Marimo-notebook met schuiven en een momentenlijn](docs/images/readme/marimo.png) **Reactief Marimo-notebook** | ![De instellingen met het logo, de kleuren en het lettertype van het bureau](docs/images/readme/house-style.png) **Je eigen huisstijl** |
 
 ## Bladen
 
@@ -71,7 +72,8 @@ Een project is een lijst bladen. Elke soort staat beschreven in [de documentatie
 | **Canvas** | Formule-eenheden vrij geplaatst, van boven naar beneden gerekend met dezelfde kern |
 | **Graaf** | Nodes, lijsten en codeblokken, met een 3D-voorbeeld |
 | **Tekening** | A4, A3 of A2 met aanzichten op schaal: stramienen, peilen, wanden, staalprofielen, kanaalplaatvloeren en schematiseringen |
-| **Jupyter** | Een [notebook met Python](docs/jupyter-blad.md), numpy, scipy, pandas en matplotlib, zonder iets te installeren |
+| **Jupyter** | Een [notebook met Python](docs/jupyter-blad.md), numpy, scipy, pandas en matplotlib, zonder iets te installeren. Op verzoek rekent het opnieuw na elke wijziging |
+| **Marimo** | Een reactief Python-notebook: verschuif een schuif en alles wat daarvan afhangt, volgt |
 | **Markdown, PDF** | Bestaande tekst en documenten, als onderdeel van het rapport |
 
 ## Modules en bibliotheek
@@ -106,10 +108,10 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **54 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **55 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **121 uitkomsten tegen een handberekening**: 53 in `scripts/check-formules.mjs` en 68 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
-- **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad en `scripts/proef-jupyter-venster.mjs` voor notebooks. Beide tellen met een luisterpost wat er naar buiten gaat.
+- **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.
 - **Bouwen op alle drie de platforms** bij elke push naar `main`, met controle van de handtekeningen.
 
 Bron van de getallen: de genoemde bestanden en `ls scripts/check-*.mjs`. De status van een module zegt hoe ver de toetsing is: *gecalibreerd* is vergeleken met referentiebladen, *nog controleren* niet.
@@ -117,8 +119,10 @@ Bron van de getallen: de genoemde bestanden en `ls scripts/check-*.mjs`. De stat
 ## Huidige beperkingen
 
 - **Controleer de uitkomsten zelf.** De ligger en de tweepaalspoer hebben de status *nog controleren*. De app vervangt het oordeel van een constructeur niet.
-- **Jupyter is alleen op Windows getest.** Op macOS en Linux start de kernel waarschijnlijk niet, omdat de webview daar service workers beperkt. Opgeslagen bestanden en afdrukken werken wel.
+- **Jupyter en Marimo zijn alleen op Windows getest.** Op macOS en Linux start de kernel waarschijnlijk niet, omdat de webview daar service workers beperkt. Opgeslagen bestanden en afdrukken werken wel.
 - **Notebooks hebben geen netwerk.** `%pip install` werkt niet, en bibliotheken die op JavaScript in hun uitvoer leunen (plotly, bokeh, ipywidgets) tonen niets. Dat is voorlopig een bewuste keuze.
+- **Een lopende cel is niet te stoppen.** Marimo heeft ook geen SQL-cellen en volgt het donkere of lichte thema alleen bij het laden.
+- **Lettertypen zitten niet in het project.** Behalve Inter en Space Grotesk moet een lettertype uit je huisstijl op de computer staan die afdrukt.
 - **De bibliotheek heeft de eerste keer internet nodig.** Zonder verbinding blijft hij leeg tot hij een keer is opgehaald. Daarna gebruikt hij de laatste stand.
 - **Waarden uit een spreadsheet komen nog niet in rekenbladen.** Een spreadsheet staat voorlopig op zichzelf.
 - **Het rapport rechtstreeks naar PDF kan alleen op Windows.** Andere platforms gebruiken de printdialoog.
@@ -156,8 +160,8 @@ Open CalcSheet Studio hoort bij de apps van de [OpenAEC Foundation](https://gith
 
 ## Licentie
 
-LGPL-3.0. Zie [LICENSE](LICENSE). De Jupyter-omgeving levert software mee onder eigen licenties (BSD, MIT, MPL-2.0, PSF): zie [de licentielijst](packages/desktop/jupyter-omgeving/LICENTIES.md).
+LGPL-3.0. Zie [LICENSE](LICENSE). De Python-omgeving voor Jupyter en Marimo levert software mee onder eigen licenties (BSD, MIT, MPL-2.0, PSF): zie [de licentielijst](packages/desktop/jupyter-omgeving/LICENTIES.md).
 
 ## Merken
 
-Jupyter, Windows, macOS en andere productnamen zijn merken van hun eigenaren. Open CalcSheet Studio is een onafhankelijk project en is niet aan hen verbonden, door hen goedgekeurd of gesponsord.
+Jupyter, Marimo, Windows, macOS en andere productnamen zijn merken van hun eigenaren. Open CalcSheet Studio is een onafhankelijk project en is niet aan hen verbonden, door hen goedgekeurd of gesponsord.

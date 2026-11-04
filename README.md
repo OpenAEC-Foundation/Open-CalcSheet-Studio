@@ -57,6 +57,7 @@ The release workflow refuses to publish files that are not signed: Windows with 
 | ![A spreadsheet sheet with a bar schedule and its ribbon tools](docs/images/readme/spreadsheet.png) **Spreadsheet** | ![Formula units placed freely on a canvas, with their results](docs/images/readme/canvas.png) **Formulas on a canvas** |
 | ![A node graph that builds a portal frame, with a 3D preview in the background](docs/images/readme/graph.png) **Node graph with 3D preview** | ![An A3 drawing sheet with a floor plan and a section, each with its own scale](docs/images/readme/drawing-sheet.png) **Drawing sheet with several views** |
 | ![A Jupyter notebook with a plot and a table, using a Python script from the work folder](docs/images/readme/jupyter.png) **Jupyter notebook with Python** | ![The IFC tab with the spatial tree and the generated file](docs/images/readme/ifc.png) **IFC and IFCX** |
+| ![A reactive Marimo notebook with sliders and a moment line](docs/images/readme/marimo.png) **Reactive Marimo notebook** | ![The settings with the logo, colours and font of the office](docs/images/readme/house-style.png) **Your own house style** |
 
 ## Sheets
 
@@ -69,7 +70,8 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 | **Canvas** | Formula units placed freely, calculated top to bottom with the same kernel |
 | **Graph** | Nodes, lists and code blocks, with a 3D preview |
 | **Drawing** | A4, A3 or A2 with views to scale: grids, levels, walls, steel sections, hollow-core floors and schemes |
-| **Jupyter** | A [notebook with Python](docs/jupyter-blad.md), numpy, scipy, pandas and matplotlib, without installing anything |
+| **Jupyter** | A [notebook with Python](docs/jupyter-blad.md), numpy, scipy, pandas and matplotlib, without installing anything. Optionally it runs again after every change |
+| **Marimo** | A reactive Python notebook: move a slider and everything that depends on it follows |
 | **Markdown, PDF** | Existing text and documents, as part of the report |
 
 ## Modules and library
@@ -104,10 +106,10 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **54 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **55 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **121 results against hand calculations**: 53 in `scripts/check-formules.mjs` and 68 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
-- **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet and `scripts/proef-jupyter-venster.mjs` for notebooks. Both use a listening post to count what gets out.
+- **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
 - **Builds on all three platforms** on every push to `main`, with the signatures checked.
 
 Count sources: the files named above and `ls scripts/check-*.mjs`. A module status tells you how far its check has gone: *calibrated* is compared against reference sheets, *to be checked* is not yet.
@@ -115,8 +117,10 @@ Count sources: the files named above and `ls scripts/check-*.mjs`. A module stat
 ## Current limitations
 
 - **Check the results yourself.** The beam and the two-pile cap have the status *to be checked*. The app does not replace the judgment of a structural engineer.
-- **Jupyter is only tested on Windows.** On macOS and Linux the sheet will probably not start a kernel, because the webview there limits service workers. Saved files and printing do work.
+- **Jupyter and Marimo are only tested on Windows.** On macOS and Linux the sheet will probably not start a kernel, because the webview there limits service workers. Saved files and printing do work.
 - **Notebooks have no network.** `%pip install` does not work, and libraries that rely on JavaScript in their output (plotly, bokeh, ipywidgets) show nothing. That is a deliberate choice for now.
+- **A running cell cannot be stopped.** Marimo also has no SQL cells and follows the dark or light theme only when it loads.
+- **Fonts are not embedded in the project.** Apart from Inter and Space Grotesk, a font in your house style must be installed on the computer that prints.
 - **The library needs internet the first time.** Without a connection it stays empty until it has been fetched once. After that it uses the last version.
 - **Spreadsheet values do not reach calculation sheets yet.** A spreadsheet stands on its own for now.
 - **Report straight to PDF is Windows only.** Other platforms use the print dialog.
@@ -154,8 +158,8 @@ Open CalcSheet Studio is part of the [OpenAEC Foundation](https://github.com/Ope
 
 ## License
 
-LGPL-3.0. See [LICENSE](LICENSE). The Jupyter environment ships software under its own licences (BSD, MIT, MPL-2.0, PSF): see [its licence list](packages/desktop/jupyter-omgeving/LICENTIES.md).
+LGPL-3.0. See [LICENSE](LICENSE). The Python environment for Jupyter and Marimo ships software under its own licences (BSD, MIT, MPL-2.0, PSF): see [its licence list](packages/desktop/jupyter-omgeving/LICENTIES.md).
 
 ## Trademarks
 
-Jupyter, Windows, macOS and other product names are trademarks of their owners. Open CalcSheet Studio is an independent project and is not affiliated with, endorsed by or sponsored by them.
+Jupyter, Marimo, Windows, macOS and other product names are trademarks of their owners. Open CalcSheet Studio is an independent project and is not affiliated with, endorsed by or sponsored by them.
