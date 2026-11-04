@@ -339,12 +339,13 @@ const CONTROLES = [
   ["library-ec3-normaalkracht", "N_t_Rd", NuRd, "kN"],
   ["library-ec3-normaalkracht", "UC_t", 900 / NuRd, ""],
   ["library-ec3-normaalkracht", "UC_c", 900 / 1264.535, ""],
-  // Moment: klasse 1 · M_c,Rd 147,7 kNm · UC 0,68.
+  // Moment, lineair-elastisch: klasse 1 · M_c,Rd = 557,1·235 = 130,9 kNm · UC 0,76 · σ_Ed = 100e6/557,1e3 = 179,5 N/mm².
   ["library-ec3-moment", "s_w", (300 - 2 * 10.7 - 30) / 7.1, ""],
   ["library-ec3-moment", "s_f", (150 - 7.1 - 30) / 2 / 10.7, ""],
   ["library-ec3-moment", "klasse", 1, ""],
-  ["library-ec3-moment", "M_c_Rd", (628.4e3 * 235) / 1e6, "kN m"],
-  ["library-ec3-moment", "UC_M", 100 / ((628.4e3 * 235) / 1e6), ""],
+  ["library-ec3-moment", "M_c_Rd", (557.1e3 * 235) / 1e6, "kN m"],
+  ["library-ec3-moment", "UC_M", 100 / ((557.1e3 * 235) / 1e6), ""],
+  ["library-ec3-moment", "σ_Ed", 100e6 / 557.1e3, "N / mm^2"],
   // Dwarskracht: A_v 2568 mm² · V_pl,Rd 348,4 kN · UC 0,34 · plooi 0,55.
   ["library-ec3-dwarskracht", "A_v", Av, "mm^2"],
   ["library-ec3-dwarskracht", "V_pl_Rd", VplRd, "kN"],
@@ -485,6 +486,26 @@ console.log("\nInvoer buiten de grens:");
   }
   // Lage ligger: 0,75·300 = 225 mm is de kleinste van de twee.
   for (const u of geval("library-ec2-beugels", { d: "300 mm" })) is("d = 300", u, "s_l_max", 225);
+}
+
+// ─── 7. Het profiel op schaal ───────────────────────────────────────
+console.log("\nHet I-profiel in de tekening:");
+{
+  const profiel = perId.get("library-ec3-moment");
+  for (const [taal, code] of [["nl", profiel.code], ["en", profiel.codeEn]]) {
+    const html = render(knopen(code));
+    const svg = html.match(/<div class="calc-svg">\s*<svg[\s\S]*?<\/svg>/)?.[0] ?? "";
+    // Schaal 200 px op 300 mm: de afronding van 15 mm is 10 px. Vier bogen, tussen lijf en flens.
+    const bogen = svg.match(/A10 10 0 0 0 /g) ?? [];
+    meld(bogen.length === 4, `${taal}: vier afrondingen van r = 15 mm op schaal`, `${bogen.length} bogen`);
+    meld(!/W_pl|W<sub>pl|plastisch|plastic/i.test(code), `${taal}: geen plastische capaciteit meer op het blad`);
+    // Elastisch: de spanning loopt op van 0 op de neutrale lijn tot de rand, dus driehoeken.
+    meld((svg.match(/<polygon/g) ?? []).length >= 2, `${taal}: het spanningsverloop is een driehoek`, svg.slice(0, 200));
+    // σ_Ed/f_y = 179,5/235: bij een breedte van 50 px voor f_y is de driehoek van σ_Ed 38,2 px breed.
+    meld(/330,20 368\.\d+,20 330,120/.test(svg.replace(/\s+/g, " ")), `${taal}: de driehoek van σ_Ed op schaal`, svg.match(/points="[^"]*"/g)?.join(" "));
+    meld(/f_y|<tspan[^>]*>y<\/tspan>/.test(svg), `${taal}: de grens f_y staat erbij`);
+    meld(/t<tspan[^>]*>f<\/tspan>/.test(svg) && /t<tspan[^>]*>w<\/tspan>/.test(svg) && />r = /.test(svg), `${taal}: t_f, t_w en r staan in de tekening`);
+  }
 }
 
 console.log(fouten === 0 ? "\nLibrary in orde." : `\n${fouten} fout(en) in de Library.`);

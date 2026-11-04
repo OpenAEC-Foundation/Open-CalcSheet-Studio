@@ -1,13 +1,12 @@
 ## Moment resistance, I-section
-'<small>Source: NEN-EN 1993-1-1 5.5.2, tab. 5.2; 6.2.5 (6.12), (6.13), (6.14)</small>
-'<i>First the section class from the slenderness of web and flange, then the resistance. The drawing shows the section to scale with the plastic stresses.</i>
+'<small>Source: NEN-EN 1993-1-1 5.5.2, tab. 5.2; 6.2.5 (6.12), (6.14)</small>
+'<i>Linear elastic: the stress rises in a straight line from the neutral axis and the edge just reaches the yield strength. That is allowed up to class 3; classes 1 and 2 keep a reserve. The drawing shows the section to scale with the stress distribution.</i>
 M_Ed = 100 kN*m'<span class="kolom-3"></span>'
 h = 300 mm', IPE 300<span class="kolom-3"></span>'
 b = 150 mm'<span class="kolom-3"></span>'
 t_w = 7.1 mm'<span class="kolom-3"></span>'
 t_f = 10.7 mm'<span class="kolom-3"></span>'
 r = 15 mm'<span class="kolom-3"></span>'
-W_pl,y = 628.4 cm^3'<span class="kolom-3"></span>'
 W_el,y = 557.1 cm^3'<span class="kolom-3"></span>'
 f_y = 235 N/mm^2', S235<span class="kolom-3"></span>'
 γ_M0 = 1.0'<span class="kolom-3"></span>'
@@ -21,8 +20,8 @@ klasse_w = if(s_w ≤ 72*ε; 1; if(s_w ≤ 83*ε; 2; if(s_w ≤ 124*ε; 3; 4)))
 klasse_f = if(s_f ≤ 9*ε; 1; if(s_f ≤ 10*ε; 2; if(s_f ≤ 14*ε; 3; 4)))
 #show
 klasse = max(klasse_w; klasse_f)', the higher of the two'
-W_y = if(klasse ≤ 2; W_pl,y; W_el,y) to cm^3
-M_c,Rd = W_y*f_y/γ_M0 to kN*m', (6.13), (6.14)'
+σ_Ed = M_Ed/W_el,y to N/mm^2', the stress at the edge'
+M_c,Rd = W_el,y*f_y/γ_M0 to kN*m', (6.14)'
 UC_M = M_Ed/M_c,Rd', (6.12)'
 #if klasse ≡ 4
 'Class 4: use the effective section; this resistance does not apply then.
@@ -32,26 +31,49 @@ p_s = 200/(h/mm)
 p_b = b/mm*p_s
 p_tw = max(t_w/mm*p_s; 2)
 p_tf = max(t_f/mm*p_s; 2)
-p_x = 120 - p_b/2
-p_w = 120 - p_tw/2
-p_y = 220 - p_tf
+p_r = r/mm*p_s
+p_xl = 120 - p_b/2
+p_xr = 120 + p_b/2
+p_wl = 120 - p_tw/2
+p_wr = 120 + p_tw/2
+p_o1 = 20 + p_tf
+p_o2 = 220 - p_tf
+p_a1 = p_wr + p_r
+p_a2 = p_wl - p_r
+p_b1 = p_o1 + p_r
+p_b2 = p_o2 - p_r
+p_e = min(50*σ_Ed/f_y; 90)
+p_el = 330 - p_e
+p_er = 330 + p_e
 p_f = round(f_y/MPa; 0)
+p_sd = round(σ_Ed/MPa; 0)
 p_M = round(M_c,Rd/(kN*m); 1)
 p_h = round(h/mm; 0)
 p_tb = round(b/mm; 0)
+p_ttf = t_f/mm
+p_ttw = t_w/mm
+p_tr = r/mm
 #show
 @svg
-<svg class="lib-tekening" viewBox="0 0 470 250" style="width:100%; max-width:470px; font-size:12px;">
-  <rect x="{{p_w}}" y="20" width="{{p_tw}}" height="200" style="fill:#a1a1aa; stroke:#36363e"/>
-  <rect x="{{p_x}}" y="20" width="{{p_b}}" height="{{p_tf}}" style="fill:#a1a1aa; stroke:#36363e"/>
-  <rect x="{{p_x}}" y="{{p_y}}" width="{{p_b}}" height="{{p_tf}}" style="fill:#a1a1aa; stroke:#36363e"/>
-  <line x1="30" y1="120" x2="410" y2="120" style="stroke:#71717a; stroke-dasharray:6 4"/>
-  <text x="120" y="240" text-anchor="middle" style="fill:#52525b">{{p_h}} × {{p_tb}} mm</text>
+<svg class="lib-tekening" viewBox="0 0 470 260" style="width:100%; max-width:470px; font-size:12px;">
+  <path d="M{{p_xl}} 20 H{{p_xr}} V{{p_o1}} H{{p_a1}} A{{p_r}} {{p_r}} 0 0 0 {{p_wr}} {{p_b1}} V{{p_b2}} A{{p_r}} {{p_r}} 0 0 0 {{p_a1}} {{p_o2}} H{{p_xr}} V220 H{{p_xl}} V{{p_o2}} H{{p_a2}} A{{p_r}} {{p_r}} 0 0 0 {{p_wl}} {{p_b2}} V{{p_b1}} A{{p_r}} {{p_r}} 0 0 0 {{p_a2}} {{p_o1}} H{{p_xl}} Z" style="fill:#c7c7cc; stroke:#36363e; stroke-width:1.2; stroke-linejoin:round"/>
+  <line x1="24" y1="120" x2="420" y2="120" style="stroke:#71717a; stroke-dasharray:6 4"/>
+  <line x1="46" y1="20" x2="46" y2="220" style="stroke:#52525b"/>
+  <line x1="41" y1="20" x2="{{p_xl}}" y2="20" style="stroke:#a1a1aa"/>
+  <line x1="41" y1="220" x2="{{p_xl}}" y2="220" style="stroke:#a1a1aa"/>
+  <text x="38" y="70" text-anchor="middle" transform="rotate(-90 38 70)" style="fill:#52525b">h = {{p_h}}</text>
+  <text x="120" y="12" text-anchor="middle" style="fill:#52525b">b = {{p_tb}}</text>
+  <text x="{{p_xr}}" y="{{p_o1}}" dx="6" style="fill:#52525b">t<tspan dy="3" font-size="9">f</tspan><tspan dy="-3"> = {{p_ttf}}</tspan></text>
+  <text x="{{p_wr}}" y="170" dx="6" style="fill:#52525b">t<tspan dy="3" font-size="9">w</tspan><tspan dy="-3"> = {{p_ttw}}</tspan></text>
+  <text x="{{p_a1}}" y="{{p_b1}}" dx="6" dy="10" style="fill:#52525b">r = {{p_tr}}</text>
   <line x1="330" y1="20" x2="330" y2="220" style="stroke:#36363e; stroke-width:1.5"/>
-  <rect x="330" y="20" width="50" height="100" style="fill:#fbbf77; stroke:#d97706"/>
-  <rect x="280" y="120" width="50" height="100" style="fill:#bfdbfe; stroke:#2563eb"/>
-  <text x="386" y="74" style="fill:#b45309; font-weight:700">f<tspan dy="3" font-size="9">y</tspan><tspan dy="-3"> = {{p_f}}</tspan></text>
-  <text x="274" y="174" text-anchor="end" style="fill:#1d4ed8; font-weight:700">f<tspan dy="3" font-size="9">y</tspan><tspan dy="-3"> = {{p_f}}</tspan></text>
-  <text x="330" y="240" text-anchor="middle" style="fill:#36363e; font-weight:700">M<tspan dy="3" font-size="9">c,Rd</tspan><tspan dy="-3"> = {{p_M}} kNm</tspan></text>
+  <polygon points="330,20 380,20 330,120" style="fill:none; stroke:#d97706; stroke-dasharray:4 3"/>
+  <polygon points="330,220 280,220 330,120" style="fill:none; stroke:#2563eb; stroke-dasharray:4 3"/>
+  <polygon points="330,20 {{p_er}},20 330,120" style="fill:#fbbf77; stroke:#d97706"/>
+  <polygon points="330,220 {{p_el}},220 330,120" style="fill:#bfdbfe; stroke:#2563eb"/>
+  <text x="384" y="24" style="fill:#b45309; font-weight:700">f<tspan dy="3" font-size="9">y</tspan><tspan dy="-3"> = {{p_f}}</tspan></text>
+  <text x="384" y="40" style="fill:#b45309">σ<tspan dy="3" font-size="9">Ed</tspan><tspan dy="-3"> = {{p_sd}}</tspan></text>
+  <text x="274" y="224" text-anchor="end" style="fill:#1d4ed8; font-weight:700">f<tspan dy="3" font-size="9">y</tspan><tspan dy="-3"> = {{p_f}}</tspan></text>
+  <text x="330" y="244" text-anchor="middle" style="fill:#36363e; font-weight:700">M<tspan dy="3" font-size="9">c,Rd</tspan><tspan dy="-3"> = {{p_M}} kNm</tspan></text>
 </svg>
 @end
