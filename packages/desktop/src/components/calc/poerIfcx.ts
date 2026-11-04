@@ -233,6 +233,8 @@ function stavenVan(p: PoerDefinitie) {
     bovenYTotaal: p.boven.d > 0 ? p.boven.y.length : 0,
     haarspeldX: p.haarspelden.d > 0 ? beperk(p.haarspelden.x, POER_MAX_PER_SOORT) : [],
     haarspeldXTotaal: p.haarspelden.d > 0 ? p.haarspelden.x.length : 0,
+    dwarsXZ: p.dwarsstaven.d > 0 ? beperk(p.dwarsstaven.x.map((x, i) => [x, p.dwarsstaven.z[i]] as P2), POER_MAX_PER_SOORT) : [],
+    dwarsTotaal: p.dwarsstaven.d > 0 ? p.dwarsstaven.x.length : 0,
   };
 }
 
@@ -242,8 +244,8 @@ export function poerModelTelling(p: PoerDefinitie): { totaal: number; getoond: n
   const perPlaats = s.lussenTotaal + (s.been !== null ? 1 : 0);
   const perPlaatsGetoond = s.lussen.length + (s.been !== null ? 1 : 0);
   return {
-    totaal: s.trekband.reduce((som, l) => som + l.totaal, 0) + s.beugelXTotaal * perPlaats + 2 * s.zijZTotaal + s.bovenYTotaal + s.haarspeldXTotaal,
-    getoond: s.trekband.reduce((som, l) => som + l.y.length, 0) + s.beugelX.length * perPlaatsGetoond + 2 * s.zijZ.length + s.bovenY.length + s.haarspeldX.length,
+    totaal: s.trekband.reduce((som, l) => som + l.totaal, 0) + s.beugelXTotaal * perPlaats + 2 * s.zijZTotaal + s.bovenYTotaal + s.haarspeldXTotaal + s.dwarsTotaal,
+    getoond: s.trekband.reduce((som, l) => som + l.y.length, 0) + s.beugelX.length * perPlaatsGetoond + 2 * s.zijZ.length + s.bovenY.length + s.haarspeldX.length + s.dwarsXZ.length,
   };
 }
 
@@ -427,6 +429,12 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
       afgerond([[-yH, hp.zBoven], [-yH, hp.z], [yH, hp.z], [yH, hp.zBoven]], HOEK_STRAAL * hp.d, HOEK_STUKKEN), "yz", hp.d / 2,
     ));
     s.haarspeldX.forEach((x, i) => staaf(`Haarspeld_${nummer(i)}`, `${t.haarspeld} ${i + 1}`, v, mat, hp.d, x, 0, 0));
+  }
+  if (s.dwarsXZ.length > 0) {
+    const dw = p.dwarsstaven;
+    const mat = staal("dwarsstaaf", POER_KLEUREN.dwarsstaaf);
+    const v = vorm("dwarsstaaf", buis([[-dw.y, 0], [dw.y, 0]], "yz", dw.d / 2));
+    s.dwarsXZ.forEach(([x, z], i) => staaf(`Dwarsstaaf_${nummer(i)}`, `${t.dwarsstaaf} ${i + 1}`, v, mat, dw.d, x, 0, z));
   }
 
   const telling = poerModelTelling(p);

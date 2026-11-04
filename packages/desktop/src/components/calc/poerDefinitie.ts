@@ -64,6 +64,12 @@ export interface PoerDefinitie {
   /** `z` is het onderbeen, `zBoven` het uiteinde van de benen. */
   haarspelden: { n: number; d: number; x: number[]; z: number; zBoven: number };
   /**
+   * De staven dwars door de poer, op de lijn van beide diagonalen: `n` per helft van een
+   * diagonaal, gelijk verdeeld over die helft. Elke staaf heeft een `x` en een `z`, en loopt
+   * van -`y` tot `y`.
+   */
+  dwarsstaven: { n: number; d: number; x: number[]; z: number[]; y: number };
+  /**
    * Het staafwerk uit het blad; null als het blad niet (volledig) heeft gerekend.
    * `eK` en `lT` zijn de arm vanaf het midden: de knoop onder de kolom en de afstand tot
    * de paalknoop, die met de paalafwijking naar buiten ligt.
@@ -149,6 +155,18 @@ export function maakPoer(d: Lees, uit: Record<string, number> = {}): PoerDefinit
     ? { d: uit.d_eff, z: zu, x: uit.x_c, hoek, eK: kolomRond ? (2 * c_x) / (3 * Math.PI) : c_x / 4, lT: uit.l_t }
     : null;
 
+  // ── dwarsstaven ───────────────────────────────────────────────────────────
+  // Op de diagonaal van het staafwerk uit het blad. Heeft het blad nog niet gerekend, dan
+  // met de grootste arm die het blad kent, zodat de staven er wel staan.
+  const n_dw = geheel(d("n_dw"));
+  const d_dw = Math.max(0, d("d_dw"));
+  const eK = kolomRond ? (2 * c_x) / (3 * Math.PI) : c_x / 4;
+  const lT = model ? model.lT : a / 2 + Math.max(0, d("e_p")) - eK;
+  const arm = model ? model.z : 0.9 * (h - aT);
+  const langsDiagonaal = Array.from({ length: 2 * n_dw }, (_, i) => (i + 0.5) / (2 * n_dw));
+  const dwarsX = langsDiagonaal.map((f) => eK + lT * (1 - f));
+  const dwarsZ = langsDiagonaal.map((f) => aT + arm * f);
+
   return {
     l, b, h, a,
     paal: { rond: paalRond, x: p_x, y: p_y, inbedding: Math.max(0, d("t_in")) },
@@ -171,6 +189,12 @@ export function maakPoer(d: Lees, uit: Record<string, number> = {}): PoerDefinit
       z: c_o + d_hp / 2,
       zBoven: h - c_z - d_s,
     },
+    dwarsstaven: {
+      n: n_dw, d: d_dw,
+      x: [...dwarsX.map((x) => -x), ...dwarsX],
+      z: [...dwarsZ, ...dwarsZ],
+      y: b / 2 - c_z - d_s - d_dw / 2,
+    },
     model,
   };
 }
@@ -183,5 +207,6 @@ export function staafTelling(p: PoerDefinitie) {
     zij: 2 * p.zij.z.length,
     boven: p.boven.y.length,
     haarspelden: p.haarspelden.x.length,
+    dwarsstaven: p.dwarsstaven.x.length,
   };
 }

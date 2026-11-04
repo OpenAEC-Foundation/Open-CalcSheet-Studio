@@ -21,6 +21,7 @@ export interface TekeningTeksten {
   zijstaven: string;
   bovenstaven: string;
   haarspelden: string;
+  dwarsstaven: string;
   laag: string;
   lagen: string;
   hoh: string;
@@ -31,6 +32,7 @@ export interface TekeningTeksten {
   sneden: string;
   perZijvlak: string;
   perPaal: string;
+  perHelft: string;
   geen: string;
   dekkingOnder: string;
   dekkingZij: string;
@@ -63,6 +65,7 @@ const TREK = "#b91c1c";
 const BEUGEL = "#1d4ed8";
 const OVERIG = "#0f766e";
 const HAARSPELD = "#7c3aed";
+const DWARSSTAAF = "#db2777";
 const MAAT = "#2563eb";
 const MODEL = "#b45309";
 const TEKST = "#1f2937";
@@ -71,7 +74,7 @@ const TEKST = "#1f2937";
 export const TEKENING_MIN_BREEDTE = 320;
 
 /** De kleuren van de tekening; het 3D-model (poerIfcx.ts) gebruikt dezelfde. */
-export const POER_KLEUREN = { paal: PAAL, kolom: KOLOM, trekband: TREK, beugel: BEUGEL, overig: OVERIG, haarspeld: HAARSPELD };
+export const POER_KLEUREN = { paal: PAAL, kolom: KOLOM, trekband: TREK, beugel: BEUGEL, overig: OVERIG, haarspeld: HAARSPELD, dwarsstaaf: DWARSSTAAF };
 
 const r = (w: number) => (Math.round(w * 100) / 100).toString();
 
@@ -135,7 +138,7 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   const maatOnder = paalOnder + 18;
   const kolommen = W >= 560 ? 2 : 1;
   const legY = maatOnder + 20;
-  const legRegels = 8;
+  const legRegels = 9;
   const H = legY + Math.ceil(legRegels / kolommen) * 13 + 2;
 
   const X = (x: number) => mL + (x + p.l / 2) * s;
@@ -154,6 +157,8 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   const dZ = Math.max(1.2, p.zij.d * s);
   const dB = Math.max(1.2, p.boven.d * s);
   const dH = Math.max(1, p.haarspelden.d * s);
+  const dw = p.dwarsstaven;
+  const dD = Math.max(1, dw.d * s);
 
   // ── bovenaanzicht ─────────────────────────────────────────────────────────
   uit.push(tekst(mL, planY - 8, t.bovenaanzicht, "start", TEKST, 11, ' font-weight="700"'));
@@ -178,6 +183,9 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
     for (const y of laag.y) {
       uit.push(`<line data-staaf="trekband" data-laag="${i + 1}" x1="${r(X(-tb.xEind[i]))}" y1="${r(Y(y))}" x2="${r(X(tb.xEind[i]))}" y2="${r(Y(y))}" stroke="${TREK}" stroke-width="${r(dT * 0.75)}"${i === 1 ? ' stroke-opacity="0.65"' : ""}/>`);
     }
+  });
+  dw.x.forEach((x) => {
+    uit.push(`<line data-staaf="dwarsstaaf" x1="${r(X(x))}" y1="${r(Y(dw.y))}" x2="${r(X(x))}" y2="${r(Y(-dw.y))}" stroke="${DWARSSTAAF}" stroke-width="${r(Math.max(0.8, dD * 0.8))}"/>`);
   });
   uit.push(`</g>`);
   // maten van het bovenaanzicht
@@ -207,6 +215,7 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
     [OVERIG, `${t.zijstaven}: ${p.zij.n > 0 ? `${p.zij.n}Ø${r(p.zij.d)} ${t.perZijvlak}` : t.geen}`],
     [OVERIG, `${t.bovenstaven}: ${p.boven.n > 0 ? `${p.boven.n}Ø${r(p.boven.d)}` : t.geen}`],
     [HAARSPELD, `${t.haarspelden}: ${p.haarspelden.n > 0 ? `${p.haarspelden.n}Ø${r(p.haarspelden.d)} ${t.perPaal}` : t.geen}`],
+    [DWARSSTAAF, `${t.dwarsstaven}: ${dw.n > 0 ? `${dw.n}Ø${r(dw.d)} ${t.perHelft}` : t.geen}`],
     [TEKST, `${t.dekkingOnder} ${r(p.c_o)}, ${t.dekkingZij} ${r(p.c_z)}`],
     [MODEL, t.staafwerk],
   ];
@@ -253,6 +262,10 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
       pad = `M ${r(X(-e))} ${r(Z(z))} L ${r(X(e))} ${r(Z(z))}`;
     }
     uit.push(`<path data-staaf="trekband-langs" d="${pad}" fill="none" stroke="${TREK}" stroke-width="${r(dT)}" stroke-linejoin="round"/>`);
+  });
+  // dwarsstaven, op de diagonalen
+  dw.x.forEach((x, i) => {
+    uit.push(`<circle data-staaf="dwarsstaaf-langs" cx="${r(X(x))}" cy="${r(Z(dw.z[i]))}" r="${r(dD / 2)}" fill="${DWARSSTAAF}"/>`);
   });
   // het staafwerk uit het blad
   if (p.model) {

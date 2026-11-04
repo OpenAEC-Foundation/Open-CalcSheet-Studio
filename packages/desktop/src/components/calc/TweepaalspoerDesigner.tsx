@@ -34,7 +34,7 @@ const DEFAULTS: Record<string, number> = {
   paalvorm: 1, p_x: 350, p_y: 350, kolomvorm: 1, c_x: 400, c_y: 400,
   betonklasse: 30, betonstaal: 2, milieu: 2, ondergrond: 1, d_g: 16, c_o: 60, c_z: 40,
   n_t: 6, d_t: 25, s_t: 70, lagen: 1, vorm_t: 2, l_op: 600, D_m: 125,
-  d_s: 12, s_s: 100, n_s: 4, n_z: 5, d_z: 12, n_b: 3, d_b: 12, n_hp: 2, d_hp: 12,
+  d_s: 12, s_s: 100, n_s: 4, n_z: 5, d_z: 12, n_b: 3, d_b: 12, n_hp: 2, d_hp: 12, n_dw: 3, d_dw: 16,
   F_Ed: 1800, F_fr: 1200, dwars: 0,
 };
 
@@ -86,6 +86,7 @@ export default function TweepaalspoerDesigner() {
     zijstaven: t("tweepaalspoer.zijstaven"),
     bovenstaven: t("tweepaalspoer.bovenstaven"),
     haarspelden: t("tweepaalspoer.haarspelden"),
+    dwarsstaven: t("tweepaalspoer.dwarsstaven"),
     laag: t("tweepaalspoer.laag"),
     lagen: t("tweepaalspoer.lagen"),
     hoh: t("tweepaalspoer.hoh"),
@@ -96,6 +97,7 @@ export default function TweepaalspoerDesigner() {
     sneden: t("tweepaalspoer.sneden"),
     perZijvlak: t("tweepaalspoer.perZijvlak"),
     perPaal: t("tweepaalspoer.perPaal"),
+    perHelft: t("tweepaalspoer.perHelft"),
     geen: t("tweepaalspoer.geen"),
     dekkingOnder: t("tweepaalspoer.dekkingOnder"),
     dekkingZij: t("tweepaalspoer.dekkingZij"),
@@ -208,6 +210,8 @@ export default function TweepaalspoerDesigner() {
           <label>{t("tweepaalspoer.velden.zijDiameter")}{diameter("d_z")}</label>
           <label>{t("tweepaalspoer.velden.haarspelden")}{getal("n_hp", 1)}</label>
           <label>{t("tweepaalspoer.velden.haarspeldDiameter")}{diameter("d_hp")}</label>
+          <label>{t("tweepaalspoer.velden.dwarsstaven")}{getal("n_dw", 1)}</label>
+          <label>{t("tweepaalspoer.velden.dwarsstaafDiameter")}{diameter("d_dw")}</label>
 
           <span className="vd-ctrl-h">{t("tweepaalspoer.koppen.dwars")}</span>
           <label>{t("tweepaalspoer.velden.dwars")}

@@ -121,7 +121,7 @@ s_t = ?*(mm)', hart-op-hart in een laag<span class="kolom-3"></span>'
     #show
 #end if
 
-'<h6>Beugels, zijstaven, bovenstaven en haarspelden</h6>
+'<h6>Beugels, zijstaven, bovenstaven, haarspelden en dwarsstaven</h6>
 d_s = ?*(mm)', beugel, diameter<span class="kolom-3"></span>'
 s_s = ?*(mm)', beugel, hart-op-hart<span class="kolom-3"></span>'
 n_s = ?', beugel, aantal sneden<span class="kolom-3"></span>'
@@ -131,6 +131,8 @@ n_b = ?', bovenstaven<span class="alleen-scherm">, constructief</span><span clas
 d_b = ?*(mm)', bovenstaaf, diameter<span class="kolom-3"></span>'
 n_hp = ?', haarspelden per paal<span class="alleen-scherm"> om de trekband; 0 = geen</span><span class="kolom-3"></span>'
 d_hp = ?*(mm)', haarspeld, diameter<span class="kolom-3"></span>'
+n_dw = ?', dwarsstaven per helft van de diagonaal<span class="alleen-scherm">, dwars door de poer en verankerd als een beugel om de zijstaven (8.5); 0 = geen spreiding</span><span class="kolom-3"></span>'
+d_dw = ?*(mm)', dwarsstaaf, diameter<span class="kolom-3"></span>'
 
 '<h6>Belastingen op de poer, zonder eigen gewicht van de poer</h6>
 F_Ed = ?*(kN)', kolomlast UGT<span class="alleen-scherm">, de maatgevende combinatie 6.10a of 6.10b</span><span class="kolom-2"></span>'
@@ -143,7 +145,7 @@ F_fr = ?*(kN)', kolomlast BGT, frequent<span class="alleen-scherm"> (tabel 7.1N 
 
 #hide
 ok_maten = bool(l_poer > 0 mm)*bool(b_poer > 0 mm)*bool(h_poer > 0 mm)*bool(a_hoh > 0 mm)*bool(p_x > 0 mm)*bool(p_y > 0 mm)*bool(c_x > 0 mm)*bool(c_y > 0 mm)*bool(c_o > 0 mm)*bool(c_z > 0 mm)*bool(d_g > 0 mm)*bool(e_p ≥ 0 mm)*bool(t_in ≥ 0 mm)
-ok_staven = bool(n_t ≥ 1)*bool(n_t ≡ round(n_t))*bool(d_t > 0 mm)*bool(s_t > 0 mm)*bool(d_s > 0 mm)*bool(s_s > 0 mm)*bool(n_s ≥ 2)*bool(n_s ≡ round(n_s))*bool(n_z ≥ 0)*bool(n_z ≡ round(n_z))*bool(n_b ≥ 0)*bool(n_b ≡ round(n_b))*bool(n_hp ≥ 0)*bool(n_hp ≡ round(n_hp))*bool(d_z ≥ 0 mm)*bool(d_b ≥ 0 mm)*bool(d_hp ≥ 0 mm)*(1 - bool(n_z > 0)*bool(d_z ≤ 0 mm))*(1 - bool(n_b > 0)*bool(d_b ≤ 0 mm))*(1 - bool(n_hp > 0)*bool(d_hp ≤ 0 mm))
+ok_staven = bool(n_t ≥ 1)*bool(n_t ≡ round(n_t))*bool(d_t > 0 mm)*bool(s_t > 0 mm)*bool(d_s > 0 mm)*bool(s_s > 0 mm)*bool(n_s ≥ 2)*bool(n_s ≡ round(n_s))*bool(n_z ≥ 0)*bool(n_z ≡ round(n_z))*bool(n_b ≥ 0)*bool(n_b ≡ round(n_b))*bool(n_hp ≥ 0)*bool(n_hp ≡ round(n_hp))*bool(d_z ≥ 0 mm)*bool(d_b ≥ 0 mm)*bool(d_hp ≥ 0 mm)*bool(n_dw ≥ 0)*bool(n_dw ≡ round(n_dw))*bool(d_dw ≥ 0 mm)*(1 - bool(n_z > 0)*bool(d_z ≤ 0 mm))*(1 - bool(n_b > 0)*bool(d_b ≤ 0 mm))*(1 - bool(n_hp > 0)*bool(d_hp ≤ 0 mm))*(1 - bool(n_dw > 0)*bool(d_dw ≤ 0 mm))
 ok_vorm = 1 - bool(vorm_t ≡ 2)*(1 - bool(l_op > 0 mm)*bool(D_m > 0 mm))
 ok_last = bool(F_Ed > 0 kN)*bool(F_fr > 0 kN)*bool(F_fr ≤ F_Ed)
 ok_inpas = bool(l_poer ≥ a_hoh + p_x)*bool(a_hoh > p_x)*bool(p_y ≤ b_poer)*bool(c_x ≤ l_poer)*bool(c_y ≤ b_poer)
@@ -174,6 +176,7 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
     A_sb = π*d_s^2/4
     A_z = if(n_z > 0; π*d_z^2/4; 0 mm^2)
     A_hp = if(n_hp > 0; π*d_hp^2/4; 0 mm^2)
+    A_dw = if(n_dw > 0; π*d_dw^2/4; 0 mm^2)
     p_xe = if(rond_p ≡ 1; p_x*sqrt(π)/2; p_x)
     p_ye = if(rond_p ≡ 1; p_x*sqrt(π)/2; p_y)
     c_xe = if(rond_k ≡ 1; c_x*sqrt(π)/2; c_x)
@@ -219,10 +222,11 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
     #hide
     ξ_x = 2*M_t/(c_ye*σ_ccc*d_eff^2)
     x_m = d_eff*(1 - sqrt(max(1 - ξ_x; 0)))
+    z_k = min(d_eff - x_m/2; 0.9*d_eff)
     #show
-    z_u = min(d_eff - x_m/2; 0.9*d_eff)', hefboomsarm UGT<span class="alleen-scherm">, uit de drukzone onder de kolom, ten hoogste 0,9·d</span><span class="alleen-scherm"></span>'
+    z_u = min(z_k; l_t*tan(55*π/180))', hefboomsarm UGT<span class="alleen-scherm">, uit de drukzone onder de kolom, ten hoogste 0,9·d en de arm bij θ = 55°</span><span class="alleen-scherm"></span>'
     z_u', hefboomsarm UGT<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
-    x_c = 2*(d_eff - z_u)', drukzone<span class="alleen-scherm"></span>'
+    x_c = 2*(d_eff - z_k)', drukzone<span class="alleen-scherm"></span>'
     x_c', drukzone<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
     #hide
     θ = atan(z_u/l_t)
@@ -238,14 +242,12 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
     sc_av = bool(a_v > 0 mm)
     sc_θ = bool(θ_g ≥ 45)
     sc_staal = bool(betonstaal ≠ 1)
-    sc_d = bool(d_t ≤ 32 mm)*bool(d_s ≤ 32 mm)*bool(d_z ≤ 32 mm)*bool(d_b ≤ 32 mm)*bool(d_hp ≤ 32 mm)
+    sc_d = bool(d_t ≤ 32 mm)*bool(d_s ≤ 32 mm)*bool(d_z ≤ 32 mm)*bool(d_b ≤ 32 mm)*bool(d_hp ≤ 32 mm)*bool(d_dw ≤ 32 mm)
     scope_ok = sc_av*sc_θ*sc_staal*sc_d
     #show
 
     #if scope_ok ≡ 1
         #hide
-        k_n = if(n_hp ≥ 1; 0.85; 0.75)
-        σ_cct = k_n*ν_s*f_cd
         σ_d = 0.6*ν_s*f_cd
         a_A = c_xe/2*sin(θ) + x_c*cos(θ)
         u_b = 2*(a_t - t_in)
@@ -254,12 +256,13 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         a_min = min(a_A; a_B)
         a_y = min(c_ye; p_ye)
         n_sb = floor(a_v/s_s)
-        n_sp = floor((a_v/2 + p_x)/s_s)
-        n_sk = floor((a_v/2 + c_x/2)/s_s)
+        n_bp = floor(p_x/s_s)
         n_bn = floor(n_s/2)
         N_v = n_sb*n_s*A_sb
         N_h = 2*n_z*A_z
-        b_w = min(b_poer; 0.5*H_s + 0.65*a_y)
+        'Zonder dwarsstaven is er geen spreiding: de diagonaal blijft zo breed als de kleinste knoop.
+        b_ef = min(b_poer; 0.5*H_s + 0.65*a_y)
+        b_w = if(n_dw > 0; b_ef; a_y)
         u_0k = 2*c_ye
         u_0p = min(p_ye + 3*d_eff; p_ye + 2*p_xe)
         v_Rd = 0.4*ν_v*f_cd
@@ -277,10 +280,8 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         A_smin = min(A_min1; A_min2)', 9.2.1.1 (NB)<span class="alleen-scherm">, kleinste van M<sub>E,min</sub> = f<sub>ctm</sub>·W en 1,25 maal de benodigde wapening</span><span class="alleen-scherm"></span>'
         A_smin', 9.2.1.1 (NB)<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
         UC_A = max(A_smin/A_s; A_s/(0.04*b_poer*h_poer))', ook A<sub>s,max</sub> = 0,04·A<sub>c</sub><span class="alleen-scherm"></span>'
-        k_n', 6.5.4(4) (NB)<span class="alleen-scherm">, k<sub>2</sub> = 0,85 met haarspelden; zonder haarspelden geeft de NB geen waarde en rekent het blad met k<sub>3</sub> = 0,75</span><span class="kolom-4"></span>'
-        σ_cct', (6.61)<span class="kolom-4"></span>'
         n_sb', beugels in a<sub>v</sub><span class="kolom-4"></span>'
-        σ_m = F_c/(a_m*b_w) to N/mm^2', diagonaal<span class="alleen-scherm">, halverwege: in het vlak de gemiddelde breedte, dwars b<sub>ef</sub> uit figuur 6.25</span><span class="alleen-scherm"></span>'
+        σ_m = F_c/(a_m*b_w) to N/mm^2', diagonaal<span class="alleen-scherm">, halverwege: in het vlak de gemiddelde breedte, dwars b<sub>ef</sub> uit figuur 6.25, zonder dwarsstaven de kleinste knoopbreedte</span><span class="alleen-scherm"></span>'
         σ_m', diagonaal<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
         σ_d', (6.56)<span class="kolom-4"></span>'
         σ_A = F_c/(a_A*c_ye) to N/mm^2', kolomknoop, diagonaal<span class="alleen-scherm"></span>'
@@ -294,27 +295,44 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         σ_1 = R_Ed/A_p to N/mm^2', op de paal<span class="alleen-scherm"></span>'
         σ_1', op de paal<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
         UC_ccc = max(σ_0/σ_ccc; σ_A/σ_ccc; ξ_x)', knoop CCC<span class="alleen-scherm"></span>'
-        UC_cct = max(σ_1; σ_B)/σ_cct', knoop CCT<span class="alleen-scherm"></span>'
         UC_d = σ_m/σ_d', drukdiagonaal<span class="alleen-scherm"></span>'
         T_sx = max(0.25*(1 - 0.7*a_min/H_s)*F_c; 0 kN) to kN', splijtkracht in het vlak, (6.59) (NB)<span class="alleen-scherm"></span>'
         T_sx', splijtkracht in het vlak<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
         UC_sx = if(T_sx > 0 kN; T_sx/R_sx; 0)', splijtkracht in het vlak<span class="alleen-scherm"></span>'
         T_sp = max(if(b_poer ≤ H_s/2; 0.25*(b_poer - p_ye)/b_poer*F_c; 0.25*(1 - 0.7*p_ye/H_s)*F_c); 0 kN) to kN', splijtkracht dwars, paalzijde<span class="alleen-scherm">, (6.58) of (6.59)</span><span class="alleen-scherm"></span>'
         T_sp', splijtkracht dwars, paalzijde<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
-        R_sp = f_yd*(n_hp*A_hp + n_sp*n_bn*A_sb) to kN', haarspelden en onderbenen<span class="alleen-scherm">, van de beugels boven de paal en tot halverwege a<sub>v</sub></span><span class="alleen-scherm"></span>'
-        R_sp', haarspelden en onderbenen<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        R_sp = f_yd*n_dw*A_dw to kN', dwarsstaven<span class="alleen-scherm">, in de paalhelft van de diagonaal; daar werkt T</span><span class="alleen-scherm"></span>'
+        R_sp', dwarsstaven<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
         T_sk = max(if(b_poer ≤ H_s/2; 0.25*(b_poer - c_ye)/b_poer*F_c; 0.25*(1 - 0.7*c_ye/H_s)*F_c); 0 kN) to kN', splijtkracht dwars, kolomzijde<span class="alleen-scherm">, (6.58) of (6.59)</span><span class="alleen-scherm"></span>'
         T_sk', splijtkracht dwars, kolomzijde<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
-        R_sk = f_yd*n_sk*n_bn*A_sb to kN', bovenbenen<span class="alleen-scherm">, van de beugels onder de halve kolom en tot halverwege a<sub>v</sub></span><span class="alleen-scherm"></span>'
-        R_sk', bovenbenen<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        R_sk = f_yd*n_dw*A_dw to kN', dwarsstaven<span class="alleen-scherm">, in de kolomhelft van de diagonaal; daar werkt T</span><span class="alleen-scherm"></span>'
+        R_sk', dwarsstaven<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
         #hide
         f_ctd = f_ctk/1.5
         f_bd = 2.25*1.0*1.0*f_ctd
         h_in = h_poer - c_o - c_z - 2*d_s
         l_bhp = if(n_hp > 0; d_hp/4*f_yd/f_bd; 0 mm)
         #show
-        UC_sy = max(if(T_sp > 0 kN; T_sp/R_sp; 0); if(T_sk > 0 kN; T_sk/R_sk; 0); l_bhp/h_in)', splijtkracht dwars, en de lengte van de haarspelden<span class="alleen-scherm"></span>'
-        V_max = 0.5*b_w*d_eff*ν_v*f_cd to kN', (6.5)<span class="alleen-scherm">, bovengrens dwarskracht</span><span class="alleen-scherm"></span>'
+        UC_sy = max(if(n_dw > 0; max(T_sp/R_sp; T_sk/R_sk); 0); l_bhp/h_in)', splijtkracht dwars, en de lengte van de haarspelden<span class="alleen-scherm"></span>'
+        #if b_poer ≤ H_s/2
+            '<i>De poer is niet breder dan H/2, dus (6.58). Net boven H/2 geldt (6.59) en springt de splijtkracht omhoog. In deze tak is er geen reserve.</i><span class="alleen-scherm"></span>
+        #else
+            '<i>De poer is breder dan H/2, dus (6.59), letterlijk toegepast. Op b = H/2 valt de splijtkracht terug op (6.58).</i><span class="alleen-scherm"></span>
+        #end if
+        #if n_dw > 0
+        #else
+            '<i>Geen dwarsstaven: de diagonaal rekent zonder spreiding, met de kleinste knoopbreedte, en de splijtkracht dwars telt niet.</i><span class="alleen-scherm"></span>
+        #end if
+        #hide
+        'De knoop mag alleen op k<sub>2</sub> rekenen met echte omsluiting: twee haarspelden per paal, die met de onderbenen boven de paal de splijtkracht dragen.
+        R_hp = f_yd*(n_hp*A_hp + n_bp*n_bn*A_sb)
+        k_n = if(n_hp ≥ 2; if(R_hp ≥ T_sp; 0.85; 0.75); 0.75)
+        σ_cct = k_n*ν_s*f_cd
+        #show
+        k_n', 6.5.4(4) (NB)<span class="alleen-scherm">, k<sub>2</sub> = 0,85 met ten minste twee haarspelden per paal, die met de onderbenen boven de paal T<sub>sp</sub> dragen; anders k<sub>3</sub> = 0,75</span><span class="kolom-4"></span>'
+        σ_cct', (6.61)<span class="kolom-4"></span>'
+        UC_cct = max(σ_1; σ_B)/σ_cct', knoop CCT<span class="alleen-scherm"></span>'
+        V_max = 0.5*b_ef*d_eff*ν_v*f_cd to kN', (6.5)<span class="alleen-scherm">, bovengrens dwarskracht</span><span class="alleen-scherm"></span>'
         V_max', (6.5)<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
         UC_V = R_Ed/V_max', dwarskracht<span class="alleen-scherm"></span>'
         v_k = 1.15*F_Ed/(u_0k*d_eff) to N/mm^2', langs de kolom<span class="alleen-scherm">, alleen de twee vlakken naar de palen</span><span class="alleen-scherm"></span>'
@@ -392,6 +410,7 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         z_el = if(a_hoh < h_poer; 0.6*a_hoh; 0.2*(a_hoh + 2*h_poer))
         z_s = min(z_u; z_el)
         T_fr = F_fr,t/2*l_t/z_s
+        T_k = (F_Ed/1.3 + G_poer)/2*l_t/z_s
         σ_s = T_fr/A_s
         ε_w1 = (σ_s - 0.4*f_ctm/ρ_p*(1 + α_e*ρ_p))/E_s
         ε_w = max(ε_w1; 0.6*σ_s/E_s)
@@ -413,11 +432,13 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         z_s', arm BGT<span class="alleen-scherm">, lineair-elastisch, 5.6.4(2)</span><span class="kolom-4"></span>'
         σ_s = T_fr/A_s to N/mm^2', 7.3.1(8)<span class="alleen-scherm">, staalspanning, frequent</span><span class="alleen-scherm"></span>'
         σ_s', 7.3.1(8)<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
+        σ_k = T_k/A_s to N/mm^2', 7.2(4)P<span class="alleen-scherm">, staalspanning, karakteristiek, de last afgeschat als F<sub>Ed</sub>/1,3</span><span class="alleen-scherm"></span>'
+        σ_k', 7.2(4)P<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
         s_rmax', (7.11) (NB) of (7.14)<span class="alleen-scherm">, s<sub>r,max</sub></span><span class="kolom-4"></span>'
         ε_w', (7.9)<span class="alleen-scherm">, ε<sub>sm</sub> − ε<sub>cm</sub></span><span class="kolom-4"></span>'
         w_k = s_rmax*ε_w to mm', (7.8)<span class="alleen-scherm">, scheurwijdte</span><span class="kolom-2"></span>'
         w_lim', tabel 7.1N (NB)<span class="alleen-scherm">, met k<sub>x</sub></span><span class="kolom-2"></span>'
-        UC_w = max(w_k/w_lim; σ_s/f_yk)', scheurwijdte, en de staalspanning onder de vloeigrens<span class="alleen-scherm"></span>'
+        UC_w = max(w_k/w_lim; σ_s/f_yk; σ_k/f_yk)', scheurwijdte, en de staalspanning onder de vloeigrens<span class="alleen-scherm"></span>'
         #if h_poer ≥ 1000 mm
             A_huid = 0.4*0.5*f_ctm*b_poer*h_poer/2/f_yk', huidwapening, 7.3.3(3)<span class="alleen-scherm"></span>'
             A_huid', 7.3.3(3)<span class="alleen-afdruk"></span><span class="kolom-4"></span>'
@@ -438,11 +459,11 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         s_tb = (b_poer - 2*c_z - d_s)/(n_s - 1)
         s_kp = p_x/(n_hp + p_x/s_s*floor(n_s/2))
         UC_zb = if(n_z > 0; (a_tb + d_t/2 + d_z/2)/(c_o + d_s + s_zv); 0)
-        UC_sp = max(if(n_tl > 1; vrij(s_t; d_t); 0); vrij(s_s/floor(n_s/2); d_s); vrij(s_tb; d_s); if(n_z > 0; vrij(s_zv; d_z); 0); if(n_b > 1; vrij(s_bb; d_b); 0); vrij(s_kp; d_o); UC_zb)
+        UC_sp = max(if(n_tl > 1; vrij(s_t; d_t); 0); vrij(s_s/floor(n_s/2); d_s); vrij(s_tb; d_s); if(n_z > 0; vrij(s_zv; d_z); 0); if(n_b > 1; vrij(s_bb; d_b); 0); vrij(s_kp; d_o); if(n_dw > 0; vrij(H_s/2/n_dw; d_dw); 0); UC_zb)
         b_in = b_poer - 2*c_z - 2*d_s
         b_zone = p_ye + 2*max(c_o + d_o + d_t/2 - t_in; 0 mm)
         UC_bd = if(min(b_in; b_zone) > 0 mm; max(b_band/b_zone; (b_band + if(n_hp > 0; 2*d_hp; 0 mm))/b_in); 99)
-        UC_min = max(8 mm/d_t; 5 mm/d_s; if(n_z > 0; 6 mm/d_z; 0); if(n_b > 0; 6 mm/d_b; 0); if(n_hp > 0; 8 mm/d_hp; 0))
+        UC_min = max(8 mm/d_t; 5 mm/d_s; if(n_z > 0; 6 mm/d_z; 0); if(n_b > 0; 6 mm/d_b; 0); if(n_hp > 0; 8 mm/d_hp; 0); if(n_dw > 0; 8 mm/d_dw; 0))
         UC_kop = t_in/c_o
         o_x = (l_poer - a_hoh - p_x)/2
         o_y = (b_poer - p_y)/2

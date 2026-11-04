@@ -76,7 +76,7 @@ const RC1 = {
   paalvorm: "1", p_x: "350", p_y: "350", kolomvorm: "1", c_x: "400", c_y: "400",
   betonklasse: "30", betonstaal: "2", milieu: "2", ondergrond: "1", d_g: "16", c_o: "60", c_z: "40",
   n_t: "6", d_t: "25", s_t: "70", lagen: "1", vorm_t: "2", l_op: "600", D_m: "125",
-  d_s: "12", s_s: "100", n_s: "4", n_z: "5", d_z: "12", n_b: "3", d_b: "12", n_hp: "2", d_hp: "12",
+  d_s: "12", s_s: "100", n_s: "4", n_z: "5", d_z: "12", n_b: "3", d_b: "12", n_hp: "2", d_hp: "12", n_dw: "3", d_dw: "16",
   F_Ed: "1800", F_fr: "1200", dwars: "1",
 };
 {
@@ -117,12 +117,12 @@ const RC1 = {
     // R = 434,78·(904,8·0,6628 + 1131·0,7486)/2/1000 = 314,5 kN; UC 0,853.
     n_sb: 2, T_sx: 268.13, R_sx: 314.46, UC_sx: 0.8527,
     // Splijt dwars: b = 580 > H/2 = 490, dus (6.59). Paalzijde: T = ¼·(1 − 0,7·350/980,4)·1314,6 = 246,5 kN.
-    // Haarspelden 2·113,1 + onderbenen ⌊(137,5 + 350)/100⌋ = 4 · 2 · 113,1 = 1131 mm²; R = 491,7 kN.
-    T_sp: 246.51, R_sp: 491.73,
-    // Kolomzijde: T = ¼·(1 − 0,7·400/980,4)·1314,6 = 234,8 kN. Bovenbenen ⌊(137,5 + 200)/100⌋ = 3 · 2 · 113,1 = 678,6 mm²; R = 295,0 kN.
-    T_sk: 234.78, R_sk: 295.04,
-    // Haarspeld: l_b,rqd = 12/4·434,78/3 = 434,8 ≤ 776 beschikbaar: 0,560. UC = max(0,501; 0,796; 0,560) = 0,796.
-    UC_sy: 0.7958,
+    // Alleen de dwarsstaven liggen op de plaats van T: 3Ø16 per helft = 603,2 mm²; R = 262,3 kN.
+    T_sp: 246.51, R_sp: 262.26,
+    // Kolomzijde: T = ¼·(1 − 0,7·400/980,4)·1314,6 = 234,8 kN.
+    T_sk: 234.78, R_sk: 262.26,
+    // Haarspeld: l_b,rqd = 12/4·434,78/3 = 434,8 ≤ 776 beschikbaar: 0,560. UC = max(246,5/262,3; 234,8/262,3; 0,560) = 0,940.
+    UC_sy: 0.93995,
     // V_max = 0,5·580·815,5·0,528·20 = 2497,4 kN; UC = 984,1/2497,4 = 0,394.
     V_max: 2497.4, UC_V: 0.3941,
     // Langs de kolom alleen de twee vlakken naar de palen: u = 2·400. v_k = 1,15·1800e3/(800·815,5) = 3,173.
@@ -179,7 +179,7 @@ console.log("\n2. Referentiegeval: ronde palen Ø450, ronde kolom Ø500, poer 28
 const RC2 = {
   ...RC1, l_poer: "2800", b_poer: "800", h_poer: "1200", a_hoh: "1800", e_p: "75", t_in: "75",
   paalvorm: "2", p_x: "450", kolomvorm: "2", c_x: "500", betonklasse: "35", milieu: "3", c_o: "85", c_z: "45",
-  n_t: "12", s_t: "75", lagen: "2", l_op: "800", D_m: "125", d_s: "16", s_s: "125", n_s: "4", n_z: "6", d_z: "16", n_hp: "3", d_hp: "16",
+  n_t: "12", s_t: "75", lagen: "2", l_op: "800", D_m: "125", d_s: "16", s_s: "125", n_s: "4", n_z: "6", d_z: "16", n_hp: "3", d_hp: "16", n_dw: "6", d_dw: "16",
   F_Ed: "3200", F_fr: "2200",
 };
 {
@@ -201,9 +201,9 @@ const RC2 = {
     // σ_0 = 3200e3/(π·500²/4) = 16,30; σ_1 = 1782,5e3/(π·450²/4) = 11,21.
     "σ_0": 16.297, "σ_1": 11.207, UC_ccc: 0.8834, UC_cct: 0.9310,
     UC_T: 0.5843, UC_d: 0.7280, UC_sx: 0.8057, UC_V: 0.3487,
-    // Dwars: gelijkwaardig 398,8 aan de paal, 443,1 aan de kolom. Bovenbenen ⌊(175 + 250)/125⌋ = 3 · 2 · 201,1 = 1206 mm²; R = 524,5.
-    // T = ¼·(1 − 0,7·443,1/1291,4)·2409,4 = 457,7 kN; UC 0,873.
-    T_sk: 457.68, R_sk: 524.51, T_sp: 472.15, R_sp: 1136.4, UC_sy: 0.8726,
+    // Dwars: gelijkwaardig 398,8 aan de paal, 443,1 aan de kolom. 6Ø16 per helft = 1206 mm²; R = 524,5.
+    // T_k = ¼·(1 − 0,7·443,1/1291,4)·2409,4 = 457,7 kN; T_p = 472,2 kN: UC = 472,2/524,5 = 0,900.
+    T_sk: 457.68, R_sk: 524.51, T_sp: 472.15, R_sp: 524.51, UC_sy: 0.9002,
     // Langs de kolom 2·443,1: v_k = 1,15·3200e3/(886,2·1061,5) = 3,912; v_Rd = 0,4·0,516·23,33 = 4,816; UC 0,812.
     v_k: 3.9119, UC_v: 0.8123,
     // De bovenste laag ligt 50 naar binnen: 1400 − 45 − (900 − 225 + 75) − 50 − 12,5 = 542,5.
@@ -230,7 +230,7 @@ console.log("\n3. Referentiegeval: rechte staven, XC1, C25/30, 4Ø16, kolom 450�
 const RC3 = {
   ...RC1, l_poer: "2300", b_poer: "570", h_poer: "850", a_hoh: "1300", e_p: "25", t_in: "50", p_x: "320", p_y: "320",
   c_x: "450", c_y: "350", betonklasse: "25", milieu: "1", d_g: "16", c_o: "60", c_z: "35",
-  n_t: "4", d_t: "16", s_t: "60", vorm_t: "1", d_s: "10", s_s: "100", n_s: "2", n_z: "4", n_hp: "2", d_hp: "10",
+  n_t: "4", d_t: "16", s_t: "60", vorm_t: "1", d_s: "10", s_s: "100", n_s: "2", n_z: "4", n_hp: "2", d_hp: "10", n_dw: "3", d_dw: "10",
   F_Ed: "500", F_fr: "350",
 };
 {
@@ -250,8 +250,8 @@ const RC3 = {
     s_rmax: 480, w_k: 0.31713, w_lim: 0.4, UC_w: 0.7928,
     // Dekking XC1, werkvloer: c_dur = 15; max(20; 25) = 25; c_o = 60.
     c_reqo: 25, c_reqz: 20,
-    // Bovenbenen ⌊(120 + 225)/100⌋ = 3 · 1 · 78,5 = 235,6 mm²; R = 102,4. T_sk = ¼·(1 − 0,7·350/894)·359,2 = 65,2.
-    T_sk: 65.181, R_sk: 102.44, UC_sy: 0.6363,
+    // 3Ø10 per helft = 235,6 mm²; R = 102,4. T_sk = ¼·(1 − 0,7·350/894)·359,2 = 65,2; T_sp = ¼·(1 − 0,7·320/894)·359,2 = 67,3: UC 0,657.
+    T_sk: 65.181, R_sk: 102.44, UC_sy: 0.6570,
     // Dwars hart-op-hart: 570 − 70 − 10 = 490; 490/500 = 0,98.
     UC_bg: 0.98,
   });
@@ -270,7 +270,8 @@ const GEVALLEN_NIET = [
   // σ_0 = 1800e3/(200·400) = 22,5 > 17,6.
   ["kolom te klein", { c_x: "200", c_y: "400" }, "UC_ccc", (u) => Math.abs(u - 22.5 / 17.6) < 1e-3],
   ["geen beugels in a_v en geen zijstaven", { s_s: "400", n_z: "0" }, "UC_sx", (u) => u > 1],
-  ["geen haarspelden en grote beugelafstand", { n_hp: "0", s_s: "300" }, "UC_sy", (u) => u > 1],
+  // 2Ø16 per helft: R = 174,8 kN < T_sp = 246,5 kN.
+  ["te weinig dwarsstaven", { n_dw: "2" }, "UC_sy", (u) => Math.abs(u - 246.51 / 174.84) < 1e-3],
   // Recht einde: beschikbaar 435, l_b,rqd 575,8.
   ["rechte staaf te kort", { vorm_t: "1" }, "UC_l", (u) => u > 1],
   // Doorn 4Ø = 100 < 5Ø = 125 voor Ø25.
@@ -299,9 +300,8 @@ for (const [wat, invoer, naam, test] of GEVALLEN_NIET) {
   // Zonder haarspelden: k = 0,75 in plaats van 0,85 (de NB koppelt k_2 aan haarspelden). UC_cct = 0,8158·0,85/0,75 = 0,9245.
   const r = doorreken({ ...RC1, n_hp: "0" });
   toets(r, { k_n: 0.75, UC_cct: 0.9245 });
-  // Bij drie sneden: één gesloten beugel en een los been, dus één onderbeen per beugel (floor(3/2)).
-  // Paal: 2·113,1 + 4·1·113,1 = 678,6: R = 295,0. Kolom: 3·1·113,1: R = 147,5.
-  toets(doorreken({ ...RC1, n_s: "3" }), { R_sp: 295.0, R_sk: 147.52 });
+  // De benen van de beugels liggen niet op de plaats van T en tellen niet mee: andere beugels, dezelfde weerstand.
+  toets(doorreken({ ...RC1, n_s: "3", s_s: "150" }), { R_sp: 262.26, R_sk: 262.26 });
   // Zonder zijstaven blijven de beugels: 904,8·cos θ·434,78/2 = 130,4 kN < T = 268 kN.
   toets(doorreken({ ...RC1, n_z: "0" }), { R_sx: 130.37 });
 
@@ -338,9 +338,9 @@ for (const [wat, invoer, naam, test] of GEVALLEN_NIET) {
   // Hart 60 + 25 + 12,5 = 97,5. Bij c_o = 35: c_nom = max(max(25; 25; 10) + 5; 35) = 35.
   toets(doorreken({ ...RC1, d_hp: "25" }), { a_t: 97.5 });
   toets(doorreken({ ...RC1, d_hp: "25", c_o: "35", t_in: "30" }), { a_t: 72.5, c_reqo: 35 });
-  // 0/0 mag een overschrijding elders niet maskeren: T_sk = 0 (kolom even breed als de poer, (6.58)) en R_sk = 0 (geen beugel binnen bereik).
-  // De trekband is daar 1Ø12 en dus veel te klein.
-  const nulnul = doorreken({ ...RC1, betonklasse: "25", l_poer: "1300", b_poer: "350", h_poer: "1500", a_hoh: "800", e_p: "25", t_in: "40", p_x: "250", p_y: "200", c_x: "350", c_y: "350", c_o: "50", c_z: "30", n_t: "1", d_t: "12", D_m: "48", l_op: "150", d_s: "8", s_s: "300", n_s: "6", n_hp: "0", F_Ed: "900", F_fr: "100" });
+  // 0/0 mag een overschrijding elders niet maskeren: T_sk = 0 (kolom even breed als de poer, (6.58)) en R_sk = 0 (geen dwarsstaven).
+  // l_t = 400 + 25 − 72,5 = 352,5; z = 503,4 bij θ = 55°; H/2 = 307,3 ≥ b = 290. De trekband is daar 1Ø12 en dus veel te klein.
+  const nulnul = doorreken({ ...RC1, betonklasse: "25", l_poer: "1300", b_poer: "290", h_poer: "1500", a_hoh: "800", e_p: "25", t_in: "40", p_x: "250", p_y: "200", c_x: "290", c_y: "290", c_o: "50", c_z: "30", n_t: "1", d_t: "12", D_m: "48", l_op: "150", d_s: "8", s_s: "300", n_s: "6", n_hp: "0", n_dw: "0", F_Ed: "900", F_fr: "100" });
   waar(`kracht nul zonder staal: UC_T = ${nulnul.uit.UC_T?.toFixed(2)}, voldoet niet en geen NaN`, voldoetNiet(nulnul) && !nulnul.tekst.includes("NaN"), JSON.stringify(nulnul.r));
   waar("een kracht van nul geeft UC 0 aan de kolomzijde", nulnul.uit.T_sk === 0 && nulnul.uit.R_sk === 0);
   // Te dunne staven: haarspeld Ø2 geeft geen k_2 en geen oordeel 'voldoet'; zijstaaf Ø4; bovenstaaf Ø1.
@@ -370,16 +370,71 @@ for (const [wat, invoer, naam, test] of GEVALLEN_NIET) {
   const { CC: _cc, ...zonderCC } = SCOPE;
   void _cc;
   waar("geen gevolgklasse in het project: geen oordeel", nietGetoetst(doorreken(RC1, zonderCC)));
-  // De kolomzijde bij de splijtkracht dwars: alleen bovenbenen. Twee sneden, s = 150: ⌊337,5/150⌋ = 2: R = 98,3 kN < T = 234,8.
-  const kolomzijde = doorreken({ ...RC1, n_s: "2", s_s: "150" });
-  toets(kolomzijde, { R_sk: 98.35 });
-  waar("te weinig bovenbenen: voldoet niet", kolomzijde.uit.UC_sy > 1 && voldoetNiet(kolomzijde));
   // De haarspeld moet zijn lengte hebben: Ø25: 25/4·434,78/3 = 905,8 > 776 beschikbaar: 1,167.
   const lang = doorreken({ ...RC1, n_hp: "1", d_hp: "25" });
   waar(`haarspeld Ø25 past niet: UC_sy = ${lang.uit.UC_sy?.toFixed(3)}, voldoet niet`, Math.abs(lang.uit.UC_sy - 905.8 / 776) < 1e-3 && voldoetNiet(lang), JSON.stringify(lang.r));
   // Brede poer: de rand ligt verder dan 5(c + Ø/2) van de staaf: (7.14). b = 2000: c_1 = 812,5 > 422,5.
   // ρ = 2945,2/(2000·815,5) = 0,001806; α_e·ρ = 0,010944; x_e = 815,5·(√(0,00011977 + 0,021888) − 0,010944) = 112,1; s_r,max = 1,3·787,9 = 1024,3.
   toets(doorreken({ ...RC1, b_poer: "2000", n_s: "6" }), { s_rmax: 1024.3 });
+}
+
+// ── 4b. De rekenregels voor de arm, de spreiding en de knoop ────────────────
+console.log("\n4b. Arm, spreiding, knoop boven de paal en staalspanning");
+{
+  // Hoge poer: h = 1800, 4Ø20. G = 25·2,1·0,58·1,8 = 54,81; F_tot = 1800 + 1,35·54,81 = 1874,0; M_t = 937,0·0,650 = 609,06 kNm.
+  // Zonder bovengrens was z = 0,9·1718 = 1546 mm (1,10·a) en T = 394 kN. Bij θ = 55° is z = 650·tan 55° = 928,3 mm en T = 656,1 kN.
+  // T_Rd = 1256,6·434,78 = 546,4 kN: UC = 1,201.
+  const hoogArm = doorreken({ ...RC1, h_poer: "1800", n_t: "4", d_t: "20", F_fr: "700" });
+  toets(hoogArm, { z_u: 928.3, "θ_g": 55, T_Ed: 656.1, T_Rd: 546.4, UC_T: 1.2008 });
+  waar("hoge poer: de trekband voldoet niet meer", voldoetNiet(hoogArm), JSON.stringify(hoogArm.r));
+  // De drukzone groeit niet mee met de bovengrens: x_c = 2·(1718 − 0,9·1718) = 343,6, niet 2·(1718 − 928,3).
+  toets(hoogArm, { x_c: 343.6 });
+  // Bij een gewone poer doet de bovengrens niets: 650·tan 55° = 928,3 > 733,95.
+  toets(doorreken(RC1), { z_u: 733.95 });
+
+  // Zonder dwarsstaven geen spreiding: de diagonaal rekent met de kleinste knoopbreedte, 350 mm.
+  // σ_m = 1314,6e3/(282,8·350) = 13,28; UC = 13,28/10,56 = 1,258. De bovengrens van de dwarskracht blijft op b_ef.
+  const zonderDw = doorreken({ ...RC1, n_dw: "0" });
+  toets(zonderDw, { "σ_m": 13.281, UC_d: 1.2577, V_max: 2497.4 });
+  waar("zonder dwarsstaven: geen weerstand dwars", zonderDw.uit.R_sp === 0 && zonderDw.uit.R_sk === 0);
+  waar("zonder dwarsstaven: voldoet niet op de diagonaal", voldoetNiet(zonderDw), JSON.stringify(zonderDw.r));
+  waar("zonder dwarsstaven: het blad zegt waarom", /zonder spreiding/.test(zonderDw.tekst));
+  // UC_sy is dan alleen de haarspeld: 434,8/776.
+  toets(zonderDw, { UC_sy: 0.5603 });
+  // Eén dwarsstaaf: de spreiding mag, en dan moet die staaf de kracht ook dragen. R = 87,4 kN: UC = 246,5/87,4 = 2,82.
+  const eenDw = doorreken({ ...RC1, n_dw: "1" });
+  toets(eenDw, { UC_d: 0.7589, UC_sy: 2.8197 });
+  // Een oud blad, zonder de nieuwe velden: geen spreiding, dus geen stil 'voldoet'.
+  const { n_dw: _n, d_dw: _d, ...oudBlad } = RC1;
+  void _n; void _d;
+  waar("oud blad zonder dwarsstaven: niet stil gunstig", voldoetNiet(doorreken(oudBlad)));
+  // Op één lijn langs de diagonaal: H/2 = 490,2; 20 stuks om de 24,5 mm, vrij 8,5: 21/8,5 = 2,47.
+  toets(doorreken({ ...RC1, n_dw: "20" }), { UC_sp: 2.4706 }, 5e-3);
+  // Kleinste diameter: Ø6 onder Ø8.
+  toets(doorreken({ ...RC1, d_dw: "6" }), { UC_min: 8 / 6 });
+
+  // k_2 = 0,85 vraagt ten minste twee haarspelden per paal, die met de onderbenen binnen p_x de splijtkracht dragen.
+  toets(doorreken(RC1), { k_n: 0.85 });
+  toets(doorreken({ ...RC1, n_hp: "1" }), { k_n: 0.75 });
+  // s = 300: ⌊350/300⌋ = 1 beugel · 2 · 113,1 = 226,2 + haarspelden 226,2 = 452,4 mm²: R = 196,7 kN < T_sp = 246,5 kN.
+  toets(doorreken({ ...RC1, s_s: "300" }), { k_n: 0.75 });
+  // F_Ed = 2000: F_tot = 2037,0; R = 1018,5·1,07143 = 1091,3; F_c = 1091,3/0,7486 = 1457,8; σ_B = 1457,8e3/(307,8·350) = 13,53.
+  // Eén haarspeld Ø8 draagt 8 % van T_sp en mag het oordeel niet bepalen: 13,53/(0,75·0,88·20) = 1,025.
+  const eenHp = doorreken({ ...RC1, F_Ed: "2000", n_hp: "1", d_hp: "8" });
+  toets(eenHp, { k_n: 0.75, UC_cct: 1.0251 });
+  waar("F_Ed = 2000 met één haarspeld Ø8: voldoet niet", voldoetNiet(eenHp), JSON.stringify(eenHp.r));
+
+  // 7.2(4)P ook bij de karakteristieke last, afgeschat als F_Ed/1,3: (1384,6 + 27,405)/2·650/640 = 717,0 kN; σ = 243,5 N/mm².
+  toets(doorreken(RC1), { "σ_k": 243.46 });
+  // 3Ø20 in een hoge poer, kleine frequente last: z_s = 0,6·1400 = 840; (1384,6 + 54,81)/2·650/840 = 556,9 kN; σ_k = 590,9; UC = 1,182.
+  toets(doorreken({ ...RC1, h_poer: "1800", n_t: "3", d_t: "20", F_fr: "300" }), { z_s: 840, "σ_k": 590.9, UC_w: 1.1818 });
+
+  // De sprong op b = H/2: (6.58) daaronder, (6.59) daarboven, en het blad zegt het.
+  const b490 = doorreken({ ...RC1, b_poer: "490", s_t: "50", n_t: "3" });
+  const b491 = doorreken({ ...RC1, b_poer: "491", s_t: "50", n_t: "3" });
+  waar(`sprong op H/2 = ${(b490.uit.H_s / 2).toFixed(1)}: T_sp van ${b490.uit.T_sp.toFixed(1)} naar ${b491.uit.T_sp.toFixed(1)} kN`, b491.uit.T_sp > 2 * b490.uit.T_sp);
+  waar("onder H/2 noemt het blad (6.58) en de sprong", /niet breder dan H\/2/.test(b490.tekst));
+  waar("boven H/2 noemt het blad (6.59) en de sprong", /breder dan H\/2, dus \(6\.59\)/.test(b491.tekst));
 }
 
 // ── 5. Grensgevallen ────────────────────────────────────────────────────────
@@ -489,6 +544,8 @@ console.log("\n6. Voldoet, voldoet niet, niet getoetst, niet van toepassing");
     ["één beugelsnede", { n_s: "1" }],
     ["geen beugeldiameter", { d_s: "0" }],
     ["zijstaven zonder diameter", { d_z: "0" }],
+    ["dwarsstaven zonder diameter", { d_dw: "0" }],
+    ["half aantal dwarsstaven", { n_dw: "1.5" }],
     ["trekband hoger dan de poer", { h_poer: "80" }],
     ["trekband niet boven de paalkop", { t_in: "90" }],
     ["omgebogen zonder been", { l_op: "0" }],
@@ -502,6 +559,7 @@ console.log("\n6. Voldoet, voldoet niet, niet getoetst, niet van toepassing");
   for (const [wat, invoer] of [
     ["B500A", { betonstaal: "1" }],
     ["Ø40", { d_t: "40", s_t: "90" }],
+    ["dwarsstaaf Ø40", { d_dw: "40" }],
     ["θ < 45°", { a_hoh: "1650", l_poer: "2400" }],
   ]) {
     const r = doorreken({ ...RC1, ...invoer });
@@ -575,6 +633,17 @@ function vergelijk(wat, invoer) {
   const links = p.kolom.x / 2 + parseFloat(invoer.e_p), rechts = links + r.uit.a_v;
   const inVak = p.beugels.x.filter((x) => x >= links - 1e-9 && x <= rechts + 1e-9).length;
   waar(`${wat}: ${inVak} beugels tussen kolom en paal, het blad telt ${r.uit.n_sb}`, inVak >= r.uit.n_sb);
+  // Elke dwarsstaaf ligt op de diagonaal, en de helft in elk deel: daar werkt T.
+  const dw = p.dwarsstaven;
+  const nDw = parseInt(invoer.n_dw);
+  waar(`${wat}: ${4 * nDw} dwarsstaven, ${nDw} per helft van elke diagonaal`, t.dwarsstaven === 4 * nDw && dw.x.length === 4 * nDw, String(t.dwarsstaven));
+  const zMidden = r.uit.a_t + r.uit.z_u / 2;
+  waar(`${wat}: de helft in de paalhelft, de helft in de kolomhelft`, dw.z.filter((z) => z < zMidden).length === 2 * nDw && dw.z.filter((z) => z > zMidden && z < r.uit.a_t + r.uit.z_u).length === 2 * nDw);
+  waar(`${wat}: de dwarsstaven op de lijn van de diagonaal`, dw.x.every((x, i) => {
+    const xKnoop = p.model.eK + p.model.lT;
+    const lijn = xKnoop - ((dw.z[i] - r.uit.a_t) / r.uit.z_u) * p.model.lT;
+    return Math.abs(Math.abs(x) - lijn) < 1e-6;
+  }));
   waar(`${wat}: staafwerk uit het blad overgenomen`, p.model && p.model.z === r.uit.z_u && p.model.hoek === r.uit.θ_g);
   // De lijn op de tekening staat onder dezelfde hoek als het blad rekent: van de kolomknoop naar de paalknoop met de afwijking.
   const hoekTekening = (Math.atan(p.model.z / p.model.lT) * 180) / Math.PI;
@@ -583,6 +652,9 @@ function vergelijk(wat, invoer) {
   const xBinnen = p.a / 2 - p.paal.x / 2 + parseFloat(invoer.e_p);
   const lTekening = p.trekband.xEind[p.trekband.xEind.length - 1] - xBinnen;
   waar(`${wat}: recht deel ${lTekening} gelijk aan het blad`, Math.abs(lTekening - r.uit.l_h) < 1e-9, `${lTekening} tegen ${r.uit.l_h}`);
+  // De afstand op de diagonaal is die waarmee het blad de vrije ruimte toetst.
+  const langs = Math.hypot(dw.x[0] - dw.x[1], dw.z[0] - dw.z[1]);
+  if (nDw > 0) waar(`${wat}: dwarsstaven ${langs.toFixed(1)} uit elkaar langs de diagonaal`, Math.abs(langs - r.uit.H_s / (2 * nDw)) < 1e-6, String(r.uit.H_s / (2 * nDw)));
   // De afstand van de beugelbenen op de tekening is die van het blad, en de haarspeld gebruikt zijn volle lengte.
   if (p.beugels.y.length > 1) {
     const stap = p.beugels.y[1] - p.beugels.y[0];
@@ -592,7 +664,8 @@ function vergelijk(wat, invoer) {
   for (const taal of ["nl", "en"]) {
     const { svg } = tekenPoer(p, talen[taal], 900);
     waar(`${wat} (${taal}): SVG met elke staaf`, tel(svg, "trekband") === n_t && tel(svg, "trekband-dwars") === n_t && tel(svg, "beugel") === t.beugels
-      && tel(svg, "zij-dwars") === t.zij && tel(svg, "boven-dwars") === t.boven && tel(svg, "haarspeld") === t.haarspelden,
+      && tel(svg, "zij-dwars") === t.zij && tel(svg, "boven-dwars") === t.boven && tel(svg, "haarspeld") === t.haarspelden
+      && tel(svg, "dwarsstaaf") === t.dwarsstaven && tel(svg, "dwarsstaaf-langs") === t.dwarsstaven,
       `${tel(svg, "trekband")}, ${tel(svg, "trekband-dwars")}, ${tel(svg, "beugel")}/${t.beugels}, ${tel(svg, "zij-dwars")}/${t.zij}, ${tel(svg, "boven-dwars")}/${t.boven}, ${tel(svg, "haarspeld")}/${t.haarspelden}`);
     waar(`${wat} (${taal}): de gekozen staaf staat in de legenda`, svg.includes(`${n_t}Ø${parseFloat(invoer.d_t)}`) && svg.includes(`Ø${parseFloat(invoer.d_s)}-${parseFloat(invoer.s_s)}`));
     waar(`${wat} (${taal}): geldige SVG met alleen getallen als maat`, svg.startsWith("<svg") && !/NaN|Infinity|undefined/.test(svg));
@@ -601,6 +674,10 @@ function vergelijk(wat, invoer) {
 }
 {
   const p1 = vergelijk("geval 1", RC1);
+  // Handberekening: paalknoop x = 100 + 650 = 750, hoogte 84,5; kolomknoop x = 100, hoogte 84,5 + 733,95 = 818,45.
+  // De eerste van 2·3 staven op 1/12 van de diagonaal: x = 750 − 650/12 = 695,83; z = 84,5 + 733,95/12 = 145,66.
+  waar("geval 1: de eerste dwarsstaaf op de handmatige plaats", Math.abs(Math.abs(p1.dwarsstaven.x[0]) - 695.83) < 0.01 && Math.abs(p1.dwarsstaven.z[0] - 145.66) < 0.01, `${p1.dwarsstaven.x[0]}, ${p1.dwarsstaven.z[0]}`);
+  waar("geval 1: de dwarsstaven in de legenda", tekenPoer(p1, talen.nl, 900).svg.includes("3Ø16"));
   vergelijk("geval 2", RC2);
   vergelijk("geval 3", RC3);
   // Een wijziging in de invoer komt door in het blad én in de tekening.
