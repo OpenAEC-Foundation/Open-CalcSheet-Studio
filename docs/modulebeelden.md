@@ -25,12 +25,13 @@ Deze beelden zijn met beeldgeneratie gemaakt; hierboven staat de prompt.
 ## Getekend
 
 Deze beelden zijn getekend (SVG naar WebP, 540 × 312 pixels). De tekeningen van de
-laatste zeven staan in `scripts/maak-modulebeelden.mjs`; opnieuw draaien maakt ze
+laatste acht staan in `scripts/maak-modulebeelden.mjs`; opnieuw draaien maakt ze
 opnieuw. Dat script gebruikt de kleuren van `tweepaalspoer.webp`.
 
 | Beeld | Tegel | Onderwerp |
 |---|---|---|
 | `tweepaalspoer` | Tweepaalspoer | Poer op twee palen met kolom, wapeningskorf zichtbaar |
+| `doorsnede-spanningen` | Spanningen in een doorsnede | Een stuk I-profiel met het spanningsveld op de snede en de spanningsdriehoeken ernaast |
 | `tekenblad` | Lege tekening | Een vel op de tekentafel met stempelveld, driehoek en potlood |
 | `fem-project` | Open FEM Studio-project | Een raamwerk op een rastervloer, met knopen en de vervormde ligger |
 | `jupyter` | Jupyter-notebook | Gestapelde cellen met regels code, de laatste met staven als uitvoer |

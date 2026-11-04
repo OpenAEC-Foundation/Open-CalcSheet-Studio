@@ -86,6 +86,7 @@
       "ligger": "Beam (timber or steel)",
       "balklaag": "Timber joist floor",
       "tweepaalspoer": "Two-pile cap (reinforced concrete)",
+      "doorsnede-spanningen": "Section stresses",
       "rekentaal-demo": "Open CalcSheet Studio demo"
     }
   },

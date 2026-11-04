@@ -73,9 +73,10 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-algemeen",
     label: "Algemeen",
     defaultExpanded: true,
-    count: 1,
+    count: 2,
     children: [
       { kind: "item", id: "sheet-ligger", label: "Ligger (hout of staal)", templateId: "ligger", status: "controleren" },
+      { kind: "item", id: "sheet-doorsnede", label: "Spanningen in een doorsnede", templateId: "doorsnede-spanningen", status: "controleren" },
     ],
   },
   {

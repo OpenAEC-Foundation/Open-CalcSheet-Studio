@@ -87,6 +87,8 @@ Modules zijn kant-en-klare bladen met een invoerscherm: een **houten balklaag** 
 
 De tweepaalspoer heeft naast de tekening een 3D-studiemodel. Dat toont de poer, de palen, de kolom en elke staaf, en volgt elk veld en elke blauwe maat meteen. **Add module** toont bij elke keuze een plaatje, van een leeg tekenblad tot een Marimo-notebook.
 
+**Spanningen in een doorsnede** is mechanica, geen normtoets: kies een I of H, rechthoek, rond, buis, koker, T of U, stel de normaalkracht, de momenten en de dwarskrachten in twee richtingen in, en zie het spanningsveld in de doorsnede, de neutrale lijn en de diagrammen van σ en τ meteen meebewegen. Zie [wat het blad rekent](docs/doorsnede-spanningen.md).
+
 De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met een schets die laat zien waar het over gaat. De liggers en de doorsnedegrootheden zetten ook een tekening in het blad die je invoer volgt: de momentenlijn op schaal, of de doorsnede op schaal met haar maten. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release. De voorbeelden bewaken hun eigen grenzen: de buigwapening waarschuwt bij een overwapende doorsnede of staven die niet passen, en het voorbeeld van de beugels houdt cot θ binnen de grenzen en toetst afstand en minimumwapening.
 
 | | |
@@ -115,7 +117,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **58 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **59 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.
@@ -125,7 +127,7 @@ Bron van de getallen: de genoemde bestanden en `ls scripts/check-*.mjs`. De stat
 
 ## Huidige beperkingen
 
-- **Controleer de uitkomsten zelf.** De ligger en de tweepaalspoer hebben de status *nog controleren*. De app vervangt het oordeel van een constructeur niet.
+- **Controleer de uitkomsten zelf.** De ligger, de tweepaalspoer en de spanningen in een doorsnede hebben de status *nog controleren*. De app vervangt het oordeel van een constructeur niet.
 - **Jupyter en Marimo zijn alleen op Windows getest.** Op macOS en Linux start de kernel waarschijnlijk niet, omdat de webview daar service workers beperkt. Opgeslagen bestanden en afdrukken werken wel.
 - **Notebooks hebben geen netwerk.** `%pip install` werkt niet, en bibliotheken die op JavaScript in hun uitvoer leunen (plotly, bokeh, ipywidgets) tonen niets. Dat is voorlopig een bewuste keuze.
 - **Een lopende cel is niet te stoppen.** Marimo heeft ook geen SQL-cellen en volgt het donkere of lichte thema alleen bij het laden.

@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 
 import BalklaagDesigner from "./BalklaagDesigner";
+import DoorsnedeDesigner from "./DoorsnedeDesigner";
 import LiggerDesigner from "./LiggerDesigner";
 import TweepaalspoerDesigner from "./TweepaalspoerDesigner";
 
@@ -19,6 +20,7 @@ const DESIGNERS: { marker: string; beeld: () => ReactElement }[] = [
   { marker: "Balklaag", beeld: () => <BalklaagDesigner /> },
   { marker: "Ligger van hout of staal", beeld: () => <LiggerDesigner /> },
   { marker: "Tweepaalspoer", beeld: () => <TweepaalspoerDesigner /> },
+  { marker: "Spanningen in een doorsnede", beeld: () => <DoorsnedeDesigner /> },
 ];
 
 /** Het beeld dat bij deze bladtekst hoort, of null als er geen is. */
