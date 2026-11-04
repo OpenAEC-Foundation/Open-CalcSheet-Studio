@@ -27,11 +27,11 @@ const ontsnap = (t: string) =>
   t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /**
- * Een teken van de rekentaal in het icoonvak, zoals op het toetsenblok van
- * CalcPAD: `#if`, `√`, `mm`. Voor wat geen B2-icoon heeft.
+ * Een teken van de rekentaal in het icoonvak, zoals op een
+ * toetsenblok: `#if`, `√`, `mm`. Voor wat geen B2-icoon heeft.
  */
 export function glyph(teken: string): string {
-  return `<span class="calcpad-glyph" aria-hidden="true">${ontsnap(teken)}</span>`;
+  return `<span class="rekentaal-glyph" aria-hidden="true">${ontsnap(teken)}</span>`;
 }
 
 // Start

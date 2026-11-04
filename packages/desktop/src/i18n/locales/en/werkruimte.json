@@ -80,13 +80,13 @@
       "cat-algemeen": "General",
       "cat-hout": "Timber",
       "cat-beton": "Concrete",
-      "calcpad-samples": "Examples"
+      "rekentaal-samples": "Examples"
     },
     "modules": {
       "ligger": "Beam (timber or steel)",
       "balklaag": "Timber joist floor",
       "tweepaalspoer": "Two-pile cap (reinforced concrete)",
-      "calcpad-demo": "Open CalcSheet Studio demo"
+      "rekentaal-demo": "Open CalcSheet Studio demo"
     }
   },
   "kiezer": {
@@ -762,7 +762,7 @@
       "grafiek": "Graph of a function",
       "tekening": "Drawing (SVG), also parametric"
     },
-    "syntaxNoot": "Every element is on the CalcPAD ribbon tab; Help explains them all.",
+    "syntaxNoot": "Every element is on the Calculation language ribbon tab; Help explains them all.",
     "voorbeeld": "Open the example sheet",
     "voorbeeldUitleg": "A worked sheet that shows the whole language, with explanation.",
     "module": "Add a module",

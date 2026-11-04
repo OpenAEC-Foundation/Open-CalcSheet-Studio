@@ -22,7 +22,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import type { RekenAntwoord, RekenVerzoek } from "../../rekenen/doorrekening";
-import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-includes";
+import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal-includes";
 import { getSetting } from "../../store";
 
 export interface Koppeling {
@@ -75,8 +75,8 @@ function reken(source: string, waarden: Record<string, string>, scope: Record<st
     scope,
     naam: "",
     hoekmodus,
-    includes: [...calcpadIncludes],
-    imageUrls: [...calcpadImageUrls],
+    includes: [...rekentaalIncludes],
+    imageUrls: [...rekentaalImageUrls],
   };
   return new Promise((klaar) => {
     wachtend.set(sleutel, klaar);

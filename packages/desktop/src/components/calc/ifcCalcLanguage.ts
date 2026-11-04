@@ -30,7 +30,7 @@ const FOLD_RULES: FoldRule[] = [
   { open: /^\s*@js\b/, close: /^\s*@end\s*$/ },
   { open: /^\s*@select\b/, close: /^\s*@end\b/ },
   { open: /^\s*#if\b/, close: /^\s*#end\s+if\b/ },
-  // CalcPAD sluit #repeat en #while met #loop; `#end repeat` blijft werken.
+  // De rekentaal sluit #repeat en #while met #loop; `#end repeat` blijft werken.
   { open: /^\s*#repeat\b/, close: /^\s*(#end\s+repeat|#loop)\b/ },
   { open: /^\s*#while\b/, close: /^\s*#loop\b/ },
   { open: /^\s*#for\b/, close: /^\s*#loop\b/ },
@@ -66,16 +66,16 @@ function ifcCalcFoldService(state: EditorState, lineStart: number, lineEnd: numb
 }
 
 /**
- * CodeMirror 6 stream parser for the .ifc-calculation / CalcPAD syntax.
+ * CodeMirror 6 stream parser for the calculation language.
  *
  * Token classes (Lezer tags):
- *   heading       → '# h1 …'  and  '"CalcPAD Title'
+ *   heading       → '# h1 …'  and  '"Title'
  *   comment       → '//' line comment
  *   keyword       → '#if', '#else', '#else if', '#end if', '#hide', '#show',
  *                   '#pre', '#post', '#repeat', '#end repeat',
  *                   '#rad', '#deg', '#gra'
  *   meta          → '@svg', '@end', '@select', '@gef', '@img(…)', '$Plot{ … }'
- *   string        → CalcPAD prose lines starting with `'`
+ *   string        → prose lines starting with `'`
  *   variableName  → identifier on the LHS of '='
  *   operator      → '=' '+' '-' '*' '/' '^' 'to' 'in'
  *   number        → numeric literal (decimal + scientific)
@@ -174,7 +174,7 @@ const parser: StreamParser<{ inPlot: boolean; inJs: boolean; inJsCommentaar: boo
       return "meta";
     }
 
-    // CalcPAD title line `"Title …` — only at column 0
+    // title line `"Title …` — only at column 0
     if (stream.sol() && stream.peek() === '"') {
       stream.skipToEnd();
       return "heading";
@@ -186,7 +186,7 @@ const parser: StreamParser<{ inPlot: boolean; inJs: boolean; inJsCommentaar: boo
       return "heading";
     }
 
-    // CalcPAD directive `#if`, `#hide`, `#repeat`, …
+    // directive `#if`, `#hide`, `#repeat`, …
     if (stream.sol() && stream.match(/^#[a-zA-Z]+/)) {
       const matched = stream.current().slice(1); // remove leading '#'
       if (KEYWORDS.has(matched)) {
@@ -196,7 +196,7 @@ const parser: StreamParser<{ inPlot: boolean; inJs: boolean; inJsCommentaar: boo
       return "keyword";
     }
 
-    // CalcPAD prose line `'…` at column 0 — runs to EOL
+    // prose line `'…` at column 0 — runs to EOL
     if (stream.sol() && stream.peek() === "'") {
       stream.skipToEnd();
       return "string";
@@ -313,7 +313,7 @@ const ifcCalcHighlight = HighlightStyle.define([
 
 /**
  * Statische aanvulling. `sleutel` is de omschrijving als i18n-sleutel
- * (calcpad:editor.…); die wordt pas bij het tonen vertaald, zodat de taal
+ * (rekentaal:editor.…); die wordt pas bij het tonen vertaald, zodat de taal
  * volgt wat de gebruiker op dat moment gekozen heeft.
  */
 type Aanvulling = Completion & { sleutel?: string };
@@ -383,7 +383,7 @@ const STATIC_COMPLETIONS: Aanvulling[] = [
 ];
 
 /** De omschrijving in de gekozen taal; aangeroepen bij elke aanvulling, nooit bij het laden. */
-const omschrijving = (sleutel: string) => i18next.t(`editor.${sleutel}`, { ns: "calcpad" });
+const omschrijving = (sleutel: string) => i18next.t(`editor.${sleutel}`, { ns: "rekentaal" });
 
 function vertaald({ sleutel, ...c }: Aanvulling): Completion {
   return sleutel ? { ...c, detail: omschrijving(sleutel) } : c;
@@ -431,7 +431,7 @@ function dynamicCompletions(source: string): Completion[] {
   return out;
 }
 
-function calcpadCompletionSource(ctx: CompletionContext): CompletionResult | null {
+function rekentaalCompletionSource(ctx: CompletionContext): CompletionResult | null {
   // Allow identifier characters + leading #, @, $ for directive triggers
   const before = ctx.matchBefore(/[#@$]?[\p{L}_][\p{L}\p{N}_]*$/u) ??
                  ctx.matchBefore(/[#@$]$/);
@@ -456,7 +456,7 @@ export function ifcCalcLang(): Extension {
     syntaxHighlighting(ifcCalcHighlight),
     foldService.of(ifcCalcFoldService),
     autocompletion({
-      override: [calcpadCompletionSource],
+      override: [rekentaalCompletionSource],
       activateOnTyping: true,
       defaultKeymap: true,
     }),

@@ -130,7 +130,7 @@ meld(
 
 // ── 2. Elk rekenblad: leeg ≡ standaardwaarde (of 0) ─────────────────────────
 console.log("\nElk rekenblad — alle invoervelden leeg rekent als hun standaardwaarde (of 0):");
-const GEEN_BLAD = new Set(["index.ts", "calcpad-includes.ts", "calcpad-samples.ts", "nl-windgebieden.ts"]);
+const GEEN_BLAD = new Set(["index.ts", "rekentaal-includes.ts", "nl-windgebieden.ts"]);
 
 /** Projectgegevens zoals de app ze vóór de eerste regel in de scope zet (als check-renders). */
 function projectScope() {

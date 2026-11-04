@@ -262,7 +262,7 @@ class Venster {
 
 // ── De uitwerking ─────────────────────────────────────────────────────────────
 
-/** De teksten van de plaatshouder en de meldingen; ze volgen de taal van de app (calcpad.json, js). */
+/** De teksten van de plaatshouder en de meldingen; ze volgen de taal van de app (rekentaal.json, js). */
 export interface JsTeksten {
   uitvoeren: string;
   uitleg: string;

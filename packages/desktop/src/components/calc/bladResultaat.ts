@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import i18next from "i18next";
 import { parse, evaluate } from "@ifc-calc/core";
 import type { AstNode } from "@ifc-calc/core";
-import { calcpadIncludes, calcpadImageUrls } from "../../templates/calcpad-includes";
+import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal-includes";
 import { useActiefExemplaar, useAlleenLezen, useProjectScope } from "../../store/actiefBlad";
 import { leesGetallen, leesResultaat, metRefNamen, ucTekst, type BladUitkomst, type Resultaat } from "./bladLezen";
 import { useDoorrekening } from "../../rekenen/doorrekening";
@@ -12,7 +12,7 @@ export type { Resultaat, BladUitkomst } from "./bladLezen";
 
 /** Leest een bladtekst in, met dezelfde includes en afbeeldingen als de uitwerking. */
 export function leesBlad(source: string): AstNode[] {
-  return parse(source, { includes: calcpadIncludes, imageUrls: calcpadImageUrls });
+  return parse(source, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls });
 }
 
 /**

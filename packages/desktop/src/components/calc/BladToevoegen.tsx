@@ -8,7 +8,7 @@ import { leesGrafBestandIn, voegLeegGrafbladToe } from "../graaf/grafbladToevoeg
 import { voegLeegJupyterToe, voegNotebookToe } from "./jupyterBlad";
 import { voegLeegMarimoToe, voegMarimoBestandToe } from "./marimoBlad";
 import { voegPdfBladToe } from "./pdfBlad";
-import { Uitklap } from "../ribbon/CalcPadTab";
+import { Uitklap } from "../ribbon/RekentaalTab";
 import Icoon from "../Icoon";
 
 /**
@@ -26,10 +26,10 @@ interface Keuze {
 
 function Kolom({ kop, keuzes, onKies }: { kop: string; keuzes: Keuze[]; onKies: (k: Keuze) => void }) {
   return (
-    <section className="calcpad-menu-sectie">
-      <div className="calcpad-menu-kop">{kop}</div>
+    <section className="rekentaal-menu-sectie">
+      <div className="rekentaal-menu-kop">{kop}</div>
       {keuzes.map((k) => (
-        <button key={k.naam} type="button" role="menuitem" className="calcpad-menu-rij" title={k.uitleg} onClick={() => onKies(k)}>
+        <button key={k.naam} type="button" role="menuitem" className="rekentaal-menu-rij" title={k.uitleg} onClick={() => onKies(k)}>
           <Icoon id={k.icoon} uit={k.uit} />
           <span>{k.naam}</span>
         </button>
@@ -88,7 +88,7 @@ export default function BladToevoegen() {
         <span className="pb-naam">{tw("browser.toevoegen.knop")}</span>
       </button>
       {open && anker.current && (
-        <Uitklap anker={anker.current} onSluit={() => setOpen(false)} className="calcpad-menu">
+        <Uitklap anker={anker.current} onSluit={() => setOpen(false)} className="rekentaal-menu">
           <Kolom kop={tw("browser.toevoegen.nieuw")} keuzes={nieuw} onKies={kies} />
           <Kolom kop={tw("browser.toevoegen.bestand")} keuzes={uitBestand} onKies={kies} />
         </Uitklap>

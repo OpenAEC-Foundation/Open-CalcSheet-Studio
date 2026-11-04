@@ -11,7 +11,7 @@ import "./Welkom.css";
 const INSTELLING = "welkomBijStart";
 
 /** Het voorbeeldblad uit de bibliotheek dat de rekentaal laat zien. */
-const VOORBEELD = "calcpad-demo";
+const VOORBEELD = "rekentaal-demo";
 
 /**
  * De rekentaal in vier regels: regel en uitleg. De regels zijn rekentaal en

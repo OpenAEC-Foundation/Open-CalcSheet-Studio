@@ -49,6 +49,10 @@ The release workflow refuses to publish files that are not signed: Windows with 
 - **Your data stays open.** The project file is IFCX, and you can export IFC4x3.
 - **Works with an AI assistant.** A built-in MCP server and REST API run on your own computer, behind a token.
 
+## Inspired by Calcpad
+
+Open CalcSheet Studio is hugely inspired by [Calcpad](https://calcpad.eu/) by Ned Ganchovski; that idea is what led to this app. You write a calculation as plain text and read back every step worked out, and we are grateful for it. The app has its own calculation kernel and also opens your `.cpd` files. The open-source line of Calcpad continues in the community edition [CalcpadCE](https://github.com/imartincei/CalcpadCE).
+
 ## Screenshots
 
 | | |

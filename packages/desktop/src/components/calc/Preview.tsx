@@ -70,7 +70,7 @@ export default function Preview() {
   // blijven bestaan over herberekeningen heen en verhuizen mee naar de nieuwe
   // uitwerking; vóór het tekenen (layout-effect), zodat de stilstaande
   // projectie niet even oplicht. Weg pas als de uitwerking sluit.
-  const { t } = useTranslation("calcpad");
+  const { t } = useTranslation("rekentaal");
   const tRef = useRef(t);
   tRef.current = t;
   const beelden = useRef<DrieDBeelden | null>(null);
@@ -172,7 +172,7 @@ export default function Preview() {
       selectHandlers.push([sel, handler]);
     }
 
-    // CalcPAD `?` input prompts — same selectValues store, different DOM
+    // `?` input prompts — same selectValues store, different DOM
     const prompts = root.querySelectorAll<HTMLInputElement>(".calc-input-value");
     const promptHandlers: Array<[HTMLInputElement, () => void, () => void]> = [];
 

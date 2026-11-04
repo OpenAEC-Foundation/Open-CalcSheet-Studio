@@ -26,7 +26,7 @@
  *      samengestelde raamwerken met alle soorten lasten.
  *   3. Het evenwicht van het hele raamwerk en de hulpfuncties (uitersten,
  *      interpolatie, SVG-punten, verplaatste vorm) en het gebruik vanuit een
- *      rekenblad, met CalcPAD-matrices en grootheden met eenheid.
+ *      rekenblad, met rekentaal-matrices en grootheden met eenheid.
  *   4. De afschuifvervorming (GA in de zevende kolom van de staven): gesloten
  *      formules met de term ∫V/GA en de knik van een pendelstaaf tegen Engesser.
  *
@@ -592,7 +592,7 @@ kop("3. Evenwicht, hulpfuncties en gebruik vanuit een rekenblad");
   const vorm = raamwerkVormPunten(Rs, 1, 10, 100, 10, 100);
   waar("verplaatste vorm", vorm === "10,100 110,80", vorm);
 
-  // Via het rekenblad: CalcPAD-matrices en eenheden.
+  // Via het rekenblad: rekentaal-matrices en eenheden.
   const bron = [
     "EI_k = 210000 N/mm^2*5790 cm^4",
     "EI_r = 210000 N/mm^2*8356 cm^4",

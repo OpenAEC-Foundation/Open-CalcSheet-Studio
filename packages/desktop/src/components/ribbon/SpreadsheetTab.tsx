@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import RibbonGroup from "./RibbonGroup";
 import RibbonButton from "./RibbonButton";
 import RibbonButtonStack from "./RibbonButtonStack";
-import { Uitklap } from "./CalcPadTab";
+import { Uitklap } from "./RekentaalTab";
 import {
   autoSomIcon, copyIcon, cutIcon, functieIcon, kolomInvoegenIcon, kolomPassendIcon, omlaagIcon, papierrandIcon, pasteIcon, rechtsIcon,
   rijInvoegenIcon, rijPassendIcon, sorteerIcon, vastzettenIcon, verwijderIcon,
@@ -19,7 +19,7 @@ import {
 
 const VASTZETTEN: Vastzetten[] = ["rij", "kolom", "cel", "uit"];
 
-/** Grote knop met een menu eronder, in dezelfde stijl als de menu's van CalcPAD. */
+/** Grote knop met een menu eronder, in dezelfde stijl als de menu's van de tab Rekentaal. */
 function MenuKnop<T extends string>({ icon, label, title, uit, keuzes, kies }: {
   icon: string;
   label: string;
@@ -31,18 +31,18 @@ function MenuKnop<T extends string>({ icon, label, title, uit, keuzes, kies }: {
   const [open, setOpen] = useState(false);
   const anker = useRef<HTMLSpanElement>(null);
   return (
-    <span ref={anker} className="calcpad-menu-anker">
+    <span ref={anker} className="rekentaal-menu-anker">
       <RibbonButton icon={icon} label={`${label} ▾`} title={title} size="large" active={open} disabled={uit} onClick={() => setOpen((o) => !o)} />
       {open && anker.current &&
         createPortal(
-          <Uitklap anker={anker.current} onSluit={() => setOpen(false)} className="calcpad-menu spreadsheet-menu">
-            <section className="calcpad-menu-sectie">
+          <Uitklap anker={anker.current} onSluit={() => setOpen(false)} className="rekentaal-menu spreadsheet-menu">
+            <section className="rekentaal-menu-sectie">
               {keuzes.map((k) => (
                 <button
                   key={k.id}
                   type="button"
                   role="menuitem"
-                  className="calcpad-menu-rij"
+                  className="rekentaal-menu-rij"
                   title={k.uitleg}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
@@ -50,7 +50,7 @@ function MenuKnop<T extends string>({ icon, label, title, uit, keuzes, kies }: {
                     kies(k.id);
                   }}
                 >
-                  <span className="calcpad-menu-naam">{k.naam}</span>
+                  <span className="rekentaal-menu-naam">{k.naam}</span>
                   {k.uitleg && <span className="spreadsheet-menu-uitleg">{k.uitleg}</span>}
                 </button>
               ))}

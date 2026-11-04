@@ -25,7 +25,7 @@ import { sprite } from "../ribbon/calcIcons";
 import { belichting, bouwModel, FOV, PAPIER, pasIn, ruimModelOp, type Model, type Standpunt } from "./drieDWeergave";
 import { bewaarIfcx } from "./ifcxBewaren";
 
-/** De teksten van de knoppen en het paneel; ze volgen de taal van de app (calcpad.json, ifcx). */
+/** De teksten van de knoppen en het paneel; ze volgen de taal van de app (rekentaal.json, ifcx). */
 export interface IfcxTeksten {
   hint: string;
   standpunt: Record<Standpunt, string>;

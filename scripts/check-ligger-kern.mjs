@@ -17,7 +17,7 @@
  *      alle keuzes van de overheersende last, met de permanente last als één
  *      bron (ongunstig of gunstig op het totaal) of per deel (EQU).
  *   4. De hulpfuncties (uitersten, interpolatie, nulpunt, velden, delen,
- *      SVG-punten) en het gebruik vanuit een rekenblad, met CalcPAD-matrices en
+ *      SVG-punten) en het gebruik vanuit een rekenblad, met rekentaal-matrices en
  *      grootheden met eenheid.
  *   5. De afschuifvervorming (EI als [EI, GA]): gesloten formules met de term
  *      ∫V/GA, ook voor een statisch onbepaalde ligger (krachtenmethode).
@@ -676,7 +676,7 @@ kop("4. Hulpfuncties en gebruik vanuit een rekenblad");
   const Sm = liggerSamen(-1, R, [[0, 2, -1, 5], [1, 0, 3, 0], [1, -4, 3, 1], [2, 0, 0, 0]]);
   waar("samen, kleinste", JSON.stringify(Sm) === JSON.stringify([[0, 1, -1, 0], [1, 0, 2, 0], [1, -4, 2, 0], [2, -3, -1, 0]]), JSON.stringify(Sm));
 
-  // Via het rekenblad: CalcPAD-matrices, eenheden, en de functies zelf.
+  // Via het rekenblad: rekentaal-matrices, eenheden, en de functies zelf.
   const bron = [
     "EI = 210000 N/mm^2*8356 cm^4",
     "geo = [0; 6 | 1; 1]",

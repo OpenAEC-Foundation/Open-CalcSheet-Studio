@@ -6,9 +6,9 @@ import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
 import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.js';
 
 /**
- * Line-based parser with CalcPAD-compatible syntax.
+ * Line-based parser for the calculation language (docs/rekentaal.md).
  *
- * Supports the subset documented at https://calcpad.eu plus our own additions:
+ * Supported syntax, including our own additions:
  *
  *   Title / heading:    `"Title text`           → H1
  *                       `# h1 … ###### h6`      → markdown headings (own extension)
@@ -21,7 +21,7 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
  *                       `f(x) = x^2 + 1`        → user-defined function (mathjs lambda)
  *
  *   Input prompts:      `F = ? kN`              → interactive numeric input
- *                       `L = ?{5000}mm`         → met standaardwaarde (CalcPAD)
+ *                       `L = ?{5000}mm`         → met standaardwaarde
  *
  *   Bare display:       `UC`                    → show "UC = <current value>"
  *
@@ -60,21 +60,21 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
  *                       `@js … @end` — JavaScript, letterlijk en afgeschermd; zie jsBlok.ts
  *
  *   Statement separator: `,'` (single comma + single-quote) splits one line into
- *                        multiple statements. Used heavily in CalcPAD files like
+ *                        multiple statements. Used heavily in calculation files like
  *                        `a = ?', 'b = ?', 'c = ?`.
  *
  *   Trailing data:      Lines of pure numbers separated by tabs/spaces at the EOF
- *                       are CalcPAD's persisted prompt-input values. Skipped here;
+ *                       are the language's persisted prompt-input values. Skipped here;
  *                       a future enhancement could feed them into SelectValues.
  */
 
 // ── Recognizers ────────────────────────────────────────────────────────
 // Identifier = unicode letter/underscore + letters/digits/underscores. Matches
-// CalcPAD's use of Greek and other non-ASCII letters (θ, α, β, …).
+// The language's use of Greek and other non-ASCII letters (θ, α, β, …).
 const IDENT = '[\\p{L}_][\\p{L}\\p{N}_]*';
 const ASSIGNMENT_RE = new RegExp(`^(${IDENT})\\s*=\\s*(.+)$`, 'u');
 const INPUT_PROMPT_RE = new RegExp(`^(${IDENT})\\s*=\\s*\\?\\s*(.*)$`, 'u');
-// Parameters mogen met een komma of een puntkomma gescheiden worden: CalcPAD
+// Parameters mogen met een komma of een puntkomma gescheiden worden: de rekentaal
 // schrijft puntkomma's, mathjs komma's, en beide horen hier te werken.
 const USER_FUNC_RE = new RegExp(
   `^(${IDENT})\\s*\\(\\s*(${IDENT}(?:\\s*[,;]\\s*${IDENT})*)\\s*\\)\\s*=\\s*(.+)$`,
@@ -84,8 +84,8 @@ const VAR_DISPLAY_RE = new RegExp(`^(${IDENT})\\s*$`, 'u');
 // `M|kN*m`, `M to kN*m`, `M in kN*m` als losse regel (zie isDoeleenheid).
 const OMREKEN_WEERGAVE_RE = new RegExp(`^(${IDENT})\\s*(?:\\||\\s+(?:to|in)\\s+)\\s*(\\S.*)$`, 'u');
 
-const TITLE_RE = /^"(.*)$/;           // CalcPAD title: "Quadratic Equation
-const PROSE_RE = /^'(.*)$/;           // CalcPAD prose: 'free text with <i>HTML</i>
+const TITLE_RE = /^"(.*)$/;           // Title: "Quadratic Equation
+const PROSE_RE = /^'(.*)$/;           // Prose: 'free text with <i>HTML</i>
 // Merkteken voor tekst die op dezelfde bronregel achter een rekendeel stond
 // (`x = a*b', uitleg'`). Een stuurteken, zodat het nooit in echte tekst staat.
 const INLINE_MARK = '\u0001';
@@ -102,9 +102,9 @@ const SELECT_START_RE = /^@select\s+([a-zA-Z_]\w*)\s+"([^"]+)"\s*$/;
 const SELECT_OPTION_RE = /^(.+)\s*=\s*(.+)$/;
 const GEF_RE = /^@gef\s+([a-zA-Z_]\w*)\s*$/;
 // Directive recognizers. All allow trailing characters after the keyword because
-// CalcPAD frequently packs persisted-input values onto the same line as the
+// the language frequently packs persisted-input values onto the same line as the
 // closing directive (e.g. `#end if 2\t3\t-5`). Hoofdletterongevoelig, zoals in
-// CalcPAD (`#If`, `#Else if`, `#End if`, `#Hide`).
+// de rekentaal (`#If`, `#Else if`, `#End if`, `#Hide`).
 const IF_RE = /^#if\s+(.+)$/i;
 const ELSE_IF_RE = /^#else\s*if\s+(.+)$/i;
 const ELSE_RE = /^#else\b/i;
@@ -115,39 +115,39 @@ const PRE_RE = /^#pre\b/i;
 const POST_RE = /^#post\b/i;
 // Opdrachten die vanaf hun regel gelden (zie OpdrachtNode in types.ts). Ze
 // worden tijdens het rekenen uitgevoerd, niet bij het inlezen: een #deg in een
-// #if-tak geldt alleen als die tak loopt, zoals in CalcPAD.
+// #if-tak geldt alleen als die tak loopt, zoals in de rekentaal.
 const OPDRACHT_RE = /^#(deg|rad|gra|equ|val|noc|varsub|nosub|novar)\b/i;
 const ROUND_RE = /^#round\b\s*(.*)$/i;
-// CalcPAD `#def Name$ = "string"` constant definitions and `#include filename`
+// `#def Name$ = "string"` constant definitions and `#include filename`
 // (both handled before line parsing), plus `#split` / `#wrap` (hoe een lange
 // formule afbreekt; de uitwerking breekt zelf af). Silently ignored.
 const NO_OP_DIRECTIVE_RE = /^#(def|include|split|wrap)\b/i;
-// CalcPAD `#repeat n … #loop` (ook zonder n: tot een #break), plus onze eigen
-// afsluiting `#end repeat`. Lusopdrachten zijn in CalcPAD hoofdletterongevoelig
+// `#repeat n … #loop` (ook zonder n: tot een #break), plus onze eigen
+// afsluiting `#end repeat`. Lusopdrachten zijn in de rekentaal hoofdletterongevoelig
 // (`#Repeat`, `#Loop`).
 const REPEAT_RE = /^#repeat\b\s*(.*)$/i;
 const ENDREPEAT_RE = /^#end\s+repeat\b/i;
-// CalcPAD `#for var = lo : hi … #loop` (#break supported as early exit)
+// `#for var = lo : hi … #loop` (#break supported as early exit)
 const FOR_RE = /^#for\s+([\p{L}_][\p{L}\p{N}_]*)\s*=\s*(.+?)\s*:\s*(.+)$/iu;
-// CalcPAD `#while voorwaarde … #loop`
+// `#while voorwaarde … #loop`
 const WHILE_RE = /^#while\s+(.+)$/i;
 const LOOP_RE = /^#loop\b/i;
 const BREAK_RE = /^#break\b/i;
 const CONTINUE_RE = /^#continue\b/i;
-// Match `$Plot{...}` even when CalcPAD has appended trailing persisted-input
+// Match `$Plot{...}` even when a file has appended trailing persisted-input
 // data after the closing brace (e.g. `}\v2\t3`).
 const PLOT_RE = /^\$Plot\s*\{([^}]+)\}/;
 const SOLVER_RE = /\$(Find|Root|Solve|Sup|Inf|Sum|Product|Area|Integral|Slope)\s*\{([^}]+)\}/g;
 const TRAILING_DATA_RE = /^[\s\d.eE+\-,;]+$/;  // pure numeric/whitespace line
 
-// HTML wrappers CalcPAD uses around conditions / equation fragments.
+// HTML wrappers the language uses around conditions / equation fragments.
 const HTML_COMMENT_WRAPPER_RE = /^\s*'?<!--\s*'?(.+?)'?\s*-->\s*'?\s*$/;
 
 // ── State ──────────────────────────────────────────────────────────────
 interface ParserState {
   hidden: boolean;
   /**
-   * Na `#pre`: alleen op het scherm. In CalcPAD toont `#pre` iets alleen in het
+   * Na `#pre`: alleen op het scherm. In de rekentaal toont `#pre` iets alleen in het
    * invoerformulier, vóór het doorrekenen, en `#post` alleen in de uitkomst.
    * Deze app heeft geen apart formulier: de uitwerking op het scherm is
    * invoer en uitkomst tegelijk, het papier is de uitkomst. Dus `#pre` →
@@ -176,7 +176,7 @@ function knipFormaat(code: string): { tekst: string; formaat?: string } {
 }
 
 /**
- * Pre-process the entire source to fold CalcPAD's comma-subscript identifiers
+ * Pre-process the entire source to fold the language's comma-subscript identifiers
  * (e.g. `V_b,0`, `n_Int,support,points`, `A_WindPressure,Suction`) into
  * underscore-only equivalents that math.js can parse as valid identifiers.
  *
@@ -279,7 +279,7 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
 }
 
 /**
- * CalcPAD identifies string variables with a trailing `$` (e.g. `ii$`,
+ * The language identifies string variables with a trailing `$` (e.g. `ii$`,
  * `Client$`, `getFdn$(ii$)`). math.js doesn't allow `$` in identifiers, so
  * these references blow up entire conditional cascades. We simply strip the
  * trailing `$` everywhere a word character precedes it — the values still
@@ -320,7 +320,7 @@ function normaliseer3d(expr: string): string {
 }
 
 /**
- * Expand CalcPAD multi-line `#def name(p1; p2; ...) ... #end def` macros via
+ * Expand multi-line `#def name(p1; p2; ...) ... #end def` macros via
  * textual substitution. Single-line `#def name = "value"` and
  * `#def name(args) = expression` are skipped (handled later).
  *
@@ -343,7 +343,7 @@ function expandMacros(source: string): string {
     const line = raw[i];
     const trimmed = line.trim();
     // Multi-line: `#def name(p1; p2; ...)` or `#def name$(p1$; p2$; ...)`
-    // (no `=` sign on the def line). `$` is a CalcPAD string-type suffix.
+    // (no `=` sign on the def line). `$` is a string-type suffix.
     const blockDef = trimmed.match(/^#def\s+([\p{L}_][\p{L}\p{N}_]*)\$?\s*\(\s*([^)]*)\s*\)\s*$/u);
     if (blockDef) {
       const name = blockDef[1];
@@ -384,7 +384,7 @@ function expandMacros(source: string): string {
   if (macros.size === 0 && constants.size === 0) return source;
 
   // Pass 2 — left-to-right linear scan, expanding macro calls one at a time.
-  // `\$?` between the name and `(` matches CalcPAD's string-typed call syntax
+  // `\$?` between the name and `(` matches the language's string-typed call syntax
   // `getFdn$(arg)`, `line$(...)`.
   let text = stripped.join('\n');
 
@@ -468,7 +468,7 @@ function findMatchingParen(s: string, openIdx: number): number {
 }
 
 function splitArgs(raw: string): string[] {
-  // CalcPAD uses `;` to separate function/macro arguments. Comma is reserved
+  // The language uses `;` to separate function/macro arguments. Comma is reserved
   // for subscripts (`b_fdn,1`) which foldSubscriptCommas rewrites later.
   // Splitting on `,` here would scramble argument order whenever a subscript
   // value is passed in (e.g. `drawFDN$(...; b_fdn,1; b_fdn,2; ...)`).
@@ -490,7 +490,7 @@ function splitArgs(raw: string): string[] {
 }
 
 function applyMacro(macro: { params: string[]; body: string[]; oneLine: string | null }, args: string[]): string {
-  // CalcPAD typed-param refs carry `$` (`x$`, `n_Length$`). Bare refs
+  // Typed-param refs carry `$` (`x$`, `n_Length$`). Bare refs
   // (`n_Length` without `$`) also occur in arithmetic context, but bare refs
   // for single-letter params (`x`, `y`, `b`, `h`, `l`, `w`) collide with SVG
   // attribute names inside prose-template lines (`<rect x="…">`). Strategy:
@@ -530,7 +530,7 @@ function applyMacro(macro: { params: string[]; body: string[]; oneLine: string |
 }
 
 /**
- * CalcPAD allows `.` and `%` inside identifier names (e.g. `Cs.Cd`,
+ * The language allows `.` and `%` inside identifier names (e.g. `Cs.Cd`,
  * `F_0.9G50%TotalWeight`). mathjs treats `.` as member access and `%` as
  * modulo, so these names blow up. Fold them to `_` when the surrounding
  * tokens form an identifier-like cluster: a leading letter/underscore,
@@ -548,19 +548,19 @@ function foldIdentifierDots(source: string): string {
   // attribute values must survive unchanged.
   const transformOutsideQuotes = (text: string): string => {
     let out = text;
-    // CalcPAD vector index `name.(expr)` → `name[expr]`. Must precede dot-fold
+    // vector index `name.(expr)` → `name[expr]`. Must precede dot-fold
     // so the parenthesised index isn't accidentally read as a member access.
     out = out.replace(
       /(?<![\p{L}\p{N}_.])([\p{L}_][\p{L}\p{N}_]*)\.\(([^()]*)\)/gu,
       (_m, name, expr) => `${name}[${expr}]`,
     );
-    // CalcPAD vector index `name.digit` → `name[digit]`. Must precede the
+    // vector index `name.digit` → `name[digit]`. Must precede the
     // identifier-cluster fold so `cc.3` isn't mistakenly read as `cc_3`.
     out = out.replace(
       /(?<![\p{L}\p{N}_.])([\p{L}_][\p{L}\p{N}_]*)\.(\d+)(?![\p{L}\p{N}_.])/gu,
       (_m, name, idx) => `${name}[${idx}]`,
     );
-    // CalcPAD vector index by loop-variable: `name.i`, `name.j` (single
+    // vector index by loop-variable: `name.i`, `name.j` (single
     // lowercase letter) → `name[i]`. Distinguishes from dotted identifiers
     // like `Cs.Cd` (uppercase / multi-char RHS) which still get folded.
     //
@@ -590,7 +590,7 @@ function foldIdentifierDots(source: string): string {
 }
 
 /**
- * CalcPAD lets every expression carry a trailing display-format hint
+ * The language lets every expression carry a trailing display-format hint
  * (`:F2` = fixed-point 2 decimals, `:N0`, `:G`, `:E3`, `:P`). It's a
  * display directive, not part of the math. Staat hij aan het eind van een
  * rekendeel, dan blijft hij als merkteken (FORMAAT_MARK + `F2`) staan; de
@@ -666,9 +666,9 @@ function stripFormatSpecs(source: string): string {
 }
 
 /**
- * CalcPAD-matrixliteralen naar de geneste vorm van mathjs, rij voor rij.
+ * Matrixliteralen van de rekentaal naar de geneste vorm van mathjs, rij voor rij.
  *
- * In CalcPAD scheidt `|` de RIJEN en `;` de elementen binnen een rij:
+ * In de rekentaal scheidt `|` de RIJEN en `;` de elementen binnen een rij:
  * `[1; 2 | 3; 4]` is de matrix met rijen [1, 2] en [3, 4], en wordt hier
  * `[[1, 2], [3, 4]]`. Eerder werden de `|`-delen als kolommen
  * gelezen; daardoor stond elke matrix gekanteld in het geheugen, gaven A*B en
@@ -677,7 +677,7 @@ function stripFormatSpecs(source: string): string {
  *
  * Een rij mag korter zijn dan de andere; de rekenkern vult hem met nullen aan,
  * en een vector als element wordt in de rij uitgevouwen (`[a | 2*a]`), zoals in
- * CalcPAD. Dat gebeurt bij het rekenen (`_cp_matrix_lit`), want hier is nog
+ * de rekentaal. Dat gebeurt bij het rekenen (`_cp_matrix_lit`), want hier is nog
  * niet bekend of een naam een getal of een vector is.
  *
  * Alleen in rekendelen: tekst als "'Profielmatrix: [id | b | h]" blijft staan.
@@ -882,7 +882,7 @@ export function parse(source: string, options: ParseOptions = {}): AstNode[] {
     ),
   );
   source = rewriteSolverDirectives(source);
-  // CalcPAD's `'` character toggles between CODE and PROSE on a single line.
+  // The language's `'` character toggles between CODE and PROSE on a single line.
   // Lines start in CODE mode. Each `'` flips mode. So:
   //   a = ?', 'b = ?     →  CODE `a = ?` + PROSE `, ` + CODE `b = ?`
   //   f(x) = c'= 0       →  CODE `f(x) = c` + PROSE `= 0`
@@ -1014,7 +1014,7 @@ function parseLines(
       continue;
     }
 
-    // CalcPAD prose line: 'free text + <i>HTML</i>
+    // prose line: 'free text + <i>HTML</i>
     // May contain embedded `'expr'` value interpolation (e.g. SVG macros).
     const proseMatch = trimmed.match(PROSE_RE);
     if (proseMatch) {
@@ -1022,7 +1022,7 @@ function parseLines(
       const text = inline ? proseMatch[1].slice(INLINE_MARK.length) : proseMatch[1];
       const textTrim = text.trim();
       const extra = inline ? { inline: true } : {};
-      // Skip empty prose AND CalcPAD's persisted input values that latch
+      // Skip empty prose AND the language's persisted input values that latch
       // onto a trailing `'` (e.g. `'2	1` at EOF).
       if (textTrim !== '' && !TRAILING_DATA_RE.test(textTrim)) {
         if (text.indexOf("'") !== -1) {
@@ -1066,7 +1066,7 @@ function parseLines(
     }
     const metFormaat = formaat ? { formaat } : {};
 
-    // CalcPAD title line: "Title text → emit as H1
+    // title line: "Title text → emit as H1
     const titleMatch = trimmed.match(TITLE_RE);
     if (titleMatch) {
       const text = titleMatch[1].trim();
@@ -1092,11 +1092,11 @@ function parseLines(
     }
 
     // Visibility directives. `#hide`, `#show`, `#pre` en `#post` sluiten elkaar
-    // uit, zoals in CalcPAD: elk zet de stand voor de regels die volgen.
+    // uit, zoals in de rekentaal: elk zet de stand voor de regels die volgen.
     if (HIDE_RE.test(trimmed)) { state.hidden = true; state.scherm = false; i++; continue; }
     if (SHOW_RE.test(trimmed)) { state.hidden = false; state.scherm = false; i++; continue; }
 
-    // `#pre` / `#post` (zie ParserState.scherm). Real CalcPAD files often use
+    // `#pre` / `#post` (zie ParserState.scherm). Real calculation files often use
     // `#hide` followed by `#post` to "begin showing results again" — so
     // `#post` un-hides. `#pre`: alleen op het scherm, bij de invoer.
     if (POST_RE.test(trimmed)) { state.hidden = false; state.scherm = false; i++; continue; }
@@ -1124,9 +1124,9 @@ function parseLines(
     // file inclusion are out of scope for this engine).
     if (NO_OP_DIRECTIVE_RE.test(trimmed)) { i++; continue; }
 
-    // #repeat N … #loop (CalcPAD) of … #end repeat. Zonder N herhaalt de lus
+    // #repeat N … #loop of … #end repeat. Zonder N herhaalt de lus
     // tot een #break, met een bovengrens in de rekenkern. N wordt afgerond op
-    // het dichtstbijzijnde gehele getal, zoals in CalcPAD.
+    // het dichtstbijzijnde gehele getal, zoals in de rekentaal.
     const repeatMatch = trimmed.match(REPEAT_RE);
     if (repeatMatch) {
       const wasHidden = state.hidden;
@@ -1141,7 +1141,7 @@ function parseLines(
       continue;
     }
 
-    // CalcPAD `#while voorwaarde … #loop`: zolang de voorwaarde waar is.
+    // `#while voorwaarde … #loop`: zolang de voorwaarde waar is.
     const whileMatch = trimmed.match(WHILE_RE);
     if (whileMatch) {
       const wasHidden = state.hidden;
@@ -1155,7 +1155,7 @@ function parseLines(
       continue;
     }
 
-    // CalcPAD `#for var = lo : hi … #loop` — emit as a repeat node with the
+    // `#for var = lo : hi … #loop` — emit as a repeat node with the
     // loop-var name baked into a synthetic `var = lo + _i - 1` prelude. Evaluator
     // already exposes `_i` (1-based iteration counter) inside repeat bodies, so
     // we only need to bind the user's `var` to the right value.
@@ -1300,7 +1300,7 @@ function parseLines(
     const ifMatch = trimmed.match(IF_RE);
     if (ifMatch) {
       // IF_RE captures everything after `#if `. The condition may itself
-      // contain trailing CalcPAD junk (e.g. extra `'` tokens); strip it.
+      // contain trailing junk (e.g. extra `'` tokens); strip it.
       const cond = stripCondWrapping(ifMatch[1]);
       const result = parseConditional(lines, i, end, state, cond);
       nodes.push(result.node);
@@ -1323,7 +1323,7 @@ function parseLines(
     const promptMatch = trimmed.match(INPUT_PROMPT_RE);
     if (promptMatch) {
       let unit = promptMatch[2].trim();
-      // CalcPAD: de standaardwaarde staat tussen accolades achter het
+      // De standaardwaarde staat tussen accolades achter het
       // vraagteken, de eenheid daarna: `L = ?{5000}mm`, `F = ? {3} kN`,
       // `q = ?{2.5}*(kN/m)`. Zonder accolades is hij 0.
       let defaultValue = '0';
@@ -1335,7 +1335,7 @@ function parseLines(
           unit = unit.slice(sluit + 1).trim();
         }
       }
-      // CalcPAD allows `?*(unit)` for prompts that imply multiplication by the
+      // The language allows `?*(unit)` for prompts that imply multiplication by the
       // unit (e.g. `q = ?*(kN/m)`). Strip the leading `*` plus optional parens.
       if (unit.startsWith('*')) unit = unit.slice(1).trim();
       if (unit.startsWith('(') && unit.endsWith(')')) {
@@ -1368,7 +1368,7 @@ function parseLines(
           name: fnMatch[1],
           params,
           // Net als elke andere expressie normaliseren. Zonder deze stap bleef
-          // de body van een functie als enige achter met CalcPAD-notatie: een
+          // de body van een functie als enige achter met rekentaal-notatie: een
           // `if(a; b; c)` erin werd nooit omgezet naar komma's en `≤`, `≡` en π
           // bleven onvertaald, waarna de aanroep stilzwijgend als tekst in de
           // uitdraai belandde in plaats van als getal.
@@ -1433,7 +1433,7 @@ function parseLines(
       continue;
     }
 
-    // CalcPAD trailing data (persisted prompt inputs) — skip silently
+    // trailing data (persisted prompt inputs) — skip silently
     if (TRAILING_DATA_RE.test(trimmed)) {
       i++;
       continue;
@@ -1458,14 +1458,14 @@ function markHidden<T extends AstNode>(node: T, state: ParserState): T {
 }
 
 /**
- * Strip CalcPAD's HTML-comment wrapping from a condition string.
+ * Strip the language's HTML-comment wrapping from a condition string.
  * `'<!--'a ≡ 0'-->`  →  `a ≡ 0`
- * Also normalises CalcPAD-specific operators to math.js-compatible forms.
+ * Also normalises language-specific operators to math.js-compatible forms.
  */
 function stripCondWrapping(cond: string): string {
   const m = cond.match(HTML_COMMENT_WRAPPER_RE);
   let stripped = m ? m[1].trim() : cond.trim();
-  // CalcPAD comparison operators → math.js
+  // comparison operators → math.js
   stripped = stripped
     .replace(/≡/g, '==')
     .replace(/≠/g, '!=')
@@ -1475,16 +1475,16 @@ function stripCondWrapping(cond: string): string {
 }
 
 /**
- * Translate CalcPAD-specific identifiers / Unicode constants / separators to
+ * Translate language-specific identifiers / Unicode constants / separators to
  * math.js-compatible forms.
  *
  *   sqr(x)         → sqrt(x)
- *   lg(x)          → log10(x)         (CalcPAD common-log)
+ *   lg(x)          → log10(x)         (common-log)
  *   π              → pi
- *   f(a; b; c)     → f(a, b, c)       (CalcPAD uses `;` as arg separator)
+ *   f(a; b; c)     → f(a, b, c)       (the language uses `;` as arg separator)
  */
 /**
- * Lift CalcPAD iterative-solver directives out of expressions so they can
+ * Lift iterative-solver directives out of expressions so they can
  * use mathjs user-functions internally.
  *
  *   `$Find{f(x) @ x = lo : hi}`   → bisection on f(x) = 0 in [lo, hi]
@@ -1576,7 +1576,7 @@ function normaliseerCode(code: string, einde: boolean): string {
     .replace(/≥/g, '>=')
     .replace(/≤/g, '<=');
   if (einde) {
-    // CalcPAD `expr|unit` = target-unit conversion → mathjs `expr to unit`.
+    // `expr|unit` = target-unit conversion → mathjs `expr to unit`.
     // Runs after matrix-rewrite so `[a;b|c;d]` matrices are already
     // converted to nested arrays before this point.
     uit = uit.replace(/\|(\s*[\p{L}\p{N}_/\s^*()-]+)$/u, (_m, doel: string) => ` to ${inchInDoel(doel)}`);
@@ -1586,7 +1586,7 @@ function normaliseerCode(code: string, einde: boolean): string {
 }
 
 /**
- * Omrekenen met `in`. In CalcPAD is `in` de inch en omrekenen `|`; mathjs kent
+ * Omrekenen met `in`. In de rekentaal is `in` de inch en omrekenen `|`; mathjs kent
  * `in` als omrekening (`x in mm`) én als inch, en leest `2 in` (een getal
  * ervoor) als 2 inch. `F*a/2 in kN*m` werd zo (F·a)/(2 inch)·kN·m.
  *
@@ -1640,9 +1640,9 @@ function isEenheid(naam: string): boolean {
 }
 
 /**
- * In CalcPAD hoort een eenheid bij het getal ervoor: `5 kN/m` is één
+ * In de rekentaal hoort een eenheid bij het getal ervoor: `5 kN/m` is één
  * grootheid. Na een deelstreep maakt dat verschil. mathjs leest
- * `20 kN/5 kN/m` als (20 kN / 5 kN) / m = 4 m⁻¹, waar CalcPAD
+ * `20 kN/5 kN/m` als (20 kN / 5 kN) / m = 4 m⁻¹, waar de rekentaal
  * 20 kN / (5 kN/m) = 4 m bedoelt, en `3/4 mm` als (3/4) mm in plaats van
  * 3 / (4 mm). Daarom komen een getal en zijn eenheid direct na een `/` tussen
  * haken: `/ 5 kN/m` → `/(5 kN/m)`. De eenheid loopt door over `/eenheid` en

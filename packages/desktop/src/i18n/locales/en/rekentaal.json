@@ -290,7 +290,7 @@
   "editor": {
     "voorwaarde": "conditional",
     "zichtbaarheid": "visibility",
-    "markering": "calcpad marker",
+    "markering": "calculation language marker",
     "lus": "loop",
     "hoekeenheid": "angle mode",
     "tekenblok": "drawing block",
@@ -311,7 +311,7 @@
     "wiskundeSqrt": "math (=sqrt)",
     "wiskundeNatuurlijk": "math (natural)",
     "wiskundeLog10": "math (=log10)",
-    "keuzefunctie": "calcpad ternary",
+    "keuzefunctie": "if … then … else",
     "matrix": "matrix",
     "omrekenen": "convert unit",
     "eenheid": "unit",

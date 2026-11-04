@@ -80,13 +80,13 @@
       "cat-algemeen": "Algemeen",
       "cat-hout": "Hout",
       "cat-beton": "Beton",
-      "calcpad-samples": "Voorbeelden"
+      "rekentaal-samples": "Voorbeelden"
     },
     "modules": {
       "ligger": "Ligger (hout of staal)",
       "balklaag": "Balklaag (houten vloerbalken)",
       "tweepaalspoer": "Tweepaalspoer (gewapend beton)",
-      "calcpad-demo": "Open CalcSheet Studio demo"
+      "rekentaal-demo": "Open CalcSheet Studio demo"
     }
   },
   "kiezer": {
@@ -762,7 +762,7 @@
       "grafiek": "Grafiek van een functie",
       "tekening": "Tekening (SVG), ook parametrisch"
     },
-    "syntaxNoot": "Alles staat ook als knop op de lintab CalcPAD; Help legt het volledig uit.",
+    "syntaxNoot": "Alles staat ook als knop op de lintab Rekentaal; Help legt het volledig uit.",
     "voorbeeld": "Voorbeeldblad openen",
     "voorbeeldUitleg": "Een uitgewerkt blad dat de hele rekentaal laat zien, met uitleg.",
     "module": "Module toevoegen",

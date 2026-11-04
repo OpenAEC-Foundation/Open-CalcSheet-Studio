@@ -1,5 +1,5 @@
 import type { EditorView } from "@codemirror/view";
-import type { SyntaxKnop } from "./calcpadLint";
+import type { SyntaxKnop } from "./rekentaalLint";
 
 const OPEN = "⟨";
 const DICHT = "⟩";
