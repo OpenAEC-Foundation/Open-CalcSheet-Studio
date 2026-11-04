@@ -39,12 +39,12 @@ export interface IfcxTeksten {
 /** Eenheden van de attributen van de standaard en van `ocss::calc`: alles SI, zoals de voorbeelden. */
 const EENHEDEN: Readonly<Record<string, string>> = {
   Length: "m", Width: "m", Height: "m", Depth: "m", CrossSectionArea: "m²", NetVolume: "m³", Volume: "m³",
-  MassDensity: "kg/m³", hartOpHart: "m", overspanning: "m",
+  MassDensity: "kg/m³", hartOpHart: "m", overspanning: "m", diameter: "m",
 };
 /** De naam staat al boven het paneel; de klasse en de rest eronder in deze volgorde. */
 const VOLGORDE = [
-  "class", "TypeName", "material", "StrengthClass", "MassDensity", "Length", "Width", "Height", "Depth",
-  "CrossSectionArea", "NetVolume", "hartOpHart", "overspanning", "unityCheck", "toetsen", "opmerking",
+  "class", "TypeName", "material", "StrengthClass", "MassDensity", "diameter", "Length", "Width", "Height", "Depth",
+  "CrossSectionArea", "NetVolume", "hartOpHart", "overspanning", "unityCheck", "toetsen", "aantalStaven", "aantalGetoond", "opmerking",
 ];
 
 const kortNaam = (sleutel: string) => sleutel.split("::").pop() ?? sleutel;

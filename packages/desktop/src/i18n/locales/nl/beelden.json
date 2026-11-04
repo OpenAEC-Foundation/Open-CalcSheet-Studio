@@ -101,7 +101,27 @@
     },
     "noot": "De overige invoer en de toetsen staan in het rekenblad. Zonder bevestiging van de dwarsstabiliteit geeft het blad geen eindoordeel.",
     "klik": "Klik op een blauwe maat om die te wijzigen — stroomt direct terug in het rekenblad.",
-    "bewaarSvg": "Detail als SVG opslaan"
+    "bewaarSvg": "Detail als SVG opslaan",
+    "modelKop": "3D-studiemodel",
+    "modelBeperkt": "Het model toont {{getoond}} van de {{totaal}} staven: zoveel zijn er niet zinvol te tekenen.",
+    "model": {
+      "tweepaalspoer": "Tweepaalspoer",
+      "hartOpHart": "palen h.o.h.",
+      "poer": "Poer",
+      "paal": "Paal",
+      "kolom": "Kolom",
+      "korf": "Wapeningskorf",
+      "trekband": "Trekbandstaaf",
+      "beugel": "Beugel",
+      "zijstaaf": "Zijstaaf",
+      "bovenstaaf": "Bovenstaaf",
+      "haarspeld": "Haarspeld",
+      "alleenAanzet": "Alleen de aanzet is getekend; de lengte valt buiten dit blad.",
+      "project": "Project",
+      "terrein": "Terrein",
+      "gebouw": "Gebouw",
+      "verdieping": "Verdieping"
+    }
   },
   "balklaag": {
     "titel": "Parametrisch beeld — balklaag",

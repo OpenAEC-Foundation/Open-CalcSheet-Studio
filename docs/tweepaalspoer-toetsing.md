@@ -217,5 +217,17 @@ Het blad is met de hand en met willekeurige invoer nagerekend en doorzocht op ee
 ## 7. Fase 1 en verder
 
 Dit blad is fase 1 uit het voorstel: de tweepaalspoer met berekening en parametrisch
-detail. De vierpaalspoer, staaflijst met merken, DXF, IFC-wapening en projectkoppelingen
-vallen hier buiten.
+detail. De vierpaalspoer, staaflijst met merken, DXF en projectkoppelingen vallen hier
+buiten. De korf staat wel in de IFC-uitvoer: elke staaf met zijn vorm en diameter, zonder
+merken of buiglijst (zie [ifc-export.md](ifc-export.md)).
+
+## 8. Het 3D-studiemodel
+
+Op het scherm staat bij de tekening een draaibaar model: de poer als doorzichtig
+betonvolume, de twee palen, de kolom en de korf. Het model rekent niets uit en toetst
+niets. Het komt uit dezelfde definitie als de tekening (`poerDefinitie.ts`, via
+`poerIfcx.ts`) en volgt elke wijziging meteen, uit de velden en uit de blauwe maten. Palen
+en kolom zijn alleen de aanzet, zoals op de tekening. Het staat niet op papier.
+
+`scripts/check-poer-ifcx.mjs` legt het model naast de definitie en de tekening: de maten,
+en het aantal en de plaats van elke staaf.

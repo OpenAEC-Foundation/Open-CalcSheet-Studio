@@ -74,8 +74,8 @@ function beeld() {
         const h = (i / 28) * 2 * Math.PI;
         return [x + r * Math.cos(h), y + r * Math.sin(h), hoogte];
       });
-      if (dik > 0) b.vlak(ring(z), randKleur);
       if (dik > 0) {
+        b.vlak(ring(z), randKleur);
         for (const [i, p] of ring(z).entries()) {
           const q = ring(z)[(i + 1) % 28];
           b.vlak([p, q, [q[0], q[1], z + dik], [p[0], p[1], z + dik]], randKleur);

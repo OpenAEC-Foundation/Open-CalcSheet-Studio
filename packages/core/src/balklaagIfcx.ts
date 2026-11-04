@@ -233,7 +233,7 @@ const uitM = (m: number) => Math.round(m * 1e6) / 1e6;
 const WOOD = { code: 'WOOD', uri: 'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcMaterial' };
 
 /** Een blok met de kanten evenwijdig aan de assen, in mm; 24 punten, want elk vlak heeft zijn eigen normaal. */
-function blok(x0: number, x1: number, y0: number, y1: number, z0: number, z1: number) {
+export function ifcxBlokMesh(x0: number, x1: number, y0: number, y1: number, z0: number, z1: number) {
   const [a, b, c, d, e, f] = [x0, x1, y0, y1, z0, z1].map(naarM);
   const vlakken: number[][][] = [
     [[a, c, e], [a, d, e], [b, d, e], [b, c, e]], // onder
@@ -312,7 +312,7 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string, taal?
     if (bestaand) return bestaand;
     const p = pad(`profiel/${lengte}`);
     const lichaam = pad(`profiel/${lengte}/lichaam`);
-    knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(0, lengte, -b / 2, b / 2, 0, h) } });
+    knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: ifcxBlokMesh(0, lengte, -b / 2, b / 2, 0, h) } });
     knopen.push({
       path: p,
       children: { Lichaam: lichaam },
@@ -361,7 +361,7 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string, taal?
   const oplegging = (nr: number, x: number, breedte: number, y0: number, y1: number) => {
     const p = pad(`oplegging/${nr}`);
     const lichaam = pad(`oplegging/${nr}/lichaam`);
-    knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(x - breedte / 2, x + breedte / 2, y0, y1, -OPLEGGING_HOOGTE, 0) } });
+    knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: ifcxBlokMesh(x - breedte / 2, x + breedte / 2, y0, y1, -OPLEGGING_HOOGTE, 0) } });
     knopen.push({
       path: p,
       children: { Lichaam: lichaam },
@@ -384,7 +384,7 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string, taal?
     const kind_: Record<string, string> = {};
     delen.forEach(([xa, xb, ya, yb, za, zb], i) => {
       const lichaam = pad(`balk/${kind}/lichaam${i === 0 ? '' : `/${i + 1}`}`);
-      knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(xa, xb, ya, yb, za, zb) } });
+      knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: ifcxBlokMesh(xa, xb, ya, yb, za, zb) } });
       kind_[delen.length === 1 ? 'Lichaam' : `Lichaam_${i + 1}`] = lichaam;
     });
     knopen.push({
@@ -414,7 +414,7 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string, taal?
     const kind: Record<string, string> = {};
     delen.forEach(([x0, x1, y0, y1], i) => {
       const lichaam = pad(`vloerplaat/lichaam/${i + 1}`);
-      knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(x0, x1, y0, y1, h, h + tVloer) } });
+      knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: ifcxBlokMesh(x0, x1, y0, y1, h, h + tVloer) } });
       kind[delen.length === 1 ? 'Lichaam' : `Lichaam_${i + 1}`] = lichaam;
     });
     knopen.push({
@@ -532,7 +532,7 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string, taal?
       const kind_: Record<string, string> = {};
       stroken.forEach(([ya, yb], i) => {
         const lichaam = pad(`oplegging/${nr}/lichaam${i === 0 ? '' : `/${i + 1}`}`);
-        knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(x - aOpl / 2, x + aOpl / 2, ya, yb, -OPLEGGING_HOOGTE, 0) } });
+        knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: ifcxBlokMesh(x - aOpl / 2, x + aOpl / 2, ya, yb, -OPLEGGING_HOOGTE, 0) } });
         kind_[`Lichaam_${i + 1}`] = lichaam;
       });
       knopen.push({
@@ -552,7 +552,7 @@ export function balklaagIfcxKnopen(invoer: BalklaagInvoer, bladId: string, taal?
         const q = pad(`oplegging/${nr}/${kant}`);
         const lichaam = pad(`oplegging/${nr}/${kant}/lichaam`);
         // Tot op de onderkant van de wisselbalk, en altijd minstens zo diep als de wand.
-        knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: blok(x - aOpl / 2, x + aOpl / 2, ya, yb, Math.min(zW, 0) - OPLEGGING_HOOGTE, zW) } });
+        knopen.push({ path: lichaam, attributes: { [ATTR.mesh]: ifcxBlokMesh(x - aOpl / 2, x + aOpl / 2, ya, yb, Math.min(zW, 0) - OPLEGGING_HOOGTE, zW) } });
         knopen.push({
           path: q,
           children: { Lichaam: lichaam },

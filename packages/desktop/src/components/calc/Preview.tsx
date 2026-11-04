@@ -12,7 +12,7 @@ import { useZoom } from "../../hooks/useZoom";
 import { useDoorrekening } from "../../rekenen/doorrekening";
 import HelpPanel from "./HelpPanel";
 import { DrieDBeelden } from "./drieDBlok";
-import { IfcxBeelden } from "./ifcxBlok";
+import { IfcxBeelden, ifcxTeksten } from "./ifcxBlok";
 import { IframeBeelden } from "./iframeBlok";
 import { JsBeelden } from "./jsBlok";
 import { schoonUitwerking } from "./uitwerkingOpschonen";
@@ -98,22 +98,7 @@ export default function Preview() {
   // Een `@ifcx`-blok: hetzelfde, maar het beeld leest een IFCX-document (ifcxBlok.ts).
   const ifcxBeelden = useRef<IfcxBeelden | null>(null);
   useLayoutEffect(() => {
-    const b = new IfcxBeelden(() => {
-      const vt = tRef.current;
-      return {
-        hint: vt("drieD.hint"),
-        passend: vt("drieD.passend"),
-        standpunt: {
-          iso: vt("drieD.standpunt.iso"),
-          voor: vt("drieD.standpunt.voor"),
-          boven: vt("drieD.standpunt.boven"),
-          zij: vt("drieD.standpunt.zij"),
-        },
-        opslaan: vt("ifcx.opslaan"),
-        sluiten: vt("ifcx.sluiten"),
-        attribuut: (kort) => vt(`ifcx.attribuut.${kort}`, { defaultValue: kort }),
-      };
-    });
+    const b = new IfcxBeelden(() => ifcxTeksten(tRef.current));
     ifcxBeelden.current = b;
     return () => {
       b.sluit();

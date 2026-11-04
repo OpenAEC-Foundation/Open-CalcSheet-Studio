@@ -80,6 +80,8 @@ const ZICHTBAAR = 'usd::usdgeom::visibility';
 const KLEUR = 'bsi::ifc::presentation::diffuseColor';
 const DEKKING = 'bsi::ifc::presentation::opacity';
 const STANDAARDKLEUR = '#a8a29e';
+/** Te dun voor omtreklijnen: de ribben van een staaf zouden zijn kleur overschrijven. */
+const ZONDER_RAND = new Set(['IfcReinforcingBar']);
 
 const kop = (pad: string) => pad.split('/')[0];
 const staart = (pad: string) => pad.split('/').slice(1).join('/');
@@ -346,7 +348,9 @@ export function ifcxNaarScene(gelezen: IfcxGelezen, hoogte = 320, camera: DrieDS
     assen: false,
     hoogte,
     elementen: gelezen.elementen.map((e) => ({
-      soort: 'vlakken' as const, vlakken: e.vlakken, kleur: e.kleur, opaciteit: e.opaciteit, pad: e.pad,
+      soort: 'vlakken' as const,
+      vlakken: ZONDER_RAND.has(e.klasse) ? e.vlakken.map((v) => ({ ...v, rand: false })) : e.vlakken,
+      kleur: e.kleur, opaciteit: e.opaciteit, pad: e.pad,
     })),
   };
 }
