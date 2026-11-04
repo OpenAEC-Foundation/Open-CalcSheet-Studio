@@ -1,6 +1,9 @@
 import { Fragment, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
+import ThemedSelect from "../ThemedSelect";
+import "../ThemedSelect.css";
 import {
+  LETTERTYPEN,
   STANDAARD_HUISSTIJL,
   type BureauProfiel,
   type Constructeur,
@@ -9,10 +12,10 @@ import {
 import "../settings/SettingsDialog.css";
 
 /**
- * De tab "Bureau" in de instellingen: het bureauprofiel dat op het voorblad en
- * in de voet van elk rapport komt (gegevens, logo, voetafbeelding, huisstijl en
- * de constructeurs waaruit het rapport de verantwoordelijke en de uitvoerende
- * kiest).
+ * De tab "Bureau en huisstijl" in de instellingen: het bureauprofiel (gegevens, logo,
+ * voetafbeelding, huisstijl en de constructeurs waaruit het rapport de verantwoordelijke
+ * en de uitvoerende kiest). De huisstijl geldt voor alles wat op papier komt: het rapport,
+ * losse bladen en de titelhoek van een tekening.
  *
  * Net als de andere tabs werkt deze tab op een concept uit SettingsDialog: pas
  * Opslaan zet het profiel in store/bureauProfiel.ts, Annuleren gooit het weg.
@@ -35,6 +38,9 @@ const KLEUREN: readonly { veld: Exclude<keyof Huisstijl, "lettertype">; sleutel:
   { veld: "tabeltekst", sleutel: "bureau.tabeltekst" },
   { veld: "invoerkleur", sleutel: "bureau.invoerkleur" },
 ];
+
+/** De keuze in de lijst voor een lettertype dat er niet in staat. */
+const ANDER_LETTERTYPE = "ander";
 
 /** "#1F3A5F", "1f3a5f" of "#abc" → "#1f3a5f" / "#aabbcc"; al het andere → null. */
 function hexKleur(s: string): string | null {
@@ -65,6 +71,7 @@ export default function BureauTab({
   // De zojuist toegevoegde constructeursrij krijgt de focus (autoFocus werkt
   // alleen bij het mounten, dus bestaande rijen springen niet).
   const [nieuweRij, setNieuweRij] = useState<number | null>(null);
+  const [anderLettertype, setAnderLettertype] = useState(false);
   // Buiten de desktop-app (Browser-paneel, headless Chrome) is er geen
   // instellingenbestand: het profiel leeft dan alleen in het geheugen.
   const inTauri = "__TAURI_INTERNALS__" in window;
@@ -87,6 +94,8 @@ export default function BureauTab({
   };
 
   const h = profiel.huisstijl;
+  const inLijst = LETTERTYPEN.some((l) => l.css === h.lettertype);
+  const toonAnder = anderLettertype || !inLijst;
 
   return (
     <div className="bureau-tab">
@@ -129,6 +138,16 @@ export default function BureauTab({
           waarde={profiel.logo}
           onWaarde={(v) => patch({ logo: v })}
         />
+        <label className="settings-row">
+          <span className="settings-label">{t("bureau.logoInKop")}</span>
+          <input
+            type="checkbox"
+            checked={profiel.logoInKop}
+            disabled={!profiel.logo}
+            onChange={(e) => patch({ logoInKop: e.target.checked })}
+          />
+        </label>
+        <p className="settings-description bureau-hint">{t("bureau.logoInKopHint")}</p>
         <AfbeeldingVeld
           label={t("bureau.voetafbeelding")}
           hint={t("bureau.voetHint")}
@@ -143,7 +162,24 @@ export default function BureauTab({
         {KLEUREN.map(({ veld, sleutel }) => (
           <KleurVeld key={veld} label={t(sleutel)} waarde={h[veld]} onWaarde={(k) => zetHuisstijl(veld, k)} />
         ))}
-        <Tekstveld label={t("bureau.lettertype")} waarde={h.lettertype} onWaarde={(v) => zetHuisstijl("lettertype", v)} />
+        <div className="settings-row">
+          <span className="settings-label">{t("bureau.lettertype")}</span>
+          <ThemedSelect
+            value={toonAnder ? ANDER_LETTERTYPE : h.lettertype}
+            options={[
+              ...LETTERTYPEN.map((l) => ({ value: l.css, label: l.naam })),
+              { value: ANDER_LETTERTYPE, label: t("bureau.lettertypeAnder") },
+            ]}
+            onChange={(v) => {
+              setAnderLettertype(v === ANDER_LETTERTYPE);
+              if (v !== ANDER_LETTERTYPE) zetHuisstijl("lettertype", v);
+            }}
+            style={{ width: 220 }}
+          />
+        </div>
+        {toonAnder && (
+          <Tekstveld label={t("bureau.lettertypeNaam")} waarde={h.lettertype} onWaarde={(v) => zetHuisstijl("lettertype", v)} />
+        )}
         <p className="settings-description bureau-hint">{t("bureau.lettertypeHint")}</p>
         {/* Proefregel met de kleuren en het lettertype zoals het rapport ze gebruikt. */}
         <div className="bureau-proef" style={{ fontFamily: h.lettertype || STANDAARD_HUISSTIJL.lettertype }}>

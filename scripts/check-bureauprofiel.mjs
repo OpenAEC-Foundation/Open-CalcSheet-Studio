@@ -14,7 +14,7 @@
  * Draaien:  node scripts/check-bureauprofiel.mjs
  */
 import { isDeepStrictEqual } from "node:util";
-import { leegBureau, STANDAARD_HUISSTIJL } from "../packages/desktop/src/rapport/model.ts";
+import { heeftEigenHuisstijl, huisstijlVariabelen, leegBureau, LETTERTYPEN, STANDAARD_HUISSTIJL, veiligLettertype } from "../packages/desktop/src/rapport/model.ts";
 import {
   normaliseerBureau,
   normaliseerEigenTeksten,
@@ -49,6 +49,19 @@ toets(
   gelijk(kleur.huisstijl, { ...STANDAARD_HUISSTIJL, hoofdkleur: "#000000" }),
   kleur.huisstijl,
 );
+
+toets("het logo staat standaard in de kop", leegBureau().logoInKop === true && deels.logoInKop === true, deels.logoInKop);
+toets("de keuze zonder logo in de kop blijft", normaliseerBureau({ logoInKop: false }).logoInKop === false);
+toets("de standaardhuisstijl is geen eigen huisstijl", !heeftEigenHuisstijl(STANDAARD_HUISSTIJL));
+toets("één kleur anders wel", heeftEigenHuisstijl({ ...STANDAARD_HUISSTIJL, accentkleur: "#ff0000" }));
+const standaardVars = huisstijlVariabelen(STANDAARD_HUISSTIJL);
+toets("zonder eigen huisstijl alleen het rapport: losse bladen houden hun opmaak", standaardVars["--rpa-font"] === STANDAARD_HUISSTIJL.lettertype && !Object.keys(standaardVars).some((k) => k.startsWith("--pr-")), standaardVars);
+const eigenVars = huisstijlVariabelen({ ...STANDAARD_HUISSTIJL, hoofdkleur: "#112233", accentkleur: "#445566", lettertype: "Georgia, serif" });
+toets("met eigen huisstijl ook de losse bladen", eigenVars["--pr-accent"] === "#445566" && eigenVars["--pr-kopkleur"] === "#112233" && eigenVars["--pr-letter"] === "Georgia, serif" && eigenVars["--rpa-hoofd"] === "#112233", eigenVars);
+toets("de lijst begint met het standaardlettertype", LETTERTYPEN[0].css === STANDAARD_HUISSTIJL.lettertype);
+toets("elk lettertype in de lijst kan veilig in een stijlregel", LETTERTYPEN.every((l) => veiligLettertype(l.css) !== ""));
+toets("aanhalingstekens worden enkel", veiligLettertype('"Segoe UI", Arial') === "'Segoe UI', Arial");
+toets("een stijlregel als lettertype valt weg", veiligLettertype("x; } @import url(http://x); {") === "" && veiligLettertype('a"><script>') === "");
 
 const ir = { naam: "Ir. A. Voorbeeld", telefoon: "010-0000000", email: "a.voorbeeld@example.com" };
 const metIr = normaliseerBureau({ constructeurs: [ir] });

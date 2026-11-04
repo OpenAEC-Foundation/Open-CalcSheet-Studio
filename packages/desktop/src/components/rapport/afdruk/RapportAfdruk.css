@@ -8,8 +8,7 @@
  * van 10 pt met een regelhoogte van 6,6 mm komt met Segoe UI vanzelf op de
  * basislijn van de referentie (13,5 pt onder de bovenkant van de regel).
  *
- * Deze regels gelden op drie plaatsen:
- * - de echte afdruk: .print-root > .rpa-wortel > section;
+ * Deze regels gelden op twee plaatsen:
  * - de meetopstelling van het afdrukvoorbeeld: .av-meet > .rpa-wortel > section;
  * - de vellen van het voorbeeld: .av-pagina.rpa-wortel > .av-pagina-inhoud.<sectieklassen>.
  * Daarom hangt alles aan `.rpa-wortel` plus een eigen klasse op het element
@@ -67,19 +66,6 @@
 
 .rpa-wortel > section {
   page: rapport;
-}
-
-/*
- * In de echte afdruk precies zo breed als de bladspiegel (MATEN.rapport).
- * In de afdrukmodus is .print-root op het scherm zo breed als het venster;
- * de parametrische beelden meten hun breedte met een ResizeObserver en zouden
- * dan de vensterbreedte aannemen. Bij het printen is alles wat breder is dan
- * de bladspiegel voor de browser reden om het hele document te verkleinen,
- * en dan valt niets meer op het raster.
- */
-.print-root > .rpa-wortel {
-  width: 190.25mm;
-  max-width: 190.25mm;
 }
 
 .rpa-wortel .rpa-sectie {
@@ -416,12 +402,16 @@
   color: var(--rpa-hoofd);
 }
 
+/* In de twee lege regels boven de titel: zo raakt het logo een lange titel of een breed
+   lettertype nooit. */
 .rpa-wortel .rpa-vb-logo {
   position: absolute;
-  top: var(--rpa-rij);
+  top: 0;
   right: 0;
-  max-width: 60mm;
-  max-height: calc(3 * var(--rpa-rij));
+  max-width: 70mm;
+  max-height: calc(2 * var(--rpa-rij));
+  object-fit: contain;
+  object-position: right top;
 }
 
 /* De projectnaam: 14 pt in de accentkleur, basislijn 108,5 pt. */
@@ -463,18 +453,6 @@
 /* Op het scherm onzichtbaar: het afdrukvoorbeeld tekent zijn eigen voet. */
 .rpa-wortel .rpa-voet {
   display: none;
-}
-
-/* Een vast element herhaalt de browser op elke pagina. De negatieve offset
-   zet hem in de ondermarge: over de volle breedte van het papier, de onderste
-   19,8 mm. */
-html.afdrukmodus .rpa-wortel .rpa-voet {
-  display: block;
-  position: fixed;
-  left: -9.85mm;
-  bottom: -19.8mm;
-  width: 210mm;
-  height: 19.8mm;
 }
 
 .rpa-wortel .rpa-voet-beeld {

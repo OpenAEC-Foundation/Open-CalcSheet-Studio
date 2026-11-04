@@ -67,7 +67,9 @@
       "pdf": "PDF…",
       "xlsx": "Spreadsheet (XLSX)…",
       "markdownBestand": "Markdown…",
-      "notebook": "Notebook or Python script…"
+      "notebook": "Notebook or Python script…",
+      "marimo": "Marimo notebook",
+      "marimoBestand": "Marimo notebook…"
     }
   },
   "catalogus": {
@@ -551,6 +553,8 @@
     "geenOmgeving": "The Python environment could not start: {{fout}}. The files and output of this sheet stay saved and still go on paper.",
     "metCode": "Code on paper",
     "metCodeUitleg": "Does the code of the cells go on paper, or only the text and the output?",
+    "automatisch": "Run automatically",
+    "automatischUitleg": "Runs all cells again as soon as you change the code. Nothing runs when a project opens: that starts with your first change.",
     "inlezen": "Add files…",
     "inlezenUitleg": "Add notebooks, scripts or data files to this work folder. The environment then reloads, and the kernel starts empty.",
     "exporteren": "Export…",
@@ -636,5 +640,23 @@
     "hoogte": "Height (mm)",
     "plekUitleg": "Place and size on paper. This does not change what is in the view.",
     "uitleg": "Click a view to select it, drag to move it, and double-click to draw in it."
+  },
+  "marimo": {
+    "toevoegenUitleg": "Add a reactive Python notebook to the project as a sheet: change a value and everything that depends on it follows. The notebook is stored in the project, and its last output goes on paper.",
+    "importerenUitleg": "Add an existing Marimo notebook (.py) as a new sheet.",
+    "nieuweNaam": "Marimo",
+    "filter": "Marimo notebook",
+    "lezenMislukt": "Reading the notebook failed: {{fout}}",
+    "schrijvenMislukt": "Writing the notebook failed: {{fout}}",
+    "teGroot": "This file is too large to be a notebook.",
+    "geenNotebook": "{{bestand}} is not a Marimo notebook.",
+    "tab": "Marimo",
+    "paneel": "Marimo",
+    "rij": "Marimo — reactive Python notebook, stored in the project",
+    "exporterenUitleg": "Write this notebook to a separate .py file.",
+    "start": {
+      "kop": "Reactive notebook",
+      "uitleg": "Press Run to start. Then move a slider: every cell that uses its value follows. Numpy, scipy, pandas and matplotlib are ready."
+    }
   }
 }

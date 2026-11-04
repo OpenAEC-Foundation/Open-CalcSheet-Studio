@@ -22,9 +22,8 @@ import type { Resultaat } from "../../calc/bladResultaat";
 /*
  * Alles wat de afdruk van het rapport nodig heeft, op één plek verzameld.
  *
- * Het afdrukvoorbeeld en de echte afdruk renderen allebei <RapportAfdruk />,
- * en die leest alleen via deze hook. Zo kunnen de twee niet uiteenlopen: wat
- * je in het voorbeeld ziet, is wat er op papier komt.
+ * Het afdrukvoorbeeld rendert <RapportAfdruk />, en die leest alleen via deze hook. Wat naar
+ * de printer gaat, is een kopie van de vellen van dat voorbeeld (drukvellen.ts).
  */
 
 /** Eén blad van het project, doorgerekend. */
@@ -55,7 +54,7 @@ export interface RapportWeergave {
 }
 
 /**
- * Het bureau van dit rapport.
+ * Het bureau op papier: in het rapport en op losse bladen.
  *
  * Een rapport draagt een vastgelegde kopie van het bureauprofiel, zodat een
  * opgeleverd rapport niet verandert als het profiel later wijzigt. Zolang die

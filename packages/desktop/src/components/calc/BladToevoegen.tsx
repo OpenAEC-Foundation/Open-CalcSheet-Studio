@@ -6,6 +6,7 @@ import { voegLeegSpreadsheetToe, voegWerkmapToe } from "./spreadsheetBlad";
 import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
 import { voegLeegGrafbladToe } from "../graaf/grafbladToevoegen";
 import { voegLeegJupyterToe, voegNotebookToe } from "./jupyterBlad";
+import { voegLeegMarimoToe, voegMarimoBestandToe } from "./marimoBlad";
 import { voegPdfBladToe } from "./pdfBlad";
 import { Uitklap } from "../ribbon/CalcPadTab";
 import Icoon from "../Icoon";
@@ -49,6 +50,7 @@ export default function BladToevoegen() {
   const voegMarkdownToe = useProjectStore((s) => s.voegMarkdownToe);
   const voegCanvasToe = useProjectStore((s) => s.voegCanvasToe);
   const voegJupyterToe = useProjectStore((s) => s.voegJupyterToe);
+  const voegMarimoToe = useProjectStore((s) => s.voegMarimoToe);
 
   const nieuw: Keuze[] = [
     { naam: tw("browser.toevoegen.module"), uitleg: tw("browser.moduleToevoegenUitleg"), icoon: "calculation.module-picker", uit: "calculations", actie: () => openModuleKiezer() },
@@ -58,6 +60,7 @@ export default function BladToevoegen() {
     { naam: tw("browser.toevoegen.graaf"), uitleg: tw("graaf.toevoegenUitleg"), icoon: "panel.model-tree", actie: voegLeegGrafbladToe },
     { naam: tw("browser.toevoegen.tekening"), uitleg: tw("browser.toevoegen.tekeningUitleg"), icoon: "draw.freehand", actie: () => voegTekenbladToe(tw("kiezer.leeg.tekening"), tw("tekenblad.viewNaam", { n: 1 })) },
     { naam: tw("browser.toevoegen.jupyter"), uitleg: tw("jupyter.toevoegenUitleg"), icoon: "file.structure", uit: "calculations", actie: () => voegLeegJupyterToe(voegJupyterToe) },
+    { naam: tw("browser.toevoegen.marimo"), uitleg: tw("marimo.toevoegenUitleg"), icoon: "data.chart", actie: () => voegLeegMarimoToe(voegMarimoToe) },
     { naam: tw("browser.toevoegen.markdown"), uitleg: tw("markdown.toevoegenUitleg"), icoon: "report.template", actie: () => voegLeegMarkdownToe(voegMarkdownToe) },
   ];
   const uitBestand: Keuze[] = [
@@ -65,6 +68,7 @@ export default function BladToevoegen() {
     { naam: tw("browser.toevoegen.xlsx"), uitleg: tw("spreadsheet.importerenUitleg"), icoon: "data.table", actie: () => void voegWerkmapToe(voegSpreadsheetToe) },
     { naam: tw("browser.toevoegen.markdownBestand"), uitleg: tw("markdown.importerenUitleg"), icoon: "report.template", actie: () => void voegMarkdownBestandToe(voegMarkdownToe) },
     { naam: tw("browser.toevoegen.notebook"), uitleg: tw("jupyter.importerenUitleg"), icoon: "file.structure", uit: "calculations", actie: () => void voegNotebookToe(voegJupyterToe) },
+    { naam: tw("browser.toevoegen.marimoBestand"), uitleg: tw("marimo.importerenUitleg"), icoon: "data.chart", actie: () => void voegMarimoBestandToe(voegMarimoToe) },
   ];
 
   const kies = (k: Keuze) => {

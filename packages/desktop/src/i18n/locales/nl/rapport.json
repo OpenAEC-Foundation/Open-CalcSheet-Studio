@@ -324,5 +324,10 @@
   "tekenBlad": {
     "soort": "Tekening",
     "ontbreekt": "Het vel van dit blad ontbreekt."
+  },
+  "marimoBlad": {
+    "soort": "Marimo",
+    "ontbreekt": "Het notebook van dit blad ontbreekt.",
+    "nogNietGedraaid": "Dit notebook heeft nog niet gedraaid, dus er is geen uitvoer om af te drukken. Open het blad en druk op Run."
   }
 }

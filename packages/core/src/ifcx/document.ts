@@ -40,6 +40,7 @@ const MARKDOWN_SOORT = 'markdown';
 const MARKDOWN_MEDIATYPE = 'text/markdown';
 const GRAAF_SOORT = 'graaf';
 const JUPYTER_SOORT = 'jupyter';
+const MARIMO_SOORT = 'marimo';
 const ZIP_MEDIATYPE = 'application/zip';
 
 export interface IfcxProjectInvoer {
@@ -67,7 +68,8 @@ export interface IfcxGelezenBlad {
   md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
   graaf?: GraafGegevens;
   tekenvel?: Record<string, unknown>;
-  jupyter?: { bestandsnaam: string; data: string; metCode: boolean };
+  jupyter?: { bestandsnaam: string; data: string; metCode: boolean; automatisch?: boolean };
+  marimo?: { bestandsnaam: string; code: string; metCode: boolean; uitvoer: string[] };
 }
 
 export interface IfcxGelezenProject {
@@ -187,8 +189,9 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     const isGraaf = blad.templateId === GRAAF_SOORT;
     const isTekenblad = blad.templateId === TEKENBLAD_SOORT;
     const isJupyter = blad.templateId === JUPYTER_SOORT;
+    const isMarimo = blad.templateId === MARIMO_SOORT;
     // Een PDF, werkmap, Markdown-tekst, graaf, tekening of Jupyter-werkmap heeft geen rekentekst, geen invoer en geen oordeel.
-    const isLos = isPdf || isSpreadsheet || isMarkdown || isGraaf || isTekenblad || isJupyter;
+    const isLos = isPdf || isSpreadsheet || isMarkdown || isGraaf || isTekenblad || isJupyter || isMarimo;
     bladKinderen[kindNaam(`B${String(i + 1).padStart(3, '0')}_${blad.naam}`, bladNamen)] = pad;
 
     const uitkomst = leesUitkomst(blad.nodes, blad.naam, isLos ? { voldoet: null, uc: null } : blad.resultaat, blad.fout);
@@ -206,7 +209,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         id: sleutel,
         volgorde: i,
         templateId: blad.templateId ?? '',
-        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isMarkdown ? 'markdown' : isGraaf ? 'graaf' : isTekenblad ? 'tekenblad' : isJupyter ? 'jupyter' : 'rekenblad',
+        soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isMarkdown ? 'markdown' : isGraaf ? 'graaf' : isTekenblad ? 'tekenblad' : isJupyter ? 'jupyter' : isMarimo ? 'marimo' : 'rekenblad',
         ...(blad.module ? { module: blad.module } : {}),
         ...(blad.bronVersie ? { bronVersie: blad.bronVersie } : {}),
       },
@@ -250,6 +253,15 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         grootte: pdfBytes(blad.jupyter.data),
         data: blad.jupyter.data,
         metCode: blad.jupyter.metCode,
+        ...(blad.jupyter.automatisch ? { automatisch: true } : {}),
+      };
+    }
+    if (blad.marimo) {
+      attributes[ATTR.marimo] = {
+        bestandsnaam: blad.marimo.bestandsnaam,
+        code: blad.marimo.code,
+        metCode: blad.marimo.metCode,
+        uitvoer: JSON.stringify(blad.marimo.uitvoer),
       };
     }
     attributes[ATTR.uitkomst] = uitkomst;
@@ -546,7 +558,8 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown } | undefined;
     const graaf = graafUitAttribuut(a[ATTR.graaf]);
     const tekenvel = a[ATTR.tekenvel];
-    const jupyter = a[ATTR.jupyter] as { bestandsnaam?: unknown; data?: unknown; metCode?: unknown } | undefined;
+    const jupyter = a[ATTR.jupyter] as { bestandsnaam?: unknown; data?: unknown; metCode?: unknown; automatisch?: unknown } | undefined;
+    const marimo = a[ATTR.marimo] as { bestandsnaam?: unknown; code?: unknown; metCode?: unknown; uitvoer?: unknown } | undefined;
     const blad: IfcxGelezenBlad = {
       id: tekstVan(b.id),
       naam: tekstVan(a[ATTR.naam]),
@@ -569,7 +582,22 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     if (graaf) blad.graaf = graaf;
     if (tekenvel && typeof tekenvel === 'object' && !Array.isArray(tekenvel)) blad.tekenvel = tekenvel as Record<string, unknown>;
     if (jupyter && typeof jupyter.data === 'string') {
-      blad.jupyter = { bestandsnaam: tekstVan(jupyter.bestandsnaam), data: jupyter.data, metCode: jupyter.metCode !== false };
+      blad.jupyter = {
+        bestandsnaam: tekstVan(jupyter.bestandsnaam),
+        data: jupyter.data,
+        metCode: jupyter.metCode !== false,
+        ...(jupyter.automatisch === true ? { automatisch: true } : {}),
+      };
+    }
+    if (marimo && typeof marimo.code === 'string') {
+      let uitvoer: string[] = [];
+      try {
+        const lijst: unknown = JSON.parse(tekstVan(marimo.uitvoer) || '[]');
+        if (Array.isArray(lijst)) uitvoer = lijst.filter((u): u is string => typeof u === 'string');
+      } catch {
+        // Onleesbare uitvoer: het notebook zelf is er nog, en rekent hem opnieuw uit.
+      }
+      blad.marimo = { bestandsnaam: tekstVan(marimo.bestandsnaam), code: marimo.code, metCode: marimo.metCode !== false, uitvoer };
     }
     return blad;
   });

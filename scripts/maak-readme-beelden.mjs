@@ -27,7 +27,7 @@ globalThis.Node = Node;
 const { bouwProjectBestand, PROJECT_FORMAAT_VERSIE } = await import("../packages/desktop/src/store/projectBestand.ts");
 const { bladenVoorIfc } = await import("../packages/desktop/src/store/projectIfcx.ts");
 const { legeGegevens } = await import("../packages/desktop/src/store/projectGegevens.ts");
-const { standaardRapport } = await import("../packages/desktop/src/rapport/model.ts");
+const { leegBureau, standaardRapport, STANDAARD_HUISSTIJL } = await import("../packages/desktop/src/rapport/model.ts");
 const { standaardTeksten } = await import("../packages/desktop/src/rapport/standaardteksten.ts");
 const { balklaag } = await import("../packages/desktop/src/templates/balklaag.ts");
 const { ligger } = await import("../packages/desktop/src/templates/ligger.ts");
@@ -36,6 +36,7 @@ const { CANVAS_BLAD, schrijfEenheden } = await import("../packages/desktop/src/s
 const { GRAAF_BLAD } = await import("../packages/desktop/src/store/graafBlad.ts");
 const { TEKEN_BLAD } = await import("../packages/desktop/src/store/tekenBlad.ts");
 const { JUPYTER_BLAD, pakWerkmapIn } = await import("../packages/desktop/src/store/jupyterBlad.ts");
+const { MARIMO_BLAD, marimoStartCode } = await import("../packages/desktop/src/store/marimoBlad.ts");
 const { voorbeeldGraaf } = await import("../packages/desktop/src/graaf/voorbeeldGraaf.ts");
 const V = await import("../packages/desktop/src/components/tekenen/vel.ts");
 const Y = await import("../packages/desktop/src/components/tekenen/symbolen.ts");
@@ -139,7 +140,15 @@ const NAAM = {
   graaf: "Portal frame graph",
   teken: "Floor plan",
   jupyter: "Quantities notebook",
+  marimo: "Beam with sliders",
   md: "Design basis",
+};
+
+/** Een verzonnen bureau met een eigen huisstijl. */
+const LOGO = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 60"><rect width="60" height="60" rx="8" fill="#0f4c5c"/><path d="M12 46 30 14 48 46Z" fill="#fff"/><text x="72" y="42" font-family="Segoe UI,Arial,sans-serif" font-size="32" fill="#0f4c5c">Example Eng.</text></svg>').toString("base64")}`;
+const BUREAU = {
+  naam: "Example Engineers", plaats: "Exampleton", logo: LOGO, logoInKop: true,
+  huisstijl: { ...STANDAARD_HUISSTIJL, hoofdkleur: "#0f4c5c", accentkleur: "#c2571a" },
 };
 
 async function bouwProject() {
@@ -184,6 +193,10 @@ async function bouwProject() {
         ])).toString("base64"),
       },
     },
+    {
+      id: "ex-marimo", naam: NAAM.marimo, ...kale, templateId: MARIMO_BLAD,
+      marimo: { bestandsnaam: "", metCode: true, uitvoer: [], code: marimoStartCode({ kop: "Beam with sliders", uitleg: "Move a slider: the moment line follows." }) },
+    },
   ];
 
   const rapport = standaardRapport("01-09-2026", standaardTeksten());
@@ -192,7 +205,7 @@ async function bouwProject() {
   rapport.verantwoordelijk = "A. Example, MSc";
   rapport.uitvoerend = "B. Example, BSc";
   rapport.teksten = { ...rapport.teksten, projectomschrijving: "{projectnaam} is a made-up project with every kind of sheet.", wijziging: "Timber floors on masonry walls." };
-  rapport.bureau = { ...rapport.bureau, naam: "Example Engineers", plaats: "Exampleton" };
+  rapport.bureau = { ...rapport.bureau, ...BUREAU };
 
   const gegevens = {
     ...legeGegevens(),
@@ -215,7 +228,7 @@ mkdirSync(UIT, { recursive: true });
 const VOORKEUREN = join(process.env.APPDATA ?? join(homedir(), ".config"), IDENTIFIER, "preferences.json");
 mkdirSync(dirname(VOORKEUREN), { recursive: true });
 const voorkeuren = existsSync(VOORKEUREN) ? JSON.parse(readFileSync(VOORKEUREN, "utf8")) : {};
-writeFileSync(VOORKEUREN, JSON.stringify({ ...voorkeuren, mcpPoort: 3897 }));
+writeFileSync(VOORKEUREN, JSON.stringify({ ...voorkeuren, mcpPoort: 3897, bureauProfiel: { ...leegBureau(), ...BUREAU } }));
 
 const wacht = (ms) => new Promise((klaar) => setTimeout(klaar, ms));
 const app = await startApp({ exe, map: join(WERK, "opslag"), poort: 9378, argumenten: [PROJECT] });
@@ -355,7 +368,36 @@ try {
       await s.voerUit(`document.querySelector('.jp-RenderedImage').scrollIntoView({ block: "center" })`, frame);
       await wacht(1000);
     },
+    marimo: async () => {
+      await kiesBlad(NAAM.marimo);
+      const frame = await s.wachtOp(async () => {
+        for (const [sessie, f] of [...s.frames].reverse()) {
+          if (f.type !== "iframe") continue;
+          const herkomst = await s.voerUit("location.origin", sessie).catch(() => "");
+          if (/^http:\/\/blad-.*\.localhost/.test(herkomst) && (await s.voerUit("location.pathname", sessie)).includes("marimo")) return sessie;
+        }
+        return null;
+      }, { tekst: "de omgeving", ms: 120000 });
+      const knop = `[...document.querySelectorAll('[data-testid="run-button"]')].at(-1)`;
+      await s.wachtOp(() => s.voerUit(`${knop} && document.querySelectorAll('[data-cell-id]').length >= 3 ? 1 : 0`, frame), { tekst: "de knop", ms: 120000 });
+      await s.wachtOp(async () => {
+        await s.voerUit(`${knop}?.click()`, frame);
+        return s.voerUit(`document.querySelectorAll('.output-area').length > 1 && [...document.querySelectorAll('marimo-mime-renderer, .output-area img')].length > 0 ? 1 : 0`, frame);
+      }, { tekst: "de uitvoer", ms: 180000, stap: 3000 });
+      await s.voerUit(`document.querySelector('.output-area')?.scrollIntoView({ block: "start" })`, frame);
+      await wacht(1500);
+    },
+    "house-style": async () => {
+      await kiesBlad(NAAM.vloer);
+      await klik(metTekst("button", /^Settings$/));
+      await wacht(600);
+      await klik(metTekst("button", /^Office and house style$/));
+      await wacht(600);
+      await s.voerUit(`[...document.querySelectorAll('.settings-section h3')].find((h) => /^Images$/.test(h.textContent)).scrollIntoView({ block: "start" })`);
+      await wacht(500);
+    },
     library: async () => {
+      await klik(metTekst("button", /^Cancel$/)).catch(() => {});
       await kiesBlad(NAAM.kolom);
       await klik(`[...document.querySelectorAll('.lib-rij')].find((e) => /Buckling/.test(e.textContent))`);
       await s.wachtOp(() => s.voerUit(`document.querySelector('.lib-vak svg') ? 1 : 0`), { tekst: "het voorbeeld", ms: 15000 });

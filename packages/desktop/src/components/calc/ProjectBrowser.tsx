@@ -14,6 +14,7 @@ import { isTekenBlad } from "../../store/tekenBlad";
 import { isMarkdownBlad } from "../../store/markdownBlad";
 import { isGraafBlad } from "../../store/graafBlad";
 import { isJupyterBlad } from "../../store/jupyterBlad";
+import { isMarimoBlad } from "../../store/marimoBlad";
 import Icoon from "../Icoon";
 import BladToevoegen from "./BladToevoegen";
 import LibrarySectie from "./LibrarySectie";
@@ -116,6 +117,7 @@ function ExemplaarRij({
   const graaf = isGraafBlad(ex);
   const tekenblad = isTekenBlad(ex);
   const jupyter = isJupyterBlad(ex);
+  const marimo = isMarimoBlad(ex);
   const stip = pdf
     ? <Icoon id="report.cover" />
     : spreadsheet
@@ -130,6 +132,8 @@ function ExemplaarRij({
     ? <Icoon id="assistant.draw" uit="calculations" />
     : jupyter
     ? <Icoon id="file.structure" uit="calculations" />
+    : marimo
+    ? <Icoon id="data.chart" />
     : <span className={`pb-stip${status ? ` pb-status-${status}` : ""}`} aria-hidden="true" />;
   const uitleg = pdf
     ? `${ex.naam}\n${tw("pdf.rij", { bestand: ex.pdf?.bestandsnaam || "—" })}\n${tw("browser.dubbelklik")}`
@@ -145,6 +149,8 @@ function ExemplaarRij({
     ? `${ex.naam}\n${tw("tekenblad.rij")}\n${tw("browser.dubbelklik")}`
     : jupyter
     ? `${ex.naam}\n${tw("jupyter.rij")}\n${tw("browser.dubbelklik")}`
+    : marimo
+    ? `${ex.naam}\n${tw("marimo.rij")}\n${tw("browser.dubbelklik")}`
     : `${ex.naam}${info ? ` — ${moduleNaam}` : ""}\n${versieRegel}` +
       (eigen ? `\n${t("bladVersie.eigenUitleg", { bron: ex.bronVersie })}` : "") +
       (verouderd ? `\n${t("bladVersie.rijVerouderd", { nieuw: nieuweVersie })}` : "") +

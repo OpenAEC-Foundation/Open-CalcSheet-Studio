@@ -37,7 +37,7 @@ export function voegLeegJupyterToe(voegToe: (naam: string, jupyter: JupyterWerkm
 }
 
 /** Kiest een of meer bestanden; ook in de browser, voor de ontwikkelserver. */
-async function kiesBestanden(extensies: string[] | null): Promise<{ naam: string; bytes: Uint8Array }[]> {
+export async function kiesBestanden(extensies: string[] | null, filter?: string): Promise<{ naam: string; bytes: Uint8Array }[]> {
   const t = i18next.getFixedT(null, "werkruimte");
   if (isTauri()) {
     const { open } = await import("@tauri-apps/plugin-dialog");
@@ -46,7 +46,7 @@ async function kiesBestanden(extensies: string[] | null): Promise<{ naam: string
       title: t("jupyter.kiesTitel"),
       multiple: true,
       directory: false,
-      filters: extensies ? [{ name: t("jupyter.filter"), extensions: extensies }] : undefined,
+      filters: extensies ? [{ name: filter ?? t("jupyter.filter"), extensions: extensies }] : undefined,
     });
     if (!gekozen) return [];
     const paden = Array.isArray(gekozen) ? gekozen : [gekozen];

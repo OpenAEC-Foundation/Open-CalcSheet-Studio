@@ -5,6 +5,7 @@ import { SPREADSHEET_BLAD } from "../../store/spreadsheetBlad";
 import { MARKDOWN_BLAD } from "../../store/markdownBlad";
 import { GRAAF_BLAD } from "../../store/graafBlad";
 import { TEKEN_BLAD } from "../../store/tekenBlad";
+import { MARIMO_BLAD } from "../../store/marimoBlad";
 import type { Blad, BladPlek, Inhoudskop } from "../../rapport/opzet";
 import type { Maten } from "./paginering";
 import { papier, usePdfPaginas, usePdfVersie } from "./pdfBlad";
@@ -16,6 +17,7 @@ import { MarkdownPapier, MarkdownRapportKeuze } from "./MarkdownBladWeergave";
 import { koppenVoorInhoud } from "./markdownRegels";
 import { GraafVellen } from "../graaf/GraafAfdruk";
 import { TekenbladAfdruk, TekenvelOpPapier } from "./TekenbladWeergave";
+import { MarimoPapier } from "./MarimoPapier";
 
 /*
  * De bladsoorten in de afdruk, op één plek.
@@ -93,6 +95,12 @@ const SOORTEN: readonly BladSoort[] = [
     plek: "hoofdstuk",
     inhoudsKoppen: (ex) => (ex.md && !ex.md.koppenUit ? koppenVoorInhoud(ex.md.tekst, ex) : []),
     RapportKeuze: MarkdownRapportKeuze,
+  },
+  {
+    templateId: MARIMO_BLAD,
+    soortTekst: () => papier()("marimoBlad.soort"),
+    Afdruk: MarimoPapier,
+    useOnderkop: (ex) => [ex.marimo?.bestandsnaam],
   },
   {
     templateId: GRAAF_BLAD,

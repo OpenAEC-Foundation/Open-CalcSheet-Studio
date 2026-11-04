@@ -26,6 +26,7 @@ import {
   canvasIcon,
   graafIcon,
   jupyterIcon,
+  marimoIcon,
 } from "./calcIcons";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../../store/projectStore";
 import { usePrintStore } from "../../store/printStore";
@@ -38,6 +39,7 @@ import { kopieer as kopieerCellen, plakKlembord } from "../calc/spreadsheetKlemb
 import { ongedaan as cellenOngedaan, opnieuw as cellenOpnieuw, uitvoeren } from "../calc/spreadsheetOpdrachten";
 import { voegLeegGrafbladToe } from "../graaf/grafbladToevoegen";
 import { voegLeegJupyterToe } from "../calc/jupyterBlad";
+import { voegLeegMarimoToe } from "../calc/marimoBlad";
 import { kanRapportPdfSchrijven, kiesRapportPdf } from "../../tauri/rapportPdf";
 
 interface CalcTabProps {
@@ -219,6 +221,12 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
             label={t("calc.jupyter", "Jupyter")}
             size="large"
             onClick={() => voegLeegJupyterToe(useProjectStore.getState().voegJupyterToe)}
+          />
+          <RibbonButton
+            icon={marimoIcon}
+            label={t("calc.marimo", "Marimo")}
+            size="large"
+            onClick={() => voegLeegMarimoToe(useProjectStore.getState().voegMarimoToe)}
           />
         </RibbonGroup>
 

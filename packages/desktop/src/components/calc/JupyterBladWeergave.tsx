@@ -3,15 +3,18 @@ import { useTranslation } from "react-i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { bewaarOpenWerkmappen } from "../../store/spreadsheetBlad";
 import { isJupyterBlad, pakWerkmapIn } from "../../store/jupyterBlad";
+import { isMarimoBlad } from "../../store/marimoBlad";
 import { useBestandActies } from "../../hooks/useBestandActies";
 import { exporteerJupyter, jupyterGrootte, kiesExtraBestanden } from "./jupyterBlad";
 import { bytesNaarBase64 } from "./pdfBlad";
+import { exporteerMarimo } from "./marimoBlad";
 import { JupyterVenster } from "./JupyterVenster";
+import { MarimoVenster } from "./MarimoVenster";
 import "./PdfBladWeergave.css";
 import "./JupyterBlad.css";
 
 /*
- * Een Jupyter-blad in de werkruimte (zie store/jupyterBlad.ts).
+ * Een Jupyter- of Marimo-blad in de werkruimte (zie store/jupyterBlad.ts en marimoBlad.ts).
  *
  * De iframe mag niet door de DOM verhuizen: dan laadt hij opnieuw, en zijn kernel
  * en open cellen zijn weg. Daarom staan de vensters in een eigen laag, en legt
@@ -60,7 +63,9 @@ function useVak(el: HTMLElement | null): DOMRect | null {
   return vak;
 }
 
-/** Houdt de omgevingen van de geopende Jupyter-bladen; staat altijd in de app. */
+const heeftOmgeving = (e: Exemplaar) => isJupyterBlad(e) || isMarimoBlad(e);
+
+/** Houdt de omgevingen van de geopende Jupyter- en Marimo-bladen; staat altijd in de app. */
 export function JupyterHouder() {
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const activeId = useProjectStore((s) => s.activeId);
@@ -72,12 +77,12 @@ export function JupyterHouder() {
   const laatst = useRef(new Map<string, number>());
   const teller = useRef(0);
 
-  const actief = exemplaren.find((e) => e.id === activeId && isJupyterBlad(e))?.id ?? null;
+  const actief = exemplaren.find((e) => e.id === activeId && heeftOmgeving(e))?.id ?? null;
 
   useEffect(() => {
     if (actief && huidigePlek) laatst.current.set(actief, ++teller.current);
     setOpen((nu) => {
-      let lijst = nu.filter((id) => exemplaren.some((e) => e.id === id && isJupyterBlad(e)));
+      let lijst = nu.filter((id) => exemplaren.some((e) => e.id === id && heeftOmgeving(e)));
       if (actief && huidigePlek && !lijst.includes(actief)) lijst = [...lijst, actief];
       while (lijst.length > MAX_OPEN) {
         const oudste = lijst
@@ -93,14 +98,17 @@ export function JupyterHouder() {
 
   return (
     <div className="jupyter-laag">
-      {open.map((id) => (
-        <JupyterVenster
-          key={id}
-          id={id}
-          onOpslaan={() => void opslaan()}
-          stijl={id === actief && vak ? { left: vak.left, top: vak.top, width: vak.width, height: vak.height } : opzij}
-        />
-      ))}
+      {open.map((id) => {
+        const Venster = exemplaren.some((e) => e.id === id && isMarimoBlad(e)) ? MarimoVenster : JupyterVenster;
+        return (
+          <Venster
+            key={id}
+            id={id}
+            onOpslaan={() => void opslaan()}
+            stijl={id === actief && vak ? { left: vak.left, top: vak.top, width: vak.width, height: vak.height } : opzij}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -118,6 +126,39 @@ export function JupyterBladWeergave() {
   return <div ref={ref} className="jupyter-plek" />;
 }
 
+/** Kop van het paneel van een Marimo-blad: code op papier en wegschrijven. */
+export function MarimoBladInfo({ ex }: { ex: Exemplaar }) {
+  const { t } = useTranslation("werkruimte");
+  const zetMarimo = useProjectStore((s) => s.zetMarimo);
+  const nb = ex.marimo;
+  const schrijf = async () => {
+    try {
+      await bewaarOpenWerkmappen();
+      const nu = useProjectStore.getState().exemplaren.find((e) => e.id === ex.id)?.marimo;
+      if (nu) await exporteerMarimo(ex.naam, nu);
+    } catch (err) {
+      console.error("Marimo-notebook wegschrijven mislukt:", err);
+      alert(t("marimo.schrijvenMislukt", { fout: (err as Error)?.message ?? String(err) }));
+    }
+  };
+  return (
+    <span className="pdf-info">
+      <label className="jupyter-keuze" title={t("jupyter.metCodeUitleg")}>
+        <input
+          type="checkbox"
+          checked={nb?.metCode ?? true}
+          disabled={!nb}
+          onChange={(e) => nb && zetMarimo(ex.id, { ...nb, metCode: e.target.checked })}
+        />
+        {t("jupyter.metCode")}
+      </label>
+      <button className="pdf-vervang" onClick={() => void schrijf()} disabled={!nb} title={t("marimo.exporterenUitleg")}>
+        {t("jupyter.exporteren")}
+      </button>
+    </span>
+  );
+}
+
 /** Kop van het paneel: grootte, code op papier, bestanden inlezen en wegschrijven. */
 export function JupyterBladInfo({ ex }: { ex: Exemplaar }) {
   const { t } = useTranslation("werkruimte");
@@ -131,7 +172,7 @@ export function JupyterBladInfo({ ex }: { ex: Exemplaar }) {
       const lijst = await kiesExtraBestanden(nu);
       if (!lijst) return;
       const data = await bytesNaarBase64(pakWerkmapIn(lijst));
-      zetJupyter(ex.id, { bestandsnaam: nu?.bestandsnaam ?? "", metCode: nu?.metCode ?? true, data });
+      zetJupyter(ex.id, { ...nu, bestandsnaam: nu?.bestandsnaam ?? "", metCode: nu?.metCode ?? true, data });
     } catch (err) {
       console.error("Bestanden inlezen mislukt:", err);
       alert(t("jupyter.lezenMislukt", { fout: (err as Error)?.message ?? String(err) }));
@@ -158,6 +199,15 @@ export function JupyterBladInfo({ ex }: { ex: Exemplaar }) {
           onChange={(e) => werkmap && zetJupyter(ex.id, { ...werkmap, metCode: e.target.checked })}
         />
         {t("jupyter.metCode")}
+      </label>
+      <label className="jupyter-keuze" title={t("jupyter.automatischUitleg")}>
+        <input
+          type="checkbox"
+          checked={werkmap?.automatisch === true}
+          disabled={!werkmap}
+          onChange={(e) => werkmap && zetJupyter(ex.id, { ...werkmap, automatisch: e.target.checked })}
+        />
+        {t("jupyter.automatisch")}
       </label>
       <button className="pdf-vervang" onClick={() => void lees()} title={t("jupyter.inlezenUitleg")}>
         {t("jupyter.inlezen")}

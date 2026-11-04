@@ -33,7 +33,7 @@ const STIL_TIJDSLIMIET_MS = 1500;
 let poortBelofte: Promise<number> | null = null;
 
 /** Start de server van de omgeving, één keer. Een fout blijft de melding: die verandert niet. */
-function omgevingPoort(): Promise<number> {
+export function omgevingPoort(): Promise<number> {
   if (!poortBelofte) {
     poortBelofte = import("@tauri-apps/api/core").then(({ invoke }) => invoke<number>("jupyter_omgeving_start"));
   }
@@ -57,6 +57,7 @@ function leesStand(x: unknown): WerkmapBestand[] | null {
 export function JupyterVenster({ id, stijl, onOpslaan }: { id: string; stijl: CSSProperties; onOpslaan: () => void }) {
   const { t } = useTranslation("werkruimte");
   const data = useProjectStore((s) => s.exemplaren.find((e) => e.id === id)?.jupyter?.data);
+  const automatisch = useProjectStore((s) => s.exemplaren.find((e) => e.id === id)?.jupyter?.automatisch === true);
   const [poort, setPoort] = useState<number | null>(null);
   const [fout, setFout] = useState<string | null>(null);
   const [geladen, setGeladen] = useState(false);
@@ -67,6 +68,8 @@ export function JupyterVenster({ id, stijl, onOpslaan }: { id: string; stijl: CS
   const buiten = useRef<HTMLIFrameElement>(null);
   /** De werkmap die de omgeving nu heeft: gelezen of zelf weggeschreven. */
   const eigen = useRef(data);
+  /** De keuze die de omgeving nu kent. */
+  const automatischNu = useRef(automatisch);
   const isGeladen = useRef(false);
   const isStil = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -144,7 +147,7 @@ export function JupyterVenster({ id, stijl, onOpslaan }: { id: string; stijl: CS
     eigen.current = nieuw;
     const s = useProjectStore.getState();
     const blad = s.exemplaren.find((e) => e.id === id);
-    if (blad) s.zetJupyter(id, { bestandsnaam: blad.jupyter?.bestandsnaam ?? "", metCode: blad.jupyter?.metCode ?? true, data: nieuw });
+    if (blad) s.zetJupyter(id, { ...blad.jupyter, bestandsnaam: blad.jupyter?.bestandsnaam ?? "", metCode: blad.jupyter?.metCode ?? true, data: nieuw });
   }, [id, t]);
 
   useEffect(() => {
@@ -168,7 +171,7 @@ export function JupyterVenster({ id, stijl, onOpslaan }: { id: string; stijl: CS
             setFout(t("jupyter.lezenMislukt", { fout: (err as Error)?.message ?? String(err) }));
             return;
           }
-          stuur({ soort: "laad", bestanden, open: eersteNotebook(bestanden) });
+          stuur({ soort: "laad", bestanden, open: eersteNotebook(bestanden), automatisch: automatischNu.current });
           stuur({ soort: "thema", donker: document.documentElement.getAttribute("data-oa-theme")?.includes("dark") ?? false });
           break;
         }
@@ -232,6 +235,13 @@ export function JupyterVenster({ id, stijl, onOpslaan }: { id: string; stijl: CS
     eigen.current = data;
     herlaad();
   }, [data, herlaad]);
+
+  // De keuze Automatisch uitvoeren: aanzetten rekent meteen alles door.
+  useEffect(() => {
+    if (automatisch === automatischNu.current) return;
+    automatischNu.current = automatisch;
+    stuur({ soort: "automatisch", aan: automatisch });
+  }, [automatisch, stuur]);
 
   // Het thema van de app volgen.
   useEffect(() => {

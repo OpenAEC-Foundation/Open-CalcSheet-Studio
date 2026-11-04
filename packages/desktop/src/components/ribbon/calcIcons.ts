@@ -54,6 +54,7 @@ export const markdownIcon = b2("report.template", "standard");
 export const canvasIcon = b2("report.workspace");
 export const graafIcon = b2("panel.model-tree");
 export const jupyterIcon = b2("file.structure");
+export const marimoIcon = b2("data.chart", "standard");
 export const previewIcon = b2("view.report-preview", "standard");
 export const printSheetIcon = b2("report.print-entry");
 export const reportIcon = b2("report.generate", "standard");

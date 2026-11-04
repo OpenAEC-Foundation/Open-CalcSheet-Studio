@@ -67,7 +67,9 @@
       "pdf": "PDF…",
       "xlsx": "Spreadsheet (XLSX)…",
       "markdownBestand": "Markdown…",
-      "notebook": "Notebook of Python-script…"
+      "notebook": "Notebook of Python-script…",
+      "marimo": "Marimo-notebook",
+      "marimoBestand": "Marimo-notebook…"
     }
   },
   "catalogus": {
@@ -551,6 +553,8 @@
     "geenOmgeving": "De Python-omgeving kon niet starten: {{fout}}. De bestanden en de uitvoer van dit blad blijven bewaard en komen gewoon op papier.",
     "metCode": "Code op papier",
     "metCodeUitleg": "Komt de code van de cellen mee op papier, of alleen de tekst en de uitvoer?",
+    "automatisch": "Automatisch uitvoeren",
+    "automatischUitleg": "Voert alle cellen opnieuw uit zodra je de code wijzigt. Bij het openen van een project draait er niets: dat begint pas bij je eerste wijziging.",
     "inlezen": "Bestanden toevoegen…",
     "inlezenUitleg": "Notebooks, scripts of databestanden aan deze werkmap toevoegen. De omgeving laadt daarna opnieuw; de kernel begint dan leeg.",
     "exporteren": "Exporteren…",
@@ -636,5 +640,23 @@
     "hoogte": "Hoogte (mm)",
     "plekUitleg": "Plek en maat op papier. Wat er in de view staat, verandert hierdoor niet.",
     "uitleg": "Klik op een view om hem te kiezen, sleep om te verplaatsen, en dubbelklik om erin te tekenen."
+  },
+  "marimo": {
+    "toevoegenUitleg": "Voeg een reactief Python-notebook toe aan het project als blad: verander een waarde en alles wat daarvan afhangt volgt. Het notebook staat in het project, en de laatste uitvoer gaat mee op papier.",
+    "importerenUitleg": "Voeg een bestaand Marimo-notebook (.py) toe als nieuw blad.",
+    "nieuweNaam": "Marimo",
+    "filter": "Marimo-notebook",
+    "lezenMislukt": "Het notebook inlezen is mislukt: {{fout}}",
+    "schrijvenMislukt": "Het notebook wegschrijven is mislukt: {{fout}}",
+    "teGroot": "Dit bestand is te groot voor een notebook.",
+    "geenNotebook": "{{bestand}} is geen Marimo-notebook.",
+    "tab": "Marimo",
+    "paneel": "Marimo",
+    "rij": "Marimo — reactief Python-notebook, staat in het project",
+    "exporterenUitleg": "Schrijf dit notebook weg als los .py-bestand.",
+    "start": {
+      "kop": "Reactief notebook",
+      "uitleg": "Druk op Run om te starten. Verschuif daarna een schuif: elke cel die de waarde gebruikt, volgt. Numpy, scipy, pandas en matplotlib staan klaar."
+    }
   }
 }

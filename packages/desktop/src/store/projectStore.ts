@@ -16,6 +16,7 @@ import { GRAAF_BLAD } from "./graafBlad";
 import { legeGraaf, type Graaf } from "../graaf/model";
 import { TEKEN_BLAD, type TekenVel } from "./tekenBlad";
 import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
+import { MARIMO_BLAD, type MarimoNotebook } from "./marimoBlad";
 
 const STORE_KEY = "projectState";
 
@@ -108,6 +109,8 @@ export interface Exemplaar {
    * de werkmap als ZIP, base64-gecodeerd.
    */
   jupyter?: JupyterWerkmap;
+  /** Alleen bij een Marimo-blad (`templateId` MARIMO_BLAD, zie store/marimoBlad.ts): het notebook. */
+  marimo?: MarimoNotebook;
 }
 
 /**
@@ -184,6 +187,10 @@ interface ProjectState {
   voegJupyterToe: (naam: string, jupyter: JupyterWerkmap) => string;
   /** De werkmap van een Jupyter-blad; opeenvolgende wijzigingen tellen als één stap ongedaan maken. */
   zetJupyter: (id: string, jupyter: JupyterWerkmap) => void;
+  /** Een Marimo-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
+  voegMarimoToe: (naam: string, marimo: MarimoNotebook) => string;
+  /** Het notebook van een Marimo-blad; opeenvolgende wijzigingen tellen als één stap ongedaan maken. */
+  zetMarimo: (id: string, marimo: MarimoNotebook) => void;
   dupliceer: (id: string) => string | null;
   hernoem: (id: string, naam: string) => void;
   verwijder: (id: string) => void;
@@ -513,6 +520,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         ...metGeschiedenis(s, `jupyter:${id}`),
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, jupyter } : e)),
+        dirty: true,
+      };
+    }),
+
+  voegMarimoToe: (naam, marimo) => {
+    const id = nieuweId();
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      exemplaren: [
+        ...s.exemplaren,
+        { id, naam: vrijeNaam(s.exemplaren, naam, false), templateId: MARIMO_BLAD, source: "", waarden: {}, marimo },
+      ],
+      activeId: id,
+      dirty: true,
+    }));
+    return id;
+  },
+
+  zetMarimo: (id, marimo) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, `marimo:${id}`),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, marimo } : e)),
         dirty: true,
       };
     }),

@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
@@ -7,6 +7,8 @@ import {
   verwijderEenheid, VEL_BREEDTE, zetEenheid, type Eenheid,
 } from "../../store/canvasBlad";
 import { registreerBewaarder } from "../../store/spreadsheetBlad";
+import { huisstijlVariabelen } from "../../rapport/model";
+import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import { useDoorrekening } from "../../rekenen/doorrekening";
 import Icoon from "../Icoon";
 import { zorgVoorKernstijlen } from "./bladDoorrekenen";
@@ -56,6 +58,7 @@ interface Sleep {
 /** Werkruimte: het vel met de eenheden. */
 export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
   const { t } = useTranslation("werkruimte");
+  const bureau = useRapportBureau();
   const zetBron = useProjectStore((s) => s.zetBron);
   const zetWaarde = useProjectStore((s) => s.zetWaarde);
   const scope = useProjectScope();
@@ -168,7 +171,7 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
   const zichtbaar = eenheden.filter((u) => u.id !== open?.id);
   return (
     <div className="canvas-weergave">
-      <div className={`canvas-papier print-opmaak${bezig ? " rekent" : ""}`} data-oa-theme="light">
+      <div className={`canvas-papier print-opmaak${bezig ? " rekent" : ""}`} data-oa-theme="light" style={huisstijlVariabelen(bureau.huisstijl) as CSSProperties}>
         <div className="canvas-kop">{ex.naam}</div>
         <div
           ref={vlak}

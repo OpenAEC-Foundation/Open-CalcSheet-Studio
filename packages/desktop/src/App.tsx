@@ -17,8 +17,7 @@ import ProjectBrowser from "./components/calc/ProjectBrowser";
 import { designerVoor } from "./components/calc/designerKeuze";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
-import PrintDocument from "./components/calc/PrintDocument";
-import { vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, wachtTotGetekend, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
 import BladBijwerken from "./components/calc/BladBijwerken";
@@ -38,8 +37,9 @@ import { GraafBladInfo, GraafBladWeergave } from "./components/graaf/GraafBladWe
 import { isGraafBlad } from "./store/graafBlad";
 import { TekenbladInfo, TekenbladWeergave } from "./components/calc/TekenbladWeergave";
 import { isTekenBlad } from "./store/tekenBlad";
-import { JupyterBladInfo, JupyterBladWeergave, JupyterHouder } from "./components/calc/JupyterBladWeergave";
+import { JupyterBladInfo, JupyterBladWeergave, JupyterHouder, MarimoBladInfo } from "./components/calc/JupyterBladWeergave";
 import { isJupyterBlad } from "./store/jupyterBlad";
+import { isMarimoBlad } from "./store/marimoBlad";
 import { getSetting } from "./store";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
 import { usePrintStore } from "./store/printStore";
@@ -157,10 +157,6 @@ export default function App() {
   useSneltoetsen();
   useMcpBrug({ splitMode, setSplitMode, activeView, setActiveView, setTheme });
 
-  // De afdrukweergave bestaat alleen tijdens het printen. Even wachten voordat
-  // de printdialoog opent: de parametrische beelden meten hun tekengebied met
-  // een ResizeObserver, en die vuurt pas ná de eerste opmaakronde. Print je te
-  // vroeg, dan staan de tekeningen er nog niet of op de verkeerde maat.
   const printBezig = usePrintStore((s) => s.bezig);
   const printVoorbeeld = usePrintStore((s) => s.voorbeeld);
   const printKlaar = usePrintStore((s) => s.klaar);
@@ -169,26 +165,19 @@ export default function App() {
   const printSelectie = usePrintStore((s) => s.selectie);
   const kiesSelectie = usePrintStore((s) => s.kiesSelectie);
   const printSoort = usePrintStore((s) => s.soort);
-  // Alleen het échte printen zet de app weg. Het afdrukvoorbeeld is een paneel
-  // binnen de applicatie: lint, projectboom en statusbalk blijven staan.
-  // Het rapport gaat via de vellen van het afdrukvoorbeeld (drukvellen.ts);
-  // de app blijft daarbij staan, want het voorbeeld moet die vellen bouwen.
-  const afdrukmodus = printBezig && printSoort !== "rapport";
-
-  // De afdrukopmaak hangt aan een klasse op <html> in plaats van aan
-  // `@media print`, zodat het voorbeeld op het scherm er precies zo uitziet.
+  // Afdrukken gaat altijd via de vellen van het afdrukvoorbeeld (drukvellen.ts): wat je daar
+  // ziet, komt op papier. De browser zelf laten pagineren zet een vaste kop en voet midden op
+  // de pagina. De app blijft staan, want het voorbeeld moet die vellen bouwen; losse bladen
+  // gaan daarna terug naar waar je was.
   useEffect(() => {
-    const el = document.documentElement;
-    if (afdrukmodus) el.classList.add("afdrukmodus");
-    else el.classList.remove("afdrukmodus");
-    return () => el.classList.remove("afdrukmodus");
-  }, [afdrukmodus]);
-
-  useEffect(() => {
-    if (!printBezig || printSoort !== "rapport") return;
+    if (!printBezig) return;
     let afgebroken = false;
-    useProjectStore.getState().selecteer(RAPPORT_ID);
-    toonVoorbeeld(null, "rapport");
+    const rapport = printSoort === "rapport";
+    const { voorbeeld: alOpen, selectie } = usePrintStore.getState();
+    const project = useProjectStore.getState();
+    if (rapport) project.selecteer(RAPPORT_ID);
+    else if (project.activeId === RAPPORT_ID) project.selecteer(selectie?.[0] ?? project.exemplaren[0]?.id ?? "");
+    toonVoorbeeld(rapport ? null : undefined, printSoort);
     wachtOpVellen()
       .then(async (vellen) => {
         if (afgebroken) return;
@@ -201,6 +190,7 @@ export default function App() {
         } finally {
           opruimen();
           printKlaar();
+          if (!rapport && !alOpen) sluitVoorbeeld();
         }
       })
       .catch((err) => {
@@ -210,33 +200,7 @@ export default function App() {
     return () => {
       afgebroken = true;
     };
-  }, [printBezig, printSoort, printKlaar, toonVoorbeeld]);
-
-  // Een PDF-blad tekent zijn pagina's eerst; tot die er zijn, wacht het printen.
-  useEffect(() => {
-    if (!printBezig || printSoort === "rapport") return;
-    let afgebroken = false;
-    const id = window.setTimeout(() => {
-      wachtTotGetekend(".print-root")
-        .then(() => {
-          if (afgebroken) return;
-          try {
-            window.print();
-          } finally {
-            printKlaar();
-          }
-        })
-        .catch((err) => {
-          if (afgebroken) return;
-          alert((err as Error).message);
-          printKlaar();
-        });
-    }, 250);
-    return () => {
-      afgebroken = true;
-      clearTimeout(id);
-    };
-  }, [printBezig, printSoort, printKlaar]);
+  }, [printBezig, printSoort, printKlaar, toonVoorbeeld, sluitVoorbeeld]);
 
   // Staat het afdrukvoorbeeld op één blad en open je een ander blad, dan volgt
   // het voorbeeld mee. Een keuze voor het hele project blijft staan.
@@ -286,6 +250,8 @@ export default function App() {
   const tekenBlad = actief !== null && isTekenBlad(actief);
   // Idem een Jupyter-blad: alleen zijn omgeving.
   const jupyterBlad = actief !== null && isJupyterBlad(actief);
+  // En een Marimo-blad: ook alleen zijn omgeving.
+  const marimoBlad = actief !== null && isMarimoBlad(actief);
   const mode = hasDesigner ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
@@ -322,9 +288,9 @@ export default function App() {
     setSplitMode((m) => (m === "vu" ? "cv" : m));
     setCanvasCode(true);
   }, [codeVerzoek, sluitVoorbeeld]);
-  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad || jupyterBlad) ? (
+  const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad || jupyterBlad || marimoBlad) ? (
     <div className="split-tabs">
-      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : jupyterBlad ? "jupyter.tab" : tekenBlad ? "tekenblad.tab" : graafBlad ? "graaf.tab" : spreadsheetBlad ? "spreadsheet.tab" : "markdown.tab")}</button>
+      <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : jupyterBlad ? "jupyter.tab" : marimoBlad ? "marimo.tab" : tekenBlad ? "tekenblad.tab" : graafBlad ? "graaf.tab" : spreadsheetBlad ? "spreadsheet.tab" : "markdown.tab")}</button>
       <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
     </div>
   ) : actief && !toontProjectGegevens ? (
@@ -487,6 +453,15 @@ export default function App() {
                 </WerkPaneel>
               </div>
             </>
+          ) : marimoBlad ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <WerkPaneel titel={t("marimo.paneel")} info={<MarimoBladInfo ex={actief} />}>
+                  <JupyterBladWeergave />
+                </WerkPaneel>
+              </div>
+            </>
           ) : spreadsheetBlad ? (
             <>
               {tabBalk}
@@ -520,7 +495,6 @@ export default function App() {
       <SpreadsheetHouder />
       <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <JupyterHouder />
-      {afdrukmodus && <PrintDocument />}
       <Backstage
         open={backstageOpen}
         onClose={() => setBackstageOpen(false)}

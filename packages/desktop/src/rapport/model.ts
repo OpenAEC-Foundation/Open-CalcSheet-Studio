@@ -51,6 +51,8 @@ export interface BureauProfiel {
   email: string;
   /** data-URL of "". */
   logo: string;
+  /** Het logo in de kop van elke pagina en in de titelhoek van een tekening. Op het voorblad staat het altijd. */
+  logoInKop: boolean;
   /** data-URL of "": over de volle paginabreedte onderaan elke pagina. */
   voetafbeelding: string;
   huisstijl: Huisstijl;
@@ -65,10 +67,72 @@ export const STANDAARD_HUISSTIJL: Huisstijl = {
   lettertype: '"Segoe UI", "Helvetica Neue", Arial, sans-serif',
 };
 
+/**
+ * De lettertypen in de keuzelijst. Inter en Space Grotesk levert de app zelf mee; de rest
+ * staat op vrijwel elke Windows-computer en valt anders terug op wat erachter staat.
+ */
+export const LETTERTYPEN: readonly { naam: string; css: string }[] = [
+  { naam: "Segoe UI", css: STANDAARD_HUISSTIJL.lettertype },
+  { naam: "Arial", css: "Arial, Helvetica, sans-serif" },
+  { naam: "Calibri", css: "Calibri, Carlito, Arial, sans-serif" },
+  { naam: "Tahoma", css: "Tahoma, Verdana, sans-serif" },
+  { naam: "Verdana", css: "Verdana, Geneva, sans-serif" },
+  { naam: "Inter", css: "Inter, system-ui, sans-serif" },
+  { naam: "Space Grotesk", css: '"Space Grotesk", system-ui, sans-serif' },
+  { naam: "Cambria", css: "Cambria, Georgia, serif" },
+  { naam: "Georgia", css: 'Georgia, "Times New Roman", serif' },
+  { naam: "Times New Roman", css: '"Times New Roman", Times, serif' },
+];
+
+/** Wijkt deze huisstijl af van de standaard? Zo niet, dan houden losse bladen hun eigen opmaak. */
+export function heeftEigenHuisstijl(h: Huisstijl): boolean {
+  return (Object.keys(STANDAARD_HUISSTIJL) as (keyof Huisstijl)[]).some((k) => h[k] !== STANDAARD_HUISSTIJL[k]);
+}
+
+/**
+ * De huisstijl als CSS-variabelen, voor op de wortel van een uitdraai. Een leeg veld valt
+ * terug op de standaard. `--rpa-*` is het rapport (RapportAfdruk.css); `--pr-*` is de opmaak
+ * van een blad (PrintDocument.css), en die verandert alleen bij een eigen huisstijl.
+ */
+export function huisstijlVariabelen(h: Huisstijl): Record<string, string> {
+  const s = STANDAARD_HUISSTIJL;
+  const hoofd = h.hoofdkleur || s.hoofdkleur;
+  const accent = h.accentkleur || s.accentkleur;
+  const tabel = h.tabeltekst || s.tabeltekst;
+  const letter = h.lettertype || s.lettertype;
+  const rapport = {
+    "--rpa-hoofd": hoofd,
+    "--rpa-accent": accent,
+    "--rpa-tabel": tabel,
+    "--rpa-invoer": h.invoerkleur || s.invoerkleur,
+    "--rpa-font": letter,
+  };
+  if (!heeftEigenHuisstijl(h)) return rapport;
+  return {
+    ...rapport,
+    "--pr-accent": accent,
+    "--pr-tekst": tabel,
+    "--pr-kopkleur": hoofd,
+    "--pr-kop": letter,
+    "--pr-letter": letter,
+    "--pr-kern-letter": letter,
+    "--pr-kern-kop": hoofd,
+  };
+}
+
+/**
+ * Een lettertypelijst die veilig in een stijlregel of SVG-attribuut kan, met enkele
+ * aanhalingstekens. Een profiel kan via een project van iemand anders komen; wat iets anders
+ * is dan namen, geeft een lege tekst.
+ */
+export function veiligLettertype(s: string): string {
+  return /^[\p{L}\p{N} ,"'_-]+$/u.test(s) ? s.replace(/"/g, "'") : "";
+}
+
 export function leegBureau(): BureauProfiel {
   return {
     naam: "", adres: "", postcode: "", plaats: "", telefoon: "", email: "",
-    logo: "", voetafbeelding: "",
+    logo: "", logoInKop: true, voetafbeelding: "",
     huisstijl: { ...STANDAARD_HUISSTIJL },
     constructeurs: [],
   };
@@ -412,6 +476,7 @@ export function normaliseerBureau(x: unknown): BureauProfiel {
     telefoon: tekst(o.telefoon, ""),
     email: tekst(o.email, ""),
     logo: tekst(o.logo, ""),
+    logoInKop: o.logoInKop !== false,
     voetafbeelding: tekst(o.voetafbeelding, ""),
     huisstijl: {
       hoofdkleur: stijl(h.hoofdkleur, s.huisstijl.hoofdkleur),

@@ -100,7 +100,8 @@
     "about": "About",
     "report": "Report",
     "start": "Getting started",
-    "extensions": "Extensions"
+    "extensions": "Extensions",
+    "marimo": "Marimo"
   },
   "insert": {
     "elements": "Elements",
