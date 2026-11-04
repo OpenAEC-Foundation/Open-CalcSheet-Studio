@@ -43,7 +43,7 @@ De releaseworkflow weigert bestanden te publiceren die niet ondertekend zijn: Wi
 
 - **Gratis en open.** LGPL-3.0. Geen licentiekosten, geen account.
 - **Je kunt elke stap nalopen.** Een uitkomst toont naam, formule, ingevulde waarden en resultaat, met eenheden.
-- **Eén project, één rapport.** Voorblad, inhoudsopgave en paginanummers lopen door over alle bladen, van welke soort ook.
+- **Eén project, één rapport.** Voorblad, inhoudsopgave en paginanummers lopen door over alle bladen, van welke soort ook. Het zijpaneel toont de inhoud en alle nummers terwijl je werkt.
 - **Het juiste blad voor elk onderdeel.** Tekst, canvas, spreadsheet, nodegraaf, tekening, notebook, Markdown of PDF, naast elkaar in één project.
 - **Verander een getal en de toets volgt.** Bladen rekenen door terwijl je typt, en een tekening of 3D-model kan zijn maten uit het blad halen.
 - **Je gegevens blijven open.** Het projectbestand is IFCX, en je kunt IFC4x3 exporteren.

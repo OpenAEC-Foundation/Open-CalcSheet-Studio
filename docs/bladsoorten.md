@@ -72,6 +72,9 @@ inhoudsopgave zelf er niet door verschuift.
   bijlage A, met eventueel zijn koppen. Een rapport van vóór versie 4 van de
   rapportopbouw opent met die keuze uit: de inhoudsopgave blijft even lang en de vellen
   erna verschuiven niet.
+- **Inhoud in het zijpaneel:** alle hoofdstukken, paragrafen, bladen en bijlagen met hun nummer,
+  die elke wijziging meteen volgen (`inhoudVoorPaneel`). De paginanummers komen uit het laatste
+  afdrukvoorbeeld van het rapport: verdelen over vellen is te zwaar om bij elke toets te doen.
 - **Inhoudsopgave van hoofdstuk Berekeningen:** elke paragraaf met zijn pagina.
 - **Een eigen bijlage** (B, C, …) heeft geen nummer: het document zelf zit niet in het
   rapport.

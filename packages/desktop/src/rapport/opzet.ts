@@ -330,6 +330,39 @@ export function bijlageRegels(knopen: Rapportknoop[]): Inhoudsregel[] {
     p.blad?.bijlage ? bladRegels(p.blad.bijlage, p.titel, bijlageBladAnker(p.id), p.blad.koppen) : []);
 }
 
+/** Een regel in het zijpaneel; `bladId` is het blad dat een klik opent. */
+export interface PaneelRegel extends Inhoudsregel {
+  bladId?: string;
+}
+
+/**
+ * De inhoud voor het zijpaneel: alle nummers die het rapport gaat krijgen, altijd met de bladen en
+ * zonder de koppen uit een blad. De hoofdstukken, bladen en bijlagen staan in dezelfde volgorde
+ * als op papier en dragen dezelfde ankers, dus het voorbeeld kan er paginanummers bij zetten.
+ */
+export function inhoudVoorPaneel(r: Rapport, bladen: Blad[]): PaneelRegel[] {
+  const knopen = bouwOpzet(r, bladen);
+  const bladVan = new Map<string, string>();
+  for (const h of knopen) {
+    for (const p of h.kinderen) {
+      if (p.blad) {
+        bladVan.set(p.id, p.blad.id);
+        bladVan.set(bijlageBladAnker(p.id), p.blad.id);
+      }
+    }
+  }
+  const regel = (i: Inhoudsregel): PaneelRegel => {
+    const bladId = bladVan.get(i.anker);
+    return bladId ? { ...i, bladId } : i;
+  };
+  const uit = inhoudsopgave(knopen, true).filter((i) => i.niveau < 3).map(regel);
+  for (const b of bijlagen(r, bladen)) {
+    uit.push({ nummer: b.letter, titel: b.titel, niveau: 1, anker: bijlageAnker(b.letter) });
+    if (b.letter === "A") uit.push(...bijlageRegels(knopen).filter((i) => i.niveau < 3).map(regel));
+  }
+  return uit;
+}
+
 export interface Bijlage { letter: string; titel: string }
 
 /** Titel van bijlage A. */
