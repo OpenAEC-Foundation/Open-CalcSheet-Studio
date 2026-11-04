@@ -68,11 +68,44 @@ function verdeeld(x1 = A, x2 = B, naam = "q") {
 
 const punt = (x: number, naam = "F") => pijl(x, Y - 24, x, Y - 2) + tekst(x + 7, Y - 18, naam);
 
-/** De maat onder een ligger. */
-const onder = (x1: number, x2: number, s = "L", index = "") => maat(x1, Y + 20, x2, Y + 20, s, index);
-
 /** De trilvorm of doorbuiging als streeplijn. */
 const buigvorm = (d: string) => pad(d, "s");
+
+// ─── Liggers met momentenlijn ───────────────────────────────────────
+
+const M_BOVEN = 46;
+const M_ONDER = 71;
+const rond1 = (n: number) => String(Number(n.toFixed(1)));
+
+/**
+ * De momentenlijn als vlak, op de schaal die in de ruimte past. Aan de trekzijde, zoals
+ * in de Nederlandse constructiepraktijk: een positief moment staat onder de nullijn.
+ */
+function momentVlak(punten: [number, number][]) {
+  const groot = Math.max(0, ...punten.map((p) => p[1]));
+  const klein = Math.max(0, ...punten.map((p) => -p[1]));
+  const schaal = (M_ONDER - M_BOVEN) / (groot + klein || 1);
+  const nul = Number((M_BOVEN + klein * schaal).toFixed(1));
+  const x1 = punten[0][0];
+  const x2 = punten[punten.length - 1][0];
+  const d = `M${x1} ${nul}${punten.map(([x, m]) => `L${rond1(x)} ${rond1(nul + m * schaal)}`).join("")}L${x2} ${nul}Z`;
+  return `<path class="fb-b" data-nul="${nul}" d="${d}"/>` + lijn(x1, nul, x2, nul) + tekst(x2 + 8, nul + 3.5, "M");
+}
+
+/** Rechte stukken tussen de knikken: bij puntlasten. Elk punt is [x, M]. */
+const knikken = (...punten: [number, number][]) => momentVlak(punten);
+
+/** Een kromme lijn: `m(s)` geeft het moment op s = 0 tot 1 van de hele ligger. */
+function kromme(x1: number, x2: number, m: (s: number) => number) {
+  const n = 54;
+  return momentVlak(Array.from({ length: n + 1 }, (_, i) => [x1 + ((x2 - x1) * i) / n, m(i / n)] as [number, number]));
+}
+
+/** De maat onder de momentenlijn. */
+const onderM = (x1: number, x2: number, s = "L") => maat(x1, 76, x2, 76, s);
+
+/** De ligger met zijn last schuift omhoog; daaronder de momentenlijn en de maten. */
+const ligger = (boven: string[], ...onder: string[]) => svg(`<g transform="translate(0 -14)">${boven.join("")}</g>`, ...onder);
 
 // ─── Doorsneden ─────────────────────────────────────────────────────
 
@@ -190,22 +223,42 @@ const las = () => plaat(30, 56, 100, 12) + plaat(74, 18, 12, 38) + vorm("M86 56V
 
 const BEELDEN: Record<string, () => string> = {
   // Mechanica: liggers
-  "ligger-twee-steunpunten-q": () => svg(balk(), scharnier(A), rol(B), verdeeld(), onder(A, B)),
-  "ligger-twee-steunpunten-f-midden": () => svg(balk(), scharnier(A), rol(B), punt(80), onder(A, B)),
-  "ligger-twee-steunpunten-f-willekeurig": () => svg(balk(), scharnier(A), rol(B), punt(64), onder(A, 64, "a"), onder(64, B, "b")),
-  "ligger-twee-steunpunten-twee-f": () => svg(balk(), scharnier(A), rol(B), punt(58), punt(102), onder(A, 58, "a"), onder(102, B, "a")),
-  "ligger-twee-steunpunten-driehoekslast": () => svg(balk(), scharnier(A), rol(B), lijn(A, Y - 2, B, Y - 22, "a"), pijl(53, Y - 7, 53, Y - 2), pijl(80, Y - 12, 80, Y - 2), pijl(107, Y - 17, 107, Y - 2), pijl(B, Y - 22, B, Y - 2), tekst(B - 8, Y - 25, "q"), onder(A, B)),
-  "ligger-ingeklemd-q": () => svg(balk(), klem(A, -1), klem(B, 1), verdeeld(), onder(A, B)),
-  "ligger-ingeklemd-f-midden": () => svg(balk(), klem(A, -1), klem(B, 1), punt(80), onder(A, B)),
-  "ligger-eenzijdig-ingeklemd-q": () => svg(balk(), klem(A, -1), rol(B), verdeeld(), onder(A, B)),
-  "ligger-eenzijdig-ingeklemd-f-midden": () => svg(balk(), klem(A, -1), rol(B), punt(80), onder(A, 80, "L/2"), onder(80, B, "L/2")),
-  "uitkraging-q": () => svg(balk(), klem(A, -1), verdeeld(), onder(A, B)),
-  "uitkraging-f": () => svg(balk(), klem(A, -1), punt(B), onder(A, B)),
-  "ligger-overstek-q": () => svg(balk(), scharnier(A), rol(102), verdeeld(), onder(A, 102), onder(102, B, "a")),
-  "ligger-twee-velden-q": () => svg(balk(), scharnier(A), rol(80), rol(B), verdeeld(), onder(A, 80), onder(80, B)),
-  "ligger-twee-velden-f-midden": () => svg(balk(), scharnier(A), rol(80), rol(B), punt(53), punt(107), onder(A, 80), onder(80, B)),
-  "ligger-drie-velden-q": () => svg(balk(), scharnier(A), rol(62), rol(98), rol(B), verdeeld(), onder(A, 62), onder(62, 98), onder(98, B)),
-  "ligger-twee-steunpunten-q-op-x": () => svg(balk(), scharnier(A), rol(B), verdeeld(), lijn(70, Y - 8, 70, Y + 8, "s"), tekst(82, Y + 12, "M, V"), onder(A, 70, "x")),
+  "ligger-twee-steunpunten-q": () => ligger([balk(), scharnier(A), rol(B), verdeeld()], kromme(A, B, (s) => s * (1 - s)), onderM(A, B)),
+  "ligger-twee-steunpunten-f-midden": () => ligger([balk(), scharnier(A), rol(B), punt(80)], knikken([A, 0], [80, 1], [B, 0]), onderM(A, B)),
+  "ligger-twee-steunpunten-f-willekeurig": () => ligger([balk(), scharnier(A), rol(B), punt(64)], knikken([A, 0], [64, 1], [B, 0]), onderM(A, 64, "a"), onderM(64, B, "b")),
+  "ligger-twee-steunpunten-twee-f": () => ligger([balk(), scharnier(A), rol(B), punt(58), punt(102)], knikken([A, 0], [58, 1], [102, 1], [B, 0]), onderM(A, 58, "a"), onderM(102, B, "a")),
+  "ligger-twee-steunpunten-driehoekslast": () => ligger([balk(), scharnier(A), rol(B), lijn(A, Y - 2, B, Y - 22, "a"), pijl(53, Y - 7, 53, Y - 2), pijl(80, Y - 12, 80, Y - 2), pijl(107, Y - 17, 107, Y - 2), pijl(B, Y - 22, B, Y - 2), tekst(B - 8, Y - 25, "q")], kromme(A, B, (s) => s - s ** 3), onderM(A, B)),
+  "ligger-ingeklemd-q": () => ligger([balk(), klem(A, -1), klem(B, 1), verdeeld()], kromme(A, B, (s) => -1 / 12 + (s * (1 - s)) / 2), onderM(A, B)),
+  "ligger-ingeklemd-f-midden": () => ligger([balk(), klem(A, -1), klem(B, 1), punt(80)], knikken([A, -1], [80, 1], [B, -1]), onderM(A, B)),
+  "ligger-eenzijdig-ingeklemd-q": () => ligger([balk(), klem(A, -1), rol(B), verdeeld()], kromme(A, B, (s) => -1 / 8 + (5 * s) / 8 - (s * s) / 2), onderM(A, B)),
+  "ligger-eenzijdig-ingeklemd-f-midden": () => ligger([balk(), klem(A, -1), rol(B), punt(80)], knikken([A, -3 / 16], [80, 5 / 32], [B, 0]), onderM(A, 80, "L/2"), onderM(80, B, "L/2")),
+  "uitkraging-q": () => ligger([balk(), klem(A, -1), verdeeld()], kromme(A, B, (s) => -((1 - s) ** 2)), onderM(A, B)),
+  "uitkraging-f": () => ligger([balk(), klem(A, -1), punt(B)], knikken([A, -1], [B, 0]), onderM(A, B)),
+  "ligger-overstek-q": () => {
+    // Veld 76, overstek 32: M = R_A·x − q·x²/2 tot B, daarna het moment van de overstek alleen.
+    const a = 32 / 76;
+    const m = (s: number) => {
+      const x = (s * (B - A)) / 76;
+      return x <= 1 ? ((1 - a * a) * x) / 2 - (x * x) / 2 : -((1 + a - x) ** 2) / 2;
+    };
+    return ligger([balk(), scharnier(A), rol(102), verdeeld()], kromme(A, B, m), onderM(A, 102), onderM(102, B, "a"));
+  },
+  "ligger-twee-velden-q": () => {
+    const m = (s: number) => {
+      const u = Math.min(2 * s, 2 - 2 * s);
+      return (3 * u) / 8 - (u * u) / 2;
+    };
+    return ligger([balk(), scharnier(A), rol(80), rol(B), verdeeld()], kromme(A, B, m), onderM(A, 80), onderM(80, B));
+  },
+  "ligger-twee-velden-f-midden": () => ligger([balk(), scharnier(A), rol(80), rol(B), punt(53), punt(107)], knikken([A, 0], [53, 5 / 32], [80, -3 / 16], [107, 5 / 32], [B, 0]), onderM(A, 80), onderM(80, B)),
+  "ligger-drie-velden-q": () => {
+    const m = (s: number) => {
+      const x = Math.min(3 * s, 3 - 3 * s);
+      return x <= 1 ? 0.4 * x - (x * x) / 2 : -0.1 + 0.5 * (x - 1) * (2 - x);
+    };
+    return ligger([balk(), scharnier(A), rol(62), rol(98), rol(B), verdeeld()], kromme(A, B, m), onderM(A, 62), onderM(62, 98), onderM(98, B));
+  },
+  "ligger-twee-steunpunten-q-op-x": () => ligger([balk(), scharnier(A), rol(B), verdeeld(), lijn(70, Y - 8, 70, Y + 8, "s")], kromme(A, B, (s) => s * (1 - s)), lijn(70, 38, 70, 70, "s"), tekst(86, 42, "M, V"), onderM(A, 70, "x")),
 
   // Mechanica: doorsnedegrootheden
   "doorsnede-rechthoek": () => svg(rechthoek(70, 38, 36, 52), assen(70, 38, 26, 32), maat(52, 71, 88, 71, "b"), maat(100, 12, 100, 64, "h")),
