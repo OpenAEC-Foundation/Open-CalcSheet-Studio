@@ -68,7 +68,7 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 | **Calculation sheet** | Text in the [calculation language](docs/rekentaal.md), with formulas, conditions, plots and drawings |
 | **Spreadsheet** | An `.xlsx` workbook with formulas, cell pointing, fill and page edges |
 | **Canvas** | Formula units placed freely, calculated top to bottom with the same kernel |
-| **Graph** | Nodes, lists and code blocks, with a 3D preview |
+| **Graph** | Nodes for numbers, logic, lists, text and geometry, and code blocks, with a 3D preview. Reads graph files (`.dyn`) |
 | **Drawing** | A4, A3 or A2 with views to scale: grids, levels, walls, steel sections, hollow-core floors and schemes |
 | **Jupyter** | A [notebook with Python](docs/jupyter-blad.md), numpy, scipy, pandas and matplotlib, without installing anything. Optionally it runs again after every change |
 | **Marimo** | A reactive Python notebook: move a slider and everything that depends on it follows |
@@ -122,6 +122,7 @@ Count sources: the files named above and `ls scripts/check-*.mjs`. A module stat
 - **A running cell cannot be stopped.** Marimo also has no SQL cells and follows the dark or light theme only when it loads.
 - **Fonts are not embedded in the project.** Apart from Inter and Space Grotesk, a font in your house style must be installed on the computer that prints.
 - **The library needs internet the first time.** Without a connection it stays empty until it has been fetched once. After that it uses the last version.
+- **A graph file is not always complete.** Nodes this app does not have, scripts and most geometry stay on the graph with a message and do not calculate.
 - **Spreadsheet values do not reach calculation sheets yet.** A spreadsheet stands on its own for now.
 - **Report straight to PDF is Windows only.** Other platforms use the print dialog.
 - **The report template is in Dutch.** The app and the sheets follow your language, but the cover, the standard chapters and some names in the IFC tree are Dutch for now.

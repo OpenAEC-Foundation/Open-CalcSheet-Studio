@@ -70,7 +70,7 @@ Een project is een lijst bladen. Elke soort staat beschreven in [de documentatie
 | **Rekenblad** | Tekst in de [rekentaal](docs/rekentaal.md), met formules, voorwaarden, grafieken en tekeningen |
 | **Spreadsheet** | Een `.xlsx`-werkmap met formules, cellen aanwijzen, doorvullen en paginagrenzen |
 | **Canvas** | Formule-eenheden vrij geplaatst, van boven naar beneden gerekend met dezelfde kern |
-| **Graaf** | Nodes, lijsten en codeblokken, met een 3D-voorbeeld |
+| **Graaf** | Nodes voor getallen, logica, lijsten, tekst en geometrie, en codeblokken, met een 3D-voorbeeld. Leest grafbestanden (`.dyn`) |
 | **Tekening** | A4, A3 of A2 met aanzichten op schaal: stramienen, peilen, wanden, staalprofielen, kanaalplaatvloeren en schematiseringen |
 | **Jupyter** | Een [notebook met Python](docs/jupyter-blad.md), numpy, scipy, pandas en matplotlib, zonder iets te installeren. Op verzoek rekent het opnieuw na elke wijziging |
 | **Marimo** | Een reactief Python-notebook: verschuif een schuif en alles wat daarvan afhangt, volgt |
@@ -124,6 +124,7 @@ Bron van de getallen: de genoemde bestanden en `ls scripts/check-*.mjs`. De stat
 - **Een lopende cel is niet te stoppen.** Marimo heeft ook geen SQL-cellen en volgt het donkere of lichte thema alleen bij het laden.
 - **Lettertypen zitten niet in het project.** Behalve Inter en Space Grotesk moet een lettertype uit je huisstijl op de computer staan die afdrukt.
 - **De bibliotheek heeft de eerste keer internet nodig.** Zonder verbinding blijft hij leeg tot hij een keer is opgehaald. Daarna gebruikt hij de laatste stand.
+- **Een grafbestand komt niet altijd volledig over.** Nodes die deze app niet heeft, scripts en de meeste geometrie blijven met een melding op de graaf staan en rekenen niet.
 - **Waarden uit een spreadsheet komen nog niet in rekenbladen.** Een spreadsheet staat voorlopig op zichzelf.
 - **Het rapport rechtstreeks naar PDF kan alleen op Windows.** Andere platforms gebruiken de printdialoog.
 - **Het rapport-sjabloon is Nederlands.** De app en de bladen volgen je taal, maar het voorblad, de standaardhoofdstukken en sommige namen in de IFC-boom zijn voorlopig Nederlands.

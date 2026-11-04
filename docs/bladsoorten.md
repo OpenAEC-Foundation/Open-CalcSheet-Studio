@@ -138,7 +138,9 @@ wat in het voorbeeld staat, komt op papier.
   `source`, met per eenheid een regel `//@eenheid id=e1 x=10 y=15`. De kern rekent van
   boven naar beneden, en `CanvasVellen` zet de eenheden op papier.
 - **Graaf** staat in `graaf` op het blad (`ocss::blad::graaf`) en is aangemeld met
-  `GraafVellen`.
+  `GraafVellen`. `graaf/grafBestand.ts` leest een grafbestand (`.dyn`, JSON) in: elke node waarvan
+  hier een gelijke bestaat wordt een gewone node, de rest blijft staan als `ingelezen` met zijn
+  naam en poorten, en rekent niet. Er draait niets uit het bestand; een codeblok wordt rekentaal.
 - **Tekenblad** staat in `tekenvel` (`ocss::blad::tekenvel`) en is aangemeld met
   `HeelBlad`, omdat de kop in de titelhoek van het vel staat.
 - **Jupyter** staat in `jupyter` (`ocss::blad::jupyter`) en is de uitzondering: dat blad

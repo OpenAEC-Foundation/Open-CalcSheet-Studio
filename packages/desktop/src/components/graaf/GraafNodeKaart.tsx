@@ -1,7 +1,7 @@
 import { memo, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { GraafNode } from "../../graaf/model";
-import { KOP_HOOGTE, RIJ_HOOGTE, nodeBreedte, nodeDef, veldSleutel, type PoortDef } from "../../graaf/nodes";
+import { KOP_HOOGTE, MAX_LIJST_INGANGEN, RIJ_HOOGTE, nodeBreedte, nodeDef, veldSleutel, type PoortDef } from "../../graaf/nodes";
 import type { NodeUitkomst } from "../../graaf/rekenen";
 import { voorbeeldVan } from "../../graaf/voorbeeld";
 import { meldingTekst, poortTekst } from "./graafTeksten";
@@ -186,6 +186,27 @@ export const GraafNodeKaart = memo(function GraafNodeKaart({ node, x, y, naam, u
       )}
 
       {node.soort === "getal" && <GetalVelden node={node} zet={zet} />}
+      {node.soort === "waarOnwaar" && (
+        <div className="graaf-velden">
+          <label className="graaf-keuze">
+            <input type="checkbox" checked={node.invoer?.waarde !== "false"} onChange={(e) => zet("waarde", String(e.target.checked))} />
+            {t(node.invoer?.waarde !== "false" ? "graaf.waar" : "graaf.onwaar")}
+          </label>
+        </div>
+      )}
+      {node.soort === "lijstMaken" && (
+        <div className="graaf-velden">
+          <label className="graaf-keuze">
+            {t("graaf.aantalIngangen")}
+            <input className="graaf-veld" type="number" min={1} max={MAX_LIJST_INGANGEN} value={node.invoer?.aantal ?? "3"} onChange={(e) => zet("aantal", e.target.value)} />
+          </label>
+        </div>
+      )}
+      {node.soort === "ingelezen" && node.invoer?.code && (
+        <div className="graaf-velden">
+          <textarea className="graaf-tekst graaf-code" readOnly spellCheck={false} rows={Math.min(8, node.invoer.code.split("\n").length + 1)} value={node.invoer.code} aria-label={t("graaf.soort.ingelezen")} />
+        </div>
+      )}
       {node.soort === "tekst" && (
         <div className="graaf-velden">
           <textarea className="graaf-tekst" rows={2} value={node.invoer?.tekst ?? ""} onChange={(e) => zet("tekst", e.target.value)} aria-label={t("graaf.poort.tekst")} />

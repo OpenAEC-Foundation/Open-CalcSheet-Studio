@@ -141,6 +141,11 @@ function rekenNode(
 ): NodeUitkomst {
   const uit: NodeUitkomst = { poorten, waarden: {}, fouten: [], meldingen: [] };
 
+  if (node.soort === "ingelezen") {
+    uit.fouten.push({ code: "nietOvergenomen", gegevens: { bron: node.invoer?.bron ?? "" } });
+    return uit;
+  }
+
   if (node.soort === "codeblok") {
     const a = analyseerRekenblok(node.invoer?.code ?? "");
     if (a.fout) uit.fouten.push({ code: "blok", gegevens: { naam: "", tekst: a.fout } });
@@ -155,6 +160,10 @@ function rekenNode(
       const w = uitkomsten[v.vanNode]?.waarden[v.vanPoort];
       if (w === undefined) uit.fouten.push({ code: "ingangZonderWaarde", gegevens: { naam: p.naam } });
       else invoer[p.naam] = w;
+      continue;
+    }
+    if (p.tekst) {
+      invoer[p.naam] = node.invoer?.[veldSleutel(node, p.naam)] ?? p.standaard ?? "";
       continue;
     }
     const tekst = (node.invoer?.[veldSleutel(node, p.naam)] ?? p.standaard ?? "").trim();

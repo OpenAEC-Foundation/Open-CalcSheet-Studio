@@ -17,6 +17,7 @@ import Icoon from "../Icoon";
 import { GraafNodeKaart, type NodeActies } from "./GraafNodeKaart";
 import { GraafZoekmenu } from "./GraafZoekmenu";
 import { nodeNaam } from "./graafTeksten";
+import { leesGrafBestandIn } from "./grafbladToevoegen";
 import type { GraafAchtergrond } from "./graafAchtergrond";
 import "./GraafBlad.css";
 
@@ -475,6 +476,7 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
         <div className="graaf-leeg">
           <p>{t("graaf.leeg")}</p>
           <button type="button" className="pdf-vervang" onClick={laadVoorbeeld}>{t("graaf.voorbeeldLaden")}</button>
+          <button type="button" className="pdf-vervang" onClick={() => void leesGrafBestandIn(id)} title={t("graaf.importerenUitleg")}>{t("graaf.importeren")}</button>
         </div>
       )}
 

@@ -9,7 +9,7 @@ import type { NodeSoort } from "../../graaf/model";
  * in de andere taal; Enter kiest de bovenste, de pijltjes bewegen.
  */
 
-const GROEPEN = ["invoer", "lijst", "reken", "geometrie"] as const;
+const GROEPEN = ["invoer", "reken", "logica", "lijst", "tekst", "geometrie"] as const;
 
 export function GraafZoekmenu({ x, y, onKies, onSluit }: {
   /** De plek in het vlak, in px vanaf de linkerbovenhoek. */
