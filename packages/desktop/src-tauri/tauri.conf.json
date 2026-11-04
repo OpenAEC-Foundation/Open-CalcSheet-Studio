@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Open CalcSheet Studio",
-  "version": "2026.45.0",
+  "version": "2026.45.1",
   "identifier": "studio.openstructuralcalculation.app",
   "build": {
     "beforeDevCommand": "npm run dev",
