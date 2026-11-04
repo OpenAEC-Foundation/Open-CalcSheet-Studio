@@ -10,6 +10,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Buiten #root (Modal.tsx): hier opnieuw, net als bij de rest van de bediening. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Modal Dialog */

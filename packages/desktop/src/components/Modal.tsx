@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import "./Modal.css";
 
 interface ModalProps {
@@ -85,7 +86,9 @@ export default function Modal({
   const style: React.CSSProperties = { width };
   if (height) style.height = height;
 
-  return (
+  // Rechtstreeks op de body: het lint vormt een eigen laag, en een venster dat daarbinnen
+  // begint, valt achter de titelbalk en de panelen.
+  return createPortal(
     <div className="modal-overlay" ref={overlayRef}>
       <div
         className={`modal-dialog${className ? ` ${className}` : ""}`}
@@ -101,6 +104,7 @@ export default function Modal({
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
