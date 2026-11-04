@@ -1,0 +1,17 @@
+## Virtual work
+'<small>Source: Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 1, art. 1.1-1.5; Hoofdstuk 2, art. 1.2</small>
+'<i>The deflection at the end of a cantilever: the actual moments and shear forces times those of a unit load at that point. That also picks up the shear deformation.</i>
+q = 10 kN/m'<span class="kolom-3"></span>'
+L = 3 m'<span class="kolom-3"></span>'
+E = 210000 N/mm^2'<span class="kolom-3"></span>'
+G = 81000 N/mm^2'<span class="kolom-3"></span>'
+I_y = 8356 cm^4', IPE 300<span class="kolom-3"></span>'
+A_v = 2568 mm^2', shear area<span class="kolom-3"></span>'
+M(x) = q*(L - x)^2/2
+Q(x) = q*(L - x)
+m_1(x) = L - x
+w_M = $Area{M(x)*m_1(x)/(E*I_y) @ x = 0 m : L} to mm', from bending'
+w_Q = $Area{Q(x)/(G*A_v) @ x = 0 m : L} to mm', from shear'
+w_tot = w_M + w_Q to mm
+a_Q = w_Q/w_tot', share of the shear force'
+w_c = q*L^4/(8*E*I_y) to mm', as a check: qL⁴/8EI'

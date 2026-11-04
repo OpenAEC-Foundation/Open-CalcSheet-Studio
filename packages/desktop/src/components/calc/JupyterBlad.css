@@ -20,10 +20,6 @@
   z-index: 1;
 }
 
-html.afdrukmodus .jupyter-laag {
-  display: none;
-}
-
 .jupyter-venster {
   position: fixed;
   overflow: hidden;

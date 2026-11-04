@@ -1,16 +1,7 @@
 /*
- * Afdrukweergave van het hele project.
- *
- * Twee soorten regels, met opzet aan verschillende haakjes:
- *
- * - `html.afdrukmodus` zet de ápp weg — lint, projectboom, statusbalk. Die
- *   klasse staat alleen aan op het moment dat er echt geprint wordt.
- * - `.print-opmaak` maakt het dócument op. Die klasse hangt aan de uitdraai
- *   zelf, zodat het afdrukvoorbeeld in de app dezelfde opmaak krijgt zonder
- *   dat daarvoor de hele applicatie hoeft te verdwijnen.
- *
- * Waarom niet gewoon `@media print`: dan is een printlayout niet te
- * controleren zonder hem uit te draaien.
+ * De opmaak van een uitdraai: `.print-opmaak` hangt aan de meetopstelling en de vellen van
+ * het afdrukvoorbeeld (AfdrukVoorbeeld.tsx), en wat naar de printer gaat is een kopie
+ * van die vellen (drukvellen.ts).
  *
  * `@page` staat los: die geldt sowieso alleen bij het printen.
  */
@@ -55,87 +46,19 @@
   --pr-lijn: #e4e4e7;
   --pr-vlak: #FAFAF9;
   --pr-kop: "Space Grotesk", system-ui, sans-serif;
+  --pr-letter: var(--font-body, "Inter", system-ui, sans-serif);
+  --pr-kopkleur: var(--pr-tekst);
 }
 
-/*
- * Buiten de afdrukmodus staat het document buiten beeld, maar wél met een echte
- * opmaak. Met `display: none` heeft niets een grootte, en de parametrische
- * beelden meten hun tekengebied met een ResizeObserver — die zou dan nul
- * teruggeven en de tekening zou leeg blijven. Daarom wegzetten in plaats van
- * verbergen, op de breedte van een A4 minus de marges.
- */
-.print-root {
+/* Het logo van het bureau boven de kopregel, rechts in de bovenmarge. */
+.print-opmaak .print-kop-logo {
   position: absolute;
-  left: -20000px;
-  top: 0;
-  width: 178mm;
-}
-
-/* ─── De app zelf verdwijnt ───────────────────────────────────── */
-
-html.afdrukmodus .titlebar,
-html.afdrukmodus .ribbon-container,
-html.afdrukmodus .document-bar,
-html.afdrukmodus .project-browser,
-html.afdrukmodus .status-bar,
-html.afdrukmodus .split-tabs,
-html.afdrukmodus .main-view,
-html.afdrukmodus .backstage-overlay,
-html.afdrukmodus .modal-overlay {
-  display: none !important;
-}
-
-/* De app-schil is een vaste kolom van schermhoogte met verborgen overloop; een
-   afdruk moet juist over zoveel pagina's lopen als hij nodig heeft. */
-html.afdrukmodus,
-html.afdrukmodus body,
-html.afdrukmodus #root {
-  display: block !important;
-  height: auto !important;
-  max-height: none !important;
-  overflow: visible !important;
-  background: #fff !important;
-  color: #000 !important;
-}
-
-html.afdrukmodus .print-root {
-  position: static;
-  left: auto;
-  width: auto;
-  display: block;
-  background: #fff;
-  color: #000;
-  font-family: var(--font-body, "Inter", system-ui, sans-serif);
-  font-size: 10.5pt;
-  line-height: 1.45;
-}
-
-/* ─── Loopkop en -voet ────────────────────────────────────────── */
-
-/* Vaste elementen herhaalt de browser op elke afgedrukte pagina. De negatieve
-   offset zet ze ín de paginamarge, boven en onder de tekst. */
-html.afdrukmodus .print-loopkop,
-html.afdrukmodus .print-loopvoet {
-  position: fixed;
-  left: 0;
   right: 0;
-  display: flex;
-  justify-content: space-between;
-  font-size: 8pt;
-  color: #6b6b73;
-}
-
-html.afdrukmodus .print-loopkop {
-  top: -13mm;
-  padding-bottom: 3pt;
-  border-bottom: 0.75pt solid #D97706;
-  font-weight: 500;
-}
-
-html.afdrukmodus .print-loopvoet {
-  bottom: -11mm;
-  padding-top: 3pt;
-  border-top: 0.5pt solid #d4d4d8;
+  bottom: calc(100% + 2pt);
+  height: 8mm;
+  max-width: 45mm;
+  object-fit: contain;
+  object-position: right bottom;
 }
 
 /* ─── Voorblad ────────────────────────────────────────────────── */
@@ -171,7 +94,7 @@ html.afdrukmodus .print-loopvoet {
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
-  color: var(--pr-tekst);
+  color: var(--pr-kopkleur);
 }
 
 .print-opmaak .print-ondertitel {
@@ -208,7 +131,7 @@ html.afdrukmodus .print-loopvoet {
   font-family: var(--pr-kop);
   font-size: 12pt;
   font-weight: 700;
-  color: var(--pr-tekst);
+  color: var(--pr-kopkleur);
 }
 
 .print-opmaak .print-resultaten {
@@ -341,7 +264,7 @@ html.afdrukmodus .print-loopvoet {
   margin: 0 0 10pt;
   padding-bottom: 5pt;
   border-bottom: 1.5pt solid var(--pr-accent);
-  color: var(--pr-tekst);
+  color: var(--pr-kopkleur);
 }
 
 .print-opmaak .print-blad-nr {
@@ -352,7 +275,7 @@ html.afdrukmodus .print-loopvoet {
   width: 18pt;
   height: 18pt;
   border-radius: 4pt;
-  background: var(--pr-tekst);
+  background: var(--pr-kopkleur);
   color: #fff;
   font-family: var(--pr-kop);
   font-size: 10pt;
@@ -451,6 +374,13 @@ html.afdrukmodus .print-loopvoet {
   margin-left: 0 !important;
   margin-right: 0 !important;
   padding: 0 !important;
+  /* Zonder eigen huisstijl: de letter en de koppen van de kern zelf. */
+  font-family: var(--pr-kern-letter, 'Segoe UI', system-ui, -apple-system, sans-serif);
+}
+
+.print-opmaak .print-blad .ifc-calc :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--pr-kop);
+  color: var(--pr-kern-kop, #0d2137);
 }
 
 /* Bedieningselementen die op papier niets betekenen: de sleepzone voor een

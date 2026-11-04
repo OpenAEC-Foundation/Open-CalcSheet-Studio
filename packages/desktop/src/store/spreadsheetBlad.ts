@@ -17,6 +17,7 @@ import { isMarkdownBlad } from "./markdownBlad.ts";
 import { isGraafBlad } from "./graafBlad.ts";
 import { isTekenBlad } from "./tekenBlad.ts";
 import { isJupyterBlad } from "./jupyterBlad.ts";
+import { isMarimoBlad } from "./marimoBlad.ts";
 
 /** `templateId` van een spreadsheet-blad. Geen module: er is geen sjabloon met deze naam. */
 export const SPREADSHEET_BLAD = "spreadsheet";
@@ -37,9 +38,9 @@ export function isSpreadsheetBlad(ex: { templateId?: string }): boolean {
   return ex.templateId === SPREADSHEET_BLAD;
 }
 
-/** Een blad zonder rekentekst en invoer: een PDF, een werkmap, een Markdown-tekst, een graaf, een tekenblad of een Jupyter-werkmap. */
+/** Een blad zonder rekentekst en invoer: een PDF, een werkmap, een Markdown-tekst, een graaf, een tekenblad, een Jupyter-werkmap of een Marimo-notebook. */
 export function isLosBlad(ex: { templateId?: string }): boolean {
-  return isPdfBlad(ex) || isSpreadsheetBlad(ex) || isMarkdownBlad(ex) || isGraafBlad(ex) || isTekenBlad(ex) || isJupyterBlad(ex);
+  return isPdfBlad(ex) || isSpreadsheetBlad(ex) || isMarkdownBlad(ex) || isGraafBlad(ex) || isTekenBlad(ex) || isJupyterBlad(ex) || isMarimoBlad(ex);
 }
 
 /** De werkmap uit een bestand of de opgeslagen staat van de app; zelfde vorm als een PDF. */

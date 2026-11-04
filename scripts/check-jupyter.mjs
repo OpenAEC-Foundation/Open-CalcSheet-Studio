@@ -118,7 +118,7 @@ const project = {
   rapport: undefined,
   exemplaren: [
     { id: "ex-reken", naam: "Reken", templateId: "", source: "a = 2", waarden: {}, elementen: [] },
-    { id: "ex-jup", naam: "Notebook", templateId: JUPYTER_BLAD, source: "", waarden: {}, elementen: [], jupyter: { bestandsnaam: "n.ipynb", data: DATA, metCode: false } },
+    { id: "ex-jup", naam: "Notebook", templateId: JUPYTER_BLAD, source: "", waarden: {}, elementen: [], jupyter: { bestandsnaam: "n.ipynb", data: DATA, metCode: false, automatisch: true } },
     { id: "ex-jup2", naam: "Tweede", templateId: JUPYTER_BLAD, source: "", waarden: {}, elementen: [], jupyter: { bestandsnaam: "", data: naarBase64(pakWerkmapIn([BESTANDEN[1]])), metCode: true } },
     { id: "ex-xlsx", naam: "Lijst", templateId: SPREADSHEET_BLAD, source: "", waarden: {}, elementen: [], xlsx: { bestandsnaam: "a.xlsx", data: "UEsDBA==" } },
   ],
@@ -133,6 +133,7 @@ const opId = (id) => terug.exemplaren.find((e) => e.id === id);
 meld(opId("ex-jup")?.jupyter?.data === DATA, "de werkmap komt byte voor byte terug");
 meld(opId("ex-jup")?.jupyter?.bestandsnaam === "n.ipynb", "de bestandsnaam komt terug");
 meld(opId("ex-jup")?.jupyter?.metCode === false && opId("ex-jup2")?.jupyter?.metCode === true, "de keuze voor de code op papier komt terug");
+meld(opId("ex-jup")?.jupyter?.automatisch === true && opId("ex-jup2")?.jupyter?.automatisch === undefined, "de keuze Automatisch uitvoeren komt terug, en staat standaard uit");
 meld(isJupyterBlad(opId("ex-jup")) && opId("ex-jup").naam === "Notebook", "het blijft een Jupyter-blad");
 meld(opId("ex-jup").jupyter.data !== opId("ex-jup2").jupyter.data, "twee bladen houden elk hun eigen werkmap");
 meld(!("jupyter" in opId("ex-reken")) && !("jupyter" in opId("ex-xlsx")), "een ander blad krijgt geen werkmap");
@@ -151,6 +152,8 @@ meld(attr["ocss::blad"].soort === "jupyter", "in het IFCX staat de soort jupyter
 meld(attr["ocss::blad::jupyter"].mediaType === "application/zip", "met het mediatype van ZIP");
 meld(attr["ocss::blad::jupyter"].grootte === zip.length, `en de grootte in bytes (${zip.length})`);
 meld(attr["ocss::blad::jupyter"].metCode === false, "en de keuze voor de code");
+meld(attr["ocss::blad::jupyter"].automatisch === true, "en de keuze voor automatisch uitvoeren");
+meld(!("automatisch" in doc.data.find((k) => k.attributes?.["ocss::blad"]?.id === "ex-jup2").attributes["ocss::blad::jupyter"]), "die alleen meegaat als hij aan staat: een bestaand bestand verandert niet");
 meld(!("ocss::blad::rekentekst" in attr) && !("ocss::blad::invoer" in attr), "zonder rekentekst en invoer");
 meld(typeof doc.schemas["ocss::blad::jupyter"]?.value === "object", "het attribuut heeft een schema");
 
@@ -168,6 +171,7 @@ meld(normaliseerExemplaar({ id: "y", naam: "R", templateId: "", jupyter: { data:
 meld(normaliseerExemplaar({ id: "z", naam: "J", templateId: JUPYTER_BLAD, jupyter: { data: "QU\nJD" } }, "n").jupyter?.data === "QUJD", "witruimte in de base64 valt weg");
 meld(leesJupyterWerkmap({ data: 12 }) === undefined && leesJupyterWerkmap(null) === undefined, "onbruikbare werkmap: geen veld");
 meld(leesJupyterWerkmap({ data: "QUJD" }).metCode === true, "zonder keuze gaat de code mee");
+meld(leesJupyterWerkmap({ data: "QUJD" }).automatisch === undefined && leesJupyterWerkmap({ data: "QUJD", automatisch: "ja" }).automatisch === undefined, "automatisch uitvoeren staat alleen aan als het er echt staat");
 meld(isLosBlad({ templateId: JUPYTER_BLAD }) && !isLosBlad({ templateId: "balklaag" }), "een Jupyter-blad is een los blad, een module niet");
 
 console.log("\nOp papier, uit de opgeslagen uitvoer");
@@ -264,6 +268,8 @@ meld(/pyodide\.mjs$/.test(lite.litePluginSettings["@jupyterlite/pyodide-kernel-e
 const bouw = lees("scripts/bouw-jupyter-omgeving.mjs");
 meld(["numpy", "scipy", "pandas", "matplotlib"].every((p) => bouw.includes(`"${p}"`)), "numpy, scipy, pandas en matplotlib zitten in de omgeving");
 const brug = lees("packages/desktop/jupyter-omgeving/ocss-brug.js");
+meld(/function laad\([^)]*\) \{\s*bezig = true;\s*automatisch = aan === true;/.test(brug) && !/run-all-cells/.test(brug), "automatisch uitvoeren: laden start geen ronde, en de cursor blijft staan");
+meld(brug.includes("stand.uitgevoerd = codeVan(paneel);"), "openen geldt niet als wijziging");
 meld(brug.includes("e.source !== window.top") && !/\beval\(|run-all|runAll|notebook:run/.test(brug), "de brug luistert alleen naar de app en start nooit een cel");
 meld(brug.includes("invalidate_caches") && brug.includes("store_history: false") && brug.includes("silent: true"), "de terugval voor een nieuw script komt in de kernel, zonder nummer op een cel");
 

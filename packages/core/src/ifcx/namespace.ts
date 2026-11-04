@@ -44,6 +44,7 @@ export const ATTR = {
   graaf: 'ocss::blad::graaf',
   tekenvel: 'ocss::blad::tekenvel',
   jupyter: 'ocss::blad::jupyter',
+  marimo: 'ocss::blad::marimo',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -168,6 +169,7 @@ const RAPPORT = object({
   opmaak: opt(object(velden(['constructieprincipe', 'subkoppen', 'bladenInInhoud'], JANEE))),
   bureau: opt(object({
     ...velden(['naam', 'adres', 'postcode', 'plaats', 'telefoon', 'email', 'logo', 'voetafbeelding']),
+    logoInKop: opt(JANEE),
     huisstijl: opt(object(velden(['hoofdkleur', 'accentkleur', 'tabeltekst', 'invoerkleur', 'lettertype']))),
     constructeurs: opt(lijst(object(velden(['naam', 'telefoon', 'email'])))),
   })),
@@ -188,7 +190,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       id: TEKST,
       volgorde: GEHEEL,
       templateId: TEKST,
-      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown', 'graaf', 'tekenblad', 'jupyter'),
+      soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown', 'graaf', 'tekenblad', 'jupyter', 'marimo'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
     }),
@@ -223,6 +225,18 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       // Base64 van de ingepakte werkmap, zoals een PDF of werkmap.
       data: TEKST,
       metCode: JANEE,
+      // Alle cellen opnieuw uitvoeren na een wijziging; zonder: alleen op verzoek.
+      automatisch: opt(JANEE),
+    }),
+  },
+  [ATTR.marimo]: {
+    value: object({
+      bestandsnaam: TEKST,
+      // Het notebook als tekst, zoals in het .py-bestand.
+      code: TEKST,
+      metCode: JANEE,
+      // De laatste uitvoer per cel als html, in JSON: een notebook bewaart die zelf niet.
+      uitvoer: TEKST,
     }),
   },
   [ATTR.markdown]: {

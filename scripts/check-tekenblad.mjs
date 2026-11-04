@@ -338,6 +338,10 @@ const kwaad = TB.leesTekenVel({
     ],
   }],
 });
+const metLogo = V.velSvg(V.nieuwVel("V"), { logo: "data:image/png;base64,iVBORw0KGgo=", lettertype: "Georgia, serif" });
+meld(metLogo.includes('<image href="data:image/png;base64,iVBORw0KGgo="') && metLogo.includes("font-family:Georgia, serif"), "het logo en de letter van het bureau staan op het vel");
+meld(!V.velSvg(V.nieuwVel("V"), { logo: 'x" onload="alert(1)' }).includes("<image") && !V.velSvg(V.nieuwVel("V"), { logo: "http://voorbeeld.invalid/a.png" }).includes("<image"), "alleen een ingebedde afbeelding komt op het vel");
+meld(!V.velSvg(V.nieuwVel("V")).includes("<image"), "zonder logo geen afbeelding");
 const kwaadSvg = V.velSvg(kwaad, { naam: "<script>alert(5)</script>" });
 meld(kwaad.views[0].elementen.length === 3, "een onbekend element en een onbekend symbool vallen weg");
 meld(!/<script|<img|onload=|onerror="/i.test(kwaadSvg), "geen script, afbeelding of event-attribuut in de SVG van het vel");

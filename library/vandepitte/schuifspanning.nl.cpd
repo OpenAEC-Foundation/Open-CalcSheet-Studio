@@ -1,0 +1,22 @@
+## Schuifspanning (Jourawsky)
+'<small>Bron: Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 2, art. 2.4</small>
+'<i>De schuifspanning over de hoogte van een I-doorsnede uit platen: klein in de flenzen, groot en bijna constant in het lijf, met een sprong op de overgang.</i>
+V_Ed = 100 kN'<span class="kolom-3"></span>'
+h = 300 mm'<span class="kolom-3"></span>'
+b = 150 mm'<span class="kolom-3"></span>'
+t_w = 7.1 mm'<span class="kolom-3"></span>'
+t_f = 10.7 mm'<span class="kolom-3"></span>'
+I_y = (b*h^3 - (b - t_w)*(h - 2*t_f)^3)/12 to mm^4
+S_f = b*t_f*(h - t_f)/2 to mm^3', statisch moment van één flens'
+S_0 = S_f + t_w*(h/2 - t_f)^2/2 to mm^3', tot aan de neutrale lijn'
+τ_f = V_Ed*S_f/(I_y*t_w) to N/mm^2', lijf bij de flens'
+τ_0 = V_Ed*S_0/(I_y*t_w) to N/mm^2', neutrale lijn'
+τ_m = V_Ed/((h - 2*t_f)*t_w) to N/mm^2', gemiddeld over het lijf'
+#hide
+S_z(y) = if(abs(y) < h/2 - t_f; S_f + t_w*((h/2 - t_f)^2 - y^2)/2; b*(h^2/4 - y^2)/2)
+b_z(y) = if(abs(y) < h/2 - t_f; t_w; b)
+τ_z(y) = V_Ed*S_z(y)/(I_y*b_z(y))
+PlotHeight = 220
+#show
+$Plot{τ_z(y)/MPa|y @ y = -h/2 : h/2}
+'Horizontaal de schuifspanning in N/mm², verticaal de plaats y vanaf de neutrale lijn.

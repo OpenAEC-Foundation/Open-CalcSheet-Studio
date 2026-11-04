@@ -95,7 +95,7 @@ Buiten de afdruk heeft een soort nog deze plekken, zoals bij Markdown:
 - `store/projectStore.ts` (toevoegen en wijzigen), `store/projectIfcx.ts` en
   `packages/core/src/ifcx/` (`ATTR`, schema en `soort` in `namespace.ts`, schrijven en
   lezen in `document.ts`, de bijlage in `step.ts`).
-- De werkruimte in `App.tsx`, de knoppen in `ProjectBrowser.tsx` en `CalcTab.tsx`, en
+- De werkruimte in `App.tsx`, de keuze in `BladToevoegen.tsx` (de ene knop in het paneel), de knop in `CalcTab.tsx`, en
   de teksten in `werkruimte.json` en `rapport.json` (Nederlands en Engels).
 - `bladSoort` in `mcp/tools/hulp.ts`.
 - Een eigen `scripts/check-<soort>.mjs`. `scripts/check-rapport-pdf.mjs` rekent de
@@ -120,18 +120,35 @@ De koppen uit de tekst komen standaard in de inhoudsopgave, de bovenste twee niv
 erin voorkomen. Een eerste kop gelijk aan de naam van het blad vervalt, op papier en in
 de inhoudsopgave. Uitzetten kan per blad, op zijn kaart in het paneel Rapport.
 
-## Canvas, graaf, tekenblad en Jupyter
+## Huisstijl
+
+*Instellingen → Bureau en huisstijl* geldt voor alles wat op papier komt: het logo, de
+voetafbeelding, de kleuren en het lettertype (`rapport/model.ts`). `huisstijlVariabelen` zet
+ze als CSS-variabelen op de wortel van een uitdraai; een blad gebruikt alleen die variabelen
+(`--pr-*` op een los blad, `--rpa-*` in het rapport). Zolang de huisstijl de standaard is,
+blijven losse bladen in hun eigen opmaak. Een rapport legt een kopie van het profiel vast; die
+geldt dan ook voor de losse bladen uit dat project.
+
+Afdrukken gaat voor elke soort uitdraai via de vellen van het afdrukvoorbeeld (`drukvellen.ts`):
+wat in het voorbeeld staat, komt op papier.
+
+## Canvas, graaf, tekenblad, Jupyter en Marimo
 
 - **Canvas** is geen losse soort maar een rekenblad: de rekentekst staat gewoon in
   `source`, met per eenheid een regel `//@eenheid id=e1 x=10 y=15`. De kern rekent van
   boven naar beneden, en `CanvasVellen` zet de eenheden op papier.
 - **Graaf** staat in `graaf` op het blad (`ocss::blad::graaf`) en is aangemeld met
-  `GraafVellen`.
+  `GraafVellen`. `graaf/grafBestand.ts` leest een grafbestand (`.dyn`, JSON) in: elke node waarvan
+  hier een gelijke bestaat wordt een gewone node, de rest blijft staan als `ingelezen` met zijn
+  naam en poorten, en rekent niet. Er draait niets uit het bestand; een codeblok wordt rekentaal.
 - **Tekenblad** staat in `tekenvel` (`ocss::blad::tekenvel`) en is aangemeld met
   `HeelBlad`, omdat de kop in de titelhoek van het vel staat.
 - **Jupyter** staat in `jupyter` (`ocss::blad::jupyter`) en is de uitzondering: dat blad
   heeft nog een eigen tak in `PrintBlad.tsx` en `bladDoorrekenen.ts`, en staat niet in
   `SOORTEN`. Zie [`jupyter-blad.md`](jupyter-blad.md).
+- **Marimo** staat in `marimo` op het blad (`ocss::blad::marimo`), met de code als tekst en per cel de
+  laatste uitvoer, en is aangemeld met `MarimoPapier`. Een schuif staat op papier als zijn waarde. De
+  Python-omgeving is die van de Jupyter-bladen: zie `docs/jupyter-blad.md`.
 
 ## Controleren
 

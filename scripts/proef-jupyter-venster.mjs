@@ -30,7 +30,7 @@ import { createSocket } from "node:dgram";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { strFromU8, strToU8 } from "fflate";
-import { startApp } from "./lib/jupyter-venster.mjs";
+import { startApp, NOTEBOOK_KLAAR } from "./lib/jupyter-venster.mjs";
 import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../packages/desktop/src/store/projectBestand.ts";
 import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
@@ -180,13 +180,12 @@ async function frameOp(s, herkomst) {
   }, { tekst: `iframe op ${herkomst}`, ms: 30000 });
 }
 const klaarVoorCel = (s, f) => s.wachtOp(
-  () => s.voerUit(`(() => { const w = window.jupyterapp?.shell.currentWidget; return w?.sessionContext?.session?.kernel?.status === 'idle' ? 1 : 0; })()`, f),
+  () => s.voerUit(NOTEBOOK_KLAAR, f),
   { tekst: "kernel", ms: 180000 },
 );
 /**
- * Alle cellen uitvoeren, zoals met de knop. Vlak na het starten van de kernel doet dat
- * heel soms niets (gemeten: 1 van de 10 keer, geen melding, opnieuw klikken werkt); dat
- * staat dan in de uitvoer van de proef, zodat het niet onzichtbaar wegvalt.
+ * Alle cellen uitvoeren, zoals met de knop. Doet dat niets, dan staat dat in de uitvoer van
+ * de proef, zodat het niet onzichtbaar wegvalt.
  */
 async function voerAllesUit(s, f) {
   for (let poging = 1; poging <= 3; poging++) {
@@ -238,6 +237,8 @@ try {
   meld(await s.voerUit(`document.querySelector('.jp-RenderedImage img').naturalWidth > 100 ? 1 : 0`, a) === 1, "matplotlib tekent een afbeelding");
   meld(await s.voerUit(`document.querySelector('.jp-RenderedHTMLCommon table.dataframe') ? 1 : 0`, a) === 1, "import uit helper.py en pandas op data/invoer.csv geven een tabel");
   meld(/\n?\s*2\s*\n?|dubbel/.test(uitvoer) && !/Traceback|Error/.test(uitvoer), "geen foutmelding in de cellen");
+  const nummers = await s.voerUit(`(() => { const c = document.querySelector('.jp-RenderedHTMLCommon table.dataframe').closest('.jp-Cell'); return c.querySelector('.jp-InputPrompt').textContent.trim() + ' ' + c.querySelector('.jp-OutputPrompt').textContent.trim(); })()`, a);
+  meld(/^\[(\d+)\]: \[\1\]:$/.test(nummers), "de uitvoer draagt hetzelfde nummer als zijn cel", nummers);
   meld(/1\.\d+\.\d+/.test(await inKernel(s, a, "import scipy; print(scipy.__version__)")), "scipy is beschikbaar");
   // Tegenproef in dezelfde kernel: zonder de terugval uit de brug is een nieuw script onvindbaar.
   const nieuw = await inKernel(s, a, [
@@ -493,13 +494,17 @@ try {
   kop("Een nieuw blad");
   const aantal = () => s2.voerUit(`document.querySelectorAll('.pb-blad').length`);
   const voor = await aantal();
-  await s2.voerUit(`[...document.querySelectorAll('.pb-toevoegen')].find((b) => /Add Jupyter|Jupyter toevoegen/.test(b.textContent)).click()`);
+  await s2.voerUit(`document.querySelector('.pb-blad-toevoegen button').click()`);
+  await s2.wachtOp(() => s2.voerUit(`document.querySelector('.calcpad-menu-rij') ? 1 : 0`), { tekst: "het menu", ms: 5000 });
+  await s2.voerUit(`[...document.querySelectorAll('.calcpad-menu-rij')].find((b) => /^(Jupyter notebook|Jupyter-notebook)$/.test(b.textContent.trim())).click()`);
   await s2.wachtOp(async () => (await aantal()) === voor + 1, { tekst: "het nieuwe blad", ms: 10000 });
   meld(true, "vanuit de projectboom");
   const nieuw = await frameVan(s2, 2);
   await s2.wachtOp(() => s2.voerUit(`document.querySelector('.jp-Notebook')?.innerText.includes('matplotlib') ? 1 : 0`, nieuw), { tekst: "de startcel", ms: 90000 });
   meld(await s2.voerUit(`document.querySelectorAll('.jp-OutputArea-output').length === 0 ? 1 : 0`, nieuw) === 1, "het opent een notebook met een startcel, en die heeft niet gedraaid");
-  await s2.voerUit(`[...document.querySelectorAll('.pb-toevoegen')].find((b) => /Add module|Module toevoegen/.test(b.textContent)).click()`);
+  await s2.voerUit(`document.querySelector('.pb-blad-toevoegen button').click()`);
+  await s2.wachtOp(() => s2.voerUit(`document.querySelector('.calcpad-menu-rij') ? 1 : 0`), { tekst: "het menu", ms: 5000 });
+  await s2.voerUit(`[...document.querySelectorAll('.calcpad-menu-rij')].find((b) => /^Module/.test(b.textContent.trim())).click()`);
   const tegel = `[...document.querySelectorAll('.mk-tegel')].find((b) => b.textContent.includes('Jupyter'))`;
   await s2.wachtOp(() => s2.voerUit(`${tegel} ? 1 : 0`), { tekst: "de tegel", ms: 10000 });
   await s2.voerUit(`${tegel}.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`);

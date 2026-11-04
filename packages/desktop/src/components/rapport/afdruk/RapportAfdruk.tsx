@@ -1,5 +1,5 @@
 import { Fragment, type CSSProperties } from "react";
-import { STANDAARD_HUISSTIJL, type BureauProfiel, type Huisstijl } from "../../../rapport/model";
+import { huisstijlVariabelen, type BureauProfiel } from "../../../rapport/model";
 import { PrintBlad } from "../../calc/PrintBlad";
 import { MATEN } from "../../calc/paginering";
 import { bijlageAnker, bijlageBladAnker } from "../../../rapport/opzet";
@@ -8,18 +8,6 @@ import { hoofdstukStukken, type Stuk } from "./Knopen";
 import Voorblad from "./Voorblad";
 import Inhoud from "./Inhoud";
 import "./RapportAfdruk.css";
-
-/** De huisstijl als CSS-variabelen op de wortel. Een leeg veld valt terug op de standaard. */
-function huisstijlStijl(h: Huisstijl): CSSProperties {
-  const s = STANDAARD_HUISSTIJL;
-  return {
-    "--rpa-hoofd": h.hoofdkleur || s.hoofdkleur,
-    "--rpa-accent": h.accentkleur || s.accentkleur,
-    "--rpa-tabel": h.tabeltekst || s.tabeltekst,
-    "--rpa-invoer": h.invoerkleur || s.invoerkleur,
-    "--rpa-font": h.lettertype || s.lettertype,
-  } as CSSProperties;
-}
 
 /** Stukken in secties: een stuk met `nieuwePagina` begint een nieuwe sectie, en daarmee een nieuw vel. */
 function groepeer(stukken: Stuk[]): Stuk[][] {
@@ -74,7 +62,7 @@ export default function RapportAfdruk() {
   const titelA = w.bijlagen.find((b) => b.letter === "A")?.titel ?? "Uitgebreide uitwerking berekeningen";
 
   return (
-    <div className="rpa-wortel" style={huisstijlStijl(w.bureau.huisstijl)}>
+    <div className="rpa-wortel" style={huisstijlVariabelen(w.bureau.huisstijl) as CSSProperties}>
       <Voet bureau={w.bureau} />
       <Voorblad w={w} />
       <Inhoud w={w} />

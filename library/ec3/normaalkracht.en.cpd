@@ -1,0 +1,19 @@
+## Tension and compression
+'<small>Source: NEN-EN 1993-1-1 6.2.3 (6.5), (6.6), (6.7); 6.2.4 (6.9), (6.10)</small>
+'<i>An IPE 300 with four bolt holes: in tension the lower of the gross and the net section governs, in compression the gross section.</i>
+N_Ed = 900 kN'<span class="kolom-3"></span>'
+A = 5381 mm^2', IPE 300<span class="kolom-3"></span>'
+t_f = 10.7 mm'<span class="kolom-3"></span>'
+d_0 = 22 mm', hole for M20<span class="kolom-3"></span>'
+n_g = 4', holes in the section<span class="kolom-3"></span>'
+f_y = 235 N/mm^2', S235<span class="kolom-3"></span>'
+f_u = 360 N/mm^2'<span class="kolom-3"></span>'
+γ_M0 = 1.0'<span class="kolom-3"></span>'
+γ_M2 = 1.25'<span class="kolom-3"></span>'
+A_net = A - n_g*d_0*t_f to mm^2
+N_pl,Rd = A*f_y/γ_M0 to kN', (6.6)'
+N_u,Rd = 0.9*A_net*f_u/γ_M2 to kN', (6.7)'
+N_t,Rd = min(N_pl,Rd; N_u,Rd)
+UC_t = N_Ed/N_t,Rd', tension, (6.5)'
+N_c,Rd = A*f_y/γ_M0 to kN', compression in class 1, 2 or 3, (6.10)'
+UC_c = N_Ed/N_c,Rd', compression, (6.9)'

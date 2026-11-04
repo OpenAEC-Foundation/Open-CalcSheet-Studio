@@ -83,7 +83,9 @@ export interface IfcCalcSheet {
   /** Alleen bij een tekenblad: het vel met zijn views (ocss::blad::tekenvel). */
   tekenvel?: Record<string, unknown>;
   /** Bij een Jupyter-blad: de werkmap als ZIP, in base64. */
-  jupyter?: { bestandsnaam: string; data: string; metCode: boolean };
+  jupyter?: { bestandsnaam: string; data: string; metCode: boolean; automatisch?: boolean };
+  /** Bij een Marimo-blad: het notebook als tekst, en de laatste uitvoer per cel. */
+  marimo?: { bestandsnaam: string; code: string; metCode: boolean; uitvoer: string[] };
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */

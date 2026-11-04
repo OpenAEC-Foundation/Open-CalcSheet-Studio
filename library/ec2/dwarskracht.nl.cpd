@@ -1,0 +1,21 @@
+## Dwarskracht zonder beugels
+'<small>Bron: NEN-EN 1992-1-1 6.2.1(4); 6.2.2(1) (6.2.a), (6.2.b), (6.3N)</small>
+'<i>Wat de balk zonder dwarskrachtwapening opneemt, met de aanbevolen waarden en de ondergrens.</i>
+V_Ed = 60 kN'<span class="kolom-3"></span>'
+b_w = 300 mm'<span class="kolom-3"></span>'
+d = 450 mm'<span class="kolom-3"></span>'
+A_sl = 942 mm^2', trekwapening 3 × Ø20<span class="kolom-3"></span>'
+f_ck = 30 N/mm^2'<span class="kolom-3"></span>'
+γ_C = 1.5'<span class="kolom-3"></span>'
+C_Rd,c = 0.18/γ_C
+k = min(1 + sqrt(200 mm/d); 2.0)
+ρ_l = min(A_sl/(b_w*d); 0.02)
+v_Rd,c = C_Rd,c*k*(100*ρ_l*f_ck/MPa)^(1/3)*MPa to N/mm^2', (6.2.a)'
+v_min = 0.035*k^(3/2)*sqrt(f_ck/MPa)*MPa to N/mm^2', (6.3N)'
+V_Rd,c = max(v_Rd,c; v_min)*b_w*d to kN', (6.2.a), (6.2.b)'
+UC_V = V_Ed/V_Rd,c
+#if V_Ed ≤ V_Rd,c
+'Geen berekende dwarskrachtwapening nodig; in een balk wel de minimale wapening volgens 9.2.2.
+#else
+'De dwarskracht is te groot: reken beugels uit met V<sub>Rd,s</sub> en V<sub>Rd,max</sub>.
+#end if

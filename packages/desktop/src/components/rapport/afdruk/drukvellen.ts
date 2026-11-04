@@ -1,11 +1,10 @@
 /**
- * Het rapport afdrukken zoals het afdrukvoorbeeld het toont.
+ * Afdrukken zoals het afdrukvoorbeeld het toont, voor het rapport en voor losse bladen.
  *
- * Het voorbeeld bouwt zelf exacte A4-vellen, met de voetafbeelding onderaan
- * en het paginanummer rechts. Laat je de browser het rapport zelf pagineren,
- * dan zet hij de vastgezette voet bij een eigen paginaformaat op de verkeerde
- * plek en vallen koppen weg. Daarom gaat een kopie van díe vellen naar de
- * printer: wat je in het voorbeeld ziet, komt op papier.
+ * Het voorbeeld bouwt zelf exacte vellen, met hun kop, voet en paginanummer. Laat je de
+ * browser zelf pagineren, dan zet hij een vastgezette kop of voet op de verkeerde plek,
+ * tot midden op de pagina, en vallen koppen weg. Daarom gaat een kopie van díe vellen naar
+ * de printer: wat je in het voorbeeld ziet, komt op papier.
  *
  * Die printer is de printdialoog of, bij de knop Rapport (PDF), een bestand. De app
  * blijft daarbij op het scherm staan; alleen de afdruk ziet de kopie (RapportAfdruk.css).
@@ -57,26 +56,9 @@ export function wachtOpVellen(maxMs = 10000): Promise<HTMLElement[]> {
       if (nu - beweging > (laadt ? MAX_LADEN_MS : maxMs)) {
         return mis(new Error(laadt
           ? i18next.t("werkruimte:pdf.nietOpTijd")
-          : "Het afdrukvoorbeeld van het rapport bouwde geen vellen."));
+          : "Het afdrukvoorbeeld bouwde geen vellen."));
       }
       window.setTimeout(kijk, 300);
-    };
-    kijk();
-  });
-}
-
-/**
- * Wacht tot er onder `wortel` (een selector) niets meer getekend wordt: voor
- * de losse bladen, die de browser zelf pagineert (PrintDocument). Zonder
- * PDF-blad meteen klaar.
- */
-export function wachtTotGetekend(wortel: string, maxMs = MAX_LADEN_MS): Promise<void> {
-  return new Promise((klaar, mis) => {
-    const begin = Date.now();
-    const kijk = () => {
-      if (document.querySelector(`${wortel} ${LAADT}`) === null) return klaar();
-      if (Date.now() - begin > maxMs) return mis(new Error(i18next.t("werkruimte:pdf.nietOpTijd")));
-      window.setTimeout(kijk, 200);
     };
     kijk();
   });

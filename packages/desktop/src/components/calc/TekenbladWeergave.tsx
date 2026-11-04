@@ -13,6 +13,8 @@ import type { Opgelost } from "../tekenen/model";
 import type { Proef } from "../tekenen/waarden";
 import { schoonSvgDeel, schoonUitwerking } from "./uitwerkingOpschonen";
 import { papier } from "./pdfBlad";
+import { heeftEigenHuisstijl, veiligLettertype } from "../../rapport/model";
+import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import "../tekenen/Tekenen.css";
 import "./Tekenblad.css";
 
@@ -104,9 +106,11 @@ function VelOverzicht({ ex }: { ex: Exemplaar }) {
   const sleep = useRef<Sleep | null>(null);
   const vel = ex.tekenvel;
 
+  const bureau = useRapportBureau();
+  const logo = bureau.logoInKop ? bureau.logo : "";
   const inhoud = useMemo(
-    () => (vel ? { __html: schoonSvgDeel(velInhoud(vel, { naam: ex.naam, project })) } : { __html: "" }),
-    [vel, ex.naam, project],
+    () => (vel ? { __html: schoonSvgDeel(velInhoud(vel, { naam: ex.naam, project, logo })) } : { __html: "" }),
+    [vel, ex.naam, project, logo],
   );
 
   if (!vel) {
@@ -346,9 +350,12 @@ function VelPaneel({ vel, gekozen, zetFormaat, kies, voegToe, wijzig, verwijder,
 export function TekenvelOpPapier({ ex, nummer, anker }: { ex: Exemplaar; nummer?: number | string; anker?: string }) {
   const project = useProjectStore((s) => s.projectNaam);
   const vel = ex.tekenvel;
+  const bureau = useRapportBureau();
+  const logo = bureau.logoInKop ? bureau.logo : "";
+  const lettertype = heeftEigenHuisstijl(bureau.huisstijl) ? veiligLettertype(bureau.huisstijl.lettertype) : "";
   const inhoud = useMemo(
-    () => (vel ? { __html: schoonUitwerking(velSvg(vel, { naam: nummer === undefined ? ex.naam : `${nummer} ${ex.naam}`, project })) } : null),
-    [vel, ex.naam, nummer, project],
+    () => (vel ? { __html: schoonUitwerking(velSvg(vel, { naam: nummer === undefined ? ex.naam : `${nummer} ${ex.naam}`, project, logo, lettertype })) } : null),
+    [vel, ex.naam, nummer, project, logo, lettertype],
   );
   const t = papier();
   if (!vel || !inhoud) return <p className="print-pdf-melding">{t("tekenBlad.ontbreekt")}</p>;

@@ -34,18 +34,28 @@ Getest op Windows met WebView2. macOS en Linux zijn niet getest; WKWebView kent 
 workers alleen met extra rechten, dus daar zal het blad waarschijnlijk niet starten.
 De bestanden en de afdruk werken daar wel; de kernel niet.
 
+## Marimo
+
+Een Marimo-blad draait in dezelfde omgeving, op dezelfde server en met dezelfde afscherming als
+een Jupyter-blad: `scripts/bouw-jupyter-omgeving.mjs` maakt ook `marimo/index.html`. Marimo eist
+de Pyodide waarvoor het is gebouwd; daarom bepaalt de versie van Marimo de versie van Pyodide
+voor beide soorten bladen. Bij het openen draait er niets. Na Run is het notebook reactief: een
+schuif of een cel die verandert, neemt alles mee wat daarvan afhangt.
+
+De code staat als tekst in het project, de uitvoer per cel daarnaast: een Marimo-notebook bewaart
+zijn uitvoer niet zelf. `jupyter-omgeving/ocss-marimo-brug.js` leest wat Marimo bewaart en haalt de
+uitvoer uit het scherm, ook uit de schaduw-DOM waar grafieken en schuiven in staan. Getest met
+`scripts/check-marimo.mjs` en `scripts/proef-marimo-venster.mjs`.
+
 ## Grootte en offline
 
 Bij het bouwen zijn internet en Python nodig; bij de gebruiker niets.
 
 | | MB |
 |---|---|
-| `omgeving.pak` op schijf, na installatie | 65 |
-| waarvan JupyterLab | 16 |
-| waarvan Pyodide (kern, standaardbibliotheek) | 12 |
-| waarvan Python-pakketten | 36 |
-| daarvan in de installer, gecomprimeerd | ongeveer 44 |
-| de hele NSIS-installer van Windows, gemeten | 56,5 |
+| `omgeving.pak` op schijf, na installatie | 96 |
+| waarvan Marimo (pagina's) | 27 |
+| de hele NSIS-installer van Windows, gemeten | 64,1 |
 
 De omgeving zit in de installer en niet in een download bij het eerste gebruik: alles
 werkt dan meteen en zonder internet, ook numpy, scipy, pandas en matplotlib. `%pip
@@ -94,6 +104,18 @@ wordt door JupyterLab geschoond. Afbeeldingen en tabellen blijven zichtbaar.
 De server geeft alleen statische inhoud, geen projectgegevens. Hij luistert op loopback,
 kent alleen GET en HEAD en antwoordt alleen op de eigen hostnamen.
 
+## Automatisch uitvoeren
+
+De keuze *Automatisch uitvoeren* staat per blad en standaard uit. Staat hij aan, dan voert de
+brug na een pauze van 800 ms alle codecellen opnieuw uit zodra de code verandert, van boven
+naar beneden in dezelfde kernel. Dat gebeurt in de cellen zelf en niet met de opdracht *Alles
+uitvoeren*: die zet de cursor op de laatste cel, en de gebruiker is juist aan het typen. Na een
+fout worden de cellen eronder leeggemaakt, zodat er geen oude uitkomst onder gewijzigde invoer
+staat. Tekstcellen en uitvoer starten geen ronde.
+
+Bij het openen van een project draait er ook dan niets: dat kan van iemand anders komen. De
+keuze aanzetten en de eerste wijziging zijn van de gebruiker, en rekenen alles door.
+
 ## Op papier
 
 Elk notebook met tekstcellen, code en uitvoer (tekst, tabellen, afbeeldingen), uit de
@@ -107,6 +129,7 @@ volgt zijn eigen instelling. Wat te hoog is voor een vel wordt geknipt op regels
 ```
 node scripts/check-jupyter.mjs
 node scripts/proef-jupyter-venster.mjs <pad-naar-exe> <map-voor-uitvoer>
+node scripts/proef-jupyter-automatisch.mjs <pad-naar-exe> <map-voor-uitvoer>
 ```
 
 De eerste draait mee in `check-alles`. De tweede vraagt een Tauri-build en stuurt het echte

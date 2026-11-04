@@ -13,8 +13,17 @@ export const GRAAF_VERSIE = 1;
 
 /** De soorten nodes van deze versie. Zie nodes.ts. */
 export type NodeSoort =
-  | "getal" | "tekst" | "reeks" | "aantal" | "som" | "element" | "bekijken" | "codeblok"
-  | "punt" | "lijn" | "balk" | "doos";
+  | "getal" | "tekst" | "waarOnwaar" | "bekijken"
+  | "reeks" | "reeksAantal" | "lijstMaken" | "aantal" | "som" | "gemiddelde" | "element" | "eerste" | "laatste" | "grootste" | "kleinste"
+  | "omkeren" | "sorteren" | "plat" | "opschonen" | "nemen" | "overslaan" | "lijstenSamen" | "lijstBevat" | "isLeeg" | "filter"
+  | "codeblok" | "optellen" | "aftrekken" | "vermenigvuldigen" | "delen" | "rest" | "macht" | "absoluut" | "wortel"
+  | "afronden" | "omlaag" | "omhoog" | "minimum" | "maximum" | "sinus" | "cosinus" | "tangens" | "pi"
+  | "gelijk" | "ongelijk" | "kleiner" | "groter" | "kleinerGelijk" | "groterGelijk" | "en" | "of" | "niet" | "als"
+  | "aantalWaar" | "allesWaar" | "ietsWaar"
+  | "tekstenSamen" | "tekstenMetScheider" | "tekstLengte" | "hoofdletters" | "kleineLetters" | "tekstBevat" | "begintMet"
+  | "vervangen" | "splitsen" | "naarTekst" | "naarGetal"
+  | "punt" | "lijn" | "balk" | "doos" | "puntDelen" | "lijnPunten" | "lengteVan" | "afstandTussen"
+  | "ingelezen";
 
 export interface GraafNode {
   id: string;
@@ -54,6 +63,8 @@ export function legeGraaf(): Graaf {
 const BEGIN: Partial<Record<string, Record<string, string>>> = {
   getal: { waarde: "1", min: "0", max: "10", stap: "0.1", eenheid: "" },
   tekst: { tekst: "" },
+  waarOnwaar: { waarde: "true" },
+  lijstMaken: { aantal: "3" },
   codeblok: { code: "y = x * 2" },
 };
 

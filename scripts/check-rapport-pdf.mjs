@@ -318,7 +318,7 @@ async function controleer(pad) {
   const zoek = (titel, voorvoegsel) => inhoudsregels.find((r) => (voorvoegsel ? r.tekst.startsWith(voorvoegsel) : true) && r.tekst.endsWith(titel));
   const bladen = Object.values(BLADEN);
   const ontbreekt = bladen.filter((b) => !zoek(b.naam));
-  meld(ontbreekt.length === 0, "elk blad staat erin: rekenblad, module, PDF, werkmap, Markdown, canvas, graaf, tekening en Jupyter", ontbreekt.map((b) => b.naam).join(", "));
+  meld(ontbreekt.length === 0, "elk blad staat erin: rekenblad, module, PDF, werkmap, Markdown, canvas, graaf, tekening, Jupyter en Marimo", ontbreekt.map((b) => b.naam).join(", "));
   const zonderPagina = bladen.filter((b) => zoek(b.naam) && zoek(b.naam).pagina === null);
   meld(zonderPagina.length === 0, "elk blad heeft een paginanummer", zonderPagina.map((b) => b.naam).join(", "));
   const koppen = [...MARKDOWN_KOPPEN.notitie, ...MARKDOWN_KOPPEN.logboek];
@@ -357,7 +357,7 @@ async function controleer(pad) {
   meld(werkmapVellen.length >= 3 && werkmapVellen.every((p) => p.afbeeldingen >= 1),
     `de werkmap van 150 rijen loopt over ${werkmapVellen.length} vellen, elk met afbeelding`, werkmapVellen.length);
 
-  console.log("\nCanvas, graaf, tekening en Jupyter");
+  console.log("\nCanvas, graaf, tekening, Jupyter en Marimo");
   for (const [soort, tekst] of Object.entries(KENMERKEN)) {
     const { pagina } = bijlageVan(BLADEN[soort].naam);
     const vel = pagina ? paginas[pagina - 1] : null;

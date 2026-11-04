@@ -5,6 +5,9 @@ declare module "*.geojson?raw" {
   export default content;
 }
 
+/** De map library/ in de dev-server; in een productiebouw leeg (vite.config.ts). */
+declare const __LIBRARY_DEV__: string;
+
 /**
  * Ontwikkelhaak uit main.tsx, alleen bij `import.meta.env.DEV`: de stores en
  * de bestandslezer voor scripts/rapport-pdf.mjs. In een productiebouw bestaat

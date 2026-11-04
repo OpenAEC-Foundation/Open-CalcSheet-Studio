@@ -7,7 +7,6 @@ import { ucTekst } from "./bladResultaat";
 import { rekenBladDoor, zorgVoorKernstijlen, type DoorgerekendBlad } from "./bladDoorrekenen";
 import { rekenversie } from "./bladVersie";
 import { Oordeel, PrintBlad } from "./PrintBlad";
-import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import "./PrintDocument.css";
 
 /** Een tekst op papier: de uitdraai volgt de taal van de app (beelden.json, onder `afdruk`). */
@@ -30,10 +29,8 @@ export interface Uitdraai {
 }
 
 /**
- * Bouwt de gekozen bladen één keer door en levert alles wat een uitdraai
- * nodig heeft. Zowel de afdruk als het afdrukvoorbeeld in de app gebruiken
- * deze hook, zodat er maar één opbouw bestaat en de twee niet uiteen kunnen
- * lopen.
+ * Bouwt de gekozen bladen één keer door en levert alles wat een uitdraai nodig heeft, voor
+ * het afdrukvoorbeeld. Ook wat er naar de printer gaat, komt daarvandaan (drukvellen.ts).
  */
 export function useUitdraai(): Uitdraai {
   const projectNaam = useProjectStore((s) => s.projectNaam);
@@ -205,58 +202,3 @@ export function UitdraaiInhoud({ uitdraai }: { uitdraai: Uitdraai }) {
 /** Tekst voor de loopkop links: projectnummer en -naam. */
 export const loopkopLinks = (u: Uitdraai) => (u.projectNummer ? `${u.projectNummer} · ` : "") + u.projectNaam;
 
-/**
- * De afdruk: het constructierapport of de gekozen bladen, naar de soort in de
- * printstore. Twee losse componenten, zodat de stand die niet gedrukt wordt
- * ook niets doorrekent.
- */
-export default function PrintDocument() {
-  const soort = usePrintStore((s) => s.soort);
-  return soort === "rapport" ? <RapportDocument /> : <BladenDocument />;
-}
-
-/**
- * Het constructierapport: eigen paginamaten (`@page rapport`), de voet van het
- * bureau en het paginanummer rechtsonder, geen loopkop. Het rapport begint
- * bij pagina 1.
- */
-function RapportDocument() {
-  return (
-    <div className="print-root print-opmaak" aria-hidden="true">
-      <RapportAfdruk />
-    </div>
-  );
-}
-
-/**
- * De gekozen bladen als één afdrukbaar document.
- *
- * Waarom via de browser en niet via de rapportengine: die levert alleen
- * rekentabellen — geen koppen, geen proza, geen variabelenamen en geen
- * tekeningen (zie docs/backlog.md, punt 4). Hier printen we exact wat de
- * uitwerking toont, plus het parametrische beeld dat de app zelf tekent.
- */
-function BladenDocument() {
-  const uitdraai = useUitdraai();
-  const { datum, onderdeel } = uitdraai;
-
-  return (
-    <div className="print-root print-opmaak" aria-hidden="true">
-      {/* Loopt op elke pagina mee: vaste elementen herhaalt de browser bij het printen.
-          Het paginanummer staat in de paginamarge zelf (@page in de CSS). */}
-      <div className="print-loopkop">
-        <span>{loopkopLinks(uitdraai)}</span>
-        <span>{onderdeel}</span>
-      </div>
-      <div className="print-loopvoet">
-        <span>Open CalcSheet Studio</span>
-        <span>{datum}</span>
-      </div>
-
-      {/* De paginaregel in de marge (PrintDocument.css) in de taal van de app; zo'n
-          regel kent geen eigen tekst per taal, dus hier de woorden. */}
-      <style>{`@page { @bottom-center { content: "${op("paginaWoord")} " counter(page) " ${op("vanWoord")} " counter(pages); } }`}</style>
-      <UitdraaiInhoud uitdraai={uitdraai} />
-    </div>
-  );
-}

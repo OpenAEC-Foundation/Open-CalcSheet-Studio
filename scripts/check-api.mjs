@@ -33,6 +33,8 @@ import { verwerkMcpBericht } from "../packages/desktop/src/mcp/dispatcher.ts";
 import { MCP_TOOLS } from "../packages/desktop/src/mcp/tools.ts";
 import { maakRequestHandler, maakSessies } from "../packages/desktop/src/mcp/requestHandler.ts";
 import { FORMULES } from "../packages/desktop/src/components/ribbon/formules.ts";
+import { useLibrary } from "../packages/desktop/src/store/library.ts";
+import { laadLibrary } from "./lib/library.mjs";
 import { maakApp, maakContext, PROJECT_ID, RAPPORT_ID, PROEF_PDF } from "./lib/mcpproef.mjs";
 
 let fouten = 0;
@@ -211,8 +213,10 @@ console.log("Bladen:");
   const evIns = await api("POST", `/api/v1/sheets/${eigenId}/evaluate`, { numbers: false });
   meld(evIns.status === 200, "blad met ingevoegde formule rekent door", kort(evIns));
 
-  // Een voorbeeld uit de Library heeft tekstregels in twee talen.
-  const vb = FORMULES.find((f) => f.library);
+  // Een voorbeeld uit de Library heeft tekstregels in twee talen. De API kent het pas
+  // als het is opgehaald, net als in de app.
+  useLibrary.setState(await laadLibrary());
+  const vb = useLibrary.getState().voorbeelden[0];
   const vbGet = await api("GET", `/api/v1/formulas/${vb.id}`);
   meld(vbGet.status === 200 && vbGet.data.library === vb.library && vbGet.data.code === vb.code && vbGet.data.codeEn === vb.codeEn, "GET /formulas/{id}: voorbeeld in twee talen", kort(vbGet));
   const vbBlad = await api("POST", "/api/v1/sheets", { source: '"Voorbeeld\n' });

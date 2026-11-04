@@ -7,7 +7,7 @@
  * projectbestand is de enige bewaarplek. De app stuurt ze hierheen en vraagt de
  * laatste stand terug; zie components/calc/JupyterVenster.tsx.
  *
- * Van de app:     laad { bestanden, open }, vraagStand { id }, thema { donker }
+ * Van de app:     laad { bestanden, open, automatisch }, vraagStand { id }, thema { donker }, automatisch { aan }
  * Naar de app:    gereed, geladen, stand { id, bestanden }, gewijzigd, opslaan, fout { melding }
  *
  * Code in deze pagina kan dezelfde berichten sturen. De app behandelt ze daarom als
@@ -26,6 +26,7 @@
    * wijzigingstijd van de map verandert. Die is op /drive altijd 0, dus een script dat
    * er na de eerste import bijkomt, bleef onvindbaar (ModuleNotFoundError). Deze
    * terugval komt pas aan de beurt als een import mislukt, en zoekt dan nog één keer.
+   * De laatste regel houdt de nummers van de cellen gelijk: dit telt niet als cel.
    */
   const ZOEK_OPNIEUW = `def _ocss_zoek_opnieuw():
     import importlib, importlib.machinery, sys
@@ -37,12 +38,19 @@
     if not any(getattr(f, "__name__", "") == "ZoekOpnieuw" for f in sys.meta_path):
         sys.meta_path.append(ZoekOpnieuw)
 _ocss_zoek_opnieuw()
-del _ocss_zoek_opnieuw`;
+del _ocss_zoek_opnieuw
+get_ipython().execution_count -= 1`;
+
+  /** Zo lang na de laatste wijziging in de code begint een automatische ronde. */
+  const PAUZE_MS = 800;
 
   let app = null;
   let bezig = false;
   let appHerkomst = "*";
+  let automatisch = false;
   const gevolgd = new WeakSet();
+  /** Per open notebook: wat de laatste ronde uitvoerde, en of er een ronde loopt. */
+  const notebooks = new Map();
 
   /** Zet de terugval in elke kernel van een notebook, ook na herstarten. */
   function volgKernel(widget) {
@@ -58,6 +66,95 @@ del _ocss_zoek_opnieuw`;
       if (status === "restarting" || status === "autorestarting") zet();
     });
     sessie.ready.then(zet, () => {});
+  }
+
+  /** De code van alle cellen: tekstcellen en uitvoer starten geen ronde. */
+  function codeVan(paneel) {
+    return paneel.model.sharedModel.cells
+      .filter((cel) => cel.cell_type === "code")
+      .map((cel) => cel.getSource())
+      .join("\0");
+  }
+
+  /**
+   * Voert de codecellen een voor een uit, in de cellen zelf. Niet met de opdracht Alles
+   * uitvoeren: die zet de cursor op de laatste cel, en de gebruiker is juist aan het typen.
+   * Na een fout staat er onder de fout niets meer: een oude uitkomst onder gewijzigde invoer
+   * zou voor een nieuwe doorgaan.
+   */
+  async function draaiCellen(paneel, code) {
+    const sessie = paneel.sessionContext;
+    await sessie.ready;
+    const kernel = sessie.session?.kernel;
+    if (!kernel) return;
+    let fout = false;
+    for (const cel of [...paneel.content.widgets]) {
+      if (cel.model.type !== "code") continue;
+      if (paneel.isDisposed || codeVan(paneel) !== code) return;
+      const bron = cel.model.sharedModel.getSource();
+      cel.model.sharedModel.transact(() => cel.model.clearExecution(), false);
+      if (fout || !bron.trim()) continue;
+      cel.outputHidden = false;
+      cel.model.trusted = true;
+      cel.setPrompt("*");
+      const toekomst = kernel.requestExecute({ code: bron, stop_on_error: true }, false, { cellId: cel.model.sharedModel.getId() });
+      cel.outputArea.future = toekomst;
+      const antwoord = await toekomst.done;
+      cel.model.executionCount = antwoord.content.execution_count;
+      fout = antwoord.content.status !== "ok";
+    }
+  }
+
+  /** Eén ronde tegelijk; wat er intussen veranderde, krijgt een nieuwe. */
+  async function ronde(paneel, stand) {
+    if (stand.bezig || paneel.isDisposed) return;
+    const code = codeVan(paneel);
+    if (code === stand.uitgevoerd) return;
+    stand.bezig = true;
+    stand.uitgevoerd = code;
+    try {
+      await draaiCellen(paneel, code);
+    } catch (err) {
+      // Bijvoorbeeld een herstart van de kernel tijdens de ronde.
+      console.warn("Automatisch uitvoeren:", err);
+    } finally {
+      stand.bezig = false;
+    }
+    if (automatisch) plan(paneel, stand);
+  }
+
+  function plan(paneel, stand) {
+    clearTimeout(stand.timer);
+    stand.timer = setTimeout(() => void ronde(paneel, stand), PAUZE_MS);
+  }
+
+  /** Volgt de code van een notebook. Openen is geen wijziging: daarbij draait er niets. */
+  function volgNotebook(paneel) {
+    if (!paneel?.content?.widgets || !paneel.sessionContext || !paneel.context || notebooks.has(paneel)) return;
+    const stand = { uitgevoerd: null, bezig: false, timer: 0 };
+    notebooks.set(paneel, stand);
+    paneel.disposed.connect(() => {
+      clearTimeout(stand.timer);
+      notebooks.delete(paneel);
+    });
+    paneel.context.ready.then(() => {
+      if (paneel.isDisposed) return;
+      stand.uitgevoerd = codeVan(paneel);
+      paneel.model.contentChanged.connect(() => {
+        if (automatisch) plan(paneel, stand);
+      });
+    }, () => {});
+  }
+
+  /** De gebruiker zet de keuze aan: alles rekent meteen door. */
+  function zetAutomatisch({ aan }) {
+    automatisch = aan === true;
+    for (const [paneel, stand] of notebooks) {
+      clearTimeout(stand.timer);
+      if (!automatisch || !paneel.context.isReady) continue;
+      stand.uitgevoerd = null;
+      void ronde(paneel, stand);
+    }
   }
 
   function stuur(bericht) {
@@ -122,8 +219,9 @@ del _ocss_zoek_opnieuw`;
     return [...mappen].sort((a, b) => a.length - b.length);
   }
 
-  async function laad({ bestanden, open }) {
+  async function laad({ bestanden, open, automatisch: aan }) {
     bezig = true;
+    automatisch = aan === true;
     try {
       const contents = app.serviceManager.contents;
       for (const pad of mappenVan(bestanden)) await schrijf(contents, { pad, bytes: new Uint8Array() });
@@ -178,6 +276,10 @@ del _ocss_zoek_opnieuw`;
     const b = e.data;
     if (e.source !== window.top || !b || b.bron !== BRON || !app) return;
     appHerkomst = e.origin;
+    if (b.soort === "automatisch") {
+      zetAutomatisch(b);
+      return;
+    }
     const klus = b.soort === "laad" ? laad(b) : b.soort === "vraagStand" ? stand(b) : b.soort === "thema" ? zetThema(b) : null;
     klus?.catch((err) => {
       console.error("Jupyter-brug:", err);
@@ -199,8 +301,16 @@ del _ocss_zoek_opnieuw`;
     lab.serviceManager.contents.fileChanged.connect(() => {
       if (!bezig) stuur({ soort: "gewijzigd" });
     });
-    lab.shell.currentChanged.connect((_, { newValue }) => volgKernel(newValue));
-    volgKernel(lab.shell.currentWidget);
+    // Alle tabbladen, niet alleen het actieve: zonder focus in het venster is dat leeg.
+    const volgAlles = () => {
+      for (const widget of lab.shell.widgets("main")) {
+        volgKernel(widget);
+        volgNotebook(widget);
+      }
+    };
+    lab.shell.layoutModified.connect(volgAlles);
+    lab.shell.currentChanged.connect(volgAlles);
+    volgAlles();
     stuur({ soort: "gereed" });
   }
 

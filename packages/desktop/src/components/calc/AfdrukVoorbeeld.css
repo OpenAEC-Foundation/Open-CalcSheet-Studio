@@ -126,7 +126,7 @@
   width: 178mm;
   height: 253mm;
   overflow: hidden;
-  font-family: var(--font-body, "Inter", system-ui, sans-serif);
+  font-family: var(--pr-letter);
   font-size: 10.5pt;
   line-height: 1.45;
 }
@@ -140,7 +140,7 @@
   right: 16mm;
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-body, "Inter", system-ui, sans-serif);
+  font-family: var(--pr-letter);
   font-size: 8pt;
   color: #6b6b73;
 }
@@ -148,7 +148,7 @@
 .av-loopkop {
   top: 13mm;
   padding-bottom: 3pt;
-  border-bottom: 0.75pt solid #D97706;
+  border-bottom: 0.75pt solid var(--pr-accent);
   font-weight: 500;
 }
 
@@ -241,12 +241,22 @@
   color: #6b6b73;
 }
 
+/* Het logo op een rapportvel: rechtsboven in de smalle bovenmarge, op de rand van de bladspiegel. */
+.av-rapport-logo {
+  position: absolute;
+  top: 0.7mm;
+  height: 5.2mm;
+  max-width: 45mm;
+  object-fit: contain;
+  object-position: right center;
+}
+
 .av-rapport-nummer {
   position: absolute;
   bottom: 0;
   display: flex;
   align-items: center;
-  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--rpa-font, "Segoe UI", "Helvetica Neue", Arial, sans-serif);
   font-size: 10pt;
   line-height: normal;
   color: #000;

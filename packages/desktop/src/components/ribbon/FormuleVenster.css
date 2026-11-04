@@ -35,10 +35,10 @@
 }
 
 .fv-rij {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 3px;
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: start;
   padding: 8px 10px;
   border: 1px solid var(--theme-border);
   border-radius: var(--oa-radius-medium);
@@ -56,6 +56,111 @@
 .fv-rij.gekozen {
   border-color: var(--theme-accent);
   background: var(--oa-selected);
+}
+
+.fv-tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.fv-beeld {
+  display: block;
+  color: var(--theme-text);
+}
+
+/* Het plaatje bij een formule (formuleBeeld.ts): in de kleuren van het thema. */
+.fb {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fb-l,
+.fb-d,
+.fb-a,
+.fb-m,
+.fb-s {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fb-l {
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+
+.fb-d {
+  stroke: currentColor;
+  stroke-width: 2.4;
+}
+
+.fb-a {
+  stroke: var(--theme-accent);
+  stroke-width: 1.2;
+}
+
+.fb-m {
+  stroke: currentColor;
+  stroke-width: 0.6;
+  opacity: 0.7;
+}
+
+.fb-s {
+  stroke: currentColor;
+  stroke-width: 0.8;
+  stroke-dasharray: 4 2.5;
+  opacity: 0.8;
+}
+
+.fb-ak {
+  fill: var(--theme-accent);
+}
+
+.fb-lk,
+.fb-z {
+  fill: currentColor;
+}
+
+.fb-n {
+  fill: currentColor;
+  fill-opacity: 0.35;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.fb-v,
+.fb-h {
+  fill: currentColor;
+  fill-opacity: 0.1;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.fb-b {
+  fill: var(--theme-accent);
+  fill-opacity: 0.28;
+  stroke: var(--theme-accent);
+  stroke-width: 0.8;
+}
+
+.fb-w {
+  fill: var(--theme-bg-lighter);
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.fb-t {
+  fill: currentColor;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.fb-i {
+  font-size: 8px;
 }
 
 .fv-kop {
@@ -83,7 +188,8 @@
 }
 
 .fv-code {
-  margin: 4px 0 0;
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
   padding: 8px 10px;
   border: 1px solid var(--theme-border);
   border-radius: var(--oa-radius-small);

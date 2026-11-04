@@ -38,9 +38,24 @@ export async function startApp({ exe, map, poort = 9377, argumenten = [] }) {
   const sessie = await Verbinding.open(doel.webSocketDebuggerUrl);
   await sessie.stuur("Page.enable");
   await sessie.stuur("Runtime.enable");
+  await sessie.stuur("Emulation.setFocusEmulationEnabled", { enabled: true });
   await sessie.stuur("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
   return { proces, sessie, stop: () => proces.kill() };
 }
+
+/**
+ * Is het notebook klaar voor een opdracht? De kernel moet klaar zijn en het notebook het
+ * actieve tabblad. JupyterLab kiest dat tabblad op focus, en die heeft een iframe niet
+ * vanzelf: gemeten bij een derde van de starts, met een kernel die gewoon klaar stond.
+ * Een gebruiker klikt in het notebook; de proef maakt het hier actief.
+ */
+export const NOTEBOOK_KLAAR = `(() => {
+  const shell = window.jupyterapp?.shell;
+  const w = shell && [...shell.widgets("main")].find((x) => x.sessionContext);
+  if (w?.sessionContext.session?.kernel?.status !== "idle") return 0;
+  if (shell.currentWidget !== w) shell.activateById(w.id);
+  return shell.currentWidget === w ? 1 : 0;
+})()`;
 
 /** Eén WebSocket met sessies per iframe (`flatten`). */
 class Verbinding {
@@ -77,6 +92,9 @@ class Verbinding {
         this.frames.set(b.params.sessionId, b.params.targetInfo);
         this.stuur("Runtime.enable", {}, b.params.sessionId).catch(() => {});
         this.stuur("Network.enable", {}, b.params.sessionId).catch(() => {});
+        // JupyterLab kiest zijn actieve tabblad op focus, en een proefvenster staat vaak op
+        // de achtergrond. Zonder dit doet Alles uitvoeren dan niets.
+        this.stuur("Emulation.setFocusEmulationEnabled", { enabled: true }, b.params.sessionId).catch(() => {});
         this.stuur("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: false, flatten: true }, b.params.sessionId).catch(() => {});
       } else if (b.method === "Target.detachedFromTarget") {
         this.frames.delete(b.params.sessionId);

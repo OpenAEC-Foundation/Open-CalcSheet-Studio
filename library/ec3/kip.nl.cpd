@@ -1,0 +1,30 @@
+## Kip van een ligger
+'<small>Bron: NEN-EN 1993-1-1 6.3.2.2 (6.54), (6.55), (6.56), tab. 6.3, 6.4</small>
+'<i>IPE 300 met vorkopleggingen en een verdeelde last op het dwarskrachtmiddelpunt; het kritieke moment volgt uit de elastische stabiliteitstheorie. Alles is een functie van de vrije lengte, dus de grafiek toont hoe ver de ligger zonder steun kan.</i>
+M_Ed = 70 kN*m'<span class="kolom-3"></span>'
+L = 5 m', vrije lengte<span class="kolom-3"></span>'
+W_y = 628.4 cm^3', IPE 300<span class="kolom-3"></span>'
+I_z = 603.8 cm^4'<span class="kolom-3"></span>'
+I_t = 20.12 cm^4'<span class="kolom-3"></span>'
+I_w = 125900 cm^6'<span class="kolom-3"></span>'
+E = 210000 N/mm^2'<span class="kolom-3"></span>'
+G = 81000 N/mm^2'<span class="kolom-3"></span>'
+f_y = 235 N/mm^2', S235<span class="kolom-3"></span>'
+γ_M1 = 1.0'<span class="kolom-3"></span>'
+C_1 = 1.13', verdeelde last<span class="kolom-3"></span>'
+α_LT = 0.21', kipkromme a bij h/b ≤ 2, tabel 6.3 en 6.4<span class="kolom-3"></span>'
+M_cr(x) = C_1*π^2*E*I_z/x^2*sqrt(I_w/I_z + x^2*G*I_t/(π^2*E*I_z))
+λ_LT(x) = sqrt(W_y*f_y/M_cr(x))
+Φ_LT(x) = 0.5*(1 + α_LT*(λ_LT(x) - 0.2) + λ_LT(x)^2)
+χ_LT(x) = min(1/(Φ_LT(x) + sqrt(Φ_LT(x)^2 - λ_LT(x)^2)); 1)
+M_b(x) = χ_LT(x)*W_y*f_y/γ_M1
+M_cr,L = M_cr(L) to kN*m
+λ_LT,L = λ_LT(L)
+χ_LT,L = χ_LT(L)', (6.56)'
+M_b,Rd = M_b(L) to kN*m', (6.55)'
+UC_LT = M_Ed/M_b,Rd', (6.54)'
+#hide
+PlotHeight = 220
+#show
+$Plot{M_b(x)/(kN*m) & M_Ed/(kN*m) @ x = 1 m : 12 m}
+'<span style="color:#D97706; font-weight:700;">━━ M<sub>b,Rd</sub></span> &nbsp; <span style="color:#2563EB; font-weight:700;">━━ M<sub>Ed</sub></span> &nbsp; in kNm, tegen de vrije lengte.

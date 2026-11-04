@@ -299,6 +299,13 @@
   padding: 4px 8px 6px;
 }
 
+.graaf-keuze {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--oa-size-label);
+}
+
 .graaf-velden-rij {
   display: flex;
   gap: 4px;

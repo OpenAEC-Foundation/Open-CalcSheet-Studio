@@ -10,7 +10,7 @@
  *   • een werkmap die over meerdere vellen loopt, en een korte;
  *   • Markdown met koppen, lijsten, tabellen, code en afbeeldingen, en een
  *     tekst die over meerdere vellen loopt;
- *   • een canvas-blad, een grafblad, een tekenblad en een Jupyter-blad.
+ *   • een canvas-blad, een grafblad, een tekenblad, een Jupyter-blad en een Marimo-blad.
  *
  * Alles is fictief. De PDF en de werkmap worden hier gemaakt, zodat er geen
  * bestanden van buiten in de repo hoeven.
@@ -31,6 +31,7 @@ import { CANVAS_BLAD, schrijfEenheden } from "../../packages/desktop/src/store/c
 import { GRAAF_BLAD } from "../../packages/desktop/src/store/graafBlad.ts";
 import { TEKEN_BLAD } from "../../packages/desktop/src/store/tekenBlad.ts";
 import { JUPYTER_BLAD, pakWerkmapIn } from "../../packages/desktop/src/store/jupyterBlad.ts";
+import { MARIMO_BLAD } from "../../packages/desktop/src/store/marimoBlad.ts";
 import { legeGraaf, verbind, voegNodeToe, zetInvoer, zetNodeNaam } from "../../packages/desktop/src/graaf/model.ts";
 
 const hier = dirname(fileURLToPath(import.meta.url));
@@ -51,6 +52,7 @@ export const BLADEN = {
   graaf: { id: "ex-graaf", naam: "Momenten als graaf" },
   tekenblad: { id: "ex-teken", naam: "Plattegrond begane grond" },
   jupyter: { id: "ex-jupyter", naam: "Notebook hoeveelheden" },
+  marimo: { id: "ex-marimo", naam: "Notebook met schuiven" },
 };
 
 /** Wat er van elk van deze bladen op zijn eigen pagina in de PDF hoort te staan. */
@@ -59,6 +61,7 @@ export const KENMERKEN = {
   graaf: "Totaal moment",
   tekenblad: "Proefview begane grond",
   jupyter: "Notebookregel van het proefblad",
+  marimo: "Marimoregel van het proefblad",
 };
 
 /** Een klein grafblad: twee getallen opgeteld in een codeblok, en de uitkomst bekeken. */
@@ -95,6 +98,16 @@ function maakJupyterWerkmap() {
   };
   const zip = pakWerkmapIn([{ pad: "notebook.ipynb", bytes: new TextEncoder().encode(JSON.stringify(notebook)) }]);
   return Buffer.from(zip).toString("base64");
+}
+
+/** Een klein Marimo-notebook met zijn opgeslagen uitvoer. */
+function maakMarimoNotebook() {
+  return {
+    bestandsnaam: "",
+    metCode: true,
+    code: 'import marimo\n\napp = marimo.App()\n\n\n@app.cell\ndef _():\n    import marimo as mo\n    return (mo,)\n\n\n@app.cell\ndef _(mo):\n    mo.md("x")\n    return\n',
+    uitvoer: ["", `<p>${KENMERKEN.marimo}</p>`],
+  };
 }
 
 /** De koppen die uit de Markdown-bladen in de inhoudsopgave horen te komen. */
@@ -250,14 +263,14 @@ export function logboekTekst() {
 }
 
 /** Een werkmap met `rijen` rijen staven: 6 m lang, oplopend genummerd. */
-async function maakWerkmap(rijen) {
+export async function maakWerkmap(rijen, staaf = "Staaf") {
   const { initWasm, openWorkbook } = await import(new URL(`file:///${XLSX_DIST.replace(/\\/g, "/")}/index.js`).href);
   await initWasm(readFileSync(join(XLSX_DIST, "generated/xlsx_wasm_bg.wasm")));
   const wb = openWorkbook(new Uint8Array(Buffer.from(LEGE_WERKMAP, "base64")));
   try {
-    ["Staaf", "L (m)", "A (mm2)", "G (kg)"].forEach((w, k) => wb.editCell(0, 0, k, w));
+    [staaf, "L (m)", "A (mm2)", "G (kg)"].forEach((w, k) => wb.editCell(0, 0, k, w));
     for (let i = 1; i <= rijen; i++) {
-      wb.editCell(0, i, 0, `Staaf ${i}`);
+      wb.editCell(0, i, 0, `${staaf} ${i}`);
       wb.editCell(0, i, 1, "6");
       wb.editCell(0, i, 2, String(1000 + i));
       wb.editCell(0, i, 3, `=B${i + 1}*C${i + 1}*7850/1000000`);
@@ -318,6 +331,7 @@ export async function bouwGemengdProject() {
       },
     },
     { ...b.jupyter, ...kale, templateId: JUPYTER_BLAD, jupyter: { bestandsnaam: "", data: maakJupyterWerkmap(), metCode: true } },
+    { ...b.marimo, ...kale, templateId: MARIMO_BLAD, marimo: maakMarimoNotebook() },
   ];
 
   const rapport = standaardRapport("01-09-2026", standaardTeksten());

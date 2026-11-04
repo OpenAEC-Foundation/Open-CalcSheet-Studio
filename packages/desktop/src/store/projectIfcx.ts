@@ -32,6 +32,7 @@ import type { MarkdownBestand } from "./markdownBlad.ts";
 import type { Graaf } from "../graaf/model.ts";
 import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
 import type { JupyterWerkmap } from "./jupyterBlad.ts";
+import type { MarimoNotebook } from "./marimoBlad.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 
 /** Wat dit bestand van een blad nodig heeft; een uittreksel van `Exemplaar`. */
@@ -49,6 +50,7 @@ export interface BladVoorIfc {
   graaf?: Graaf;
   tekenvel?: TekenVel;
   jupyter?: JupyterWerkmap;
+  marimo?: MarimoNotebook;
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -82,6 +84,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
     graaf: ex.graaf,
     ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
     jupyter: ex.jupyter,
+    marimo: ex.marimo,
     nodes: [],
   };
   if (!isLosBlad(ex)) {

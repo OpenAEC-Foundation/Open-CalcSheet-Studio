@@ -12,6 +12,7 @@ import { isGraafBlad } from "./graafBlad.ts";
 import { leesGraaf } from "../graaf/model.ts";
 import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
 import { isJupyterBlad, leesJupyterWerkmap } from "./jupyterBlad.ts";
+import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -217,6 +218,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (tekenvel) ex.tekenvel = tekenvel;
   const jupyter = isJupyterBlad(ex) ? leesJupyterWerkmap(e.jupyter) : undefined;
   if (jupyter) ex.jupyter = jupyter;
+  const marimo = isMarimoBlad(ex) ? leesMarimoNotebook(e.marimo) : undefined;
+  if (marimo) ex.marimo = marimo;
   return ex;
 }
 

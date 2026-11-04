@@ -5,8 +5,13 @@ import react from "@vitejs/plugin-react";
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
-export default defineConfig(async () => ({
+export default defineConfig(async ({ command }) => ({
   plugins: [react()],
+
+  // De Library zit niet in de app; in de dev-server komt hij uit de map library/.
+  define: {
+    __LIBRARY_DEV__: JSON.stringify(command === "serve" ? `/@fs${new URL("../../library", import.meta.url).pathname}` : ""),
+  },
 
   // De spreadsheetkern laadt zijn WASM en worker relatief aan import.meta.url;
   // prebundelen verbreekt die paden.

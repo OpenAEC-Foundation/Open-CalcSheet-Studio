@@ -1,0 +1,17 @@
+## Virtuele arbeid
+'<small>Bron: Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 1, art. 1.1-1.5; Hoofdstuk 2, art. 1.2</small>
+'<i>De doorbuiging aan het eind van een uitkraging: de werkelijke momenten en dwarskrachten maal die van een eenheidslast op die plek. Zo tel je ook de dwarskrachtvervorming mee.</i>
+q = 10 kN/m'<span class="kolom-3"></span>'
+L = 3 m'<span class="kolom-3"></span>'
+E = 210000 N/mm^2'<span class="kolom-3"></span>'
+G = 81000 N/mm^2'<span class="kolom-3"></span>'
+I_y = 8356 cm^4', IPE 300<span class="kolom-3"></span>'
+A_v = 2568 mm^2', afschuifoppervlak<span class="kolom-3"></span>'
+M(x) = q*(L - x)^2/2
+Q(x) = q*(L - x)
+m_1(x) = L - x
+w_M = $Area{M(x)*m_1(x)/(E*I_y) @ x = 0 m : L} to mm', door buiging'
+w_Q = $Area{Q(x)/(G*A_v) @ x = 0 m : L} to mm', door dwarskracht'
+w_tot = w_M + w_Q to mm
+a_Q = w_Q/w_tot', aandeel van de dwarskracht'
+w_c = q*L^4/(8*E*I_y) to mm', ter controle: qL⁴/8EI'

@@ -1,241 +1,166 @@
+**English** · [Nederlands](README.nl.md)
+
+<div align="center">
+
 # Open CalcSheet Studio
 
-Open desktop-applicatie voor constructieve berekeningen op basis van CalcPAD-syntax, met directe export naar IFC (4x3 STEP) en IFCX (JSON-LD). Werkt zowel als standalone Tauri-app als embedded library voor FEM-applicaties en normtoetsingen.
+**Structural calculations you can read back: every result shows its formula, numbers and units, and all your sheets end up in one report.**
 
-Deze repository bevat de applicatie zelf — editor, rekenkern, projectbeheer, constructierapport en IFC-export — met drie uitgewerkte rekenmodules: de **houten balklaag** volgens NEN-EN 1995-1-1, de **ligger van hout of staal** volgens NEN-EN 1995-1-1 en NEN-EN 1993-1-1 en de **tweepaalspoer** volgens NEN-EN 1992-1-1, telkens met de Nederlandse nationale bijlage. Een nieuwe module voeg je toe zoals beschreven in [docs/overdracht.md](docs/overdracht.md).
+[![Release](https://img.shields.io/github/v/release/OpenAEC-Foundation/Open-CalcSheet-Studio?include_prereleases&label=release&color=D97706)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
+[![CI](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-LGPL--3.0-blue)](#license)
+[![Languages](https://img.shields.io/badge/languages-English%20%C2%B7%20Dutch-informational)](#screenshots)
 
-## Features
+### [Download](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
 
-### Rekenen
-- **Formules met eenheden** — `mm`, `kN`, `N/mm²`, `mm⁴`, … via mathjs unit-aware arithmetic
-- **Automatische unit-simplificatie** — `b*h` geeft direct `mm²`, geen handmatige `to`-cast nodig
-- **Wiskundige opmaak** — KaTeX-rendering met echte breuken, superscripts, subscripts en Griekse letters
-- **Formule-keten** — toont `naam = formule = ingevulde waarden = resultaat` op één regel
-- **Live preview** — split-pane editor (CodeMirror 6) en debounced preview, syntax highlighting voor `.cpd`
-- **Project met meerdere rekenbladen** — dezelfde module kan er meerdere keren in (drie balklagen, elk met eigen invoer); de projectgegevens gelden voor alle bladen
+![A timber joist floor: input screen with drawings and a live unity check next to the worked-out sheet, with the project and the library in the panel](docs/images/readme/hero.png)
 
-### CalcPAD-compatibiliteit
-Compatibiliteit met voorbeeldbestanden voor de ondersteunde rekensyntax.
+</div>
 
-- `"Title`, `'prose`, `// comment`
-- `#if … #else if … #else … #end if`, `#hide / #show / #pre / #post`
-- `#repeat n … #end repeat` en `#for var = lo : hi … #loop` (incl. nested)
-- `#def name(p1; p2; …) … #end def` macros, `#def Name$ = literal` constants
-- `#include filename.cpd` — externe macro-libraries en SVG drawings
-- `$Plot{ … @ x = lo : hi }` — inline parametrische plots
-- Subscript-comma's (`V_b,0`, `n_Int,support,points`), `$`-getypeerde refs, matrix `[a;b|c;d]`
-- Format-specs (`:F2`), dotted/percent identifiers (`Cs.Cd`, `F_0.9G50%TotalWeight`)
-- mathjs Matrix-aware `take`, `hlookup`, `hlookup_ge`, `hlookup_le`, `vlookup`, `get`
+Open CalcSheet Studio is a desktop app for structural engineers. You write a calculation as text, line by line, and the app works it out with units, in readable formulas. Next to those calculation sheets, a project can hold spreadsheets, formula canvases, node graphs, drawings, Jupyter notebooks, Markdown and PDF files. Together they become one report.
 
-### Tekeningen
-- **Parametrische SVG-macros** — prose-line value interpolation (`'<line x1="'a'" y1="'b'"/>`)
-- **`@svg … @end`** blocks voor handgeschreven SVG
-- **`@img(file.svg)`** — externe SVG-tekeningen worden inline ge-embed (incl. `<polygon fill="…">`, hatch patterns, gradients) via dezelfde include-resolver als `#include`
-- **`@img(file.png|jpg|…)`** — raster afbeeldingen via `<img src>`
-- **`@iframe https://… hoogte=120mm`** — een externe pagina, laadt pas na bevestiging, in een sandbox
-- **`@js hoogte=90mm titel="…" bibliotheek=three … @end`** — JavaScript met de waarden van het blad als `calc`, pas na bevestiging, afgeschermd en zonder netwerk; een draaibaar model kan met `calc.wereld3d()`, en een knop met `addEventListener` (geen `onclick=`)
+It runs on Windows, macOS and Linux. It is under active development: see [Current limitations](#current-limitations).
 
-### Bladsoorten
-Naast het rekenblad kan een project ook deze bladen bevatten. Ze komen allemaal in hetzelfde rapport, met de inhoudsopgave en de paginanummering die over alle bladen doorloopt. Zie [docs/bladsoorten.md](docs/bladsoorten.md).
-- **Spreadsheet** — een werkmap met formules, cellen aanwijzen, kopiëren en vullen; de paginagrenzen zijn te zien
-- **Canvas** — formules als losse eenheden op een vlak, met dezelfde rekenkern als het rekenblad, van boven naar beneden
-- **Graaf** — knopen verbinden tot een berekening, met lijsten, codeblokken en een 3D-voorbeeld op de achtergrond
-- **Tekenblad** — een lege tekening op A4, A3 of A2 met meerdere aanzichten op schaal: staalprofielen, kanaalplaatvloeren, stramienen, peilen, wanden en schematiseringen
-- **Jupyter** — een notebook met Python, afgeschermd en zonder installatie; zie [docs/jupyter-blad.md](docs/jupyter-blad.md)
-- **Markdown** en **PDF** — bestaande tekst en documenten mee in het rapport
+## Try it
 
-### IFC export
-Live IFCX (JSON-LD draft) en IFC4x3 STEP-SPF generatie. Opslaan schrijft het
-**hele project** weg: alle rekenbladen in één ruimtelijke boom, met een element
-per blad. Zie [docs/ifc-export.md](docs/ifc-export.md).
-- Detecteert structurele elementen via conventionele variabelenamen (`b_fdn`, `l_fdn`, `D_paal`, `M_Ed`, `R_c_d`, …)
-- Altijd geldig Project → Site → Building → Storey skelet
-- IFC-tab met spatial tree, STEP viewer en IFCX JSON viewer (syntax highlighting + klikbare entity-types naar BuildingSMART docs)
-- Eén klik export: `.ifc` / `.ifcx` download
+[Download the app](#download-1), open it and choose **Module**, then **Timber joist floor**. Change the section or the span and watch the unity check follow. Then open **Print preview** to see the sheet on paper.
 
-### Overig
-- **Projectgegevens** — gevolgklasse, ontwerplevensduur, windgebied en de projectkop staan op projectniveau en werken door in elk blad
-- **Afdrukken / PDF** — het hele project als één document: voorblad uit de projectgegevens, inhoudsopgave, elk blad op een eigen pagina, met het parametrische beeld én de uitwerking. Met **Voorbeeld** zie je op het scherm precies wat er op papier komt
-- **5 themes** (light, forge, openaec, blueprint, contrast) — OpenAEC design tokens
-- **`@select var "Label" … @end`** dropdown-blocks voor materiaalkeuzes etc.
+## Download
 
-## Projectstructuur
+There is no stable release yet. The [nightly build](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/tag/nightly) is made from `main` every day.
 
-```
-Open-CalcSheet-Studio/
-├── packages/
-│   ├── core/                          # @ifc-calc/core — rekenengine (TS library)
-│   │   ├── src/
-│   │   │   ├── parser.ts              # Line-based parser, macro expansion, #include
-│   │   │   ├── evaluator.ts           # mathjs evaluator + CalcPAD helpers
-│   │   │   ├── ligger.ts              # Ligger op steunpunten (omhullende M/V)
-│   │   │   ├── raamwerk.ts            # Vlakke raamwerken, knikfactor
-│   │   │   ├── doorsnede.ts           # Samengestelde doorsneden
-│   │   │   ├── ifc-generator.ts       # IFCX / IFC4x3 STEP generators
-│   │   │   ├── latex.ts               # Expr → LaTeX converter
-│   │   │   ├── renderer.ts            # HTML renderer (KaTeX, SVG coalescing)
-│   │   │   ├── gef-parser.ts          # Sondering (GEF) parser
-│   │   │   ├── types.ts               # Public types
-│   │   │   └── index.ts               # Public API
-│   │   └── package.json
-│   └── desktop/                       # @openaec/calcsheet-studio — Tauri app
-│       ├── src/                       # React UI (ribbon, panels, preview)
-│       │   ├── templates/             # Rekenbladen (balklaag, ligger, tweepaalspoer) en registratie
-│       │   └── store/projectStore.ts  # Project: exemplaren + projectgegevens
-│       └── src-tauri/                 # Rust shell (Tauri 2)
-├── scripts/                           # Controles (npm run check) en hulpscripts
-├── docs/                              # Opbouw, toetsing, ontwerpen
-└── package.json                       # npm workspaces root
-```
+| Platform | Installer |
+|----------|-----------|
+| **Windows** | `.exe` installer (x64), for all users or for one user |
+| **macOS** | `.dmg` (universal: Apple silicon and Intel) |
+| **Linux** | `.deb`, `.AppImage` |
 
-## Document Syntax
+The app has no built-in updater: install a new version over the old one. Your projects are ordinary files and stay where they are.
 
-```calcpad
-"Voorbeeldproject
+The release workflow refuses to publish files that are not signed: Windows with Authenticode, macOS with a Developer ID and notarized by Apple, Linux with a separate OpenPGP signature (`.asc`). `SHA256SUMS.txt` lists every file. See [how to verify a download](docs/ondertekening.md).
 
-#include svg_drawing.cpd
+## Why use it?
 
-# 1. Invoer
-b = 300 mm
-h = 500 mm
-N_Ed = ?*(kN)
-fck = 30 N/mm^2
+- **Free and open.** LGPL-3.0. No licence fees, no account.
+- **You can check every step.** A result shows its name, formula, filled-in values and outcome, with units.
+- **One project, one report.** Cover, table of contents and page numbers run through all sheets, whatever kind they are.
+- **The right sheet for each part.** Text, canvas, spreadsheet, node graph, drawing, notebook, Markdown or PDF, side by side in one project.
+- **Change a number, the check follows.** Sheets recalculate while you type, and a drawing can take its sizes from the sheet.
+- **Your data stays open.** The project file is IFCX, and you can export IFC4x3.
+- **Works with an AI assistant.** A built-in MCP server and REST API run on your own computer, behind a token.
 
-# 2. Geometrie
-A = b*h          // mm² — automatisch
-W_y = b*h^2/6    // mm³
+## Screenshots
 
-# 3. Toetsing
-sigma = N_Ed/A to N/mm^2
+| | |
+|---|---|
+| ![The print preview of the report with cover, contents and calculation pages](docs/images/readme/report.png) **One report from all sheets** | ![The calculation text next to the worked-out formulas, with every step and its numbers](docs/images/readme/code-output.png) **Text in, formulas out** |
+| ![A spreadsheet sheet with a bar schedule and its ribbon tools](docs/images/readme/spreadsheet.png) **Spreadsheet** | ![Formula units placed freely on a canvas, with their results](docs/images/readme/canvas.png) **Formulas on a canvas** |
+| ![A node graph that builds a portal frame, with a 3D preview in the background](docs/images/readme/graph.png) **Node graph with 3D preview** | ![An A3 drawing sheet with a floor plan and a section, each with its own scale](docs/images/readme/drawing-sheet.png) **Drawing sheet with several views** |
+| ![A Jupyter notebook with a plot and a table, using a Python script from the work folder](docs/images/readme/jupyter.png) **Jupyter notebook with Python** | ![The IFC tab with the spatial tree and the generated file](docs/images/readme/ifc.png) **IFC and IFCX** |
+| ![A reactive Marimo notebook with sliders and a moment line](docs/images/readme/marimo.png) **Reactive Marimo notebook** | ![The settings with the logo, colours and font of the office](docs/images/readme/house-style.png) **Your own house style** |
 
-#if sigma ≤ fck/1.5
-    'Voldoet ✓
-#else
-    'Voldoet NIET ✗
-#end if
+## Sheets
 
-# 4. Detail-tekening
-@img(detail-D1.svg)
+A project is a list of sheets. Each kind has a chapter in [the sheet kinds documentation](docs/bladsoorten.md).
 
-# 5. Belasting-diagram
-$Plot{f(x) @ x = 0 : L}
-```
+| Sheet | What it is |
+|-------|------------|
+| **Calculation sheet** | Text in the [calculation language](docs/rekentaal.md), with formulas, conditions, plots and drawings |
+| **Spreadsheet** | An `.xlsx` workbook with formulas, cell pointing, fill and page edges |
+| **Canvas** | Formula units placed freely, calculated top to bottom with the same kernel |
+| **Graph** | Nodes for numbers, logic, lists, text and geometry, and code blocks, with a 3D preview. Reads graph files (`.dyn`) |
+| **Drawing** | A4, A3 or A2 with views to scale: grids, levels, walls, steel sections, hollow-core floors and schemes |
+| **Jupyter** | A [notebook with Python](docs/jupyter-blad.md), numpy, scipy, pandas and matplotlib, without installing anything. Optionally it runs again after every change |
+| **Marimo** | A reactive Python notebook: move a slider and everything that depends on it follows |
+| **Markdown, PDF** | Existing text and documents, as part of the report |
 
-## Installatie
+## Modules and library
+
+Modules are ready-made sheets with an input screen: a **timber joist floor** and a **beam in timber or steel** to EN 1995-1-1 and EN 1993-1-1, and a **two-pile cap** to EN 1992-1-1, with the Dutch national annex. The [online module library](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) can add modules without a new release; so far it holds the floor. See [how the floor check works](docs/balklaag-toetsing.md) and [the pile cap check](docs/tweepaalspoer-toetsing.md).
+
+The formula library holds 137 formulas you can insert with a click, each with a sketch that shows what it is about. The library in the project panel adds 15 worked examples from the Eurocodes and classical mechanics. Those examples are not in the installer: the app fetches them from this repository when it starts, so [a correction reaches everyone](docs/library.md) without a new release.
+
+| | |
+|---|---|
+| ![A library example on buckling worked out next to the panel, with Insert and New sheet](docs/images/readme/library.png) **A worked example from the library** | ![The input screen of a two-pile cap with its reinforcement drawing](docs/images/readme/two-pile-cap.png) **Two-pile cap with reinforcement drawing** |
+| ![The formula library with a sketch next to every formula](docs/images/readme/formula-library.png) **Formula library with a sketch per formula** | |
+
+## Interoperability
+
+| Format | Open | Save / export |
+|--------|------|---------------|
+| **IFCX** (`.ifccalculation`, `.ifcx`) | Yes | Yes, this is the project file |
+| **IFC4x3** (`.ifc`) | No | Yes |
+| **Calculation text** (`.cpd`) | Yes | No, it is saved as the project file |
+| **Spreadsheet** (`.xlsx`) | Yes | Yes |
+| **Markdown** (`.md`) | Yes | Yes |
+| **Notebook** (`.ipynb`, `.py`, data files) | Yes | The work folder as `.zip` |
+| **PDF** | As a sheet | Yes, the report |
+| **DXF** | Converted to a drawing in a sheet | No |
+
+Every sheet with its text, input and results is in the IFCX file. Drawings that a module's input screen draws are not stored as figures, only what the calculation text draws itself. Most sheets do not know where their part sits in the building, so elements without geometry are placed at the origin of the storey. See [the IFC documentation](docs/ifc-export.md).
+
+## MCP
+
+The app has a built-in MCP server and a REST API with the same 43 tools: open and save projects, add sheets, set input, calculate, export and print. It only listens on your own computer (`127.0.0.1`), behind a token. You can switch it off, make it read-only or pause it under **Settings › API and AI assistant**. See [the MCP documentation](docs/mcp.md) and [the REST API](docs/api.md).
+
+## Testing and reliability
+
+- **55 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **121 results against hand calculations**: 53 in `scripts/check-formules.mjs` and 68 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
+- **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
+- **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
+- **Builds on all three platforms** on every push to `main`, with the signatures checked.
+
+Count sources: the files named above and `ls scripts/check-*.mjs`. A module status tells you how far its check has gone: *calibrated* is compared against reference sheets, *to be checked* is not yet.
+
+## Current limitations
+
+- **Check the results yourself.** The beam and the two-pile cap have the status *to be checked*. The app does not replace the judgment of a structural engineer.
+- **Jupyter and Marimo are only tested on Windows.** On macOS and Linux the sheet will probably not start a kernel, because the webview there limits service workers. Saved files and printing do work.
+- **Notebooks have no network.** `%pip install` does not work, and libraries that rely on JavaScript in their output (plotly, bokeh, ipywidgets) show nothing. That is a deliberate choice for now.
+- **A running cell cannot be stopped.** Marimo also has no SQL cells and follows the dark or light theme only when it loads.
+- **Fonts are not embedded in the project.** Apart from Inter and Space Grotesk, a font in your house style must be installed on the computer that prints.
+- **The library needs internet the first time.** Without a connection it stays empty until it has been fetched once. After that it uses the last version.
+- **A graph file is not always complete.** Nodes this app does not have, scripts and most geometry stay on the graph with a message and do not calculate.
+- **Spreadsheet values do not reach calculation sheets yet.** A spreadsheet stands on its own for now.
+- **Report straight to PDF is Windows only.** Other platforms use the print dialog.
+- **The report template is in Dutch.** The app and the sheets follow your language, but the cover, the standard chapters and some names in the IFC tree are Dutch for now.
+- **Page breaks can differ slightly between screen scales.** At 100% and 150% a few lines can move to another page.
+- **No WebRTC in the app.** It is blocked everywhere, so an external page in `@iframe` that needs it will not work.
+- **Open FEM Studio projects are not there yet.** The menu item is visible but disabled.
+
+Found something? [Open an issue](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/issues).
+
+## Under the hood
+
+The calculation kernel (`packages/core`) is TypeScript on mathjs and also works [as a package without the app](docs/rekenkern-als-pakket.md). The app is a Tauri 2 shell in Rust with React 19, CodeMirror 6 and KaTeX; notebooks run on JupyterLite and Pyodide. The shared look and icons come from [OpenAEC Blueprint](https://github.com/OpenAEC-Foundation/OpenAEC-Blueprint).
+
+## Contributing
+
+- **Try it on a real project** and report bugs or missing features as an [issue](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/issues/new). Describe what you did, what you expected and what happened.
+- **Correct an example.** The [library](library) is plain text; see [how to fix one](docs/library.md).
+- **Write code.** Read [AGENTS.md](AGENTS.md) and [the developer notes](docs/ontwikkelen.md), and open a pull request.
+
+## Quick start (developers)
 
 ```bash
-npm install
-```
-
-## Ontwikkeling
-
-```bash
-# Browser-preview starten (bouwt eerst de rekenkern)
-npm run dev
-
-# Rekenkern en frontend bouwen, inclusief TypeScript-controle
-npm run build
-
-# Native debugbuild zonder installatiepakket
-npm run build:debug
-
-# Desktop (Tauri) starten
+git clone https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio.git
+cd Open-CalcSheet-Studio
+npm ci
 npm run tauri:dev --workspace=@openaec/calcsheet-studio
-
-# Rekenkern automatisch herbouwen tijdens wijzigingen
-npm run dev --workspace=@ifc-calc/core
 ```
 
-De desktop-app vraagt een Rust-toolchain (`rustup`) plus, op Windows, de
-Visual Studio Build Tools met de C++-werkbelasting en de Windows SDK:
+Requires Node 24 and Rust, plus Python 3.10 or newer once to build the Jupyter environment. `npm run dev` starts a browser preview that does not need Rust. See [the developer notes](docs/ontwikkelen.md). The images in this README come from `scripts/maak-readme-beelden.mjs`.
 
-```bash
-winget install --id Rustlang.Rustup --exact
-```
-```bash
-winget install --id Microsoft.VisualStudio.2022.BuildTools --exact --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
-```
+Versions follow the OpenAEC scheme `YYYY.W.N`: year, ISO week without a leading zero, and a number within the week that starts at 0, such as `2026.45.0`.
 
-Die tweede vraagt beheerdersrechten; draai hem vanuit een PowerShell die als
-administrator is gestart, anders breekt hij af met code 1602. De browser-preview draait zonder Rust en is voor het rekenwerk zelf
-gelijkwaardig; alleen bestandsdialogen en de opslag van instellingen werken
-daar niet.
+Open CalcSheet Studio is part of the [OpenAEC Foundation](https://github.com/OpenAEC-Foundation) family of apps.
 
-### Optioneel: de OpenAEC-rapportengine
+## License
 
-Afdrukken gaat standaard via de browser (voorblad, inhoudsopgave, elk blad op
-een pagina, mét tekeningen). De Rust-rapportengine van OpenAEC is optioneel en
-wordt níét meegebouwd, zodat dit project op zichzelf bouwt:
+LGPL-3.0. See [LICENSE](LICENSE). The Python environment for Jupyter and Marimo ships software under its own licences (BSD, MIT, MPL-2.0, PSF): see [its licence list](packages/desktop/jupyter-omgeving/LICENTIES.md).
 
-```bash
-npm run tauri build --workspace=@openaec/calcsheet-studio -- --features rapportengine
-```
+## Trademarks
 
-Zonder die vlag bestaan de engine-commando's wel, maar geven ze een melding dat
-de build ze niet bevat. Zie [docs/backlog.md](docs/backlog.md) voor waarom die
-weg nu niet de standaard is.
-
-## Gebruik als library
-
-```typescript
-import {
-  parse,
-  evaluate,
-  render,
-  generateIfcx,
-  generateIfc4x3Step,
-} from '@ifc-calc/core';
-
-const source = `
-b = 300 mm
-h = 500 mm
-A = b*h
-N_Ed = 120 kN
-sigma = N_Ed/A to N/mm^2
-`;
-
-// Render naar HTML (KaTeX formules + SVG)
-const ast = parse(source);
-const evaluated = evaluate(ast, {});
-const html = render(evaluated);
-
-// IFC export uit dezelfde calc
-const ifcx = generateIfcx(evaluated, { projectName: 'Toetsing balk B1' });
-const step = generateIfc4x3Step(evaluated, { projectName: 'Toetsing balk B1' });
-```
-
-### Externe SVG / `#include` inlinen
-
-```typescript
-import detailSvg from './detail-D1.svg?raw';
-import svgDrawing from './svg_drawing.cpd?raw';
-
-const ast = parse(source, {
-  includes: new Map([
-    ['detail-D1.svg', detailSvg],     // wordt door @img(detail-D1.svg) inline ge-embed
-    ['svg_drawing.cpd', svgDrawing],  // wordt door #include svg_drawing.cpd geladen
-  ]),
-});
-```
-
-## Tech Stack
-
-- **TypeScript** — type-safe codebase
-- **mathjs** — expressie-parsing, eenheden, matrices
-- **KaTeX** — wiskundige opmaak
-- **CodeMirror 6** — editor met `.cpd` syntax highlighting + autocomplete
-- **React 19** — desktop UI
-- **Tauri 2** — Rust shell met file-system + dialog plugins
-- **JupyterLite + Pyodide** — Python in een Jupyter-blad, afgeschermd en zonder installatie; zie [`docs/jupyter-blad.md`](docs/jupyter-blad.md)
-- **Vite** — bundler met `?raw` imports voor samples
-- **npm workspaces** — monorepo
-
-## Licentie
-
-LGPL-3.0, zie [`LICENSE`](LICENSE).
-
-De Jupyter-omgeving levert software mee onder eigen licenties (BSD, MIT, MPL-2.0, PSF): zie [`packages/desktop/jupyter-omgeving/LICENTIES.md`](packages/desktop/jupyter-omgeving/LICENTIES.md).
-
-## Status
-
-In actieve ontwikkeling onder de [OpenAEC Foundation](https://github.com/OpenAEC-Foundation). PRs en issues welkom.
+Jupyter, Marimo, Windows, macOS and other product names are trademarks of their owners. Open CalcSheet Studio is an independent project and is not affiliated with, endorsed by or sponsored by them.

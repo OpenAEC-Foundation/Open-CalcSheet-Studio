@@ -324,5 +324,10 @@
   "tekenBlad": {
     "soort": "Drawing",
     "ontbreekt": "The sheet of this drawing is missing."
+  },
+  "marimoBlad": {
+    "soort": "Marimo",
+    "ontbreekt": "The notebook of this sheet is missing.",
+    "nogNietGedraaid": "This notebook has not been run yet, so there is no output to print. Open the sheet and press Run."
   }
 }

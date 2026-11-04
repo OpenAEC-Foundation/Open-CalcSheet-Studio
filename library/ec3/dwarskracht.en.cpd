@@ -1,0 +1,24 @@
+## Shear in the web
+'<small>Source: NEN-EN 1993-1-1 6.2.6 (6.17), (6.18), (6.22); 6.2.8(2)</small>
+'<i>The shear area of a rolled section and the plastic resistance, plus two follow-up questions: does the web buckle and must the moment resistance be reduced?</i>
+V_Ed = 120 kN'<span class="kolom-3"></span>'
+A = 5381 mm^2', IPE 300<span class="kolom-3"></span>'
+h = 300 mm'<span class="kolom-3"></span>'
+b = 150 mm'<span class="kolom-3"></span>'
+t_w = 7.1 mm'<span class="kolom-3"></span>'
+t_f = 10.7 mm'<span class="kolom-3"></span>'
+r = 15 mm'<span class="kolom-3"></span>'
+f_y = 235 N/mm^2', S235<span class="kolom-3"></span>'
+γ_M0 = 1.0'<span class="kolom-3"></span>'
+η = 1.0', on the safe side<span class="kolom-3"></span>'
+h_w = h - 2*t_f
+A_v = max(A - 2*b*t_f + (t_w + 2*r)*t_f; η*h_w*t_w) to mm^2
+V_pl,Rd = A_v*(f_y/sqrt(3))/γ_M0 to kN', (6.18)'
+UC_V = V_Ed/V_pl,Rd', (6.17)'
+ε = sqrt(235 N/mm^2/f_y)
+UC_plooi = (h_w/t_w)/(72*ε/η)', shear buckling need not be checked if ≤ 1, (6.22)'
+#if V_Ed ≤ 0.5*V_pl,Rd
+'V<sub>Ed</sub> is at most half of V<sub>pl,Rd</sub>: the moment resistance is not reduced.
+#else
+'V<sub>Ed</sub> exceeds half of V<sub>pl,Rd</sub>: reduce the moment resistance according to 6.2.8.
+#end if

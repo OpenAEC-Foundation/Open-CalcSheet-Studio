@@ -1,0 +1,22 @@
+## Eigenfrequentie ligger
+'<small>Bron: Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 8, art. 8.2-8.3</small>
+'<i>Twee gevallen op dezelfde ligger: een puntmassa in het midden en een verdeelde massa. De frequentie volgt uit stijfheid en massa, of uit de statische doorbuiging.</i>
+L = 6 m'<span class="kolom-3"></span>'
+E = 210000 N/mm^2'<span class="kolom-3"></span>'
+I_y = 8356 cm^4', IPE 300<span class="kolom-3"></span>'
+M_p = 1000 kg', puntmassa in het midden<span class="kolom-3"></span>'
+m_l = 300 kg/m', verdeelde massa<span class="kolom-3"></span>'
+g_n = 9.81 m/s^2'<span class="kolom-3"></span>'
+k_b(x) = 48*E*I_y/x^3
+f_p(x) = sqrt(k_b(x)/M_p)/(2*π)
+f_v(x) = π/(2*x^2)*sqrt(E*I_y/m_l)
+k_L = k_b(L) to kN/m', veerstijfheid in het midden'
+f_1 = f_p(L) to Hz', puntmassa'
+δ_st = M_p*g_n/k_L to mm', statische doorbuiging'
+f_δ = sqrt(g_n/δ_st)/(2*π) to Hz', dezelfde uitkomst via δ'
+f_2 = f_v(L) to Hz', verdeelde massa'
+#hide
+PlotHeight = 220
+#show
+$Plot{f_p(x)/Hz & f_v(x)/Hz @ x = 3 m : 12 m}
+'<span style="color:#D97706; font-weight:700;">━━ f<sub>p</sub></span> puntmassa &nbsp; <span style="color:#2563EB; font-weight:700;">━━ f<sub>v</sub></span> verdeelde massa &nbsp; in Hz, tegen de overspanning.

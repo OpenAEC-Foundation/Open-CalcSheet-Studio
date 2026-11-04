@@ -30,12 +30,16 @@
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { parse, evaluate } from "../packages/core/dist/index.js";
+import { laadLibrary } from "./lib/library.mjs";
 
 const bron = readFileSync(new URL("../packages/desktop/src/components/ribbon/formules.ts", import.meta.url), "utf8");
 const js = ts.transpileModule(bron, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 const { FORMULES, FORMULE_GROEPEN } = await import(`data:text/javascript,${encodeURIComponent(js)}`);
+// De voorbeelden van de Library staan in dezelfde groepen; check-library.mjs rekent ze na.
+const { voorbeelden: LIBRARY } = await laadLibrary();
+const inGroep = (g) => [...FORMULES, ...LIBRARY].filter((f) => f.groep === g.id);
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -112,10 +116,10 @@ for (const f of FORMULES) {
 }
 for (const g of FORMULE_GROEPEN) {
   if (!tekstOk(g.naam)) meld(false, `groep ${g.id}`, "naam mist nl of en");
-  const aantal = FORMULES.filter((f) => f.groep === g.id).length;
+  const aantal = inGroep(g).length;
   meld(aantal > 0, `groep ${g.id}: ${aantal} formules`, "lege groep");
 }
-console.log(`  ${FORMULE_GROEPEN.map((g) => `${g.id} ${FORMULES.filter((f) => f.groep === g.id).length}`).join(" · ")}`);
+console.log(`  ${FORMULE_GROEPEN.map((g) => `${g.id} ${inGroep(g).length}`).join(" · ")}`);
 
 // ─── 2. Elk fragment rekent foutloos door ───────────────────────────
 console.log("\nElk fragment rekent met de kern zonder foutmelding:");

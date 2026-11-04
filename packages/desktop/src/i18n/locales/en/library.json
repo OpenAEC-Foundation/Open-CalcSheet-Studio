@@ -10,5 +10,10 @@
   "geenBlad": "No sheet open: Insert starts a new sheet",
   "alleFormules": "Search all formulas…",
   "alleFormulesUitleg": "Open the formula library with all formulas, including these examples",
-  "rekenfout": "This example cannot be calculated: {{fout}}"
+  "rekenfout": "This example cannot be calculated: {{fout}}",
+  "ophalen": "Loading the library…",
+  "nietOpgehaald": "The library could not be loaded. Check your internet connection.",
+  "nietBijgewerkt": "Not updated: this is the version from {{datum}}.",
+  "teNieuw": "This library needs a newer version of the app.",
+  "opnieuw": "Try again"
 }

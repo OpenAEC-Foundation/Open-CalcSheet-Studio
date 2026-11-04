@@ -1,10 +1,11 @@
-# Licenties van de Jupyter-omgeving
+# Licenties van de Python-omgeving
 
-De Jupyter-bladen leveren onderstaande software ongewijzigd mee in `omgeving.pak`.
+De Jupyter- en Marimo-bladen leveren onderstaande software ongewijzigd mee in `omgeving.pak`.
 `scripts/bouw-jupyter-omgeving.mjs` haalt ze op bij de bronnen hieronder, op vaste
 versie en hash. De licentieteksten van de Python-pakketten staan in hun wielen in
 `static/pyodide/`; die van de JavaScript-pakketten in JupyterLab onder
-Help → Licenses (`build/third-party-licenses.json`).
+Help → Licenses (`build/third-party-licenses.json`). De licentie van Marimo staat in
+`marimo/LICENSE`.
 
 | Pakket | Versie | Licentie | Bron |
 |---|---|---|---|
@@ -13,8 +14,8 @@ Help → Licenses (`build/third-party-licenses.json`).
 | Pyodide | 314.0.6 | MPL-2.0 | github.com/pyodide/pyodide |
 | CPython (in Pyodide) | 3.14 | PSF-2.0 | github.com/python/cpython |
 | micropip | 0.11.1 | MPL-2.0 | github.com/pyodide/micropip |
-| numpy | 2.4.6 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | github.com/numpy/numpy |
-| scipy | 1.18.0 | BSD-3-Clause | github.com/scipy/scipy |
+| numpy | 2.4.3 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | github.com/numpy/numpy |
+| scipy | 1.17.1 | BSD-3-Clause | github.com/scipy/scipy |
 | pandas | 3.0.2 | BSD-3-Clause | github.com/pandas-dev/pandas |
 | matplotlib | 3.10.8 | Matplotlib-licentie (op basis van PSF) | github.com/matplotlib/matplotlib |
 | pillow | 12.2.0 | MIT-CMU | github.com/python-pillow/Pillow |
@@ -42,3 +43,11 @@ Help → Licenses (`build/third-party-licenses.json`).
 | asttokens | 3.0.1 | Apache-2.0 | github.com/gristlabs/asttokens |
 | wcwidth | 0.6.0 | MIT | github.com/jquast/wcwidth |
 | pydoc_data | 1.0.0 | PSF-2.0 | github.com/python/cpython |
+| marimo (`marimo-base` en de pagina) | 0.25.2 | Apache-2.0 | github.com/marimo-team/marimo |
+| Markdown | 3.10.2 | BSD-3-Clause | github.com/Python-Markdown/markdown |
+| pymdown-extensions | 10.21.3 | MIT | github.com/facelessuser/pymdown-extensions |
+| narwhals | 2.18.1 | MIT | github.com/narwhals-dev/narwhals |
+| msgspec | 0.20.0 | BSD-3-Clause | github.com/jcrist/msgspec |
+| docutils | 0.22.4 | Public domain, BSD-2-Clause | docutils.sourceforge.io |
+| PyYAML | 6.0.3 | MIT | github.com/yaml/pyyaml |
+| pyodide-http | 0.2.2 | MIT | github.com/koenvo/pyodide-http |

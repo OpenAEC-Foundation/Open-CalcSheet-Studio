@@ -1,8 +1,10 @@
 /**
- * De Library in het projectpaneel (components/calc/LibrarySectie.tsx): een paar
- * voorbeelden uit formules.ts met `library`. Deze controle bewaakt bovenop
- * check-formules.mjs:
+ * De Library in het projectpaneel (components/calc/LibrarySectie.tsx): de voorbeelden
+ * uit de map library/ van de repository, die de app bij het opstarten ophaalt
+ * (store/library.ts, docs/library.md). Deze controle bewaakt:
  *
+ *   0. het ophalen: de map klopt, en wat niet klopt komt de app niet in; de
+ *      voorbeelden staan niet meer in de code die in de installer gaat;
  *   1. de indeling: elke groep een handvol voorbeelden, een bron die bij de
  *      groep past, korte namen voor een smal paneel, en per groep minstens één
  *      grafiek of tekening;
@@ -20,15 +22,11 @@
  * Draaien:  node scripts/check-library.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
-import { readFileSync } from "node:fs";
-import ts from "typescript";
+import { readdirSync, readFileSync } from "node:fs";
 import { parse, evaluate, render } from "../packages/core/dist/index.js";
-
-const bron = readFileSync(new URL("../packages/desktop/src/components/ribbon/formules.ts", import.meta.url), "utf8");
-const js = ts.transpileModule(bron, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const { FORMULES, LIBRARY_GROEPEN, codeVan } = await import(`data:text/javascript,${encodeURIComponent(js)}`);
+import { FORMULES, codeVan } from "../packages/desktop/src/components/ribbon/formules.ts";
+import { LibraryTeNieuw, haalLibrary, leesBewaardeLibrary } from "../packages/desktop/src/store/library.ts";
+import { LIBRARY_MAP, laadLibrary, leesUitMap } from "./lib/library.mjs";
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -61,11 +59,67 @@ function uitkomsten(code) {
   return r;
 }
 
-const VOORBEELDEN = FORMULES.filter((f) => f.library);
+// ─── 0. Het ophalen ─────────────────────────────────────────────────
+console.log("Ophalen uit de repository:");
+const inhoud = await laadLibrary();
+const VOORBEELDEN = inhoud.voorbeelden;
+const LIBRARY_GROEPEN = inhoud.groepen;
 const perId = new Map(VOORBEELDEN.map((f) => [f.id, f]));
+{
+  meld(VOORBEELDEN.length > 0, "de map library/ laadt langs dezelfde weg als in de app");
+  meld(!FORMULES.some((f) => f.library), "geen voorbeeld in formules.ts: de Library gaat niet mee in de installer");
+
+  const index = JSON.parse(readFileSync(new URL("index.json", LIBRARY_MAP), "utf8"));
+  const genoemd = new Set(index.voorbeelden.flatMap((r) => [r.nl, r.en]));
+  const opSchijf = readdirSync(LIBRARY_MAP, { recursive: true }).map((p) => String(p).replaceAll("\\", "/")).filter((p) => p.endsWith(".cpd"));
+  meld(opSchijf.every((p) => genoemd.has(p)), "elk bestand in library/ staat in de index", opSchijf.filter((p) => !genoemd.has(p)).join(", "));
+
+  // Wat er binnenkomt is invoer van buiten: één fout, en de hele stand blijft staan.
+  const metIndex = (wijzig) => async (url, opties) => {
+    if (!url.endsWith("/index.json")) return leesUitMap(url, opties);
+    const i = structuredClone(index);
+    wijzig(i);
+    return new Response(JSON.stringify(i));
+  };
+  const weigert = async (wat, lees, soort = Error) => {
+    try {
+      await haalLibrary("map:", lees);
+      meld(false, `geweigerd: ${wat}`, "werd geaccepteerd");
+    } catch (err) {
+      meld(err instanceof soort, `geweigerd: ${wat}`, String(err));
+    }
+  };
+  await weigert("een bestand dat niet opgehaald kan worden", async (url, opties) =>
+    (url.endsWith(".en.cpd") ? new Response("", { status: 404 }) : leesUitMap(url, opties)));
+  await weigert("geen verbinding", async () => { throw new TypeError("Failed to fetch"); });
+  await weigert("een index die geen JSON is", async (url, opties) => (url.endsWith("/index.json") ? new Response("<html>") : leesUitMap(url, opties)));
+  await weigert("een nieuwer formaat", metIndex((i) => { i.formaat = 99; }), LibraryTeNieuw);
+  await weigert("een pad dat de map uit gaat", metIndex((i) => { i.voorbeelden[0].nl = "../../geheim.nl.cpd"; }));
+  await weigert("een adres in plaats van een pad", metIndex((i) => { i.voorbeelden[0].en = "https://voorbeeld.invalid/x.en.cpd"; }));
+  await weigert("een onbekende groep", metIndex((i) => { i.voorbeelden[0].library = "bestaat-niet"; }));
+  await weigert("een dubbel id", metIndex((i) => { i.voorbeelden[1].id = i.voorbeelden[0].id; }));
+  await weigert("het id van een ingebouwde formule", metIndex((i) => { i.voorbeelden[0].id = FORMULES[0].id; }));
+  await weigert("een naam zonder Engels", metIndex((i) => { delete i.voorbeelden[0].naam.en; }));
+  await weigert("een onbekende soort", metIndex((i) => { i.voorbeelden[0].soort = "film"; }));
+  await weigert("een te groot bestand", async (url, opties) => (url.endsWith(".nl.cpd") ? new Response("x".repeat(300 * 1024)) : leesUitMap(url, opties)));
+
+  const crlf = await haalLibrary("map:", async (url, opties) => {
+    const a = await leesUitMap(url, opties);
+    return url.endsWith(".cpd") ? new Response(`${(await a.text()).replace(/\r?\n/g, "\r\n")}\r\n\r\n`) : a;
+  });
+  meld(crlf.voorbeelden.every((f, i) => f.code === VOORBEELDEN[i].code && f.codeEn === VOORBEELDEN[i].codeEn), "regeleinden maken niet uit");
+
+  meld(leesBewaardeLibrary(JSON.parse(JSON.stringify(inhoud)))?.voorbeelden.length === VOORBEELDEN.length, "de bewaarde stand laadt terug");
+  for (const [wat, x] of [
+    ["niets", null],
+    ["een andere vorm", { voorbeelden: "x" }],
+    ["een voorbeeld zonder tekst", { ...inhoud, voorbeelden: [{ ...VOORBEELDEN[0], code: 1 }] }],
+    ["een voorbeeld in een onbekende groep", { ...inhoud, voorbeelden: [{ ...VOORBEELDEN[0], library: "x" }] }],
+  ]) meld(leesBewaardeLibrary(x) === null, `de bewaarde stand wordt genegeerd bij ${wat}`);
+}
 
 // ─── 1. De indeling ─────────────────────────────────────────────────
-console.log("Indeling van de Library:");
+console.log("\nIndeling van de Library:");
 const BRON_VAN = {
   ec2: /^NEN-EN 1992-1-1 /,
   ec3: /^NEN-EN 1993-1-1 /,

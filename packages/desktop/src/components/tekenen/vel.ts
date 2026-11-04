@@ -296,7 +296,14 @@ export interface VelOpties {
   naam?: string;
   /** De projectnaam, voor de titelhoek. */
   project?: string;
+  /** Het logo van het bureau, als data-URL, rechts in de titelhoek. */
+  logo?: string;
+  /** Het lettertype op papier (veiligLettertype); zonder de standaardletter van het vel. */
+  lettertype?: string;
 }
+
+/** Alleen een ingebedde afbeelding: een profiel kan via een project van iemand anders komen. */
+const LOGO_ADRES = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+$/i;
 
 /** Tekst op het vel: elk leesteken als tekenverwijzing. */
 const tekstOpVel = (s: string) => veilig(s.replace(/\{\{|\}\}/g, ""));
@@ -329,9 +336,13 @@ function velKader(vel: TekenVel, opties: VelOpties): string {
   const g = TITEL_LETTER * PX_PER_MM;
   const regel = (i: number, s: string, vet = false) =>
     s ? `<text x="${f2(tx + 2 * PX_PER_MM)}" y="${f2(ty + (i * 5 + 5.4) * PX_PER_MM)}" font-size="${f2(g)}"${vet ? ' font-weight="600"' : ""} style="fill:#000000; stroke:none">${tekstOpVel(s)}</text>` : "";
+  const logo = opties.logo && LOGO_ADRES.test(opties.logo)
+    ? `<image href="${opties.logo}" x="${f2(tx + tb - 24 * PX_PER_MM)}" y="${f2(ty + 2 * PX_PER_MM)}" width="${f2(22 * PX_PER_MM)}" height="${f2(14 * PX_PER_MM)}" preserveAspectRatio="xMaxYMid meet"/>`
+    : "";
   return [
     `<rect x="${f2(r)}" y="${f2(r)}" width="${f2(w)}" height="${f2(h)}" style="fill:none; stroke:#000000; stroke-width:1"/>`,
     `<rect x="${f2(tx)}" y="${f2(ty)}" width="${f2(tb)}" height="${f2(th)}" style="fill:#FFFFFF; stroke:#000000; stroke-width:1"/>`,
+    logo,
     regel(0, opties.naam ?? "", true),
     regel(1, opties.project ?? ""),
     regel(2, [vel.formaat, schalen].filter(Boolean).join(" · ")),
@@ -366,7 +377,7 @@ export function velSvg(vel: TekenVel, opties: VelOpties = {}): string {
   const m = velMaat(vel);
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" data-tekenvel="${vel.formaat}" viewBox="0 0 ${f2(m.breedte * PX_PER_MM)} ${f2(m.hoogte * PX_PER_MM)}" ` +
-    `width="${m.breedte}mm" height="${m.hoogte}mm" style="font-family:Inter, system-ui, sans-serif">${velInhoud(vel, opties)}</svg>`
+    `width="${m.breedte}mm" height="${m.hoogte}mm" style="font-family:${opties.lettertype || "Inter, system-ui, sans-serif"}">${velInhoud(vel, opties)}</svg>`
   );
 }
 

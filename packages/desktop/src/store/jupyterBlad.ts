@@ -34,6 +34,11 @@ export interface JupyterWerkmap {
   data: string;
   /** Gaat de code mee op papier, of alleen de tekst en de uitvoer? */
   metCode: boolean;
+  /**
+   * Alle cellen opnieuw uitvoeren na een wijziging. Bij het openen draait er ook dan niets:
+   * een project kan van iemand anders komen, en de eerste wijziging is van de gebruiker.
+   */
+  automatisch?: boolean;
 }
 
 /** Eén bestand in de werkmap. Een pad dat op `/` eindigt, is een lege map. */
@@ -50,12 +55,13 @@ export function isJupyterBlad(ex: { templateId?: string }): boolean {
 /** De werkmap uit een bestand of de opgeslagen staat van de app. */
 export function leesJupyterWerkmap(x: unknown): JupyterWerkmap | undefined {
   if (!x || typeof x !== "object") return undefined;
-  const w = x as { bestandsnaam?: unknown; data?: unknown; metCode?: unknown };
+  const w = x as { bestandsnaam?: unknown; data?: unknown; metCode?: unknown; automatisch?: unknown };
   if (typeof w.data !== "string") return undefined;
   return {
     bestandsnaam: typeof w.bestandsnaam === "string" ? w.bestandsnaam : "",
     data: w.data.replace(/\s+/g, ""),
     metCode: w.metCode !== false,
+    ...(w.automatisch === true ? { automatisch: true } : {}),
   };
 }
 
@@ -218,10 +224,10 @@ export const JUPYTER_RECHTEN = "allow-scripts allow-same-origin allow-downloads"
  * omgeving de pagina niet naar buiten navigeren, ook niet met een waarde in het adres.
  * De CSP uit de antwoordkoppen dekt alleen de verzoeken vanuit de pagina zelf.
  */
-export function jupyterOmhulsel(herkomst: string): string {
+export function jupyterOmhulsel(herkomst: string, pad = "/lab/index.html"): string {
   const csp = `default-src 'none'; style-src 'unsafe-inline'; frame-src ${herkomst}`;
   return "<!doctype html><html><head><meta charset=\"utf-8\">"
     + `<meta http-equiv="Content-Security-Policy" content="${csp}">`
     + "<style>html,body,iframe{margin:0;padding:0;border:0;width:100%;height:100%;display:block;overflow:hidden}</style>"
-    + `</head><body><iframe src="${herkomst}/lab/index.html" sandbox="${JUPYTER_RECHTEN}" allow="clipboard-read; clipboard-write"></iframe></body></html>`;
+    + `</head><body><iframe src="${herkomst}${pad}" sandbox="${JUPYTER_RECHTEN}" allow="clipboard-read; clipboard-write"></iframe></body></html>`;
 }

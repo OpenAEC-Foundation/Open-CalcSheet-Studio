@@ -116,7 +116,7 @@ export const NIEUW_VEL = "print-nieuw-vel";
 export const VEL_AF = "print-vel-af";
 
 /** Elementen die geen inhoud zijn maar bediening, loopkop of voet. */
-const OVERSLAAN = ["print-loopkop", "print-loopvoet", "rpa-voet"];
+const OVERSLAAN = ["rpa-voet"];
 
 /**
  * Regels die zich als kop gedragen zonder een `<h*>` te zijn: het kopblok van

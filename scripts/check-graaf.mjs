@@ -8,7 +8,9 @@
  *   • een cirkel en een fout blijven bij de node en houden de rest niet tegen;
  *   • geometrie in mm, ook uit lijsten, en de scène voor het 3D-voorbeeld;
  *   • opslaan en heropenen: de graaf komt gelijk terug, met dezelfde uitkomsten;
- *   • papier: de SVG en de bekijk-tabel; oude bestanden blijven leesbaar.
+ *   • papier: de SVG en de bekijk-tabel; oude bestanden blijven leesbaar;
+ *   • de basisnodes voor rekenen, logica, lijsten en tekst, met de hand nagerekend;
+ *   • een grafbestand inlezen: nodes, verbindingen, plek, codeblokken en wat niet meerekent.
  *
  * Draaien:  node scripts/check-graaf.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -24,6 +26,7 @@ import { MAX_ELEMENTEN, NODE_SOORTEN, nodeDef, poortenVan, poortPlek } from "../
 import { bekijkUitkomsten, rekenGraaf } from "../packages/desktop/src/graaf/rekenen.ts";
 import { graafScene } from "../packages/desktop/src/graaf/scene.ts";
 import { graafSvg } from "../packages/desktop/src/graaf/papier.ts";
+import { GrafBestandFout, leesGrafBestand, vertaalCodeblok } from "../packages/desktop/src/graaf/grafBestand.ts";
 import { voorbeeldVan } from "../packages/desktop/src/graaf/voorbeeld.ts";
 import { waardeTekst } from "../packages/desktop/src/graaf/waarde.ts";
 import { GRAAF_BLAD, isGraafBlad } from "../packages/desktop/src/store/graafBlad.ts";
@@ -555,6 +558,183 @@ console.log("\nDe repo");
   const zonder = [...codes].filter((c) => !nl.fout[c] || !en.fout[c]);
   meld(codes.size > 10 && zonder.length === 0, `elke melding heeft een tekst (${codes.size})${zonder.length ? `: mist ${zonder}` : ""}`);
 }
+
+// ── De basisnodes ───────────────────────────────────────────────────────────
+console.log("\nDe basisnodes");
+/** Rekent één node, met deze velden. Geeft de uitkomst van de node. */
+const rekenEen = (soort, invoer = {}) => {
+  const g = { versie: 1, nodes: [{ id: "n1", soort, x: 0, y: 0, invoer }], verbindingen: [] };
+  return rekenGraaf(g).nodes.n1;
+};
+const tekstVan = (soort, invoer, poort = "uit") => waardeTekst(rekenEen(soort, invoer).waarden[poort]);
+/** Een lijst uit een codeblok aan de ingang `lijst`, en eventuele velden. */
+const metLijst = (soort, code, invoer = {}, poort = "uit") => {
+  const g = {
+    versie: 1,
+    nodes: [{ id: "n1", soort: "codeblok", x: 0, y: 0, invoer: { code: `l = ${code}` } }, { id: "n2", soort, x: 0, y: 0, invoer }],
+    verbindingen: [{ vanNode: "n1", vanPoort: "l", naarNode: "n2", naarPoort: "lijst" }],
+  };
+  return waardeTekst(rekenGraaf(g).nodes.n2.waarden[poort]);
+};
+meld(tekstVan("optellen", { a: "6 m", b: "1500 mm" }) === "7.5 m", "6 m + 1500 mm = 7,5 m", tekstVan("optellen", { a: "6 m", b: "1500 mm" }));
+meld(/^5 kN \/ m$/.test(tekstVan("delen", { a: "10 kN", b: "2 m" })), "10 kN / 2 m = 5 kN/m", tekstVan("delen", { a: "10 kN", b: "2 m" }));
+meld(tekstVan("macht", { a: "2", b: "10" }) === "1024", "2^10 = 1024");
+meld(tekstVan("rest", { a: "7", b: "3" }) === "1", "7 mod 3 = 1");
+meld(tekstVan("wortel", { waarde: "16" }) === "4", "√16 = 4");
+meld(tekstVan("absoluut", { waarde: "-3 m" }) === "3 m", "|-3 m| = 3 m");
+meld(tekstVan("afronden", { waarde: "2.6" }) === "3" && tekstVan("omlaag", { waarde: "2.6" }) === "2" && tekstVan("omhoog", { waarde: "2.1" }) === "3", "afronden, omlaag en omhoog");
+meld(tekstVan("sinus", { waarde: "30" }) === "0.5", "sin 30 = 0,5: een getal telt in graden", tekstVan("sinus", { waarde: "30" }));
+meld(tekstVan("cosinus", { waarde: "60 deg" }) === "0.5", "cos 60° = 0,5", tekstVan("cosinus", { waarde: "60 deg" }));
+meld(tekstVan("minimum", { a: "1 m", b: "500 mm" }) === "500 mm", "min(1 m, 500 mm) = 500 mm", tekstVan("minimum", { a: "1 m", b: "500 mm" }));
+meld(tekstVan("kleiner", { a: "1 m", b: "2000 mm" }) === "true", "1 m < 2000 mm", tekstVan("kleiner", { a: "1 m", b: "2000 mm" }));
+meld(tekstVan("gelijk", { a: "1 m", b: "1000 mm" }) === "true" && tekstVan("ongelijk", { a: "1 m", b: "1000 mm" }) === "false", "1 m = 1000 mm");
+meld(tekstVan("en", { a: "true", b: "false" }) === "false" && tekstVan("of", { a: "true", b: "false" }) === "true" && tekstVan("niet", { waarde: "true" }) === "false", "en, of, niet");
+meld(tekstVan("als", { voorwaarde: "true", dan: "1 m", anders: "2 m" }) === "1 m" && tekstVan("als", { voorwaarde: "false", dan: "1 m", anders: "2 m" }) === "2 m", "als kiest op de voorwaarde");
+meld(rekenEen("als", { voorwaarde: "3", dan: "1", anders: "2" }).fouten[0]?.code === "geenWaarOnwaar", "als zonder waar of onwaar: een melding bij de node");
+meld(tekstVan("waarOnwaar", { waarde: "false" }, "waarde") === "false" && tekstVan("waarOnwaar", {}, "waarde") === "true", "waar of onwaar");
+meld(/^3\.14/.test(tekstVan("pi", {})), "pi");
+meld(tekstVan("reeksAantal", { van: "0 m", aantal: "3", stap: "2 m" }, "lijst") === "[0 m; 2 m; 4 m]", "reeks op aantal", tekstVan("reeksAantal", { van: "0 m", aantal: "3", stap: "2 m" }, "lijst"));
+meld(rekenEen("reeksAantal", { van: "0", aantal: "1.5", stap: "1" }).fouten[0]?.code === "geenAantal", "een aantal is geheel");
+meld(metLijst("gemiddelde", "[1, 2, 6]") === "3", "het gemiddelde van 1, 2 en 6 is 3");
+meld(metLijst("grootste", "[1, 5, 2]") === "5" && metLijst("kleinste", "[4, 5, 2]") === "2", "grootste en kleinste");
+meld(metLijst("eerste", "[1, 5, 2]") === "1" && metLijst("laatste", "[1, 5, 2]") === "2", "eerste en laatste");
+meld(metLijst("omkeren", "[1, 5, 2]") === "[2; 5; 1]" && metLijst("sorteren", "[3, 1, 2]") === "[1; 2; 3]", "omkeren en sorteren");
+meld(metLijst("plat", "[[1, 2], [3, 4]]") === "[1; 2; 3; 4]", "plat maken");
+meld(metLijst("nemen", "[1, 2, 3]", { aantal: "2" }) === "[1; 2]" && metLijst("overslaan", "[1, 2, 3]", { aantal: "2" }) === "[3]", "nemen en overslaan");
+meld(metLijst("element", "[7, 8, 9]", { index: "1" }, "element") === "7", "een nieuwe node telt vanaf 1");
+meld(metLijst("element", "[7, 8, 9]", { index: "1", basis: "0" }, "element") === "8", "een ingelezen node vanaf 0");
+meld(tekstVan("tekstenSamen", { a: "HEA", b: "200" }) === "HEA200", "teksten samenvoegen: een veld is letterlijk tekst");
+meld(tekstVan("tekstenMetScheider", { scheider: "-", a: "a", b: "b" }) === "a-b", "teksten met scheider");
+meld(tekstVan("vervangen", { tekst: "a.b.c", zoek: ".", door: "," }) === "a,b,c", "vervangen, elk voorkomen");
+meld(tekstVan("splitsen", { tekst: "a;b", scheider: ";" }) === "[a; b]", "splitsen");
+meld(tekstVan("hoofdletters", { tekst: "hea" }) === "HEA" && tekstVan("kleineLetters", { tekst: "HEA" }) === "hea" && tekstVan("tekstLengte", { tekst: "abc" }) === "3", "hoofdletters, kleine letters, lengte");
+meld(tekstVan("tekstBevat", { tekst: "HEA 200", zoek: "200" }) === "true" && tekstVan("begintMet", { tekst: "HEA 200", zoek: "IPE" }) === "false", "bevat en begint met");
+meld(tekstVan("naarGetal", { tekst: "12.5 kN" }) === "12.5 kN", "een tekst wordt een getal met eenheid");
+{
+  const g = {
+    versie: 1,
+    nodes: [
+      { id: "a", soort: "punt", x: 0, y: 0, invoer: { x: "3000 mm", y: "4000 mm", z: "0 mm" } },
+      { id: "b", soort: "punt", x: 0, y: 0, invoer: { x: "0 mm", y: "0 mm", z: "0 mm" } },
+      { id: "l", soort: "lijn", x: 0, y: 0 },
+      { id: "len", soort: "lengteVan", x: 0, y: 0 },
+      { id: "afst", soort: "afstandTussen", x: 0, y: 0 },
+      { id: "dl", soort: "puntDelen", x: 0, y: 0 },
+      { id: "lst", soort: "lijstMaken", x: 0, y: 0, invoer: { aantal: "3" } },
+      { id: "plus", soort: "optellen", x: 0, y: 0, invoer: { b: "1" } },
+    ],
+    verbindingen: [
+      { vanNode: "a", vanPoort: "punt", naarNode: "l", naarPoort: "van" },
+      { vanNode: "b", vanPoort: "punt", naarNode: "l", naarPoort: "naar" },
+      { vanNode: "l", vanPoort: "lijn", naarNode: "len", naarPoort: "lijn" },
+      { vanNode: "a", vanPoort: "punt", naarNode: "afst", naarPoort: "van" },
+      { vanNode: "b", vanPoort: "punt", naarNode: "afst", naarPoort: "naar" },
+      { vanNode: "a", vanPoort: "punt", naarNode: "dl", naarPoort: "punt" },
+      { vanNode: "len", vanPoort: "uit", naarNode: "lst", naarPoort: "item1" },
+      { vanNode: "afst", vanPoort: "uit", naarNode: "lst", naarPoort: "item3" },
+    ],
+  };
+  const u = rekenGraaf(g).nodes;
+  meld(waardeTekst(u.len.waarden.uit) === "5000 mm", "de lengte van een lijn: 3-4-5 geeft 5000 mm", waardeTekst(u.len.waarden.uit));
+  meld(waardeTekst(u.afst.waarden.uit) === "5000 mm", "de afstand tussen twee punten");
+  meld(waardeTekst(u.dl.waarden.y) === "4000 mm", "de y van een punt");
+  meld(waardeTekst(u.lst.waarden.lijst) === "[5000 mm; 5000 mm]", "lijst maken: een lege ingang telt niet mee", waardeTekst(u.lst.waarden.lijst));
+  meld(poortenVan(g.nodes[6]).ingangen.length === 3 && poortenVan({ ...g.nodes[6], invoer: { aantal: "99999" } }).ingangen.length === 64, "lijst maken: het aantal ingangen heeft een grens");
+}
+{
+  const g = {
+    versie: 1,
+    nodes: [{ id: "r", soort: "reeks", x: 0, y: 0, invoer: { van: "1", tot: "3", stap: "1" } }, { id: "p", soort: "optellen", x: 0, y: 0, invoer: { b: "10" } }],
+    verbindingen: [{ vanNode: "r", vanPoort: "lijst", naarNode: "p", naarPoort: "a" }],
+  };
+  meld(waardeTekst(rekenGraaf(g).nodes.p.waarden.uit) === "[11; 12; 13]", "rekent per element, zoals de andere nodes");
+}
+
+// ── Een grafbestand inlezen ─────────────────────────────────────────────────
+console.log("\nEen grafbestand inlezen");
+const poort = (Id, Name = "") => ({ Id, Name, Description: "", UsingDefaultValue: false, Level: 2, UseLevels: false, KeepListStructure: false });
+const BESTAND = {
+  Uuid: "u", IsCustomNode: false, Description: "", Name: "Proefgraaf", Inputs: [], Outputs: [],
+  Nodes: [
+    { ConcreteType: "CoreNodeModels.Input.DoubleSlider, CoreNodeModels", NodeType: "NumberInputNode", NumberType: "Double", MaximumValue: 12, MinimumValue: 2, StepValue: 0.5, InputValue: 6, Id: "A", Inputs: [], Outputs: [poort("Au")], Replication: "Disabled" },
+    { ConcreteType: "CoreNodeModels.Input.DoubleInput, CoreNodeModels", NodeType: "NumberInputNode", NumberType: "Double", InputValue: 4, Id: "B", Inputs: [], Outputs: [poort("Bu")], Replication: "Disabled" },
+    { ConcreteType: "x", NodeType: "FunctionNode", FunctionSignature: "+@var[]..[],var[]..[]", Id: "C", Inputs: [poort("Ci1", "x"), poort("Ci2", "y")], Outputs: [poort("Cu", "var")], Replication: "Auto" },
+    { ConcreteType: "CoreNodeModels.Watch, CoreNodeModels", NodeType: "ExtensionNode", Id: "D", Inputs: [poort("Di")], Outputs: [poort("Du")], Replication: "Disabled" },
+    { ConcreteType: "y", NodeType: "CodeBlockNode", Code: "a * 2;\nb = 0..10..5; // commentaar\n", Id: "E", Inputs: [poort("Ei", "a")], Outputs: [poort("Eu1"), poort("Eu2")], Replication: "Disabled" },
+    { ConcreteType: "y", NodeType: "CodeBlockNode", Code: '"HEA 200";', Id: "F", Inputs: [], Outputs: [poort("Fu")], Replication: "Disabled" },
+    { ConcreteType: "CoreNodeModels.Logic.RefactoredIf, CoreNodeModels", NodeType: "ExtensionNode", Id: "G", Inputs: [poort("Gi1", "test"), poort("Gi2", "true"), poort("Gi3", "false")], Outputs: [poort("Gu", "result")], Replication: "Disabled" },
+    { ConcreteType: "CoreNodeModels.Input.BoolSelector, CoreNodeModels", NodeType: "BooleanInputNode", InputValue: true, Id: "H", Inputs: [], Outputs: [poort("Hu")], Replication: "Disabled" },
+    { ConcreteType: "PythonNodeModels.PythonNode, PythonNodeModels", NodeType: "PythonScriptNode", Code: "OUT = 1", Id: "I", Inputs: [poort("Ii", "IN[0]")], Outputs: [poort("Iu", "OUT")], Replication: "Disabled" },
+    { ConcreteType: "x", NodeType: "FunctionNode", FunctionSignature: "Fabrikant.Iets.Doe@double", Id: "J", Inputs: [poort("Ji", "getal")], Outputs: [poort("Ju", "uit")], Replication: "Auto" },
+    { ConcreteType: "CoreNodeModels.CreateList, CoreNodeModels", NodeType: "ExtensionNode", Id: "K", Inputs: [poort("Ki1", "item0"), poort("Ki2", "item1")], Outputs: [poort("Ku", "list")], Replication: "Disabled" },
+    { ConcreteType: "x", NodeType: "FunctionNode", FunctionSignature: "DSCore.List.GetItemAtIndex@var[]..[],int", Id: "L", Inputs: [poort("Li1", "list"), poort("Li2", "index")], Outputs: [poort("Lu", "item")], Replication: "Auto" },
+    { ConcreteType: "x", NodeType: "FunctionNode", FunctionSignature: "DSCore.String.Contains@string,string,bool", Id: "M", Inputs: [poort("Mi1", "string"), poort("Mi2", "searchFor"), poort("Mi3", "ignoreCase")], Outputs: [poort("Mu", "bool")], Replication: "Auto" },
+  ],
+  Connectors: [
+    { Start: "Au", End: "Ci1", Id: "c1", IsHidden: "False" },
+    { Start: "Bu", End: "Ci2", Id: "c2", IsHidden: "False" },
+    { Start: "Cu", End: "Di", Id: "c3", IsHidden: "False" },
+    { Start: "Cu", End: "Ei", Id: "c4", IsHidden: "False" },
+    { Start: "Hu", End: "Gi1", Id: "c5", IsHidden: "False" },
+    { Start: "Au", End: "Gi2", Id: "c6", IsHidden: "False" },
+    { Start: "Bu", End: "Gi3", Id: "c7", IsHidden: "False" },
+    { Start: "Au", End: "Ki1", Id: "c8", IsHidden: "False" },
+    { Start: "Bu", End: "Ki2", Id: "c9", IsHidden: "False" },
+    { Start: "Ku", End: "Li1", Id: "c10", IsHidden: "False" },
+    { Start: "Hu", End: "Mi3", Id: "c11", IsHidden: "False" },
+    { Start: "Au", End: "Ii", Id: "c12", IsHidden: "False" },
+  ],
+  View: {
+    NodeViews: [
+      { Id: "A", Name: "Overspanning", X: 100, Y: 50, ShowGeometry: true, Excluded: false, IsSetAsInput: false, IsSetAsOutput: false },
+      { Id: "C", Name: "+", X: 300, Y: 150 },
+      { Id: "D", Name: "Watch", X: 500, Y: 150 },
+      { Id: "E", Name: "Code Block", X: 500, Y: 400 },
+      { Id: "I", Name: "Python Script", X: 700, Y: 400 },
+      { Id: "J", Name: "Iets.Doe", X: 700, Y: 600 },
+    ],
+  },
+};
+const v = leesGrafBestand(JSON.stringify(BESTAND));
+const op = Object.fromEntries(v.graaf.nodes.map((n, i) => [BESTAND.Nodes[i].Id, n]));
+meld(v.naam === "Proefgraaf" && v.graaf.nodes.length === BESTAND.Nodes.length, "alle nodes staan erin, met de naam van de graaf");
+meld(op.A.soort === "getal" && op.A.invoer.waarde === "6" && op.A.invoer.min === "2" && op.A.invoer.max === "12" && op.A.invoer.stap === "0.5" && op.A.naam === "Overspanning", "een schuif: waarde, grenzen, stap en eigen naam");
+meld(op.B.soort === "getal" && op.B.invoer.waarde === "4", "een los getal");
+meld(op.C.soort === "optellen" && op.C.x === Math.round(200 * 1.3) + 40 && op.C.y === Math.round(100 * 1.6) + 40, "de plek komt mee, opgeschaald voor de hogere nodes", `${op.C.x}, ${op.C.y}`);
+meld(op.D.soort === "bekijken" && op.D.naam === undefined, "een bekijk-node zonder eigen naam");
+meld(op.E.soort === "codeblok" && op.E.invoer.code === "uit1 = a * 2\nb = (0):(5):(10)", "een codeblok in de rekentaal, met namen en een reeks", op.E.invoer.code);
+meld(op.F.soort === "tekst" && op.F.invoer.tekst === "HEA 200", "een losse tekst in een codeblok wordt een tekst-node");
+meld(op.G.soort === "als" && op.H.soort === "waarOnwaar" && op.H.invoer.waarde === "true", "als en waar of onwaar");
+meld(op.K.soort === "lijstMaken" && op.K.invoer.aantal === "2", "een lijst met het aantal ingangen uit het bestand");
+meld(op.L.soort === "element" && op.L.invoer.basis === "0", "een index uit het bestand telt vanaf 0");
+meld(op.I.soort === "ingelezen" && op.I.naam === "Python Script" && op.I.invoer.code === "OUT = 1", "een script draait niet, maar de code blijft leesbaar");
+meld(op.J.soort === "ingelezen" && op.J.invoer.bron === "Fabrikant.Iets.Doe", "een onbekende node blijft staan, met zijn herkomst");
+meld(!NODE_SOORTEN.includes("ingelezen"), "die kies je niet uit het menu");
+meld(v.overgenomen === 11 && v.nietOvergenomen.length === 2 && v.nietOvergenomen.includes("Python Script"), "het verslag telt wat meerekent en wat niet", JSON.stringify(v.nietOvergenomen));
+meld(v.verbindingenWeg === 1, "een verbinding op een optie die hier niet bestaat, valt weg en telt mee", v.verbindingenWeg);
+const ur = rekenGraaf(v.graaf).nodes;
+const idVan = (k) => op[k].id;
+meld(waardeTekst(ur[idVan("C")].waarden.uit) === "10", "het rekent: 6 + 4 = 10");
+meld(waardeTekst(ur[idVan("D")].waarden.waarde) === "10", "de bekijk-node toont het");
+meld(waardeTekst(ur[idVan("E")].waarden.uit1) === "20", "het codeblok krijgt de verbinding op zijn naam: 10 · 2 = 20", JSON.stringify(ur[idVan("E")].fouten));
+meld(waardeTekst(ur[idVan("E")].waarden.b) === "[0; 5; 10]", "de reeks 0..10..5 in het codeblok", waardeTekst(ur[idVan("E")].waarden.b));
+meld(waardeTekst(ur[idVan("G")].waarden.uit) === "6", "als: waar kiest de eerste waarde");
+meld(waardeTekst(ur[idVan("K")].waarden.lijst) === "[6; 4]", "de lijst uit twee verbindingen");
+meld(waardeTekst(ur[idVan("L")].waarden.element) === "4", "een index telt daar vanaf 0: index 1 is het tweede element", JSON.stringify(ur[idVan("L")].fouten));
+meld(ur[idVan("I")].fouten[0]?.code === "nietOvergenomen" && ur[idVan("I")].poorten.ingangen[0].naam === "IN[0]", "wat niet meerekent, meldt zich en houdt zijn poorten");
+const opnieuw = leesGraaf(JSON.parse(JSON.stringify(v.graaf)));
+meld(JSON.stringify(opnieuw) === JSON.stringify(v.graaf), "opslaan en heropenen geeft dezelfde graaf");
+meld(vertaalCodeblok('a && b; !c; x != 1; "a;b";').regels.join("|") === 'uit1 = a  and  b|uit2 =  not c|uit3 = x != 1|uit4 = "a;b"', "logische tekens; een puntkomma in een tekst splitst niet", vertaalCodeblok('a && b; !c; x != 1; "a;b";').regels.join("|"));
+meld(vertaalCodeblok("[1,2,3];{4,5};").regels.join("|") === "uit1 = [1,2,3]|uit2 = [4,5]", "beide vormen van een lijst");
+const foutCode = (t) => { try { leesGrafBestand(t); return ""; } catch (e) { return e instanceof GrafBestandFout ? e.code : `anders: ${e.message}`; } };
+meld(foutCode("{niet") === "geenJson", "geen JSON: een eigen melding");
+meld(foutCode('<Workspace Version="1.3"><Elements/></Workspace>') === "oudeIndeling", "de oude XML-indeling: een eigen melding");
+meld(foutCode("{}") === "geenGraaf" && foutCode("null") === "geenGraaf" && foutCode("[]") === "geenGraaf", "geen graaf: een eigen melding");
+meld(foutCode(`\uFEFF${JSON.stringify(BESTAND)}`) === "", "een BOM aan het begin mag");
+meld(leesGrafBestand(JSON.stringify({ Nodes: [null, 3, { NodeType: "NumberInputNode", Outputs: [null] }], Connectors: [null, { Start: 1 }], View: { NodeViews: [null] } })).graaf.nodes.length === 1, "wat niet klopt in een bestand, valt weg");
+const kwaad = leesGrafBestand(JSON.stringify({ Nodes: [{ NodeType: "StringInputNode", InputValue: "<script>alert(1)</script>", Id: "x", Outputs: [poort("xu")] }], View: { NodeViews: [{ Id: "x", Name: "<img src=x onerror=alert(1)>", X: 0, Y: 0 }] } }));
+const kwaadSvg = graafSvg(kwaad.graaf, rekenGraaf(kwaad.graaf), { naamVan: (n) => n.naam ?? n.soort, poort: (_n, p) => p, melding: (x) => x.code, meer: (n) => `+${n}` }).svg;
+meld(kwaad.graaf.nodes[0].soort === "tekst" && !kwaadSvg.includes("<script") && !kwaadSvg.includes("<img"), "tekst uit een bestand blijft tekst op papier");
 
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

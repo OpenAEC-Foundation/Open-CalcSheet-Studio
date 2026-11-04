@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { usePrintStore } from "../../store/printStore";
 import { useProjectStore } from "../../store/projectStore";
 import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
+import { huisstijlVariabelen } from "../../rapport/model";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import { meetBlokken, paginaVanAnkers, verdeelPerSectie, pxPerMm, MATEN, SPELING, type Maten } from "./paginering";
 import { useBladSoortenVersie } from "./bladSoorten";
@@ -92,6 +93,8 @@ export default function AfdrukVoorbeeld() {
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const voetafbeelding = bureau.voetafbeelding;
   const bureaunaam = bureau.naam;
+  const kopLogo = bureau.logoInKop ? bureau.logo : "";
+  const huisstijl = useMemo(() => huisstijlVariabelen(bureau.huisstijl), [bureau.huisstijl]);
   // Een PDF-pagina, werkmap of afbeelding die klaar is, moet op de vellen komen:
   // dan opnieuw verdelen (bladSoorten.tsx).
   const soortenVersie = useBladSoortenVersie();
@@ -139,9 +142,6 @@ export default function AfdrukVoorbeeld() {
     const paginas = verdeelPerSectie(meetBlokken(bron), (sectie) =>
       (/\bprint-blad\b/.test(sectie) ? maten.inhoud.hoogte - SPELING : maten.inhoud.vulhoogte) * mm,
     );
-    // De huisstijl van het rapport staat als CSS-variabelen op de wortel in de
-    // meetopstelling. Een vel staat los van die wortel, dus krijgt hij ze mee.
-    const huisstijl = rapport ? bron.querySelector<HTMLElement>(".rpa-wortel")?.style.cssText ?? "" : "";
     // De paginanummers van de inhoudsopgave, uit dezelfde verdeling als de vellen.
     const nummers = paginaVanAnkers(paginas);
 
@@ -151,7 +151,9 @@ export default function AfdrukVoorbeeld() {
     paginas.forEach((pagina, i) => {
       const vel = document.createElement("div");
       vel.className = rapport ? "av-pagina print-opmaak rpa-wortel" : "av-pagina print-opmaak";
-      if (huisstijl) vel.style.cssText = huisstijl;
+      // De huisstijl staat als CSS-variabelen op de wortel in de meetopstelling. Een vel
+      // staat daar los van, dus krijgt hij ze mee.
+      for (const [naam, waarde] of Object.entries(huisstijl)) vel.style.setProperty(naam, waarde);
       // Een tekenblad staat op zijn eigen formaat, zonder marges, loopkop of voet.
       const eigenVel = pagina.find((b) => b.el.dataset.velPagina)?.el.dataset;
 
@@ -217,14 +219,30 @@ export default function AfdrukVoorbeeld() {
           vel.append(nr);
         }
       } else if (rapport) {
-        // Geen loopkop: het rapport heeft alleen een voet.
+        // Geen loopkop: het rapport heeft alleen een voet, en op elk vel na het voorblad
+        // het logo. Het voorblad draagt het al groter.
         vel.append(inhoud, ...rapportVoet(i + 1, voetafbeelding, bureaunaam, maten));
+        if (kopLogo && i > 0) {
+          const logo = document.createElement("img");
+          logo.className = "av-rapport-logo";
+          logo.alt = "";
+          logo.src = kopLogo;
+          logo.style.right = `${maten.marge.rechts}mm`;
+          vel.append(logo);
+        }
       } else {
         const kop = document.createElement("div");
         kop.className = "av-loopkop";
         kop.innerHTML = "<span></span><span></span>";
         (kop.firstChild as HTMLElement).textContent = linksBoven;
         (kop.lastChild as HTMLElement).textContent = onderdeel ?? "";
+        if (kopLogo) {
+          const logo = document.createElement("img");
+          logo.className = "print-kop-logo";
+          logo.alt = "";
+          logo.src = kopLogo;
+          kop.append(logo);
+        }
 
         const voet = document.createElement("div");
         voet.className = "av-loopvoet";
@@ -254,7 +272,7 @@ export default function AfdrukVoorbeeld() {
 
     setAantal(paginas.length);
     setBezig(false);
-  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, t]);
+  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, kopLogo, huisstijl, t]);
 
   /*
    * Opnieuw verdelen zodra de opmaak verandert.
@@ -391,7 +409,7 @@ export default function AfdrukVoorbeeld() {
         className="av-meet print-opmaak"
         ref={meetRef}
         aria-hidden="true"
-        style={{ width: `${maten.inhoud.breedte}mm` }}
+        style={{ ...huisstijl, width: `${maten.inhoud.breedte}mm` } as CSSProperties}
       >
         {rapport ? <RapportAfdruk /> : <UitdraaiInhoud uitdraai={uitdraai} />}
       </div>

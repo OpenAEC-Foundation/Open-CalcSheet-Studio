@@ -273,10 +273,6 @@
 }
 
 /* Nooit mee op papier. */
-html.afdrukmodus .welkom-paneel {
-  display: none;
-}
-
 @media print {
   .welkom-paneel {
     display: none;

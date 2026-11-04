@@ -1,0 +1,22 @@
+## Shear stress (Jourawsky)
+'<small>Source: Prof. D. Vandepitte, Berekening van Constructies, Deel I, Hoofdstuk 2, art. 2.4</small>
+'<i>The shear stress over the depth of an I-section made of plates: small in the flanges, large and almost constant in the web, with a jump at the transition.</i>
+V_Ed = 100 kN'<span class="kolom-3"></span>'
+h = 300 mm'<span class="kolom-3"></span>'
+b = 150 mm'<span class="kolom-3"></span>'
+t_w = 7.1 mm'<span class="kolom-3"></span>'
+t_f = 10.7 mm'<span class="kolom-3"></span>'
+I_y = (b*h^3 - (b - t_w)*(h - 2*t_f)^3)/12 to mm^4
+S_f = b*t_f*(h - t_f)/2 to mm^3', first moment of one flange'
+S_0 = S_f + t_w*(h/2 - t_f)^2/2 to mm^3', up to the neutral axis'
+τ_f = V_Ed*S_f/(I_y*t_w) to N/mm^2', web at the flange'
+τ_0 = V_Ed*S_0/(I_y*t_w) to N/mm^2', neutral axis'
+τ_m = V_Ed/((h - 2*t_f)*t_w) to N/mm^2', mean over the web'
+#hide
+S_z(y) = if(abs(y) < h/2 - t_f; S_f + t_w*((h/2 - t_f)^2 - y^2)/2; b*(h^2/4 - y^2)/2)
+b_z(y) = if(abs(y) < h/2 - t_f; t_w; b)
+τ_z(y) = V_Ed*S_z(y)/(I_y*b_z(y))
+PlotHeight = 220
+#show
+$Plot{τ_z(y)/MPa|y @ y = -h/2 : h/2}
+'Horizontal axis: shear stress in N/mm²; vertical axis: position y from the neutral axis.

@@ -11,7 +11,9 @@ import { isMarkdownBlad } from "../../store/markdownBlad.ts";
 import { isGraafBlad } from "../../store/graafBlad.ts";
 import { isTekenBlad } from "../../store/tekenBlad.ts";
 import { isJupyterBlad } from "../../store/jupyterBlad.ts";
-import { FORMULES, codeVan } from "../../components/ribbon/formules.ts";
+import { isMarimoBlad } from "../../store/marimoBlad.ts";
+import { codeVan } from "../../components/ribbon/formules.ts";
+import { alleFormules } from "../../store/library.ts";
 import { jsonGetal, regels, rekenDoor, ucWaarden, type Doorrekening } from "../rekenen.ts";
 import {
   LEEG_BLAD, LEEG_BLAD_NAAM, LEEG_BLAD_TEKST, LEZEN, NIEUW, WEG, WIJZIGEN,
@@ -102,7 +104,7 @@ export const BLADTOOLS: McpToolDef[] = [
     name: "sheets_list",
     kind: "read",
     description:
-      "List the sheets of the project in order (id, name, kind calculation/pdf/spreadsheet/markdown/graph/drawing/jupyter, module, active, UC and verdict when known). " +
+      "List the sheets of the project in order (id, name, kind calculation/pdf/spreadsheet/markdown/graph/drawing/jupyter/marimo, module, active, UC and verdict when known). " +
       "UC is reported for sheets evaluated through this API with their current input; pass evaluate=true to compute every sheet now.",
     inputSchema: objectSchema({
       evaluate: { type: "boolean", description: "Compute every calculation sheet now (a large sheet can take a second or more). Default false." },
@@ -227,6 +229,9 @@ export const BLADTOOLS: McpToolDef[] = [
       }
       if (isJupyterBlad(blad)) {
         return ok({ ...basis, jupyter: blad.jupyter ? { fileName: blad.jupyter.bestandsnaam, bytes: base64Bytes(blad.jupyter.data) } : null });
+      }
+      if (isMarimoBlad(blad)) {
+        return ok({ ...basis, marimo: blad.marimo ? { fileName: blad.marimo.bestandsnaam, code: blad.marimo.code } : null });
       }
       const { velden, fout: leesfout } = veldenVan(blad.source);
       const veldnamen = new Set(velden.map((v) => v.naam));
@@ -517,7 +522,7 @@ export const BLADTOOLS: McpToolDef[] = [
       if ("fout" in gevonden) return gevonden.fout;
       const pdf = geenPdfBlad(gevonden.blad);
       if (pdf) return pdf;
-      const formule = FORMULES.find((f) => f.id === args.formulaId);
+      const formule = alleFormules().find((f) => f.id === args.formulaId);
       if (!formule) return fout("NOT_FOUND", `Unknown formula "${String(args.formulaId)}". Call formulas_list.`);
       const regelsNu = gevonden.blad.source.split("\n");
       // Een lege slotregel telt niet mee als plek: "einde" is na de laatste echte regel.
