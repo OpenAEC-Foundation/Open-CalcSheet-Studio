@@ -70,7 +70,8 @@ Project (IfcProject)                ocss::project
 ├─ Rekenbladen
 │  └─ blad (IfcGroup)               ocss::blad, ::rekentekst, ::invoer, ::elementen, ::pdf, ::xlsx, ::markdown, ::uitkomst
 │     └─ figuur                     ocss::figuur: svg, plot, 3d, afbeelding, iframe, ifcx
-└─ Constructierapport               ocss::rapport
+├─ Constructierapport               ocss::rapport
+└─ Versies                          ocss::versies: de andere versies van het project, alleen als die er zijn
 ```
 
 Paden zijn UUID's, afgeleid van de plek in het project, dus gelijk bij elke
@@ -87,7 +88,9 @@ constructeur een element heeft aangewezen.
 
 Bij het openen telt: de projectnaam, de gegevens, de verborgen onderdelen, het
 rapport, en per blad zijn naam, id, `templateId`, `bronVersie`, rekentekst,
-invoer, elementen, PDF, werkmap en Markdown-tekst.
+invoer, elementen, PDF, werkmap en Markdown-tekst. Dat is de versie die openstond.
+De andere versies staan in `ocss::versies` ([projectmodel.md](projectmodel.md#versies-in-het-bestand)):
+een lezer die dat attribuut niet kent, ziet een gewoon project.
 
 Afgeleid, en alleen voor andere lezers: `ocss::blad::uitkomst`, `ocss::figuur`,
 de elementen in de ruimtelijke boom en de geometrie. De app rekent die bij het

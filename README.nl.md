@@ -45,6 +45,7 @@ De releaseworkflow weigert bestanden te publiceren die niet ondertekend zijn: Wi
 - **Je kunt elke stap nalopen.** Een uitkomst toont naam, formule, ingevulde waarden en resultaat, met eenheden.
 - **Eén project, één rapport.** Voorblad, inhoudsopgave en paginanummers lopen door over alle bladen, van welke soort ook. Het zijpaneel toont de inhoud en alle nummers terwijl je werkt.
 - **Je eigen rapportformat.** Het standaardrapport is een template dat je kunt aanpassen: hoofdstukken en tekstblokken toevoegen, hernoemen, verplaatsen en verwijderen, en de berekende blokken plaatsen. Bewaar het als `.reporttemplate`-bestand om het te delen, of maak het de standaard voor nieuwe rapporten.
+- **Versies in het bestand.** Een wijziging op een berekening wordt een versie in hetzelfde projectbestand, zonder iets te installeren. Wat je wijzigt, staat alleen in die versie, en je kunt altijd terug naar het origineel. Elke versie is een regel in de revisietabel op het voorblad, en bij de inhoudsopgave staat per pagina wat er is gewijzigd, met je eigen toelichting.
 - **Het juiste blad voor elk onderdeel.** Tekst, canvas, spreadsheet, nodegraaf, tekening, notebook, Markdown of PDF, naast elkaar in één project.
 - **Verander een getal en de toets volgt.** Bladen rekenen door terwijl je typt, en een tekening of 3D-model kan zijn maten uit het blad halen.
 - **Je gegevens blijven open.** Het projectbestand is IFCX, en je kunt IFC4x3 exporteren.
@@ -118,7 +119,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **63 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **64 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.

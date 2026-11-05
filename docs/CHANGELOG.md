@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Versies in het bestand: Nieuwe versie maakt een tak van wat er nu staat. Wat je daarna wijzigt, staat alleen daarin, en je kunt altijd wisselen, ook terug naar het origineel, zonder iets te verliezen. Elke versie is een regel in de revisietabel op het voorblad. Bij de inhoudsopgave staat per pagina wat er is gewijzigd, met je eigen toelichting, en het paneel Versies vergelijkt per blad de invoer, de rekentekst en de uitkomsten met de versie ervoor. Grote bijlagen staan één keer in het bestand, en een bestaand project verandert niet
 - Rapporttemplate: het standaardrapport is nu een template dat je kunt aanpassen. In de nieuwe sectie Rapportopbouw voeg je hoofdstukken, paragrafen en tekstblokken toe, hernoem, verplaats en verwijder je ze, en plaats je de berekende blokken. Bewaar het als eigen bestand (`.reporttemplate`) om je format te delen, of stel het in als standaard voor nieuwe rapporten. Een rapport houdt zijn eigen kopie, en bestaande rapporten veranderen niet
 - Het rapport heeft een eigen taal, te kiezen bij Document: koppen, vaste woorden, standaardteksten en rekenbladen staan in die taal, ook als de app een andere taal heeft. Een nieuw rapport neemt de taal van de app over; een bestaand rapport blijft Nederlands en ziet er hetzelfde uit
 - De tab Code toont de rekentekst in de taal van de app, ook de uitleg in de verborgen regels. De rekenversie en de bestaande bladen veranderen daardoor niet; wat je typt, staat op die regel in het blad

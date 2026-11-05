@@ -95,13 +95,15 @@ volgende module zo weer in.
 Eén project is één `.ifccalculation`-bestand (`store/projectBestand.ts`). Het is
 zuiver IFCX: alleen `header`, `imports`, `schemas` en `data`, en alles staat als
 attribuut op een knoop. Dezelfde inhoud met de extensie `.ifcx` is hetzelfde
-bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
+bestand. De opbouw staat in [ifc-export.md](ifc-export.md). De knopen zijn altijd
+de actieve versie; zie [Versies](#versies).
 
 | wat | waar in het bestand | |
 |---|---|---|
 | Projectnaam | `bsi::ifc::prop::Name` op het project | bron |
 | Projectgegevens, verborgen onderdelen | `ocss::project` | bron |
 | Constructierapport | `ocss::rapport` | bron |
+| De andere versies van het project | `ocss::versies` | bron |
 | Naam van een blad | `bsi::ifc::prop::Name` op het blad | bron |
 | Id, volgorde, `templateId`, `bronVersie` | `ocss::blad` | bron |
 | Rekentekst | `ocss::blad::rekentekst` | bron |
@@ -225,12 +227,93 @@ template. Eigen templates staan in de instellingen (`store/rapportTemplates.ts`)
 kan de standaard voor nieuwe rapporten zijn. `scripts/check-rapporttemplate.mjs` toetst dit alles,
 ook in de echte afdruk en het echte paneel.
 
+## Versies
+
+Een wijziging op een berekening wordt een versie in hetzelfde bestand, zonder git en zonder iets te
+installeren (`store/versies.ts`). Een versie is een tak: ze begint als kopie van de hele projectstand
+(de bladen, de projectgegevens en het rapport), en wat je daarna wijzigt, staat alleen daarin. Wisselen
+kan altijd, ook terug naar het origineel, en een oude versie blijft bewerkbaar. De projectnaam en wat er
+uit de projectboom is gehaald, horen bij het bestand en niet bij een versie. De bediening staat in het
+zijpaneel (`VersieSectie.tsx`) en in het paneel Versies (`VersiesPaneel.tsx`).
+
+De werkstand in de store is altijd de actieve versie, en die staat dus niet ook in de lijst: er is één
+bron. Omdat elke wijziging een nieuw object maakt en de rest ongemoeid laat, delen versies alles wat niet
+verschilt; een nieuwe versie kost in het geheugen vrijwel niets.
+
+**Wisselen verliest niets.** `versieActies.ts` bewaart eerst wat nog openstaat, in de versie waar het is
+getypt: een veld dat vastlegt bij het verlaten, en een open werkmap of notebook via `registreerBewaarder`.
+De bladen volgen de wissel langs dezelfde weg als ongedaan maken. Paginanummers en UC's in de projectboom
+horen bij een versie en worden vergeten; ze komen terug zodra er is gerekend. Een wissel is geen wijziging:
+er komt geen stap in ongedaan maken bij en het project wordt er niet "niet opgeslagen" van.
+
+**De revisietabel.** Elke versie is een regel in de revisietabel van haar eigen rapport, en haar code,
+datum, omschrijving en status staan in die regel (`Revisie.versieId`). Bewerken is dus gewoon het rapport
+bewerken, met ongedaan maken erbij. Het rapport noemt de lijn waaruit de versie is ontstaan: een andere tak
+zit niet in dit rapport en staat niet op dit voorblad. De regel van een eerdere versie staat vast en volgt
+die versie bij een wissel; de eigen regel is te bewerken maar niet weg te halen; een regel zonder versie is
+vrij. Zolang er één versie is, is er geen koppeling: dan is de laatste regel de versie en blijft de tabel
+helemaal vrij.
+
+**Vergelijken** (`store/versieVergelijking.ts`) gebeurt per blad op `id`, niet op naam, en altijd met de
+stand van de oudertak zoals die nu is: invoer zoals die meetelt in de berekening, de regels van de rekentekst,
+en uitkomsten uit de bestaande doorrekening (`bladenVoorIfc`, `leesUitkomst`), niet uit een eigen rekenpad. Een
+veld dat in de ene versie nog leeg is en in de andere de standaardwaarde heeft gekregen, is geen wijziging.
+
+**De lijst met wijzigingen** is het rekenblok `wijzigingen` (`rapport/wijzigingen.ts`). Op het hoogste niveau
+staat het onder de inhoudsopgave, zonder nummer, waar het ook in de opzet staat; onder een hoofdstuk is het een
+gewone paragraaf. Het valt weg zolang er geen regels zijn, dus een eerste versie en een bestaand rapport
+veranderen niet, en de hoofdstukken houden in een nieuwe versie hun nummers. De regels zelf
+(`Rapport.wijzigingsLijst`) zijn afgeleid: de app maakt ze opnieuw zodra het rapport in beeld komt, en ze staan
+niet in het bestand. Een regel bewaart gegevens en geen zinnen, zodat hij op papier in `rapport.taal` staat. Wat
+de gebruiker met een regel doet (een eigen tekst, een toelichting, weglaten) staat in `Rapport.wijzigingen`, op
+de vaste sleutel van de regel (`blad:<id>`, `knoop:<id>`), en blijft dus bewaard als de lijst opnieuw wordt
+gemaakt. Is het verschil weg, dan komt de tekst niet op papier en komt hij terug als het verschil terugkomt. De
+pagina's komen uit de ankers van het afdrukvoorbeeld (`paginaVanAnkers`), net als bij de inhoudsopgave.
+
+### Versies in het bestand
+
+De knopen van het bestand zijn de actieve versie, precies zoals een bestand zonder versies. De andere versies
+staan samen in één attribuut `ocss::versies`, op een knoop `Versies` onder het project:
+
+| veld | |
+|---|---|
+| `versie` | de vorm van dit attribuut, nu 1 |
+| `actief` | het id van de versie die in de knopen staat |
+| `lijst` | per versie `id`, `code`, `naam`, `datum`, `omschrijving`, `ouder` en `inhoud`: de bladen, de gegevens en het rapport. De actieve versie heeft geen `inhoud` |
+| `bijlagen` | teksten vanaf 1024 tekens op hun SHA-256 (`store/inhoudshash.ts`) |
+
+Een tekst vanaf 1024 tekens staat één keer in het bestand, en een versie wijst hem aan met `{ "$bijlage": "<sha256>" }`.
+Dat geldt voor alles (een PDF, een werkmap, een afbeelding, een lange rekentekst), dus ook voor een soort blad die
+later bijkomt. Staat de tekst ook in de actieve versie, dan alleen daar en niet ook onder `bijlagen`. `code`, `datum`
+en `omschrijving` in de lijst zijn voor andere lezers: de app leest ze uit de revisietabel van de versie.
+
+**De formaatversie blijft 2.** Een project met één versie zonder eigen naam schrijft er niets bij: dat bestand is
+tot op de letter wat het was. Een oud bestand is na het openen één versie, die zijn laatste revisie noemt.
+
+**Een oudere app** kent `ocss::versies` niet en laat het liggen. Hij opent de versie die bij het opslaan openstond als
+een gewoon project, met alle bladen, de uitkomsten en de revisieregels op het voorblad; de lijst met wijzigingen staat
+dan niet in het rapport. Slaat hij het bestand op, dan zijn de andere versies daarna weg: die kent hij niet, dus schrijft
+hij ze ook niet terug. Wie de versies wil houden, opent zo'n bestand in een oudere app dus alleen om te lezen.
+
+**Een bestand met kapotte versies** opent de laatste bruikbare stand, want dat zijn de knopen. Elk veld wordt
+gecontroleerd zoals bij de rest van het bestand, en een bijlage telt alleen als zijn inhoud bij zijn hash past. Een versie
+die niet te lezen is, valt weg; een versie waarvan alleen een bijlage ontbreekt, blijft zonder die bijlage: de rest van
+haar werk is er nog. De app meldt het bij het openen (`meldVersieProblemen`). Wat wegviel, is er bij het volgende opslaan
+niet meer.
+
+`scripts/check-versies.mjs` toetst dit alles, ook in de echte store, afdruk en bediening, en `scripts/check-rapport-pdf.mjs`
+rekent de pagina's in de lijst na in een echte PDF. De IFC-tab toont en exporteert alleen de actieve versie.
+
 ## Ongedaan maken
 
 Eén stapel voor het hele project (`verleden` / `toekomst` in `projectStore.ts`),
 niet één per onderdeel. Ctrl+Z draait dus hetzelfde terug of je nu in de
 rekentekst typt, een maat in het parametrische beeld versleept, een blad
 hernoemt of er een verwijdert.
+
+Elke versie heeft haar eigen stapel (`stapels`). Ctrl+Z raakt dus nooit een andere versie dan die in beeld
+staat, en een nieuwe versie begint zonder geschiedenis: ongedaan maken loopt niet terug tot voor de tak. Na een
+wissel terug zijn de stappen van die versie er weer.
 
 De editor heeft zijn eigen geschiedenis daarom **uit** (`basicSetup.history:
 false`). Twee stapels naast elkaar geeft een onvoorspelbare volgorde: dezelfde

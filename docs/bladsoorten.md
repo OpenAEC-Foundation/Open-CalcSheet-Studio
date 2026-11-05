@@ -103,6 +103,8 @@ Buiten de afdruk heeft een soort nog deze plekken, zoals bij Markdown:
   haalt zijn teksten met `usePapier()` of `useTranslation` (`components/calc/afdrukTaal.tsx`), niet met
   de globale i18next: een losse uitdraai volgt de taal van de app, het rapport zijn eigen taal.
 - `bladSoort` in `mcp/tools/hulp.ts`.
+- `veranderdeBestanden` in `store/versieVergelijking.ts`, zodat de vergelijking van versies het verschil ziet. Grote
+  bestanden staan vanzelf één keer in het projectbestand (`store/versies.ts`).
 - Een eigen `scripts/check-<soort>.mjs`. `scripts/check-rapport-pdf.mjs` rekent de
   nummers na op een gemengd project (`scripts/lib/gemengd-project.mjs`): zet de soort
   daar ook in.
