@@ -17,7 +17,7 @@ import type { Rapport } from "./model.ts";
 export type Inhoud =
   | "tekst" | "rol"
   | "bouwwerk" | "brand" | "materialen" | "conservering" | "factoren" | "bestaand" | "vervormingen"
-  | "sneeuw" | "wind" | "veranderlijk" | "blijvend"
+  | "sneeuw" | "wind" | "veranderlijk" | "blijvend" | "aardbeving"
   | "berekeningen";
 
 export interface Knoop {
@@ -108,7 +108,8 @@ export const OPZET: readonly Knoop[] = [
       { id: "montage", titel: { en: "Erection and construction stages", nl: "Montage en bouwfase" }, niveau: 2, inhoud: "tekst" },
       { id: "rekenprogrammatuur", titel: { en: "Calculation software", nl: "Toegepaste rekenprogrammatuur" }, niveau: 2, inhoud: "tekst" },
       { id: "temperatuur", titel: { en: "Thermal actions", nl: "Temperatuursinvloeden" }, niveau: 2, inhoud: "tekst" },
-      { id: "aardbeving", titel: { en: "Seismic actions", nl: "Aardbevingen" }, niveau: 2, inhoud: "tekst" },
+      // De tekst `aardbeving`, en buiten de Nederlandse tabellen de grootheden van het land eronder.
+      { id: "aardbeving", titel: { en: "Seismic actions", nl: "Aardbevingen" }, niveau: 2, inhoud: "aardbeving" },
     ],
   },
   {
@@ -128,7 +129,7 @@ export const OPZET: readonly Knoop[] = [
 ];
 
 /** Inhoudssoorten met een tekst in rapport.teksten naast hun tabel. */
-const MET_TEKST: readonly Inhoud[] = ["rol", "vervormingen", "sneeuw"];
+const MET_TEKST: readonly Inhoud[] = ["rol", "vervormingen", "sneeuw", "aardbeving"];
 
 /** Heeft deze knoop een tekst in rapport.teksten (onder zijn eigen id)? */
 export function heeftTekst(k: Knoop): boolean {

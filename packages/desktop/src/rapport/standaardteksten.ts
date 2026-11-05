@@ -202,6 +202,10 @@ export const STANDAARD_TEKSTEN: Record<string, readonly Tekstvariant[]> = {
   ],
   aardbeving: [
     v("Not required", "Niet voorgeschreven", "No seismic design situation is required.", "Er is geen aardbevingsontwerpsituatie voorgeschreven."),
+    // Buiten de Nederlandse tabellen de standaard: daar is "niet voorgeschreven" niet vanzelf waar (normen/keuze.ts).
+    v("According to the location", "Volgens de locatie",
+      "Seismic actions follow from the standard that applies at the location.",
+      "De aardbevingsbelasting volgt uit de norm die op de locatie geldt."),
   ],
 
   // ── 5 Belastingen ──
