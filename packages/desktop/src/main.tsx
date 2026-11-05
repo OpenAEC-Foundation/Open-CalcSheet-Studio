@@ -1,8 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-// Ontwerp 0.4: lettertypen en tokens uit het webpakket van de OpenAEC Blueprint.
-import "./openaec/openaec-fonts.css";
-import "./openaec/openaec-tokens.css";
+// Eerst alle stijlen, op hun vaste volgorde; ontwerp 0.4 komt uit de OpenAEC Blueprint.
+import "./stijlen";
 import "./i18n/config";
 import App from "./App";
 import { useProjectStore } from "./store/projectStore";
@@ -10,8 +9,6 @@ import { usePrintStore } from "./store/printStore";
 import { useBureauStore } from "./store/bureauProfiel";
 import { leesProjectBestand } from "./store/projectBestand";
 import { wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
-import "./themes.css";
-import "./App.css";
 
 // Alleen tijdens ontwikkeling: de stores op `window`, voor scripts/rapport-pdf.mjs.
 // Dat script stuurt een headless browser aan en moet dezelfde stores raken als
