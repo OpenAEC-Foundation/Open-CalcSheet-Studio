@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Rapporttemplate: het standaardrapport is nu een template dat je kunt aanpassen. In de nieuwe sectie Rapportopbouw voeg je hoofdstukken, paragrafen en tekstblokken toe, hernoem, verplaats en verwijder je ze, en plaats je de berekende blokken. Bewaar het als eigen bestand (`.reporttemplate`) om je format te delen, of stel het in als standaard voor nieuwe rapporten. Een rapport houdt zijn eigen kopie, en bestaande rapporten veranderen niet
 - Het rapport heeft een eigen taal, te kiezen bij Document: koppen, vaste woorden, standaardteksten en rekenbladen staan in die taal, ook als de app een andere taal heeft. Een nieuw rapport neemt de taal van de app over; een bestaand rapport blijft Nederlands en ziet er hetzelfde uit
 - De laatste vaste Nederlandse teksten op het scherm en in meldingen staan nu in de vertaalbestanden, en getallen in de app volgen de notatie van de taal
 - Nieuw blad Spanningen in een doorsnede: kies een vorm, stel de normaalkracht, de momenten en de dwarskrachten in twee richtingen in, en zie het spanningsverloop in de doorsnede

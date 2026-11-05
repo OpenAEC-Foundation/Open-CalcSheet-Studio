@@ -44,6 +44,7 @@ The release workflow refuses to publish files that are not signed: Windows with 
 - **Free and open.** LGPL-3.0. No licence fees, no account.
 - **You can check every step.** A result shows its name, formula, filled-in values and outcome, with units.
 - **One project, one report.** Cover, table of contents and page numbers run through all sheets, whatever kind they are. The side panel shows the contents and all numbers as you work.
+- **Your own report format.** The standard report is a template you can change: add, rename, move and remove chapters and text blocks, and place the calculated blocks. Save it as a `.reporttemplate` file to share it, or make it the default for new reports.
 - **The right sheet for each part.** Text, canvas, spreadsheet, node graph, drawing, notebook, Markdown or PDF, side by side in one project.
 - **Change a number, the check follows.** Sheets recalculate while you type, and a drawing or a 3D model can take its sizes from the sheet.
 - **Your data stays open.** The project file is IFCX, and you can export IFC4x3.
@@ -115,7 +116,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **61 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **62 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
