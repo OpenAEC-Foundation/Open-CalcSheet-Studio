@@ -131,7 +131,7 @@ export const liveOmgeving: McpOmgeving = {
     // Een heel stuk rapport: daarna aanvullen tot een geldig rapport, net als bij openen.
     zetRapportDeel: (pad, waarde) =>
       useProjectStore.getState().werkRapportBij((r) =>
-        normaliseerRapport(zetOpPad(r, leesPad(pad), waarde), datumTekst(new Date()), standaardTeksten()),
+        normaliseerRapport(zetOpPad(r, leesPad(pad), waarde), datumTekst(new Date()), standaardTeksten),
       ),
     ongedaan: () => useProjectStore.getState().ongedaan(),
     opnieuw: () => useProjectStore.getState().opnieuw(),

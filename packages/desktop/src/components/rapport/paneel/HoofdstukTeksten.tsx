@@ -1,4 +1,6 @@
 import { useTranslation } from "react-i18next";
+import { inTaal, type Meertalig } from "../../../rapport/meertalig";
+import { ROLLEN } from "../../../rapport/model";
 import type { Knoop } from "../../../rapport/opzet";
 import { vindKnoop } from "./hulp";
 import TekstVeld, { Invulvelden } from "./TekstVeld";
@@ -10,9 +12,6 @@ import { Kop, Sectie, Veld, Vink, useRapport } from "./velden";
  * sectie.
  */
 const HOOFDSTUKKEN = ["inleiding", "projectgegevens", "constructie"];
-
-/** Suggesties voor de rol in 2.2; eigen tekst kan altijd. Komt zo in het rapport, dus Nederlands. */
-const ROLLEN = ["Hoofdconstructeur", "Constructeur", "Constructief adviseur", "Controlerend constructeur"];
 
 /**
  * Sectie Hoofdstukken 1 t/m 3: per tekstonderdeel uit de opzet een tekstvak
@@ -72,16 +71,21 @@ function KnoopInvoer({ knoop }: { knoop: Knoop }) {
  * (rapport.opmaak.constructieprincipe). Een rapport van een eerdere versie
  * opent met de keuze uit, zodat zijn afdruk niet verandert.
  */
-function KopNieuwbouw({ knoop, titelNieuwbouw }: { knoop: Knoop; titelNieuwbouw: string }) {
+function KopNieuwbouw({ knoop, titelNieuwbouw }: { knoop: Knoop; titelNieuwbouw: Meertalig }) {
   const { t } = useTranslation("rapport");
-  const aan = useRapport().opmaak.constructieprincipe;
-  // De koppen zelf komen uit de opzet en blijven Nederlands, net als op papier.
+  const rapport = useRapport();
+  const aan = rapport.opmaak.constructieprincipe;
+  // De koppen zelf komen uit de opzet, in de taal van het rapport, net als op papier.
+  const bestaand = vindKnoop("bestaand");
   return (
     <Vink
-      label={t("teksten.nieuwbouwKop", { titel: titelNieuwbouw })}
+      label={t("teksten.nieuwbouwKop", { titel: inTaal(titelNieuwbouw, rapport.taal) })}
       pad="opmaak.constructieprincipe"
       aan={aan}
-      hint={t(aan ? "teksten.nieuwbouwAan" : "teksten.nieuwbouwUit", { titel: knoop.titel })}
+      hint={t(aan ? "teksten.nieuwbouwAan" : "teksten.nieuwbouwUit", {
+        titel: inTaal(knoop.titel, rapport.taal),
+        bestaand: bestaand ? inTaal(bestaand.titel, rapport.taal) : "",
+      })}
     />
   );
 }
@@ -89,7 +93,8 @@ function KopNieuwbouw({ knoop, titelNieuwbouw }: { knoop: Knoop; titelNieuwbouw:
 /** 2.2: rol, bouwkundig adviseur of architect, datum van de bouwkundige onderlegger. */
 function RolVelden() {
   const { t } = useTranslation("rapport");
-  const rol = useRapport().rol;
+  const rapport = useRapport();
+  const { rol } = rapport;
   return (
     <div className="rapport-rij">
       <Veld label={t("teksten.rol")} pad="rol.rol" waarde={rol.rol} lijst="rapport-rollen" />
@@ -102,7 +107,7 @@ function RolVelden() {
       />
       <datalist id="rapport-rollen">
         {ROLLEN.map((r) => (
-          <option key={r} value={r} />
+          <option key={r.en} value={inTaal(r, rapport.taal)} />
         ))}
       </datalist>
     </div>

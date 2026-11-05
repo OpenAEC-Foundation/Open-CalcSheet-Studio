@@ -827,5 +827,8 @@
       "kop": "Reactief notebook",
       "uitleg": "Druk op Run om te starten. Verschuif daarna een schuif: elke cel die de waarde gebruikt, volgt. Numpy, scipy, pandas en matplotlib staan klaar."
     }
+  },
+  "project": {
+    "nieuweNaam": "Nieuw project"
   }
 }

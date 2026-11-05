@@ -827,5 +827,8 @@
       "kop": "Reactive notebook",
       "uitleg": "Press Run to start. Then move a slider: every cell that uses its value follows. Numpy, scipy, pandas and matplotlib are ready."
     }
+  },
+  "project": {
+    "nieuweNaam": "New project"
   }
 }

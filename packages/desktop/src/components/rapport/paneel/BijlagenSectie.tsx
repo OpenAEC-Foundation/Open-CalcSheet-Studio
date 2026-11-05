@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { inTaal } from "../../../rapport/meertalig";
 import { BIJLAGE_A, staatInHoofdstuk } from "../../../rapport/opzet";
 import { useProjectStore } from "../../../store/projectStore";
 import { bladVoorOpzet } from "../../calc/bladSoorten";
@@ -37,9 +38,9 @@ export default function BijlagenSectie() {
       <ol className="rapport-bijlagen">
         <li>
           <span className="rapport-letter">A</span>
-          {/* De titel van bijlage A zoals hij in het rapport staat, dus Nederlands. */}
+          {/* De titel van bijlage A zoals hij in het rapport staat. */}
           <span className="rapport-vast">
-            {BIJLAGE_A}
+            {inTaal(BIJLAGE_A, rapport.taal)}
             {metA ? "" : ` — ${t("bijlagen.vervalt")}`}
           </span>
         </li>
