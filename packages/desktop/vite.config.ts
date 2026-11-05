@@ -1,12 +1,28 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
+/**
+ * De lettertypen van KaTeX alleen als WOFF2. Het stijlblad noemt elk lettertype ook als
+ * WOFF en TTF, voor browsers van voor 2016; de webviews van deze app kiezen altijd het
+ * eerste. Zonder dit gaan veertig ongebruikte bestanden mee in de installer.
+ */
+function katexAlleenWoff2(): Plugin {
+  return {
+    name: "katex-alleen-woff2",
+    enforce: "pre",
+    transform(code, id) {
+      if (!id.includes("katex/dist/katex") || !/\.css(\?|$)/.test(id)) return null;
+      return code.replace(/,\s*url\([^)]+\.woff\) format\("woff"\),\s*url\([^)]+\.ttf\) format\("truetype"\)/g, "");
+    },
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig(async ({ command }) => ({
-  plugins: [react()],
+  plugins: [katexAlleenWoff2(), react()],
 
   // De Library zit niet in de app; in de dev-server komt hij uit de map library/.
   define: {
