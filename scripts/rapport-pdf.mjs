@@ -35,7 +35,6 @@
  *     gebruikt de haak `window.__ocs` uit main.tsx, die alleen in dev bestaat.
  *   • een gebouwde core: npm --prefix packages/core run build. De app laadt
  *     packages/core/dist; zonder die map blijft de pagina leeg.
- *   • netwerk voor de lettertypen uit index.html, anders vallen ze terug.
  *
  * Valkuilen die het script afvangt:
  *   • Vite luistert alleen op ::1, dus localhost en niet 127.0.0.1. DevTools

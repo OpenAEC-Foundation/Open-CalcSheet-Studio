@@ -218,9 +218,6 @@ export function Defs({ k }: { k: string }) {
 }
 /** id-helpers die bij `Defs` horen. */
 export const dimMark = (k: string) => `url(#dk${k}Dim)`;
-export const loadMark = (k: string) => `url(#dk${k}Load)`;
-export const betonFill = (k: string) => `url(#dk${k}Beton)`;
-export const staalFill = (k: string) => `url(#dk${k}Staal)`;
 
 /** Horizontale maatlijn met streepjes aan beide zijden. */
 export function HDim({ k, x0, x1, y, ext }: { k: string; x0: number; x1: number; y: number; ext?: number }) {
@@ -234,75 +231,6 @@ export function HDim({ k, x0, x1, y, ext }: { k: string; x0: number; x1: number;
           <line x1={x1} y1={y} x2={x1} y2={ext} className="vd-dimext" />
         </>
       )}
-    </g>
-  );
-}
-
-/** Verticale maatlijn met streepjes aan beide zijden. */
-export function VDim({ k, y0, y1, x, ext }: { k: string; y0: number; y1: number; x: number; ext?: number }) {
-  return (
-    <g>
-      <line x1={x} y1={y0} x2={x} y2={y1} className="vd-dimmeasure"
-        markerStart={dimMark(k)} markerEnd={dimMark(k)} />
-      {ext !== undefined && (
-        <>
-          <line x1={x} y1={y0} x2={ext} y2={y0} className="vd-dimext" />
-          <line x1={x} y1={y1} x2={ext} y2={y1} className="vd-dimext" />
-        </>
-      )}
-    </g>
-  );
-}
-
-/**
- * Doorsnede van een I-profiel, getekend vanuit het hart. `rechtop` zet het
- * profiel met het lijf verticaal (normale doorsnede), anders liggend.
- */
-export function IProfiel(props: {
-  cx: number; cy: number; h: number; b: number; tw: number; tf: number; s: number;
-  rechtop?: boolean; vulling?: string; lijn?: string;
-}) {
-  const { cx, cy, h, b, tw, tf, s, rechtop = true, vulling = "#cfe0f5", lijn = "#1e40af" } = props;
-  const H = (rechtop ? h : b) * s, B = (rechtop ? b : h) * s;
-  const TF = Math.max(1.4, tf * s), TW = Math.max(1.4, tw * s);
-  const x0 = cx - B / 2, y0 = cy - H / 2;
-  return (
-    <g>
-      {rechtop ? (
-        <>
-          <rect x={x0} y={y0} width={B} height={TF} fill={vulling} stroke={lijn} strokeWidth={1.2} />
-          <rect x={x0} y={y0 + H - TF} width={B} height={TF} fill={vulling} stroke={lijn} strokeWidth={1.2} />
-          <rect x={cx - TW / 2} y={y0 + TF} width={TW} height={H - 2 * TF} fill={vulling} stroke={lijn} strokeWidth={1.2} />
-        </>
-      ) : (
-        <>
-          <rect x={x0} y={y0} width={TF} height={H} fill={vulling} stroke={lijn} strokeWidth={1.2} />
-          <rect x={x0 + B - TF} y={y0} width={TF} height={H} fill={vulling} stroke={lijn} strokeWidth={1.2} />
-          <rect x={x0 + TF} y={cy - TW / 2} width={B - 2 * TF} height={TW} fill={vulling} stroke={lijn} strokeWidth={1.2} />
-        </>
-      )}
-    </g>
-  );
-}
-
-/** Bout in bovenaanzicht: cirkel met hartkruis. */
-export function Bout({ cx, cy, r, kleur = "#1e40af" }: { cx: number; cy: number; r: number; kleur?: string }) {
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={r} fill="#e8eefb" stroke={kleur} strokeWidth={1.2} />
-      <line x1={cx - r * 1.7} y1={cy} x2={cx + r * 1.7} y2={cy} stroke={kleur} strokeWidth={0.7} />
-      <line x1={cx} y1={cy - r * 1.7} x2={cx} y2={cy + r * 1.7} stroke={kleur} strokeWidth={0.7} />
-    </g>
-  );
-}
-
-/** Lasdriehoekje met keeldikte-aanduiding, zoals op een werktekening. */
-export function Las(props: { x: number; y: number; a: number; hoek?: number; kleur?: string }) {
-  const { x, y, a, hoek = 0, kleur = "#1e40af" } = props;
-  const g = Math.max(3, a);
-  return (
-    <g transform={`rotate(${hoek} ${x} ${y})`}>
-      <path d={`M ${x} ${y} L ${x} ${y - g} L ${x + g} ${y} Z`} fill={kleur} opacity={0.55} />
     </g>
   );
 }

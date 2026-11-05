@@ -184,10 +184,6 @@ export const HOEKSTALEN: Record<number, Hoekstaal> = Object.fromEntries(
 export const hoekstaal = (id: number, terugval = 3): Hoekstaal =>
   HOEKSTALEN[Math.round(id)] ?? HOEKSTALEN[terugval];
 
-/** Keuzelijst voor een `<select>`, in tabelvolgorde. */
-export const hoekstaalOpties = (ids?: number[]) =>
-  (ids ?? Object.keys(HOEKSTALEN).map(Number)).map((id) => ({ v: id, label: HOEKSTALEN[id].naam }));
-
 // ── Rekentaal-matrix voor de rekenbladen ───────────────────────────────────────
 
 /** Grootheden van een I-profiel, in de rijvolgorde van profielMatrix() (rij 1 = id). */

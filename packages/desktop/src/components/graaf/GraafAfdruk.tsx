@@ -92,24 +92,3 @@ export function GraafVellen({ ex, maten }: { ex: Exemplaar; maten: Maten }) {
     </>
   );
 }
-
-/**
- * Een grafblad als eigen onderdeel van de uitdraai: de kop met nummer en naam,
- * daaronder de delen. PrintBlad geeft zo'n blad hieraan door.
- */
-export function GraafBladAfdruk({ ex, nummer, maten }: { ex: Exemplaar; nummer: number | string; maten: Maten }) {
-  const t = usePapier();
-  return (
-    <section className="print-blad print-pdf">
-      <header className="print-blad-kop">
-        <span className="print-blad-nr">{nummer}</span>
-        <span className="print-blad-titel">
-          <span className="print-blad-naam">{ex.naam}</span>
-          <span className="print-blad-norm">{t("graafBlad.soort")}</span>
-        </span>
-      </header>
-      <GraafVellen ex={ex} maten={maten} />
-    </section>
-  );
-}
-

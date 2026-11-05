@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import { useProjectStore, type Exemplaar } from "./projectStore";
-import { belastingFactoren, kFiVoor, projectScope } from "./projectGegevens";
+import { projectScope } from "./projectGegevens";
 
 /**
  * Kleine haakjes rond het actieve rekenblad.
@@ -48,29 +48,6 @@ export function useZetActieveWaarde(): (naam: string, waarde: string) => void {
 export function useProjectScope(): Record<string, unknown> {
   const gegevens = useProjectStore((s) => s.gegevens);
   return useMemo(() => projectScope(gegevens), [gegevens]);
-}
-
-/**
- * Gevolgklasse uit de projectgegevens (1, 2 of 3).
- *
- * De designers rekenen live mee met het blad, dus ze hebben dezelfde
- * gevolgklasse nodig als de uitwerking. Die staat op projectniveau — een
- * designer heeft er geen eigen invoerveld meer voor.
- */
-export function useProjectCC(): number {
-  const ruw = useProjectStore((s) => s.gegevens.CC);
-  const n = parseFloat(ruw ?? "2");
-  return Number.isFinite(n) ? n : 2;
-}
-
-/** K_FI bij de gevolgklasse van het project (0,90 / 1,00 / 1,10). */
-export function useProjectKFI(): number {
-  return kFiVoor(useProjectCC());
-}
-
-/** γ_G, γ_Q (6.10b) en γ_G voor 6.10a bij de gevolgklasse van het project. */
-export function useBelastingFactoren(): { gG: number; gQ: number; gGa: number } {
-  return belastingFactoren(useProjectCC());
 }
 
 /**

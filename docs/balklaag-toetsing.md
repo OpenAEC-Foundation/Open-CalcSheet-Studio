@@ -166,8 +166,8 @@ Legenda oordeel: 🟠 afwijkende keuze · ⚪ onduidelijk/informatief · 🟢 ak
 | klimaat · eigengewicht · belastingcat · verplaatsbaar · controleer · grensfactor | — | match ✓ |
 
 - **OPGELOST (implementatie):** gedeelde `DEFAULTS`-bron in BalklaagDesigner +
-  nieuwe store-methode `seedActiveValues(defaults)` ([loadCaseStore.ts](../packages/desktop/src/store/loadCaseStore.ts))
-  die op mount/case-switch alle ontbrekende keys vult (bestaande waarden blijven
+  store-methode `seedWaarden` ([projectStore.ts](../packages/desktop/src/store/projectStore.ts))
+  die bij het openen alle ontbrekende keys vult (bestaande waarden blijven
   staan; geeft state ongewijzigd terug als er niets te vullen is → geen render-loop).
   De `num()`-defaults lezen nu uit diezelfde `DEFAULTS`, dus beeld en evaluator
   kunnen niet meer uiteenlopen.
