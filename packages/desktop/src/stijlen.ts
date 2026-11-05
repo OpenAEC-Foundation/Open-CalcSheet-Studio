@@ -28,6 +28,7 @@ import "katex/dist/katex.min.css";
 import "./components/calc/Preview.css";
 import "./components/calc/SplitPane.css";
 import "./components/calc/LibrarySectie.css";
+import "./components/rapport/gewichten/GewichtenVenster.css";
 import "./components/calc/PdfBladWeergave.css";
 import "./components/calc/SpreadsheetBladWeergave.css";
 import "./components/calc/MarkdownBladWeergave.css";
