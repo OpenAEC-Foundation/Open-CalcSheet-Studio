@@ -175,6 +175,13 @@ const RAPPORT = object({
     huisstijl: opt(object(velden(['hoofdkleur', 'accentkleur', 'tabeltekst', 'invoerkleur', 'lettertype']))),
     constructeurs: opt(lijst(object(velden(['naam', 'telefoon', 'email'])))),
   })),
+  // Het eigen rapporttemplate (rapport/template.ts in de app). De opzet is een boom met vrije
+  // ids en titels per taal: de app controleert hem bij het lezen, veld voor veld.
+  opzet: opt(lijst(VRIJ)),
+  varianten: opt(VRIJ),
+  weggehaald: opt(lijst(VRIJ)),
+  template: opt(VRIJ),
+  huisstijl: opt(object(velden(['hoofdkleur', 'accentkleur', 'tabeltekst', 'invoerkleur', 'lettertype']))),
 });
 
 /** De schema's van alles onder `ocss::`. Elk bestand draagt ze zelf mee. */

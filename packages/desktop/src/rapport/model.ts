@@ -10,9 +10,13 @@
  * Wat de app meelevert is meertalig, met Engels als bron (meertalig.ts). Een rapport
  * bewaart de tekst in zijn eigen taal (`Rapport.taal`), zoals de gebruiker hem ziet.
  */
-import { inTaal, type Meertalig } from "./meertalig.ts";
+import { inTaal, leesMeertalig, leesTaal, type Meertalig } from "./meertalig.ts";
 import { EN1990_FACTOREN, EN1990_PSI } from "./normen/en1990.ts";
 import { LANDEN, TWEEDE_GENERATIE_TEKST } from "./normen/landen.ts";
+import { leesWeggehaald, normaliseerOpzet, type Knoop, type Weggehaald } from "./opzet.ts";
+import { leesVarianten, type Tekstvariant } from "./standaardteksten.ts";
+
+export { leesTaal };
 
 export type Fase = "" | "SO" | "VO" | "DO" | "TO" | "UO";
 export const FASEN: readonly Fase[] = ["SO", "VO", "DO", "TO", "UO"];
@@ -317,6 +321,25 @@ export interface Rapport {
    * dus een oud rapport verandert niet.
    */
   lokaal?: Record<string, LokaleInvoer>;
+  /**
+   * De eigen kopie van de hoofdstukindeling (opzet.ts), zoals `bureau` een kopie van het
+   * profiel is: een gewijzigd template verandert dit rapport niet. Ontbreekt: het ingebouwde
+   * template. De velden hieronder ontbreken ook zolang ze niets zeggen.
+   */
+  opzet?: Knoop[];
+  /** Per tekst-id de varianten uit het template, waar die afwijken van de meegeleverde. */
+  varianten?: Record<string, Tekstvariant[]>;
+  /** Uit de opzet gehaald en terug te zetten; de tekst staat nog in `teksten`. */
+  weggehaald?: Weggehaald[];
+  /** Het template waar dit rapport mee begon. `land` wordt alleen bewaard en doorgegeven. */
+  template?: TemplateHerkomst;
+  /** De huisstijl uit het template; gaat boven die van het bureau. */
+  huisstijl?: Huisstijl;
+}
+
+export interface TemplateHerkomst {
+  naam: Meertalig;
+  land?: string;
 }
 
 /**
@@ -440,11 +463,6 @@ export const MEEGELEVERD = {
   factorNaam: EN1990_FACTOREN.map((f) => f.naam),
   psiNaam: EN1990_PSI.map((p) => p.naam),
 } as const satisfies Record<string, readonly Meertalig[]>;
-
-/** Een taalcode uit een bestand: "en", "nl", "pt-BR". Iets anders geeft undefined. */
-export function leesTaal(x: unknown): string | undefined {
-  return typeof x === "string" && /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(x) ? x : undefined;
-}
 
 /**
  * Talen die een getal met een decimale komma schrijven. Ook de bron van het
@@ -700,6 +718,66 @@ export function normaliseerBureau(x: unknown): BureauProfiel {
   };
 }
 
+/** Een kleur die veilig in een stijlregel kan: geen url() en geen tweede declaratie. */
+const VEILIGE_KLEUR = /^(?:#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,30}|(?:rgb|hsl)a?\([\d\s.,%/]+\))$/;
+
+/**
+ * Een huisstijl uit een bestand dat van iemand anders kan komen. Wat niet veilig in een
+ * stijlregel kan, wordt de standaard. Geen object: undefined.
+ */
+export function leesHuisstijl(x: unknown): Huisstijl | undefined {
+  const o = object(x);
+  if (!o) return undefined;
+  const s = STANDAARD_HUISSTIJL;
+  const kleur = (v: unknown, standaard: string) => (typeof v === "string" && VEILIGE_KLEUR.test(v) ? v : standaard);
+  const letter = typeof o.lettertype === "string"
+    ? (LETTERTYPEN.some((l) => l.css === o.lettertype) ? o.lettertype : veiligLettertype(o.lettertype))
+    : "";
+  return {
+    hoofdkleur: kleur(o.hoofdkleur, s.hoofdkleur),
+    accentkleur: kleur(o.accentkleur, s.accentkleur),
+    tabeltekst: kleur(o.tabeltekst, s.tabeltekst),
+    invoerkleur: kleur(o.invoerkleur, s.invoerkleur),
+    lettertype: letter || s.lettertype,
+  };
+}
+
+/** Een herkomst uit een bestand; zonder leesbare naam geen herkomst. */
+export function leesHerkomst(x: unknown): TemplateHerkomst | undefined {
+  const o = object(x);
+  const naam = o && leesMeertalig(o.naam);
+  if (!o || !naam) return undefined;
+  const land = leesLand(o.land);
+  return land ? { naam, land } : { naam };
+}
+
+/** Een landcode of regio uit een bestand: kort en zonder vreemde tekens. Iets anders geeft undefined. */
+export function leesLand(x: unknown): string | undefined {
+  return typeof x === "string" && /^[\p{L}\p{N}_ -]{1,40}$/u.test(x) ? x : undefined;
+}
+
+/**
+ * De velden van een eigen template in een rapport. Alleen wat er is en klopt komt terug: een
+ * rapport zonder template krijgt er geen enkel veld bij, en een opzet die alleen uit onzin
+ * bestaat geeft het ingebouwde template. Een lege lijst is wel een keuze.
+ */
+function templateVelden(o: Los): Partial<Rapport> {
+  const uit: Partial<Rapport> = {};
+  if (Array.isArray(o.opzet)) {
+    const { opzet } = normaliseerOpzet(o.opzet);
+    if (opzet.length > 0 || o.opzet.length === 0) uit.opzet = opzet;
+  }
+  const varianten = leesVarianten(o.varianten);
+  if (Object.keys(varianten).length > 0) uit.varianten = varianten;
+  const weggehaald = leesWeggehaald(o.weggehaald);
+  if (weggehaald.length > 0) uit.weggehaald = weggehaald;
+  const template = leesHerkomst(o.template);
+  if (template) uit.template = template;
+  const huisstijl = leesHuisstijl(o.huisstijl);
+  if (huisstijl) uit.huisstijl = huisstijl;
+  return uit;
+}
+
 /**
  * Een rapport uit een bestand of de opslag, aangevuld met standaardwaarden. Onbekende
  * velden vallen weg; verkeerde typen worden standaard. Geneste objecten en lijsten
@@ -827,5 +905,6 @@ export function normaliseerRapport(
     bureau: normaliseerBureau(o.bureau),
     // Alleen als het er is: zonder blijft een oud rapport tot op het veld hetzelfde.
     ...(lokaal ? { lokaal } : {}),
+    ...templateVelden(o),
   };
 }

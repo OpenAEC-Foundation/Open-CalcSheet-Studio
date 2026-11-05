@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Rapporttemplate: het standaardrapport is nu een template dat je kunt aanpassen. In de nieuwe sectie Rapportopbouw voeg je hoofdstukken, paragrafen en tekstblokken toe, hernoem, verplaats en verwijder je ze, en plaats je de berekende blokken. Bewaar het als eigen bestand (`.reporttemplate`) om je format te delen, of stel het in als standaard voor nieuwe rapporten. Een rapport houdt zijn eigen kopie, en bestaande rapporten veranderen niet
 - Normen per land: kies in de projectgegevens een land of regio, en het rapport noemt de normen die daar gelden, met uitgever, editie en een link naar de officiële bron. Nederland blijft precies zoals het was. Elders vul je de grootheid voor wind, sneeuw en aardbeving in met de bron erbij; Eurocode-landen beginnen met de aanbevolen waarden uit EN 1990 en buiten de Eurocodes schrijf je de combinaties zelf. Een bestaand project is Nederlands, een nieuw project volgt de regio van het systeem
 - Per project te kiezen: de eerste of de tweede generatie Eurocodes
 - Een blad dat op een andere norm rust dan het land van het project, zegt dat op het scherm en op papier; buiten de Eurocodes staat er "niet getoetst" in plaats van een oordeel

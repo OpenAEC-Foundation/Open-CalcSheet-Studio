@@ -6,7 +6,7 @@ import { bronVoorUitvoer } from "../../../templates/vertalingen";
 import { projectScope } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
 import { bladNormUit, normAfwijking } from "../../../rapport/normen/keuze";
-import { staatInHoofdstuk } from "../../../rapport/opzet";
+import { staatInHoofdstuk, type Knoop } from "../../../rapport/opzet";
 import { useNormkeuze } from "../../../store/actiefBlad";
 import { bladNormTekst } from "../../calc/BladNorm";
 import { leesResultaat, samenvatting, type Resultaat } from "../../calc/bladResultaat";
@@ -47,11 +47,11 @@ function useUitkomsten(taal: string): Map<string, Uitkomst> {
 }
 
 /**
- * Sectie Berekeningen (hoofdstuk 6): per rekenblad de samenvatting die in
- * het rapport komt, een eigen toelichting, en de keuze of de volledige
- * uitwerking in het hoofdstuk zelf staat of in bijlage A.
+ * Sectie Berekeningen: per rekenblad de samenvatting die in het rapport komt,
+ * een eigen toelichting, en de keuze of de volledige uitwerking in het hoofdstuk
+ * zelf staat of in bijlage A.
  */
-export default function BerekeningenSectie() {
+export default function BerekeningenSectie({ knoop, titel }: { knoop: Knoop; titel: string }) {
   const { t, i18n } = useTranslation("rapport");
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const zet = useProjectStore((s) => s.zetRapportVeld);
@@ -63,8 +63,8 @@ export default function BerekeningenSectie() {
   return (
     <Sectie
       id="berekeningen"
-      titel={t("secties.berekeningen")}
-      hoofdstuk="berekeningen"
+      titel={titel}
+      hoofdstuk={knoop.id}
       intro={t("berekeningen.intro")}
     >
       {exemplaren.length === 0 && <p className="rapport-hint">{t("berekeningen.geenBladen")}</p>}

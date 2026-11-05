@@ -32,7 +32,8 @@ import {
   normkeuzeVan, pasRapportAan, standaardLokaal, veldZichtbaar,
 } from "../packages/desktop/src/rapport/normen/keuze.ts";
 import { MEEGELEVERD, normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
-import { OPZET, TEKST_IDS } from "../packages/desktop/src/rapport/opzet.ts";
+import { normaliseerOpzet, OPZET, REKENBLOKKEN, TEKST_IDS, zoekKnoop } from "../packages/desktop/src/rapport/opzet.ts";
+import { ongeplaatsteBlokken, plaatsBlok, verwijderKnoop } from "../packages/desktop/src/rapport/template.ts";
 import { STANDAARD_TEKSTEN, standaardTeksten } from "../packages/desktop/src/rapport/standaardteksten.ts";
 import { isNieuwRapport, wisselTaal } from "../packages/desktop/src/rapport/taalwissel.ts";
 import { leesPad, zetOpPad } from "../packages/desktop/src/rapport/pad.ts";
@@ -233,6 +234,19 @@ kop("3. Wind, sneeuw en aardbeving per land");
   gelijk("het tekstblok Aardbevingen is een rekenblok geworden", OPZET.find((k) => k.id === "uitgangspunten").kinderen.at(-1).inhoud, "aardbeving");
   toets("en houdt zijn tekst onder hetzelfde id", TEKST_IDS.includes("aardbeving"));
   gelijk("Nederland houdt zijn tekst", [standaardTeksten("nl").aardbeving, standaardTeksten("en").aardbeving], ["Er is geen aardbevingsontwerpsituatie voorgeschreven.", "No seismic design situation is required."]);
+
+  // Een echt rekenblok: weg te halen en weer te plaatsen, en de tekst blijft.
+  toets("aardbeving staat tussen de rekenblokken", REKENBLOKKEN.some((k) => k.id === "aardbeving" && k.inhoud === "aardbeving" && k.inspringen === 1));
+  const eigen = { ...nieuw("nl"), teksten: { ...nieuw("nl").teksten, aardbeving: "Eigen tekst over de locatie." } };
+  const zonder = verwijderKnoop(eigen, "aardbeving");
+  toets("weghalen: het blok kan weer uit de lijst", ongeplaatsteBlokken(zonder).some((k) => k.inhoud === "aardbeving"));
+  gelijk("en de tekst blijft", zonder.teksten.aardbeving, "Eigen tekst over de locatie.");
+  const terug = plaatsBlok(zonder, "aardbeving", "belastingen");
+  gelijk("plaatsen onder een ander hoofdstuk", [zoekKnoop("aardbeving", terug.opzet)?.inhoud, zoekKnoop("aardbeving", terug.opzet)?.niveau, terug.teksten.aardbeving], ["aardbeving", 2, "Eigen tekst over de locatie."]);
+  toets("hooguit één keer", plaatsBlok(terug, "aardbeving", "uitgangspunten") === terug);
+  // Een opzet van vóór het blok had hier gewone tekst: die wordt het blok, en geen los onderdeel zonder zijn tekst.
+  const oud = normaliseerOpzet([{ id: "h", titel: { en: "H" }, kinderen: [{ id: "aardbeving", titel: { en: "Seismic" }, inhoud: "tekst" }] }]);
+  gelijk("een oud template met aardbeving als tekst", [oud.opzet[0].kinderen[0].id, oud.opzet[0].kinderen[0].inhoud, oud.opzet[0].kinderen[0].titel.en, oud.meldingen], ["aardbeving", "aardbeving", "Seismic", []]);
 }
 
 // ── 4. Factoren ─────────────────────────────────────────────────────────────
@@ -336,9 +350,9 @@ kop("5. Wisselen van land");
   gelijk("en terug", wisselTaal(en, "nl"), de);
   const metWaarde = zetOpPad(zetOpPad(de, leesPad("lokaal.DE.wind.q"), "0,85"), leesPad("lokaal.DE.wind.bron"), "DIBt, Liste");
   gelijk("een eigen getal gaat naar de notatie, een eigen tekst blijft", [wisselTaal(metWaarde, "en").lokaal.DE.wind.q, wisselTaal(metWaarde, "en").lokaal.DE.wind.bron], ["0.85", "DIBt, Liste"]);
-  toets("nieuw in een ander land: nog steeds nieuw", isNieuwRapport(de, keuze("DE")) && isNieuwRapport(en, keuze("DE")) && !isNieuwRapport(metWaarde, keuze("DE")));
-  toets("na opslaan en openen ook", isNieuwRapport(normaliseerRapport(kloon(de), VANDAAG, standaardTeksten), keuze("DE")));
-  toets("Nederland zoals altijd", isNieuwRapport(nl) && isNieuwRapport(nl, nederland));
+  toets("nieuw in een ander land: nog steeds nieuw", isNieuwRapport(de, null, keuze("DE")) && isNieuwRapport(en, null, keuze("DE")) && !isNieuwRapport(metWaarde, null, keuze("DE")));
+  toets("na opslaan en openen ook", isNieuwRapport(normaliseerRapport(kloon(de), VANDAAG, standaardTeksten), null, keuze("DE")));
+  toets("Nederland zoals altijd", isNieuwRapport(nl) && isNieuwRapport(nl, null, nederland));
   gelijk("elke voorbladtekst heeft Engels en Nederlands", MEEGELEVERD.normen.filter((m) => !m.en || !m.nl), []);
 }
 

@@ -3,12 +3,14 @@ import type { ElementRef } from "@ifc-calc/core";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
 import i18next, { LANGUAGES } from "../i18n/config";
-import { leesTaal, normaliseerRapport, standaardRapport, type Rapport } from "../rapport/model";
+import { leesTaal, normaliseerRapport, type Rapport } from "../rapport/model";
 import { leesPad } from "../rapport/pad";
 import { datumTekst } from "../rapport/revisies";
 import { standaardTeksten } from "../rapport/standaardteksten";
 import { isNieuwRapport, wisselTaal, zetVeldOpPad } from "../rapport/taalwissel";
 import { landVoorLocale, metLokaal, NEDERLAND, normkeuzeVan, pasRapportAan } from "../rapport/normen/keuze";
+import { nieuwRapportVolgens, standaardTemplateVan, type Template } from "../rapport/template";
+import { useTemplateStore } from "./rapportTemplates";
 import { rekenversie } from "../components/calc/bladVersie";
 import { normaliseerExemplaren } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
@@ -233,9 +235,10 @@ interface ProjectState {
    * Structurele wijziging van het rapport: een revisie, tabelregel, opbouw of
    * bijlage erbij of eraf, of "Bijwerken uit bureauprofiel". Altijd een eigen
    * stap in de geschiedenis. `fn` krijgt het huidige rapport en geeft een
-   * nieuw object terug; het oude blijft ongemoeid.
+   * nieuw object terug; het oude blijft ongemoeid. Met `sleutel` is doortypen
+   * één stap, zoals bij een veld: een titel in de opzet heeft geen vast pad.
    */
-  werkRapportBij: (fn: (r: Rapport) => Rapport) => void;
+  werkRapportBij: (fn: (r: Rapport) => Rapport, sleutel?: string) => void;
 
   ongedaan: () => void;
   opnieuw: () => void;
@@ -318,6 +321,9 @@ function vrijeNaam(exemplaren: Exemplaar[], basisNaam: string, altijdNummeren = 
 /** De taal van de app, voor wat er nieuw wordt gemaakt. */
 const appTaal = () => leesTaal(i18next.language) ?? "en";
 
+/** Het template waarmee een nieuw rapport begint; null is het ingebouwde. */
+const standaardTemplate = () => standaardTemplateVan(useTemplateStore.getState());
+
 /**
  * De regio van het systeem. Een WebView geeft de taal van de gebruiker, en die zegt weinig over
  * de plek: een Engelstalig Windows in Nederland geeft "en-US". In de app komt de werkelijke
@@ -329,12 +335,11 @@ let systeemLocale: string | undefined = typeof navigator === "undefined" ? undef
 const nieuweGegevens = (): ProjectGegevens => ({ ...legeGegevens(), land: landVoorLocale(systeemLocale) });
 
 /**
- * Een nieuw rapport in de taal van de app: revisie A van vandaag en de meegeleverde standaardteksten,
+ * Een nieuw rapport in de taal van de app, volgens het standaardtemplate: revisie A van vandaag,
  * aangepast aan het land van het project.
  */
 function nieuwRapport(gegevens: ProjectGegevens): Rapport {
-  const taal = appTaal();
-  return pasRapportAan(standaardRapport(datumTekst(new Date()), standaardTeksten(taal), taal), NEDERLAND, normkeuzeVan(gegevens));
+  return pasRapportAan(nieuwRapportVolgens(datumTekst(new Date()), appTaal(), standaardTemplate()), NEDERLAND, normkeuzeVan(gegevens));
 }
 
 /** De naam van een project dat nog geen naam heeft, in de taal van de app. */
@@ -740,13 +745,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       dirty: true,
     })),
 
-  werkRapportBij: (fn) =>
+  werkRapportBij: (fn, sleutel) =>
     set((s) => {
       const rapport = fn(s.rapport);
       // Hetzelfde object terug betekent: niets veranderd. Dan ook geen lege
       // stap in de geschiedenis en geen "niet opgeslagen".
       if (rapport === s.rapport) return s;
-      return { ...metGeschiedenis(s, null), rapport, dirty: true };
+      return { ...metGeschiedenis(s, sleutel ?? null), rapport, dirty: true };
     }),
 
   ongedaan: () =>
@@ -845,7 +850,7 @@ const isStandaardNaam = (naam: string) =>
 function volgTaalVanApp() {
   const s = useProjectStore.getState();
   const taal = appTaal();
-  if (s.dirty || s.bestandspad || s.exemplaren.length > 0 || s.rapport.taal === taal || !isNieuwRapport(s.rapport, normkeuzeVan(s.gegevens))) return;
+  if (s.dirty || s.bestandspad || s.exemplaren.length > 0 || s.rapport.taal === taal || !isNieuwRapport(s.rapport, standaardTemplate(), normkeuzeVan(s.gegevens))) return;
   useProjectStore.setState({
     rapport: wisselTaal(s.rapport, taal),
     ...(isStandaardNaam(s.projectNaam) ? { projectNaam: nieuweProjectNaam() } : {}),
@@ -874,10 +879,24 @@ async function volgRegioVanSysteem() {
   const s = useProjectStore.getState();
   const land = landVoorLocale(systeemLocale);
   const van = normkeuzeVan(s.gegevens);
-  if (s.gegevens !== beginGegevens || land === s.gegevens.land || s.dirty || !isNieuwRapport(s.rapport, van)) return;
+  if (s.gegevens !== beginGegevens || land === s.gegevens.land || s.dirty || !isNieuwRapport(s.rapport, standaardTemplate(), van)) return;
   const gegevens = { ...s.gegevens, land };
   useProjectStore.setState({ gegevens, rapport: pasRapportAan(s.rapport, van, normkeuzeVan(gegevens)) });
 }
+
+/*
+ * De eigen templates komen ook pas na het maken van de store binnen, en je kunt een ander template
+ * als standaard kiezen voordat je iets hebt gedaan. Een rapport waar nog niemand aan heeft gezeten,
+ * begint dan opnieuw volgens de standaard; `vorige` is het template waar het zo mee begon.
+ */
+function volgStandaardTemplate(vorige: Template | null) {
+  const s = useProjectStore.getState();
+  if (s.dirty || s.bestandspad || s.exemplaren.length > 0 || vorige === standaardTemplate() || !isNieuwRapport(s.rapport, vorige, normkeuzeVan(s.gegevens))) return;
+  useProjectStore.setState({ rapport: nieuwRapport(s.gegevens) });
+}
+useTemplateStore.subscribe((nu, vorig) => {
+  if (nu.lijst !== vorig.lijst || nu.standaard !== vorig.standaard) volgStandaardTemplate(standaardTemplateVan(vorig));
+});
 
 // Persistentie -------------------------------------------------------------
 // Debounced wegschrijven naar de Tauri-store, zodat de app opent waar je hem
@@ -915,6 +934,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       dirty: false,
     });
     volgTaalVanApp();
+    volgStandaardTemplate(null);
     void leesRegioVanSysteem();
   } else {
     void volgRegioVanSysteem();
