@@ -5,7 +5,7 @@ import type { AstNode } from "@ifc-calc/core";
 import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal-includes";
 import { useActiefExemplaar, useAlleenLezen, useProjectScope } from "../../store/actiefBlad";
 import { leesGetallen, leesResultaat, metRefNamen, ucTekst, type BladUitkomst, type Resultaat } from "./bladLezen";
-import { useDoorrekening } from "../../rekenen/doorrekening";
+import { bewaardeDoorrekening, rekenSleutel, useDoorrekening } from "../../rekenen/doorrekening";
 
 export { ucTekst, leesResultaat, leesGetallen, metRefNamen } from "./bladLezen";
 export type { Resultaat, BladUitkomst } from "./bladLezen";
@@ -40,6 +40,30 @@ export function rekenBladDoor(
   }
 }
 
+/** Zoveel uitkomsten voor de beelden op papier blijven bewaard. */
+const BEWAARD = 24;
+const bewaard = new Map<string, BladUitkomst>();
+
+/**
+ * De uitkomst voor een beeld op papier. Wat de worker voor het scherm uitrekende geldt ook
+ * hier, en wat hier is uitgerekend hoeft bij het volgende voorbeeld niet opnieuw: het
+ * rekenen gebeurt op de hoofddraad, en een groot blad kost dan een merkbaar deel van het
+ * voorbeeld. Een blad dat niet doorrekent wordt niet bewaard.
+ */
+function uitkomstVoorPapier(source: string, waarden: Record<string, string>, scope: Record<string, unknown>, naam: string): BladUitkomst | null {
+  const vanWorker = bewaardeDoorrekening(rekenSleutel(i18next.language ?? "", naam, scope, waarden, source))?.uitkomst;
+  if (vanWorker) return vanWorker;
+  const sleutel = rekenSleutel("", naam, scope, waarden, source);
+  const klaar = bewaard.get(sleutel);
+  if (klaar) return klaar;
+  const uitkomst = rekenBladDoor(source, waarden, scope, naam);
+  if (uitkomst) {
+    if (bewaard.size >= BEWAARD) bewaard.delete(bewaard.keys().next().value!);
+    bewaard.set(sleutel, uitkomst);
+  }
+  return uitkomst;
+}
+
 /**
  * Rekent het blad dat het beeld tekent door: normaal het actieve blad, in de
  * afdruk het blad van de afdrukcontext. Met dezelfde invoer en
@@ -58,7 +82,7 @@ export function useBladUitkomst(): BladUitkomst | null {
   const waarden = exemplaar?.waarden ?? GEEN_WAARDEN;
   const naam = exemplaar?.naam ?? "";
   const direct = useMemo(
-    () => (alleenLezen && source ? rekenBladDoor(source, waarden, scope, naam) : null),
+    () => (alleenLezen && source ? uitkomstVoorPapier(source, waarden, scope, naam) : null),
     [alleenLezen, source, waarden, scope, naam],
   );
   const { doorrekening } = useDoorrekening(exemplaar?.id, alleenLezen ? "" : source, waarden, scope, naam);
