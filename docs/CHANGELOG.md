@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Gewichtenbibliotheek: ruim 2300 eigen gewichten met bron, van materialen en grond tot kanaalplaten, metselwerk, dakpannen en gevelplaten per leverancier. Zoeken, filteren en met één klik invoegen in een opbouw; een eigen bibliotheek openen, aanvullen, samenvoegen en delen als `.weightlibrary`-bestand
 - Nieuw blad Spanningen in een doorsnede: kies een vorm, stel de normaalkracht, de momenten en de dwarskrachten in twee richtingen in, en zie het spanningsverloop in de doorsnede
 - PDF-blad: zoomen, schuiven en aantekenen met pen, markeerstift, pijl, kader, wolk en tekst. De aantekeningen gaan mee in het project en, als je dat kiest, op papier
 - Zijpaneel: de inhoud van het rapport met alle nummers terwijl je werkt, en de paginanummers uit het laatste afdrukvoorbeeld
