@@ -126,6 +126,8 @@ toets("h1 tot en met h6 zijn koppen", ["H1", "H2", "H3", "H4", "H5", "H6"].every
 toets("het kopblok van een rekenblad is een kop", houdtBijVolgende(el("HEADER", "print-blad-kop")));
 toets("de sectiekop op het voorblad en de kopregel van een rapporttabel zijn koppen",
   houdtBijVolgende(el("P", "print-sectiekop")) && houdtBijVolgende(el("DIV", "rpa-rij", "rpa-houd")));
+toets("de kopregel van de inhoud op het voorblad is een kop, een regel van die inhoud niet",
+  houdtBijVolgende(el("DIV", "print-inhoud-rij", "print-inhoud-kop")) && !houdtBijVolgende(el("DIV", "print-inhoud-rij")));
 toets("gewone regels zijn geen kop",
   !houdtBijVolgende(el("P", "calc-text")) && !houdtBijVolgende(el("DIV", "calc-line")) && !houdtBijVolgende(el("H7")));
 

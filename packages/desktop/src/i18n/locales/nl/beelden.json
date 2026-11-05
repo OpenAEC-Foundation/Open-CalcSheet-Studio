@@ -450,6 +450,7 @@
     "inhoudResultaten": "Inhoud en resultaten",
     "grondslag": "Grondslag",
     "oordeel": "Oordeel",
+    "paginaKolom": "Pag.",
     "alleVoldoen": "Alle getoetste onderdelen voldoen.",
     "nietGetoetstEen": "{{n}} van de {{totaal}} onderdelen is niet getoetst; zie het betreffende blad.",
     "nietGetoetstMeer": "{{n}} van de {{totaal}} onderdelen zijn niet getoetst; zie de betreffende bladen.",

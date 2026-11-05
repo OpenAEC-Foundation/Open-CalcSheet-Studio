@@ -134,44 +134,65 @@
   color: var(--pr-kopkleur);
 }
 
-.print-opmaak .print-resultaten {
-  width: 100%;
-  border-collapse: collapse;
+/*
+ * De inhoud op het voorblad: per blad een regel met nummer, naam, grondslag, UC,
+ * oordeel en pagina. Geen tabel maar losse regels in een wikkel (paginering.ts): zo
+ * loopt een lange inhoud door op het volgende vel in plaats van eraf te vallen. De
+ * kolommen staan daarom vast, voor elke regel gelijk.
+ */
+.print-opmaak .print-inhoud {
   font-size: 9.5pt;
 }
 
-.print-opmaak .print-resultaten th {
-  padding: 3pt 5pt;
+.print-opmaak .print-inhoud-rij {
+  display: grid;
+  grid-template-columns: 9mm minmax(0, 1fr) 44mm 13mm 21mm 12mm;
+  align-items: center;
+  border-bottom: 0.5pt solid var(--pr-lijn);
+}
+
+.print-opmaak .print-inhoud-rij > span {
+  padding: 4pt 4pt;
+  overflow-wrap: break-word;
+}
+
+/* Getallen en het korte kopje erboven breken niet af. */
+.print-opmaak .print-inhoud .nr,
+.print-opmaak .print-inhoud .uc,
+.print-opmaak .print-inhoud .pag {
+  white-space: nowrap;
+}
+
+.print-opmaak .print-inhoud-kop {
   border-bottom: 0.75pt solid var(--pr-tekst);
+}
+
+.print-opmaak .print-inhoud-kop > span {
+  padding: 3pt 4pt;
   font-size: 7.5pt;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  text-align: left;
   color: var(--pr-zacht);
 }
 
-.print-opmaak .print-resultaten td {
-  padding: 4pt 5pt;
-  border-bottom: 0.5pt solid var(--pr-lijn);
-  vertical-align: middle;
-}
-
-.print-opmaak .print-resultaten .nr {
-  width: 7mm;
+.print-opmaak .print-inhoud .nr {
   color: #9a9aa2;
   font-variant-numeric: tabular-nums;
 }
 
-.print-opmaak .print-resultaten .norm {
+.print-opmaak .print-inhoud .norm {
   font-size: 8.5pt;
   color: var(--pr-zacht);
 }
 
-.print-opmaak .print-resultaten .uc {
-  width: 14mm;
+.print-opmaak .print-inhoud .uc,
+.print-opmaak .print-inhoud .pag {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.print-opmaak .print-inhoud .uc {
   font-weight: 600;
 }
 

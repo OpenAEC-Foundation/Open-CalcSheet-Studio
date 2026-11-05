@@ -192,6 +192,19 @@
   contain-intrinsic-size: auto 210mm auto calc(297mm + 24px);
 }
 
+/* Een regel van een inhoudsopgave op een vel: klikken springt naar die kop
+   (AfdrukVoorbeeld.tsx). Alleen hier op het scherm; de kopie voor de printer staat
+   buiten `.av-vellen-binnen`. */
+.av-vellen-binnen [data-naar],
+.av-vellen-binnen .rpa-inhoud .rpa-rij:has([data-inhoud-doel]) {
+  cursor: pointer;
+}
+
+.av-vellen-binnen [data-naar]:hover,
+.av-vellen-binnen .rpa-inhoud .rpa-rij:has([data-inhoud-doel]):hover {
+  background: rgba(0, 0, 0, 0.045);
+}
+
 .av-nummer {
   margin-top: 6px;
   text-align: center;

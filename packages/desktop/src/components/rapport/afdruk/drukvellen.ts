@@ -90,6 +90,31 @@ export async function vellenNaarPdf(pad: string): Promise<boolean> {
 }
 
 /**
+ * Maakt van elk paginanummer in een inhoudsopgave een link naar zijn kop, zodat je in
+ * de PDF doorklikt. Alleen op de kopie: daar staat elke kop één keer, en een id op de
+ * vellen van het voorbeeld zou er dan dubbel zijn.
+ */
+export function linkInhoud(wortel: HTMLElement) {
+  const ids = new Map<string, string>();
+  for (const kop of wortel.querySelectorAll<HTMLElement>("[data-inhoud]")) {
+    const anker = kop.dataset.inhoud ?? "";
+    if (!anker || ids.has(anker)) continue;
+    const id = `inhoud-${ids.size + 1}`;
+    kop.id = id;
+    ids.set(anker, id);
+  }
+  for (const doel of wortel.querySelectorAll<HTMLElement>("[data-inhoud-doel]")) {
+    const id = ids.get(doel.dataset.inhoudDoel ?? "");
+    if (!id || !doel.textContent) continue;
+    const link = document.createElement("a");
+    link.href = `#${id}`;
+    link.className = "inhoud-link";
+    link.append(...doel.childNodes);
+    doel.append(link);
+  }
+}
+
+/**
  * Zet een kopie van de vellen klaar om af te drukken; op papier is er niets anders
  * dan die kopie. Geeft de functie terug die alles weer opruimt.
  */
@@ -97,6 +122,7 @@ export function zetDrukvellenKlaar(vellen: HTMLElement[]): () => void {
   const bak = document.createElement("div");
   bak.className = "rpa-drukvellen";
   for (const vel of vellen) bak.appendChild(vel.cloneNode(true));
+  linkInhoud(bak);
   // Een gekopieerd iframe begint opnieuw en komt leeg op papier: de geladen
   // iframes verhuizen zolang naar de kopie.
   const verhuis = iframesNaarDruk(vellen, bak);

@@ -87,7 +87,16 @@ export function useUitdraai(): Uitdraai {
   };
 }
 
-/** De resultatentabel: per blad de norm, de maatgevende UC en het oordeel. */
+/** Het anker van de kop van een blad in de uitdraai, voor de inhoud op het voorblad. */
+export const bladAnker = (id: string) => `blad-${id}`;
+
+/**
+ * De inhoud met de resultaten: per blad de norm, de maatgevende UC, het oordeel en de
+ * pagina waar het blad begint. Het paginanummer vult het afdrukvoorbeeld in zodra de
+ * vellen verdeeld zijn; de kolom staat er al, dus de verdeling verandert er niet door.
+ * In het voorbeeld springt een klik op een regel naar het blad, in de PDF een klik op
+ * het nummer (drukvellen.ts).
+ */
 function Resultaten({ uitdraai }: { uitdraai: Uitdraai }) {
   const { bladen } = uitdraai;
   const nietGoed = bladen.filter((b) => b.resultaat.voldoet === false).length;
@@ -96,28 +105,26 @@ function Resultaten({ uitdraai }: { uitdraai: Uitdraai }) {
   return (
     <>
       <p className="print-sectiekop">{op("inhoudResultaten")}</p>
-      <table className="print-resultaten">
-        <thead>
-          <tr>
-            <th className="nr">#</th>
-            <th>{op("onderdeel")}</th>
-            <th>{op("grondslag")}</th>
-            <th className="uc">UC</th>
-            <th>{op("oordeel")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bladen.map(({ ex, resultaat }, i) => (
-            <tr key={ex.id}>
-              <td className="nr">{i + 1}</td>
-              <td>{ex.naam}</td>
-              <td className="norm">{resultaat.norm || "—"}</td>
-              <td className="uc">{resultaat.uc !== null ? ucTekst(resultaat.uc) : "—"}</td>
-              <td><Oordeel r={resultaat} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="print-inhoud">
+        <div className="print-inhoud-rij print-inhoud-kop">
+          <span className="nr">#</span>
+          <span>{op("onderdeel")}</span>
+          <span>{op("grondslag")}</span>
+          <span className="uc">UC</span>
+          <span>{op("oordeel")}</span>
+          <span className="pag">{op("paginaKolom")}</span>
+        </div>
+        {bladen.map(({ ex, resultaat }, i) => (
+          <div key={ex.id} className="print-inhoud-rij" data-naar={bladAnker(ex.id)}>
+            <span className="nr">{i + 1}</span>
+            <span>{ex.naam}</span>
+            <span className="norm">{resultaat.norm || "—"}</span>
+            <span className="uc">{resultaat.uc !== null ? ucTekst(resultaat.uc) : "—"}</span>
+            <span><Oordeel r={resultaat} /></span>
+            <span className="pag" data-inhoud-doel={bladAnker(ex.id)} />
+          </div>
+        ))}
+      </div>
       <p className="print-resultaten-noot">
         {nietGoed === 0 && nietGetoetst === 0 && op("alleVoldoen")}
         {nietGoed > 0 && op(nietGoed === 1 ? "nietGoedEen" : "nietGoedMeer", { n: nietGoed, totaal: bladen.length })}
@@ -193,6 +200,7 @@ export function UitdraaiInhoud({ uitdraai }: { uitdraai: Uitdraai }) {
       {!enkel && <PrintVoorblad uitdraai={uitdraai} />}
       {bladen.map(({ ex, html, resultaat, eenheden }, i) => (
         <PrintBlad key={ex.id} ex={ex} html={html} nummer={i + 1} resultaat={resultaat} titelInKop eenheden={eenheden}
+          anker={enkel ? undefined : bladAnker(ex.id)}
           projectregel={enkel ? <PrintProjectregel uitdraai={uitdraai} rekenversie={rekenversie(ex.source)} /> : undefined} />
       ))}
     </>
