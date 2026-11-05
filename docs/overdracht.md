@@ -121,7 +121,7 @@ Controle: `scripts/check-tekenblad.mjs`.
 Een nieuwe module bestaat uit een rekenblad in `packages/desktop/src/templates`
 (geregistreerd in `index.ts`), een regel in de catalogus (`projectTree.ts`), zo
 nodig een parametrisch beeld (`*Designer.tsx`, gekoppeld in
-`designerKeuze.tsx`), een catalogusbeeld en een eigen `scripts/check-<module>.mjs`.
+`designerKeuze.tsx` en met zijn herkenningstekst in `designerHerkenning.ts`), een catalogusbeeld en een eigen `scripts/check-<module>.mjs`.
 
 ## 7. Open punten
 

@@ -90,8 +90,7 @@ function useOoit(nu: boolean): boolean {
 
 /** De worker en de schermen alvast klaarzetten; het eerste blad gaat voor. */
 function warmOp() {
-  warmRekenWorker();
-  warmLuiOp([ModuleKiezer, Preview, BeeldVanBlad, Editor, AfdrukVoorbeeld]);
+  warmLuiOp([{ vooraf: async () => warmRekenWorker() }, ModuleKiezer, Preview, BeeldVanBlad, Editor, AfdrukVoorbeeld]);
 }
 
 /**

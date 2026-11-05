@@ -12,7 +12,7 @@ import { hoortBij } from "../../templates/hoortBij";
  * De koppeling loopt via een herkenningspunt in de tekst van het blad, niet via
  * het sjabloon-id: pas je de tekst van een exemplaar aan, dan blijft het beeld
  * meegaan zolang de kop erin staat, ook als die in de tab Code in het Engels is aangepast
- * (hoortBij in templates/vertalingen.ts).
+ * (templates/hoortBij.ts).
  *
  * Stond eerder als keten in App.tsx. Nu op één plek, omdat de afdrukweergave
  * dezelfde keuze moet maken — voor elk blad in het project, niet alleen voor
