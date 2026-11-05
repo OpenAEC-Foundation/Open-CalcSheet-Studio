@@ -57,6 +57,8 @@ formulier *Projectgegevens* (`components/calc/ProjectGegevensPanel.tsx`):
 | Ontwerplevensduur | `DesignLife` | in jaren |
 | Windgebied | `windgebied` | volgt uit de gemeente (Tabel NB.1) |
 | Terreincategorie | `terreincategorie` | volgt uit de omgeving (Tabel NB.3-4.1) |
+| Land of regio | `land` | code uit `rapport/normen/landen.ts`; geen variabele voor de bladen |
+| Generatie Eurocodes | `eurocode_generatie` | 1 of 2 |
 
 Deze waarden gaan als **`initialScope`** de evaluator in, vóór de eerste regel
 van het blad draait (`packages/core/src/evaluator.ts`). Een blad gebruikt ze
@@ -82,6 +84,28 @@ Grensgeval: de **referentiehoogte** voor wind. Windgebied en terreincategorie
 zijn eigenschappen van de locatie en staan dus op projectniveau; z_e hoort bij
 het constructiedeel (een gording op 9 m, een gevelkolom op 4 m) en staat dus in
 het blad. Zie `docs/backlog.md` voor wat daar nog aan open staat.
+
+### Land en normen
+
+`land` bepaalt welke normen gelden. De lijst staat in `rapport/normen/landen.ts`: alleen
+gegevens, per land per onderwerp de norm, de uitgever, de editie en de officiële bron, en
+welke grootheid de locatie levert. Een bestaand project kent het veld niet en is daarmee
+Nederlands; een nieuw project krijgt de regio van het systeem (`landVoorLocale`), of als die
+niet in de lijst staat de Eurocode zonder nationale bijlage. Niets wordt opgehaald bij een
+externe dienst: het scherm geeft alleen een link.
+
+De grens loopt bij `nlTabellen` (`normkeuzeVan` in `rapport/normen/keuze.ts`): alleen Nederland
+met de eerste generatie rekent met de tabellen uit `rapport/normwaarden.ts` en toont de
+windkaart. Daarbuiten komt daar geen getal uit, ook niet als standaardwaarde. De invoer staat
+in het rapport, per land apart (`Rapport.lokaal`), zodat een waarde niet stil meegaat naar een
+ander land; een Nederlands rapport heeft dat veld niet en verandert dus niet.
+
+`windgebied` en `terreincategorie` blijven in de gegevens staan, maar staan alleen op het
+formulier als de Nederlandse tabellen gelden. De rekenbladen rusten op de Eurocodes met de
+Nederlandse bijlage en veranderen niet mee: `bladNormUit` leest uit de rekentekst op welke norm
+een blad rust, en `normAfwijking` zegt of dat afwijkt van het land. Dat staat dan op het scherm
+en op papier; bij een ander stelsel dan de Eurocode staat er "niet getoetst" in plaats van een
+oordeel.
 
 ## De grens wordt bewaakt
 
