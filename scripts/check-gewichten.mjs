@@ -146,6 +146,7 @@ const bestand = (regels = [regel()], over = {}) => ({
 
   const tekst = leesBibliotheekTekst("<html>");
   meld(!tekst.ok && tekst.fout.soort === "geenJson", "geweigerd: tekst die geen JSON is");
+  meld(leesBibliotheekTekst(`﻿${JSON.stringify(bestand())}`).ok, "een byte-order mark vooraan mag");
   const groot = leesBibliotheekTekst(" ".repeat(32 * 1024 * 1024 + 1));
   meld(!groot.ok && groot.fout.soort === "teGroot", "geweigerd: een te groot bestand");
 }

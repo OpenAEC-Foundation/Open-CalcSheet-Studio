@@ -89,6 +89,8 @@ export default function GewichtenVenster({ open, onSluit, onInvoegen, kanInvoege
 
   const zichtbaar = useMemo(() => zichtbareRegels(meegeleverd ?? [], eigen), [meegeleverd, eigen]);
   const eigenIds = useMemo(() => new Set(eigen?.regels.map((r) => r.id) ?? []), [eigen]);
+  // Een nieuw id mag ook niet gelijk zijn aan een meegeleverd: dan zou de nieuwe regel die verbergen.
+  const alleIds = useMemo(() => new Set(zichtbaar.map((z) => z.regel.id)), [zichtbaar]);
   const regels = useMemo(
     () => zichtbaar.filter((z) => !herkomst || (herkomst === "eigen") === z.eigen).map((z) => z.regel),
     [zichtbaar, herkomst],
@@ -235,7 +237,7 @@ export default function GewichtenVenster({ open, onSluit, onInvoegen, kanInvoege
 
       {formulier && (
         <RegelFormulier
-          bestaand={eigenIds}
+          bestaand={alleIds}
           opAnnuleer={() => setFormulier(false)}
           opBewaar={(r) => {
             voegEigenRegelToe(r);

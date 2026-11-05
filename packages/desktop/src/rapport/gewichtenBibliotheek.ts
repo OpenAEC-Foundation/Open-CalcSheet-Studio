@@ -249,7 +249,8 @@ export function leesBibliotheekTekst(tekst: string): Leesuitslag {
   if (tekst.length > MAX_TEKENS) return { ok: false, fout: { soort: "teGroot" } };
   let data: unknown;
   try {
-    data = JSON.parse(tekst);
+    // Een byte-order mark, zoals sommige editors op Windows die voor een bestand zetten.
+    data = JSON.parse(tekst.replace(/^﻿/, ""));
   } catch {
     return { ok: false, fout: { soort: "geenJson" } };
   }
