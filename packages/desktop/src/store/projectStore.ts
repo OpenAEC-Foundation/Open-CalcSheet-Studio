@@ -8,6 +8,7 @@ import { leesPad } from "../rapport/pad";
 import { datumTekst } from "../rapport/revisies";
 import { standaardTeksten } from "../rapport/standaardteksten";
 import { isNieuwRapport, wisselTaal, zetVeldOpPad } from "../rapport/taalwissel";
+import { landVoorLocale, metLokaal, NEDERLAND, normkeuzeVan, pasRapportAan } from "../rapport/normen/keuze";
 import { rekenversie } from "../components/calc/bladVersie";
 import { normaliseerExemplaren } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
@@ -317,10 +318,23 @@ function vrijeNaam(exemplaren: Exemplaar[], basisNaam: string, altijdNummeren = 
 /** De taal van de app, voor wat er nieuw wordt gemaakt. */
 const appTaal = () => leesTaal(i18next.language) ?? "en";
 
-/** Een nieuw rapport in de taal van de app: revisie A van vandaag en de meegeleverde standaardteksten. */
-function nieuwRapport(): Rapport {
+/**
+ * De regio van het systeem. Een WebView geeft de taal van de gebruiker, en die zegt weinig over
+ * de plek: een Engelstalig Windows in Nederland geeft "en-US". In de app komt de werkelijke
+ * regio bij het opstarten binnen (locale in plugin-os, onderaan dit bestand).
+ */
+let systeemLocale: string | undefined = typeof navigator === "undefined" ? undefined : navigator.language;
+
+/** De gegevens van een nieuw project: elk veld op zijn standaard en het land van het systeem. */
+const nieuweGegevens = (): ProjectGegevens => ({ ...legeGegevens(), land: landVoorLocale(systeemLocale) });
+
+/**
+ * Een nieuw rapport in de taal van de app: revisie A van vandaag en de meegeleverde standaardteksten,
+ * aangepast aan het land van het project.
+ */
+function nieuwRapport(gegevens: ProjectGegevens): Rapport {
   const taal = appTaal();
-  return standaardRapport(datumTekst(new Date()), standaardTeksten(taal), taal);
+  return pasRapportAan(standaardRapport(datumTekst(new Date()), standaardTeksten(taal), taal), NEDERLAND, normkeuzeVan(gegevens));
 }
 
 /** De naam van een project dat nog geen naam heeft, in de taal van de app. */
@@ -331,16 +345,20 @@ const nieuweProjectNaam = () => i18next.t("werkruimte:project.nieuweNaam");
  * aangevuld tot een volledig rapport. Ontbreekt het (opslag of bestand van
  * vóór het constructierapport), dan komt er een nieuw rapport.
  */
-function rapportUit(x: unknown): Rapport {
-  return x ? normaliseerRapport(x, datumTekst(new Date()), standaardTeksten, appTaal()) : nieuwRapport();
+function rapportUit(x: unknown, gegevens: ProjectGegevens): Rapport {
+  if (!x) return nieuwRapport(gegevens);
+  // Een project van een ander land heeft zijn invoer klaar staan: het paneel schrijft erin.
+  return metLokaal(normaliseerRapport(x, datumTekst(new Date()), standaardTeksten, appTaal()), normkeuzeVan(gegevens));
 }
+
+const beginGegevens = nieuweGegevens();
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
   projectNaam: nieuweProjectNaam(),
   bestandspad: null,
-  gegevens: legeGegevens(),
+  gegevens: beginGegevens,
   exemplaren: [],
-  rapport: nieuwRapport(),
+  rapport: nieuwRapport(beginGegevens),
   activeId: PROJECT_ID,
   verborgen: {},
   dirty: false,
@@ -700,11 +718,18 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     })),
 
   zetGegeven: (naam, waarde) =>
-    set((s) => ({
-      ...metGeschiedenis(s, `gegeven:${naam}`),
-      gegevens: { ...s.gegevens, [naam]: waarde },
-      dirty: true,
-    })),
+    set((s) => {
+      const gegevens = { ...s.gegevens, [naam]: waarde };
+      return {
+        ...metGeschiedenis(s, `gegeven:${naam}`),
+        gegevens,
+        // Het rapport volgt het land en de generatie; bij een ander veld blijft het hetzelfde object.
+        rapport: naam === "land" || naam === "eurocode_generatie"
+          ? pasRapportAan(s.rapport, normkeuzeVan(s.gegevens), normkeuzeVan(gegevens))
+          : s.rapport,
+        dirty: true,
+      };
+    }),
 
   zetProjectNaam: (naam) => set({ projectNaam: naam, dirty: true }),
 
@@ -772,33 +797,38 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       };
     }),
 
-  nieuwProject: () =>
+  nieuwProject: () => {
+    const gegevens = nieuweGegevens();
     set({
       verborgen: {},
       projectNaam: nieuweProjectNaam(),
       bestandspad: null,
-      gegevens: legeGegevens(),
+      gegevens,
       exemplaren: [],
-      rapport: nieuwRapport(),
+      rapport: nieuwRapport(gegevens),
       activeId: PROJECT_ID,
       dirty: false,
       verleden: [],
       toekomst: [],
-    }),
+    });
+  },
 
-  laadProject: (p) =>
+  laadProject: (p) => {
+    // Zonder veld `land`: een oud project, dus Nederland (legeGegevens).
+    const gegevens = { ...legeGegevens(), ...(p.gegevens ?? {}) };
     set({
       verborgen: p.verborgen ?? {},
       projectNaam: p.projectNaam ?? nieuweProjectNaam(),
       bestandspad: p.bestandspad ?? null,
-      gegevens: { ...legeGegevens(), ...(p.gegevens ?? {}) },
+      gegevens,
       exemplaren: p.exemplaren ?? [],
-      rapport: rapportUit(p.rapport),
+      rapport: rapportUit(p.rapport, gegevens),
       activeId: p.exemplaren?.[0]?.id ?? PROJECT_ID,
       dirty: false,
       verleden: [],
       toekomst: [],
-    }),
+    });
+  },
 
   markeerOpgeslagen: (bestandspad) => set({ bestandspad, dirty: false }),
 }));
@@ -815,13 +845,39 @@ const isStandaardNaam = (naam: string) =>
 function volgTaalVanApp() {
   const s = useProjectStore.getState();
   const taal = appTaal();
-  if (s.dirty || s.bestandspad || s.exemplaren.length > 0 || s.rapport.taal === taal || !isNieuwRapport(s.rapport)) return;
+  if (s.dirty || s.bestandspad || s.exemplaren.length > 0 || s.rapport.taal === taal || !isNieuwRapport(s.rapport, normkeuzeVan(s.gegevens))) return;
   useProjectStore.setState({
     rapport: wisselTaal(s.rapport, taal),
     ...(isStandaardNaam(s.projectNaam) ? { projectNaam: nieuweProjectNaam() } : {}),
   });
 }
 i18next.on("languageChanged", volgTaalVanApp);
+
+/** De werkelijke regio van het systeem, in de app; in een browser blijft het navigator.language. */
+async function leesRegioVanSysteem() {
+  if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
+  try {
+    const { locale } = await import("@tauri-apps/plugin-os");
+    systeemLocale = (await locale()) ?? systeemLocale;
+  } catch {
+    // Geen regio te lezen: dan blijft het wat de WebView zegt.
+  }
+}
+
+/*
+ * Bij een start zonder bewaarde stand. Het beginproject, waar nog niemand aan heeft gezeten,
+ * krijgt het land van het systeem; een bewaarde stand houdt zijn eigen land, ook als dat
+ * bewust is gekozen, en een project dat intussen is geopend ook.
+ */
+async function volgRegioVanSysteem() {
+  await leesRegioVanSysteem();
+  const s = useProjectStore.getState();
+  const land = landVoorLocale(systeemLocale);
+  const van = normkeuzeVan(s.gegevens);
+  if (s.gegevens !== beginGegevens || land === s.gegevens.land || s.dirty || !isNieuwRapport(s.rapport, van)) return;
+  const gegevens = { ...s.gegevens, land };
+  useProjectStore.setState({ gegevens, rapport: pasRapportAan(s.rapport, van, normkeuzeVan(gegevens)) });
+}
 
 // Persistentie -------------------------------------------------------------
 // Debounced wegschrijven naar de Tauri-store, zodat de app opent waar je hem
@@ -845,19 +901,23 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
   const onaangeroerd = nu.exemplaren.length === 0 && !nu.dirty;
   if (saved && Array.isArray(saved.exemplaren) && onaangeroerd) {
     const projectNaam = saved.projectNaam ?? nieuweProjectNaam();
+    const gegevens = { ...legeGegevens(), ...(saved.gegevens ?? {}) };
     useProjectStore.setState({
       projectNaam,
       bestandspad: saved.bestandspad ?? null,
-      gegevens: { ...legeGegevens(), ...(saved.gegevens ?? {}) },
+      gegevens,
       // Net zo aangevuld als een ingelezen bestand: de opslag kan van een
       // oudere versie van de app zijn, met bladen zonder tekst of invoer.
       exemplaren: normaliseerExemplaren(saved.exemplaren, projectNaam),
-      rapport: rapportUit(saved.rapport),
+      rapport: rapportUit(saved.rapport, gegevens),
       activeId: saved.activeId ?? PROJECT_ID,
       verborgen: saved.verborgen ?? {},
       dirty: false,
     });
     volgTaalVanApp();
+    void leesRegioVanSysteem();
+  } else {
+    void volgRegioVanSysteem();
   }
   // Een expliciete lijst: een nieuw veld moet hier én hierboven bij het
   // hydrateren worden toegevoegd, anders overleeft het geen herstart.

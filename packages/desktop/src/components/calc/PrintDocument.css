@@ -297,6 +297,14 @@
   line-height: 1.15;
 }
 
+/* Op welke norm dit blad rust, als die afwijkt van het land van het project (BladNorm.tsx). */
+.print-opmaak .print-normmelding {
+  margin: 1mm 0 2mm;
+  font-size: 8.5pt;
+  font-style: italic;
+  color: var(--pr-tekst);
+}
+
 .print-opmaak .print-blad-norm {
   font-size: 8.5pt;
   color: var(--pr-zacht);
