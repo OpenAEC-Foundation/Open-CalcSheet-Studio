@@ -19,7 +19,7 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 | `packages/desktop/src/store` | Project (exemplaren/bladen, projectgegevens, rapport), projectbestand, undo. |
 | `packages/desktop/src/components/tekenen` | De tekeneditor: tekeningen in een rekenblad (`@svg`-blok) en de views van een tekenblad. `vel.ts` rekent een view van echte maat naar papier; het vel staat in `store/tekenBlad.ts`. |
 | Bladsoorten | Naast rekenbladen ook PDF, spreadsheet en Jupyter. Een Jupyter-blad is een eigen werkmap met notebooks en scripts in een afgeschermde JupyterLab-omgeving: zie [jupyter-blad.md](jupyter-blad.md). |
-| `scripts/check-*.mjs` | Controles; `node scripts/check-alles.mjs` draait ze allemaal (nu 26 controles). |
+| `scripts/check-*.mjs` | Controles; `node scripts/check-alles.mjs` draait ze allemaal; het aantal staat in de README. |
 
 ## 2. Afspraken in de bladen
 
