@@ -8,7 +8,7 @@ import { useZoom } from "../../hooks/useZoom";
 import { usePapier } from "./afdrukTaal";
 import type { Maten } from "./paginering";
 import { IframeBeelden } from "./iframeBlok";
-import { exporteerMarkdown, kiesMarkdown, meldBeeldGeladen } from "./markdownBlad";
+import { exporteerMarkdown, kiesMarkdown } from "./markdownBlad";
 import { markdownVoorPapier, markdownVoorScherm } from "./markdownRegels";
 import { schoonUitwerking } from "./uitwerkingOpschonen";
 import { UitwerkingHtml } from "./UitwerkingHtml";
@@ -156,10 +156,8 @@ export function MarkdownPapier({ ex }: { ex: Exemplaar; maten: Maten }) {
     for (const img of wortel.current?.querySelectorAll("img") ?? []) {
       if (img.complete) continue;
       img.setAttribute("data-afdruk-laadt", "");
-      const klaar = () => {
-        img.removeAttribute("data-afdruk-laadt");
-        meldBeeldGeladen();
-      };
+      // Het afdrukvoorbeeld ziet het merkteken verdwijnen en zet het beeld op zijn vel.
+      const klaar = () => img.removeAttribute("data-afdruk-laadt");
       img.addEventListener("load", klaar, { once: true });
       img.addEventListener("error", klaar, { once: true });
     }

@@ -182,6 +182,14 @@
   flex-direction: column;
   align-items: center;
   flex: none;
+  /* Alleen de vellen in beeld worden opgemaakt en getekend. Een groot project
+     heeft zo honderdduizend elementen op zijn vellen; die allemaal opmaken kostte
+     elke keer bijna een seconde. Een vel buiten beeld houdt zijn maat vrij: die
+     van A4 tot hij een keer is getekend, een vel op eigen formaat zet zijn maat
+     zelf (AfdrukVoorbeeld.tsx). De kopie voor de printer staat hier buiten
+     (drukvellen.ts) en wordt gewoon helemaal opgemaakt. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 210mm auto calc(297mm + 24px);
 }
 
 .av-nummer {

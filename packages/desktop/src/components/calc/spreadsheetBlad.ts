@@ -53,11 +53,8 @@ interface Ingang {
 const LADEN: WerkmapStand = { status: "laden", vellen: [] };
 const cache = new Map<string, Ingang>();
 const luisteraars = new Set<() => void>();
-/** Telt elke melding; het afdrukvoorbeeld verdeelt opnieuw als hij verandert. */
-let versie = 0;
 
 function meld() {
-  versie += 1;
   for (const l of luisteraars) l();
 }
 
@@ -148,11 +145,6 @@ export function useWerkmapVellen(data: string | undefined, breedte: number, hoog
     };
   }, [sleutel, data, breedte, hoogte]);
   return stand;
-}
-
-/** Verandert bij elke getekende werkmap; voor het opnieuw verdelen van het afdrukvoorbeeld. */
-export function useWerkmapVersie(): number {
-  return useSyncExternalStore(abonneer, () => versie);
 }
 
 // ── Kiezen en wegschrijven ────────────────────────────────────────────────────
