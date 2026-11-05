@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Modal from "../Modal";
 import "./PdfPreviewModal.css";
 
@@ -20,6 +21,7 @@ export default function PdfPreviewModal({
   generate,
   onSave,
 }: PdfPreviewModalProps) {
+  const { t } = useTranslation("werkruimte");
   const [src, setSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -65,17 +67,17 @@ export default function PdfPreviewModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={`PDF voorvertoning — ${projectName}`} width={920}>
+    <Modal open={open} onClose={onClose} title={t("pdfVoorbeeld.titel", { naam: projectName })} width={920}>
       <div className="pdf-preview-modal-body">
         {busy && (
           <div className="pdf-preview-state">
-            <p>PDF wordt gegenereerd…</p>
-            <small>openaec-core engine — eerste keer kan een paar seconden duren.</small>
+            <p>{t("pdfVoorbeeld.bezig")}</p>
+            <small>{t("pdfVoorbeeld.bezigUitleg")}</small>
           </div>
         )}
         {error && (
           <div className="pdf-preview-state pdf-preview-error">
-            <p>PDF generatie mislukt</p>
+            <p>{t("pdfVoorbeeld.mislukt")}</p>
             <pre>{error}</pre>
           </div>
         )}
@@ -83,14 +85,14 @@ export default function PdfPreviewModal({
           <iframe
             className="pdf-preview-frame"
             src={src}
-            title={`PDF voorvertoning ${projectName}`}
+            title={t("pdfVoorbeeld.kader", { naam: projectName })}
           />
         )}
       </div>
 
       <div className="pdf-preview-modal-footer">
         <button className="pdf-preview-btn pdf-preview-btn-ghost" type="button" onClick={onClose}>
-          Sluiten
+          {t("pdfVoorbeeld.sluiten")}
         </button>
         {onSave && (
           <button
@@ -99,7 +101,7 @@ export default function PdfPreviewModal({
             onClick={handleSaveClick}
             disabled={saving || !src}
           >
-            {saving ? "Opslaan…" : "Opslaan als…"}
+            {saving ? t("pdfVoorbeeld.opslaan") : t("pdfVoorbeeld.opslaanAls")}
           </button>
         )}
       </div>

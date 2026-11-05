@@ -61,7 +61,7 @@ export default function LiggerDesigner() {
   const ctx = useDesigner(MARKER, DEFAULTS);
   // Vóór de vroege return: de volgorde van de hooks moet vast liggen.
   const uitkomst = useBladUitkomst();
-  const { t } = useTranslation("beelden");
+  const { t, i18n } = useTranslation("beelden");
   if (!ctx.actief) return null;
   const { d, set, box, wrapRef } = ctx;
   const num = (e: { target: { value: string } }) => parseFloat(e.target.value.replace(",", "."));
@@ -241,14 +241,14 @@ export default function LiggerDesigner() {
                   <Dim key={i} ctx={ctx} name={naam} value={d(naam)} x={midden} y={yMaat} step={0.1} dec={2}
                     label={naam === "a_l" || naam === "a_r" ? "a" : `L${naam.slice(2)}`} />
                 ) : (
-                  <Ro key={i} text={`${fmt(x1 - velden[i], 2)} m`} x={midden} y={yMaat} />
+                  <Ro key={i} text={`${fmt(x1 - velden[i], 2, i18n.language)} m`} x={midden} y={yMaat} />
                 );
               })}
               {lijn.length > 0 && Mmax > 1e-6 && (
-                <Ro text={`${fmt(Mmax, 2)} kNm`} x={X(lijn.find((r) => r[2] === Mmax)?.[0] ?? 0)} y={yM + Mmax * mS + 8} kleur="#dc2626" />
+                <Ro text={`${fmt(Mmax, 2, i18n.language)} kNm`} x={X(lijn.find((r) => r[2] === Mmax)?.[0] ?? 0)} y={yM + Mmax * mS + 8} kleur="#dc2626" />
               )}
               {lijn.length > 0 && Mmin < -1e-6 && (
-                <Ro text={`${fmt(Mmin, 2)} kNm`} x={X(lijn.find((r) => r[2] === Mmin)?.[0] ?? 0)} y={yM + Mmin * mS - 22} kleur="#dc2626" />
+                <Ro text={`${fmt(Mmin, 2, i18n.language)} kNm`} x={X(lijn.find((r) => r[2] === Mmin)?.[0] ?? 0)} y={yM + Mmin * mS - 22} kleur="#dc2626" />
               )}
               {status === -1 && <Ro text={t("ligger.beweeglijk")} x={W / 2} y={yM} kleur="#b91c1c" />}
             </div>
@@ -263,7 +263,7 @@ export default function LiggerDesigner() {
           {(() => {
             const s = SYSTEMEN.find((o) => o.v === systeem);
             return s ? t(`ligger.systemen.${s.sleutel}`) : "";
-          })()} · {t("ligger.lengte", { l: fmt(xEind, 2) })} · {t("ligger.lasten", { count: lasten.length })}
+          })()} · {t("ligger.lengte", { l: fmt(xEind, 2, i18n.language) })} · {t("ligger.lasten", { count: lasten.length })}
           {scharnieren.length ? ` · ${t("ligger.scharnieren", { count: scharnieren.length })}` : ""}
         </span>
       </div>

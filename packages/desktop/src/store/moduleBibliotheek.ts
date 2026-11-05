@@ -72,6 +72,7 @@ function registreer(m: GeinstalleerdeModule) {
   modulesPerTemplate[m.id] = {
     templateId: m.id,
     label: m.naam.nl,
+    namen: m.naam,
     status: m.status,
     categorie: modulesPerTemplate[m.id]?.categorie ?? m.categorie,
   };

@@ -7,6 +7,10 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Het rapport heeft een eigen taal, te kiezen bij Document: koppen, vaste woorden, standaardteksten en rekenbladen staan in die taal, ook als de app een andere taal heeft. Een nieuw rapport neemt de taal van de app over; een bestaand rapport blijft Nederlands en ziet er hetzelfde uit
+- De tab Code toont de rekentekst in de taal van de app, ook de uitleg in de verborgen regels. De rekenversie en de bestaande bladen veranderen daardoor niet; wat je typt, staat op die regel in het blad
+- Een nieuw blad krijgt zijn naam in de taal van de app, ook via de API
+- De laatste vaste Nederlandse teksten op het scherm en in meldingen staan nu in de vertaalbestanden, en getallen in de app volgen de notatie van de taal
 - Canvas: zoomen met Ctrl en scrollen, rond het punt onder de muis
 - Nieuw blad Spanningen in een doorsnede: kies een vorm, stel de normaalkracht, de momenten en de dwarskrachten in twee richtingen in, en zie het spanningsverloop in de doorsnede
 - PDF-blad: zoomen, schuiven en aantekenen met pen, markeerstift, pijl, kader, wolk en tekst. De aantekeningen gaan mee in het project en, als je dat kiest, op papier

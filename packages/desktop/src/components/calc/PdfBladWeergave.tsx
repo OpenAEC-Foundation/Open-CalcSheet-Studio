@@ -10,7 +10,8 @@ import {
   type PdfAantekening, type PdfPunt,
 } from "../../store/pdfAantekeningen";
 import { usePdfViewer } from "../../store/pdfViewer";
-import { kiesPdfBijlage, papier, sluitScherp, TEKENSCHAAL, tekenScherp, usePdfPaginas } from "./pdfBlad";
+import { kiesPdfBijlage, sluitScherp, TEKENSCHAAL, tekenScherp, usePdfPaginas } from "./pdfBlad";
+import { usePapier } from "./afdrukTaal";
 import { SPELING, type Maten } from "./paginering";
 import "./PdfBladWeergave.css";
 
@@ -598,7 +599,7 @@ export function PdfBladInfo({ ex }: { ex: Exemplaar }) {
  */
 export function PdfPaginas({ ex, maten }: { ex: Exemplaar; maten: Maten }) {
   const stand = usePdfPaginas(ex.pdf?.data);
-  const t = papier();
+  const t = usePapier();
   if (!ex.pdf) return <p className="print-pdf-melding">{t("pdfBlad.ontbreekt")}</p>;
   if (!stand || stand.paginas.length === 0) {
     return stand?.status === "fout" ? (

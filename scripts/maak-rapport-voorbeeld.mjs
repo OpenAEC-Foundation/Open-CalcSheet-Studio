@@ -67,7 +67,7 @@ function bouwProject() {
     { id: ZOLDER_ID, naam: "Balklaag zoldervloer", templateId: "balklaag", source: balklaag, waarden: {}, elementen: [] },
   ];
 
-  const rapport = standaardRapport(DATUM, standaardTeksten());
+  const rapport = standaardRapport(DATUM, standaardTeksten("nl"), "nl");
   rapport.kenmerk = "VB-2026-001";
   rapport.fase = "DO";
   rapport.opdrachtgeverAdres = "Voorbeeldstraat 1\n1234 AB Voorbeeldstad";
@@ -171,7 +171,7 @@ function controleerInhoud(doc) {
   const { rapport } = doc.project;
   // Zoals na opslaan en openen: via JSON, en normaliseerRapport krijgt zijn eigen kopie.
   const gelezen = JSON.parse(JSON.stringify(rapport));
-  const genormaliseerd = normaliseerRapport(JSON.parse(JSON.stringify(rapport)), DATUM, standaardTeksten());
+  const genormaliseerd = normaliseerRapport(JSON.parse(JSON.stringify(rapport)), DATUM, standaardTeksten);
   for (const v of verschillen(gelezen, genormaliseerd, "rapport")) fouten.push(`normaliseerRapport verandert ${v}`);
   for (const o of [...rapport.belastingen.vloerenDaken, ...rapport.belastingen.wanden]) {
     const som = rond((o.soort === "vlak" ? vlakOpbouw(o.lagen) : gevelOpbouw(o.lagen)).som, 2);

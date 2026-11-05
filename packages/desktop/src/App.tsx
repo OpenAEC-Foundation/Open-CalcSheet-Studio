@@ -48,7 +48,7 @@ import { useRecentFiles } from "./hooks/useRecentFiles";
 import { useSneltoetsen } from "./hooks/useSneltoetsen";
 import { useMcpBrug } from "./mcp/useMcpBrug";
 import { useBestandActies } from "./hooks/useBestandActies";
-import { leesProjectBestand } from "./store/projectBestand";
+import { GeenProjectFout, leesProjectBestand } from "./store/projectBestand";
 import { startbestand } from "./tauri/fileOps";
 import type { AngleMode } from "@ifc-calc/core";
 import { zetHoekmodus, useBladResultaat } from "./rekenen/doorrekening";
@@ -347,7 +347,8 @@ export default function App() {
       markeerOpgeslagen(path);
       await addRecentFile(path);
     } catch (err) {
-      alert(i18next.t("werkruimte:bestand.openenMislukt", { fout: (err as Error).message }));
+      const fout = err instanceof GeenProjectFout ? i18next.t("werkruimte:bestandDialoog.geenProject") : (err as Error).message;
+      alert(i18next.t("werkruimte:bestand.openenMislukt", { fout }));
     }
   }, [laadProject, markeerOpgeslagen, addRecentFile]);
 

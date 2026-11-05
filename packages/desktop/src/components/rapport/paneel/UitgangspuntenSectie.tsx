@@ -1,10 +1,12 @@
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import type {
-  Bevestigingsregel,
-  Conserveringsregel,
-  Materiaalregel,
-  Vervormingsregel,
+import { inTaal } from "../../../rapport/meertalig";
+import {
+  SOORTEN_BOUWWERK,
+  type Bevestigingsregel,
+  type Conserveringsregel,
+  type Materiaalregel,
+  type Vervormingsregel,
 } from "../../../rapport/model";
 import {
   beta,
@@ -23,19 +25,7 @@ import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
 import { Afgeleid, Keuze, Kop, Sectie, TekstVak, Veld, Vink, useRapport, type Optie } from "./velden";
 
-/** Suggesties voor 4.1; eigen tekst kan altijd. Komt zo in het rapport, dus Nederlands. */
-const SOORTEN = [
-  "Woning",
-  "Eengezinswoning",
-  "Appartementencomplex",
-  "Villa",
-  "Kantoor",
-  "Bedrijfshal",
-  "Bijgebouw",
-  "Schuur",
-];
-
-/** Ja of Nee: de waarde komt zo in het rapport, alleen het label volgt de taal. */
+/** Ja of Nee: de waarde is een code; de afdruk zet hem in de taal van het rapport, het label volgt de app. */
 function jaNee(t: TFunction<"rapport">): Optie[] {
   return [
     { waarde: "Ja", label: t("algemeen.ja") },
@@ -81,7 +71,8 @@ const SLOTTEKSTEN = ["montage", "rekenprogrammatuur", "temperatuur", "aardbeving
 /**
  * Sectie Uitgangspunten (hoofdstuk 4). Invoer die alleen in het rapport
  * bestaat staat hier; CC, RC, ontwerplevensduur en wat daaruit volgt staan
- * grijs, want die komen uit de projectgegevens en de norm.
+ * grijs, want die komen uit de projectgegevens en de norm. Grijze getallen staan
+ * in de notatie van het rapport, zoals op papier.
  */
 export default function UitgangspuntenSectie() {
   const { t } = useTranslation("rapport");
@@ -94,6 +85,7 @@ export default function UitgangspuntenSectie() {
   const jaren = getal(projectWaarde(gegevens, "DesignLife"));
   const bouwjaar = getal(u.bestaand.bouwjaar);
   const jaNeeOpties = jaNee(t);
+  const taal = rapport.taal;
 
   return (
     <Sectie
@@ -111,9 +103,10 @@ export default function UitgangspuntenSectie() {
           lijst="rapport-soorten"
           hint={t("uitgangspunten.soortHint")}
         />
+        {/* Suggesties: de soort komt zo in het rapport, dus in de taal van het rapport. */}
         <datalist id="rapport-soorten">
-          {SOORTEN.map((s) => (
-            <option key={s} value={s} />
+          {SOORTEN_BOUWWERK.map((s) => (
+            <option key={s.en} value={inTaal(s, taal)} />
           ))}
         </datalist>
         <Afgeleid
@@ -124,17 +117,16 @@ export default function UitgangspuntenSectie() {
             {
               label: t("uitgangspunten.ontwerplevensduur"),
               waarde: Number.isFinite(jaren)
-                ? t("uitgangspunten.levensduurWaarde", { jaren: fmt(jaren, 0), klasse: levensduurklasse(jaren) })
+                ? t("uitgangspunten.levensduurWaarde", { jaren: fmt(jaren, 0, false, taal), klasse: levensduurklasse(jaren) })
                 : "—",
               bron: t("algemeen.tabel", { nummer: "NB.1–2.1" }),
             },
             {
               label: t("uitgangspunten.betrouwbaarheidsindex"),
-              waarde: fmt(beta(rc), 1),
+              waarde: fmt(beta(rc), 1, false, taal),
               bron: t("uitgangspunten.betaBron"),
             },
-            { label: <>K<sub>FI</sub></>, waarde: fmt(kFiVoor(cc), 2), bron: t("algemeen.tabel", { nummer: "B3" }) },
-            // De omschrijvingen van supervisie en inspectie komen uit de norm (normwaarden.ts) en blijven Nederlands.
+            { label: <>K<sub>FI</sub></>, waarde: fmt(kFiVoor(cc), 2, false, taal), bron: t("algemeen.tabel", { nummer: "B3" }) },
             {
               label: t("uitgangspunten.supervisie"),
               waarde: ontwerpSupervisie(rc),

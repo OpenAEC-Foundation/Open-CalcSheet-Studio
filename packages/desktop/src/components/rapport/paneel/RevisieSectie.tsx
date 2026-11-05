@@ -6,8 +6,8 @@ import RijenTabel, { type Kolom } from "./RijenTabel";
 import { Sectie, useRapport } from "./velden";
 
 /**
- * Sleutel van de naam van een status. De status zelf komt zo op het voorblad
- * en blijft dus Nederlands; alleen wat het paneel toont volgt de taal.
+ * Sleutel van de naam van een status. De status zelf is een code; het paneel toont
+ * hem in de taal van de app, het voorblad in de taal van het rapport.
  */
 const STATUS_SLEUTEL: Record<RevisieStatus, string> = {
   concept: "revisies.statussen.concept",

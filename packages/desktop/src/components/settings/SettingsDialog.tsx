@@ -422,22 +422,22 @@ function UnitsTabContent({
   const patch = (partial: Partial<UnitsSettings>) => onChange({ ...units, ...partial });
   return (
     <div className="settings-section">
-      <h3>{t("units.angle", "Hoekmodus")}</h3>
+      <h3>{t("units.angle")}</h3>
       <div className="settings-row">
-        <span className="settings-label">{t("units.angleMode", "Hoek-eenheid")}</span>
+        <span className="settings-label">{t("units.angleMode")}</span>
         <ThemedSelect
           value={units.angleMode}
           options={[
-            { value: "deg", label: t("units.deg", "Graden (°)") },
-            { value: "rad", label: t("units.rad", "Radialen (rad)") },
-            { value: "gra", label: t("units.gra", "Gradianen (grad)") },
+            { value: "deg", label: t("units.deg") },
+            { value: "rad", label: t("units.rad") },
+            { value: "gra", label: t("units.gra") },
           ]}
           onChange={(v) => patch({ angleMode: v as UnitsSettings["angleMode"] })}
           style={{ width: 180 }}
         />
       </div>
       <div className="settings-row">
-        <span className="settings-label">{t("units.returnAngleUnits", "Hoeken mét eenheid teruggeven")}</span>
+        <span className="settings-label">{t("units.returnAngleUnits")}</span>
         <input
           type="checkbox"
           checked={units.returnAngleUnits}
@@ -445,9 +445,9 @@ function UnitsTabContent({
         />
       </div>
 
-      <h3 style={{ marginTop: 16 }}>{t("units.defaults", "Standaard weergave-eenheden")}</h3>
+      <h3 style={{ marginTop: 16 }}>{t("units.defaults")}</h3>
       <div className="settings-row">
-        <span className="settings-label">{t("units.length", "Lengte")}</span>
+        <span className="settings-label">{t("units.length")}</span>
         <ThemedSelect
           value={units.defaultLength}
           options={[
@@ -460,7 +460,7 @@ function UnitsTabContent({
         />
       </div>
       <div className="settings-row">
-        <span className="settings-label">{t("units.force", "Kracht")}</span>
+        <span className="settings-label">{t("units.force")}</span>
         <ThemedSelect
           value={units.defaultForce}
           options={[
@@ -473,7 +473,7 @@ function UnitsTabContent({
         />
       </div>
       <div className="settings-row">
-        <span className="settings-label">{t("units.stress", "Spanning / druk")}</span>
+        <span className="settings-label">{t("units.stress")}</span>
         <ThemedSelect
           value={units.defaultStress}
           options={[

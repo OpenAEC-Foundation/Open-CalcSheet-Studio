@@ -70,18 +70,18 @@ const bestaandeIds = new Set(FORMULES.map((f) => f.id));
 
 function controleerIndex(index: unknown): { groepen: LibraryGroep[]; regels: IndexRegel[] } {
   const i = index as { formaat?: unknown; groepen?: unknown; voorbeelden?: unknown } | null;
-  if (typeof i !== "object" || i === null || typeof i.formaat !== "number") throw new Error("index.json is onleesbaar");
+  if (typeof i !== "object" || i === null || typeof i.formaat !== "number") throw new Error("index.json is unreadable");
   if (i.formaat > FORMAAT) throw new LibraryTeNieuw(`formaat ${i.formaat}`);
-  if (!Array.isArray(i.groepen) || !i.groepen.every(isGroep)) throw new Error("index.json: ongeldige groep");
+  if (!Array.isArray(i.groepen) || !i.groepen.every(isGroep)) throw new Error("index.json: invalid group");
   const groepen = i.groepen as LibraryGroep[];
   const groepIds = new Set(groepen.map((g) => g.id));
   const lijst: unknown = i.voorbeelden;
-  if (!Array.isArray(lijst) || lijst.length > MAX_VOORBEELDEN) throw new Error("index.json: ongeldige lijst");
+  if (!Array.isArray(lijst) || lijst.length > MAX_VOORBEELDEN) throw new Error("index.json: invalid list");
   const regels: IndexRegel[] = [];
   const gezien = new Set<string>();
   for (const r of lijst) {
-    if (!isRegel(r, groepIds)) throw new Error("index.json: ongeldig voorbeeld");
-    if (gezien.has(r.id) || bestaandeIds.has(r.id)) throw new Error(`index.json: dubbel id ${r.id}`);
+    if (!isRegel(r, groepIds)) throw new Error("index.json: invalid example");
+    if (gezien.has(r.id) || bestaandeIds.has(r.id)) throw new Error(`index.json: duplicate id ${r.id}`);
     gezien.add(r.id);
     regels.push(r);
   }

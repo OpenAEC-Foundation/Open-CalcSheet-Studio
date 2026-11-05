@@ -16,6 +16,8 @@
  * geen imports, dus scripts/check-rapport.mjs kan alles rechtstreeks laden.
  */
 import { belastingFactoren, kFiVoor } from "../store/projectGegevens.ts";
+import { inTaal, type Meertalig } from "./meertalig.ts";
+import { decimaleKomma, inNotatie } from "./model.ts";
 
 /** K_FI bij een gevolgklasse (tabel B3); hier doorgegeven zodat het rapport één bron heeft. */
 export { kFiVoor };
@@ -48,15 +50,25 @@ export function rond(v: number, dec: number): number {
 }
 
 /**
- * Nederlandse notatie; `dec` vaste decimalen; `trim` haalt nullen achteraan weg.
- * Geen getal (NaN, ontbrekende invoer) → "": de afdruk laat de cel dan leeg.
+ * `dec` vaste decimalen; `trim` haalt nullen achteraan weg; de notatie van `taal`, zonder
+ * taal de Nederlandse, waarin invoer in het rapport staat. Geen getal (NaN, ontbrekende
+ * invoer) → "": de afdruk laat de cel dan leeg.
  */
-export function fmt(v: number, dec: number, trim = false): string {
+export function fmt(v: number, dec: number, trim = false, taal = "nl"): string {
   if (!Number.isFinite(v)) return "";
   // `|| 0` maakt van −0 een gewone 0, anders staat er "-0,00".
   let s = (rond(v, dec) || 0).toFixed(dec);
   if (trim && s.includes(".")) s = s.replace(/0+$/, "").replace(/\.$/, "");
-  return s.replace(".", ",");
+  return decimaleKomma(taal) ? s.replace(".", ",") : s;
+}
+
+/**
+ * Een getypt getal op papier. In een rapport met een decimale punt gaat een komma tussen
+ * cijfers om, ook bij een waarde uit de gewichtenbibliotheek; met een komma blijft staan
+ * wat er getypt is, zodat een oud rapport niet verandert.
+ */
+export function notatie(s: string, taal: string): string {
+  return decimaleKomma(taal) ? s : inNotatie(s, taal);
 }
 
 // ── Klassen (NEN-EN 1990) ───────────────────────────────────────────────────
@@ -106,6 +118,16 @@ export interface FactorRij {
   opmerking?: string;
 }
 
+/** De combinaties van tabel A1.4 en 6.14 t/m 6.16; de formulenummers blijven in elke taal gelijk. */
+const COMBINATIE: Record<"buitengewoon" | "karakteristiek" | "frequent" | "quasi" | "nietGebruikt", Meertalig> = {
+  buitengewoon: { en: "Accidental", nl: "Buitengewoon" },
+  karakteristiek: { en: "Characteristic", nl: "Karakteristiek" },
+  frequent: { en: "Frequent", nl: "Frequent" },
+  // Afgekort: voluit past hij niet in de kolom naast de factoren.
+  quasi: { en: "Quasi-perm.", nl: "Quasi-Blijvend" },
+  nietGebruikt: { en: "not used", nl: "niet gebruikt" },
+};
+
 /**
  * 4.5 volgens NB.3, NB.4, NB.5 (via belastingFactoren(cc)); ψ als "ψ0"/"ψ1"/"ψ2" (de afdruk
  * zet het cijfer als subscript).
@@ -115,12 +137,15 @@ export interface FactorRij {
  * 6.10a en 6.10b komen uit tabel NB.4 (CC2) en NB.5 (CC1, CC3). De tabel
  * rondt zelf af, dus bewust niet K_FI × de factoren van CC2 — zie
  * `belastingFactoren` in projectGegevens.ts. De buitengewone en de
- * bruikbaarheidscombinaties (tabel A1.4) hebben overal factor 1,0.
+ * bruikbaarheidscombinaties (tabel A1.4) hebben overal factor 1,0. Namen en getallen in `taal`.
  */
-export function belastingfactorTabel(cc: Klasse): FactorRij[] {
+export function belastingfactorTabel(cc: Klasse, taal: string): FactorRij[] {
   const { gG, gQ, gGa } = belastingFactoren(cc);
-  const g = (v: number) => fmt(v, 2);
-  const q = (v: number) => fmt(v, 2, true);
+  const g = (v: number) => fmt(v, 2, false, taal);
+  const q = (v: number) => fmt(v, 2, true, taal);
+  const een = fmt(1, 1, false, taal);
+  const eenTwee = g(1);
+  const naam = (sleutel: keyof typeof COMBINATIE, formule: string) => `${inTaal(COMBINATIE[sleutel], taal)}(${formule})`;
   return [
     { groep: "A", naam: "EQU(6.10)", cellen: [g(0.9), g(1.1), q(1.5), `${q(1.5)}ψ0`] },
     { groep: "B", naam: "STR(6.10a)", cellen: [g(0.9), g(gGa), `${q(gQ)}ψ0`, `${q(gQ)}ψ0`] },
@@ -128,10 +153,10 @@ export function belastingfactorTabel(cc: Klasse): FactorRij[] {
     { groep: "C", naam: "GEO(6.10)", cellen: null },
     { groep: "D", naam: "FAT", cellen: null },
     { groep: "F", naam: "HYD", cellen: null },
-    { groep: "", naam: "Buitengewoon(6.11a/b)", cellen: ["1,00", "1,00", "1,0ψ1", "1,0ψ2"], opmerking: "niet gebruikt" },
-    { groep: "", naam: "Karakteristiek(6.14b)", cellen: ["1,00", "1,00", "1,00", "1,0ψ0"] },
-    { groep: "", naam: "Frequent(6.15b)", cellen: ["1,00", "1,00", "1,0ψ1", "1,0ψ2"] },
-    { groep: "", naam: "Quasi-Blijvend(6.16b)", cellen: ["1,00", "1,00", "1,0ψ2", "1,0ψ2"] },
+    { groep: "", naam: naam("buitengewoon", "6.11a/b"), cellen: [eenTwee, eenTwee, `${een}ψ1`, `${een}ψ2`], opmerking: inTaal(COMBINATIE.nietGebruikt, taal) },
+    { groep: "", naam: naam("karakteristiek", "6.14b"), cellen: [eenTwee, eenTwee, eenTwee, `${een}ψ0`] },
+    { groep: "", naam: naam("frequent", "6.15b"), cellen: [eenTwee, eenTwee, `${een}ψ1`, `${een}ψ2`] },
+    { groep: "", naam: naam("quasi", "6.16b"), cellen: [eenTwee, eenTwee, `${een}ψ2`, `${een}ψ2`] },
   ];
 }
 
@@ -167,7 +192,7 @@ export function normVoorBouwjaar(jaar: number): string {
 // ── 5.4 Opgelegde belastingen ───────────────────────────────────────────────
 
 export interface Categorie {
-  id: string; label: string;
+  id: string; label: Meertalig;
   soort: "vloer" | "dak";
   /** kN/m²; bij daken de waarde voor een plat dak. */
   qk: number;
@@ -187,24 +212,24 @@ const PSI_H: [number, number, number] = [0, 0, 0];
 
 /** NEN-EN 1991-1-1 NB (NB.1–6.2, NB.4–6.10) en NEN-EN 1990 NB (NB.2–A1.1). */
 export const CATEGORIEEN: readonly Categorie[] = [
-  { id: "A-vloer", label: "Categorie A: woon- en verblijfsruimtes", soort: "vloer", qk: 1.75, Qk: 3.0, psi: PSI_A },
-  { id: "A-trap", label: "Categorie A: trappen", soort: "vloer", qk: 2.0, Qk: 3.0, psi: PSI_A },
-  { id: "A-balkon", label: "Categorie A: balkons", soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_A },
-  { id: "A-gemeenschappelijk", label: "Categorie A: gemeenschappelijke ruimtes", soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_A },
-  { id: "B", label: "Categorie B: kantoorruimtes", soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_B },
-  { id: "B-verkeer", label: "Categorie B: omsloten verkeersruimte", soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_B },
-  { id: "C-verkeer", label: "Categorie C: omsloten verkeersruimte", soort: "vloer", qk: 5.0, Qk: 3.0, psi: PSI_C_VERKEER },
-  { id: "C1", label: "Categorie C1: ruimtes met tafels", soort: "vloer", qk: 4.0, Qk: 3.0, psi: PSI_C },
-  { id: "C2", label: "Categorie C2: ruimtes met vaste zitplaatsen", soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_C },
-  { id: "C3", label: "Categorie C3: ruimtes zonder obstakels", soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
-  { id: "C4", label: "Categorie C4: ruimtes voor lichamelijke activiteiten", soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
-  { id: "C5", label: "Categorie C5: ruimtes voor grote menigten", soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
-  { id: "D-verkeer", label: "Categorie D: omsloten verkeersruimte", soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
-  { id: "D1", label: "Categorie D1: detailhandel", soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
-  { id: "D2", label: "Categorie D2: warenhuizen", soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  { id: "A-vloer", label: { en: "Category A: domestic and residential areas", nl: "Categorie A: woon- en verblijfsruimtes" }, soort: "vloer", qk: 1.75, Qk: 3.0, psi: PSI_A },
+  { id: "A-trap", label: { en: "Category A: stairs", nl: "Categorie A: trappen" }, soort: "vloer", qk: 2.0, Qk: 3.0, psi: PSI_A },
+  { id: "A-balkon", label: { en: "Category A: balconies", nl: "Categorie A: balkons" }, soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_A },
+  { id: "A-gemeenschappelijk", label: { en: "Category A: communal areas", nl: "Categorie A: gemeenschappelijke ruimtes" }, soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_A },
+  { id: "B", label: { en: "Category B: office areas", nl: "Categorie B: kantoorruimtes" }, soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_B },
+  { id: "B-verkeer", label: { en: "Category B: enclosed circulation areas", nl: "Categorie B: omsloten verkeersruimte" }, soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_B },
+  { id: "C-verkeer", label: { en: "Category C: enclosed circulation areas", nl: "Categorie C: omsloten verkeersruimte" }, soort: "vloer", qk: 5.0, Qk: 3.0, psi: PSI_C_VERKEER },
+  { id: "C1", label: { en: "Category C1: areas with tables", nl: "Categorie C1: ruimtes met tafels" }, soort: "vloer", qk: 4.0, Qk: 3.0, psi: PSI_C },
+  { id: "C2", label: { en: "Category C2: areas with fixed seats", nl: "Categorie C2: ruimtes met vaste zitplaatsen" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_C },
+  { id: "C3", label: { en: "Category C3: areas without obstacles", nl: "Categorie C3: ruimtes zonder obstakels" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
+  { id: "C4", label: { en: "Category C4: areas for physical activities", nl: "Categorie C4: ruimtes voor lichamelijke activiteiten" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
+  { id: "C5", label: { en: "Category C5: areas for large crowds", nl: "Categorie C5: ruimtes voor grote menigten" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
+  { id: "D-verkeer", label: { en: "Category D: enclosed circulation areas", nl: "Categorie D: omsloten verkeersruimte" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  { id: "D1", label: { en: "Category D1: general retail", nl: "Categorie D1: detailhandel" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  { id: "D2", label: { en: "Category D2: department stores", nl: "Categorie D2: warenhuizen" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
   // Q_k 2,0 kN: de NB-waarde voor gordingen, spanten en liggers direct onder het
   // dakbeschot (NB.4–6.10), de elementen waarvoor deze tabel bedoeld is.
-  { id: "H-dak", label: "Categorie H: daken", soort: "dak", qk: 1.0, Qk: 2.0, psi: PSI_H },
+  { id: "H-dak", label: { en: "Category H: roofs", nl: "Categorie H: daken" }, soort: "dak", qk: 1.0, Qk: 2.0, psi: PSI_H },
 ];
 
 export function categorie(id: string): Categorie | undefined {
@@ -247,7 +272,11 @@ export interface WindUitkomst { vb0: number; z0: number; zmin: number; ze: numbe
 const VB0: Record<Klasse, number> = { 1: 29.5, 2: 27.0, 3: 24.5 };          // tabel NB.1, m/s
 const Z0: Record<Klasse, number> = { 1: 0.005, 2: 0.2, 3: 0.5 };            // tabel NB.3–4.1, m
 const ZMIN: Record<Klasse, number> = { 1: 1, 2: 4, 3: 7 };                  // tabel NB.3–4.1, m
-const TERREIN: Record<Klasse, string> = { 1: "kust", 2: "onbebouwd", 3: "bebouwd" };
+const TERREIN: Record<Klasse, Meertalig> = {
+  1: { en: "coastal", nl: "kust" },
+  2: { en: "rural", nl: "onbebouwd" },
+  3: { en: "built-up", nl: "bebouwd" },
+};
 
 /**
  * Zelfde keten als templates/gording.ts: projectgegevens-codes windgebied 1..3,
@@ -274,7 +303,7 @@ export function windQp(windgebied: Klasse, terrein: Klasse, zMeter: number): Win
   return { vb0, z0, zmin, ze, qp };
 }
 
-/** "1 kust" / "2 onbebouwd" / "3 bebouwd": het label van 5.2. */
-export function windLabel(windgebied: Klasse, terrein: Klasse): string {
-  return `${windgebied} ${TERREIN[terrein]}`;
+/** "1 kust" / "2 onbebouwd" / "3 bebouwd" in `taal`: het label van 5.2. */
+export function windLabel(windgebied: Klasse, terrein: Klasse, taal: string): string {
+  return `${windgebied} ${inTaal(TERREIN[terrein], taal)}`;
 }

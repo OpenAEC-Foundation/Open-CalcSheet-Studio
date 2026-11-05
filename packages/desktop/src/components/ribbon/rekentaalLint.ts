@@ -14,8 +14,30 @@
  * De woorden zijn sleutels in locales/{nl,en}/rekentaal.json, onder `lint`:
  * `label` in lint.groep, de `naam` van een menu in lint.menu, `kop` in
  * lint.kop en de `naam` van een knop in lint.knop. RekentaalTab vertaalt ze bij
- * het tekenen. `tekst` en `glyph` zijn rekentaal en blijven in elke taal gelijk.
+ * het tekenen. `tekst` en `glyph` zijn rekentaal en blijven in elke taal gelijk, op
+ * de woorden om te overtypen na (WOORDEN hieronder).
  */
+
+/**
+ * De woorden in een fragment die er staan om te overtypen: het woord in `tekst` en zijn
+ * sleutel in lint.plek. fragmentInTaal zet ze bij het invoegen in de taal van de app.
+ */
+const WOORDEN: readonly [patroon: RegExp, sleutel: string][] = [
+  [/⟨Titel⟩/g, "Titel"], [/⟨Kop⟩/g, "Kop"], [/⟨tekst⟩/g, "tekst"], [/⟨vet⟩/g, "vet"], [/⟨cursief⟩/g, "cursief"],
+  [/⟨onderstreept⟩/g, "onderstreept"], [/⟨opmerking⟩/g, "opmerking"], [/⟨naam\$?⟩/g, "naam"], [/⟨keuze⟩/g, "keuze"],
+  [/⟨bestand(?:\.cpd)?⟩/g, "bestand"], [/⟨voorwaarde⟩/g, "voorwaarde"], [/⟨Draaibaar model⟩/g, "DraaibaarModel"],
+  [/\bOmschrijving\b/g, "Omschrijving"], [/\bOptie(?= \d)/g, "Optie"], [/\bwaarde\b/g, "waarde"],
+];
+
+/** Het fragment van een knop met de woorden om te overtypen in de taal van `vertaal`. */
+export function fragmentInTaal(tekst: string, vertaal: (sleutel: string) => string): string {
+  let uit = tekst;
+  for (const [patroon, sleutel] of WOORDEN) {
+    const woord = vertaal(sleutel);
+    uit = uit.replace(patroon, (heel) => (heel.startsWith("⟨") ? heel.replace(/⟨[^⟩$.]*/, () => `⟨${woord}`) : woord));
+  }
+  return uit;
+}
 
 export interface SyntaxKnop {
   /** Wat in het icoonvak staat: het teken zelf, zoals op het toetsenblok. */

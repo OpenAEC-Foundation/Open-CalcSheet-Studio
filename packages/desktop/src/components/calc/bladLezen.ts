@@ -30,10 +30,10 @@ export interface Resultaat {
   nietGetoetst?: boolean;
 }
 
-/** Twee decimalen in de notatie van de taal van de app; een oneindige UC als ∞. */
-export const ucTekst = (uc: number) => {
+/** Twee decimalen in de notatie van de taal, zonder taal die van de app; een oneindige UC als ∞. */
+export const ucTekst = (uc: number, taal: string | undefined = i18next.language) => {
   if (!Number.isFinite(uc)) return "∞";
-  return i18next.language?.startsWith("nl") ? uc.toFixed(2).replace(".", ",") : uc.toFixed(2);
+  return taal?.startsWith("nl") ? uc.toFixed(2).replace(".", ",") : uc.toFixed(2);
 };
 
 /** Een uitkomst van het blad als getal. ∞ is een geldige UC: weerstand nul. */

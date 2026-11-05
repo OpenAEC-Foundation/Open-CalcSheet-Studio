@@ -86,14 +86,21 @@ function kop(titel) {
 
 const VANDAAG = "26-09-2026";
 
+/*
+ * Dit script toetst het rapport in het Nederlands, de taal van de referentie; wat de taal
+ * doet, staat in scripts/check-rapport-talen.mjs.
+ */
+const standaardNl = (vandaag, teksten) => standaardRapport(vandaag, teksten, "nl");
+const tekstenNl = () => standaardTeksten("nl");
+
 // ── model.ts ────────────────────────────────────────────────────────────────
 kop("model.ts — standaardrapport");
 {
   const teksten = { inleiding: "Inleidende tekst.", rol: "{adviseur} heeft opdracht." };
-  const r = standaardRapport(VANDAAG, teksten);
-  gelijk("versie van de rapportopbouw", [r.versie, RAPPORT_VERSIE], [4, 4]);
+  const r = standaardNl(VANDAAG, teksten);
+  gelijk("versie van de rapportopbouw", [r.versie, RAPPORT_VERSIE], [5, 5]);
   gelijk("geen eigen keuzes voor een nieuwe pagina", r.nieuwePagina, {});
-  gelijk("opmaak van versie 4: Constructieprincipe, subkoppen en de bladen in de inhoudsopgave", r.opmaak,
+  gelijk("opmaak: Constructieprincipe, subkoppen en de bladen in de inhoudsopgave", r.opmaak,
     { constructieprincipe: true, subkoppen: true, bladenInInhoud: true });
   gelijk("titel", r.titel, "Constructieadvies & berekeningen");
   gelijk("normen", r.normen, "NEN-EN 1990 t/m 1997");
@@ -126,8 +133,8 @@ kop("model.ts — standaardrapport");
   gelijk("bureau leeg", r.bureau, leegBureau());
   gelijk("huisstijl standaard", r.bureau.huisstijl, STANDAARD_HUISSTIJL);
 
-  const a = standaardRapport(VANDAAG, {});
-  const b = standaardRapport(VANDAAG, {});
+  const a = standaardNl(VANDAAG, {});
+  const b = standaardNl(VANDAAG, {});
   a.uitgangspunten.materialen.push({ type: "x", soort: "", opmerking: "" });
   a.bureau.huisstijl.hoofdkleur = "#000000";
   toets("elk rapport eigen lijsten", b.uitgangspunten.materialen.length === 6);
@@ -138,15 +145,17 @@ kop("model.ts — standaardrapport");
 kop("model.ts — normaliseerRapport");
 {
   const teksten = { inleiding: "Standaard inleiding.", sneeuw: "Standaard sneeuw." };
-  const standaard = standaardRapport(VANDAAG, teksten);
+  const standaard = standaardNl(VANDAAG, teksten);
   for (const [naam, x] of [["undefined", undefined], ["null", null], ["tekst", "rapport"], ["lijst", []]]) {
-    gelijk(`lege invoer (${naam}) → standaard`, normaliseerRapport(x, VANDAAG, teksten), standaard);
+    gelijk(`lege invoer (${naam}) → standaard, in de gevraagde taal`, normaliseerRapport(x, VANDAAG, teksten, "nl"), standaard);
   }
   // Een object zonder versie is een rapport van vóór versie 2, ook als het leeg is.
   gelijk("leeg object → standaard, als rapport van versie 1", normaliseerRapport({}, VANDAAG, teksten),
     { ...standaard, nieuwePagina: { projectgegevens: false }, opmaak: { constructieprincipe: false, subkoppen: false, bladenInInhoud: false } });
   gelijk("standaard blijft zichzelf (heen en terug via JSON)",
     normaliseerRapport(JSON.parse(JSON.stringify(standaard)), VANDAAG, teksten), standaard);
+  gelijk("een rapport van deze versie zonder taal: de gevraagde taal", normaliseerRapport({ versie: 5 }, VANDAAG, teksten, "en").taal, "en");
+  gelijk("een rapport van een oudere versie zonder taal: Nederlands", normaliseerRapport({ versie: 4 }, VANDAAG, teksten, "en").taal, "nl");
 
   const r = normaliseerRapport({
     titel: "Eigen titel",
@@ -196,7 +205,7 @@ kop("model.ts — normaliseerRapport");
   gelijk("bureau: lege kleur → standaard", r.bureau.huisstijl.hoofdkleur, STANDAARD_HUISSTIJL.hoofdkleur);
   gelijk("bureau: constructeurs gefilterd", r.bureau.constructeurs, [{ naam: "Ir. A. Voorbeeld", telefoon: "", email: "" }]);
   gelijk("lege lijst blijft leeg", normaliseerRapport({ revisies: [] }, VANDAAG, teksten).revisies, []);
-  const opmaak = (x, versie = RAPPORT_VERSIE) => normaliseerRapport({ versie, opmaak: x }, VANDAAG, teksten).opmaak;
+  const opmaak = (x, versie = RAPPORT_VERSIE) => normaliseerRapport({ versie, taal: "nl", opmaak: x }, VANDAAG, teksten).opmaak;
   gelijk("opmaak: eigen keuzes bewaard", opmaak({ constructieprincipe: false, subkoppen: true, extra: 1 }),
     { constructieprincipe: false, subkoppen: true, bladenInInhoud: true });
   gelijk("opmaak: verkeerd type of ontbrekend → standaard", [opmaak({ constructieprincipe: "ja" }), opmaak("aan"), opmaak(undefined)],
@@ -208,20 +217,22 @@ kop("model.ts — een opgeslagen rapport van vóór versie 2 verandert niet onge
   // Zoals de vorige versie van de app het opsloeg: geen versie, geen eigen
   // keuze voor Projectgegevens, geen opmaak, en de standaardtekst met de vorige naam.
   const OUDE_TEKST = "De berekeningen in dit rapport zijn opgesteld met OpenAEC Calc.";
-  const oud = JSON.parse(JSON.stringify(standaardRapport(VANDAAG, standaardTeksten())));
+  const oud = JSON.parse(JSON.stringify(standaardNl(VANDAAG, tekstenNl())));
   delete oud.versie;
   delete oud.opmaak;
+  delete oud.taal;
+  delete oud.tekstTaal;
   oud.teksten.rekenprogrammatuur = OUDE_TEKST;
-  const geopend = normaliseerRapport(JSON.parse(JSON.stringify(oud)), VANDAAG, standaardTeksten());
+  const geopend = normaliseerRapport(JSON.parse(JSON.stringify(oud)), VANDAAG, tekstenNl());
 
-  gelijk("alleen versie en de keuzes voor Projectgegevens en de opmaak komen erbij", geopend, {
-    ...oud, versie: 4, nieuwePagina: { projectgegevens: false }, opmaak: { constructieprincipe: false, subkoppen: false, bladenInInhoud: false },
+  gelijk("alleen versie, taal en de keuzes voor Projectgegevens en de opmaak komen erbij", geopend, {
+    ...oud, versie: 5, taal: "nl", tekstTaal: {}, nieuwePagina: { projectgegevens: false }, opmaak: { constructieprincipe: false, subkoppen: false, bladenInInhoud: false },
   });
   gelijk("tekst met de vorige naam blijft staan", geopend.teksten.rekenprogrammatuur, OUDE_TEKST);
   gelijk("Projectgegevens loopt door na de inleiding, zoals het was",
     bouwOpzet(geopend, []).map((k) => k.nieuwePagina), [true, false, true, true, true]);
   gelijk("opnieuw openen verandert niets meer",
-    normaliseerRapport(JSON.parse(JSON.stringify(geopend)), VANDAAG, standaardTeksten()), geopend);
+    normaliseerRapport(JSON.parse(JSON.stringify(geopend)), VANDAAG, tekstenNl()), geopend);
 
   const metKeuze = (nieuwePagina, versie) =>
     normaliseerRapport({ ...oud, nieuwePagina, ...(versie === undefined ? {} : { versie }) }, VANDAAG, {}).nieuwePagina;
@@ -233,9 +244,9 @@ kop("model.ts — een opgeslagen rapport van vóór versie 2 verandert niet onge
     bouwOpzet(normaliseerRapport({ ...oud, versie: 2 }, VANDAAG, {}), [])[1].nieuwePagina, true);
   gelijk("ongeldige versie telt als 1", ["2", 2.5, 0, -1, null].map((v) => metKeuze({}, v)),
     Array(5).fill({ projectgegevens: false }));
-  const later = normaliseerRapport({ ...oud, versie: 5 }, VANDAAG, {});
+  const later = normaliseerRapport({ ...oud, versie: 6 }, VANDAAG, {});
   gelijk("rapport van een nieuwere versie houdt zijn versie en zijn keuzes",
-    [later.versie, later.nieuwePagina, later.opmaak], [5, {}, { constructieprincipe: true, subkoppen: true, bladenInInhoud: true }]);
+    [later.versie, later.nieuwePagina, later.opmaak], [6, {}, { constructieprincipe: true, subkoppen: true, bladenInInhoud: true }]);
 }
 
 kop("model.ts — een opgeslagen rapport van vóór versie 3: kop Wijziging en geen subkoppen");
@@ -247,32 +258,34 @@ kop("model.ts — een opgeslagen rapport van vóór versie 3: kop Wijziging en g
   const wijziging = OPZET[2].kinderen[0].kinderen.find((k) => k.id === "wijziging");
   const blok = (r) => bouwOpzet(r, [])[2].kinderen[0].kinderen.map((k) => `${k.id}: ${k.titel}`);
   const koppen = (r) => tekstRegels(r.teksten.wijziging, r.opmaak.subkoppen).filter((x) => x.kop).map((x) => x.tekst);
-  const v2 = JSON.parse(JSON.stringify(standaardRapport(VANDAAG, standaardTeksten())));
+  const v2 = JSON.parse(JSON.stringify(standaardNl(VANDAAG, tekstenNl())));
   v2.versie = 2;
   delete v2.opmaak;
+  delete v2.taal;
+  delete v2.tekstTaal;
   v2.teksten.wijziging = WIJZIGING;
   const v1 = structuredClone(v2);
   delete v1.versie;
 
   for (const [naam, oud] of [["versie 2", v2], ["versie 1", v1]]) {
-    const geopend = normaliseerRapport(JSON.parse(JSON.stringify(oud)), VANDAAG, standaardTeksten());
-    gelijk(`${naam}: opmaak uit als eigen keuze`, [geopend.versie, geopend.opmaak], [4, { constructieprincipe: false, subkoppen: false, bladenInInhoud: false }]);
+    const geopend = normaliseerRapport(JSON.parse(JSON.stringify(oud)), VANDAAG, tekstenNl());
+    gelijk(`${naam}: opmaak uit als eigen keuze`, [geopend.versie, geopend.opmaak], [5, { constructieprincipe: false, subkoppen: false, bladenInInhoud: false }]);
     toets(`${naam}: is nieuwbouw`, !beschrijftBestaand(geopend));
     gelijk(`${naam}: kop blijft Wijziging`, [titelVan(wijziging, geopend), blok(geopend)], ["Wijziging", ["wijziging: Wijziging"]]);
     gelijk(`${naam}: tekst zonder subkoppen`, koppen(geopend), []);
     gelijk(`${naam}: tekst zelf ongewijzigd`, geopend.teksten.wijziging, WIJZIGING);
     gelijk(`${naam}: opnieuw openen verandert niets meer`,
-      normaliseerRapport(JSON.parse(JSON.stringify(geopend)), VANDAAG, standaardTeksten()), geopend);
+      normaliseerRapport(JSON.parse(JSON.stringify(geopend)), VANDAAG, tekstenNl()), geopend);
   }
-  gelijk("versie 2: verder komt er niets bij", normaliseerRapport(JSON.parse(JSON.stringify(v2)), VANDAAG, standaardTeksten()),
-    { ...v2, versie: 4, opmaak: { constructieprincipe: false, subkoppen: false, bladenInInhoud: false } });
+  gelijk("versie 2: verder komt er niets bij", normaliseerRapport(JSON.parse(JSON.stringify(v2)), VANDAAG, tekstenNl()),
+    { ...v2, versie: 5, taal: "nl", tekstTaal: {}, opmaak: { constructieprincipe: false, subkoppen: false, bladenInInhoud: false } });
 
   // De gebruiker zet de keuzes zelf om; daarna blijven ze zo, ook na opnieuw openen.
-  const geopend = normaliseerRapport(JSON.parse(JSON.stringify(v2)), VANDAAG, standaardTeksten());
+  const geopend = normaliseerRapport(JSON.parse(JSON.stringify(v2)), VANDAAG, tekstenNl());
   const om = zetOpPad(zetOpPad(geopend, leesPad("opmaak.constructieprincipe"), true), leesPad("opmaak.subkoppen"), true);
   gelijk("omgezet: Constructieprincipe en subkoppen", [titelVan(wijziging, om), koppen(om)],
     ["Constructieprincipe", ["Fundering:", "Vloeren en daken:"]]);
-  gelijk("omgezet: blijft na opnieuw openen", normaliseerRapport(JSON.parse(JSON.stringify(om)), VANDAAG, standaardTeksten()).opmaak,
+  gelijk("omgezet: blijft na opnieuw openen", normaliseerRapport(JSON.parse(JSON.stringify(om)), VANDAAG, tekstenNl()).opmaak,
     { constructieprincipe: true, subkoppen: true, bladenInInhoud: false });
   const half = zetOpPad(geopend, leesPad("opmaak.subkoppen"), true);
   gelijk("de keuzes staan los van elkaar", [titelVan(wijziging, half), koppen(half)], ["Wijziging", ["Fundering:", "Vloeren en daken:"]]);
@@ -280,7 +293,7 @@ kop("model.ts — een opgeslagen rapport van vóór versie 3: kop Wijziging en g
     normaliseerRapport({ ...v2, opmaak: { subkoppen: true } }, VANDAAG, {}).opmaak, { constructieprincipe: false, subkoppen: true, bladenInInhoud: false });
 
   // Een nieuw rapport met dezelfde tekst krijgt het nieuwe gedrag.
-  const nieuw = standaardRapport(VANDAAG, standaardTeksten());
+  const nieuw = standaardNl(VANDAAG, tekstenNl());
   nieuw.teksten.wijziging = WIJZIGING;
   gelijk("nieuw rapport: Constructieprincipe en subkoppen", [titelVan(wijziging, nieuw), koppen(nieuw)],
     ["Constructieprincipe", ["Fundering:", "Vloeren en daken:"]]);
@@ -290,15 +303,17 @@ kop("model.ts en opzet.ts — een opgeslagen rapport van vóór versie 4: de inh
 {
   const bladen = [{ id: "ex-a", naam: "Blad in het hoofdstuk" }, { id: "ex-b", naam: "Blad in de bijlage" }];
   // Een rapport van versie 3: met de opmaak van toen, zonder de keuze voor de inhoudsopgave.
-  const v3 = JSON.parse(JSON.stringify(standaardRapport(VANDAAG, standaardTeksten())));
+  const v3 = JSON.parse(JSON.stringify(standaardNl(VANDAAG, tekstenNl())));
   v3.versie = 3;
+  delete v3.taal;
+  delete v3.tekstTaal;
   v3.opmaak = { constructieprincipe: true, subkoppen: true };
   v3.inHoofdstuk = { "ex-a": true };
-  const geopend = normaliseerRapport(JSON.parse(JSON.stringify(v3)), VANDAAG, standaardTeksten());
+  const geopend = normaliseerRapport(JSON.parse(JSON.stringify(v3)), VANDAAG, tekstenNl());
   gelijk("versie 3: de bladen blijven uit de inhoudsopgave", geopend.opmaak, { constructieprincipe: true, subkoppen: true, bladenInInhoud: false });
-  gelijk("versie 3: verder komt er niets bij", geopend, { ...v3, versie: 4, opmaak: geopend.opmaak });
+  gelijk("versie 3: verder komt er niets bij", geopend, { ...v3, versie: 5, taal: "nl", tekstTaal: {}, opmaak: geopend.opmaak });
   gelijk("versie 3: opnieuw openen verandert niets meer",
-    normaliseerRapport(JSON.parse(JSON.stringify(geopend)), VANDAAG, standaardTeksten()), geopend);
+    normaliseerRapport(JSON.parse(JSON.stringify(geopend)), VANDAAG, tekstenNl()), geopend);
   const knopen = bouwOpzet(geopend, bladen);
   const metBladen = geopend.opmaak.bladenInInhoud;
   gelijk("versie 3: dezelfde regels als zonder bladen, plus hoofdstuk Berekeningen",
@@ -306,7 +321,7 @@ kop("model.ts en opzet.ts — een opgeslagen rapport van vóór versie 4: de inh
     [...inhoudsopgave(bouwOpzet(geopend, []), metBladen).map((i) => i.nummer), "6"]);
 
   // De keuze aan: elk blad één keer, op de plek van zijn uitwerking.
-  const nieuw = standaardRapport(VANDAAG, standaardTeksten());
+  const nieuw = standaardNl(VANDAAG, tekstenNl());
   nieuw.inHoofdstuk = { "ex-a": true };
   const k = bouwOpzet(nieuw, [{ ...bladen[0], koppen: [{ titel: "Een kop", anker: "ex-a#0" }] }, { ...bladen[1], koppen: [{ titel: "Twee", anker: "ex-b#1" }] }]);
   const regels = inhoudsopgave(k, true);
@@ -343,7 +358,7 @@ kop("model.ts en opzet.ts — een opgeslagen rapport van vóór versie 4: de inh
 
 kop("opzet.ts — de plek van een blad volgt zijn soort, tot de gebruiker kiest");
 {
-  const r = standaardRapport(VANDAAG, standaardTeksten());
+  const r = standaardNl(VANDAAG, tekstenNl());
   const zo = { id: "ex-1", naam: "Notitie", plek: "hoofdstuk" };
   const gewoon = { id: "ex-2", naam: "Ligger" };
   toets("zonder keuze: de plek van de soort", staatInHoofdstuk(r, zo));
@@ -363,7 +378,7 @@ kop("pad.ts");
   gelijk("leesPad: cijfers worden indexen", leesPad("revisies.0.code"), ["revisies", 0, "code"]);
   gelijk("leesPad: exemplaar-id blijft tekst", leesPad("inHoofdstuk.ex-1"), ["inHoofdstuk", "ex-1"]);
 
-  const r0 = standaardRapport(VANDAAG, {});
+  const r0 = standaardNl(VANDAAG, {});
   const r1 = zetOpPad(r0, leesPad("belastingen.wind.gebouwhoogte"), "9");
   gelijk("zetOpPad: waarde gezet", r1.belastingen.wind.gebouwhoogte, "9");
   gelijk("zetOpPad: origineel onaangetast", r0.belastingen.wind.gebouwhoogte, "");
@@ -495,8 +510,8 @@ kop("normwaarden.ts — 4.1 constructieve uitgangspunten");
 
 kop("normwaarden.ts — 4.5 belastingfactoren");
 {
-  const rij = (cc, naam) => belastingfactorTabel(cc).find((r) => r.naam === naam);
-  gelijk("tabel: rijen", belastingfactorTabel(2).map((r) => `${r.groep} ${r.naam}`), [
+  const rij = (cc, naam) => belastingfactorTabel(cc, "nl").find((r) => r.naam === naam);
+  gelijk("tabel: rijen", belastingfactorTabel(2, "nl").map((r) => `${r.groep} ${r.naam}`), [
     "A EQU(6.10)", "B STR(6.10a)", "B STR(6.10b)", "C GEO(6.10)", "D FAT", "F HYD",
     " Buitengewoon(6.11a/b)", " Karakteristiek(6.14b)", " Frequent(6.15b)", " Quasi-Blijvend(6.16b)",
   ]);
@@ -571,7 +586,7 @@ kop("normwaarden.ts — 5.2 wind (referentie: scripts/check-gording.mjs)");
   const w = windQp(2, 3, 5);
   gelijk("II / III / 5 m: v_b,0, z₀, z_min, z_e", [w.vb0, w.z0, w.zmin, w.ze], [27.0, 0.5, 7, 7]);
   toets("geen gebouwhoogte → q_p NaN", Number.isNaN(windQp(2, 2, getal("")).qp));
-  gelijk("windLabel", [windLabel(1, 1), windLabel(2, 2), windLabel(3, 3)], ["1 kust", "2 onbebouwd", "3 bebouwd"]);
+  gelijk("windLabel", [windLabel(1, 1, "nl"), windLabel(2, 2, "nl"), windLabel(3, 3, "nl")], ["1 kust", "2 onbebouwd", "3 bebouwd"]);
   gelijk("ψ wind (NB.2–A1.1)", PSI_WIND, [0, 0.2, 0]);
 }
 
@@ -713,21 +728,21 @@ kop("standaardteksten.ts");
   for (const id of IDS) {
     const varianten = STANDAARD_TEKSTEN[id];
     toets(`${id}: minstens één variant, elk met label en tekst`, varianten.length > 0
-      && varianten.every((v) => v.label.trim() !== "" && v.tekst.trim() !== ""));
+      && varianten.every((v) => v.label.nl.trim() !== "" && v.tekst.nl.trim() !== ""));
   }
-  const nieuw = standaardTeksten();
+  const nieuw = tekstenNl();
   gelijk("nieuw rapport: welke teksten", Object.keys(nieuw), [...STANDAARD_IN_NIEUW_RAPPORT]);
   gelijk("nieuw rapport: welke teksten (spec)", Object.keys(nieuw).sort(), [
     "inleiding", "projectomschrijving", "rol", "trillingen", "vervormingen", "montage",
     "rekenprogrammatuur", "temperatuur", "aardbeving", "sneeuw", "regenwater",
   ].sort());
-  gelijk("nieuw rapport: eerste variant", nieuw.trillingen, STANDAARD_TEKSTEN.trillingen[0].tekst);
+  gelijk("nieuw rapport: eerste variant", nieuw.trillingen, STANDAARD_TEKSTEN.trillingen[0].tekst.nl);
   gelijk("rol: openingszin van 2.2", nieuw.rol, "{adviseur} heeft opdracht voor het constructieadvies voor dit project.");
   gelijk("regenwater: standaard", nieuw.regenwater, "Niet van toepassing");
   toets("rekenprogrammatuur noemt Open CalcSheet Studio",
-    STANDAARD_TEKSTEN.rekenprogrammatuur.every((v) => v.tekst.includes("opgesteld met Open CalcSheet Studio.")));
+    STANDAARD_TEKSTEN.rekenprogrammatuur.every((v) => v.tekst.nl.includes("opgesteld met Open CalcSheet Studio.") && v.tekst.en.includes("prepared with Open CalcSheet Studio.")));
   gelijk("vorige productnaam nergens meer in de meegeleverde teksten",
-    Object.values(STANDAARD_TEKSTEN).flat().filter((v) => (v.label + v.tekst).includes(VORIGE_PRODUCTNAAM)).map((v) => v.label), []);
+    Object.values(STANDAARD_TEKSTEN).flat().filter((v) => JSON.stringify(v).includes(VORIGE_PRODUCTNAAM)).map((v) => v.label.nl), []);
   // De melding in het paneel: de vorige naam als losse woorden, niet als begin van een langere naam.
   gelijk("vorige productnaam herkend",
     [VORIGE_PRODUCTNAAM, "Opgesteld met OpenAEC Calc.", "met OpenAEC Calc, versie 1", "met OpenAEC\nCalc", "(OpenAEC Calc)"]
@@ -740,16 +755,16 @@ kop("standaardteksten.ts");
   // letterlijk ("{adviseru}") in elk rapport komen.
   const w = Object.fromEntries(INVULVELDEN.map((v) => [v, "x"]));
   const alle = Object.values(STANDAARD_TEKSTEN).flat();
-  const rest = alle.map((v) => vulIn(v.tekst, w)).filter((t) => /\{[A-Za-z]+\}/.test(t));
+  const rest = alle.map((v) => vulIn(v.tekst.nl, w)).filter((t) => /\{[A-Za-z]+\}/.test(t));
   gelijk("alleen bekende invulvelden", rest, []);
   // Een meegeleverde tekst krijgt door de subkoppen geen andere opmaak dan voorheen.
   gelijk("meegeleverde teksten hebben geen subkop",
-    alle.flatMap((v) => tekstRegels(v.tekst, true)).filter((r) => r.kop).map((r) => r.tekst), []);
+    alle.flatMap((v) => tekstRegels(v.tekst.nl, true)).filter((r) => r.kop).map((r) => r.tekst), []);
 }
 
 kop("opzet.ts — standaardrapport zonder bladen (uitgangspuntendocument)");
 {
-  const r = standaardRapport(VANDAAG, standaardTeksten());
+  const r = standaardNl(VANDAAG, tekstenNl());
   const knopen = bouwOpzet(r, []);
   gelijk("hoofdstukken: geen Berekeningen zonder rekenbladen", knopen.map((k) => `${k.nummer} ${k.titel}`), [
     "1 Inleiding", "2 Projectgegevens", "3 Constructie", "4 Uitgangspunten", "5 Belastingen",
@@ -796,7 +811,7 @@ kop("opzet.ts — standaardrapport zonder bladen (uitgangspuntendocument)");
 
 kop("opzet.ts — weglaten en terugkomen");
 {
-  const r = standaardRapport(VANDAAG, standaardTeksten());
+  const r = standaardNl(VANDAAG, tekstenNl());
   r.teksten["bestaand-stabiliteit"] = "De stabiliteit wordt verzorgd door de gemetselde bouwmuren.";
   r.teksten.belendingen = "   ";
   r.teksten["uitvoering-nieuwbouw"] = "-Wapening laten controleren.";
@@ -825,7 +840,7 @@ kop("opzet.ts — 3.1 Wijziging heet bij nieuwbouw Constructieprincipe");
   const wijziging = OPZET[2].kinderen[0].kinderen.find((k) => k.id === "wijziging");
   const blok = (r) => bouwOpzet(r, [])[2].kinderen[0].kinderen.map((k) => `${k.id}: ${k.titel}`);
 
-  const nieuw = standaardRapport(VANDAAG, standaardTeksten());
+  const nieuw = standaardNl(VANDAAG, tekstenNl());
   nieuw.teksten.wijziging = "Fundering:\nOp staal.";
   toets("standaardrapport is nieuwbouw", !beschrijftBestaand(nieuw));
   gelijk("nieuwbouw: Constructieprincipe", titelVan(wijziging, nieuw), "Constructieprincipe");
@@ -846,7 +861,7 @@ kop("opzet.ts — 3.1 Wijziging heet bij nieuwbouw Constructieprincipe");
   gelijk("andere koppen hangen er niet van af",
     [titelVan(OPZET[2].kinderen[0].kinderen.find((k) => k.id === "belendingen"), nieuw), titelVan(OPZET[0], nieuw)],
     ["Belendingen", "Inleiding"]);
-  toets("OPZET zelf houdt beide koppen", wijziging.titel === "Wijziging" && wijziging.titelNieuwbouw === "Constructieprincipe");
+  toets("OPZET zelf houdt beide koppen", wijziging.titel.nl === "Wijziging" && wijziging.titelNieuwbouw.nl === "Constructieprincipe");
 
   // Met opmaak.constructieprincipe uit (zo opent een rapport van vóór versie 3)
   // heet het blok altijd Wijziging, ook bij nieuwbouw.
@@ -857,14 +872,14 @@ kop("opzet.ts — 3.1 Wijziging heet bij nieuwbouw Constructieprincipe");
   // Een opgeslagen rapport van deze versie opent ongewijzigd: de tekst blijft
   // onder `wijziging`, de kop volgt de regel.
   const opgeslagen = JSON.parse(JSON.stringify(nieuw));
-  const geopend = normaliseerRapport(JSON.parse(JSON.stringify(opgeslagen)), VANDAAG, standaardTeksten());
+  const geopend = normaliseerRapport(JSON.parse(JSON.stringify(opgeslagen)), VANDAAG, tekstenNl());
   gelijk("opgeslagen rapport van deze versie opent ongewijzigd", geopend, opgeslagen);
   gelijk("en houdt Constructieprincipe", titelVan(wijziging, geopend), "Constructieprincipe");
 }
 
 kop("opzet.ts — berekeningen en bijlagen");
 {
-  const r = standaardRapport(VANDAAG, standaardTeksten());
+  const r = standaardNl(VANDAAG, tekstenNl());
   r.inHoofdstuk = { "ex-a": true };
   r.bijlagen = ["Constructieoverzicht", "  ", "Sonderingen"];
   const bladen = [
@@ -938,7 +953,7 @@ kop("materialen.ts — 4.3: geen opmerking over de bevestigingsmiddelen");
   // Het vlak springt één kolom in: kolom 9 hier is de laatste van het vel.
   toets("bevestigingsmiddelen binnen de bladspiegel", eind(k.bevestigingKwaliteit) <= 9);
 
-  const r = standaardRapport(VANDAAG, {});
+  const r = standaardNl(VANDAAG, {});
   const { materialen, bevestiging } = r.uitgangspunten;
   const standaard = materialenRijen(materialen, bevestiging);
   gelijk("standaard: bevestigingsmiddelen naast de derde materiaalregel, zoals de referentie",

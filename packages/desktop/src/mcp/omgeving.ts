@@ -1,3 +1,4 @@
+import { groepNaam, moduleNaam } from "../components/calc/moduleNaam";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../store/projectStore";
 import { usePrintStore } from "../store/printStore";
 import { useModuleBibliotheek, type CatalogusModule } from "../store/moduleBibliotheek";
@@ -111,6 +112,8 @@ export const liveOmgeving: McpOmgeving = {
     };
   },
   sjabloon: (templateId) => (Object.prototype.hasOwnProperty.call(templates, templateId) ? templates[templateId] : undefined),
+  moduleNaam,
+  groepNaam,
   speciaal: { project: PROJECT_ID, rapport: RAPPORT_ID },
 
   acties: {
@@ -131,7 +134,7 @@ export const liveOmgeving: McpOmgeving = {
     // Een heel stuk rapport: daarna aanvullen tot een geldig rapport, net als bij openen.
     zetRapportDeel: (pad, waarde) =>
       useProjectStore.getState().werkRapportBij((r) =>
-        normaliseerRapport(zetOpPad(r, leesPad(pad), waarde), datumTekst(new Date()), standaardTeksten()),
+        normaliseerRapport(zetOpPad(r, leesPad(pad), waarde), datumTekst(new Date()), standaardTeksten),
       ),
     ongedaan: () => useProjectStore.getState().ongedaan(),
     opnieuw: () => useProjectStore.getState().opnieuw(),

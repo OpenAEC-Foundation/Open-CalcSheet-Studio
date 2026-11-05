@@ -310,7 +310,7 @@ export const PROJECTTOOLS: McpToolDef[] = [
     name: "report_get",
     kind: "read",
     description:
-      "Read the structural report (cover, revisions, chapters, assumptions, loads, layout) or one part of it by path, e.g. 'belastingen.wind', 'revisies' or 'revisies.0.omschrijving' (numbers are list indexes).",
+      "Read the structural report (cover, language, revisions, chapters, assumptions, loads, layout) or one part of it by path, e.g. 'taal', 'belastingen.wind', 'revisies' or 'revisies.0.omschrijving' (numbers are list indexes).",
     inputSchema: objectSchema({ path: { type: "string", description: "Dot path into the report. Default: the whole report." } }),
     annotations: LEZEN,
     rest: [{ method: "GET", path: "/report" }],
@@ -328,7 +328,7 @@ export const PROJECTTOOLS: McpToolDef[] = [
     name: "report_set",
     kind: "mutate",
     description:
-      "Set report fields by dot path (see report_get), e.g. {path: 'belastingen.wind.gebouwhoogte', value: '12'}. Text and checkbox fields take a string or boolean. " +
+      "Set report fields by dot path (see report_get), e.g. {path: 'belastingen.wind.gebouwhoogte', value: '12'}. Text and checkbox fields take a string or boolean. Setting 'taal' ('en', 'nl') switches the report language: built-in texts switch along, text typed by the user stays. " +
       "A list or object value replaces that part (e.g. append a revision with path 'revisies.2'); the app then completes it to a valid report. Pass values {path: value} for several. The parent of each path must exist.",
     inputSchema: objectSchema({
       path: { type: "string", minLength: 1, description: "Dot path into the report." },

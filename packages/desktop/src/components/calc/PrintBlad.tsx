@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from "react";
-import i18next from "i18next";
+import { useTranslation } from "react-i18next";
 import type { Exemplaar } from "../../store/projectStore";
 import { ExemplaarContext } from "../../store/actiefBlad";
 import { designerVoor } from "./designerKeuze";
@@ -24,10 +24,9 @@ import "./PrintDocument.css";
  */
 
 /*
- * De uitdraai volgt de taal van de app, net als de uitwerking op het scherm: het
- * rekenblad (bladDoorrekenen.ts) en de parametrische beelden (namespace "beelden").
- * Voor een Nederlands rapport staat de app op Nederlands. Eerder was de afdruk altijd
- * Nederlands; die keuze is vervallen.
+ * Een losse uitdraai volgt de taal van de app, net als de uitwerking op het scherm. In
+ * het rapport volgt alles de taal van het rapport (AfdrukTaal in afdrukTaal.tsx): daarom
+ * hier `useTranslation` en niet de globale i18next.
  */
 
 /**
@@ -73,11 +72,12 @@ export function CanvasVellen({ eenheden, bladId }: { eenheden: CanvasUitwerking[
 
 /** Het oordeel als klein label: groen, rood of neutraal. */
 export function Oordeel({ r }: { r: Resultaat }) {
-  if (r.nietGetoetst) return <span className="print-oordeel neutraal">{i18next.t("beelden:kit.nietGetoetst")}</span>;
+  const { t } = useTranslation("beelden");
+  if (r.nietGetoetst) return <span className="print-oordeel neutraal">{t("kit.nietGetoetst")}</span>;
   if (r.voldoet === null) return <span className="print-oordeel neutraal">—</span>;
   return (
     <span className={`print-oordeel ${r.voldoet ? "goed" : "fout"}`}>
-      {i18next.t(r.voldoet ? "beelden:afdruk.voldoet" : "beelden:afdruk.voldoetNiet")}
+      {t(r.voldoet ? "afdruk.voldoet" : "afdruk.voldoetNiet")}
     </span>
   );
 }
@@ -108,6 +108,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
   ex: Exemplaar; html: string; nummer: number | string; resultaat: Resultaat; projectregel?: ReactNode;
   titelInKop?: boolean; maten?: Maten; anker?: string; eenheden?: CanvasUitwerking[];
 }) {
+  const { t, i18n } = useTranslation("beelden");
   const soort = bladSoortVan(ex);
   if (soort?.HeelBlad) return <soort.HeelBlad ex={ex} nummer={nummer} anker={anker} />;
   if (soort) return <LosBladAfdruk soort={soort} ex={ex} nummer={nummer} maten={maten} anker={anker} />;
@@ -130,7 +131,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
   // blad dat toevallig openstaat. `alleenLezen` houdt tegen dat het afdrukken
   // standaardwaarden aanvult of iets anders aan het project verandert.
   const beeld = designerVoor(ex.source);
-  const onderkop = [resultaat.norm, projectregel ? "" : `${i18next.t("beelden:afdruk.rekenversieKlein")} ${rekenversie(ex.source)}`]
+  const onderkop = [resultaat.norm, projectregel ? "" : `${t("afdruk.rekenversieKlein")} ${rekenversie(ex.source)}`]
     .filter(Boolean)
     .join(" · ");
   return (
@@ -142,7 +143,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
           {onderkop && <span className="print-blad-norm">{onderkop}</span>}
         </span>
         <span className="print-blad-uitkomst">
-          {resultaat.uc !== null && <span className="print-blad-uc">UC {ucTekst(resultaat.uc)}</span>}
+          {resultaat.uc !== null && <span className="print-blad-uc">UC {ucTekst(resultaat.uc, i18n.language)}</span>}
           <Oordeel r={resultaat} />
         </span>
       </header>

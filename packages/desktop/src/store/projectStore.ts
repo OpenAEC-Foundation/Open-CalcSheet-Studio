@@ -2,10 +2,12 @@ import { create } from "zustand";
 import type { ElementRef } from "@ifc-calc/core";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
-import { normaliseerRapport, standaardRapport, type Rapport } from "../rapport/model";
-import { leesPad, zetOpPad } from "../rapport/pad";
+import i18next, { LANGUAGES } from "../i18n/config";
+import { leesTaal, normaliseerRapport, standaardRapport, type Rapport } from "../rapport/model";
+import { leesPad } from "../rapport/pad";
 import { datumTekst } from "../rapport/revisies";
 import { standaardTeksten } from "../rapport/standaardteksten";
+import { isNieuwRapport, wisselTaal, zetVeldOpPad } from "../rapport/taalwissel";
 import { rekenversie } from "../components/calc/bladVersie";
 import { normaliseerExemplaren } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
@@ -312,10 +314,17 @@ function vrijeNaam(exemplaren: Exemplaar[], basisNaam: string, altijdNummeren = 
   }
 }
 
-/** Een nieuw rapport: revisie A van vandaag en de meegeleverde standaardteksten. */
+/** De taal van de app, voor wat er nieuw wordt gemaakt. */
+const appTaal = () => leesTaal(i18next.language) ?? "en";
+
+/** Een nieuw rapport in de taal van de app: revisie A van vandaag en de meegeleverde standaardteksten. */
 function nieuwRapport(): Rapport {
-  return standaardRapport(datumTekst(new Date()), standaardTeksten());
+  const taal = appTaal();
+  return standaardRapport(datumTekst(new Date()), standaardTeksten(taal), taal);
 }
+
+/** De naam van een project dat nog geen naam heeft, in de taal van de app. */
+const nieuweProjectNaam = () => i18next.t("werkruimte:project.nieuweNaam");
 
 /**
  * Een rapport van buiten de store — uit de opslag of een ingelezen bestand —
@@ -323,11 +332,11 @@ function nieuwRapport(): Rapport {
  * vóór het constructierapport), dan komt er een nieuw rapport.
  */
 function rapportUit(x: unknown): Rapport {
-  return x ? normaliseerRapport(x, datumTekst(new Date()), standaardTeksten()) : nieuwRapport();
+  return x ? normaliseerRapport(x, datumTekst(new Date()), standaardTeksten, appTaal()) : nieuwRapport();
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
-  projectNaam: "Nieuw project",
+  projectNaam: nieuweProjectNaam(),
   bestandspad: null,
   gegevens: legeGegevens(),
   exemplaren: [],
@@ -702,7 +711,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   zetRapportVeld: (pad, waarde) =>
     set((s) => ({
       ...metGeschiedenis(s, `rapport:${pad}`),
-      rapport: zetOpPad(s.rapport, leesPad(pad), waarde),
+      rapport: zetVeldOpPad(s.rapport, leesPad(pad), waarde),
       dirty: true,
     })),
 
@@ -766,7 +775,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   nieuwProject: () =>
     set({
       verborgen: {},
-      projectNaam: "Nieuw project",
+      projectNaam: nieuweProjectNaam(),
       bestandspad: null,
       gegevens: legeGegevens(),
       exemplaren: [],
@@ -780,7 +789,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   laadProject: (p) =>
     set({
       verborgen: p.verborgen ?? {},
-      projectNaam: p.projectNaam ?? "Nieuw project",
+      projectNaam: p.projectNaam ?? nieuweProjectNaam(),
       bestandspad: p.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(p.gegevens ?? {}) },
       exemplaren: p.exemplaren ?? [],
@@ -793,6 +802,26 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   markeerOpgeslagen: (bestandspad) => set({ bestandspad, dirty: false }),
 }));
+
+/** Is dit de naam die de app zelf aan een nieuw project gaf, in welke taal dan ook? */
+const isStandaardNaam = (naam: string) =>
+  LANGUAGES.some((l) => i18next.t("werkruimte:project.nieuweNaam", { lng: l.code }) === naam);
+
+/*
+ * De bewaarde taal van de app komt pas na het maken van de store binnen, en je kunt hem
+ * wisselen voordat je iets hebt gedaan. Een project waar nog niemand aan heeft gezeten,
+ * volgt dan de app. Iets dat is geopend of aangeraakt, houdt zijn eigen taal.
+ */
+function volgTaalVanApp() {
+  const s = useProjectStore.getState();
+  const taal = appTaal();
+  if (s.dirty || s.bestandspad || s.exemplaren.length > 0 || s.rapport.taal === taal || !isNieuwRapport(s.rapport)) return;
+  useProjectStore.setState({
+    rapport: wisselTaal(s.rapport, taal),
+    ...(isStandaardNaam(s.projectNaam) ? { projectNaam: nieuweProjectNaam() } : {}),
+  });
+}
+i18next.on("languageChanged", volgTaalVanApp);
 
 // Persistentie -------------------------------------------------------------
 // Debounced wegschrijven naar de Tauri-store, zodat de app opent waar je hem
@@ -815,7 +844,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
   const nu = useProjectStore.getState();
   const onaangeroerd = nu.exemplaren.length === 0 && !nu.dirty;
   if (saved && Array.isArray(saved.exemplaren) && onaangeroerd) {
-    const projectNaam = saved.projectNaam ?? "Nieuw project";
+    const projectNaam = saved.projectNaam ?? nieuweProjectNaam();
     useProjectStore.setState({
       projectNaam,
       bestandspad: saved.bestandspad ?? null,
@@ -828,6 +857,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       verborgen: saved.verborgen ?? {},
       dirty: false,
     });
+    volgTaalVanApp();
   }
   // Een expliciete lijst: een nieuw veld moet hier én hierboven bij het
   // hydrateren worden toegevoegd, anders overleeft het geen herstart.

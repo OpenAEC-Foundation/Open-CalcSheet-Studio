@@ -14,9 +14,10 @@ import "./HelpPanel.css";
 /**
  * Zichtbare tekst: letterlijk (code, tekens; in elke taal gelijk) of een
  * sleutel onder rekentaal:help. Het fragment in `insert` is rekentaal en wordt
- * nooit vertaald.
+ * niet vertaald, op de voorbeeldwoorden na: een kop of titel om te overtypen volgt de
+ * taal (help.invoeg). In `sjabloon` komt de vertaling op de plek van {}.
  */
-type Tekst = string | { sleutel: string };
+type Tekst = string | { sleutel: string; sjabloon?: string };
 const vt = (sleutel: string): Tekst => ({ sleutel });
 
 interface Section {
@@ -25,14 +26,14 @@ interface Section {
   /** When set, items render as a collapsible list. */
   items?: Item[];
   /** When set, render as a single paragraph / inline list (no toggle). */
-  inline?: { label: Tekst; insert?: string; isCode?: boolean }[];
+  inline?: { label: Tekst; insert?: Tekst; isCode?: boolean }[];
   /** Plain-text body shown after the title (no inserts). */
   description?: Tekst;
 }
 
 interface Item {
   label: Tekst;
-  insert?: string;
+  insert?: Tekst;
   description?: Tekst;
 }
 
@@ -110,7 +111,7 @@ const SECTIONS: Section[] = [
     items: [
       { label: "#def name(args) … #end def", insert: "#def line$(x1$; y1$; x2$; y2$)\n\t'<line x1=\"'x1$'\" y1=\"'y1$'\" .../>\n#end def" },
       { label: vt("item.defConstante"), insert: "#def style1$ = \"stroke:black\"" },
-      { label: vt("item.include"), insert: "#include bestand.cpd" },
+      { label: vt("item.include"), insert: vt("invoeg.include") },
     ],
   },
   {
@@ -129,7 +130,7 @@ const SECTIONS: Section[] = [
       },
       {
         label: vt("item.js"),
-        insert: "@js hoogte=80mm titel=\"Waarden uit het blad\"\nfunction toon() {\n  document.body.textContent = calc.namen().map(calc.tekst).join(\", \");\n}\ntoon();\ncalc.bijWijziging(toon);\n@end",
+        insert: { sleutel: "invoeg.jsTitel", sjabloon: "@js hoogte=80mm titel=\"{}\"\nfunction toon() {\n  document.body.textContent = calc.namen().map(calc.tekst).join(\", \");\n}\ntoon();\ncalc.bijWijziging(toon);\n@end" },
         description: vt("omschrijving.js"),
       },
       { label: vt("item.imgPng"), insert: "@img(detail.png)" },
@@ -140,10 +141,10 @@ const SECTIONS: Section[] = [
   {
     id: "tekst",
     items: [
-      { label: vt("item.titel"), insert: "\"Project Titel" },
-      { label: vt("item.vet"), insert: "'<b>Vetgedrukt</b>" },
-      { label: vt("item.hoofdstuk"), insert: "# 1. Invoer" },
-      { label: vt("item.commentaar"), insert: "// commentaar" },
+      { label: vt("item.titel"), insert: vt("invoeg.titel") },
+      { label: vt("item.vet"), insert: vt("invoeg.vet") },
+      { label: vt("item.hoofdstuk"), insert: vt("invoeg.hoofdstuk") },
+      { label: vt("item.commentaar"), insert: vt("invoeg.commentaar") },
     ],
   },
   {
@@ -162,7 +163,11 @@ const SECTIONS: Section[] = [
 
 export default function HelpPanel() {
   const { t } = useTranslation("rekentaal");
-  const tekst = (x: Tekst) => (typeof x === "string" ? x : t(`help.${x.sleutel}`));
+  const tekst = (x: Tekst) => {
+    if (typeof x === "string") return x;
+    const woord = t(`help.${x.sleutel}`);
+    return x.sjabloon ? x.sjabloon.replace("{}", woord) : woord;
+  };
   const source = useActieveBron();
   const setSource = useZetActieveBron();
   // First two sections always open; rest start collapsed.
@@ -216,8 +221,8 @@ export default function HelpPanel() {
                           key={j}
                           type="button"
                           className={`help-chip${it.isCode ? " is-code" : ""}`}
-                          onClick={() => it.insert && insert(it.insert)}
-                          title={it.insert ? t("help.voegIn", { fragment: it.insert }) : undefined}
+                          onClick={() => it.insert && insert(tekst(it.insert))}
+                          title={it.insert ? t("help.voegIn", { fragment: tekst(it.insert) }) : undefined}
                         >
                           {tekst(it.label)}
                         </button>
@@ -231,7 +236,7 @@ export default function HelpPanel() {
                           <button
                             type="button"
                             className="help-item"
-                            onClick={() => it.insert && insert(it.insert)}
+                            onClick={() => it.insert && insert(tekst(it.insert))}
                             title={it.insert ? t("help.klikOmInTeVoegen") : undefined}
                           >
                             <span className="help-item-label">{tekst(it.label)}</span>

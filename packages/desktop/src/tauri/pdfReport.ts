@@ -7,6 +7,7 @@
  * into the openaec-core ReportData schema first.
  */
 
+import i18next from "i18next";
 import { documentToReport, type ReportData } from "../lib/documentToReport";
 import type { EvaluatedNode } from "@ifc-calc/core";
 
@@ -32,10 +33,7 @@ export async function savePdfReport(
   projectName: string,
 ): Promise<string | null> {
   if (!isTauriEnv()) {
-    alert(
-      "PDF rapportgeneratie werkt alleen in de Tauri desktop app, " +
-        "niet in de browser preview. Open via `tauri dev` of de gebouwde executable.",
-    );
+    alert(i18next.t("werkruimte:pdfRapport.alleenApp"));
     return null;
   }
 
@@ -49,9 +47,9 @@ export async function savePdfReport(
 
   const defaultName = `${sanitizeFileName(projectName)}.pdf`;
   const path = await save({
-    title: "PDF rapport opslaan",
+    title: i18next.t("werkruimte:pdfRapport.opslaanTitel"),
     defaultPath: defaultName,
-    filters: [{ name: "PDF document", extensions: ["pdf"] }],
+    filters: [{ name: i18next.t("werkruimte:pdfRapport.filter"), extensions: ["pdf"] }],
   });
   if (!path) return null;
 
@@ -72,9 +70,7 @@ export async function previewPdfReport(
   projectName: string,
 ): Promise<string> {
   if (!isTauriEnv()) {
-    throw new Error(
-      "PDF preview vereist de Tauri desktop app — gebruik `npm run tauri dev` of de gebouwde executable.",
-    );
+    throw new Error(i18next.t("werkruimte:pdfRapport.alleenApp"));
   }
   const report = documentToReport(nodes, projectName);
   const { invoke } = await import("@tauri-apps/api/core");

@@ -1,3 +1,4 @@
+import i18next from "i18next";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { MapContainer, TileLayer, GeoJSON, Marker, Pane, Popup, useMap, useMapEvents } from "react-leaflet";
@@ -16,7 +17,8 @@ import {
 import "./WindAreaMap.css";
 
 const ROMEINS: Record<WindGebied, string> = { 1: "I", 2: "II", 3: "III" };
-const komma = (v: number, dec: number) => v.toFixed(dec).replace(".", ",");
+/** Een getal in de notatie van de taal van de app. */
+const komma = (v: number, dec: number) => (i18next.language?.startsWith("nl") ? v.toFixed(dec).replace(".", ",") : v.toFixed(dec));
 
 /**
  * Het gekozen windgebied: één omtrek om al het land en water van dat gebied,

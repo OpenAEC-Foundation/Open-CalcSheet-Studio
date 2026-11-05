@@ -6,7 +6,7 @@ import { graafSvg } from "../../graaf/papier";
 import { graafScene } from "../../graaf/scene";
 import { waardeTekst } from "../../graaf/waarde";
 import { useDrieDAfdruk } from "../calc/drieDBlok";
-import { papier } from "../calc/pdfBlad";
+import { usePapier } from "../calc/afdrukTaal";
 import type { Maten } from "../calc/paginering";
 import { meldingTekst, nodeNaam, poortTekst } from "./graafTeksten";
 import "./GraafBlad.css";
@@ -29,7 +29,7 @@ const GRAAF_MAX_HOOGTE = 0.55;
  * uitdraai en bijlage A onder de kop van het blad.
  */
 export function GraafVellen({ ex, maten }: { ex: Exemplaar; maten: Maten }) {
-  const t = papier();
+  const t = usePapier();
   const graaf = ex.graaf;
   const uitkomst = useMemo(() => (graaf ? rekenGraaf(graaf) : null), [graaf]);
   const tekening = useMemo(() => {
@@ -98,7 +98,7 @@ export function GraafVellen({ ex, maten }: { ex: Exemplaar; maten: Maten }) {
  * daaronder de delen. PrintBlad geeft zo'n blad hieraan door.
  */
 export function GraafBladAfdruk({ ex, nummer, maten }: { ex: Exemplaar; nummer: number | string; maten: Maten }) {
-  const t = papier();
+  const t = usePapier();
   return (
     <section className="print-blad print-pdf">
       <header className="print-blad-kop">

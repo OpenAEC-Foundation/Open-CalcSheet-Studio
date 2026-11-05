@@ -1,8 +1,10 @@
 import { Fragment, type CSSProperties } from "react";
 import { huisstijlVariabelen, type BureauProfiel } from "../../../rapport/model";
+import { inTaal } from "../../../rapport/meertalig";
+import { AfdrukTaal } from "../../calc/afdrukTaal";
 import { PrintBlad } from "../../calc/PrintBlad";
 import { MATEN } from "../../calc/paginering";
-import { bijlageAnker, bijlageBladAnker } from "../../../rapport/opzet";
+import { BIJLAGE_A, bijlageAnker, bijlageBladAnker } from "../../../rapport/opzet";
 import { useRapportWeergave, type RapportBlad } from "./useRapportWeergave";
 import { hoofdstukStukken, type Stuk } from "./Knopen";
 import Voorblad from "./Voorblad";
@@ -44,7 +46,8 @@ type BijlageBlad = RapportBlad & { nummer: string };
 /**
  * Het volledige constructierapport: voorblad, inhoud, de hoofdstukken en
  * bijlage A. Elke `section` begint op een nieuw vel — in het afdrukvoorbeeld
- * omdat de verdeling dat zo doet, bij het printen via `break-before`.
+ * omdat de verdeling dat zo doet, bij het printen via `break-before`. Alles staat in de
+ * taal van het rapport, ook de beelden en de kop van een blad (AfdrukTaal).
  */
 export default function RapportAfdruk() {
   const w = useRapportWeergave();
@@ -59,9 +62,10 @@ export default function RapportAfdruk() {
     const b = w.bladen.find((x) => x.ex.id === blad.id);
     return b ? [{ ...b, nummer: blad.bijlage }] : [];
   });
-  const titelA = w.bijlagen.find((b) => b.letter === "A")?.titel ?? "Uitgebreide uitwerking berekeningen";
+  const titelA = w.bijlagen.find((b) => b.letter === "A")?.titel ?? inTaal(BIJLAGE_A, w.taal);
 
   return (
+    <AfdrukTaal taal={w.taal}>
     <div className="rpa-wortel" style={huisstijlVariabelen(w.bureau.huisstijl) as CSSProperties}>
       <Voet bureau={w.bureau} />
       <Voorblad w={w} />
@@ -75,7 +79,7 @@ export default function RapportAfdruk() {
       ))}
       {inBijlage.length > 0 && (
         <section className="rpa-sectie rpa-bijlagekop">
-          <h1 className="rpa-h1" data-inhoud={bijlageAnker("A")}>Bijlage A {titelA}</h1>
+          <h1 className="rpa-h1" data-inhoud={bijlageAnker("A")}>{w.t("afdruk.bijlageKop", { letter: "A", titel: titelA })}</h1>
         </section>
       )}
       {/* De kop (A.x) noemt naam en grondslag al; de titelkop van de uitwerking zou die herhalen.
@@ -85,5 +89,6 @@ export default function RapportAfdruk() {
           maten={MATEN.rapport} anker={bijlageBladAnker(b.ex.id)} eenheden={b.eenheden} />
       ))}
     </div>
+    </AfdrukTaal>
   );
 }

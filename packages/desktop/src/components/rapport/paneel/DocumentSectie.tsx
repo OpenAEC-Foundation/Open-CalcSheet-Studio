@@ -1,20 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { FASEN } from "../../../rapport/model";
+import { LANGUAGES } from "../../../i18n/config";
+import { inTaal } from "../../../rapport/meertalig";
+import { FASEN, TITELS } from "../../../rapport/model";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { useProjectStore } from "../../../store/projectStore";
 import { Afgeleid, Keuze, Sectie, TekstVak, Veld, useRapport, type Optie } from "./velden";
-
-/**
- * Suggesties voor de rapporttitel; een eigen titel typen kan altijd. De titel
- * komt zo in het rapport, dus deze lijst blijft Nederlands.
- */
-const TITELS = [
-  "Constructieadvies & berekeningen",
-  "Constructieve berekening",
-  "Constructief advies",
-  "Constructieve berekeningen en tekeningen",
-  "Beoordeling bestaande constructie",
-];
 
 /**
  * Sectie Document: wat op het voorblad staat en niet al in de
@@ -34,6 +24,8 @@ export default function DocumentSectie() {
     { waarde: "", label: t("document.faseNietVermelden") },
     ...FASEN.map((f) => ({ waarde: f, label: `${f} — ${t(`document.fasen.${f}`)}` })),
   ];
+  // Elke taal in haar eigen naam, zoals in de instellingen.
+  const taalOpties: Optie[] = LANGUAGES.filter((l) => l.code !== "auto").map((l) => ({ waarde: l.code, label: l.name }));
   const constructeurs: Optie[] = [
     { waarde: "", label: "—" },
     ...namen.map((n) => ({ waarde: n, label: n })),
@@ -45,6 +37,7 @@ export default function DocumentSectie() {
       titel={t("secties.document")}
       intro={t("document.intro")}
     >
+      <Keuze label={t("document.taal")} pad="taal" waarde={rapport.taal} opties={taalOpties} hint={t("document.taalHint")} />
       <Veld
         label={t("document.titel")}
         pad="titel"
@@ -53,8 +46,9 @@ export default function DocumentSectie() {
         hint={t("document.titelHint")}
       />
       <datalist id="rapport-titels">
+        {/* Suggesties: de titel komt zo in het rapport, dus in de taal van het rapport. */}
         {TITELS.map((titel) => (
-          <option key={titel} value={titel} />
+          <option key={titel.en} value={inTaal(titel, rapport.taal)} />
         ))}
       </datalist>
       <div className="rapport-rij">

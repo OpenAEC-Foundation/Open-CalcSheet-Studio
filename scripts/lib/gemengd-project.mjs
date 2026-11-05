@@ -334,7 +334,7 @@ export async function bouwGemengdProject() {
     { ...b.marimo, ...kale, templateId: MARIMO_BLAD, marimo: maakMarimoNotebook() },
   ];
 
-  const rapport = standaardRapport("01-09-2026", standaardTeksten());
+  const rapport = standaardRapport("01-09-2026", standaardTeksten("nl"), "nl");
   rapport.kenmerk = "VB-2026-002";
   rapport.fase = "DO";
   rapport.verantwoordelijk = "Ir. A. Voorbeeld";

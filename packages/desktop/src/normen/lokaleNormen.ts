@@ -22,22 +22,22 @@ function openDatabase(): Promise<IDBDatabase> {
       request.result.createObjectStore(STORE, { keyPath: "id" });
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("Lokale opslag niet beschikbaar"));
+    request.onerror = () => reject(request.error ?? new Error(i18next.t("werkruimte:normbestanden.opslagNietBeschikbaar")));
   });
 }
 
 function leesVerzoek<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("Normbestand lezen mislukt"));
+    request.onerror = () => reject(request.error ?? new Error(i18next.t("werkruimte:normbestanden.lezenMislukt")));
   });
 }
 
 function wachtOpTransactie(transactie: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     transactie.oncomplete = () => resolve();
-    transactie.onerror = () => reject(transactie.error ?? new Error("Lokale opslag mislukt"));
-    transactie.onabort = () => reject(transactie.error ?? new Error("Lokale opslag afgebroken"));
+    transactie.onerror = () => reject(transactie.error ?? new Error(i18next.t("werkruimte:normbestanden.opslaanMislukt")));
+    transactie.onabort = () => reject(transactie.error ?? new Error(i18next.t("werkruimte:normbestanden.opslaanAfgebroken")));
   });
 }
 
@@ -66,8 +66,8 @@ export async function leesLokaleNorm(id: string): Promise<Blob | null> {
 
 export async function voegLokaleNormToe(nummer: string, editie: string, bestand: File): Promise<void> {
   const begin = new TextDecoder().decode(await bestand.slice(0, 5).arrayBuffer());
-  if (begin !== "%PDF-") throw new Error("Kies een geldig PDF-bestand");
-  if (bestand.size > 100 * 1024 * 1024) throw new Error("PDF is groter dan 100 MB");
+  if (begin !== "%PDF-") throw new Error(i18next.t("werkruimte:normbestanden.geenPdf"));
+  if (bestand.size > 100 * 1024 * 1024) throw new Error(i18next.t("werkruimte:normbestanden.teGroot"));
   const database = await openDatabase();
   try {
     const transactie = database.transaction(STORE, "readwrite");
@@ -96,4 +96,5 @@ export async function verwijderLokaleNorm(id: string): Promise<void> {
   } finally {
     database.close();
   }
-}
+}import i18next from "i18next";
+

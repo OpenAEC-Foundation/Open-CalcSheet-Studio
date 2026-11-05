@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { useAfdrukTaal, usePapier } from "./afdrukTaal";
 import type { Exemplaar } from "../../store/projectStore";
 import { PDF_BLAD } from "../../store/pdfBijlage";
 import { SPREADSHEET_BLAD } from "../../store/spreadsheetBlad";
@@ -35,8 +36,8 @@ import { MarimoPapier } from "./MarimoPapier";
 export interface BladSoort {
   /** `templateId` van de bladen van deze soort. */
   templateId: string;
-  /** De naam van de soort op papier, onder de kop en in de kolom grondslag. In de taal van de app. */
-  soortTekst: () => string;
+  /** De naam van de soort op papier, onder de kop en in de kolom grondslag, in de taal van de uitdraai. */
+  soortTekst: (taal?: string) => string;
   /**
    * Het afdrukonderdeel: de inhoud van het blad onder zijn kop, binnen de
    * bladspiegel van `maten`. Elk blok is een los kind; `print-nieuw-vel` begint een
@@ -68,18 +69,19 @@ export interface BladSoort {
 const SOORTEN: readonly BladSoort[] = [
   {
     templateId: PDF_BLAD,
-    soortTekst: () => papier()("pdfBlad.soort"),
+    soortTekst: (taal) => papier(taal)("pdfBlad.soort"),
     Afdruk: PdfPaginas,
     // Een getekende pagina verandert de hoogte niet, maar moet wel op de vellen komen.
     useVersie: usePdfVersie,
     useOnderkop: (ex) => {
       const stand = usePdfPaginas(ex.pdf?.data);
-      return [ex.pdf?.bestandsnaam, stand && stand.paginas.length > 0 ? papier()("pdfBlad.paginas", { count: stand.paginas.length }) : ""];
+      const t = usePapier();
+      return [ex.pdf?.bestandsnaam, stand && stand.paginas.length > 0 ? t("pdfBlad.paginas", { count: stand.paginas.length }) : ""];
     },
   },
   {
     templateId: SPREADSHEET_BLAD,
-    soortTekst: () => papier()("spreadsheetBlad.soort"),
+    soortTekst: (taal) => papier(taal)("spreadsheetBlad.soort"),
     Afdruk: SpreadsheetVellen,
     // Een getekende werkmap verandert de hoogte juist wel.
     useVersie: useWerkmapVersie,
@@ -87,7 +89,7 @@ const SOORTEN: readonly BladSoort[] = [
   },
   {
     templateId: MARKDOWN_BLAD,
-    soortTekst: () => papier()("markdownBlad.soort"),
+    soortTekst: (taal) => papier(taal)("markdownBlad.soort"),
     Afdruk: MarkdownPapier,
     // Een geladen afbeelding.
     useVersie: useMarkdownVersie,
@@ -98,18 +100,18 @@ const SOORTEN: readonly BladSoort[] = [
   },
   {
     templateId: MARIMO_BLAD,
-    soortTekst: () => papier()("marimoBlad.soort"),
+    soortTekst: (taal) => papier(taal)("marimoBlad.soort"),
     Afdruk: MarimoPapier,
     useOnderkop: (ex) => [ex.marimo?.bestandsnaam],
   },
   {
     templateId: GRAAF_BLAD,
-    soortTekst: () => papier()("graafBlad.soort"),
+    soortTekst: (taal) => papier(taal)("graafBlad.soort"),
     Afdruk: GraafVellen,
   },
   {
     templateId: TEKEN_BLAD,
-    soortTekst: () => papier()("tekenBlad.soort"),
+    soortTekst: (taal) => papier(taal)("tekenBlad.soort"),
     Afdruk: TekenvelOpPapier,
     HeelBlad: TekenbladAfdruk,
   },
@@ -141,7 +143,8 @@ export function LosBladAfdruk({ soort, ex, nummer, maten, anker }: {
 }) {
   // Een blad verandert niet van soort, dus deze haak blijft dezelfde.
   const extra = soort.useOnderkop?.(ex) ?? [];
-  const onderkop = [soort.soortTekst(), ...extra].filter(Boolean).join(" · ");
+  const taal = useAfdrukTaal();
+  const onderkop = [soort.soortTekst(taal), ...extra].filter(Boolean).join(" · ");
   return (
     <section className="print-blad print-pdf">
       <header className="print-blad-kop" data-inhoud={anker}>

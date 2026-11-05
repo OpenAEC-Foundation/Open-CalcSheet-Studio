@@ -1,3 +1,4 @@
+import { ucTekst } from "./bladLezen";
 import { Fragment, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
@@ -8,14 +9,14 @@ import "./ProjectGegevensPanel.css";
 /**
  * De koppen van PROJECT_VELDEN, naar hun sleutel onder gegevens.groepen in
  * werkruimte.json. De velden zelf staan daar onder gegevens.velden.<naam>.
- * Labels, toelichtingen en keuzes in de store blijven Nederlands; de
- * vertaling gebeurt hier, bij het tonen. Een kop of veld zonder vertaling
+ * Labels, toelichtingen en keuzes staan in de store in het Engels, zoals de API ze
+ * teruggeeft; de vertaling gebeurt hier, bij het tonen. Een kop of veld zonder vertaling
  * toont de tekst uit de store.
  */
 const GROEP_SLEUTELS: Record<string, string> = {
-  "Rekenwijze": "rekenwijze",
+  "Calculation method": "rekenwijze",
   "Project": "project",
-  "Grondslagen (NEN-EN 1990 + NB)": "grondslagen",
+  "Basis of design (NEN-EN 1990 + NB)": "grondslagen",
   "Wind (NEN-EN 1991-1-4 + NB)": "wind",
 };
 
@@ -138,7 +139,7 @@ export default function ProjectGegevensPanel() {
               )}
               {veld.naam === "CC" && (
                 <span className="pg-afgeleid">
-                  {t("gegevens.afgeleid")} K<sub>FI</sub> = {kFi.toFixed(2).replace(".", ",")}
+                  {t("gegevens.afgeleid")} K<sub>FI</sub> = {ucTekst(kFi)}
                 </span>
               )}
             </label>

@@ -67,15 +67,15 @@ function RolInhoud({ w }: { w: RapportWeergave }) {
     <>
       <Tekst tekst={w.rapport.teksten.rol} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />
       <Rij>
-        <Cel k={1} n={5}>{vulIn("Rol van {adviseur} in dit project:", w.invul)}</Cel>
+        <Cel k={1} n={5}>{vulIn(w.t("afdruk.rol.rolVan"), w.invul)}</Cel>
         <Cel k={6} n={5}>{rol.rol}</Cel>
       </Rij>
       <Rij>
-        <Cel k={2} n={4}>Bouwkundig adviseur/Architect:</Cel>
+        <Cel k={2} n={4}>{w.t("afdruk.rol.architect")}</Cel>
         <Cel k={6} n={5}>{rol.architect}</Cel>
       </Rij>
       <Rij>
-        <Cel k={2} n={4}>Datum bouwkundige onderlegger:</Cel>
+        <Cel k={2} n={4}>{w.t("afdruk.rol.datumOnderlegger")}</Cel>
         <Cel k={6} n={5}>{rol.datumOnderlegger}</Cel>
       </Rij>
     </>
@@ -88,12 +88,12 @@ function RolInhoud({ w }: { w: RapportWeergave }) {
  * rechts en twee lege regels erna. Zonder rekenbladen is er geen hoofdstuk
  * Berekeningen (bouwOpzet laat het weg).
  */
-function BerekeningenInhoud({ knoop }: { knoop: Rapportknoop }) {
+function BerekeningenInhoud({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
   const paragrafen = knoop.kinderen.filter((k) => k.blad);
   if (paragrafen.length === 0) return null;
   return (
     <>
-      <h3 className="rpa-io-kop">Inhoudsopgave</h3>
+      <h3 className="rpa-io-kop">{w.t("afdruk.inhoud.inhoudsopgave")}</h3>
       {paragrafen.map((k) => (
         <Rij key={k.id} klasse="rpa-tt">
           <Cel k={1} n={3} o>{k.nummer} {k.titel}</Cel>
@@ -121,7 +121,7 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
     <>
       {/* Zonder UC of oordeel zegt de samenvatting niets meer dan de kop. */}
       {b && (b.resultaat.uc !== null || b.resultaat.voldoet !== null) && (
-        <p className="rpa-tekst">{samenvatting(b.resultaat)}</p>
+        <p className="rpa-tekst">{samenvatting(b.resultaat, w.taal)}</p>
       )}
       {toelichting.trim() && <Tekst tekst={toelichting} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />}
       {inHoofdstuk && b && soort ? (
@@ -135,7 +135,7 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
             : <UitwerkingHtml html={b.html} bladId={b.ex.id} />}
         </Vlak>
       ) : (
-        blad.bijlage && <p className="rpa-tekst">Zie bijlage {blad.bijlage}.</p>
+        blad.bijlage && <p className="rpa-tekst">{w.t("afdruk.zieBijlage", { nummer: blad.bijlage })}</p>
       )}
     </>
   );
@@ -169,7 +169,7 @@ function InhoudVan({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
     case "veranderlijk":
       return <Veranderlijk w={w} />;
     case "berekeningen":
-      return <BerekeningenInhoud knoop={knoop} />;
+      return <BerekeningenInhoud knoop={knoop} w={w} />;
     default:
       // "blijvend" krijgt in voegToe een eigen behandeling; zonder inhoud is er niets.
       return null;
@@ -194,10 +194,10 @@ function voegToe(knoop: Rapportknoop, w: RapportWeergave, plaats: Plaats, uit: S
         <Vlak>
           {kop}
           {vloerenDaken.length > 0 && (
-            <Groep titel="VLOER, DAKEN" opbouwen={vloerenDaken} direct inspringen={inspringen} />
+            <Groep titel={w.t("afdruk.belastingen.vloerDaken")} opbouwen={vloerenDaken} direct inspringen={inspringen} w={w} />
           )}
           {wanden.length > 0 && !wandenApart && (
-            <Groep titel="WANDEN" opbouwen={wanden} direct={vloerenDaken.length === 0} inspringen={inspringen} />
+            <Groep titel={w.t("afdruk.belastingen.wanden")} opbouwen={wanden} direct={vloerenDaken.length === 0} inspringen={inspringen} w={w} />
           )}
         </Vlak>
       ),
@@ -208,7 +208,7 @@ function voegToe(knoop: Rapportknoop, w: RapportWeergave, plaats: Plaats, uit: S
         nieuwePagina: true,
         inhoud: (
           <Vlak>
-            <Groep titel="WANDEN" opbouwen={wanden} direct={false} inspringen={inspringen} />
+            <Groep titel={w.t("afdruk.belastingen.wanden")} opbouwen={wanden} direct={false} inspringen={inspringen} w={w} />
           </Vlak>
         ),
       });
