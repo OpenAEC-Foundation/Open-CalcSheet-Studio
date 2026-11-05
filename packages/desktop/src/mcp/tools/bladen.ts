@@ -23,13 +23,13 @@ import {
 } from "./hulp.ts";
 
 /** Een blad in een lijst: id, naam, soort, en de UC als die bekend is. */
-function bladRegel(b: McpBlad, actief: string, r: ReturnType<typeof bekendeUitkomst>, error?: string): Record<string, unknown> {
+function bladRegel(b: McpBlad, actief: string, module: string | null, r: ReturnType<typeof bekendeUitkomst>, error?: string): Record<string, unknown> {
   return {
     id: b.id,
     name: b.naam,
     templateId: b.templateId,
     kind: bladSoort(b),
-    module: modulesPerTemplate[b.templateId]?.label ?? null,
+    module,
     active: b.id === actief,
     evaluated: r !== null,
     uc: r ? jsonGetal(r.uc) : null,
@@ -67,7 +67,7 @@ export const BLADTOOLS: McpToolDef[] = [
             gezien.add(n.templateId);
             modules.push({
               templateId: n.templateId,
-              name: n.label,
+              name: ctx.omgeving.moduleNaam(n.templateId) ?? n.label,
               category: categorie,
               kind: soort,
               ...(n.status ? { status: n.status } : {}),
@@ -76,7 +76,7 @@ export const BLADTOOLS: McpToolDef[] = [
               available: ctx.omgeving.sjabloon(n.templateId) !== undefined,
             });
           } else {
-            loop(n.children, n.kind === "category" ? n.label : categorie, soort);
+            loop(n.children, n.kind === "category" ? ctx.omgeving.groepNaam(n.id, n.label) : categorie, soort);
           }
         }
       };
@@ -87,7 +87,7 @@ export const BLADTOOLS: McpToolDef[] = [
         if (gezien.has(id)) continue;
         modules.push({
           templateId: id,
-          name: info.label,
+          name: ctx.omgeving.moduleNaam(id) ?? info.label,
           category: info.categorie,
           kind: "module",
           ...(info.status ? { status: info.status } : {}),
@@ -140,7 +140,7 @@ export const BLADTOOLS: McpToolDef[] = [
           return fout("NOT_FOUND", `Unknown templateId "${templateId}". Call modules_list for the available modules.`);
         }
         bron = sjabloon;
-        basis = korteNaam(modulesPerTemplate[templateId]?.label ?? templateId);
+        basis = korteNaam(ctx.omgeving.moduleNaam(templateId) ?? templateId);
         tid = templateId;
       } else {
         bron = typeof args.source === "string" ? args.source : LEEG_BLAD_TEKST;
@@ -204,7 +204,7 @@ export const BLADTOOLS: McpToolDef[] = [
         name: blad.naam,
         templateId: blad.templateId,
         kind: bladSoort(blad),
-        module: modulesPerTemplate[blad.templateId]?.label ?? null,
+        module: ctx.omgeving.moduleNaam(blad.templateId),
         active: blad.id === stand.activeId,
         position: stand.exemplaren.indexOf(blad),
       };
@@ -602,9 +602,10 @@ export function lijstVan(ctx: McpContext, nuRekenen: boolean): Record<string, un
   const stand = ctx.omgeving.stand();
   ruimUitkomstenOp(stand);
   return stand.exemplaren.map((b) => {
-    if (isLosBlad(b)) return bladRegel(b, stand.activeId, null);
-    if (!nuRekenen) return bladRegel(b, stand.activeId, bekendeUitkomst(b, stand.gegevens));
+    const module = ctx.omgeving.moduleNaam(b.templateId);
+    if (isLosBlad(b)) return bladRegel(b, stand.activeId, module, null);
+    if (!nuRekenen) return bladRegel(b, stand.activeId, module, bekendeUitkomst(b, stand.gegevens));
     const uitkomst = rekenBlad(b, stand.gegevens);
-    return uitkomst.ok ? bladRegel(b, stand.activeId, uitkomst.d.resultaat) : bladRegel(b, stand.activeId, null, uitkomst.fout);
+    return uitkomst.ok ? bladRegel(b, stand.activeId, module, uitkomst.d.resultaat) : bladRegel(b, stand.activeId, module, null, uitkomst.fout);
   });
 }

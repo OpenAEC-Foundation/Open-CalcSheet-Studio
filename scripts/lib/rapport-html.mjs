@@ -60,8 +60,32 @@ const INGANG = `
   import { useProjectStore } from "./store/projectStore";
   import { useBureauStore } from "./store/bureauProfiel";
   import { useTemplateStore } from "./store/rapportTemplates";
+  import { useModuleKiezer } from "./store/moduleKiezer";
+  import { useEditorViewStore } from "./store/editorViewStore";
+  import Editor from "./components/calc/Editor";
 
-  export { i18next, useProjectStore, useBureauStore, useTemplateStore, flushSync };
+  export { i18next, useProjectStore, useBureauStore, useTemplateStore, useModuleKiezer, flushSync };
+
+  /** De echte tab Code: wat erin staat, en typen of weghalen aan het eind van een regel. */
+  export function tekenEditor() {
+    const plek = document.createElement("div");
+    document.body.append(plek);
+    const wortel = createRoot(plek);
+    flushSync(() => wortel.render(createElement(Editor)));
+    const view = () => useEditorViewStore.getState().view;
+    return {
+      tekst: () => view().state.doc.toString(),
+      typ: (regel, tekst) => view().dispatch({ changes: { from: view().state.doc.line(regel + 1).to, insert: tekst }, userEvent: "input" }),
+      haalWeg: (regel, n) => {
+        const { to } = view().state.doc.line(regel + 1);
+        view().dispatch({ changes: { from: to - n, to }, userEvent: "delete" });
+      },
+      sluit: () => {
+        wortel.unmount();
+        plek.remove();
+      },
+    };
+  }
 
   export function teken() {
     const plek = document.createElement("div");
@@ -113,12 +137,16 @@ export async function laadRapportAfdruk() {
       banner: { js: "import { createRequire as __maakRequire } from 'node:module'; const require = __maakRequire(import.meta.url);" },
     });
     const { window } = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/", pretendToBeVisual: true });
-    for (const naam of ["window", "document", "navigator", "localStorage", "HTMLElement", "Element", "Node", "getComputedStyle", "DOMParser", "CustomEvent", "Event", "requestAnimationFrame", "cancelAnimationFrame", "matchMedia"]) {
+    for (const naam of ["window", "document", "navigator", "localStorage", "HTMLElement", "Element", "Node", "getComputedStyle", "DOMParser", "CustomEvent", "Event", "requestAnimationFrame", "cancelAnimationFrame", "matchMedia", "MutationObserver", "Range", "DOMRect", "getSelection", "Text"]) {
       Object.defineProperty(globalThis, naam, { value: window[naam], configurable: true, writable: true });
     }
     window.matchMedia = window.matchMedia ?? (() => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
     globalThis.matchMedia = window.matchMedia;
     globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
+    // jsdom meet niets; de editor wil wel kunnen vragen.
+    window.Range.prototype.getClientRects = () => [];
+    window.Range.prototype.getBoundingClientRect = () => ({ left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 });
+    window.HTMLElement.prototype.getClientRects = () => [];
     const module = await import(pathToFileURL(uit).href);
     // De app zet bij het opstarten de bewaarde taal en stand terug; dat moet eerst klaar zijn.
     await new Promise((klaar) => setTimeout(klaar, 200));

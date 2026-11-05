@@ -10,6 +10,7 @@ import type { BladVertaling } from "../components/calc/uitvoerTaal";
  */
 export const doorsnedeSpanningenEn: BladVertaling = {
   marker: "\"Spanningen in een doorsnede —",
+  markerVertaald: "\"Section stresses —",
   tekst: {
     "Spanningen in een doorsnede — lineair-elastisch": "Section stresses — linear elastic",
     "Kies een vorm, vul de maten en de snedekrachten in en lees het spanningsverloop af. Alles komt uit de maten, niet uit tabellen. Dit is mechanica, geen normtoets: er zit geen materiaal in en het blad geeft alleen een oordeel als je een grenswaarde invult": "Choose a shape, enter the dimensions and the internal forces and read the stress distribution. Everything comes from the dimensions, not from tables. This is mechanics, not a code check: no material is involved and the sheet only gives a verdict if you enter a limit",
@@ -102,4 +103,15 @@ export const doorsnedeSpanningenEn: BladVertaling = {
     "Eindoordeel: ongeldige invoer, niet getoetst": "Overall result: invalid input, not verified",
   },
   namen: {},
+  code: {
+    "Naar boven afgerond: 1,004 staat er als 1,01 en nooit als 1,00": "Rounded up: 1.004 appears as 1.01 and never as 1.00",
+    "Profieltabel uit profielen.ts: id | h (mm) | b (mm) | t_w (mm) | t_f (mm) | r (mm) | A (cm²) | I_y (cm⁴) | W_el,y (cm³) | W_pl,y (cm³) | i_y (cm) | A_v,z (cm²) | I_z (cm⁴) | W_el,z (cm³) | W_pl,z (cm³) | i_z (cm) | I_t (cm⁴) | I_w (cm⁶)": "Section table from profielen.ts: id | h (mm) | b (mm) | t_w (mm) | t_f (mm) | r (mm) | A (cm²) | I_y (cm⁴) | W_el,y (cm³) | W_pl,y (cm³) | i_y (cm) | A_v,z (cm²) | I_z (cm⁴) | W_el,z (cm³) | W_pl,z (cm³) | i_z (cm) | I_t (cm⁴) | I_w (cm⁶)",
+    "De delen van de doorsnede, per kolom een deel; assen van de rekenkern: y naar rechts, z omhoog": "The parts of the section, one part per column; axes of the calculation core: y to the right, z upwards",
+    "Kale getallen in N en mm: het rooster en de rekenkern rekenen daarmee": "Bare numbers in N and mm: the grid and the calculation core use them",
+    "De uiterste vezels: een hoekpunt van de omtrek, of op de cirkel de plek in de richting van de gradiënt": "The extreme fibres: a corner of the outline, or on the circle the point in the direction of the gradient",
+    "S/b op een lijn; op een sprong in de breedte telt de kleinste kant (doorsnede.ts)": "S/b on a line; at a jump in the width the smaller side counts (doorsnede.ts)",
+    "De lijnen waar de hoogste waarde kan liggen: de zwaartelijn en de overgang van lijf naar flens": "The lines where the highest value can lie: the centroidal axis and the transition from web to flange",
+    "Daarna langs de hele doorsnede, en fijner rond de hoogste plek": "Then along the whole section, and finer around the highest point",
+    "De plekken langs de wanden of door de hele doorsnede. Per groep de hoogste, met zijn y, z, σ en τ": "The points along the walls or through the whole section. Per group the highest, with its y, z, σ and τ",
+  },
 };

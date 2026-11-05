@@ -1,3 +1,4 @@
+import { groepNaam, moduleNaam } from "../components/calc/moduleNaam";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../store/projectStore";
 import { usePrintStore } from "../store/printStore";
 import { useModuleBibliotheek, type CatalogusModule } from "../store/moduleBibliotheek";
@@ -111,6 +112,8 @@ export const liveOmgeving: McpOmgeving = {
     };
   },
   sjabloon: (templateId) => (Object.prototype.hasOwnProperty.call(templates, templateId) ? templates[templateId] : undefined),
+  moduleNaam,
+  groepNaam,
   speciaal: { project: PROJECT_ID, rapport: RAPPORT_ID },
 
   acties: {

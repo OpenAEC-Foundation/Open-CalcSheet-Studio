@@ -45,8 +45,7 @@ export default function Welkom({ onSluit }: { onSluit: () => void }) {
   };
 
   const voorbeeld = () => {
-    const info = modulesPerTemplate[VOORBEELD];
-    if (info) useModuleKiezer.getState().voegToe(VOORBEELD, info.label);
+    if (modulesPerTemplate[VOORBEELD]) useModuleKiezer.getState().voegToe(VOORBEELD);
     onSluit();
   };
   const module = () => {

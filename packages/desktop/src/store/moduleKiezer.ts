@@ -2,6 +2,7 @@ import { create } from "zustand";
 import i18next from "../i18n/config";
 import { templates } from "../templates";
 import { useProjectStore } from "./projectStore";
+import { moduleNaam } from "../components/calc/moduleNaam";
 import { nieuwVel } from "../components/tekenen/vel";
 
 /**
@@ -26,7 +27,7 @@ interface ModuleKiezerState {
   sluiten: () => void;
   naamKlaar: () => void;
   /** Voegt een blad uit de catalogus toe, selecteert het en sluit het scherm. */
-  voegToe: (templateId: string, label: string) => void;
+  voegToe: (templateId: string) => void;
   /** Voegt een leeg tekenblad toe, met één lege view, en sluit het scherm. */
   voegTekenbladToe: (naam: string, viewTitel: string) => void;
   /** Voegt een leeg blad toe om zelf een berekening in te schrijven. */
@@ -43,13 +44,14 @@ export const useModuleKiezer = create<ModuleKiezerState>((set) => ({
   openen: (tab = "modules") => set({ open: true, tab }),
   sluiten: () => set({ open: false }),
   naamKlaar: () => set({ nieuwId: null }),
-  voegToe: (templateId, label) => {
+  voegToe: (templateId) => {
     const bron = templates[templateId];
     if (!bron) return;
-    // De catalogus draagt een toelichting in het label ("Balklaag (houten
-    // vloerbalken)"); als naam van een blad is dat te lang. De korte vorm is
-    // toch maar een voorstel.
-    const kort = label.replace(/\s*\([^)]*\)\s*$/, "").trim() || label;
+    // De naam in de taal van de app. De catalogus draagt een toelichting in de naam
+    // ("Beam (timber or steel)"); als naam van een blad is dat te lang. De korte vorm
+    // is toch maar een voorstel.
+    const naam = moduleNaam(templateId) ?? templateId;
+    const kort = naam.replace(/\s*\([^)]*\)\s*$/, "").trim() || naam;
     const id = useProjectStore.getState().voegToe(templateId, kort, bron);
     set({ nieuwId: id, open: false });
   },

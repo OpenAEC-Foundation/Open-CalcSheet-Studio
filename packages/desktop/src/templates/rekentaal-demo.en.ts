@@ -3,7 +3,19 @@ import type { BladVertaling } from "../components/calc/uitvoerTaal";
 /** Het demoblad in het Engels; zie balklaag.en.ts. */
 export const rekentaalDemoEn: BladVertaling = {
   marker: "\"Open CalcSheet Studio demo",
+  // De kop is in beide talen gelijk: de eerste zin onderscheidt een vertaalde tekst.
+  markerVertaald: "This sheet is itself the example",
+  kenmerkBron: "Dit blad is zelf het voorbeeld",
   tekst: {
+    "<code>oordeel(u) = if(u ≤ 1; \"voldoet\"; \"voldoet niet\")</code>": "<code>oordeel(u) = if(u ≤ 1; \"OK\"; \"not OK\")</code>",
+    "<code>\"Titel</code>": "<code>\"Title</code>",
+    "<code># Kop</code>, <code>## Kop</code>": "<code># Heading</code>, <code>## Heading</code>",
+    "<code>&#39;tekst</code>": "<code>&#39;text</code>",
+    "<code>x = 5 mm&#39;, toelichting&#39;</code>": "<code>x = 5 mm&#39;, note&#39;</code>",
+    "<code>@select naam \"…\"</code> … <code>@end</code>": "<code>@select name \"…\"</code> … <code>@end</code>",
+    "<code>#def naam&#36;(a&#36;; b&#36;)</code> … <code>#end def</code>": "<code>#def name&#36;(a&#36;; b&#36;)</code> … <code>#end def</code>",
+    "<code>@img(bestand.svg)</code>": "<code>@img(file.svg)</code>",
+    "<code>@iframe adres hoogte=60mm</code>": "<code>@iframe address hoogte=60mm</code>",
     "Balk in 3D": "Beam in 3D",
     "Voorbeeldpagina": "Example page",
     "Dit blad is zelf het voorbeeld: in de editor staat de rekentaal, in de uitwerking wat daaruit volgt. Elk hoofdstuk behandelt één onderdeel, met eerst een korte uitleg en de schrijfwijze (in <code>deze letter</code>) en daarna het werkende voorbeeld. De rode draad is een stalen ligger op twee steunpunten. Verander gerust iets in de editor of in de invoervelden en kijk wat er meebeweegt":
@@ -319,5 +331,14 @@ export const rekentaalDemoEn: BladVertaling = {
     g_eg: "g_sw", n_st: "n_bars", W_rh: "W_rect", met_F: "with_F", staal: "steel",
     profiel: "section", profielen: "sections", bout: "bolt", bouten: "bolts", last: "load",
     M_veld: "M_span", x_veld: "x_span", R_som: "R_sum", L_grens: "L_lim",
+  },
+  code: {
+    "Deze regel is commentaar: hij staat alleen in de editor": "This line is a comment: it only appears in the editor",
+    "poeren en kolommen (het profiel staat met zijn lijf in het vlak van het portaal)": "pile caps and columns (the section has its web in the plane of the portal)",
+    "de ligger ligt op de kolommen": "the beam rests on the columns",
+    "verdeelde last: 100 mm pijl per kN/m": "distributed load: 100 mm arrow per kN/m",
+    "oplegging in de lengte van de balk": "support along the length of the beam",
+    "en dwars erop": "and across it",
+    "Een verdeelde last, en de maten als tekst bij het model": "A distributed load, and the dimensions as text with the model",
   },
 };
