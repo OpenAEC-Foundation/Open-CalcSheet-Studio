@@ -517,6 +517,19 @@ p.rapport-hint {
   white-space: nowrap;
 }
 
+/* Regels van een rekentekst die anders zijn, in de vergelijking van versies. */
+.rapport-regelverschil {
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  border: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.2));
+  border-radius: 4px;
+}
+
 .rapport-kaart-voet {
   display: flex;
   flex-wrap: wrap;

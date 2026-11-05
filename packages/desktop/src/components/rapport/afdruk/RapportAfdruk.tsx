@@ -9,6 +9,7 @@ import { useRapportWeergave, type RapportBlad } from "./useRapportWeergave";
 import { hoofdstukStukken, type Stuk } from "./Knopen";
 import Voorblad from "./Voorblad";
 import Inhoud from "./Inhoud";
+import { useWijzigingenLijst } from "../../../store/useWijzigingenLijst";
 import "./RapportAfdruk.css";
 
 /** Stukken in secties: een stuk met `nieuwePagina` begint een nieuwe sectie, en daarmee een nieuw vel. */
@@ -50,6 +51,7 @@ type BijlageBlad = RapportBlad & { nummer: string };
  * taal van het rapport, ook de beelden en de kop van een blad (AfdrukTaal).
  */
 export default function RapportAfdruk() {
+  useWijzigingenLijst();
   const w = useRapportWeergave();
   const secties = groepeer(hoofdstukStukken(w));
 

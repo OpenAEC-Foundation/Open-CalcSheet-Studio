@@ -8,6 +8,7 @@ import { BELASTING_BLOKKEN } from "./BelastingenSectie";
 import { vindKnoop } from "./hulp";
 import TekstVeld, { Invulvelden } from "./TekstVeld";
 import { UITGANGSPUNT_BLOKKEN } from "./UitgangspuntenSectie";
+import { WijzigingenInvoer } from "./WijzigingenSectie";
 import { Kop, Sectie, Veld, Vink, useRapport } from "./velden";
 
 /** Per rekenblok zijn invoer. Berekeningen heeft een eigen sectie: daar staan de bladen. */
@@ -15,6 +16,7 @@ const BLOKKEN: Partial<Record<Inhoud, ComponentType>> = {
   rol: RolInvoer,
   ...UITGANGSPUNT_BLOKKEN,
   ...BELASTING_BLOKKEN,
+  wijzigingen: WijzigingenInvoer,
 };
 
 /**

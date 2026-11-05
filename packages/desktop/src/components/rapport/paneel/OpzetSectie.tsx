@@ -289,7 +289,11 @@ function OpzetRegel({ knoop }: { knoop: Knoop }) {
             werkBij((r) => hernoemKnoop(r, knoop.id, nieuw), `rapport:opzet:${knoop.id}`);
           }}
         />
-        {isRekenblok(knoop) && <span className="rapport-soort" title={t("opzet.rekenblokUitleg")}>{t("opzet.rekenblok")}</span>}
+        {isRekenblok(knoop) && (
+          <span className="rapport-soort" title={t(knoop.inhoud === "wijzigingen" && knoop.niveau === 1 ? "opzet.wijzigingenUitleg" : "opzet.rekenblokUitleg")}>
+            {t("opzet.rekenblok")}
+          </span>
+        )}
         {stand.valtWeg(knoop.id) && <span className="rapport-weg" title={t("velden.onderdeelValtWeg")}>{t("velden.valtWeg")}</span>}
         <label className="rapport-vink" title={t("velden.nieuwePagina")}>
           <input

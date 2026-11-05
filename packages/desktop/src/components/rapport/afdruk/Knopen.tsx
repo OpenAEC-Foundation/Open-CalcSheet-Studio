@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Rapportknoop } from "../../../rapport/opzet";
+import { staatBijInhoudsopgave, type Rapportknoop } from "../../../rapport/opzet";
 import { vulIn } from "../../../rapport/invullen";
 import { samenvatting } from "../../calc/bladResultaat";
 import { MATEN } from "../../calc/paginering";
@@ -11,6 +11,7 @@ import type { RapportWeergave } from "./useRapportWeergave";
 import { Cel, Leeg, PaginaCel, Rij, Tekst, Vlak } from "./raster";
 import { Bestaand, Bouwwerk, Brand, Conservering, Factoren, Materialen, Vervormingen } from "./Uitgangspunten";
 import { Groep, Sneeuw, Veranderlijk, Wind } from "./Belastingen";
+import { WijzigingenRegels } from "./Wijzigingen";
 
 /*
  * De hoofdstukken van het rapport: koppen met nummering, en per soort inhoud
@@ -170,6 +171,8 @@ function InhoudVan({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
       return <Veranderlijk w={w} />;
     case "berekeningen":
       return <BerekeningenInhoud knoop={knoop} w={w} />;
+    case "wijzigingen":
+      return <WijzigingenRegels w={w} />;
     default:
       // "blijvend" krijgt in voegToe een eigen behandeling; zonder inhoud is er niets.
       return null;
@@ -245,10 +248,13 @@ function voegToe(knoop: Rapportknoop, w: RapportWeergave, plaats: Plaats, uit: S
   );
 }
 
-/** Alle hoofdstukken als stukken. Het eerste begint altijd op een vers vel: de inhoud gaat eraan vooraf. */
+/**
+ * Alle hoofdstukken als stukken. Het eerste begint altijd op een vers vel: de inhoud gaat eraan vooraf.
+ * De lijst met wijzigingen op het hoogste niveau staat bij die inhoud (Inhoud.tsx).
+ */
 export function hoofdstukStukken(w: RapportWeergave): Stuk[] {
   const uit: Stuk[] = [];
-  w.knopen.forEach((knoop, i) =>
+  w.knopen.filter((k) => !staatBijInhoudsopgave(k)).forEach((knoop, i) =>
     voegToe(knoop, w, { begin: i === 0 || knoop.nieuwePagina, direct: false, inspringen: 0 }, uit),
   );
   return uit;

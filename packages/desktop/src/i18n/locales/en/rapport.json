@@ -8,6 +8,7 @@
   "secties": {
     "document": "Document",
     "revisies": "Revisions",
+    "wijzigingen": "Changes",
     "opzet": "Report structure",
     "tekstenKort": "Chapters {{van}}–{{tot}}",
     "teksten": "Chapters {{van}} to {{tot}}",
@@ -56,6 +57,7 @@
     "pagina": "new page",
     "rekenblok": "calculated",
     "rekenblokUitleg": "The app fills this block from the project data and the standard. You can place, move and rename it, but not replace its content.",
+    "wijzigingenUitleg": "The app fills this in. At this level it appears under the table of contents without a number, wherever it is in this list; under a chapter it is a normal section. It stays out of the report until a version has changes.",
     "hoger": "One level up",
     "dieper": "One level down",
     "verwijderen": "Remove from the report",
@@ -171,7 +173,8 @@
     },
     "toevoegen": "Add revision",
     "leeg": "No revisions yet: the cover page then leaves date and status blank.",
-    "rapportstatus": "Report status:"
+    "rapportstatus": "Report status:",
+    "versieUitleg": "A line that belongs to a version comes from that version. You edit the line of the open version here or under Versions; a line of an earlier version follows that version."
   },
   "teksten": {
     "intro": "One text per part. Standard text ▾ picks a built-in or custom variant. An optional block left empty is omitted from the report.",
@@ -504,6 +507,56 @@
       "vulling": "fill",
       "vloerDaken": "FLOOR, ROOFS",
       "wanden": "WALLS"
+    },
+    "wijzigingen": {
+      "versie": "Version {{code}}, {{datum}}",
+      "voorblad": "Cover page",
+      "projectgegevens": "Project data",
+      "bijlagen": "Appendices",
+      "opzet": "Report structure",
+      "erbij": "Added.",
+      "weg": "Removed.",
+      "tekst": "Text changed.",
+      "inhoud": "Content changed.",
+      "hernoemd": "Renamed from {{van}}.",
+      "invoer": "Input: {{lijst}}.",
+      "uitkomst": "Results: {{lijst}}.",
+      "gegevens": "{{lijst}}.",
+      "meer": "and {{aantal}} more",
+      "rekentekst_one": "Calculation: {{count}} line changed.",
+      "rekentekst_other": "Calculation: {{count}} lines changed.",
+      "oordeel": "Verdict: {{van}} → {{naar}}.",
+      "oordelen": {
+        "voldoet": "passes",
+        "voldoet_niet": "does not pass",
+        "geen_oordeel": "no verdict",
+        "niet_doorgerekend": "not calculated"
+      },
+      "bestand": {
+        "pdf": "PDF replaced.",
+        "aantekeningen": "Notes on the PDF changed.",
+        "werkmap": "Workbook changed.",
+        "tekst": "Content changed.",
+        "graaf": "Graph changed.",
+        "tekening": "Drawing changed.",
+        "notebook": "Notebook changed.",
+        "elementen": "Linked model elements changed."
+      }
     }
+  },
+  "wijzigingen": {
+    "intro": "What differs from the version this one came from, per place in the report. It appears under the table of contents. The list is remade when something changes; what you do here stays.",
+    "pagina": "page {{pagina}}",
+    "wat": "What changed",
+    "tekstVanApp": "Back to the text the app makes",
+    "toelichting": "Your explanation",
+    "toelichtingLeeg": "Optional: appears under this line in the report",
+    "weghalen": "Leave this line out of the report",
+    "leeg": "Nothing differs from that version yet.",
+    "weggehaald": "Left out of the report",
+    "terugzetten": "Put back",
+    "zonderVerschil": "No longer a difference",
+    "zonderVerschilUitleg": "Your text at a line that no longer differs. It is not on paper, and comes back if the difference does.",
+    "vergeten": "Forget this text"
   }
 }

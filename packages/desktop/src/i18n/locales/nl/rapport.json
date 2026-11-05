@@ -8,6 +8,7 @@
   "secties": {
     "document": "Document",
     "revisies": "Revisies",
+    "wijzigingen": "Wijzigingen",
     "opzet": "Rapportopbouw",
     "tekstenKort": "Hoofdstukken {{van}}–{{tot}}",
     "teksten": "Hoofdstukken {{van}} t/m {{tot}}",
@@ -56,6 +57,7 @@
     "pagina": "nieuwe pagina",
     "rekenblok": "berekend",
     "rekenblokUitleg": "De app vult dit blok uit de projectgegevens en de norm. Je kunt het plaatsen, verplaatsen en hernoemen, maar de inhoud niet vervangen.",
+    "wijzigingenUitleg": "De app vult dit zelf in. Op dit niveau staat het onder de inhoudsopgave, zonder nummer, waar het ook in deze lijst staat; onder een hoofdstuk is het een gewone paragraaf. Het blijft uit het rapport tot een versie wijzigingen heeft.",
     "hoger": "Een niveau hoger",
     "dieper": "Een niveau dieper",
     "verwijderen": "Uit het rapport halen",
@@ -171,7 +173,8 @@
     },
     "toevoegen": "Revisie toevoegen",
     "leeg": "Nog geen revisies: het voorblad laat datum en status dan leeg.",
-    "rapportstatus": "Rapportstatus:"
+    "rapportstatus": "Rapportstatus:",
+    "versieUitleg": "Een regel die bij een versie hoort, komt uit die versie. De regel van de open versie bewerk je hier of onder Versies; de regel van een eerdere versie volgt die versie."
   },
   "teksten": {
     "intro": "Per onderdeel een tekst. Standaardtekst ▾ kiest een meegeleverde of eigen variant. Een optioneel blok dat leeg blijft, valt weg uit het rapport.",
@@ -504,6 +507,56 @@
       "vulling": "vulling",
       "vloerDaken": "VLOER, DAKEN",
       "wanden": "WANDEN"
+    },
+    "wijzigingen": {
+      "versie": "Versie {{code}}, {{datum}}",
+      "voorblad": "Voorblad",
+      "projectgegevens": "Projectgegevens",
+      "bijlagen": "Bijlagen",
+      "opzet": "Rapportopbouw",
+      "erbij": "Toegevoegd.",
+      "weg": "Vervallen.",
+      "tekst": "Tekst gewijzigd.",
+      "inhoud": "Inhoud gewijzigd.",
+      "hernoemd": "Hernoemd, was {{van}}.",
+      "invoer": "Invoer: {{lijst}}.",
+      "uitkomst": "Uitkomsten: {{lijst}}.",
+      "gegevens": "{{lijst}}.",
+      "meer": "en {{aantal}} meer",
+      "rekentekst_one": "Rekentekst: {{count}} regel gewijzigd.",
+      "rekentekst_other": "Rekentekst: {{count}} regels gewijzigd.",
+      "oordeel": "Oordeel: {{van}} → {{naar}}.",
+      "oordelen": {
+        "voldoet": "voldoet",
+        "voldoet_niet": "voldoet niet",
+        "geen_oordeel": "geen oordeel",
+        "niet_doorgerekend": "niet doorgerekend"
+      },
+      "bestand": {
+        "pdf": "PDF vervangen.",
+        "aantekeningen": "Aantekeningen op de PDF gewijzigd.",
+        "werkmap": "Werkmap gewijzigd.",
+        "tekst": "Inhoud gewijzigd.",
+        "graaf": "Graaf gewijzigd.",
+        "tekening": "Tekening gewijzigd.",
+        "notebook": "Notebook gewijzigd.",
+        "elementen": "Gekoppelde elementen gewijzigd."
+      }
     }
+  },
+  "wijzigingen": {
+    "intro": "Wat er verschilt met de versie waaruit deze is ontstaan, per plek in het rapport. Dit komt onder de inhoudsopgave. De lijst wordt opnieuw gemaakt als er iets verandert; wat je hier doet, blijft staan.",
+    "pagina": "pagina {{pagina}}",
+    "wat": "Wat is er gewijzigd",
+    "tekstVanApp": "Terug naar de tekst van de app",
+    "toelichting": "Je toelichting",
+    "toelichtingLeeg": "Optioneel: komt onder deze regel in het rapport",
+    "weghalen": "Deze regel uit het rapport laten",
+    "leeg": "Er verschilt nog niets met die versie.",
+    "weggehaald": "Uit het rapport gelaten",
+    "terugzetten": "Terugzetten",
+    "zonderVerschil": "Geen verschil meer",
+    "zonderVerschilUitleg": "Je tekst bij een regel die niet meer verschilt. Die staat niet op papier, en komt terug als het verschil terugkomt.",
+    "vergeten": "Deze tekst vergeten"
   }
 }

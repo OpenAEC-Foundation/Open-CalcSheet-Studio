@@ -1,7 +1,8 @@
 import type { RapportWeergave } from "./useRapportWeergave";
 import { tekstBreedte } from "../../../rapport/materialen";
-import { bijlageAnker, type Inhoudsregel } from "../../../rapport/opzet";
+import { bijlageAnker, staatBijInhoudsopgave, type Inhoudsregel } from "../../../rapport/opzet";
 import { Cel, PaginaCel, Rij, Vlak } from "./raster";
+import { WijzigingenBijInhoud } from "./Wijzigingen";
 
 /** Een paragraaf, blad of kop uit een blad: nummer, titel en paginanummer. */
 function Regel({ regel, klasse }: { regel: Inhoudsregel; klasse?: string }) {
@@ -28,7 +29,8 @@ const pastInKolom = (label: string) => tekstBreedte(label) * 1.08 * 10 <= 51;
  * eigen bijlage heeft geen nummer: het document zelf zit niet in dit rapport.
  *
  * Met opmaak.bladenInInhoud staan ook de bladen erin (w.inhoud, w.inhoudBijlage),
- * op de plek waar hun uitwerking staat.
+ * op de plek waar hun uitwerking staat. Daaronder, in een nieuwe versie, de lijst met
+ * wat er per pagina is gewijzigd.
  */
 export default function Inhoud({ w }: { w: RapportWeergave }) {
   return (
@@ -50,6 +52,7 @@ export default function Inhoud({ w }: { w: RapportWeergave }) {
             ...(heeftInhoud ? w.inhoudBijlage.map((r) => <Regel key={r.anker} regel={r} />) : []),
           ];
         })}
+        {w.knopen.filter(staatBijInhoudsopgave).map((k) => <WijzigingenBijInhoud key={k.id} knoop={k} w={w} />)}
       </Vlak>
     </section>
   );

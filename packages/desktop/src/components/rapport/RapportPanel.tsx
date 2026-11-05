@@ -2,6 +2,7 @@ import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { opzetVan, titelVan } from "../../rapport/opzet";
 import { useProjectStore } from "../../store/projectStore";
+import { ouderVan } from "../../store/versies";
 import DocumentSectie from "./paneel/DocumentSectie";
 import HoofdstukTeksten, { KnoopInvoer } from "./paneel/HoofdstukTeksten";
 import UitgangspuntenSectie from "./paneel/UitgangspuntenSectie";
@@ -11,6 +12,7 @@ import BijlagenSectie from "./paneel/BijlagenSectie";
 import BureauSectie from "./paneel/BureauSectie";
 import OpzetSectie from "./paneel/OpzetSectie";
 import RevisieSectie from "./paneel/RevisieSectie";
+import WijzigingenSectie from "./paneel/WijzigingenSectie";
 import { paneelGroepen, type PaneelGroep } from "./paneel/hulp";
 import { Invulvelden } from "./paneel/TekstVeld";
 import { OpzetBron, useOpzetStand, useRapport } from "./paneel/velden";
@@ -48,9 +50,15 @@ function useGroepTitel() {
   };
 }
 
+/** Staat de lijst met wijzigingen bij de inhoudsopgave, en heeft deze versie een oudertak? */
+function useMetWijzigingen(): boolean {
+  return useProjectStore((s) => opzetVan(s.rapport).some((k) => k.inhoud === "wijzigingen") && ouderVan(s.versies, s.versies.actief) !== undefined);
+}
+
 function Sprongbalk({ groepen, naarSectie }: { groepen: readonly PaneelGroep[]; naarSectie: (id: string) => void }) {
   const { t } = useTranslation("rapport");
   const groepTitel = useGroepTitel();
+  const metWijzigingen = useMetWijzigingen();
   const knop = (id: string, label: string) => (
     <button key={id} type="button" onClick={() => naarSectie(id)}>
       {label}
@@ -60,6 +68,7 @@ function Sprongbalk({ groepen, naarSectie }: { groepen: readonly PaneelGroep[]; 
     <nav className="rapport-nav" aria-label={t("paneel.navLabel")}>
       {knop("document", t("secties.document"))}
       {knop("revisies", t("secties.revisies"))}
+      {metWijzigingen && knop("wijzigingen", t("secties.wijzigingen"))}
       {knop("opzet", t("secties.opzet"))}
       {groepen.map((g) => knop(groepId(g), groepTitel(g, true)))}
       {knop("bijlagen", t("secties.bijlagen"))}
@@ -107,6 +116,7 @@ export default function RapportPanel() {
   const paneelRef = useRef<HTMLDivElement>(null);
   const opzet = useProjectStore((s) => opzetVan(s.rapport));
   const groepen = useMemo(() => paneelGroepen(opzet), [opzet]);
+  const metWijzigingen = useMetWijzigingen();
 
   const naarSectie = (id: string) =>
     paneelRef.current
@@ -124,6 +134,7 @@ export default function RapportPanel() {
         <Sprongbalk groepen={groepen} naarSectie={naarSectie} />
         <DocumentSectie />
         <RevisieSectie />
+        {metWijzigingen && <WijzigingenSectie />}
         <OpzetSectie />
         <Hoofdstukken groepen={groepen} />
         <BijlagenSectie />

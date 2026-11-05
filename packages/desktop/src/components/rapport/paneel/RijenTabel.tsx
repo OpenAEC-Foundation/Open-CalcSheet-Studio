@@ -57,6 +57,8 @@ export interface RijenTabelProps<T> {
   verplaatsbaar?: boolean;
   /** Bij dit aantal rijen of minder kan er geen rij meer weg. */
   minimaal?: number;
+  /** Wat er aan een rij vast staat: zijn cellen, en of hij weg kan. */
+  vast?: (rij: T) => { cellen: boolean; verwijderen: boolean };
 }
 
 export default function RijenTabel<T extends object>({
@@ -71,6 +73,7 @@ export default function RijenTabel<T extends object>({
   leeg,
   verplaatsbaar = true,
   minimaal = 0,
+  vast,
 }: RijenTabelProps<T>) {
   const { t } = useTranslation("rapport");
   const zet = useProjectStore((s) => s.zetRapportVeld);
@@ -127,7 +130,7 @@ export default function RijenTabel<T extends object>({
                 return (
                   <td key={k.sleutel}>
                     {k.keuzes ? (
-                      <select value={waarde} onChange={(e) => zet(celPad, e.target.value)}>
+                      <select value={waarde} disabled={vast?.(rij).cellen} onChange={(e) => zet(celPad, e.target.value)}>
                         {!k.keuzes.some((o) => o.waarde === waarde) && (
                           <option value={waarde}>{waarde}</option>
                         )}
@@ -144,6 +147,7 @@ export default function RijenTabel<T extends object>({
                         placeholder={k.placeholder}
                         list={k.lijst}
                         className={k.getal ? "rapport-getal" : undefined}
+                        readOnly={vast?.(rij).cellen}
                         onChange={(e) => zet(celPad, e.target.value)}
                       />
                     )}
@@ -182,7 +186,7 @@ export default function RijenTabel<T extends object>({
                   type="button"
                   className="rapport-icoon"
                   title={t("rijen.verwijderen")}
-                  disabled={rijen.length <= minimaal}
+                  disabled={rijen.length <= minimaal || vast?.(rij).verwijderen}
                   onClick={() => wijzig((l) => l.filter((_, j) => j !== i))}
                 >
                   ✕
