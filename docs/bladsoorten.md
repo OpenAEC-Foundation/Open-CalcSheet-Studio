@@ -28,7 +28,6 @@ het daar na. Een blad zonder aanmelding is een rekenblad; alleen Jupyter wijkt n
 | `useOnderkop` | wat er achter de soort onder de kop staat, zoals de bestandsnaam | alleen de soort |
 | `plek` | waar de uitwerking staat zolang de gebruiker niets koos: `hoofdstuk` of `bijlage` | in de bijlage |
 | `inhoudsKoppen` | regels onder de naam van het blad in de inhoudsopgave | alleen de naam |
-| `useVersie` | verandert als er iets klaar is getekend, zodat het afdrukvoorbeeld opnieuw verdeelt | niet nodig als alles meteen klaar is |
 | `RapportKeuze` | een eigen keuze op de kaart van het blad in het paneel Rapport | geen |
 | `HeelBlad` | het hele blad zelf, zonder kop erboven: voor een blad op eigen papierformaat met zijn naam op het vel, zoals een tekenblad | de kop met `Afdruk` eronder |
 
@@ -53,8 +52,9 @@ kopie van die vellen gaat naar de printer. Daarvoor geldt:
 - **`print-nieuw-vel`** begint een vers vel, **`print-vel-af`** sluit het af. Zo krijgt
   elke pagina van een PDF een eigen vel. De kop van het blad neemt 20 mm van het
   eerste vel.
-- **`data-afdruk-laadt`** op een element houdt het printen tegen tot het weg is. Geef
-  daarna een nieuwe `useVersie`: de vellen zijn een kopie, en die moet opnieuw.
+- **`data-afdruk-laadt`** op een element houdt het printen tegen tot het weg is. Wat
+  daarna in het afdrukonderdeel verandert, ziet het afdrukvoorbeeld zelf: het zet dat
+  blok opnieuw op zijn vel, of verdeelt opnieuw als de hoogte dat vraagt.
 - **`data-inhoud="anker"`** op een kop maakt een regel in de inhoudsopgave mogelijk:
   `inhoudsKoppen` geeft hetzelfde anker terug. De kop van het blad zelf regelt
   `LosBladAfdruk`.

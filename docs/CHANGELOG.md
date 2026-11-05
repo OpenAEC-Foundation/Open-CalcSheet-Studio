@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Afdrukvoorbeeld veel sneller bij een groot project: een PDF-pagina, werkmap of 3D-afbeelding die klaar is, komt los op zijn vel in plaats van dat het hele voorbeeld opnieuw wordt opgebouwd, en alleen de vellen in beeld worden opgemaakt. Bij een project van 33 bladen is alles klaar na 8 in plaats van 18 seconden, zonder het haperen daarna
 - Gewichtenbibliotheek: ruim 2300 eigen gewichten met bron, van materialen en grond tot kanaalplaten, metselwerk, dakpannen en gevelplaten per leverancier. Zoeken, filteren en met één klik invoegen in een opbouw; een eigen bibliotheek openen, aanvullen, samenvoegen en delen als `.weightlibrary`-bestand
 - Het rapport heeft een eigen taal, te kiezen bij Document: koppen, vaste woorden, standaardteksten en rekenbladen staan in die taal, ook als de app een andere taal heeft. Een nieuw rapport neemt de taal van de app over; een bestaand rapport blijft Nederlands en ziet er hetzelfde uit
 - De tab Code toont de rekentekst in de taal van de app, ook de uitleg in de verborgen regels. De rekenversie en de bestaande bladen veranderen daardoor niet; wat je typt, staat op die regel in het blad

@@ -9,9 +9,7 @@ import { TEKEN_BLAD } from "../../store/tekenBlad";
 import { MARIMO_BLAD } from "../../store/marimoBlad";
 import type { Blad, BladPlek, Inhoudskop } from "../../rapport/opzet";
 import type { Maten } from "./paginering";
-import { papier, usePdfPaginas, usePdfVersie } from "./pdfBlad";
-import { useWerkmapVersie } from "./spreadsheetBlad";
-import { useMarkdownVersie } from "./markdownBlad";
+import { papier, usePdfPaginas } from "./pdfBlad";
 import { PdfPaginas } from "./PdfBladWeergave";
 import { SpreadsheetVellen } from "./SpreadsheetBladWeergave";
 import { MarkdownPapier, MarkdownRapportKeuze } from "./MarkdownBladWeergave";
@@ -42,7 +40,7 @@ export interface BladSoort {
    * Het afdrukonderdeel: de inhoud van het blad onder zijn kop, binnen de
    * bladspiegel van `maten`. Elk blok is een los kind; `print-nieuw-vel` begint een
    * vers vel en `print-vel-af` sluit het af (paginering.ts). Wat nog tekent draagt
-   * `data-afdruk-laadt`, en verandert daarna `useVersie`.
+   * `data-afdruk-laadt`; het afdrukvoorbeeld ziet zelf wanneer er iets verandert.
    */
   Afdruk: ComponentType<{ ex: Exemplaar; maten: Maten }>;
   /**
@@ -52,8 +50,6 @@ export interface BladSoort {
   HeelBlad?: ComponentType<{ ex: Exemplaar; nummer?: number | string; anker?: string }>;
   /** Wat er achter de soort onder de kop staat, zoals de bestandsnaam. Een haak: mag een stand lezen. */
   useOnderkop?: (ex: Exemplaar) => Array<string | undefined>;
-  /** Verandert als er iets klaar is getekend: het afdrukvoorbeeld verdeelt dan opnieuw. */
-  useVersie?: () => number;
   /** Waar de uitwerking staat zolang de gebruiker niets koos. Zonder: in de bijlage. */
   plek?: BladPlek;
   /**
@@ -71,8 +67,6 @@ const SOORTEN: readonly BladSoort[] = [
     templateId: PDF_BLAD,
     soortTekst: (taal) => papier(taal)("pdfBlad.soort"),
     Afdruk: PdfPaginas,
-    // Een getekende pagina verandert de hoogte niet, maar moet wel op de vellen komen.
-    useVersie: usePdfVersie,
     useOnderkop: (ex) => {
       const stand = usePdfPaginas(ex.pdf?.data);
       const t = usePapier();
@@ -83,16 +77,12 @@ const SOORTEN: readonly BladSoort[] = [
     templateId: SPREADSHEET_BLAD,
     soortTekst: (taal) => papier(taal)("spreadsheetBlad.soort"),
     Afdruk: SpreadsheetVellen,
-    // Een getekende werkmap verandert de hoogte juist wel.
-    useVersie: useWerkmapVersie,
     useOnderkop: (ex) => [ex.xlsx?.bestandsnaam],
   },
   {
     templateId: MARKDOWN_BLAD,
     soortTekst: (taal) => papier(taal)("markdownBlad.soort"),
     Afdruk: MarkdownPapier,
-    // Een geladen afbeelding.
-    useVersie: useMarkdownVersie,
     useOnderkop: (ex) => [ex.md?.bestandsnaam],
     plek: "hoofdstuk",
     inhoudsKoppen: (ex) => (ex.md && !ex.md.koppenUit ? koppenVoorInhoud(ex.md.tekst, ex) : []),
@@ -120,11 +110,6 @@ const SOORTEN: readonly BladSoort[] = [
 /** De aanmelding van dit blad; een rekenblad heeft er geen. */
 export function bladSoortVan(ex: { templateId?: string }): BladSoort | undefined {
   return SOORTEN.find((s) => s.templateId === ex.templateId);
-}
-
-/** Verandert als een van de soorten iets klaar heeft. De lijst staat vast, dus de haken ook. */
-export function useBladSoortenVersie(): string {
-  return SOORTEN.map((s) => s.useVersie?.() ?? 0).join("|");
 }
 
 /** Een blad zoals de opzet van het rapport het leest (rapport/opzet.ts). */

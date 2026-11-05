@@ -245,6 +245,43 @@ export function paginaVanAnkers(paginas: Blok[][]): Map<string, number> {
 }
 
 /**
+ * Staan dezelfde blokken op dezelfde vellen, in dezelfde volgorde?
+ *
+ * Dan zijn de vellen van de vorige keer nog goed, op de blokken na waarvan de
+ * inhoud veranderde: die kunnen los worden vervangen (AfdrukVoorbeeld.tsx). Een
+ * hoogte die verandert zonder dat er een blok verschuift, maakt niets uit; elk
+ * vel heeft een vaste maat.
+ */
+export function zelfdeIndeling(a: readonly Blok[][], b: readonly Blok[][]): boolean {
+  return a.length === b.length && a.every((vel, i) => vel.length === b[i].length && vel.every((blok, j) => blok.el === b[i][j].el));
+}
+
+/** Genoeg van een DOM-knoop om de ouders langs te lopen; los te toetsen. */
+export interface Knoop {
+  parentNode: Knoop | null;
+}
+
+/**
+ * De blokken die een verandering raakt: per knoop het blok waar hij in zit.
+ *
+ * Een knoop die in geen enkel blok zit, staat in `buiten`: een wikkel of sectie
+ * die verandert (er komt een blok bij of er gaat er een af), of een knoop die
+ * niet meer in de uitdraai staat. Zo'n verandering is met losse blokken niet
+ * bij te houden.
+ */
+export function veranderdeBlokken(knopen: Iterable<Knoop>, blokken: ReadonlySet<Knoop>, wortel: Knoop): { veranderd: Set<Knoop>; buiten: Knoop[] } {
+  const veranderd = new Set<Knoop>();
+  const buiten: Knoop[] = [];
+  for (const k of knopen) {
+    let n: Knoop | null = k;
+    while (n && n !== wortel && !blokken.has(n)) n = n.parentNode;
+    if (n && n !== wortel) veranderd.add(n);
+    else buiten.push(k);
+  }
+  return { veranderd, buiten };
+}
+
+/**
  * Afrondingsruimte in px.
  *
  * Hoogtes zijn afstanden tussen gemeten blokken, en de browser rekent in

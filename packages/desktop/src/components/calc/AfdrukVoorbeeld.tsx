@@ -1,22 +1,53 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { usePrintStore } from "../../store/printStore";
-import { useProjectStore } from "../../store/projectStore";
 import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import { useInhoudPaginas } from "../../store/inhoudPaginas";
 import { huisstijlVariabelen } from "../../rapport/model";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
-import { meetBlokken, paginaVanAnkers, verdeelPerSectie, pxPerMm, MATEN, SPELING, type Maten } from "./paginering";
-import { useBladSoortenVersie } from "./bladSoorten";
-import { useDrieDVersie } from "./drieDBlok";
-import { useIfcxVersie } from "./ifcxBlok";
+import {
+  meetBlokken,
+  paginaVanAnkers,
+  verdeelPerSectie,
+  veranderdeBlokken,
+  zelfdeIndeling,
+  pxPerMm,
+  MATEN,
+  SPELING,
+  type Blok,
+  type Maten,
+} from "./paginering";
 import { useIframeVersie, vulIframesIn } from "./iframeBlok";
 import { useJsVersie, vulJsIn } from "./jsBlok";
 import "./PrintDocument.css";
 import "./AfdrukVoorbeeld.css";
 
 const ZOOMSTANDEN = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3];
+
+/**
+ * Blokken die de vellen zelf invullen, buiten de meetopstelling om: een externe pagina
+ * en een `@js`-blok (iframeBlok.ts, jsBlok.ts). Een los vervangen kopie zou zijn
+ * ingevulde venster kwijt zijn; zo'n blok gaat met de hele opbouw mee.
+ */
+const EIGEN_VULLING = ".calc-iframe, .calc-js";
+
+/** Wat de vorige opbouw op de vellen zette. */
+interface Opgebouwd {
+  paginas: Blok[][];
+  /** Per blok uit de meetopstelling zijn kopie op een vel. */
+  kopieen: Map<HTMLElement, HTMLElement>;
+  /** De blokken die bovenaan een vel staan: hun bovenmarge vervalt. */
+  eersten: Set<HTMLElement>;
+  /** De paginanummers voor de inhoudsopgave van het rapport. */
+  nummers: Map<string, number>;
+}
+
+/** Staat deze knoop op papier? Wat niet wordt getoond (alleen op het scherm, of weg), heeft geen vak. */
+function opPapier(knoop: Node): boolean {
+  const el = knoop instanceof Element ? knoop : knoop.parentElement;
+  return !!el && el.isConnected && el.getClientRects().length > 0;
+}
 
 /**
  * De voet van een vel van het rapport: de voetafbeelding van het bureau over
@@ -74,7 +105,7 @@ function rapportVoet(nummer: number, voetafbeelding: string, bureaunaam: string,
 export default function AfdrukVoorbeeld() {
   const { t } = useTranslation("beelden");
   const uitdraai = useUitdraai();
-  const { bladen, alleBladen, onderdeel, datum } = uitdraai;
+  const { alleBladen, onderdeel, datum } = uitdraai;
   const soort = usePrintStore((s) => s.soort);
   const sluitVoorbeeld = usePrintStore((s) => s.sluitVoorbeeld);
   const afdrukken = usePrintStore((s) => s.afdrukken);
@@ -85,27 +116,18 @@ export default function AfdrukVoorbeeld() {
 
   const rapport = soort === "rapport";
   const maten: Maten = MATEN[soort];
-  // Het bureau voor de voet van de rapportvellen. Het rapport, de gegevens en
-  // de bladen zelf staan erbij om opnieuw te verdelen als het rapport
-  // verandert zonder dat zijn hoogte dat doet (een tekst, een kleur).
+  // Het bureau voor de voet en het logo van de vellen.
   const bureau = useRapportBureau();
-  const rapportGegevens = useProjectStore((s) => s.rapport);
-  const gegevens = useProjectStore((s) => s.gegevens);
-  const exemplaren = useProjectStore((s) => s.exemplaren);
   const voetafbeelding = bureau.voetafbeelding;
   const bureaunaam = bureau.naam;
   const kopLogo = bureau.logoInKop ? bureau.logo : "";
   const huisstijl = useMemo(() => huisstijlVariabelen(bureau.huisstijl), [bureau.huisstijl]);
-  // Een PDF-pagina, werkmap of afbeelding die klaar is, moet op de vellen komen:
-  // dan opnieuw verdelen (bladSoorten.tsx).
-  const soortenVersie = useBladSoortenVersie();
-  // Idem voor een 3D-blok: zijn afbeelding komt in de plaats van de projectie
-  // (drieDBlok.ts), vaak zonder dat de hoogte verandert.
-  const drieDVersie = useDrieDVersie();
-  const ifcxVersie = useIfcxVersie();
-  // Een bevestigde externe pagina komt op de vellen (iframeBlok.ts).
+  // Een bevestigde externe pagina (iframeBlok.ts) en een uitgevoerd `@js`-blok
+  // (jsBlok.ts) vullen de vellen zelf in; de meetopstelling verandert daarbij niet.
+  // Dan alles opnieuw opbouwen. Al het andere dat klaar komt (een PDF-pagina, een
+  // werkmap, een 3D-afbeelding) verandert de meetopstelling zelf, en dat ziet de
+  // MutationObserver hieronder.
   const iframeVersie = useIframeVersie();
-  // En een uitgevoerd `@js`-blok: zijn afbeelding of zijn venster (jsBlok.ts).
   const jsVersie = useJsVersie();
   const scriptsWeg = useRef<(() => void) | null>(null);
   const iframesWeg = useRef<(() => void) | null>(null);
@@ -123,6 +145,54 @@ export default function AfdrukVoorbeeld() {
 
   // Kopregels per vel: dezelfde als de loopkop van de echte afdruk.
   const linksBoven = loopkopLinks(uitdraai);
+
+  /**
+   * Wat de vorige opbouw op de vellen zette, en wat er sindsdien in de meetopstelling
+   * veranderde. Daarmee kan een blok dat alleen van inhoud wisselt (een PDF-pagina
+   * die getekend is, een 3D-afbeelding op de plaats van de projectie) los op zijn
+   * vel worden vervangen. Alles opnieuw opbouwen kostte bij een project van 33
+   * bladen telkens bijna een seconde, en zulke beelden komen een voor een klaar.
+   */
+  const opgebouwd = useRef<Opgebouwd | null>(null);
+  const veranderd = useRef(new Set<Node>());
+  const heelOpnieuw = useRef(true);
+
+  /** Een kopie van een blok voor op een vel. */
+  const kopieVan = useCallback((el: HTMLElement, eerste: boolean, nummers: Map<string, number>) => {
+    const kloon = el.cloneNode(true) as HTMLElement;
+    // De bovenmarge van het eerste blok vervalt op een pagina-overgang. In
+    // de doorlopende meting klapt die marge samen met die van het blok
+    // erboven; bovenaan een vers vel is er niets om mee samen te klappen en
+    // komt hij er als extra ruimte bij — genoeg om de onderste regel van
+    // het vel af te duwen.
+    if (eerste) kloon.style.marginTop = "0";
+    if (rapport) {
+      const doelen = [...(kloon.matches("[data-inhoud-doel]") ? [kloon] : []), ...kloon.querySelectorAll<HTMLElement>("[data-inhoud-doel]")];
+      for (const doel of doelen) doel.textContent = String(nummers.get(doel.dataset.inhoudDoel ?? "") ?? "");
+    }
+    return kloon;
+  }, [rapport]);
+
+  /**
+   * Vervangt alleen de blokken die veranderden, als de indeling gelijk bleef. Geeft
+   * `false` als dat niet gaat: dan moet alles opnieuw.
+   */
+  const vervangLos = useCallback((vorig: Opgebouwd, knopen: Iterable<Node>, bron: HTMLElement): boolean => {
+    const { veranderd: geraakt, buiten } = veranderdeBlokken(knopen, new Set(vorig.kopieen.keys()), bron);
+    // Buiten elk blok: een wikkel of sectie die veranderde. Alleen niet erg als het
+    // niet op papier staat.
+    if (buiten.some((k) => opPapier(k as Node))) return false;
+    const blokken = [...geraakt] as HTMLElement[];
+    if (blokken.some((el) => el.matches(EIGEN_VULLING) || el.querySelector(EIGEN_VULLING) || el.dataset.velPagina !== undefined)) return false;
+    for (const el of blokken) {
+      const oud = vorig.kopieen.get(el);
+      if (!oud?.isConnected) return false;
+      const nieuw = kopieVan(el, vorig.eersten.has(el), vorig.nummers);
+      oud.replaceWith(nieuw);
+      vorig.kopieen.set(el, nieuw);
+    }
+    return true;
+  }, [kopieVan]);
 
   const bouwPaginas = useCallback(() => {
     const bron = meetRef.current;
@@ -143,6 +213,18 @@ export default function AfdrukVoorbeeld() {
     const paginas = verdeelPerSectie(meetBlokken(bron), (sectie) =>
       (/\bprint-blad\b/.test(sectie) ? maten.inhoud.hoogte - SPELING : maten.inhoud.vulhoogte) * mm,
     );
+
+    // Bleef de indeling gelijk, dan alleen de veranderde blokken vervangen.
+    const knopen = [...veranderd.current];
+    veranderd.current.clear();
+    const vorig = opgebouwd.current;
+    const heel = heelOpnieuw.current;
+    heelOpnieuw.current = false;
+    if (!heel && vorig && zelfdeIndeling(vorig.paginas, paginas) && vervangLos(vorig, knopen, bron)) {
+      vorig.paginas = paginas;
+      return;
+    }
+
     // De paginanummers van de inhoudsopgave, uit dezelfde verdeling als de vellen.
     const nummers = paginaVanAnkers(paginas);
     // Ook voor het zijpaneel, zodat de inhoud daar de pagina's kent (InhoudLijst.tsx).
@@ -151,6 +233,8 @@ export default function AfdrukVoorbeeld() {
     iframesWeg.current?.();
     scriptsWeg.current?.();
     host.replaceChildren();
+    const kopieen = new Map<HTMLElement, HTMLElement>();
+    const eersten = new Set<HTMLElement>();
     paginas.forEach((pagina, i) => {
       const vel = document.createElement("div");
       vel.className = rapport ? "av-pagina print-opmaak rpa-wortel" : "av-pagina print-opmaak";
@@ -192,24 +276,13 @@ export default function AfdrukVoorbeeld() {
           }
           vorigeWikkels = sleutel;
         }
-        const kloon = blok.el.cloneNode(true) as HTMLElement;
-        // De bovenmarge van het eerste blok vervalt op een pagina-overgang. In
-        // de doorlopende meting klapt die marge samen met die van het blok
-        // erboven; bovenaan een vers vel is er niets om mee samen te klappen en
-        // komt hij er als extra ruimte bij — genoeg om de onderste regel van
-        // het vel af te duwen.
-        if (eersteVanDezePagina) {
-          kloon.style.marginTop = "0";
-          eersteVanDezePagina = false;
-        }
+        if (eersteVanDezePagina) eersten.add(blok.el);
+        const kloon = kopieVan(blok.el, eersteVanDezePagina, nummers);
+        eersteVanDezePagina = false;
+        kopieen.set(blok.el, kloon);
         doel.appendChild(kloon);
       }
 
-      if (rapport) {
-        for (const doel of inhoud.querySelectorAll<HTMLElement>("[data-inhoud-doel]")) {
-          doel.textContent = String(nummers.get(doel.dataset.inhoudDoel ?? "") ?? "");
-        }
-      }
       if (eigenVel) {
         vel.append(inhoud);
         // In het rapport loopt de nummering ook over een vel op eigen formaat door.
@@ -265,9 +338,13 @@ export default function AfdrukVoorbeeld() {
 
       const omhulsel = document.createElement("div");
       omhulsel.className = "av-vel";
+      // Een vel buiten beeld wordt niet opgemaakt (AfdrukVoorbeeld.css); tot hij in
+      // beeld komt, houdt hij deze maat vrij: het papier en het nummer eronder.
+      if (eigenVel) omhulsel.style.containIntrinsicSize = `auto ${eigenVel.velBreedte}mm auto calc(${eigenVel.velHoogte}mm + 24px)`;
       omhulsel.append(vel, nummer);
       host.appendChild(omhulsel);
     });
+    opgebouwd.current = { paginas, kopieen, eersten, nummers };
     // Op de vellen en niet in de meetopstelling: de hoogte staat vast, en een
     // iframe in de meetopstelling zou elke pagina dubbel laden.
     iframesWeg.current = vulIframesIn(host);
@@ -275,17 +352,23 @@ export default function AfdrukVoorbeeld() {
 
     setAantal(paginas.length);
     setBezig(false);
-  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, kopLogo, huisstijl, t]);
+  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, kopLogo, huisstijl, t, kopieVan, vervangLos]);
 
   /*
    * Opnieuw verdelen zodra de opmaak verandert.
    *
    * De parametrische beelden meten hun eigen tekengebied en schalen zich pas
    * daarna; meteen verdelen zou op hoogtes gebeuren die een tel later niet meer
-   * kloppen. Een ResizeObserver op de meetopstelling vangt elke wijziging op,
-   * en een korte vertraging bundelt een reeks wijzigingen tot één verdeling.
-   * Wat de hoogte niet verandert (een woord, een kleur) komt via de
-   * afhankelijkheden binnen.
+   * kloppen. Een ResizeObserver op de meetopstelling vangt elke wijziging van
+   * de maat op, en een korte vertraging bundelt een reeks wijzigingen tot één
+   * verdeling. Wat de maat niet verandert (een woord, een kleur, een PDF-pagina
+   * die getekend is) ziet een MutationObserver; een geladen afbeelding de
+   * `load`-luisteraar.
+   *
+   * Zulke wijzigingen bouwen niet alles opnieuw op. Blijft de indeling gelijk,
+   * dan krijgen alleen de veranderde blokken een nieuwe kopie op hun vel
+   * (`vervangLos`). Alleen wat de vellen zelf raakt (de loopkop, de huisstijl,
+   * een bevestigd venster: de afhankelijkheden hier) bouwt alles opnieuw op.
    *
    * Bewust geen requestAnimationFrame: dat staat volledig stil zodra het
    * venster niet zichtbaar is. Het voorbeeld zou dan blijven hangen op
@@ -295,24 +378,48 @@ export default function AfdrukVoorbeeld() {
     const bron = meetRef.current;
     if (!bron) return;
     setBezig(true);
+    heelOpnieuw.current = true;
 
     let timer = 0;
     // `data-opnieuw`: er komt een nieuwe verdeling; de afdruk wacht daarop (drukvellen.ts).
     const plan = () => {
       bron.dataset.opnieuw = "";
       window.clearTimeout(timer);
-      timer = window.setTimeout(bouwPaginas, 120);
+      timer = window.setTimeout(() => {
+        // Wat nog niet is afgeleverd, telt ook mee.
+        neem(mo.takeRecords());
+        bouwPaginas();
+      }, 120);
+    };
+    const neem = (lijst: MutationRecord[]) => {
+      let iets = false;
+      for (const r of lijst) {
+        // `data-opnieuw` op de meetopstelling zelf zet dit effect.
+        if (r.target === bron && r.type === "attributes") continue;
+        veranderd.current.add(r.target);
+        iets = true;
+      }
+      return iets;
     };
 
     const ro = new ResizeObserver(plan);
     ro.observe(bron);
+    const mo = new MutationObserver((lijst) => {
+      if (neem(lijst)) plan();
+    });
+    mo.observe(bron, { subtree: true, childList: true, attributes: true, characterData: true });
+    // `load` borrelt niet op; vangen op de weg naar beneden.
+    bron.addEventListener("load", plan, true);
     plan();
 
     return () => {
       ro.disconnect();
+      neem(mo.takeRecords());
+      mo.disconnect();
+      bron.removeEventListener("load", plan, true);
       window.clearTimeout(timer);
     };
-  }, [bouwPaginas, bladen, rapportGegevens, gegevens, exemplaren, bureau, soortenVersie, drieDVersie, ifcxVersie, iframeVersie, jsVersie]);
+  }, [bouwPaginas, iframeVersie, jsVersie]);
 
   useEffect(() => () => {
     iframesWeg.current?.();

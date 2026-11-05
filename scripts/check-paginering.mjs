@@ -14,8 +14,10 @@ import {
   SPELING,
   houdtBijVolgende,
   paginaVanAnkers,
+  veranderdeBlokken,
   verdeelInPaginas,
   verdeelPerSectie,
+  zelfdeIndeling,
 } from "../packages/desktop/src/components/calc/paginering.ts";
 
 let fouten = 0;
@@ -126,6 +128,39 @@ toets("de sectiekop op het voorblad en de kopregel van een rapporttabel zijn kop
   houdtBijVolgende(el("P", "print-sectiekop")) && houdtBijVolgende(el("DIV", "rpa-rij", "rpa-houd")));
 toets("gewone regels zijn geen kop",
   !houdtBijVolgende(el("P", "calc-text")) && !houdtBijVolgende(el("DIV", "calc-line")) && !houdtBijVolgende(el("H7")));
+
+// Bijwerken zonder opnieuw opbouwen (AfdrukVoorbeeld.tsx). Een blok is hier een
+// element; de indeling vergelijkt welke elementen op welk vel staan.
+const knoop = (ouder = null) => ({ parentNode: ouder });
+const metEl = (el, hoogte = 10, nieuw = false) => ({ ...blok(hoogte, "print-blad", nieuw), el });
+const [p, q, r] = [knoop(), knoop(), knoop()];
+const indeling = [[metEl(p, 10, true), metEl(q)], [metEl(r, 10, true)]];
+toets("dezelfde blokken op dezelfde vellen: dezelfde indeling",
+  zelfdeIndeling(indeling, [[metEl(p, 12, true), metEl(q, 30)], [metEl(r, 10, true)]]));
+toets("een blok naar het volgende vel: een andere indeling",
+  !zelfdeIndeling(indeling, [[metEl(p, 10, true)], [metEl(q), metEl(r, 10, true)]]));
+toets("een vel erbij: een andere indeling",
+  !zelfdeIndeling(indeling, [...indeling, [metEl(knoop(), 10, true)]]));
+toets("een ander blok op dezelfde plek: een andere indeling",
+  !zelfdeIndeling(indeling, [[metEl(p, 10, true), metEl(knoop())], [metEl(r, 10, true)]]));
+
+// Welke blokken een verandering raakt: het blok waar de knoop in zit.
+const wortel = knoop();
+const wikkel = knoop(wortel);
+const blokA = knoop(wikkel);
+const blokB = knoop(wikkel);
+const diep = knoop(knoop(blokA));
+const raak = veranderdeBlokken([diep, blokB, knoop(blokB)], new Set([blokA, blokB]), wortel);
+toets("een knoop diep in een blok raakt dat blok", raak.veranderd.has(blokA));
+toets("het blok zelf en een kind ervan raken hetzelfde blok, één keer",
+  raak.veranderd.has(blokB) && raak.veranderd.size === 2, raak.veranderd.size);
+toets("niets buiten de blokken", raak.buiten.length === 0, raak.buiten.length);
+const erbuiten = veranderdeBlokken([wikkel, wortel], new Set([blokA, blokB]), wortel);
+toets("een wikkel of de wortel zelf valt buiten elk blok",
+  erbuiten.buiten.length === 2 && erbuiten.veranderd.size === 0, `${erbuiten.buiten.length} buiten`);
+const los = knoop(knoop());
+toets("een knoop die niet meer in de uitdraai staat, valt erbuiten",
+  veranderdeBlokken([los], new Set([blokA]), wortel).buiten.length === 1);
 
 if (fouten > 0) {
   console.error(`\nPaginering: ${fouten} afwijking(en).`);

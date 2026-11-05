@@ -72,15 +72,13 @@ interface Ingang {
 
 const cache = new Map<string, Ingang>();
 const luisteraars = new Set<() => void>();
-/** Telt elke melding; het afdrukvoorbeeld verdeelt opnieuw als hij verandert. */
-let versie = 0;
 let meldTimer: ReturnType<typeof setTimeout> | null = null;
 
 const laatste = (ingang: Ingang) => ingang.volgende ?? ingang.stand;
 
 /**
  * Meldt de wijzigingen aan de weergaven. Gebundeld: een PDF van dertig
- * pagina's zou anders dertig keer het hele afdrukvoorbeeld opnieuw verdelen.
+ * pagina's zou anders dertig keer alle weergaven opnieuw tekenen.
  * `direct` voor de maten en het einde van het laden, zodat de afdruk niet
  * onnodig wacht. Pas hier veranderen de standen die de weergaven lezen, zoals
  * useSyncExternalStore dat wil.
@@ -93,7 +91,6 @@ function meld(direct = false) {
       if (ingang.volgende) ingang.stand = ingang.volgende;
       ingang.volgende = null;
     }
-    versie += 1;
     for (const l of luisteraars) l();
   };
   if (direct) roep();
@@ -297,11 +294,6 @@ export function usePdfPaginas(data: string | undefined): PdfStand | null {
     };
   }, [data]);
   return stand;
-}
-
-/** Verandert bij elke getekende pagina; voor het opnieuw verdelen van het afdrukvoorbeeld. */
-export function usePdfVersie(): number {
-  return useSyncExternalStore(abonneer, () => versie);
 }
 
 /**
