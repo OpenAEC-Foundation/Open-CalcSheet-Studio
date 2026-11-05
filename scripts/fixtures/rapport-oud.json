@@ -1,0 +1,339 @@
+{
+  "projectNaam": "Voorbeeldproject",
+  "gegevens": {
+    "project_nummer": "2026-001",
+    "project_naam": "Voorbeeldproject",
+    "opdrachtgever": "Voorbeeld BV",
+    "locatie": "Voorbeeldstad",
+    "CC": "2",
+    "RC": "2",
+    "DesignLife": "50",
+    "windgebied": "2",
+    "terreincategorie": "3",
+    "rekenwijze": "1"
+  },
+  "exemplaren": [
+    {
+      "id": "ex-a",
+      "naam": "Ligger in het hoofdstuk",
+      "templateId": "",
+      "waarden": {},
+      "elementen": [],
+      "source": "\"Ligger in het hoofdstuk — NEN-EN 1990\n# Invoer\n'Korte toelichting bij de invoer.\nM_Ed = 12.5*(kN*m)',veld 1\nM_Rd = 25*(kN*m)\nUC_max = M_Ed/M_Rd\n'Maatgevende UC = 0,50 → voldoet"
+    },
+    {
+      "id": "ex-b",
+      "naam": "Ligger in de bijlage",
+      "templateId": "",
+      "waarden": {},
+      "elementen": [],
+      "source": "\"Ligger in de bijlage — NEN-EN 1990\n# Invoer\n'Korte toelichting bij de invoer.\nM_Ed = 12.5*(kN*m)',veld 1\nM_Rd = 25*(kN*m)\nUC_max = M_Ed/M_Rd\n'Maatgevende UC = 0,50 → voldoet"
+    }
+  ],
+  "rapport": {
+    "versie": 4,
+    "titel": "Constructieadvies & berekeningen",
+    "kenmerk": "2026-001-C01",
+    "fase": "VO",
+    "normen": "NEN-EN 1990 t/m 1997",
+    "opdrachtgeverAdres": "Voorbeeldstraat 1\n1234 AB Voorbeeldstad",
+    "verantwoordelijk": "Ir. A. Voorbeeld",
+    "uitvoerend": "Ing. B. Voorbeeld",
+    "revisies": [
+      {
+        "code": "A",
+        "datum": "12-03-2026",
+        "omschrijving": "Eerste uitgave",
+        "status": "concept"
+      },
+      {
+        "code": "B",
+        "datum": "02-04-2026",
+        "omschrijving": "Na opmerkingen",
+        "status": "ter goedkeuring"
+      },
+      {
+        "code": "C",
+        "datum": "14-05-2026",
+        "omschrijving": "Definitief",
+        "status": "definitief"
+      }
+    ],
+    "teksten": {
+      "inleiding": "Ten behoeve van het genoemde project brengt {adviseur} op verzoek van de opdrachtgever in dit rapport een constructieadvies uit.\n\nHet advies is gebaseerd op de verstrekte gegevens.\n\nDit rapport omvat de hoofdberekening van de constructie.\nVoor de detailengineering dienen nog aanvullende berekeningen door derden te worden uitgevoerd, die door {adviseur} worden gecontroleerd:\n-Tekeningen en berekeningen systeemvloeren;\n-Tekeningen en berekeningen staalconstructie;\n-Sondering en funderingsadvies;",
+      "projectomschrijving": "Het project omvat het realiseren van een aanbouw.",
+      "rol": "{adviseur} heeft opdracht voor het constructieadvies voor dit project.",
+      "trillingen": "Bij vloerconstructies worden trillingsberekeningen uitgevoerd.\nVoor overige onderdelen worden trillingen verder niet beschouwd.",
+      "vervormingen": "De onderstaande vervormingseisen worden gehanteerd voor dit project.",
+      "montage": "Deze berekening gaat uit van de constructie in de eindfase. Het berekenen van de verschillende bouwfasen, zoals onderstempeling, is niet meegenomen.",
+      "rekenprogrammatuur": "De berekeningen in dit rapport zijn opgesteld met Open CalcSheet Studio.",
+      "temperatuur": "Bij dit project zijn geen bijzondere temperatuursinvloeden aan de orde.",
+      "aardbeving": "Er is geen aardbevingsontwerpsituatie voorgeschreven.",
+      "sneeuw": "Sneeuwophoping en sneeuwbelasting op hellende daken worden bij de desbetreffende onderdelen berekend, indien van toepassing.",
+      "regenwater": "Niet van toepassing",
+      "bestaand-verticaal": "De vloeren bestaan uit houten balklagen. Deze dragen via de gemetselde bouwmuren af naar de fundering.",
+      "bestaand-stabiliteit": "De stabiliteit wordt verzorgd door de gemetselde bouwmuren.",
+      "bestaand-fundatie": "Er zijn geen archiefgegevens bekend. Vermoedelijk is het gebouw op staal gefundeerd.",
+      "bestaand-beoordeling": "Er is geen aanleiding om te twijfelen aan de bouwkwaliteit van de bestaande constructie.",
+      "wijziging": "Er wordt een doorbraak gemaakt in een dragende wand met een stalen portaal.\nDe stabiliteit wordt verzorgd door het resterende deel van de wand.\nDe verticale belastingafdracht naar de fundering gaat via de kolommen en de onderligger naar de bestaande fundering.",
+      "belendingen": "Fundering:\nDe belending staat op palen.\n\n-Eigen opsommingsregel;\n-Nog een regel.",
+      "uitvoering-bestaand": "-Maatvoering is gebaseerd op archiefstukken en/of de tekening van de architect.\n-Maatvoering moet in het werk worden gecontroleerd.",
+      "uitvoering-verbouw": "-Bij het maken van nieuwe openingen in bestaand metselwerk de wand en de omliggende constructie voldoende stempelen.",
+      "uitvoering-nieuwbouw": "-Fundering op staal: de draagkrachtige laag vaststellen tijdens het ontgraven.\n-Wapening voor het storten laten controleren."
+    },
+    "rol": {
+      "rol": "Hoofdconstructeur",
+      "architect": "n.v.t.",
+      "datumOnderlegger": "n.v.t."
+    },
+    "uitgangspunten": {
+      "soortBouwwerk": "Woning",
+      "brand": {
+        "hoofddraagconstructie": "60",
+        "brandscheiding": "30",
+        "vluchtroute": "-",
+        "verwijzing": "Besluit bouwwerken"
+      },
+      "materialen": [
+        {
+          "type": "TPG Beton",
+          "soort": "C20/25",
+          "opmerking": "(voor milieuklassen zie berekening betononderdelen en tekening)"
+        },
+        {
+          "type": "Hout",
+          "soort": "C24",
+          "opmerking": "lijmwerk; hoger waar de berekening dat vraagt"
+        },
+        {
+          "type": "Plaatmateriaal",
+          "soort": "CE2+",
+          "opmerking": ""
+        },
+        {
+          "type": "Wapeningsstaal",
+          "soort": "B500",
+          "opmerking": ""
+        },
+        {
+          "type": "Staal",
+          "soort": "S235",
+          "opmerking": "JR"
+        },
+        {
+          "type": "Ondervoeging staal",
+          "soort": "K50",
+          "opmerking": ""
+        }
+      ],
+      "materialenNoot": "(tenzij anders aangegeven)",
+      "bevestiging": [
+        {
+          "type": "Bouten",
+          "kwaliteit": "8.8"
+        },
+        {
+          "type": "Houtdraaibout",
+          "kwaliteit": "4.6"
+        },
+        {
+          "type": "Chemische Ankers",
+          "kwaliteit": "5.8"
+        }
+      ],
+      "conservering": [
+        {
+          "onderdeel": "Buitenconstructies",
+          "systeem": "Duplex of thermisch verzinkt"
+        },
+        {
+          "onderdeel": "Constructies in spouw",
+          "systeem": "Thermisch verzinkt"
+        },
+        {
+          "onderdeel": "Staal binnen",
+          "systeem": "Verf systeem"
+        }
+      ],
+      "conserveringSlot": "Conservering wordt toegepast op nieuw te plaatsen constructieonderdelen.",
+      "bestaand": {
+        "opnemen": true,
+        "bouwjaar": "1955",
+        "bron": "archieftekening",
+        "berekeningBeschikbaar": "Nee",
+        "materiaalgegevensBeschikbaar": "Ja"
+      },
+      "vervormingen": [
+        {
+          "onderdeel": "Verticale doorbuiging van daken",
+          "ueind": "0,004l_rep",
+          "ubij": "0,004l_rep",
+          "uhor": ""
+        },
+        {
+          "onderdeel": "Verticale doorbuiging van vloeren",
+          "ueind": "0,004l_rep",
+          "ubij": "0,003l_rep",
+          "uhor": ""
+        },
+        {
+          "onderdeel": "Vloer met steenachtige wanden",
+          "ueind": "",
+          "ubij": "0,002l_rep",
+          "uhor": ""
+        },
+        {
+          "onderdeel": "Horizontale verplaatsing bouwwerk",
+          "ueind": "",
+          "ubij": "",
+          "uhor": "H/300"
+        },
+        {
+          "onderdeel": "Horizontale verplaatsing afscheiding",
+          "ueind": "",
+          "ubij": "",
+          "uhor": "< 20 mm"
+        }
+      ]
+    },
+    "belastingen": {
+      "wind": {
+        "gebouwhoogte": "9",
+        "cscd": "1",
+        "coefficienten": [
+          {
+            "omschrijving": "gevel, druk",
+            "c": "0,04"
+          },
+          {
+            "omschrijving": "",
+            "c": "0,40"
+          },
+          {
+            "omschrijving": "",
+            "c": "0,80"
+          },
+          {
+            "omschrijving": "",
+            "c": "1,10"
+          }
+        ]
+      },
+      "klassen": [
+        {
+          "categorie": "A-vloer",
+          "lichteScheidingswanden": "0,80",
+          "dakhelling": "",
+          "qlast": ""
+        },
+        {
+          "categorie": "B",
+          "lichteScheidingswanden": "",
+          "dakhelling": "",
+          "qlast": ""
+        },
+        {
+          "categorie": "H-dak",
+          "lichteScheidingswanden": "",
+          "dakhelling": "17,5",
+          "qlast": "2,0"
+        },
+        {
+          "categorie": "onbekend",
+          "lichteScheidingswanden": "",
+          "dakhelling": "",
+          "qlast": ""
+        }
+      ],
+      "vloerenDaken": [
+        {
+          "soort": "vlak",
+          "naam": "Verdiepingsvloer",
+          "lagen": [
+            {
+              "naam": "vloerplaat",
+              "d": "",
+              "rho": "",
+              "p": "0,30"
+            },
+            {
+              "naam": "beschot",
+              "d": "0,02",
+              "rho": "4,0",
+              "p": ""
+            },
+            {
+              "naam": "balklaag",
+              "d": "",
+              "rho": "",
+              "p": "0,08"
+            }
+          ]
+        }
+      ],
+      "wanden": [
+        {
+          "soort": "gevel",
+          "naam": "Voorgevel",
+          "lagen": [
+            {
+              "naam": "metselwerk",
+              "p": "2,00",
+              "h": "3,00",
+              "vulling": "90%"
+            },
+            {
+              "naam": "kozijn",
+              "p": "0,75",
+              "h": "3,00",
+              "vulling": "10%"
+            }
+          ]
+        }
+      ]
+    },
+    "toelichting": {
+      "ex-a": "Eigen toelichting bij dit blad."
+    },
+    "inHoofdstuk": {
+      "ex-a": true
+    },
+    "bijlagen": [
+      "Constructieoverzicht",
+      "Sonderingen"
+    ],
+    "nieuwePagina": {
+      "uitvoering": false
+    },
+    "opmaak": {
+      "constructieprincipe": true,
+      "subkoppen": true,
+      "bladenInInhoud": true
+    },
+    "bureau": {
+      "naam": "Voorbeeld Constructies",
+      "adres": "Voorbeeldlaan 2",
+      "postcode": "1234 AB",
+      "plaats": "Voorbeeldstad",
+      "telefoon": "010-0000000",
+      "email": "info@voorbeeld.invalid",
+      "logo": "",
+      "logoInKop": true,
+      "voetafbeelding": "",
+      "huisstijl": {
+        "hoofdkleur": "#1f3a5f",
+        "accentkleur": "#2f7d6d",
+        "tabeltekst": "#1f2937",
+        "invoerkleur": "#1d4ed8",
+        "lettertype": "\"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"
+      },
+      "constructeurs": [
+        {
+          "naam": "Ir. A. Voorbeeld",
+          "telefoon": "",
+          "email": ""
+        }
+      ]
+    }
+  }
+}
