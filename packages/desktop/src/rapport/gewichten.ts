@@ -16,7 +16,10 @@
  * eenheid en orde van grootte (scripts/check-rapport.mjs). Niet opgenomen:
  * veranderlijke belastingen, korrelvolumieke massa's van toeslagmaterialen
  * (dat is geen stortgewicht) en waarden die alleen als bereik bekend zijn.
- * Elementen heten naar wat ze zijn, niet naar een merk of fabrikant.
+ *
+ * Dit is de korte lijst in het keuzemenu. De volledige bibliotheek, per
+ * leverancier en met een bron bij elke waarde, staat in library/gewichten/ en
+ * gewichtenBibliotheek.ts; die bevat ook deze regels.
  */
 import type { Gevellaag, Laag, Opbouw } from "./model.ts";
 import { fmt } from "./normwaarden.ts";
