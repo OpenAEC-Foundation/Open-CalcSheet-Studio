@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { tekstRegels } from "../../../rapport/invullen";
-import { bouwOpzet, titelVan, type Rapportknoop } from "../../../rapport/opzet";
+import { bouwOpzet, opzetVan, titelVan, type Rapportknoop } from "../../../rapport/opzet";
 import { bladVoorOpzet } from "../../calc/bladSoorten";
 import { PROJECT_ID, useProjectStore } from "../../../store/projectStore";
 import { vindKnoop } from "./hulp";
@@ -144,7 +144,7 @@ export function Kop({ id }: { id: string }) {
   const { t } = useTranslation("rapport");
   const stand = useOpzetStand();
   const rapport = useRapport();
-  const knoop = vindKnoop(id);
+  const knoop = vindKnoop(id, opzetVan(rapport));
   const niveau = knoop?.niveau ?? 2;
   const Tag = KOPTAGS[niveau - 1];
   const nummer = stand.nummer(id);
@@ -172,8 +172,9 @@ export function Kop({ id }: { id: string }) {
 export function NieuwePagina({ id }: { id: string }) {
   const { t } = useTranslation("rapport");
   const eigen = useProjectStore((s) => s.rapport.nieuwePagina[id]);
+  const opzet = useProjectStore((s) => opzetVan(s.rapport));
   const zet = useProjectStore((s) => s.zetRapportVeld);
-  const aan = eigen ?? vindKnoop(id)?.nieuwePagina ?? false;
+  const aan = eigen ?? vindKnoop(id, opzet)?.nieuwePagina ?? false;
   return (
     <label className="rapport-vink rapport-nieuwe-pagina">
       <input

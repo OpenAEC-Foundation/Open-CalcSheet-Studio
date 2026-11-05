@@ -7,17 +7,38 @@
  */
 import type { BureauProfiel } from "../../../rapport/model.ts";
 import { fmt } from "../../../rapport/normwaarden.ts";
-import { OPZET, type Knoop } from "../../../rapport/opzet.ts";
+import { OPZET, zoekKnoop, type Knoop } from "../../../rapport/opzet.ts";
 import type { Pad } from "../../../rapport/pad.ts";
 
-/** Zoekt een knoop in de vaste opzet op id, diepte eerst. */
+/** Zoekt een knoop op id, diepte eerst: in de opzet van een rapport, of anders in het ingebouwde template. */
 export function vindKnoop(id: string, lijst: readonly Knoop[] = OPZET): Knoop | undefined {
-  for (const k of lijst) {
-    if (k.id === id) return k;
-    const dieper = k.kinderen ? vindKnoop(id, k.kinderen) : undefined;
-    if (dieper) return dieper;
+  return zoekKnoop(id, lijst);
+}
+
+/** Een stuk van het paneel: losse teksthoofdstukken, of een hoofdstuk met een eigen sectie. */
+export type PaneelGroep =
+  | { soort: "teksten"; knopen: Knoop[] }
+  | { soort: "uitgangspunten" | "belastingen" | "berekeningen"; knoop: Knoop };
+
+/**
+ * Hoe de opzet over de secties van het paneel valt, in de volgorde van het rapport. Uitgangspunten,
+ * Belastingen en Berekeningen hebben een eigen sectie met een eigen uitleg; opeenvolgende andere
+ * hoofdstukken delen er één. Voor het ingebouwde template is dat de indeling die het paneel altijd
+ * had: hoofdstuk 1 t/m 3, dan die drie.
+ */
+export function paneelGroepen(opzet: readonly Knoop[]): PaneelGroep[] {
+  const uit: PaneelGroep[] = [];
+  for (const k of opzet) {
+    if (k.inhoud === "berekeningen") uit.push({ soort: "berekeningen", knoop: k });
+    else if (k.inhoud === undefined && k.id === "uitgangspunten") uit.push({ soort: "uitgangspunten", knoop: k });
+    else if (k.inhoud === undefined && k.id === "belastingen") uit.push({ soort: "belastingen", knoop: k });
+    else {
+      const laatste = uit[uit.length - 1];
+      if (laatste?.soort === "teksten") laatste.knopen.push(k);
+      else uit.push({ soort: "teksten", knopen: [k] });
+    }
   }
-  return undefined;
+  return uit;
 }
 
 /**
