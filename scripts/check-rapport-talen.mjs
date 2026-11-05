@@ -42,6 +42,12 @@ import { balklaag } from "../packages/desktop/src/templates/balklaag.ts";
 import { ligger } from "../packages/desktop/src/templates/ligger.ts";
 import { tweepaalspoer } from "../packages/desktop/src/templates/tweepaalspoer.ts";
 import { doorsnedeSpanningen } from "../packages/desktop/src/templates/doorsnede-spanningen.ts";
+import { PDF_BLAD } from "../packages/desktop/src/store/pdfBijlage.ts";
+import { SPREADSHEET_BLAD } from "../packages/desktop/src/store/spreadsheetBlad.ts";
+import { GRAAF_BLAD } from "../packages/desktop/src/store/graafBlad.ts";
+import { TEKEN_BLAD } from "../packages/desktop/src/store/tekenBlad.ts";
+import { JUPYTER_BLAD } from "../packages/desktop/src/store/jupyterBlad.ts";
+import { MARIMO_BLAD } from "../packages/desktop/src/store/marimoBlad.ts";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const lees = (pad) => readFileSync(join(hier, pad), "utf8").replace(/\r\n/g, "\n");
@@ -242,6 +248,7 @@ kop("3. Wisselen van taal");
   toets("nieuw rapport herkend, in elke taal", isNieuwRapport(nl) && isNieuwRapport(en));
   toets("een wijziging is geen nieuw rapport meer", !isNieuwRapport({ ...nl, kenmerk: "x" }) && !isNieuwRapport(metTekst(nl, "rol", "Eigen.")));
   toets("isNieuwRapport kijkt niet naar de datum", isNieuwRapport(standaardRapport("01-01-2020", standaardTeksten("en"), "en")));
+  toets("isNieuwRapport: ook na opslaan en openen", isNieuwRapport(normaliseerRapport(kloon(nieuw("en")), VANDAAG, standaardTeksten)));
 
   // Alle varianten, in elke richting.
   let mis = [];
@@ -279,6 +286,8 @@ kop("3. Wisselen van taal");
   // Een tekst van een oud rapport heeft nog geen taal: die was Nederlands.
   const oud = { ...nl, teksten: { ...nl.teksten, belendingen: eigen }, tekstTaal: {} };
   gelijk("een oude eigen tekst: de taal van het rapport voor de wissel", andereTaalVan(wisselTaal(oud, "en"), "belendingen"), "nl");
+  const zonderVarianten = wisselTaal({ ...nl, teksten: { ...nl.teksten, "eigen-id": eigen } }, "en");
+  gelijk("een tekst-id zonder vertaling: de tekst blijft en krijgt een melding", [zonderVarianten.teksten["eigen-id"], andereTaalVan(zonderVarianten, "eigen-id")], [eigen, "nl"]);
   const ids = (r) => Object.keys(r.teksten).sort();
   gelijk("de tekst-ids veranderen niet", ids(wisselTaal(nl, "en")), ids(nl));
 
@@ -431,6 +440,9 @@ kop("5. De afdruk als html");
     module("ex-c", "Pile cap", tweepaalspoer),
     module("ex-d", "Section stresses", doorsnedeSpanningen),
     { id: "ex-md", naam: "Foundation notes", templateId: "markdown", source: "", waarden: {}, elementen: [], md: { bestandsnaam: "notes.md", tekst: "# Foundation\n\nOwn text.", beelden: {} } },
+    // De andere bladsoorten zonder inhoud: dan zegt elke soort op papier wat er ontbreekt.
+    ...[[PDF_BLAD, "Supplier sheet"], [SPREADSHEET_BLAD, "Quantities"], [GRAAF_BLAD, "Moments as graph"], [TEKEN_BLAD, "Floor plan"], [JUPYTER_BLAD, "Notebook"], [MARIMO_BLAD, "Sliders"]]
+      .map(([templateId, naam], i) => ({ id: `ex-soort-${i}`, naam, templateId, source: "", waarden: {}, elementen: [] })),
   ];
   const gegevens = { ...project.gegevens, project_naam: "Example project", opdrachtgever: "Example Ltd", locatie: "Exampletown" };
 
@@ -444,6 +456,9 @@ kop("5. De afdruk als html");
     toets(`de vaste woorden staan er: app op ${app}`, ["Contents", "Introduction", "Design basis", "Loads", "Calculations", "Consequence class", "Design working life (t)"].every((w) => regels.some((r) => r.includes(w))),
       regels.slice(0, 12).join(" | "));
     toets(`de rekenbladen rekenen in het Engels: app op ${app}`, /Timber joist floor/.test(html) && !/Balklaag —/.test(html));
+    toets(`de bladsoorten op papier in het Engels: app op ${app}`, ["PDF attachment", "The PDF file of this sheet is missing.", "The workbook of this sheet is missing.", "The graph of this sheet is missing.", "The sheet of this drawing is missing.", "The work folder of this sheet is missing.", "The notebook of this sheet is missing."].every((w) => regels.some((r) => r.includes(w))),
+      regels.filter((r) => /missing|Spreadsheet|PDF/.test(r)).join(" | "));
+    gelijk(`de taal van de app blijft staan: ${app}`, m.i18next.language, app);
     // Zonder de formules: een index als E_0,05 is een naam, geen getal.
     const kommas = [...perRegel(html).matchAll(/.{0,60}>(\d+,\d+)</g)].map((k) => k[0]);
     toets(`getallen met een punt in de vaste tabellen: app op ${app}`, html.includes(">0.56<") && kommas.length === 0, kommas.slice(0, 8).join(" | "));

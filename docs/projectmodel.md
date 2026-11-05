@@ -161,6 +161,22 @@ Dat gaat bewust via de browser en niet via de Rust-rapportengine — zie
 `docs/backlog.md`. De engine slaat tekeningen over, en zonder de
 `openaec-reports`-repo is de app niet eens te bouwen.
 
+## Taal van het rapport
+
+Het rapport heeft een eigen taal, `Rapport.taal` in `ocss::rapport`, los van de taal
+van de app. Een nieuw rapport neemt de taal van de app over; een rapport van vóór
+versie 5 van de rapportopbouw krijgt `nl`, want zijn inhoud is Nederlands. Op papier
+volgt alles die taal: de vaste woorden (`rapport.json`, onder `afdruk`), de koppen, de
+rekenbladen en de getallen. Op het scherm volgt de uitwerking de taal van de app.
+
+Wat de app meelevert is meertalig (`rapport/meertalig.ts`), met Engels als bron. Een
+rapport bewaart de tekst in zijn eigen taal. Wisselen (`rapport/taalwissel.ts`) zet wat
+gelijk is aan een meegeleverde waarde om; eigen tekst blijft staan, en
+`Rapport.tekstTaal` onthoudt per tekst-id de taal waarin hij is getypt. De tekst-id's en
+de ankers op papier veranderen niet met de taal. `scripts/check-rapport-talen.mjs` legt
+een oud rapport naast de html van vóór de talen (`scripts/fixtures/rapport-oud-*.html`)
+en doorzoekt een compleet Engels rapport op Nederlandse woorden.
+
 ## Ongedaan maken
 
 Eén stapel voor het hele project (`verleden` / `toekomst` in `projectStore.ts`),
