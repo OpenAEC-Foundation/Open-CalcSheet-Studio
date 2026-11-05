@@ -94,6 +94,23 @@ export function linkNaarBuiten(adres: string): string | null {
 /** SVG-attributen die een `url()` aannemen, naast `style`. */
 const STIJL_ATTRIBUUT = /^(?:style|fill|stroke|filter|mask|clip-path|marker-(?:start|mid|end)|cursor)$/;
 
+/**
+ * Het oordeel over een stijl onthouden: een uitwerking telt duizenden `style`-attributen,
+ * en KaTeX schrijft er steeds dezelfde. Het oordeel hangt alleen van de tekst af.
+ */
+const STIJLEN_BEWAARD = 4000;
+const stijlOordelen = new Map<string, boolean>();
+function stijlGevaarlijk(css: string): boolean {
+  if (css.length > 400) return gevaarlijkeStijl(css);
+  let oordeel = stijlOordelen.get(css);
+  if (oordeel === undefined) {
+    oordeel = gevaarlijkeStijl(css);
+    if (stijlOordelen.size >= STIJLEN_BEWAARD) stijlOordelen.clear();
+    stijlOordelen.set(css, oordeel);
+  }
+  return oordeel;
+}
+
 /** Hangt de regels van deze app aan een DOMPurify-instantie en geeft de opschoner. */
 export function maakOpschoner(purify: DOMPurify): (html: string) => string {
   purify.addHook("uponSanitizeElement", (node, data) => {
@@ -108,7 +125,7 @@ export function maakOpschoner(purify: DOMPurify): (html: string) => string {
     }
   });
   purify.addHook("uponSanitizeAttribute", (node, data) => {
-    if (STIJL_ATTRIBUUT.test(data.attrName) && gevaarlijkeStijl(data.attrValue)) data.keepAttr = false;
+    if (STIJL_ATTRIBUUT.test(data.attrName) && stijlGevaarlijk(data.attrValue)) data.keepAttr = false;
     if ((data.attrName === "href" || data.attrName === "xlink:href") && node.nodeName.toLowerCase() === "use"
       && !data.attrValue.trim().startsWith("#")) {
       data.keepAttr = false;
@@ -120,7 +137,10 @@ export function maakOpschoner(purify: DOMPurify): (html: string) => string {
     const soort = el.localName.toLowerCase();
     const inSvg = el.namespaceURI === SVG_NS;
     for (const naam of ["src", "href", "xlink:href"]) {
-      const adres = adresNaarBuiten(el.getAttribute(naam) ?? "");
+      // De meeste elementen hebben geen adres, en `new URL` op elk ervan telt op.
+      const waarde = el.getAttribute(naam);
+      if (!waarde) continue;
+      const adres = adresNaarBuiten(waarde);
       if (!adres) continue;
       // Een href laadt vanzelf in SVG, behalve op een link. In html is hij altijd een link.
       if (naam !== "src" && (!inSvg || soort === "a")) continue;
