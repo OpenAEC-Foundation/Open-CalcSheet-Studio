@@ -489,7 +489,7 @@ console.log("Oude bestanden blijven openen:");
   } catch (e) {
     melding = e.message;
   }
-  meld(/geen project/.test(melding), "IFCX van een ander programma geeft een melding en wordt geen rekentekst", melding);
+  meld(/does not contain a project/.test(melding), "IFCX van een ander programma geeft een melding en wordt geen rekentekst", melding);
 }
 
 console.log("De kopie van een oud bestand:");

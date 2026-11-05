@@ -161,6 +161,16 @@ for (const ns of NAMESPACES) {
   meld(nl.length === 0, "geen Nederlandse woorden in de Engelse vertaling", nl);
 }
 
+// De woorden om te overtypen in een lintfragment: geen ervan blijft Nederlands.
+{
+  const { REKENTAAL_LINT, fragmentInTaal } = await import("../packages/desktop/src/components/ribbon/rekentaalLint.ts");
+  const plek = JSON.parse(readFileSync(join(LOCALES, "en", "rekentaal.json"), "utf8")).lint.plek;
+  const knoppen = REKENTAAL_LINT.flatMap((g) => g.items.flatMap((i) => (i.soort === "stapel" ? i.knoppen : i.secties.flatMap((s) => s.knoppen))));
+  const NL = /⟨(?:Titel|Kop|tekst|vet|cursief|onderstreept|opmerking|naam\$?|keuze|bestand(?:\.cpd)?|voorwaarde|Draaibaar model)⟩|\bOmschrijving\b|\bOptie\b|\bwaarde\b|undefined/;
+  const mis = knoppen.map((k) => fragmentInTaal(k.tekst, (w) => plek[w])).filter((t) => NL.test(t));
+  meld(mis.length === 0, `${knoppen.length} lintfragmenten in het Engels: geen Nederlandse plek om te overtypen`, mis);
+}
+
 // ── Sleutels in de code ─────────────────────────────────────────────────────
 console.log("\nSleutels in de code");
 const bestaat = (ns, sleutel) => TALEN.every((taal) => {

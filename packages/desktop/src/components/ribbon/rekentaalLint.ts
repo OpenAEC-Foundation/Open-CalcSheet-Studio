@@ -25,20 +25,16 @@
 const WOORDEN: readonly [patroon: RegExp, sleutel: string][] = [
   [/⟨Titel⟩/g, "Titel"], [/⟨Kop⟩/g, "Kop"], [/⟨tekst⟩/g, "tekst"], [/⟨vet⟩/g, "vet"], [/⟨cursief⟩/g, "cursief"],
   [/⟨onderstreept⟩/g, "onderstreept"], [/⟨opmerking⟩/g, "opmerking"], [/⟨naam\$?⟩/g, "naam"], [/⟨keuze⟩/g, "keuze"],
-  [/"Omschrijving"/g, "Omschrijving"], [/Optie (?=\d)/g, "Optie"], [/⟨bestand(?:\.cpd)?⟩/g, "bestand"], [/⟨voorwaarde⟩/g, "voorwaarde"],
-  [/⟨Draaibaar model⟩/g, "DraaibaarModel"], [/"waarde"/g, "waarde"],
+  [/⟨bestand(?:\.cpd)?⟩/g, "bestand"], [/⟨voorwaarde⟩/g, "voorwaarde"], [/⟨Draaibaar model⟩/g, "DraaibaarModel"],
+  [/\bOmschrijving\b/g, "Omschrijving"], [/\bOptie(?= \d)/g, "Optie"], [/\bwaarde\b/g, "waarde"],
 ];
 
 /** Het fragment van een knop met de woorden om te overtypen in de taal van `vertaal`. */
 export function fragmentInTaal(tekst: string, vertaal: (sleutel: string) => string): string {
   let uit = tekst;
   for (const [patroon, sleutel] of WOORDEN) {
-    uit = uit.replace(patroon, (heel) => {
-      const woord = vertaal(sleutel);
-      if (heel.startsWith("⟨")) return heel.replace(/⟨([^⟩$.]*)(.*)⟩/, (_m, _w: string, rest: string) => `⟨${woord}${rest}⟩`);
-      if (heel.startsWith('"')) return `"${woord}"`;
-      return `${woord} `;
-    });
+    const woord = vertaal(sleutel);
+    uit = uit.replace(patroon, (heel) => (heel.startsWith("⟨") ? heel.replace(/⟨[^⟩$.]*/, () => `⟨${woord}`) : woord));
   }
   return uit;
 }
