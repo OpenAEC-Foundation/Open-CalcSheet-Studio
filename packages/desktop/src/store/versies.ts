@@ -401,7 +401,7 @@ export interface VersieLezers {
  * `meldingen`. Een versie waarvan alleen een bijlage ontbreekt, blijft: de rest van haar werk is er nog.
  * De actieve versie staat in de knopen en is er dus altijd. `top` zijn die knopen, zoals ze zijn gelezen.
  */
-export function leesVersies(x: unknown, top: { exemplaren?: unknown; rapport?: unknown }, lees: VersieLezers): { versies: VersieLijst; meldingen: VersieMelding[] } {
+export function leesVersies(x: unknown, top: { exemplaren?: unknown; gegevens?: unknown; rapport?: unknown }, lees: VersieLezers): { versies: VersieLijst; meldingen: VersieMelding[] } {
   const o = object(x);
   if (!o || !Array.isArray(o.lijst) || o.lijst.length === 0) return { versies: beginVersies(), meldingen: [{ soort: "onleesbaar" }] };
 

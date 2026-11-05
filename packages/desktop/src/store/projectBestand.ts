@@ -13,7 +13,7 @@ import { leesGraaf } from "../graaf/model.ts";
 import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
 import { isJupyterBlad, leesJupyterWerkmap } from "./jupyterBlad.ts";
 import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
-import { leesVersies, rapportVoorBestand, schrijfVersies, type VersieLijst, type VersieMelding } from "./versies.ts";
+import { leesVersies, rapportVoorBestand, schrijfVersies, type VersieLezers, type VersieLijst, type VersieMelding } from "./versies.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -183,13 +183,8 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
     const p: { naam?: unknown; gegevens?: unknown; exemplaren?: unknown; rapport?: unknown; verborgen?: unknown; versies?: unknown } | undefined =
       isProjectIfcx(parsed) ? leesProjectIfcx(parsed) : parsed.project;
     if (p && Array.isArray(p.exemplaren)) {
-      const rapportUit = (x: unknown) => normaliseerRapport(x, datumTekst(new Date()), standaardTeksten);
       // Een bestand met kapotte versies opent gewoon: de knopen zijn de laatste bruikbare stand.
-      const gelezen = p.versies === undefined ? undefined : leesVersies(p.versies, { exemplaren: p.exemplaren, rapport: p.rapport }, {
-        exemplaren: (x) => normaliseerExemplaren(x, bestandsnaam),
-        gegevens: (x) => ({ ...legeGegevens(), ...leesWaarden(x) }),
-        rapport: rapportUit,
-      });
+      const gelezen = p.versies === undefined ? undefined : leesVersies(p.versies, { exemplaren: p.exemplaren, gegevens: p.gegevens, rapport: p.rapport }, versieLezers(bestandsnaam));
       return {
         ...(gelezen ? { versies: gelezen.versies } : {}),
         ...(gelezen && gelezen.meldingen.length > 0 ? { versieMeldingen: gelezen.meldingen } : {}),
@@ -199,7 +194,7 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
         // Per veld gecontroleerd: het bestand kan van een andere versie van
         // de app komen of met de hand zijn aangepast. Onbekende velden
         // vallen weg, ontbrekende krijgen hun standaardwaarde.
-        rapport: p.rapport ? rapportUit(p.rapport) : undefined,
+        rapport: p.rapport ? normaliseerRapport(p.rapport, datumTekst(new Date()), standaardTeksten) : undefined,
         verborgen: leesVerborgen(p.verborgen),
       };
     }
@@ -210,6 +205,20 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
   }
 
   return losBlad(raw, bestandsnaam);
+}
+
+/** De velden van een versie worden op dezelfde manier gelezen als die van het hele project. */
+function versieLezers(naam: string): VersieLezers {
+  return {
+    exemplaren: (x) => normaliseerExemplaren(x, naam),
+    gegevens: (x) => ({ ...legeGegevens(), ...leesWaarden(x) }),
+    rapport: (x) => normaliseerRapport(x, datumTekst(new Date()), standaardTeksten),
+  };
+}
+
+/** De versies uit de opgeslagen staat van de app; die kan van een andere versie van de app zijn. */
+export function versiesUitOpslag(x: unknown, top: { exemplaren?: unknown; gegevens?: unknown; rapport?: unknown }, naam: string): VersieLijst {
+  return leesVersies(x, top, versieLezers(naam)).versies;
 }
 
 /**

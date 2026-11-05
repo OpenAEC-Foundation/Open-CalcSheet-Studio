@@ -8,6 +8,7 @@ import { bouwProjectStep, IFCX_ATTR, platteKnopen, type BladUitkomstGegevens, ty
 import i18next from "../../i18n/config";
 import { useIfcInhoud } from "../../store/ifcInhoud";
 import "./IfcViewerPanel.css";
+import { rapportVoorBestand } from "../../store/versies";
 
 /** Tooltip bij een IFC-type: een link naar de documentatie. Opgezocht bij het tekenen. */
 const docsTitel = (type: string) => i18next.t("werkruimte:ifc.docs", { type });
@@ -399,7 +400,7 @@ function useProjectIfc(): GebouwdeIfc | null | "fout" {
           naam: projectNaam,
           gegevens,
           exemplaren,
-          rapport,
+          rapport: rapportVoorBestand(rapport),
           verborgen,
         });
         setUit({ doc, ifcx: JSON.stringify(doc, null, 2), step: bouwProjectStep(doc) });

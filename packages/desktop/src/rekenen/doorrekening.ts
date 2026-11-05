@@ -110,6 +110,15 @@ function abonneer(l: () => void) {
 }
 
 /**
+ * De UC's in de projectboom vergeten: na een wissel van versie kan een blad iets anders uitrekenen, en
+ * een uitkomst van een andere versie mag daar niet blijven staan.
+ */
+export function vergeetBladResultaten() {
+  perBlad.clear();
+  meld();
+}
+
+/**
  * De UC en het oordeel van een blad, zodra het in deze sessie is doorgerekend;
  * tot dan null. Rekent zelf niets: de projectboom laat alleen zien wat de
  * werkruimte al uitrekende.

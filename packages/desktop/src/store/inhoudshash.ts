@@ -85,13 +85,16 @@ export function sha256(tekst: string): string {
 
 /** Zoveel hashes blijven bewaard: opslaan vraagt elke keer dezelfde teksten na. */
 const ONTHOUDEN = 64;
+/** Wat korter is, is meteen uitgerekend; bewaren zou alleen de grote teksten uit de lijst duwen. */
+const ONTHOUD_VANAF = 65536;
 const onthouden = new Map<string, string>();
 
 /**
- * De hash van een tekst, onthouden voor de laatste teksten. Een hash is niet duur, maar het project
- * wordt bij elke wijziging kort daarna bewaard (projectStore.ts), en een PDF verandert daar zelden in.
+ * De hash van een tekst. Het project wordt bij elke wijziging kort daarna bewaard (projectStore.ts),
+ * en een PDF verandert daar zelden in: de hash van een grote tekst wordt dus onthouden.
  */
 export function hashVan(tekst: string): string {
+  if (tekst.length < ONTHOUD_VANAF) return sha256(tekst);
   const bekend = onthouden.get(tekst);
   if (bekend !== undefined) return bekend;
   const hash = sha256(tekst);

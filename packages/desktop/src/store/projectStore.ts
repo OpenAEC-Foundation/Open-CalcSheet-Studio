@@ -11,7 +11,7 @@ import { isNieuwRapport, wisselTaal, zetVeldOpPad } from "../rapport/taalwissel"
 import { nieuwRapportVolgens, standaardTemplateVan, type Template } from "../rapport/template";
 import { useTemplateStore } from "./rapportTemplates";
 import { rekenversie } from "../components/calc/bladVersie";
-import { normaliseerExemplaren } from "./projectBestand";
+import { normaliseerExemplaren, versiesUitOpslag } from "./projectBestand";
 import { PDF_BLAD, type PdfBijlage } from "./pdfBijlage";
 import type { PdfAantekening } from "./pdfAantekeningen";
 import { SPREADSHEET_BLAD, type SpreadsheetBestand } from "./spreadsheetBlad";
@@ -22,6 +22,10 @@ import { legeGraaf, type Graaf } from "../graaf/model";
 import { TEKEN_BLAD, type TekenVel } from "./tekenBlad";
 import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
 import { MARIMO_BLAD, type MarimoNotebook } from "./marimoBlad";
+import {
+  beginVersies, hernoemVersie, nieuweVersie, schrijfVersies, verwijderVersie, wissel, type Stapel, type VersieLijst,
+} from "./versies";
+import { metVerseLijst } from "./versieVergelijking";
 
 const STORE_KEY = "projectState";
 
@@ -34,6 +38,9 @@ export const PROJECT_ID = "__projectgegevens__";
  * `__x__`-id kan nooit met een blad botsen.
  */
 export const RAPPORT_ID = "__rapport__";
+
+/** Vaste id van het paneel met de versies; net als RAPPORT_ID geen exemplaar. */
+export const VERSIES_ID = "__versies__";
 
 /**
  * Eén rekenblad in het project.
@@ -138,6 +145,8 @@ interface Persisted {
   rapport?: Rapport;
   /** Ontbreekt als niets verborgen is. */
   verborgen?: Verborgen;
+  /** De versies van dit project; ontbreekt zolang er één is. De velden hierboven zijn de actieve. */
+  versies?: VersieLijst;
 }
 
 interface ProjectState {
@@ -155,6 +164,19 @@ interface ProjectState {
   /** Stapels voor ongedaan maken; niet opgeslagen, alleen voor deze sessie. */
   verleden: Momentopname[];
   toekomst: Momentopname[];
+  /** De versies van dit project; de velden hierboven zijn de actieve (store/versies.ts). */
+  versies: VersieLijst;
+  /** De stappen van ongedaan maken van de andere versies, voor deze sessie. */
+  stapels: Record<string, Stapel<Momentopname>>;
+
+  /** Naar een andere versie. Bewaar eerst wat openstaat: zie store/versieActies.ts. */
+  wisselVersie: (id: string) => void;
+  /** Een nieuwe versie uit de huidige stand, die daarna openstaat. */
+  maakVersie: (opties?: { naam?: string; omschrijving?: string }) => void;
+  verwijderVersie: (id: string) => void;
+  zetVersieNaam: (id: string, naam: string) => void;
+  /** Maakt de lijst met wijzigingen opnieuw; afgeleid, dus geen stap en geen "niet opgeslagen". */
+  werkWijzigingenLijstBij: () => void;
 
   selecteer: (id: string) => void;
   /**
@@ -252,7 +274,8 @@ interface ProjectState {
  *
  * Alleen verwijzingen: omdat elke mutatie een nieuw object maakt en de rest
  * ongemoeid laat, delen opeenvolgende momentopnamen bijna alles met elkaar.
- * Honderd stappen geschiedenis kost daardoor nauwelijks geheugen.
+ * Honderd stappen geschiedenis kost daardoor nauwelijks geheugen. Elke versie
+ * heeft haar eigen stappen (`stapels`): ongedaan maken loopt niet door een wissel.
  */
 interface Momentopname {
   exemplaren: Exemplaar[];
@@ -293,6 +316,12 @@ function metGeschiedenis(s: ProjectState, sleutel: string | null) {
     verleden: [...s.verleden, punt].slice(-MAX_GESCHIEDENIS),
     toekomst: [] as Momentopname[],
   };
+}
+
+let versieTeller = 0;
+function nieuweVersieId(): string {
+  versieTeller += 1;
+  return `v-${Date.now().toString(36)}-${versieTeller.toString(36)}`;
 }
 
 let teller = 0;
@@ -351,6 +380,36 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   dirty: false,
   verleden: [],
   toekomst: [],
+  versies: beginVersies(),
+  stapels: {},
+
+  // Een wissel is geen wijziging: er komt geen stap bij en het project wordt niet "niet opgeslagen".
+  // Doortypen na een wissel is altijd een nieuwe stap, in de versie die nu openstaat.
+  wisselVersie: (id) =>
+    set((s) => {
+      laatsteSleutel = null;
+      return wissel(s, id, PROJECT_ID);
+    }),
+
+  maakVersie: (opties) =>
+    set((s) => {
+      laatsteSleutel = null;
+      return { ...nieuweVersie(s, { id: nieuweVersieId(), datum: datumTekst(new Date()), ...opties }), dirty: true };
+    }),
+
+  verwijderVersie: (id) =>
+    set((s) => {
+      const uit = verwijderVersie(s, id);
+      return uit === s ? s : { ...uit, dirty: true };
+    }),
+
+  zetVersieNaam: (id, naam) => set((s) => ({ versies: hernoemVersie(s.versies, id, naam), dirty: true })),
+
+  werkWijzigingenLijstBij: () =>
+    set((s) => {
+      const rapport = metVerseLijst(s);
+      return rapport === s.rapport ? s : { rapport };
+    }),
 
   selecteer: (id) => set({ activeId: id }),
   zetVerborgen: (onderdeel, verborgen) =>
@@ -789,6 +848,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       dirty: false,
       verleden: [],
       toekomst: [],
+      versies: beginVersies(),
+      stapels: {},
     }),
 
   laadProject: (p) =>
@@ -803,6 +864,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       dirty: false,
       verleden: [],
       toekomst: [],
+      versies: p.versies ?? beginVersies(),
+      stapels: {},
     }),
 
   markeerOpgeslagen: (bestandspad) => set({ bestandspad, dirty: false }),
@@ -847,10 +910,11 @@ useTemplateStore.subscribe((nu, vorig) => {
 // achterliet. Het projectbestand op schijf is iets anders; zie tauri/fileOps.
 
 let timer: ReturnType<typeof setTimeout> | null = null;
-function schedulePersist(snapshot: Persisted) {
+function schedulePersist(snapshot: Persisted & { rapport: Rapport; versies: VersieLijst }) {
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
-    void setSetting(STORE_KEY, snapshot);
+    // Ingepakt, net als in het bestand: tien versies bewaren niet tien keer dezelfde PDF.
+    void setSetting(STORE_KEY, { ...snapshot, versies: schrijfVersies(snapshot.versies, snapshot) });
     timer = null;
   }, 400);
 }
@@ -875,6 +939,8 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       activeId: saved.activeId ?? PROJECT_ID,
       verborgen: saved.verborgen ?? {},
       dirty: false,
+      versies: saved.versies === undefined ? beginVersies() : versiesUitOpslag(saved.versies, saved, projectNaam),
+      stapels: {},
     });
     volgTaalVanApp();
     volgStandaardTemplate(null);
@@ -890,6 +956,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       rapport: s.rapport,
       activeId: s.activeId,
       verborgen: s.verborgen,
+      versies: s.versies,
     }),
   );
 });

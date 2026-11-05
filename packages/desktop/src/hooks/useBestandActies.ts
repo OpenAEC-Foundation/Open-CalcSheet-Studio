@@ -3,6 +3,7 @@ import { useProjectStore } from "../store/projectStore";
 import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../store/projectBestand";
 import { bladenVoorIfc } from "../store/projectIfcx";
 import { bewaarOpenWerkmappen } from "../store/spreadsheetBlad";
+import { meldVersieProblemen } from "../store/versieActies";
 import {
   openCalculationFile,
   saveCalculationFile,
@@ -27,9 +28,9 @@ const melding = (sleutel: string, fout?: unknown) =>
  * in het bestand (store/projectIfcx.ts); een blad dat omvalt blijft erin staan.
  */
 export function projectInhoud(): string {
-  const { projectNaam, gegevens, exemplaren, rapport, verborgen } = useProjectStore.getState();
+  const { projectNaam, gegevens, exemplaren, rapport, verborgen, versies } = useProjectStore.getState();
   return bouwProjectBestand(
-    { versie: PROJECT_FORMAAT_VERSIE, naam: projectNaam, gegevens, exemplaren, rapport, verborgen: Object.keys(verborgen).length ? verborgen : undefined },
+    { versie: PROJECT_FORMAAT_VERSIE, naam: projectNaam, gegevens, exemplaren, rapport, verborgen: Object.keys(verborgen).length ? verborgen : undefined, versies },
     bladenVoorIfc({ exemplaren, gegevens }),
   );
 }
@@ -64,9 +65,11 @@ export function useBestandActies() {
       const file = await openCalculationFile();
       if (!file) return;
       const store = useProjectStore.getState();
-      store.laadProject(leesProjectBestand(file.raw, file.name));
+      const gelezen = leesProjectBestand(file.raw, file.name);
+      store.laadProject(gelezen);
       store.markeerOpgeslagen(file.path);
       await onthoud(file.path);
+      meldVersieProblemen(gelezen);
     } catch (err) {
       console.error("Open file failed:", err);
       alert(melding("openenMislukt", err));
