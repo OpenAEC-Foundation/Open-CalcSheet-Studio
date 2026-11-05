@@ -165,6 +165,19 @@ export function maxBreedte(x: number): number {
   return Math.max(VEL_BREEDTE - x, INVOER_BREEDTE);
 }
 
+/** De grenzen van het zoomen op het vel; 1 is 100 %. */
+export const ZOOM_MIN = 0.25;
+export const ZOOM_MAX = 3;
+
+/**
+ * De zoomstand na scrollen met Ctrl. Een tik van een muiswiel is ±100 en scheelt
+ * ongeveer 15 %. Exponentieel, zodat een tik heen en terug op hetzelfde uitkomt;
+ * knijpen op een touchpad geeft veel kleine stapjes, die vanzelf optellen.
+ */
+export function zoomNaWiel(zoom: number, deltaY: number): number {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom * Math.exp(-deltaY * 0.0015)));
+}
+
 /** Op het dichtstbijzijnde punt van het raster. */
 export function opRaster(mm: number): number {
   return Math.max(0, Math.round(mm / RASTER_MM) * RASTER_MM);

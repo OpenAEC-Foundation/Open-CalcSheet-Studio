@@ -162,7 +162,8 @@ wat in het voorbeeld staat, komt op papier.
 
 - **Canvas** is geen losse soort maar een rekenblad: de rekentekst staat gewoon in
   `source`, met per eenheid een regel `//@eenheid id=e1 x=10 y=15`. De kern rekent van
-  boven naar beneden, en `CanvasVellen` zet de eenheden op papier.
+  boven naar beneden, en `CanvasVellen` zet de eenheden op papier. Ctrl en scrollen zoomt
+  het vel rond het punt onder de muis; dat verandert alleen de weergave, niet de maten.
 - **Graaf** staat in `graaf` op het blad (`ocss::blad::graaf`) en is aangemeld met
   `GraafVellen`. `graaf/grafBestand.ts` leest een grafbestand (`.dyn`, JSON) in: elke node waarvan
   hier een gelijke bestaat wordt een gewone node, de rest blijft staan als `ingelezen` met zijn
