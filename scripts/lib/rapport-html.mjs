@@ -56,10 +56,12 @@ const INGANG = `
   import { createRoot } from "react-dom/client";
   import i18next from "./i18n/config";
   import RapportAfdruk from "./components/rapport/afdruk/RapportAfdruk";
+  import RapportPanel from "./components/rapport/RapportPanel";
   import { useProjectStore } from "./store/projectStore";
   import { useBureauStore } from "./store/bureauProfiel";
+  import { useTemplateStore } from "./store/rapportTemplates";
 
-  export { i18next, useProjectStore, useBureauStore };
+  export { i18next, useProjectStore, useBureauStore, useTemplateStore, flushSync };
 
   export function teken() {
     const plek = document.createElement("div");
@@ -68,6 +70,15 @@ const INGANG = `
     const html = plek.innerHTML;
     wortel.unmount();
     return html;
+  }
+
+  /** Het rapportpaneel in het document, om in te klikken. Geeft de plek en wat hem weer weghaalt. */
+  export function tekenPaneel() {
+    const plek = document.createElement("div");
+    document.body.appendChild(plek);
+    const wortel = createRoot(plek);
+    flushSync(() => wortel.render(createElement(RapportPanel)));
+    return { plek, weg: () => { wortel.unmount(); plek.remove(); } };
   }
 `;
 
