@@ -56,7 +56,7 @@ let omgeving: McpOmgeving | null = null;
 /** Per request vers: de gebruiker kan pauze en alleen-lezen tussendoor omzetten. */
 function context(): McpContext {
   const s = useMcpStatus.getState();
-  if (!omgeving) throw new Error("MCP-omgeving nog niet geladen");
+  if (!omgeving) throw new Error("MCP environment not loaded yet");
   return {
     omgeving,
     alleenLezen: s.alleenLezen,

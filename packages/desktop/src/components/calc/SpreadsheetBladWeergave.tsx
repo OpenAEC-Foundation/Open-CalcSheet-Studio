@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { bewaarOpenWerkmappen, isSpreadsheetBlad, LEGE_WERKMAP } from "../../store/spreadsheetBlad";
 import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
-import { papier } from "./pdfBlad";
+import { usePapier } from "./afdrukTaal";
 import { SPELING, type Maten } from "./paginering";
 import { exporteerWerkmap, kiesWerkmap, useWerkmapVellen, werkmapGrootte } from "./spreadsheetBlad";
 import "./PdfBladWeergave.css";
@@ -140,7 +140,7 @@ export function SpreadsheetBladInfo({ ex }: { ex: Exemplaar }) {
 export function SpreadsheetVellen({ ex, maten }: { ex: Exemplaar; maten: Maten }) {
   // Rekenblad en rapport rekenen met de speling onderaan (AfdrukVoorbeeld).
   const stand = useWerkmapVellen(ex.xlsx?.data, maten.inhoud.breedte, maten.inhoud.hoogte - SPELING);
-  const t = papier();
+  const t = usePapier();
   if (!ex.xlsx) return <p className="print-pdf-melding">{t("spreadsheetBlad.ontbreekt")}</p>;
   if (!stand || stand.status === "laden") {
     return <p className="print-pdf-melding" data-afdruk-laadt="">{t("spreadsheetBlad.laden")}</p>;

@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import type { EigenVariant } from "../../../rapport/bureau";
 import { INVULVELDEN, SUBKOP_WOORDEN, type Invulwaarden } from "../../../rapport/invullen";
+import { inTaal } from "../../../rapport/meertalig";
 import { STANDAARD_TEKSTEN, type Tekstvariant } from "../../../rapport/standaardteksten";
+import { andereTaalVan, metTekst } from "../../../rapport/taalwissel";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { useProjectStore } from "../../../store/projectStore";
 import { uittreksel } from "./hulp";
 import { GroeiVeld, SubkopMelding, Vink } from "./velden";
 
 const GEEN: readonly Tekstvariant[] = [];
+const GEEN_EIGEN: readonly EigenVariant[] = [];
 
 /**
  * Eén tekstonderdeel van het rapport (rapport.teksten[id]) met zijn
@@ -18,6 +22,10 @@ const GEEN: readonly Tekstvariant[] = [];
  * dan vraagt het eerst om bevestiging. Het vervangen is één eigen stap in
  * ongedaan maken. "Bewaar als eigen variant" legt de tekst van nu vast onder
  * een naam, voor dit onderdeel in elk volgend rapport.
+ *
+ * Het label van een meegeleverde variant volgt de taal van de app, de tekst komt in de
+ * taal van het rapport. Staat de tekst nog in een andere taal (na het wisselen van taal),
+ * dan zegt het veld dat.
  */
 export default function TekstVeld({ id, kop, hint, placeholder }: {
   /** Tekst-id uit de opzet, tevens de sleutel in rapport.teksten. */
@@ -27,14 +35,20 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
   hint?: ReactNode;
   placeholder?: string;
 }) {
-  const { t } = useTranslation("rapport");
+  const { t, i18n } = useTranslation("rapport");
+  const rapportTaal = useProjectStore((s) => s.rapport.taal);
   const tekst = useProjectStore((s) => s.rapport.teksten[id] ?? "");
+  const andereTaal = useProjectStore((s) => andereTaalVan(s.rapport, id));
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
-  const eigen = useBureauStore((s) => s.eigenTeksten[id] ?? GEEN);
+  const eigen = useBureauStore((s) => s.eigenTeksten[id] ?? GEEN_EIGEN);
   const voegTekstToe = useBureauStore((s) => s.voegTekstToe);
   const verwijderTekst = useBureauStore((s) => s.verwijderTekst);
-  const meegeleverd = STANDAARD_TEKSTEN[id] ?? GEEN;
+  // Als gewone tekst: het label in de taal van de app, de tekst in die van het rapport.
+  const meegeleverd: EigenVariant[] = (STANDAARD_TEKSTEN[id] ?? GEEN).map((v) => ({
+    label: inTaal(v.label, i18n.language),
+    tekst: inTaal(v.tekst, rapportTaal),
+  }));
 
   const [menuOpen, setMenuOpen] = useState(false);
   /** Naam voor een nieuwe eigen variant; null zolang dat regeltje dicht is. */
@@ -63,7 +77,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
   const vervang = (nieuw: string, vraag: string) => {
     const huidig = tekst.trim();
     if (huidig !== "" && huidig !== nieuw.trim() && !confirm(vraag)) return;
-    werkBij((r) => ({ ...r, teksten: { ...r.teksten, [id]: nieuw } }));
+    werkBij((r) => metTekst(r, id, nieuw));
     setMenuOpen(false);
     setMelding("");
   };
@@ -76,7 +90,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
     setMelding(t("tekstveld.bewaard", { label }));
   };
 
-  const variant = (v: Tekstvariant, sleutel: string) => (
+  const variant = (v: EigenVariant, sleutel: string) => (
     <button
       key={sleutel}
       type="button"
@@ -187,6 +201,14 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
         </div>
       )}
       {melding && <span className="rapport-melding">{melding}</span>}
+      {andereTaal && (
+        <span className="rapport-hint">
+          {t("tekstveld.andereTaal", {
+            taal: t(`document.talen.${andereTaal}`, { defaultValue: andereTaal }),
+            rapportTaal: t(`document.talen.${rapportTaal}`, { defaultValue: rapportTaal }),
+          })}
+        </span>
+      )}
       <SubkopMelding tekst={tekst} />
       {hint && <span className="rapport-hint">{hint}</span>}
     </div>

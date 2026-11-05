@@ -174,7 +174,7 @@ export function notebookNaarHtml(bestand: WerkmapBestand, opties: PapierOpties):
   let nb: { cells?: Cel[] };
   try {
     nb = JSON.parse(strFromU8(bestand.bytes));
-    if (!Array.isArray(nb.cells)) throw new Error("geen cellen");
+    if (!Array.isArray(nb.cells)) throw new Error("no cells");
   } catch {
     return `<p class="nb-tekst-los nb-fout">${esc(opties.fout(bestand.pad))}</p>`;
   }

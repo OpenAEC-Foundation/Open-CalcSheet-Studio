@@ -40,21 +40,22 @@ export interface DoorgerekendBlad {
 }
 
 /**
- * Rekent één blad door met de projectgegevens als scope.
+ * Rekent één blad door met de projectgegevens als scope, voor de uitvoer in `taal`:
+ * zonder taal die van de app (losse uitdraai), in het rapport die van het rapport.
  *
  * Een blad dat niet doorrekent houdt de rest van de uitdraai niet tegen: het
  * krijgt een rode regel met de fout, en de andere bladen komen gewoon op papier.
  */
-export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): DoorgerekendBlad {
+export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>, taal: string = i18next.language): DoorgerekendBlad {
   // Een aangemelde soort rekent niets: geen uitwerking, geen UC. De naam van de soort
   // staat in de kolom grondslag van het overzicht; de inhoud tekent de soort zelf.
   const soort = bladSoortVan(ex);
   if (soort) {
-    return { html: "", resultaat: { titel: ex.naam, norm: soort.soortTekst(), uc: null, voldoet: null } };
+    return { html: "", resultaat: { titel: ex.naam, norm: soort.soortTekst(taal), uc: null, voldoet: null } };
   }
   // Een Jupyter-blad rekent hier ook niets: de uitwerking komt uit de opgeslagen uitvoer.
   if (isJupyterBlad(ex)) {
-    const t = papier();
+    const t = papier(taal);
     const html = ex.jupyter
       ? werkmapHtml(ex.jupyter, {
         leeg: t("jupyterBlad.leeg"),
@@ -69,14 +70,13 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>): Do
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
   try {
     const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls };
-    // De uitvoer volgt de taal van de app, ook op papier.
-    const uitvoer = bronVoorUitvoer(ex.source, i18next.language);
+    const uitvoer = bronVoorUitvoer(ex.source, taal);
     const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, scope, opties, uitvoer.namen);
     html = uitwerking.html;
     eenheden = uitwerking.eenheden;
     resultaat = leesResultaat(uitwerking.nodes, ex.naam);
   } catch (err) {
-    html = `<p class="calc-text" style="color:#b91c1c">${i18next.t("beelden:afdruk.nietDoorgerekend")} ${
+    html = `<p class="calc-text" style="color:#b91c1c">${i18next.t("beelden:afdruk.nietDoorgerekend", { lng: taal })} ${
       (err as Error).message
     }</p>`;
   }

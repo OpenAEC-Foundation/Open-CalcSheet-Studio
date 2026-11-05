@@ -101,6 +101,10 @@ export interface McpOmgeving {
   stand(): McpProjectStand;
   /** De moduletekst bij een templateId, of niets. */
   sjabloon(templateId: string): string | undefined;
+  /** De naam van een module in de taal van de app, of null. */
+  moduleNaam(templateId: string): string | null;
+  /** De naam van een groep in de catalogus, in de taal van de app. */
+  groepNaam(id: string, label: string): string;
   /** De vaste ids van de niet-bladen in de projectboom. */
   speciaal: { project: string; rapport: string };
   acties: {

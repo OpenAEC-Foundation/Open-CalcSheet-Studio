@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import i18next from "i18next";
 import { useTranslation } from "react-i18next";
+import { hoortBij } from "../../templates/vertalingen";
 import { useProjectStore } from "../../store/projectStore";
 import { useActiefExemplaar, useAlleenLezen, useProjectGetal } from "../../store/actiefBlad";
 import { ucTekst, type BladUitkomst } from "./bladResultaat";
@@ -66,7 +68,7 @@ export function useDesigner(marker: string, defaults: Record<string, number>): D
   const wrapRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 640, h: 520 });
 
-  const actief = !!exemplaar?.source.includes(marker);
+  const actief = !!exemplaar && hoortBij(exemplaar.source, marker);
   const ref = Math.round(useProjectGetal("rekenwijze", 1)) === 1;
 
   useEffect(() => {
@@ -102,9 +104,11 @@ export function useDesigner(marker: string, defaults: Record<string, number>): D
   return { actief, d, set, box, wrapRef, editing, setEditing, ref };
 }
 
-/** Nederlandse notatie: 1234.5 → "1234,5". */
-export const fmt = (v: number, dec = 0) =>
-  (Number.isFinite(v) ? v : 0).toFixed(dec).replace(".", ",");
+/** Een getal in de notatie van de taal: 1234.5 → "1234,5" in het Nederlands, anders "1234.5". */
+export const fmt = (v: number, dec = 0, taal: string | undefined = i18next.language) => {
+  const t = (Number.isFinite(v) ? v : 0).toFixed(dec);
+  return taal?.startsWith("nl") ? t.replace(".", ",") : t;
+};
 
 export const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -117,7 +121,7 @@ export function Dim(props: {
   step?: number; label?: string; dec?: number; title?: string;
 }) {
   const { ctx, name, value, x, y, step = 10, label, dec = 0, title } = props;
-  const { t } = useTranslation("beelden");
+  const { t, i18n } = useTranslation("beelden");
   const isEd = ctx.editing === name;
   const commit = (raw: string) => {
     const n = parseFloat(raw.replace(",", "."));
@@ -138,7 +142,7 @@ export function Dim(props: {
         <button className="vd-dim-num" style={{ whiteSpace: "nowrap" }}
           title={title ?? t("kit.klikWijzig", { naam: label ?? name })}
           onClick={() => ctx.setEditing(name)}>
-          {label ? `${label}=` : ""}{fmt(value, dec)}
+          {label ? `${label}=` : ""}{fmt(value, dec, i18n.language)}
         </button>
       )}
     </div>
@@ -151,7 +155,7 @@ export function Force(props: {
   unit: string; label: string; step?: number; dec?: number;
 }) {
   const { ctx, name, value, x, y, unit, label, step = 10, dec = 0 } = props;
-  const { t } = useTranslation("beelden");
+  const { t, i18n } = useTranslation("beelden");
   const isEd = ctx.editing === name;
   const commit = (raw: string) => {
     const n = parseFloat(raw.replace(",", "."));
@@ -171,7 +175,7 @@ export function Force(props: {
       ) : (
         <button className="vd-force-num" style={{ whiteSpace: "nowrap" }}
           title={t("kit.klikWijzig", { naam: name })} onClick={() => ctx.setEditing(name)}>
-          {label}={fmt(value, dec)}<small>{unit}</small>
+          {label}={fmt(value, dec, i18n.language)}<small>{unit}</small>
         </button>
       )}
     </div>
@@ -319,7 +323,7 @@ export function Kop({ titel, badge, staat }: { titel: string; badge: ReactNode; 
  * dus niet na, en kan het blad niet tegenspreken.
  */
 export function UitkomstKop({ titel, uitkomst }: { titel: string; uitkomst: BladUitkomst | null }) {
-  const { t } = useTranslation("beelden");
+  const { t, i18n } = useTranslation("beelden");
   const r = uitkomst?.resultaat;
   if (r?.nietGetoetst) return <Kop titel={titel} badge={t("kit.nietGetoetst")} />;
   if (!r || (r.uc === null && r.voldoet === null)) return <Kop titel={titel} badge="—" />;
@@ -329,7 +333,7 @@ export function UitkomstKop({ titel, uitkomst }: { titel: string; uitkomst: Blad
       staat={r.voldoet === null ? "info" : r.voldoet ? "ok" : "bad"}
       badge={
         <>
-          {r.uc !== null && <>UC<sub>max</sub> = {ucTekst(r.uc)} </>}
+          {r.uc !== null && <>UC<sub>max</sub> = {ucTekst(r.uc, i18n.language)} </>}
           {r.voldoet === null ? null : r.voldoet ? t("kit.voldoet") : t("kit.voldoetNiet")}
         </>
       }

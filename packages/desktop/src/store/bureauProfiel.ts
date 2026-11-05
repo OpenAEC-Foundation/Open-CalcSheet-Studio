@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { getSetting, setSetting } from "../store";
 import { leegBureau, type BureauProfiel } from "../rapport/model";
-import type { Tekstvariant } from "../rapport/standaardteksten";
 import {
+  type EigenVariant,
   metEigenVariant,
   normaliseerBureau,
   normaliseerEigenTeksten,
@@ -31,10 +31,10 @@ const TEKSTEN_KEY = "rapportTeksten";
 interface BureauState {
   profiel: BureauProfiel;
   /** Eigen varianten per tekst-id. */
-  eigenTeksten: Record<string, Tekstvariant[]>;
+  eigenTeksten: Record<string, EigenVariant[]>;
   zetProfiel: (p: BureauProfiel) => void;
   /** Achteraan erbij; een variant met hetzelfde label wordt vervangen. */
-  voegTekstToe: (id: string, v: Tekstvariant) => void;
+  voegTekstToe: (id: string, v: EigenVariant) => void;
   /** `index` telt binnen de eigen varianten van `id`. */
   verwijderTekst: (id: string, index: number) => void;
 }
@@ -43,7 +43,7 @@ interface BureauState {
 // objecten bevat, heeft niemand iets gewijzigd en mag de opgeslagen stand
 // eroverheen.
 const BEGIN_PROFIEL = leegBureau();
-const BEGIN_TEKSTEN: Record<string, Tekstvariant[]> = {};
+const BEGIN_TEKSTEN: Record<string, EigenVariant[]> = {};
 
 export const useBureauStore = create<BureauState>((set) => ({
   profiel: BEGIN_PROFIEL,

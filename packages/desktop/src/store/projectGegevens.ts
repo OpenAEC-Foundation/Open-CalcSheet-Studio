@@ -46,44 +46,44 @@ export const PROJECT_VELDEN: VeldDef[] = [
   // conclusie stuurt; de andere verschijnt als kanttekening zodra hij afwijkt.
   // Het register met alle splitspunten staat in docs/afwijkingen-referentie.md.
   {
-    groep: "Rekenwijze",
+    groep: "Calculation method",
     naam: "rekenwijze",
-    label: "Rekenwijze bij een verschil met het referentieprogramma",
+    label: "Calculation method where the reference program differs",
     type: "keuze",
     standaard: "1",
     opties: [
-      { label: "de referentie-uitwerking volgen (huidige praktijk)", waarde: "1" },
-      { label: "De norm volgen", waarde: "0" },
+      { label: "Follow the reference calculation (current practice)", waarde: "1" },
+      { label: "Follow the standard", waarde: "0" },
     ],
-    hint: "de referentie-uitwerking is het rekenprogramma dat we vandaag hanteren en is daarom de standaard; elke uitkomst is tegen referentiebladen na te rekenen. De norm-stand rekent op de gemarkeerde punten volgens de Eurocode zelf — die tak is niet tegen een referentie te toetsen en staat er voor het moment dat dit programma op eigen benen staat. Het gekozen antwoord staat altijd op de afdruk.",
+    hint: "The reference calculation is the calculation program we use today and is therefore the default; every result can be checked against reference sheets. The standard mode follows the Eurocode itself at the marked points — that branch cannot be checked against a reference and is there for the moment this program stands on its own. The chosen answer is always shown on the printout.",
   },
 
   // ── Projectkop ───────────────────────────────────────────────────────────
-  { groep: "Project", naam: "project_nummer", label: "Projectnummer", type: "tekst", standaard: "" },
-  { groep: "Project", naam: "project_naam", label: "Projectnaam", type: "tekst", standaard: "" },
-  { groep: "Project", naam: "opdrachtgever", label: "Opdrachtgever", type: "tekst", standaard: "" },
-  { groep: "Project", naam: "constructeur", label: "Constructeur", type: "tekst", standaard: "" },
-  { groep: "Project", naam: "locatie", label: "Locatie", type: "tekst", standaard: "" },
-  { groep: "Project", naam: "onderdeel", label: "Onderdeel", type: "tekst", standaard: "" },
+  { groep: "Project", naam: "project_nummer", label: "Project number", type: "tekst", standaard: "" },
+  { groep: "Project", naam: "project_naam", label: "Project name", type: "tekst", standaard: "" },
+  { groep: "Project", naam: "opdrachtgever", label: "Client", type: "tekst", standaard: "" },
+  { groep: "Project", naam: "constructeur", label: "Structural engineer", type: "tekst", standaard: "" },
+  { groep: "Project", naam: "locatie", label: "Location", type: "tekst", standaard: "" },
+  { groep: "Project", naam: "onderdeel", label: "Part", type: "tekst", standaard: "" },
 
   // ── Grondslagen (NEN-EN 1990 + NB) ───────────────────────────────────────
   {
-    groep: "Grondslagen (NEN-EN 1990 + NB)",
+    groep: "Basis of design (NEN-EN 1990 + NB)",
     naam: "CC",
-    label: "Gevolgklasse",
+    label: "Consequence class",
     type: "keuze",
     standaard: "2",
     opties: [
-      { label: "CC1 — beperkte gevolgen", waarde: "1" },
-      { label: "CC2 — middelmatige gevolgen", waarde: "2" },
-      { label: "CC3 — grote gevolgen", waarde: "3" },
+      { label: "CC1 — low consequences", waarde: "1" },
+      { label: "CC2 — medium consequences", waarde: "2" },
+      { label: "CC3 — high consequences", waarde: "3" },
     ],
-    hint: "Bepaalt K_FI (tabel B3, met de opmerking bij tabel NB.4 – A1.2(B)): CC1 → 0,90 · CC2 → 1,00 · CC3 → 1,10. Elk blad krijgt zowel CC als K_FI.",
+    hint: "Determines K_FI (table B3, with the note to table NB.4 – A1.2(B)): CC1 → 0,90 · CC2 → 1,00 · CC3 → 1,10. Every sheet receives both CC and K_FI.",
   },
   {
-    groep: "Grondslagen (NEN-EN 1990 + NB)",
+    groep: "Basis of design (NEN-EN 1990 + NB)",
     naam: "RC",
-    label: "Betrouwbaarheidsklasse",
+    label: "Reliability class",
     type: "keuze",
     standaard: "2",
     opties: [
@@ -93,52 +93,52 @@ export const PROJECT_VELDEN: VeldDef[] = [
     ],
   },
   {
-    groep: "Grondslagen (NEN-EN 1990 + NB)",
+    groep: "Basis of design (NEN-EN 1990 + NB)",
     naam: "DesignLife",
-    label: "Ontwerplevensduur",
+    label: "Design working life",
     type: "keuze",
     standaard: "50",
     opties: [
-      { label: "5 jaar — klasse 1: tijdelijk, hooguit 5 jaar in gebruik", waarde: "5" },
-      { label: "15 jaar — klasse 2: landbouw, industrie met 1 of 2 bouwlagen", waarde: "15" },
-      { label: "50 jaar — klasse 3: gebouwen en gewone constructies (standaard)", waarde: "50" },
-      { label: "100 jaar — klasse 4: monumentale gebouwen", waarde: "100" },
+      { label: "5 years — class 1: temporary, in use for at most 5 years", waarde: "5" },
+      { label: "15 years — class 2: agricultural, industrial with 1 or 2 storeys", waarde: "15" },
+      { label: "50 years — class 3: buildings and common structures (default)", waarde: "50" },
+      { label: "100 years — class 4: monumental buildings", waarde: "100" },
     ],
     // 10 en 25 jaar zijn geen klasse van tabel NB.1 – 2.1; een project dat ze
     // nog heeft, rekent met de klasse erboven.
     vervallen: [
-      { waarde: "10", label: "10 jaar", naar: "15" },
-      { waarde: "25", label: "25 jaar", naar: "50" },
+      { waarde: "10", label: "10 years", naar: "15" },
+      { waarde: "25", label: "25 years", naar: "50" },
     ],
-    hint: "Minimumwaarden volgens tabel NB.1 – 2.1. Een tijdelijk bouwwerk valt in klasse 3, tenzij het hooguit 5 jaar in gebruik is (klasse 1) of een bestemming uit klasse 2 heeft. De belastingen rekenen met een referentieperiode van ten minste 15 jaar.",
+    hint: "Minimum values according to table NB.1 – 2.1. A temporary structure falls in class 3, unless it is in use for at most 5 years (class 1) or has a use from class 2. The loads are calculated with a reference period of at least 15 years.",
   },
 
   // ── Locatiegebonden (NEN-EN 1991-1-4 + NB) ───────────────────────────────
   {
     groep: "Wind (NEN-EN 1991-1-4 + NB)",
     naam: "windgebied",
-    label: "Windgebied",
+    label: "Wind zone",
     type: "keuze",
     standaard: "2",
     opties: [
-      { label: "I — Waddeneilanden, Waddenzee, IJsselmeer, Markermeer en Noord-Holland-noord (v_b0 = 29,5 m/s)", waarde: "1" },
-      { label: "II — rest van Noord-Holland, vasteland Groningen en Friesland, Flevoland, Zuid-Holland, Zeeland (27,0)", waarde: "2" },
-      { label: "III — rest van Nederland (24,5)", waarde: "3" },
+      { label: "I — Wadden Islands, Wadden Sea, IJsselmeer, Markermeer and northern Noord-Holland (v_b0 = 29,5 m/s)", waarde: "1" },
+      { label: "II — rest of Noord-Holland, mainland Groningen and Friesland, Flevoland, Zuid-Holland, Zeeland (27,0)", waarde: "2" },
+      { label: "III — rest of the Netherlands (24,5)", waarde: "3" },
     ],
-    hint: "Indeling volgens 4.2(1) opmerking 2 van de NB, v_b0 uit tabel NB.1. Provinciegrenzen, en in Noord-Holland een horizontale lijn op 52½° noorderbreedte; gebied I is Noord-Holland daarboven (o.a. Den Helder, Alkmaar, Hoorn, Heemskerk, Purmerend). Binnen 5 km van een grens gaat v_b0 geleidelijk over (figuur NB.1); het gebied waarin de locatie ligt, zit dan aan de veilige kant. Een blad met windbelasting rekent q_p hieruit, met de referentiehoogte uit het blad.",
+    hint: "Zoning according to 4.2(1) note 2 of the NB, v_b0 from table NB.1: provincial boundaries, and in Noord-Holland a horizontal line at 52½° north; zone I is Noord-Holland above it (including Den Helder, Alkmaar, Hoorn, Heemskerk, Purmerend). Within 5 km of a boundary, v_b0 changes gradually (figure NB.1); the zone in which the location lies is then on the safe side. A sheet with wind load calculates q_p from this, using the reference height from the sheet.",
   },
   {
     groep: "Wind (NEN-EN 1991-1-4 + NB)",
     naam: "terreincategorie",
-    label: "Terreincategorie",
+    label: "Terrain category",
     type: "keuze",
     standaard: "2",
     opties: [
-      { label: "0 — Zee of kustgebied (z₀ = 0,005 · z_min = 1)", waarde: "1" },
-      { label: "II — Onbebouwd gebied (z₀ = 0,2 · z_min = 4)", waarde: "2" },
-      { label: "III — Bebouwd gebied (z₀ = 0,5 · z_min = 7)", waarde: "3" },
+      { label: "0 — Sea or coastal area (z₀ = 0,005 · z_min = 1)", waarde: "1" },
+      { label: "II — Undeveloped area (z₀ = 0,2 · z_min = 4)", waarde: "2" },
+      { label: "III — Built-up area (z₀ = 0,5 · z_min = 7)", waarde: "3" },
     ],
-    hint: "Volgt uit de omgeving van het gebouw (Tabel NB.3-4.1).",
+    hint: "Follows from the surroundings of the building (Table NB.3-4.1).",
   },
 ];
 
@@ -180,11 +180,11 @@ export function keuzesVoor(veld: VeldDef, ruw: string): Keuze[] {
   const opties = veld.opties ?? [];
   if (opties.some((o) => o.waarde === ruw)) return opties;
   const oud = vervallenKeuze(veld, ruw);
-  // Van de vervanger alleen het deel vóór de toelichting: "50 jaar".
+  // Van de vervanger alleen het deel vóór de toelichting: "50 years".
   const vervanger = oud && opties.find((o) => o.waarde === oud.naar)?.label.split(" — ")[0];
   const label = oud
-    ? `${oud.label} — vervallen keuze, gerekend als ${vervanger ?? oud.naar}`
-    : `${ruw} — onbekende keuze`;
+    ? `${oud.label} — no longer offered, calculated as ${vervanger ?? oud.naar}`
+    : `${ruw} — unknown choice`;
   return [...opties, { label, waarde: ruw }];
 }
 

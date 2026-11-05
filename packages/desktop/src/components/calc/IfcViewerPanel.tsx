@@ -1,3 +1,4 @@
+import { ucTekst } from "./bladLezen";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
@@ -251,7 +252,7 @@ function StructureBrowser({ tree, gekozen, kies }: { tree: TreeNode | null; geko
   return (
     <div className="ifc-structure-pane">
       <div className="ifc-viewer-toolbar">
-        <span className="ifc-viewer-label">{t("ifc.structure", "Spatial Tree")}</span>
+        <span className="ifc-viewer-label">{t("ifc.structure")}</span>
       </div>
       <div className="ifc-structure-tree">
         {tree && <TreeItem node={tree} gekozen={gekozen} kies={kies} />}
@@ -269,7 +270,7 @@ function UitkomstTabel({ u }: { u: BladUitkomstGegevens }) {
     <div className="ifc-uitkomst">
       <div className="ifc-uitkomst-kop">
         <span className={`ifc-status is-${u.status}`}>{t(`ifc.status.${u.status}`)}</span>
-        {u.uc !== undefined && <span className="ifc-uitkomst-uc">UC {u.uc.toFixed(2).replace(".", ",")}</span>}
+        {u.uc !== undefined && <span className="ifc-uitkomst-uc">UC {ucTekst(u.uc)}</span>}
         {u.ucTekst && <span className="ifc-uitkomst-uc">UC {u.ucTekst}</span>}
         {u.norm && <span className="ifc-uitkomst-norm">{u.norm}</span>}
       </div>
@@ -336,7 +337,7 @@ function StepViewer({ content }: { content: string }) {
 
   return (
     <>
-      <span className="ifc-viewer-stats">{alle.length} {t("ifc.lines", "regels")} &middot; {grootte(content.length)}</span>
+      <span className="ifc-viewer-stats">{alle.length} {t("ifc.lines")} &middot; {grootte(content.length)}</span>
       <div className="ifc-viewer-code">
         <table className="ifc-viewer-table">
           <tbody>

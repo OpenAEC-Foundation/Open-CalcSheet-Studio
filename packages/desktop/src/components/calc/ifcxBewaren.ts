@@ -1,3 +1,4 @@
+import i18next from "i18next";
 /**
  * Het IFCX los bewaren (knop "IFCX opslaan" bij het 3D-beeld). De kop krijgt het
  * tijdstip van bewaren, en de paden worden afgeleid van het blad: in de uitwerking
@@ -29,9 +30,9 @@ export async function bewaarIfcx(json: string, naam: string, blad: string | unde
     const { save } = await import("@tauri-apps/plugin-dialog");
     const { writeTextFile } = await import("@tauri-apps/plugin-fs");
     const pad = await save({
-      title: "IFCX opslaan",
+      title: i18next.t("werkruimte:ifcxBewaren.titel"),
       defaultPath: bestand,
-      filters: [{ name: "IFCX", extensions: ["ifcx"] }, { name: "Alle bestanden", extensions: ["*"] }],
+      filters: [{ name: "IFCX", extensions: ["ifcx"] }, { name: i18next.t("werkruimte:ifcxBewaren.alleBestanden"), extensions: ["*"] }],
     });
     if (pad) await writeTextFile(pad, inhoud);
     return;

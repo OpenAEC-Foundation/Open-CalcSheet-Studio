@@ -709,7 +709,7 @@
     "filterZip": "Packed work folder",
     "lezenMislukt": "Reading the files failed: {{fout}}",
     "schrijvenMislukt": "Writing the work folder failed: {{fout}}",
-    "teGroot": "The work folder is too large to keep in the project. Remove files in the environment.",
+    "teGroot": "The work folder is larger than {{mb}} MB.",
     "tab": "Jupyter",
     "paneel": "Jupyter",
     "rij": "Jupyter — work folder is in the project",
@@ -761,7 +761,8 @@
       "formule": "Formula: the output shows the formula, the filled-in values and the result; units are simplified",
       "voorwaarde": "Condition: only one branch appears in the output",
       "grafiek": "Graph of a function",
-      "tekening": "Drawing (SVG), also parametric"
+      "tekening": "Drawing (SVG), also parametric",
+      "kopVoorbeeld": "# 1. Input"
     },
     "syntaxNoot": "Every element is on the Calculation language ribbon tab; Help explains them all.",
     "voorbeeld": "Open the example sheet",
@@ -827,5 +828,54 @@
       "kop": "Reactive notebook",
       "uitleg": "Press Run to start. Then move a slider: every cell that uses its value follows. Numpy, scipy, pandas and matplotlib are ready."
     }
+  },
+  "project": {
+    "nieuweNaam": "New project",
+    "leegBladNaam": "Sheet",
+    "leegBladTitel": "New sheet"
+  },
+  "belastingsgevallen": {
+    "titel": "Load cases",
+    "nieuw": "New load case",
+    "nieuwKnop": "+ new",
+    "verwijderTitel": "Remove {{naam}}",
+    "verwijderVraag": "Remove load case \"{{naam}}\"?"
+  },
+  "pdfVoorbeeld": {
+    "titel": "PDF preview — {{naam}}",
+    "kader": "PDF preview {{naam}}",
+    "bezig": "Generating PDF…",
+    "bezigUitleg": "Report engine: the first time can take a few seconds.",
+    "mislukt": "PDF generation failed",
+    "sluiten": "Close",
+    "opslaan": "Saving…",
+    "opslaanAls": "Save as…"
+  },
+  "pdfRapport": {
+    "alleenApp": "PDF report generation only works in the desktop app, not in the browser preview.",
+    "opslaanTitel": "Save PDF report",
+    "filter": "PDF document"
+  },
+  "bestandDialoog": {
+    "openen": "Open file",
+    "opslaanAls": "Save file as",
+    "geenBestand": "No open file to overwrite",
+    "geenProject": "This IFCX file does not contain a project of this app."
+  },
+  "ifcxBewaren": {
+    "titel": "Save IFCX",
+    "alleBestanden": "All files"
+  },
+  "normbestanden": {
+    "opslagNietBeschikbaar": "Local storage is not available",
+    "lezenMislukt": "Reading the standard file failed",
+    "opslaanMislukt": "Saving to local storage failed",
+    "opslaanAfgebroken": "Saving to local storage was aborted",
+    "geenPdf": "Choose a valid PDF file",
+    "teGroot": "The PDF is larger than 100 MB"
+  },
+  "fouten": {
+    "bestandLezen": "Reading the file failed",
+    "geenVellen": "The print preview did not build any pages."
   }
 }

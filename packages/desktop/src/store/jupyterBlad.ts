@@ -91,13 +91,22 @@ export function pakWerkmapIn(bestanden: readonly WerkmapBestand[]): Uint8Array {
   return zipSync(invoer, { mtime: ZIP_TIJD });
 }
 
+/** De werkmap past niet; de app zet de melding in de taal van de gebruiker (werkruimte:jupyter.teGroot). */
+export class WerkmapTeGrootFout extends Error {
+  readonly mb: number;
+  constructor(mb: number) {
+    super(`The work folder is larger than ${mb} MB.`);
+    this.mb = mb;
+  }
+}
+
 /** Pakt een werkmap uit. Een kapotte of te grote ZIP geeft een fout; onveilige paden vallen weg. */
 export function pakWerkmapUit(zip: Uint8Array): WerkmapBestand[] {
   let totaal = 0;
   const uit = unzipSync(zip, {
     filter: (f) => {
       totaal += f.originalSize;
-      if (totaal > WERKMAP_MAX_BYTES) throw new Error(`De werkmap is groter dan ${WERKMAP_MAX_BYTES / 1024 / 1024} MB.`);
+      if (totaal > WERKMAP_MAX_BYTES) throw new WerkmapTeGrootFout(WERKMAP_MAX_BYTES / 1024 / 1024);
       return veiligPad(f.name) !== null;
     },
   });

@@ -230,6 +230,23 @@
       "teGroot": "Deze tekening is te groot voor een rekenblad (meer dan {{max}} elementen). Sla alleen het nodige deel op als DXF.",
       "groot": "Deze tekening heeft {{aantal}} elementen ({{mb}} MB SVG) en komt als tekst in het blad en het projectbestand. Toch invoegen?",
       "mislukt": "De tekening kon niet worden omgezet: {{fout}}"
+    },
+    "plek": {
+      "Titel": "Titel",
+      "Kop": "Kop",
+      "tekst": "tekst",
+      "vet": "vet",
+      "cursief": "cursief",
+      "onderstreept": "onderstreept",
+      "opmerking": "opmerking",
+      "naam": "naam",
+      "keuze": "keuze",
+      "Omschrijving": "Omschrijving",
+      "Optie": "Optie",
+      "bestand": "bestand",
+      "voorwaarde": "voorwaarde",
+      "DraaibaarModel": "Draaibaar model",
+      "waarde": "waarde"
     }
   },
   "help": {
@@ -285,6 +302,14 @@
       "drieD": "Draaibaar 3D-beeld met maten uit het blad",
       "iframe": "Externe pagina op de bladbreedte; laadt pas na bevestiging",
       "js": "Script met de waarden van het blad als calc, bijvoorbeeld een draaibaar model met bibliotheek=three; loopt pas na bevestiging"
+    },
+    "invoeg": {
+      "titel": "\"Project Titel",
+      "vet": "'<b>Vetgedrukt</b>",
+      "hoofdstuk": "# 1. Invoer",
+      "commentaar": "// commentaar",
+      "include": "#include bestand.cpd",
+      "jsTitel": "Waarden uit het blad"
     }
   },
   "editor": {

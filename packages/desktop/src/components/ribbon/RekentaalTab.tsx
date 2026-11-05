@@ -5,7 +5,7 @@ import i18next from "../../i18n/config";
 import RibbonGroup from "./RibbonGroup";
 import RibbonButton from "./RibbonButton";
 import RibbonButtonStack from "./RibbonButtonStack";
-import { REKENTAAL_LINT, type LintGroep, type LintItem, type MenuSectie, type SyntaxKnop } from "./rekentaalLint";
+import { REKENTAAL_LINT, type LintGroep, type LintItem, type MenuSectie, type SyntaxKnop, fragmentInTaal } from "./rekentaalLint";
 import { b2, glyph } from "./calcIcons";
 import { voegIn } from "./invoegen";
 import FormuleVenster from "./FormuleVenster";
@@ -16,7 +16,8 @@ const icoon = (k: SyntaxKnop) => (k.icoon ? b2(k.icoon.id, k.icoon.sprite) : gly
 
 /**
  * De woorden van het lint in de gekozen taal. rekentaalLint.ts bewaart alleen
- * sleutels (rekentaal:lint.…); het fragment zelf blijft rekentaal.
+ * sleutels (rekentaal:lint.…); het fragment zelf blijft rekentaal, op de woorden om te
+ * overtypen na.
  */
 function useLintWoorden() {
   const { t } = useTranslation("rekentaal");
@@ -27,9 +28,12 @@ function useLintWoorden() {
     menu: (item: Menu) => t(`lint.menu.${item.naam}`),
     kop: (sectie: MenuSectie) => t(`lint.kop.${sectie.kop}`),
     /** Tooltip: het woord en wat er in de editor komt. */
-    tip: (k: SyntaxKnop) => `${naam(k)}\n${k.tekst.replace(/[⟨⟩]/g, "").trim()}`,
+    tip: (k: SyntaxKnop) => `${naam(k)}\n${inTaal(k.tekst).replace(/[⟨⟩]/g, "").trim()}`,
   };
 }
+
+/** Een fragment met de woorden om te overtypen in de taal van de app. */
+const inTaal = (tekst: string) => fragmentInTaal(tekst, (sleutel) => i18next.t(`rekentaal:lint.plek.${sleutel}`));
 
 /** React-key van een knop: teken en sleutel samen zijn uniek binnen een stapel of sectie. */
 const sleutel = (k: SyntaxKnop) => k.glyph + (k.naam ?? "");
@@ -37,7 +41,7 @@ const sleutel = (k: SyntaxKnop) => k.glyph + (k.naam ?? "");
 /** Het fragment op de cursor; staat de code niet in beeld, dan eerst de code erbij. */
 function invoegen(k: SyntaxKnop) {
   if (k.actie === "afbeelding") return kiesAfbeelding();
-  metEditor((view) => voegIn(view, k));
+  metEditor((view) => voegIn(view, { ...k, tekst: inTaal(k.tekst) }));
 }
 
 /** Boven deze grootte vragen we eerst: het beeld komt in het projectbestand. */

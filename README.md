@@ -117,7 +117,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **60 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **63 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
@@ -137,7 +137,7 @@ Count sources: the files named above and `ls scripts/check-*.mjs`. A module stat
 - **A graph file is not always complete.** Nodes this app does not have, scripts and most geometry stay on the graph with a message and do not calculate.
 - **Spreadsheet values do not reach calculation sheets yet.** A spreadsheet stands on its own for now.
 - **Report straight to PDF is Windows only.** Other platforms use the print dialog.
-- **The report template is in Dutch.** The app and the sheets follow your language, but the cover, the standard chapters and some names in the IFC tree are Dutch for now.
+- **Some text stays in Dutch for now.** The app, the sheets, the Code tab and the report follow your language, but the variable names in the modules and some names in the IFC tree are Dutch.
 - **Page breaks can differ slightly between screen scales.** At 100% and 150% a few lines can move to another page.
 - **No WebRTC in the app.** It is blocked everywhere, so an external page in `@iframe` that needs it will not work.
 - **Open FEM Studio projects are not there yet.** The menu item is visible but disabled.

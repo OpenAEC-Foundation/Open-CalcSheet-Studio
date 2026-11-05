@@ -59,8 +59,7 @@ type Vertaler = (sleutel: string, opties: { defaultValue: string }) => string;
 /**
  * De naam van een module of groep in de taal van de app. Een module heeft zijn
  * sleutel op sjabloon-id (net als in de projectboom), een groep op id. Zonder
- * vertaling blijft het Nederlandse label uit de catalogus staan. Een nieuw
- * blad krijgt nog altijd dat catalogus-label als naam (store/moduleKiezer.ts).
+ * vertaling blijft het Nederlandse label uit de catalogus staan.
  */
 function catalogusNaam(tw: Vertaler, node: TreeNode): string {
   if (node.kind === "item" && node.namen) return inTaal(node.namen);
@@ -451,9 +450,7 @@ export default function ModuleKiezer() {
       return;
     }
     if (!item?.templateId || !templates[item.templateId]) return;
-    // Het catalogus-label, niet de vertaalde naam: de naamgeving van nieuwe
-    // bladen blijft zoals hij was.
-    voegToe(item.templateId, item.label);
+    voegToe(item.templateId);
     setGekozen(null);
     setZoek("");
   };

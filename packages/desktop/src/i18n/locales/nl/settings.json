@@ -126,7 +126,8 @@
     "emailVoorbeeld": "naam@example.com",
     "constructeurToevoegen": "Constructeur toevoegen",
     "constructeurVerwijderen": "Constructeur verwijderen",
-    "geenConstructeurs": "Nog geen constructeurs. In het rapport kies je hieruit de verantwoordelijke en de uitvoerende constructeur."
+    "geenConstructeurs": "Nog geen constructeurs. In het rapport kies je hieruit de verantwoordelijke en de uitvoerende constructeur.",
+    "bestandLezenMislukt": "lezen mislukt"
   },
   "mcp": {
     "intro": "Een AI-assistent (bijvoorbeeld Claude Code, via MCP) of een ander programma (via de REST-API) kan met deze app werken: alles wat jij in de app kunt, van project openen en opslaan tot bladen toevoegen, invoer zetten, doorrekenen en exporteren. De server luistert alleen op deze computer (127.0.0.1) en vraagt een token. Wijzigingen op deze tab gelden direct.",

@@ -19,7 +19,7 @@ import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 const bron = readFileSync(new URL("../packages/desktop/src/tauri/fileOps.ts", import.meta.url), "utf8");
 const js = ts.transpileModule(bron, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
+}).outputText.replace('from "i18next"', `from "${import.meta.resolve("i18next")}"`);
 
 let dialoogAantal = 0;
 const bestanden = new Map();

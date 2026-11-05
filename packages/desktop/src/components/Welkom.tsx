@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Icoon from "./Icoon";
 import { getSetting, setSetting } from "../store";
-import { useProjectStore } from "../store/projectStore";
 import { useModuleKiezer } from "../store/moduleKiezer";
 import { modulesPerTemplate } from "./calc/projectTree";
 import "./Welkom.css";
@@ -15,7 +14,8 @@ const VOORBEELD = "rekentaal-demo";
 
 /**
  * De rekentaal in vier regels: regel en uitleg. De regels zijn rekentaal en
- * worden niet vertaald; de uitleg staat onder welkom.syntax in werkruimte.json.
+ * worden niet vertaald, op de tekst van de kop na (welkom.syntax.kopVoorbeeld); de
+ * uitleg staat onder welkom.syntax in werkruimte.json.
  */
 const SYNTAX: [string, string][] = [
   ["# 1. Invoer", "kop"],
@@ -45,8 +45,7 @@ export default function Welkom({ onSluit }: { onSluit: () => void }) {
   };
 
   const voorbeeld = () => {
-    const info = modulesPerTemplate[VOORBEELD];
-    if (info) useModuleKiezer.getState().voegToe(VOORBEELD, info.label);
+    if (modulesPerTemplate[VOORBEELD]) useModuleKiezer.getState().voegToe(VOORBEELD);
     onSluit();
   };
   const module = () => {
@@ -54,8 +53,7 @@ export default function Welkom({ onSluit }: { onSluit: () => void }) {
     useModuleKiezer.getState().openen();
   };
   const leegBlad = () => {
-    const id = useProjectStore.getState().voegToe("leeg", "Blad", "\"Nieuw blad\n\n");
-    useModuleKiezer.setState({ nieuwId: id });
+    useModuleKiezer.getState().voegLeegBladToe();
     onSluit();
   };
 
@@ -106,7 +104,7 @@ export default function Welkom({ onSluit }: { onSluit: () => void }) {
         <dl>
           {SYNTAX.map(([code, sleutel]) => (
             <div key={sleutel}>
-              <dt><code>{code}</code></dt>
+              <dt><code>{sleutel === "kop" ? t("welkom.syntax.kopVoorbeeld") : code}</code></dt>
               <dd>{t(`welkom.syntax.${sleutel}`)}</dd>
             </div>
           ))}

@@ -56,7 +56,7 @@ export function wachtOpVellen(maxMs = 10000): Promise<HTMLElement[]> {
       if (nu - beweging > (laadt ? MAX_LADEN_MS : maxMs)) {
         return mis(new Error(laadt
           ? i18next.t("werkruimte:pdf.nietOpTijd")
-          : "Het afdrukvoorbeeld bouwde geen vellen."));
+          : i18next.t("werkruimte:fouten.geenVellen")));
       }
       window.setTimeout(kijk, 300);
     };

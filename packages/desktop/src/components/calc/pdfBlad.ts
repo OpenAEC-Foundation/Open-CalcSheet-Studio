@@ -305,10 +305,11 @@ export function usePdfVersie(): number {
 }
 
 /**
- * Teksten op papier: de uitdraai volgt de taal van de app (zie PrintBlad.tsx). Ze
- * staan in rapport.json onder `pdfBlad`.
+ * Teksten op papier, buiten een onderdeel om: in de gegeven taal, zonder taal die van de
+ * app. Ze staan in rapport.json onder `pdfBlad`. Een onderdeel gebruikt usePapier
+ * (afdrukTaal.tsx), dat de taal van de uitdraai kent.
  */
-export const papier = () => i18next.getFixedT(i18next.language, "rapport");
+export const papier = (taal?: string) => i18next.getFixedT(taal ?? i18next.language, "rapport");
 
 // ── Base64 ────────────────────────────────────────────────────────────────────
 
@@ -331,7 +332,7 @@ export function bytesNaarBase64(bytes: Uint8Array): Promise<string> {
       const url = String(lezer.result);
       ok(url.slice(url.indexOf(",") + 1));
     };
-    lezer.onerror = () => mis(lezer.error ?? new Error("Bestand lezen mislukt"));
+    lezer.onerror = () => mis(lezer.error ?? new Error(i18next.t("werkruimte:fouten.bestandLezen")));
     lezer.readAsDataURL(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: "application/pdf" }));
   });
 }

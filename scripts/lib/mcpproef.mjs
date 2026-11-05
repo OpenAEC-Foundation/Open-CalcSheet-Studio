@@ -9,6 +9,8 @@
  * `dirty` en is ongedaan te maken. `acties` telt mee, zodat te zien is dat elke
  * mutatie via een store-actie loopt.
  */
+import { readFileSync } from "node:fs";
+import { modulesPerTemplate } from "../../packages/desktop/src/components/calc/projectTree.ts";
 import { laadTemplate } from "./refcheck.mjs";
 import { legeGegevens } from "../../packages/desktop/src/store/projectGegevens.ts";
 import { normaliseerRapport, standaardRapport } from "../../packages/desktop/src/rapport/model.ts";
@@ -22,6 +24,9 @@ export const PROJECT_ID = "__projectgegevens__";
 export const RAPPORT_ID = "__rapport__";
 
 const nieuwRapport = () => standaardRapport(datumTekst(new Date()), standaardTeksten());
+
+/** De namen van de modules per taal, uit de vertaalbestanden. */
+const werkruimte = (taal) => JSON.parse(readFileSync(new URL(`../../packages/desktop/src/i18n/locales/${taal}/werkruimte.json`, import.meta.url), "utf8"));
 
 /** Een klein, echt PDF-bestand (base64). */
 export const PROEF_PDF = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n").toString("base64");
@@ -83,6 +88,9 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
   const omgeving = {
     stand: () => ({ ...s, stappenTerug: verleden.length, stappenVooruit: toekomst.length }),
     sjabloon: (id) => sjablonen[id],
+    // Zoals in de app: de naam in de taal van de instellingen.
+    moduleNaam: (id) => (modulesPerTemplate[id] ? (werkruimte(instellingen.language).catalogus.modules[id] ?? modulesPerTemplate[id].label) : null),
+    groepNaam: (id, label) => werkruimte(instellingen.language).catalogus.groepen[id] ?? label,
     speciaal: { project: PROJECT_ID, rapport: RAPPORT_ID },
     acties: {
       voegToe(templateId, basis, source) {
@@ -149,7 +157,7 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
       },
       zetRapportVeld: (pad, waarde) => wijzig("zetRapportVeld", () => (s.rapport = zetOpPad(s.rapport, leesPad(pad), waarde))),
       zetRapportDeel: (pad, waarde) =>
-        wijzig("werkRapportBij", () => (s.rapport = normaliseerRapport(zetOpPad(s.rapport, leesPad(pad), waarde), datumTekst(new Date()), standaardTeksten()))),
+        wijzig("werkRapportBij", () => (s.rapport = normaliseerRapport(zetOpPad(s.rapport, leesPad(pad), waarde), datumTekst(new Date()), standaardTeksten))),
       ongedaan: () => {
         acties.push("ongedaan");
         const vorige = verleden.pop();

@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import type { Belastingklasse, Windcoefficient } from "../../../rapport/model";
+import { inTaal } from "../../../rapport/meertalig";
 import {
   CATEGORIEEN,
   DAK_QK_DIRECT,
@@ -39,9 +40,9 @@ const TERREIN = {
 
 const PSI = <>ψ<sub>0</sub> / ψ<sub>1</sub> / ψ<sub>2</sub></>;
 
-/** "0,4 / 0,5 / 0,3" */
-function psiTekst(psi: readonly number[]): string {
-  return psi.map((p) => fmt(p, 1, true)).join(" / ");
+/** "0,4 / 0,5 / 0,3" in de notatie van de taal. */
+function psiTekst(psi: readonly number[], taal: string): string {
+  return psi.map((p) => fmt(p, 1, true, taal)).join(" / ");
 }
 
 const NIEUWE_KLASSE: Belastingklasse = {
@@ -54,11 +55,15 @@ const NIEUWE_KLASSE: Belastingklasse = {
 /**
  * Sectie Belastingen (hoofdstuk 5): sneeuw, wind, regenwater, de
  * belastingklassen en de opbouwen van de blijvende belasting. Normwaarden
- * volgen uit de projectgegevens en worden hier alleen getoond.
+ * volgen uit de projectgegevens en worden hier alleen getoond, in de notatie
+ * van het rapport.
  */
 export default function BelastingenSectie() {
   const { t } = useTranslation("rapport");
-  const b = useRapport().belastingen;
+  const rapport = useRapport();
+  const b = rapport.belastingen;
+  const taal = rapport.taal;
+  const f = (v: number, dec: number, trim = false) => fmt(v, dec, trim, taal);
   const gegevens = useProjectStore((s) => s.gegevens);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
 
@@ -89,9 +94,9 @@ export default function BelastingenSectie() {
               label: t("belastingen.platDak"),
               waarde: (
                 <>
-                  s = μ<sub>1</sub>·C<sub>e</sub>·C<sub>t</sub>·s<sub>k</sub> = {fmt(SNEEUW.mu1, 1)} ×{" "}
-                  {fmt(SNEEUW.ce, 1)} × {fmt(SNEEUW.ct, 1)} × {fmt(SNEEUW.sk, 1)} ={" "}
-                  {fmt(sneeuwPlatDak(), 2)} kN/m²
+                  s = μ<sub>1</sub>·C<sub>e</sub>·C<sub>t</sub>·s<sub>k</sub> = {f(SNEEUW.mu1, 1)} ×{" "}
+                  {f(SNEEUW.ce, 1)} × {f(SNEEUW.ct, 1)} × {f(SNEEUW.sk, 1)} ={" "}
+                  {f(sneeuwPlatDak(), 2)} kN/m²
                 </>
               ),
               bron: "NEN-EN 1991-1-3 (5.1)",
@@ -108,7 +113,7 @@ export default function BelastingenSectie() {
           regels={[
             {
               label: t("belastingen.windgebied"),
-              waarde: <>{GEBIED[wg]} — v<sub>b,0</sub> = {fmt(wind.vb0, 1)} m/s</>,
+              waarde: <>{GEBIED[wg]} — v<sub>b,0</sub> = {f(wind.vb0, 1)} m/s</>,
               bron: t("algemeen.tabel", { nummer: "NB.1" }),
             },
             {
@@ -116,8 +121,8 @@ export default function BelastingenSectie() {
               waarde: t(TERREIN[tc]),
               bron: t("algemeen.tabel", { nummer: "NB.3–4.1" }),
             },
-            // Zoals het in het rapport staat, dus Nederlands.
-            { label: t("belastingen.omschrijving52"), waarde: windLabel(wg, tc) },
+            // Zoals het in het rapport staat.
+            { label: t("belastingen.omschrijving52"), waarde: windLabel(wg, tc, taal) },
           ]}
         />
         <div className="rapport-rij">
@@ -137,19 +142,19 @@ export default function BelastingenSectie() {
         </div>
         <Afgeleid
           regels={[
-            { label: <>z<sub>0</sub></>, waarde: `${fmt(wind.z0, 3, true)} m` },
-            { label: <>z<sub>min</sub></>, waarde: `${fmt(wind.zmin, 0)} m` },
+            { label: <>z<sub>0</sub></>, waarde: `${f(wind.z0, 3, true)} m` },
+            { label: <>z<sub>min</sub></>, waarde: `${f(wind.zmin, 0)} m` },
             {
               label: <>z<sub>e</sub></>,
-              waarde: hoogteBekend ? `${fmt(wind.ze, 2, true)} m` : "—",
+              waarde: hoogteBekend ? `${f(wind.ze, 2, true)} m` : "—",
               bron: t("belastingen.zeBron"),
             },
             {
               label: <>q<sub>p</sub>(z<sub>e</sub>)</>,
-              waarde: hoogteBekend ? `${fmt(qp, 2)} kN/m²` : t("belastingen.hoogteInvullen"),
+              waarde: hoogteBekend ? `${f(qp, 2)} kN/m²` : t("belastingen.hoogteInvullen"),
               bron: "(4.8)",
             },
-            { label: PSI, waarde: psiTekst(PSI_WIND), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
+            { label: PSI, waarde: psiTekst(PSI_WIND, taal), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
           ]}
         />
         <h6 className="rapport-subkop">{t("belastingen.coefficienten")}</h6>
@@ -163,7 +168,7 @@ export default function BelastingenSectie() {
             {
               kop: <>P<sub>rep</sub> [kN/m²]</>,
               breedte: "8em",
-              waarde: (rij) => getalTekst(getal(rij.c) * qp, 2),
+              waarde: (rij) => getalTekst(getal(rij.c) * qp, 2, false, taal),
             },
           ]}
         />
@@ -210,7 +215,9 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
   aantal: number;
   wijzig: (fn: (lijst: Belastingklasse[]) => Belastingklasse[]) => void;
 }) {
-  const { t } = useTranslation("rapport");
+  const { t, i18n } = useTranslation("rapport");
+  const taal = useRapport().taal;
+  const f = (v: number, dec: number) => fmt(v, dec, false, taal);
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const pad = `belastingen.klassen.${index}`;
   const cat = categorie(regel.categorie);
@@ -228,18 +235,18 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
           {!cat && (
             <option value={regel.categorie}>{t("belastingen.onbekend", { waarde: regel.categorie || "—" })}</option>
           )}
-          {/* De namen van de categorieën komen uit de norm (normwaarden.ts) en blijven Nederlands. */}
+          {/* De naam van de categorie volgt de app: opgeslagen wordt het id, en de afdruk zet hem in de taal van het rapport. */}
           <optgroup label={t("belastingen.vloeren")}>
             {CATEGORIEEN.filter((c) => c.soort === "vloer").map((c) => (
               <option key={c.id} value={c.id}>
-                {c.label}
+                {inTaal(c.label, i18n.language)}
               </option>
             ))}
           </optgroup>
           <optgroup label={t("belastingen.daken")}>
             {CATEGORIEEN.filter((c) => c.soort === "dak").map((c) => (
               <option key={c.id} value={c.id}>
-                {c.label}
+                {inTaal(c.label, i18n.language)}
               </option>
             ))}
           </optgroup>
@@ -288,15 +295,15 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
             regels={[
               {
                 label: <>q<sub>k</sub></>,
-                waarde: `${fmt(cat.qk, 2)} kN/m²`,
+                waarde: `${f(cat.qk, 2)} kN/m²`,
                 bron: t("algemeen.tabel", { nummer: "NB.1–6.2" }),
               },
               {
                 label: <>q<sub>k</sub> + L.S.</>,
-                waarde: `${fmt(cat.qk + (Number.isFinite(ls) ? ls : 0), 2)} kN/m²`,
+                waarde: `${f(cat.qk + (Number.isFinite(ls) ? ls : 0), 2)} kN/m²`,
               },
-              { label: <>Q<sub>k</sub></>, waarde: `${fmt(cat.Qk, 1)} kN` },
-              { label: PSI, waarde: psiTekst(cat.psi), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
+              { label: <>Q<sub>k</sub></>, waarde: `${f(cat.Qk, 1)} kN` },
+              { label: PSI, waarde: psiTekst(cat.psi, taal), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
             ]}
           />
         </>
@@ -312,18 +319,18 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
             regels={[
               {
                 label: <>q<sub>k</sub> {t("belastingen.platDakKlein")}</>,
-                waarde: `${fmt(cat.qk, 2)} kN/m²`,
+                waarde: `${f(cat.qk, 2)} kN/m²`,
                 bron: t("algemeen.tabel", { nummer: "NB.4–6.10" }),
               },
               {
                 label: <>q<sub>k</sub> {t("belastingen.bijAlfa")}</>,
-                waarde: Number.isFinite(alfa) ? `${fmt(dakQk(alfa), 2)} kN/m²` : t("belastingen.dakhellingInvullen"),
+                waarde: Number.isFinite(alfa) ? `${f(dakQk(alfa), 2)} kN/m²` : t("belastingen.dakhellingInvullen"),
               },
               {
                 label: <>Q<sub>k</sub></>,
-                waarde: t("belastingen.qkDirect", { qk: fmt(cat.Qk, 1), direct: fmt(DAK_QK_DIRECT, 1) }),
+                waarde: t("belastingen.qkDirect", { qk: f(cat.Qk, 1), direct: f(DAK_QK_DIRECT, 1) }),
               },
-              { label: PSI, waarde: psiTekst(cat.psi), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
+              { label: PSI, waarde: psiTekst(cat.psi, taal), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
             ]}
           />
         </>

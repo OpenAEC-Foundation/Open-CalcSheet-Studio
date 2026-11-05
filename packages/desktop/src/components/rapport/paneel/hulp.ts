@@ -48,9 +48,9 @@ export function verplaatst<T>(lijst: readonly T[], i: number, richting: -1 | 1):
   return uit;
 }
 
-/** Een getal in Nederlandse notatie, of "—" als er (nog) geen getal is. */
-export function getalTekst(v: number | null | undefined, dec: number, trim = false): string {
-  return typeof v === "number" && Number.isFinite(v) ? fmt(v, dec, trim) : "—";
+/** Een getal in de notatie van de taal (zonder taal de Nederlandse), of "—" als er (nog) geen getal is. */
+export function getalTekst(v: number | null | undefined, dec: number, trim = false, taal = "nl"): string {
+  return typeof v === "number" && Number.isFinite(v) ? fmt(v, dec, trim, taal) : "—";
 }
 
 /** De eerste niet-lege regel van een tekst, ingekort voor in een keuzemenu. */

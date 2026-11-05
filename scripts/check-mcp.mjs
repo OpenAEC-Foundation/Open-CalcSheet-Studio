@@ -157,7 +157,7 @@ let liggerId = null;
 
   const a = await roep("sheet_add", { templateId: "ligger" });
   liggerId = a.data?.id;
-  meld(!a.isError && a.data.name === "Ligger 1" && app.s.activeId === liggerId, "sheet_add: module, korte naam, geselecteerd", JSON.stringify(a.data?.name));
+  meld(!a.isError && a.data.name === "Beam 1" && app.s.activeId === liggerId, "sheet_add: module, korte naam in de taal van de app, geselecteerd", JSON.stringify(a.data?.name));
   meld(a.data.inputs.some((v) => v.name === "materiaal" && v.kind === "choice"), "sheet_add: geeft de invoervelden");
   meld((await roep("sheet_add", { templateId: "bestaat_niet" })).data.code === "NOT_FOUND", "sheet_add: onbekende module");
   meld((await roep("sheet_add", { templateId: "ligger", source: "x" })).data.code === "VALIDATION", "sheet_add: templateId en source niet samen");
@@ -189,7 +189,7 @@ let liggerId = null;
 
   const p2 = await roep("project_get");
   const blad = p2.data.sheets.find((x) => x.id === liggerId);
-  meld(blad.evaluated === true && blad.uc === e.data.uc && blad.module === "Ligger (hout of staal)", "project_get: uitkomst bekend na sheet_evaluate", JSON.stringify(blad));
+  meld(blad.evaluated === true && blad.uc === e.data.uc && blad.module === "Beam (timber or steel)", "project_get: uitkomst bekend na sheet_evaluate", JSON.stringify(blad));
   await roep("sheet_set_input", { id: liggerId, name: "materiaal", value: "1" });
   const blad2 = (await roep("project_get")).data.sheets.find((x) => x.id === liggerId);
   meld(blad2.evaluated === false && blad2.uc === null, "project_get: andere invoer ⇒ uitkomst niet meer bekend");

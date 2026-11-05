@@ -1,9 +1,9 @@
 import { Fragment, type ReactNode } from "react";
 import type { Belastingklasse, Opbouw } from "../../../rapport/model";
+import { inTaal } from "../../../rapport/meertalig";
 import {
   categorie,
   dakQk,
-  fmt,
   getal,
   klasse,
   PSI_WIND,
@@ -21,17 +21,14 @@ import { Cel, Eenheid, Leeg, Rij, Tekst, Vlak } from "./raster";
  * staat in de tabeltekstkleur, ingevulde waarden in de invoerkleur.
  */
 
-/** Een berekend getal, of niets als er (nog) niets te berekenen valt. */
-const getalTekst = (v: number, dec: number) => (Number.isFinite(v) ? fmt(v, dec) : "");
-
 /** 5.1 Sneeuw op een plat dak, s = μ1·Ce·Ct·sk; de tekst eronder. */
 export function Sneeuw({ w }: { w: RapportWeergave }) {
   const tekst = w.rapport.teksten.sneeuw ?? "";
   return (
     <>
       <Rij>
-        <Cel k={1} o>plat dak</Cel>
-        <Cel k={2} o>{fmt(sneeuwPlatDak(), 2)}</Cel>
+        <Cel k={1} o>{w.t("afdruk.belastingen.platDak")}</Cel>
+        <Cel k={2} o>{w.f(sneeuwPlatDak(), 2)}</Cel>
         <Cel k={3} o><Eenheid e="kN/m2" /></Cel>
       </Rij>
       {tekst.trim() && (
@@ -58,41 +55,42 @@ export function Wind({ w }: { w: RapportWeergave }) {
   // z₀, z_min en v_b,0 hangen niet van de hoogte af; q_p wel.
   const u = windQp(wg, tc, geldig ? z : 0);
   const qp = geldig ? u.qp : NaN;
+  const { t, f, n } = w;
 
   const links: ReactNode[] = [
-    <Cel k={1} n={2}>Windgebied &amp;</Cel>,
+    <Cel k={1} n={2}>{t("afdruk.belastingen.windgebied")}</Cel>,
     <>
-      <Cel k={1} n={2} o>Terreincategorie</Cel>
-      <Cel k={3} n={2} o>{windLabel(wg, tc)}</Cel>
+      <Cel k={1} n={2} o>{t("afdruk.belastingen.terreincategorie")}</Cel>
+      <Cel k={3} n={2} o>{windLabel(wg, tc, w.taal)}</Cel>
     </>,
     <>
-      <Cel k={1} n={2} o>Gebouwhoogte</Cel>
-      <Cel k={3} o>{wind.gebouwhoogte}</Cel>
+      <Cel k={1} n={2} o>{t("afdruk.belastingen.gebouwhoogte")}</Cel>
+      <Cel k={3} o>{n(wind.gebouwhoogte)}</Cel>
       <Cel k={4} o><Eenheid e="m" /></Cel>
     </>,
     <>
       <Cel k={2} o>z<sub>0</sub></Cel>
-      <Cel k={3} o>{fmt(u.z0, 3, true)}</Cel>
+      <Cel k={3} o>{f(u.z0, 3, true)}</Cel>
       <Cel k={4} o />
     </>,
     <>
       <Cel k={2} o>z<sub>min</sub></Cel>
-      <Cel k={3} o>{fmt(u.zmin, 0)}</Cel>
+      <Cel k={3} o>{f(u.zmin, 0)}</Cel>
       <Cel k={4} o />
     </>,
     <>
       <Cel k={2} o>c<sub>s</sub>*c<sub>d</sub></Cel>
-      <Cel k={3} o>{wind.cscd}</Cel>
+      <Cel k={3} o>{n(wind.cscd)}</Cel>
       <Cel k={4} o />
     </>,
     <>
       <Cel k={2} o>q<sub>p</sub></Cel>
-      <Cel k={3} o>{getalTekst(qp, 2)}</Cel>
+      <Cel k={3} o>{f(qp, 2)}</Cel>
       <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
     </>,
     <>
       <Cel k={2} o>v<sub>b,0</sub></Cel>
-      <Cel k={3} o>{fmt(u.vb0, 1)}</Cel>
+      <Cel k={3} o>{f(u.vb0, 1)}</Cel>
     </>,
   ];
 
@@ -106,8 +104,8 @@ export function Wind({ w }: { w: RapportWeergave }) {
   wind.coefficienten.forEach((c, i) => {
     rechts[1 + i] = (
       <>
-        <Cel k={6} o>{c.c}</Cel>
-        <Cel k={7} o>{getalTekst(getal(c.c) * qp, 2)}</Cel>
+        <Cel k={6} o>{n(c.c)}</Cel>
+        <Cel k={7} o>{f(getal(c.c) * qp, 2)}</Cel>
         <Cel k={8} o><Eenheid e="kN/m2" /></Cel>
         {c.omschrijving && <Cel k={9}>{c.omschrijving}</Cel>}
       </>
@@ -119,7 +117,7 @@ export function Wind({ w }: { w: RapportWeergave }) {
     rechts[psiVanaf + i] = (
       <>
         <Cel k={6} o>ψ<sub>{i}</sub></Cel>
-        <Cel k={7} o>{fmt(psi, 1)}</Cel>
+        <Cel k={7} o>{f(psi, 1)}</Cel>
       </>
     );
   });
@@ -141,19 +139,22 @@ export function Wind({ w }: { w: RapportWeergave }) {
  * Eén belastingklasse van 5.4: vloer of dak, met rechts de ψ-factoren. Boven
  * de eerste klasse staat de normverwijzing, in de lege regel onder de kop.
  */
-function KlasseRijen({ bk, eerste }: { bk: Belastingklasse; eerste: boolean }) {
+function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; w: RapportWeergave }) {
   const cat = categorie(bk.categorie);
+  const { t, f, n } = w;
+  const algemeen = t("afdruk.belastingen.algemeen");
+  const dakPlat = t("afdruk.belastingen.dakPlat");
   const rijen: ReactNode[] = [
     <>
-      <Cel k={1} n={2} o>Belastingklasse</Cel>
-      <Cel k={3} n={3} o klasse="rpa-invoer">{cat?.label ?? bk.categorie}</Cel>
+      <Cel k={1} n={2} o>{t("afdruk.belastingen.klasse")}</Cel>
+      <Cel k={3} n={3} o klasse="rpa-invoer">{cat ? inTaal(cat.label, w.taal) : bk.categorie}</Cel>
     </>,
   ];
   if (!cat || cat.soort === "vloer") {
     rijen.push(
       <>
-        <Cel k={1} n={2} o>Algemeen q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{cat ? fmt(cat.qk, 2) : ""}</Cel>
+        <Cel k={1} n={2} o>{algemeen} q<sub>k</sub></Cel>
+        <Cel k={3} o klasse="rpa-invoer">{cat ? f(cat.qk, 2) : ""}</Cel>
         <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
       </>,
     );
@@ -161,21 +162,21 @@ function KlasseRijen({ bk, eerste }: { bk: Belastingklasse; eerste: boolean }) {
       const ls = getal(bk.lichteScheidingswanden);
       rijen.push(
         <>
-          <Cel k={1} n={2} o>L.S.</Cel>
-          <Cel k={3} o klasse="rpa-invoer">{bk.lichteScheidingswanden}</Cel>
+          <Cel k={1} n={2} o>{t("afdruk.belastingen.ls")}</Cel>
+          <Cel k={3} o klasse="rpa-invoer">{n(bk.lichteScheidingswanden)}</Cel>
           <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
         </>,
         <>
-          <Cel k={1} n={2} o>Algemeen q<sub>k</sub>+L.S.</Cel>
-          <Cel k={3} o>{cat ? getalTekst(cat.qk + ls, 2) : ""}</Cel>
+          <Cel k={1} n={2} o>{algemeen} q<sub>k</sub>+{t("afdruk.belastingen.ls")}</Cel>
+          <Cel k={3} o>{cat ? f(cat.qk + ls, 2) : ""}</Cel>
           <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
         </>,
       );
     }
     rijen.push(
       <>
-        <Cel k={1} n={2} o>Algemeen Q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{cat ? fmt(cat.Qk, 2) : ""}</Cel>
+        <Cel k={1} n={2} o>{algemeen} Q<sub>k</sub></Cel>
+        <Cel k={3} o klasse="rpa-invoer">{cat ? f(cat.Qk, 2) : ""}</Cel>
         <Cel k={4} o><Eenheid e="kN" /></Cel>
       </>,
     );
@@ -183,28 +184,28 @@ function KlasseRijen({ bk, eerste }: { bk: Belastingklasse; eerste: boolean }) {
     const alfa = getal(bk.dakhelling);
     rijen.push(
       <>
-        <Cel k={1} n={2} o>Dak plat q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{fmt(cat.qk, 1)}</Cel>
+        <Cel k={1} n={2} o>{dakPlat} q<sub>k</sub></Cel>
+        <Cel k={3} o klasse="rpa-invoer">{f(cat.qk, 1)}</Cel>
         <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
       </>,
       <>
-        <Cel k={1} n={2} o>Dak plat Q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{fmt(cat.Qk, 1)}</Cel>
+        <Cel k={1} n={2} o>{dakPlat} Q<sub>k</sub></Cel>
+        <Cel k={3} o klasse="rpa-invoer">{f(cat.Qk, 1)}</Cel>
         <Cel k={4} o><Eenheid e="kN" /></Cel>
       </>,
       <>
-        <Cel k={1} n={2} o>Dak schuin</Cel>
-        <Cel k={3} o>{Number.isFinite(alfa) ? fmt(dakQk(alfa), 1) : ""}</Cel>
+        <Cel k={1} n={2} o>{t("afdruk.belastingen.dakSchuin")}</Cel>
+        <Cel k={3} o>{Number.isFinite(alfa) ? f(dakQk(alfa), 1) : ""}</Cel>
         <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
       </>,
       <>
-        <Cel k={1} n={2} o>Dak q-last</Cel>
-        <Cel k={3} o>{bk.qlast}</Cel>
+        <Cel k={1} n={2} o>{t("afdruk.belastingen.dakQlast")}</Cel>
+        <Cel k={3} o>{n(bk.qlast)}</Cel>
         <Cel k={4} o><Eenheid e="kN/m1" /></Cel>
       </>,
       <>
         <Cel k={1} n={2} o>α</Cel>
-        <Cel k={3} o klasse="rpa-invoer">{bk.dakhelling}</Cel>
+        <Cel k={3} o klasse="rpa-invoer">{n(bk.dakhelling)}</Cel>
         <Cel k={4} o>°</Cel>
       </>,
     );
@@ -218,7 +219,7 @@ function KlasseRijen({ bk, eerste }: { bk: Belastingklasse; eerste: boolean }) {
           {cat && i < 3 && (
             <>
               <Cel k={8} o>ψ<sub>{i}</sub></Cel>
-              <Cel k={9} o>{fmt(cat.psi[i], 1)}</Cel>
+              <Cel k={9} o>{f(cat.psi[i], 1)}</Cel>
             </>
           )}
           {i === 0 && eerste && <span className="rpa-boven rpa-norm">6.3.1.2 NEN-EN 1991-1-1</span>}
@@ -233,7 +234,7 @@ export function Veranderlijk({ w }: { w: RapportWeergave }) {
   return (
     <>
       {w.rapport.belastingen.klassen.map((bk, i) => (
-        <KlasseRijen key={i} bk={bk} eerste={i === 0} />
+        <KlasseRijen key={i} bk={bk} eerste={i === 0} w={w} />
       ))}
     </>
   );
@@ -244,8 +245,9 @@ export function Veranderlijk({ w }: { w: RapportWeergave }) {
  * een ingevulde p staan er zoals ze zijn ingevuld, een berekende p met twee
  * decimalen. Op de onderste laag het plusteken en de optellijn.
  */
-function VlakTabel({ opbouw }: { opbouw: Extract<Opbouw, { soort: "vlak" }> }) {
+function VlakTabel({ opbouw, w }: { opbouw: Extract<Opbouw, { soort: "vlak" }>; w: RapportWeergave }) {
   const { regels, som } = vlakOpbouw(opbouw.lagen);
+  const { f, n } = w;
   const laatste = opbouw.lagen.length - 1;
   return (
     <>
@@ -257,12 +259,12 @@ function VlakTabel({ opbouw }: { opbouw: Extract<Opbouw, { soort: "vlak" }> }) {
       </Rij>
       {opbouw.lagen.map((laag, i) => {
         const onderste = i === laatste;
-        const p = laag.p.trim() ? laag.p : fmt(regels[i]?.p ?? 0, 2);
+        const p = laag.p.trim() ? n(laag.p) : f(regels[i]?.p ?? 0, 2);
         return (
           <Rij key={i}>
             <Cel k={1} n={2}>{laag.naam}</Cel>
-            <Cel k={3}>{laag.d}</Cel>
-            <Cel k={4}>{laag.rho}</Cel>
+            <Cel k={3}>{n(laag.d)}</Cel>
+            <Cel k={4}>{n(laag.rho)}</Cel>
             <Cel k={5} o={onderste}>{p}</Cel>
             <Cel k={6} o={onderste}><Eenheid e="kN/m2" /></Cel>
             {onderste && <Cel k={7} o>+</Cel>}
@@ -270,7 +272,7 @@ function VlakTabel({ opbouw }: { opbouw: Extract<Opbouw, { soort: "vlak" }> }) {
         );
       })}
       <Rij>
-        <Cel k={5}>{fmt(som, 2)}</Cel>
+        <Cel k={5}>{f(som, 2)}</Cel>
         <Cel k={6}><Eenheid e="kN/m2" /></Cel>
       </Rij>
     </>
@@ -281,8 +283,9 @@ function VlakTabel({ opbouw }: { opbouw: Extract<Opbouw, { soort: "vlak" }> }) {
  * Een gevelopbouw: per laag q = p × h × vulling, de som in kN/m¹. p en h zoals
  * ingevuld, de vulling als percentage, q en de som met twee decimalen.
  */
-function GevelTabel({ opbouw }: { opbouw: Extract<Opbouw, { soort: "gevel" }> }) {
+function GevelTabel({ opbouw, w }: { opbouw: Extract<Opbouw, { soort: "gevel" }>; w: RapportWeergave }) {
   const { regels, som } = gevelOpbouw(opbouw.lagen);
+  const { f, n } = w;
   const laatste = opbouw.lagen.length - 1;
   return (
     <>
@@ -290,7 +293,7 @@ function GevelTabel({ opbouw }: { opbouw: Extract<Opbouw, { soort: "gevel" }> })
         <Cel k={1} b o l klasse="rpa-kop-licht">{opbouw.naam}</Cel>
         <Cel k={2} b o klasse="rpa-kop-licht">p<sub>rep</sub></Cel>
         <Cel k={3} b o klasse="rpa-kop-licht">h<Eenheid e="m" /></Cel>
-        <Cel k={4} b o klasse="rpa-kop-licht">vulling</Cel>
+        <Cel k={4} b o klasse="rpa-kop-licht">{w.t("afdruk.belastingen.vulling")}</Cel>
         <Cel k={5} n={2} b o r klasse="rpa-kop-licht">q<sub>rep</sub></Cel>
       </Rij>
       {opbouw.lagen.map((laag, i) => {
@@ -299,17 +302,17 @@ function GevelTabel({ opbouw }: { opbouw: Extract<Opbouw, { soort: "gevel" }> })
         return (
           <Rij key={i}>
             <Cel k={1}>{laag.naam}</Cel>
-            <Cel k={2} klasse="rpa-midden">{laag.p}</Cel>
-            <Cel k={3}>{laag.h}</Cel>
-            <Cel k={4}>{regel ? vullingTekst(regel.vulling) : laag.vulling}</Cel>
-            <Cel k={5} o={onderste}>{regel ? fmt(regel.q, 2) : ""}</Cel>
+            <Cel k={2} klasse="rpa-midden">{n(laag.p)}</Cel>
+            <Cel k={3}>{n(laag.h)}</Cel>
+            <Cel k={4}>{n(regel ? vullingTekst(regel.vulling) : laag.vulling)}</Cel>
+            <Cel k={5} o={onderste}>{regel ? f(regel.q, 2) : ""}</Cel>
             <Cel k={6} o={onderste}><Eenheid e="kN/m1" /></Cel>
             {onderste && <Cel k={7} o>+</Cel>}
           </Rij>
         );
       })}
       <Rij>
-        <Cel k={5}>{fmt(som, 2)}</Cel>
+        <Cel k={5}>{f(som, 2)}</Cel>
         <Cel k={6}><Eenheid e="kN/m1" /></Cel>
       </Rij>
     </>
@@ -322,13 +325,13 @@ function GevelTabel({ opbouw }: { opbouw: Extract<Opbouw, { soort: "gevel" }> })
  * ertussen. `direct`: de kop staat direct onder de paragraafkop en krijgt dan
  * geen extra lege regel boven zich.
  */
-export function Groep({ titel, opbouwen, direct, inspringen }: {
-  titel: string; opbouwen: Opbouw[]; direct: boolean; inspringen: 0 | 1;
+export function Groep({ titel, opbouwen, direct, inspringen, w }: {
+  titel: string; opbouwen: Opbouw[]; direct: boolean; inspringen: 0 | 1; w: RapportWeergave;
 }) {
   const tabellen = opbouwen.map((o, i) => (
     <Fragment key={i}>
       {i > 0 && <Leeg />}
-      {o.soort === "vlak" ? <VlakTabel opbouw={o} /> : <GevelTabel opbouw={o} />}
+      {o.soort === "vlak" ? <VlakTabel opbouw={o} w={w} /> : <GevelTabel opbouw={o} w={w} />}
     </Fragment>
   ));
   return (

@@ -14,7 +14,7 @@ het daar na. Een blad zonder aanmelding is een rekenblad; alleen Jupyter wijkt n
 ```tsx
 {
   templateId: TEKEN_BLAD,
-  soortTekst: () => papier()("tekenBlad.soort"),
+  soortTekst: (taal) => papier(taal)("tekenBlad.soort"),
   Afdruk: TekenPapier,
   useOnderkop: (ex) => [ex.tekening?.bestandsnaam],
 }
@@ -23,7 +23,7 @@ het daar na. Een blad zonder aanmelding is een rekenblad; alleen Jupyter wijkt n
 | veld | wat | zonder |
 |---|---|---|
 | `templateId` | de `templateId` van de bladen | verplicht |
-| `soortTekst` | de naam op papier, onder de kop en in de kolom grondslag, in de taal van de app | verplicht |
+| `soortTekst` | de naam op papier, onder de kop en in de kolom grondslag, in de taal `taal` van de uitdraai | verplicht |
 | `Afdruk` | het afdrukonderdeel: de inhoud onder de kop, binnen de bladspiegel van `maten` | verplicht |
 | `useOnderkop` | wat er achter de soort onder de kop staat, zoals de bestandsnaam | alleen de soort |
 | `plek` | waar de uitwerking staat zolang de gebruiker niets koos: `hoofdstuk` of `bijlage` | in de bijlage |
@@ -99,7 +99,9 @@ Buiten de afdruk heeft een soort nog deze plekken, zoals bij Markdown:
   `packages/core/src/ifcx/` (`ATTR`, schema en `soort` in `namespace.ts`, schrijven en
   lezen in `document.ts`, de bijlage in `step.ts`).
 - De werkruimte in `App.tsx`, de keuze in `BladToevoegen.tsx` (de ene knop in het paneel), de knop in `CalcTab.tsx`, en
-  de teksten in `werkruimte.json` en `rapport.json` (Nederlands en Engels).
+  de teksten in `werkruimte.json` en `rapport.json` (Nederlands en Engels). Een onderdeel op papier
+  haalt zijn teksten met `usePapier()` of `useTranslation` (`components/calc/afdrukTaal.tsx`), niet met
+  de globale i18next: een losse uitdraai volgt de taal van de app, het rapport zijn eigen taal.
 - `bladSoort` in `mcp/tools/hulp.ts`.
 - Een eigen `scripts/check-<soort>.mjs`. `scripts/check-rapport-pdf.mjs` rekent de
   nummers na op een gemengd project (`scripts/lib/gemengd-project.mjs`): zet de soort
@@ -162,7 +164,8 @@ wat in het voorbeeld staat, komt op papier.
 
 - **Canvas** is geen losse soort maar een rekenblad: de rekentekst staat gewoon in
   `source`, met per eenheid een regel `//@eenheid id=e1 x=10 y=15`. De kern rekent van
-  boven naar beneden, en `CanvasVellen` zet de eenheden op papier.
+  boven naar beneden, en `CanvasVellen` zet de eenheden op papier. Ctrl en scrollen zoomt
+  het vel rond het punt onder de muis; dat verandert alleen de weergave, niet de maten.
 - **Graaf** staat in `graaf` op het blad (`ocss::blad::graaf`) en is aangemeld met
   `GraafVellen`. `graaf/grafBestand.ts` leest een grafbestand (`.dyn`, JSON) in: elke node waarvan
   hier een gelijke bestaat wordt een gewone node, de rest blijft staan als `ingelezen` met zijn

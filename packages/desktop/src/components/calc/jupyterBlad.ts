@@ -1,9 +1,13 @@
 import i18next from "../../i18n/config";
 import { base64Bytes, grootteTekst } from "../../store/pdfBijlage";
 import {
-  bladnaamVoorNotebook, notebooksIn, pakWerkmapIn, pakWerkmapUit, START_NOTEBOOK, startNotebook, uitBase64,
+  bladnaamVoorNotebook, notebooksIn, pakWerkmapIn, pakWerkmapUit, WerkmapTeGrootFout, START_NOTEBOOK, startNotebook, uitBase64,
   type JupyterWerkmap, type WerkmapBestand,
 } from "../../store/jupyterBlad";
+
+/** De melding bij een mislukte werkmap, in de taal van de app. */
+const foutTekst = (err: unknown) =>
+  err instanceof WerkmapTeGrootFout ? i18next.t("werkruimte:jupyter.teGroot", { mb: err.mb }) : (err as Error)?.message ?? String(err);
 import { bytesNaarBase64 } from "./pdfBlad";
 
 /*
@@ -32,7 +36,7 @@ export function voegLeegJupyterToe(voegToe: (naam: string, jupyter: JupyterWerkm
     .then((werkmap) => voegToe(i18next.t("werkruimte:jupyter.nieuweNaam"), werkmap))
     .catch((err) => {
       console.error("Jupyter-blad maken mislukt:", err);
-      alert(i18next.t("werkruimte:jupyter.lezenMislukt", { fout: (err as Error)?.message ?? String(err) }));
+      alert(i18next.t("werkruimte:jupyter.lezenMislukt", { fout: foutTekst(err) }));
     });
 }
 
@@ -94,7 +98,7 @@ export async function voegNotebookToe(voegToe: (naam: string, jupyter: JupyterWe
     voegToe(bladnaamVoorNotebook(eerste), await naarWerkmap(bestanden, eerste));
   } catch (err) {
     console.error("Notebook inlezen mislukt:", err);
-    alert(i18next.t("werkruimte:jupyter.lezenMislukt", { fout: (err as Error)?.message ?? String(err) }));
+    alert(i18next.t("werkruimte:jupyter.lezenMislukt", { fout: foutTekst(err) }));
   }
 }
 

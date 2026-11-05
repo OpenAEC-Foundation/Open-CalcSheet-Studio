@@ -6,12 +6,12 @@ import { useActiefExemplaar, useAlleenLezen, useProjectScope } from "../../store
 import { JaNee, IconKeuze, SchemaIcoon, type SchemaSoort } from "./designerKit";
 import {
   KLEUR_M, KLEUR_V, KLEUR_U, Label, Oplegging, LijnLast, PuntLast, KrachtenLijn,
-  RaveelPlattegrond, raveelMaten, raveelHoogte, extremen, randwaarden, nl,
+  RaveelPlattegrond, raveelMaten, raveelHoogte, extremen, randwaarden, nl as nlInTaal,
 } from "./balklaagTekening";
 import { leesBlad, rekenBladDoor, useBladUitkomst } from "./bladResultaat";
 import { belastinggevallen, helften, lijnen, omhullende, wisselOmhullende, type Ligger, type Lijnen } from "./balklaagLijnen";
 import { balklaagKent, kdefUitKlimaat } from "./balklaagBlad";
-import { weergaveNaamVoor } from "../../templates/vertalingen";
+import { hoortBij, weergaveNaamVoor } from "../../templates/vertalingen";
 import "./VoetplaatDesigner.css"; // hergebruik vd-* stijlen
 
 /**
@@ -237,8 +237,9 @@ export default function BalklaagDesigner() {
   // meer hooks aan dan in de andere en klapt React eruit bij een bladwissel.
   const uitkomst = useBladUitkomst();
   const scope = useProjectScope();
-  // De taal van de app, ook op papier: de uitvoer volgt de taal.
+  // De taal van de app, en op papier die van de uitdraai (afdrukTaal.tsx).
   const { t, i18n } = useTranslation("beelden");
+  const nl = (v: number, dec = 2) => nlInTaal(v, dec, i18n.language);
   const [editing, setEditing] = useState<string | null>(null);
   // Uitkomst van de ontwerpknop. De handtekening is een vingerafdruk van de
   // invoer waarop gezocht is — het profiel zit er bewust NIET in, want dat
@@ -259,7 +260,7 @@ export default function BalklaagDesigner() {
   // Push the displayed defaults into the shared store on open / case switch, so
   // the rekensheet evaluates with the same inputs the picture shows. Only fills
   // missing keys — user-set values are never overwritten.
-  const isBalklaag = source.includes(MARKER);
+  const isBalklaag = hoortBij(source, MARKER);
   useEffect(() => {
     if (!isBalklaag) return;
     const seed: Record<string, string> = {};

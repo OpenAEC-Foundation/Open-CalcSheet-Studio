@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { evaluate, parse } from "@ifc-calc/core";
 import { rekentaalImageUrls, rekentaalIncludes } from "../../../templates/rekentaal-includes";
+import { bronVoorUitvoer } from "../../../templates/vertalingen";
 import { projectScope } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
 import { staatInHoofdstuk } from "../../../rapport/opzet";
@@ -17,10 +18,10 @@ interface Uitkomst {
 
 /**
  * Rekent elk blad door en leest zijn uitkomst, net als de afdruk. Hangt
- * alleen af van de bladen en de projectgegevens: typen in het rapport rekent
- * niets opnieuw.
+ * alleen af van de bladen, de projectgegevens en de taal van het rapport: typen in het
+ * rapport rekent niets opnieuw.
  */
-function useUitkomsten(): Map<string, Uitkomst> {
+function useUitkomsten(taal: string): Map<string, Uitkomst> {
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const gegevens = useProjectStore((s) => s.gegevens);
   return useMemo(() => {
@@ -29,7 +30,7 @@ function useUitkomsten(): Map<string, Uitkomst> {
     const uit = new Map<string, Uitkomst>();
     for (const ex of exemplaren) {
       try {
-        const nodes = evaluate(parse(ex.source, opties), ex.waarden, scope);
+        const nodes = evaluate(parse(bronVoorUitvoer(ex.source, taal).bron, opties), ex.waarden, scope);
         uit.set(ex.id, { resultaat: leesResultaat(nodes, ex.naam), fout: null });
       } catch (err) {
         uit.set(ex.id, {
@@ -39,7 +40,7 @@ function useUitkomsten(): Map<string, Uitkomst> {
       }
     }
     return uit;
-  }, [exemplaren, gegevens]);
+  }, [exemplaren, gegevens, taal]);
 }
 
 /**
@@ -53,7 +54,7 @@ export default function BerekeningenSectie() {
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const rapport = useRapport();
   const stand = useOpzetStand();
-  const uitkomsten = useUitkomsten();
+  const uitkomsten = useUitkomsten(rapport.taal);
 
   return (
     <Sectie
@@ -94,7 +95,7 @@ export default function BerekeningenSectie() {
               )}
             </div>
             {/* De samenvatting is de tekst zoals hij in het rapport komt. */}
-            {r && zegtIets && <p className="rapport-samenvatting">{samenvatting(r)}</p>}
+            {r && zegtIets && <p className="rapport-samenvatting">{samenvatting(r, rapport.taal)}</p>}
             {uitkomst?.fout && (
               <p className="rapport-hint">{t("berekeningen.nietDoorgerekend", { fout: uitkomst.fout })}</p>
             )}

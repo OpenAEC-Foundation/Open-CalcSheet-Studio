@@ -29,7 +29,8 @@ export interface BalklaagKent {
 export function balklaagKent(source: string): BalklaagKent {
   return {
     ligger: /@select ligger\b/.test(source),
-    zelf: /Zelf invullen = 28\b/.test(source),
+    // Ook als de regel in de tab Code in het Engels is aangepast.
+    zelf: /(?:Zelf invullen|Custom) = 28\b/.test(source),
     steun: /^\s*a_steun = \?/m.test(source),
     gedragen: /^\s*g_bl = \?/m.test(source),
     bijkomend: /@select grens_bij\b/.test(source),

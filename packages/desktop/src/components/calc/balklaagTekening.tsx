@@ -17,10 +17,10 @@ export const KLEUR_V = { lijn: "#2563eb", vlak: "rgba(59, 130, 246, 0.20)" };
 export const KLEUR_U = { lijn: "#2563eb", licht: "#93c5fd" };
 const OPL = { vulling: "#fbbf24", lijn: "#92400e" };
 
-/** Een getal in de notatie van de taal van de app: "6,28" in het Nederlands, "6.28" anders. */
-export const nl = (v: number, dec = 2) => {
+/** Een getal in de notatie van de taal, zonder taal die van de app: "6,28" in het Nederlands, "6.28" anders. */
+export const nl = (v: number, dec = 2, taal: string | undefined = i18next.language) => {
   const t = (Number.isFinite(v) ? v : 0).toFixed(dec);
-  return i18next.language?.startsWith("nl") ? t.replace(".", ",") : t;
+  return taal?.startsWith("nl") ? t.replace(".", ",") : t;
 };
 
 /** Tekst met een witte rand, zodat hij leesbaar blijft boven lijnen en vlakken. */

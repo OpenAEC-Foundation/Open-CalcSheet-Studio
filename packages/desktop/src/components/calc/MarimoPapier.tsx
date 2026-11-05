@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { Exemplaar } from "../../store/projectStore";
 import { marimoNaarHtml } from "../../store/marimoBlad";
 import type { Maten } from "./paginering";
-import { papier } from "./pdfBlad";
+import { usePapier } from "./afdrukTaal";
 import { UitwerkingHtml } from "./UitwerkingHtml";
 import "./JupyterBlad.css";
 
@@ -12,7 +12,7 @@ import "./JupyterBlad.css";
  * een schuif staat op papier als zijn laatste waarde.
  */
 export function MarimoPapier({ ex }: { ex: Exemplaar; maten: Maten }) {
-  const t = papier();
+  const t = usePapier();
   const html = useMemo(() => (ex.marimo ? marimoNaarHtml(ex.marimo) : ""), [ex.marimo]);
   if (!ex.marimo) return <p className="print-pdf-melding">{t("marimoBlad.ontbreekt")}</p>;
   const gedraaid = ex.marimo.uitvoer.some((u) => u.trim());

@@ -12,7 +12,7 @@ import { PX_PER_MM } from "../tekenen/staalprofielen";
 import type { Opgelost } from "../tekenen/model";
 import type { Proef } from "../tekenen/waarden";
 import { schoonSvgDeel, schoonUitwerking } from "./uitwerkingOpschonen";
-import { papier } from "./pdfBlad";
+import { usePapier } from "./afdrukTaal";
 import { heeftEigenHuisstijl, veiligLettertype } from "../../rapport/model";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import "../tekenen/Tekenen.css";
@@ -357,7 +357,7 @@ export function TekenvelOpPapier({ ex, nummer, anker }: { ex: Exemplaar; nummer?
     () => (vel ? { __html: schoonUitwerking(velSvg(vel, { naam: nummer === undefined ? ex.naam : `${nummer} ${ex.naam}`, project, logo, lettertype })) } : null),
     [vel, ex.naam, nummer, project, logo, lettertype],
   );
-  const t = papier();
+  const t = usePapier();
   if (!vel || !inhoud) return <p className="print-pdf-melding">{t("tekenBlad.ontbreekt")}</p>;
   const m = velMaat(vel);
   const pagina = paginaNaam(vel);

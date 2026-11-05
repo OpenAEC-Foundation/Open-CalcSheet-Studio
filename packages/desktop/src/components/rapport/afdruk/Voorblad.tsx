@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { RevisieStatus } from "../../../rapport/model";
 import { eersteDatum, rapportStatus } from "../../../rapport/revisies";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { Cel, Leeg, Rij, Vlak } from "./raster";
@@ -19,11 +20,21 @@ function Gegeven({ label, waarde, ingesprongen }: { label: ReactNode; waarde?: s
   );
 }
 
-/** "ter goedkeuring" → "Ter goedkeuring". */
-const metHoofdletter = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+/** De status is een code ("ter goedkeuring"); op papier in de taal van het rapport, met een hoofdletter. */
+const STATUS_SLEUTEL: Record<RevisieStatus, string> = {
+  concept: "revisies.statussen.concept",
+  "ter goedkeuring": "revisies.statussen.terGoedkeuring",
+  definitief: "revisies.statussen.definitief",
+};
+
+function statusTekst(status: RevisieStatus | "", t: RapportWeergave["t"]): string {
+  if (!status) return "";
+  const s = t(STATUS_SLEUTEL[status]);
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 export default function Voorblad({ w }: { w: RapportWeergave }) {
-  const { rapport, bureau, invul } = w;
+  const { rapport, bureau, invul, t } = w;
   const project = [invul.projectnummer, invul.projectnaam].filter(Boolean).join(" - ");
   const adres = rapport.opdrachtgeverAdres
     .split("\n")
@@ -45,34 +56,37 @@ export default function Voorblad({ w }: { w: RapportWeergave }) {
         <p className="rpa-vb-ondertitel">{invul.projectnaam}</p>
         <Leeg n={11} />
         <Rij>
-          <Cel k={3} n={3} klasse="rpa-vet">Project</Cel>
+          <Cel k={3} n={3} klasse="rpa-vet">{t("afdruk.voorblad.project")}</Cel>
           <Cel k={6} n={5}>{project}</Cel>
         </Rij>
         <Leeg />
         {opdracht.map((regel, i) => (
           <Rij key={i}>
-            {i === 0 && <Cel k={3} n={3} klasse="rpa-vet">In opdracht van</Cel>}
+            {i === 0 && <Cel k={3} n={3} klasse="rpa-vet">{t("afdruk.voorblad.inOpdrachtVan")}</Cel>}
             <Cel k={6} n={5}>{regel}</Cel>
           </Rij>
         ))}
         <Leeg n={3} />
-        <Gegeven label="Adviseur" waarde={bureau.naam} />
-        <Gegeven label="Verantwoordelijk constructeur" waarde={rapport.verantwoordelijk} />
-        <Gegeven label="Uitvoerend constructeur" waarde={rapport.uitvoerend} />
-        <Gegeven label="Toegepaste Normen" waarde={rapport.normen} />
-        <Gegeven label="Documentgegevens" />
-        <Gegeven label={<>1<sup>e</sup> Datum rapport</>} waarde={eersteDatum(rapport.revisies)} />
+        <Gegeven label={t("afdruk.voorblad.adviseur")} waarde={bureau.naam} />
+        <Gegeven label={t("afdruk.voorblad.verantwoordelijk")} waarde={rapport.verantwoordelijk} />
+        <Gegeven label={t("afdruk.voorblad.uitvoerend")} waarde={rapport.uitvoerend} />
+        <Gegeven label={t("afdruk.voorblad.normen")} waarde={rapport.normen} />
+        <Gegeven label={t("afdruk.voorblad.documentgegevens")} />
+        <Gegeven
+          label={<>{t("afdruk.voorblad.eersteDatumVoor")}<sup>{t("afdruk.voorblad.eersteDatumSup")}</sup> {t("afdruk.voorblad.eersteDatumNa")}</>}
+          waarde={eersteDatum(rapport.revisies)}
+        />
         {later.length === 0 ? (
-          <Gegeven label="Datum wijz." ingesprongen />
+          <Gegeven label={t("afdruk.voorblad.datumWijz")} ingesprongen />
         ) : (
           later.map((r, i) => (
-            <Gegeven key={i} label={`Datum wijz. ${r.code}`} waarde={r.datum} ingesprongen />
+            <Gegeven key={i} label={`${t("afdruk.voorblad.datumWijz")} ${r.code}`} waarde={r.datum} ingesprongen />
           ))
         )}
         <Leeg n={2} />
-        <Gegeven label="Fase in bouwproces" waarde={rapport.fase} />
-        <Gegeven label="Rapportstatus" waarde={metHoofdletter(rapportStatus(rapport.revisies))} />
-        <Gegeven label="Documentkenmerk" waarde={rapport.kenmerk} />
+        <Gegeven label={t("afdruk.voorblad.fase")} waarde={rapport.fase ? t(`afdruk.fasen.${rapport.fase}`) : ""} />
+        <Gegeven label={t("afdruk.voorblad.status")} waarde={statusTekst(rapportStatus(rapport.revisies), t)} />
+        <Gegeven label={t("afdruk.voorblad.kenmerk")} waarde={rapport.kenmerk} />
       </Vlak>
     </section>
   );

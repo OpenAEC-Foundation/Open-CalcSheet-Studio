@@ -5,7 +5,7 @@ import { markdown } from "@codemirror/lang-markdown";
 import { EditorView } from "@codemirror/view";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { useZoom } from "../../hooks/useZoom";
-import { papier } from "./pdfBlad";
+import { usePapier } from "./afdrukTaal";
 import type { Maten } from "./paginering";
 import { IframeBeelden } from "./iframeBlok";
 import { exporteerMarkdown, kiesMarkdown, meldBeeldGeladen } from "./markdownBlad";
@@ -147,7 +147,7 @@ export function MarkdownRapportKeuze({ ex }: { ex: Exemplaar }) {
  */
 export function MarkdownPapier({ ex }: { ex: Exemplaar; maten: Maten }) {
   const wortel = useRef<HTMLDivElement>(null);
-  const t = papier();
+  const t = usePapier();
   const html = useMemo(
     () => (ex.md ? markdownVoorPapier(ex.md, { id: ex.id, naam: ex.naam }, schoonUitwerking) : ""),
     [ex.md, ex.id, ex.naam],
