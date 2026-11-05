@@ -9,14 +9,19 @@
  *
  * Een blad vergelijkt zijn invoer zoals hij echt meetelt. Een veld dat in de ene versie nog leeg is en
  * in de andere de standaardwaarde heeft gekregen (dat gebeurt bij het eerste openen), is geen wijziging.
+ * Zo ook de projectgegevens: een veld dat een oudere versie nog niet kende, telt als zijn standaard, en
+ * het land en de generatie tellen zoals ze gelden (normkeuzeVan), niet zoals ze zijn opgeslagen.
  *
  * Zonder React en zonder stores: scripts/check-versies.mjs laadt dit bestand in Node.
  */
 import { leesUitkomst, type BladUitkomstGegevens, type IfcCalcSheet } from "@ifc-calc/core";
 import { heeftSleutel, heeftTekst, knopenVan, opzetVan, titelVan, zelfdeWaarde, zoekKnoop, type Knoop } from "../rapport/opzet.ts";
-import type { Rapport } from "../rapport/model.ts";
+import { inTaal } from "../rapport/meertalig.ts";
+import type { LokaleInvoer, Rapport } from "../rapport/model.ts";
+import { lokaalVan, normkeuzeVan, veldZichtbaar } from "../rapport/normen/keuze.ts";
 import { MAX_VERANDERINGEN, type BestandsDeel, type Verandering, type WijzigingsDeel, type Wijzigingsregel } from "../rapport/wijzigingen.ts";
 import { bladenVoorIfc } from "./projectIfcx.ts";
+import { legeGegevens } from "./projectGegevens.ts";
 import { isLosBlad } from "./spreadsheetBlad.ts";
 import type { Exemplaar } from "./projectStore";
 import { inhoudVan, ouderVan, type VersieInhoud, type VersieLijst } from "./versies.ts";
@@ -166,17 +171,37 @@ function bladDelen(v: BladVerschil, toelichtingAnders: boolean): WijzigingsDeel[
   return uit;
 }
 
-/** Waar de gegevens van een rekenblok in het rapport staan, per knoop. */
-const BLOK_INHOUD: Record<string, (r: Rapport) => unknown> = {
+/**
+ * Wat er in dit rapport voor zijn land is ingevuld. Met de Nederlandse tabellen niets: dan staat dit
+ * niet op papier, ook niet als er nog invoer van een ander land in het rapport zit.
+ */
+interface Landinvoer {
+  code: string;
+  invoer: LokaleInvoer;
+}
+
+function landinvoerVan(i: VersieInhoud): Landinvoer | null {
+  const k = normkeuzeVan(i.gegevens);
+  return k.nlTabellen ? null : { code: k.land.code, invoer: lokaalVan(i.rapport, k) };
+}
+
+/**
+ * Waar de gegevens van een rekenblok in het rapport staan, per knoop. Locatiewaarden horen bij hun land:
+ * in een ander land is het een andere grootheid, ook als er nog niets is ingevuld.
+ */
+const BLOK_INHOUD: Record<string, (r: Rapport, land: Landinvoer | null) => unknown> = {
   rol: (r) => r.rol,
-  bouwwerk: (r) => r.uitgangspunten.soortBouwwerk,
+  bouwwerk: (r, land) => [r.uitgangspunten.soortBouwwerk, land?.invoer.veiligheid],
   brand: (r) => r.uitgangspunten.brand,
   materialen: (r) => [r.uitgangspunten.materialen, r.uitgangspunten.materialenNoot, r.uitgangspunten.bevestiging],
   conservering: (r) => [r.uitgangspunten.conservering, r.uitgangspunten.conserveringSlot],
+  factoren: (_r, land) => land && [land.invoer.factoren, land.invoer.psi, land.invoer.combinaties],
   "bestaand-situatie": (r) => r.uitgangspunten.bestaand,
   vervormingen: (r) => r.uitgangspunten.vervormingen,
-  wind: (r) => r.belastingen.wind,
-  veranderlijk: (r) => r.belastingen.klassen,
+  aardbeving: (_r, land) => land && [land.code, land.invoer.aardbeving],
+  sneeuw: (_r, land) => land && [land.code, land.invoer.sneeuw],
+  wind: (r, land) => [r.belastingen.wind, land && [land.code, land.invoer.wind]],
+  veranderlijk: (r, land) => [r.belastingen.klassen, land?.invoer.klassen],
   blijvend: (r) => [r.belastingen.vloerenDaken, r.belastingen.wanden],
 };
 
@@ -184,7 +209,9 @@ const BLOK_INHOUD: Record<string, (r: Rapport) => unknown> = {
 const VOORBLAD_VELDEN = ["titel", "kenmerk", "fase", "normen", "opdrachtgeverAdres", "verantwoordelijk", "uitvoerend"] as const;
 const VOORBLAD_GEGEVENS = new Set(["project_nummer", "project_naam", "opdrachtgever"]);
 /** Projectgegevens die in een rekenblok van het rapport staan. De rest heeft geen eigen plek op papier. */
-const GEGEVENS_IN_KNOOP: Record<string, string> = { CC: "bouwwerk", RC: "bouwwerk", DesignLife: "bouwwerk", windgebied: "wind", terreincategorie: "wind" };
+const GEGEVENS_IN_KNOOP: Record<string, string> = {
+  land: "bouwwerk", eurocode_generatie: "bouwwerk", CC: "bouwwerk", RC: "bouwwerk", DesignLife: "bouwwerk", windgebied: "wind", terreincategorie: "wind",
+};
 
 /**
  * De regels van de lijst met wijzigingen, in de volgorde van het rapport: het voorblad, de onderdelen
@@ -196,13 +223,26 @@ export function maakWijzigingen(oud: VersieInhoud, nieuw: VersieInhoud): Wijzigi
   const b = nieuw.rapport;
   const uit: Wijzigingsregel[] = [];
 
-  // De projectgegevens, op de plek waar ze op papier staan. Een naam uit een bestand kan alles zijn.
-  const veld = (g: Record<string, string>, naam: string) => (heeftSleutel(g, naam) ? g[naam] : "");
+  // De projectgegevens, op de plek waar ze op papier staan. Een naam uit een bestand kan alles zijn, en
+  // een veld dat een oudere versie nog niet kende, staat op zijn standaard. Het land en de generatie
+  // zoals ze gelden: een generatie die in dit land niet bestaat, verandert niets aan het rapport.
+  const standaard = legeGegevens();
+  const lees = (r: Record<string, string>, naam: string) => (heeftSleutel(r, naam) ? r[naam] : "");
+  const veld = (g: Record<string, string>, naam: string) => (heeftSleutel(g, naam) ? g[naam] : lees(standaard, naam));
   const knoopVan = (naam: string) => (heeftSleutel(GEGEVENS_IN_KNOOP, naam) ? GEGEVENS_IN_KNOOP[naam] : undefined);
-  const gegevens = Object.keys({ ...nieuw.gegevens, ...oud.gegevens })
-    .filter((naam) => veld(oud.gegevens, naam) !== veld(nieuw.gegevens, naam))
-    .map((naam): Verandering => ({ naam, van: veld(oud.gegevens, naam), naar: veld(nieuw.gegevens, naam) }));
+  const keuzeOud = normkeuzeVan(oud.gegevens);
+  const keuzeNieuw = normkeuzeVan(nieuw.gegevens);
+  const gegevens: Verandering[] = [
+    ...(keuzeOud.land.code === keuzeNieuw.land.code ? [] : [{ naam: "land", van: inTaal(keuzeOud.land.naam, b.taal), naar: inTaal(keuzeNieuw.land.naam, b.taal) }]),
+    ...(keuzeOud.generatie === keuzeNieuw.generatie ? [] : [{ naam: "eurocode_generatie", van: String(keuzeOud.generatie), naar: String(keuzeNieuw.generatie) }]),
+    ...Object.keys({ ...nieuw.gegevens, ...oud.gegevens })
+      .filter((naam) => naam !== "land" && naam !== "eurocode_generatie" && (veldZichtbaar(naam, keuzeOud) || veldZichtbaar(naam, keuzeNieuw)))
+      .filter((naam) => veld(oud.gegevens, naam) !== veld(nieuw.gegevens, naam))
+      .map((naam): Verandering => ({ naam, van: veld(oud.gegevens, naam), naar: veld(nieuw.gegevens, naam) })),
+  ];
   const inKnoop = (id: string) => gegevens.filter((g) => knoopVan(g.naam) === id);
+  const landOud = landinvoerVan(oud);
+  const landNieuw = landinvoerVan(nieuw);
 
   const voorblad: WijzigingsDeel[] = [];
   const opVoorblad = gegevens.filter((g) => VOORBLAD_GEGEVENS.has(g.naam));
@@ -216,14 +256,14 @@ export function maakWijzigingen(oud: VersieInhoud, nieuw: VersieInhoud): Wijzigi
   const knopen: Knoop[] = [...knopenVan(opzet), ...knopenVan(opzetVan(a)).filter((k) => !ids.has(k.id))];
   for (const k of knopen) {
     const delen: WijzigingsDeel[] = [];
-    const lees = BLOK_INHOUD[k.id];
+    const blok = heeftSleutel(BLOK_INHOUD, k.id) ? BLOK_INHOUD[k.id] : undefined;
     const nu = zoekKnoop(k.id, opzet) ?? k;
     if (heeftTekst(k)) {
       const van = (a.teksten[k.id] ?? "").trim();
       const naar = (b.teksten[k.id] ?? "").trim();
       if (van !== naar) delen.push({ soort: naar === "" ? "weg" : van === "" ? "erbij" : "tekst" });
     }
-    if (lees && !zelfdeWaarde(lees(a), lees(b))) delen.push({ soort: "inhoud" });
+    if (blok && !zelfdeWaarde(blok(a, landOud), blok(b, landNieuw))) delen.push({ soort: "inhoud" });
     const knoopGegevens = inKnoop(k.id);
     if (knoopGegevens.length > 0) delen.push(beknopt("gegevens", knoopGegevens));
     if (delen.length > 0) uit.push({ sleutel: `knoop:${k.id}`, doel: "knoop", id: k.id, titel: titelVan(nu, b), delen });
@@ -240,7 +280,7 @@ export function maakWijzigingen(oud: VersieInhoud, nieuw: VersieInhoud): Wijzigi
   // De bladen, ook als alleen hun toelichting in het rapport anders is.
   const verschillen = vergelijkBladen(oud, nieuw);
   const perBlad = new Map(verschillen.map((v) => [v.id, v]));
-  const toelichtingAnders = (id: string) => veld(a.toelichting, id).trim() !== veld(b.toelichting, id).trim();
+  const toelichtingAnders = (id: string) => lees(a.toelichting, id).trim() !== lees(b.toelichting, id).trim();
   for (const ex of nieuw.exemplaren) {
     const v = perBlad.get(ex.id);
     const anders = toelichtingAnders(ex.id) && oud.exemplaren.some((e) => e.id === ex.id);

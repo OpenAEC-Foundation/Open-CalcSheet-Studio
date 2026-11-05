@@ -392,7 +392,8 @@ export interface VersieMelding {
 export interface VersieLezers {
   exemplaren: (x: unknown) => Exemplaar[];
   gegevens: (x: unknown) => ProjectGegevens;
-  rapport: (x: unknown) => Rapport;
+  /** Met de gegevens van de versie erbij: haar land bepaalt welke invoer er klaar moet staan. */
+  rapport: (x: unknown, gegevens: ProjectGegevens) => Rapport;
 }
 
 /**
@@ -444,7 +445,8 @@ export function leesVersies(x: unknown, top: { exemplaren?: unknown; gegevens?: 
         weg();
         continue;
       }
-      versie.inhoud = { exemplaren: lees.exemplaren(i.exemplaren), gegevens: lees.gegevens(i.gegevens), rapport: lees.rapport(i.rapport) };
+      const gegevens = lees.gegevens(i.gegevens);
+      versie.inhoud = { exemplaren: lees.exemplaren(i.exemplaren), gegevens, rapport: lees.rapport(i.rapport, gegevens) };
       if (aantal > 0) meldingen.push({ soort: "bijlageWeg", aantal, ...(code ? { code } : {}) });
       lijst.push(versie);
     } catch {

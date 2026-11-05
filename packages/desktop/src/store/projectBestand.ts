@@ -2,6 +2,7 @@ import { bouwProjectIfcx, isIfcxBestand, isProjectIfcx, leesProjectIfcx, type If
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens.ts";
 import type { Exemplaar, Verborgen } from "./projectStore";
 import { normaliseerRapport, type Rapport } from "../rapport/model.ts";
+import { metLokaal, normkeuzeVan } from "../rapport/normen/keuze.ts";
 import { datumTekst } from "../rapport/revisies.ts";
 import { standaardTeksten } from "../rapport/standaardteksten.ts";
 import { leesRekenversie } from "../components/calc/bladVersie.ts";
@@ -212,7 +213,8 @@ function versieLezers(naam: string): VersieLezers {
   return {
     exemplaren: (x) => normaliseerExemplaren(x, naam),
     gegevens: (x) => ({ ...legeGegevens(), ...leesWaarden(x) }),
-    rapport: (x) => normaliseerRapport(x, datumTekst(new Date()), standaardTeksten),
+    // Een versie staat niet door laadProject heen: de invoer van haar land moet hier klaarstaan.
+    rapport: (x, gegevens) => metLokaal(normaliseerRapport(x, datumTekst(new Date()), standaardTeksten), normkeuzeVan(gegevens)),
   };
 }
 

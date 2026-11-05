@@ -11,6 +11,8 @@
  *   7  vergelijken met de oudertak: toegevoegd, verwijderd, hernoemd, invoer, rekentekst en
  *      uitkomsten uit de bestaande doorrekening; wisselen verandert geen enkel getal;
  *   8  de lijst per pagina: de regels, de toelichting die blijft, en de opzet met het blok;
+ *   8b het land hoort bij een versie: wisselen wisselt het land, de lijst noemt het als het rapport
+ *      erdoor verandert, en een versie van vóór dit veld geeft geen valse wijzigingen;
  *   9  de echte store, afdruk en bediening: het voorblad, de lijst bij de inhoudsopgave, een open
  *      invoerveld, ongedaan maken en het paneel.
  *
@@ -44,6 +46,7 @@ import {
 import { normaliseerRapport } from "../packages/desktop/src/rapport/model.ts";
 import { ongeplaatsteBlokken, plaatsBlok, verwijderKnoop } from "../packages/desktop/src/rapport/template.ts";
 import { paneelGroepen } from "../packages/desktop/src/components/rapport/paneel/hulp.ts";
+import { landVanCode, normkeuzeVan, pasRapportAan } from "../packages/desktop/src/rapport/normen/keuze.ts";
 import { bouwProjectStep, isProjectIfcx, leesProjectIfcx, leesUitkomst, OCSS_SCHEMAS } from "../packages/core/dist/index.js";
 import { afwijkingen } from "./lib/ifcx-specificatie.mjs";
 
@@ -775,6 +778,130 @@ kop("8. De lijst per pagina");
   gelijk("wat vervallen is, heeft geen pagina", [plek("blad", "ex-weg"), plek("knoop", "bestaat-niet"), plek("gegevens")], [{ nummer: "" }, { nummer: "" }, { nummer: "" }]);
 }
 
+// ── 8b. Het land ────────────────────────────────────────────────────────────
+kop("8b. Het land hoort bij een versie");
+{
+  /** Wat de store doet bij een ander land: de gegevens, en het rapport volgt. */
+  const zetLand = (s, land) => {
+    const gegevens = { ...s.gegevens, land };
+    return { ...s, gegevens, rapport: pasRapportAan(s.rapport, normkeuzeVan(s.gegevens), normkeuzeVan(gegevens)) };
+  };
+  const ouderVanStand = (s) => inhoudVan(s, ouderVan(s.versies, s.versies.actief).id);
+  const regels = (s) => maakWijzigingen(ouderVanStand(s), inhoud(s));
+  const begin = () => ({ ...beginStand([balk()]), rapport: nieuwRapport("en"), gegevens: { ...legeGegevens() } });
+  const NORMEN_NL = begin().rapport.normen;
+
+  let s = begin();
+  const eerste = s.versies.actief;
+  gelijk("een project begint in Nederland", s.gegevens.land, "NL");
+  s = maak(s, "v-b");
+  gelijk("een nieuwe versie neemt het land mee", s.gegevens.land, "NL");
+  s = zetLand(s, "DE");
+  gelijk("in de tak: een ander land", [s.gegevens.land, inhoudVan(s, eerste).gegevens.land], ["DE", "NL"]);
+  toets("het rapport van de tak volgt", s.rapport.normen !== NORMEN_NL && !!s.rapport.lokaal?.DE);
+  toets("dat van het origineel niet", inhoudVan(s, eerste).rapport.normen === NORMEN_NL && !inhoudVan(s, eerste).rapport.lokaal);
+  const normenDe = s.rapport.normen;
+
+  s = naar(s, eerste);
+  gelijk("wisselen wisselt ook het land", [s.gegevens.land, s.rapport.normen, s.rapport.lokaal], ["NL", NORMEN_NL, undefined]);
+  s = naar(s, "v-b");
+  gelijk("en weer terug", [s.gegevens.land, s.rapport.normen, !!s.rapport.lokaal?.DE], ["DE", normenDe, true]);
+
+  // Eigen invoer voor het land hoort bij de versie.
+  s = { ...s, rapport: { ...s.rapport, lokaal: { ...s.rapport.lokaal, DE: { ...s.rapport.lokaal.DE, veiligheid: "RC2" } } } };
+  s = naar(naar(s, eerste), "v-b");
+  gelijk("de invoer voor dat land blijft in de versie", s.rapport.lokaal.DE.veiligheid, "RC2");
+
+  // Opslaan en heropenen.
+  const tekst = schrijf(s);
+  const uitBestand = heropen(tekst);
+  gelijk("het land gaat mee in het bestand: de knopen", [uitBestand.gegevens.land, uitBestand.rapport.lokaal.DE.veiligheid], ["DE", "RC2"]);
+  gelijk("en elke andere versie", [inhoudVan(uitBestand, eerste).gegevens.land, inhoudVan(uitBestand, eerste).rapport.normen], ["NL", NORMEN_NL]);
+  gelijk("opslaan, openen, opslaan: dezelfde inhoud", inhoudVanDoc(schrijf(uitBestand)), inhoudVanDoc(tekst));
+  gelijk("een oudere app ziet de actieve versie, met zijn land", leesProjectIfcx(JSON.parse(tekst)).gegevens.land, "DE");
+
+  // De lijst: het land, en wat er in het rapport door verandert.
+  const lijst = regels(s);
+  const van = (sleutel) => lijst.find((r) => r.sleutel === sleutel);
+  gelijk("het land staat bij de plek waar het op papier staat", van("knoop:bouwwerk")?.delen.find((d) => d.soort === "gegevens")?.lijst.find((g) => g.naam === "land"), { naam: "land", van: landVanCode("NL").naam.en, naar: landVanCode("DE").naam.en });
+  toets("niet nog eens zonder plek", !van("gegevens"), van("gegevens"));
+  gelijk("het voorblad: de normen", van("voorblad")?.delen, [{ soort: "inhoud" }]);
+  for (const id of ["factoren", "wind", "sneeuw", "veranderlijk", "vervormingen"]) toets(`wat het land verandert, staat erin: ${id}`, !!van(`knoop:${id}`), lijst.map((r) => r.sleutel));
+
+  // Heen en terug: geen verschil, en dus geen regels.
+  const terugInNl = zetLand(zetLand({ ...begin(), versies: beginVersies() }, "DE"), "NL");
+  gelijk("heen en terug naar Nederland: het rapport is wat het was", terugInNl.rapport, begin().rapport);
+  let h = maak(begin(), "v-b");
+  h = zetLand(zetLand(h, "DE"), "NL");
+  gelijk("en de lijst is leeg", regels(h), []);
+
+  // Een versie van vóór dit veld: geen valse wijzigingen.
+  const zonderVeld = (g) => {
+    const { land: _land, eurocode_generatie: _generatie, ...rest } = g;
+    return rest;
+  };
+  let o = maak(begin(), "v-b");
+  const oudeVersie = { ...ouderVanStand(o), gegevens: zonderVeld(ouderVanStand(o).gegevens) };
+  gelijk("een oudertak zonder land: geen wijziging", maakWijzigingen(oudeVersie, inhoud(o)), []);
+  gelijk("een tak zonder land: ook niet", maakWijzigingen(inhoud(o), { ...inhoud(o), gegevens: zonderVeld(o.gegevens) }), []);
+  gelijk("en een veld dat de ene versie nog niet kent, telt als zijn standaard", maakWijzigingen({ ...oudeVersie, gegevens: { project_naam: "" } }, inhoud(o)), []);
+  const metWijziging = metBlad(o, "ex-balk", (e) => ({ ...e, waarden: { h: "200" } }));
+  gelijk("een echte wijziging blijft de enige regel", maakWijzigingen(oudeVersie, inhoud(metWijziging)).map((r) => r.sleutel), ["blad:ex-balk"]);
+  // Hetzelfde door een bestand heen: een versie uit een bestand van vóór dit veld.
+  const doc = JSON.parse(schrijf(metWijziging));
+  const attr = doc.data.find((k) => k.attributes?.["ocss::versies"]).attributes["ocss::versies"];
+  delete attr.lijst[0].inhoud.gegevens.land;
+  delete attr.lijst[0].inhoud.gegevens.eurocode_generatie;
+  const oudGelezen = heropen(JSON.stringify(doc));
+  gelijk("een versie zonder land in een bestand is Nederland", inhoudVan(oudGelezen, oudGelezen.versies.lijst[0].id).gegevens.land, "NL");
+  gelijk("en de vergelijking meldt alleen wat echt anders is", regels(oudGelezen).map((r) => r.sleutel), ["blad:ex-balk"]);
+  const knoopZonderLand = JSON.parse(schrijf(begin()));
+  const wortel = knoopZonderLand.data.find((k) => k.attributes?.["ocss::project"]).attributes["ocss::project"];
+  wortel.gegevens = wortel.gegevens.filter((g) => g.naam !== "land");
+  gelijk("een oud bestand zonder land is ook Nederland", leesProjectBestand(JSON.stringify(knoopZonderLand), "oud").gegevens.land, "NL");
+
+  // Wat op papier niets verandert, is geen wijziging.
+  let us = maak({ ...begin(), gegevens: { ...legeGegevens(), land: "US" } }, "v-b");
+  us = { ...us, gegevens: { ...us.gegevens, eurocode_generatie: "2" } };
+  gelijk("een generatie die hier niet geldt, verandert niets", regels(us), []);
+  let de = maak(zetLand(begin(), "DE"), "v-b");
+  de = { ...de, gegevens: { ...de.gegevens, windgebied: "1" } };
+  gelijk("een windgebied dat hier niet op het formulier staat, ook niet", regels(de), []);
+  let gen = maak(begin(), "v-b");
+  gen = { ...gen, gegevens: { ...gen.gegevens, eurocode_generatie: "2" } };
+  gen = { ...gen, rapport: pasRapportAan(gen.rapport, normkeuzeVan({ ...gen.gegevens, eurocode_generatie: "1" }), normkeuzeVan(gen.gegevens)) };
+  gelijk("een generatie die wel geldt, staat erin", regels(gen).find((r) => r.sleutel === "knoop:bouwwerk")?.delen.find((d) => d.soort === "gegevens")?.lijst, [{ naam: "eurocode_generatie", van: "1", naar: "2" }]);
+
+  // Eigen invoer buiten Nederland: op de plek van het blok.
+  let w = maak(zetLand(begin(), "DE"), "v-b");
+  gelijk("een verse tak buiten Nederland: geen regels", regels(w), []);
+  const lokaal = (fn) => ({ ...w, rapport: { ...w.rapport, lokaal: { ...w.rapport.lokaal, DE: fn(w.rapport.lokaal.DE) } } });
+  gelijk("de stuwdruk: bij wind", regels(lokaal((l) => ({ ...l, wind: { ...l.wind, q: "0,65" } }))).map((r) => r.sleutel), ["knoop:wind"]);
+  gelijk("de sneeuw: bij sneeuw", regels(lokaal((l) => ({ ...l, sneeuw: { ...l.sneeuw, s: "0,85" } }))).map((r) => r.sleutel), ["knoop:sneeuw"]);
+  gelijk("de aardbeving: bij aardbeving", regels(lokaal((l) => ({ ...l, aardbeving: { ...l.aardbeving, bron: "Kaart" } }))).map((r) => r.sleutel), ["knoop:aardbeving"]);
+  gelijk("de factoren: bij de factoren", regels(lokaal((l) => ({ ...l, psi: [] }))).map((r) => r.sleutel), ["knoop:factoren"]);
+  gelijk("de klasse: bij het bouwwerk", regels(lokaal((l) => ({ ...l, veiligheid: "RC3" }))).map((r) => r.sleutel), ["knoop:bouwwerk"]);
+  gelijk("de opgelegde belastingen: bij de veranderlijke", regels(lokaal((l) => ({ ...l, klassen: [] }))).map((r) => r.sleutel), ["knoop:veranderlijk"]);
+
+  // In Nederland telt invoer van een ander land niet: die staat niet op papier.
+  let n2 = maak(begin(), "v-b");
+  n2 = { ...n2, rapport: { ...n2.rapport, lokaal: { DE: { veiligheid: "RC2" } } } };
+  gelijk("achtergebleven invoer van een ander land: geen wijziging in Nederland", regels(n2), []);
+
+  // Van een land naar een ander: de locatiewaarden horen bij het land, ook als ze leeg zijn.
+  let dk = maak(zetLand(begin(), "DE"), "v-b");
+  dk = zetLand(dk, "DK");
+  const dkLijst = regels(dk).map((r) => r.sleutel);
+  for (const id of ["knoop:bouwwerk", "knoop:wind", "knoop:sneeuw", "knoop:aardbeving"]) toets(`van land naar land: ${id}`, dkLijst.includes(id), dkLijst);
+
+  // Een versie uit een bestand krijgt de invoer van zijn land klaar, zoals de actieve versie.
+  let klaar = maak(zetLand(begin(), "DE"), "v-b");
+  klaar = zetLand(klaar, "NL");
+  const klaarDoc = JSON.parse(schrijf(klaar));
+  delete klaarDoc.data.find((k) => k.attributes?.["ocss::versies"]).attributes["ocss::versies"].lijst[0].inhoud.rapport.lokaal;
+  toets("een versie zonder invoer voor haar land krijgt die klaar", !!inhoudVan(heropen(JSON.stringify(klaarDoc)), klaar.versies.lijst[0].id).rapport.lokaal?.DE);
+}
+
 // ── 9. De echte store, afdruk en bediening ──────────────────────────────────
 kop("9. De echte store");
 const { laadRapportAfdruk } = await import("./lib/rapport-html.mjs");
@@ -1007,6 +1134,43 @@ kop("9c. De afdruk");
   await m.maakNieuweVersie();
   m.flushSync(() => staat().werkWijzigingenLijstBij());
   toets("een tak zonder wijziging: geen lijst", !m.teken().includes('data-inhoud="wijzigingen"'));
+}
+
+// ── Het land in de echte store ──────────────────────────────────────────────
+kop("9c2. Het land in de echte store");
+{
+  await m.i18next.changeLanguage("en");
+  nieuwProject([balk()], "en");
+  const eerste = staat().versies.actief;
+  const normenNl = staat().rapport.normen;
+  await m.maakNieuweVersie();
+  const b = staat().versies.actief;
+  m.flushSync(() => staat().zetGegeven("land", "DE"));
+  m.flushSync(() => staat().werkWijzigingenLijstBij());
+  gelijk("het land staat in de nieuwe versie", [staat().gegevens.land, !!staat().rapport.lokaal?.DE], ["DE", true]);
+  const op = () => {
+    const p = document.createElement("div");
+    p.innerHTML = m.teken();
+    return p;
+  };
+  const inTak = op();
+  toets("op papier: de normen van dat land", inTak.textContent.includes("Standards applied: Germany"));
+  toets("en de lijst noemt het land", inTak.querySelector(".rpa-inhoud").textContent.includes("Country or region Netherlands → Germany"), inTak.querySelector(".rpa-inhoud").textContent.slice(-400));
+
+  await m.wisselNaarVersie(eerste);
+  gelijk("wisselen wisselt ook het land", [staat().gegevens.land, staat().rapport.normen, staat().rapport.lokaal], ["NL", normenNl, undefined]);
+  toets("en op papier", !op().textContent.includes("Standards applied"));
+
+  await m.wisselNaarVersie(b);
+  gelijk("terug in de tak", staat().gegevens.land, "DE");
+  m.flushSync(() => staat().ongedaan());
+  gelijk("ongedaan maken zet het land van deze versie terug", [staat().gegevens.land, staat().rapport.normen], ["NL", normenNl]);
+  m.flushSync(() => staat().werkWijzigingenLijstBij());
+  gelijk("en dan is er geen verschil meer", staat().rapport.wijzigingsLijst, undefined);
+  await m.wisselNaarVersie(eerste);
+  gelijk("het origineel is niet stil veranderd", staat().gegevens.land, "NL");
+  m.flushSync(() => staat().opnieuw());
+  gelijk("opnieuw loopt ook niet door de wissel", staat().gegevens.land, "NL");
 }
 
 // ── De bediening ────────────────────────────────────────────────────────────

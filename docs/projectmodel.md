@@ -261,8 +261,9 @@ ook in de echte afdruk en het echte paneel.
 Een wijziging op een berekening wordt een versie in hetzelfde bestand, zonder git en zonder iets te
 installeren (`store/versies.ts`). Een versie is een tak: ze begint als kopie van de hele projectstand
 (de bladen, de projectgegevens en het rapport), en wat je daarna wijzigt, staat alleen daarin. Wisselen
-kan altijd, ook terug naar het origineel, en een oude versie blijft bewerkbaar. De projectnaam en wat er
-uit de projectboom is gehaald, horen bij het bestand en niet bij een versie. De bediening staat in het
+kan altijd, ook terug naar het origineel, en een oude versie blijft bewerkbaar. Het land en de generatie staan
+in de projectgegevens en `Rapport.lokaal` in het rapport: wisselen van versie wisselt dus ook het land. De
+projectnaam en wat er uit de projectboom is gehaald, horen bij het bestand en niet bij een versie. De bediening staat in het
 zijpaneel (`VersieSectie.tsx`) en in het paneel Versies (`VersiesPaneel.tsx`).
 
 De werkstand in de store is altijd de actieve versie, en die staat dus niet ook in de lijst: er is één
@@ -286,7 +287,10 @@ helemaal vrij.
 **Vergelijken** (`store/versieVergelijking.ts`) gebeurt per blad op `id`, niet op naam, en altijd met de
 stand van de oudertak zoals die nu is: invoer zoals die meetelt in de berekening, de regels van de rekentekst,
 en uitkomsten uit de bestaande doorrekening (`bladenVoorIfc`, `leesUitkomst`), niet uit een eigen rekenpad. Een
-veld dat in de ene versie nog leeg is en in de andere de standaardwaarde heeft gekregen, is geen wijziging.
+veld dat in de ene versie nog leeg is en in de andere de standaardwaarde heeft gekregen, is geen wijziging. Zo ook
+de projectgegevens: wat een oudere versie nog niet kende, telt als zijn standaard, dus een versie van vóór het veld
+`land` is Nederland. Het land en de generatie tellen zoals ze gelden (`normkeuzeVan`), en komen in de lijst bij het
+bouwwerk, samen met wat er in het rapport door verandert. Invoer van een land telt alleen als dat land geldt.
 
 **De lijst met wijzigingen** is het rekenblok `wijzigingen` (`rapport/wijzigingen.ts`). Op het hoogste niveau
 staat het onder de inhoudsopgave, zonder nummer, waar het ook in de opzet staat; onder een hoofdstuk is het een
