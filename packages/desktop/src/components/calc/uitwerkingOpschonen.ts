@@ -8,7 +8,7 @@ import { linkNaarBuiten, maakOpschoner } from "./uitwerkingRegels";
 
 export const schoonUitwerking = maakOpschoner(DOMPurify);
 
-async function openBuiten(url: string) {
+export async function openBuiten(url: string) {
   if ("__TAURI_INTERNALS__" in window) {
     const { openUrl } = await import("@tauri-apps/plugin-opener");
     await openUrl(url);

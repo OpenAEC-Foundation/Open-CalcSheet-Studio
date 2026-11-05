@@ -3,6 +3,10 @@ import { Fragment, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
 import { PROJECT_VELDEN, kFiVoor, keuzesVoor, vervallenKeuze, type Keuze, type VeldDef } from "../../store/projectGegevens";
+import { useNormkeuze } from "../../store/actiefBlad";
+import { inTaal } from "../../rapport/meertalig";
+import { landVanCode, veldZichtbaar } from "../../rapport/normen/keuze";
+import NormenOverzicht from "./NormenOverzicht";
 import WindAreaMap from "./WindAreaMap";
 import "./ProjectGegevensPanel.css";
 
@@ -16,6 +20,7 @@ import "./ProjectGegevensPanel.css";
 const GROEP_SLEUTELS: Record<string, string> = {
   "Calculation method": "rekenwijze",
   "Project": "project",
+  "Country and standards": "land",
   "Basis of design (NEN-EN 1990 + NB)": "grondslagen",
   "Wind (NEN-EN 1991-1-4 + NB)": "wind",
 };
@@ -29,8 +34,9 @@ const GROEP_SLEUTELS: Record<string, string> = {
  * exemplaren van dezelfde module elkaar nooit in de weg zitten.
  */
 export default function ProjectGegevensPanel() {
-  const { t } = useTranslation("werkruimte");
+  const { t, i18n } = useTranslation("werkruimte");
   const gegevens = useProjectStore((s) => s.gegevens);
+  const keuze = useNormkeuze();
   const zetGegeven = useProjectStore((s) => s.zetGegeven);
   const projectNaam = useProjectStore((s) => s.projectNaam);
   const zetProjectNaam = useProjectStore((s) => s.zetProjectNaam);
@@ -51,25 +57,40 @@ export default function ProjectGegevensPanel() {
     }
     return uit;
   }, []);
+  // Wat aan de Nederlandse bijlage hangt, staat alleen op het formulier als die geldt.
+  const zichtbaar = groepen
+    .map((g) => ({ ...g, velden: g.velden.filter((v) => veldZichtbaar(v.naam, keuze)) }))
+    .filter((g) => g.velden.length > 0);
 
   const cc = parseFloat(gegevens.CC ?? "2");
   const kFi = kFiVoor(Number.isFinite(cc) ? cc : 2);
 
   const groepNaam = (naam: string) => {
     const sleutel = GROEP_SLEUTELS[naam];
+    if (sleutel === "grondslagen" && !keuze.nlTabellen) return t("gegevens.groepen.grondslagenAlgemeen");
     return sleutel ? t(`gegevens.groepen.${sleutel}`, { defaultValue: naam }) : naam;
   };
+  // De toelichting bij CC en de ontwerplevensduur noemt de tabellen van de Nederlandse bijlage.
+  const nlToelichting = (veld: VeldDef) => veld.naam === "CC" || veld.naam === "DesignLife";
   const veldTekst = (veld: VeldDef, deel: "label" | "hint") =>
-    t(`gegevens.velden.${veld.naam}.${deel}`, { defaultValue: veld[deel] ?? "" });
+    deel === "hint" && nlToelichting(veld) && !keuze.nlTabellen
+      ? t(`gegevens.velden.${veld.naam}.${keuze.eurocode ? "hintEurocode" : "hintEigen"}`)
+      : t(`gegevens.velden.${veld.naam}.${deel}`, { defaultValue: veld[deel] ?? "" });
   // Dezelfde keuzes als keuzesVoor, met vertaalde labels. Een vervallen of
   // onbekende keuze krijgt hier opnieuw zijn tekst, op dezelfde manier als in
   // de store: "10 jaar — vervallen keuze, gerekend als 15 jaar".
-  const keuzeLabel = (veld: VeldDef, keuze: Keuze): string => {
-    if (veld.opties?.some((o) => o.waarde === keuze.waarde)) {
-      return t(`gegevens.velden.${veld.naam}.opties.${keuze.waarde}`, { defaultValue: keuze.label });
+  const keuzeLabel = (veld: VeldDef, optie: Keuze): string => {
+    if (veld.naam === "land") {
+      const land = landVanCode(optie.waarde);
+      return land ? inTaal(land.naam, i18n.language) : t("gegevens.onbekendeKeuze", { waarde: optie.waarde });
     }
-    const oud = vervallenKeuze(veld, keuze.waarde);
-    if (!oud) return t("gegevens.onbekendeKeuze", { waarde: keuze.waarde });
+    if (veld.opties?.some((o) => o.waarde === optie.waarde)) {
+      // De klassen bij de ontwerplevensduur komen uit de Nederlandse bijlage; elders alleen de jaren.
+      if (veld.naam === "DesignLife" && !keuze.nlTabellen) return t("gegevens.jaren", { jaren: optie.waarde });
+      return t(`gegevens.velden.${veld.naam}.opties.${optie.waarde}`, { defaultValue: optie.label });
+    }
+    const oud = vervallenKeuze(veld, optie.waarde);
+    if (!oud) return t("gegevens.onbekendeKeuze", { waarde: optie.waarde });
     const naar = veld.opties?.find((o) => o.waarde === oud.naar);
     return t("gegevens.vervallenKeuze", {
       label: t(`gegevens.velden.${veld.naam}.vervallen.${oud.waarde}`, { defaultValue: oud.label }),
@@ -77,6 +98,12 @@ export default function ProjectGegevensPanel() {
       vervanger: naar ? keuzeLabel(veld, naar).split(" — ")[0] : oud.naar,
     });
   };
+
+  // De landen op hun naam in de taal van de app, onder de twee die vooraan horen.
+  const opGoedeVolgorde = (veld: VeldDef, opties: Keuze[]): Keuze[] =>
+    veld.naam !== "land"
+      ? opties
+      : [...opties.slice(0, 2), ...opties.slice(2).sort((a, b) => keuzeLabel(veld, a).localeCompare(keuzeLabel(veld, b), i18n.language))];
 
   return (
     <div className="pg-panel">
@@ -103,7 +130,7 @@ export default function ProjectGegevensPanel() {
         </label>
       </div>
 
-      {groepen.map((groep) => (
+      {zichtbaar.map((groep) => (
         <div className="pg-groep" key={groep.naam}>
           <h2>{groepNaam(groep.naam)}</h2>
           {groep.velden.map((veld) => (
@@ -111,7 +138,8 @@ export default function ProjectGegevensPanel() {
             <label className="pg-veld">
               <span className="pg-label">
                 {veldTekst(veld, "label")}
-                <code className="pg-var">{veld.naam}</code>
+                {/* Het land is een code, geen variabele voor de bladen. */}
+                {veld.naam !== "land" && <code className="pg-var">{veld.naam}</code>}
               </span>
               {veld.type === "keuze" ? (
                 // Een waarde die niet (meer) tussen de keuzes staat, komt er als
@@ -120,7 +148,7 @@ export default function ProjectGegevensPanel() {
                   value={gegevens[veld.naam] ?? veld.standaard}
                   onChange={(e) => zetGegeven(veld.naam, e.target.value)}
                 >
-                  {keuzesVoor(veld, gegevens[veld.naam] ?? veld.standaard).map((o) => (
+                  {opGoedeVolgorde(veld, keuzesVoor(veld, gegevens[veld.naam] ?? veld.standaard)).map((o) => (
                     <option key={o.waarde} value={o.waarde}>
                       {keuzeLabel(veld, o)}
                     </option>
@@ -137,12 +165,14 @@ export default function ProjectGegevensPanel() {
               {vervallenKeuze(veld, gegevens[veld.naam] ?? "") && (
                 <span className="pg-afgeleid">{t("gegevens.vervallen")}</span>
               )}
-              {veld.naam === "CC" && (
+              {veld.naam === "CC" && keuze.eurocode && (
                 <span className="pg-afgeleid">
                   {t("gegevens.afgeleid")} K<sub>FI</sub> = {ucTekst(kFi)}
                 </span>
               )}
             </label>
+            {/* Onder het laatste veld van de groep: zonder generatie is dat het land zelf. */}
+            {groep.naam === "Country and standards" && veld === groep.velden[groep.velden.length - 1] && <NormenOverzicht keuze={keuze} />}
             {veld.naam === "windgebied" && (
               <div className="pg-windkaart">
                 <button

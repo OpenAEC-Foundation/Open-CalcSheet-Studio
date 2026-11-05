@@ -17,7 +17,9 @@ import {
   windQp,
 } from "../../../rapport/normwaarden";
 import { useProjectStore } from "../../../store/projectStore";
+import { useNormkeuze } from "../../../store/actiefBlad";
 import { getalTekst, verplaatst } from "./hulp";
+import { LokaleKlassenInvoer, LokaleSneeuwInvoer, LokaleWindInvoer } from "./LokaalVelden";
 import OpbouwEditor from "./OpbouwEditor";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
@@ -66,6 +68,7 @@ export default function BelastingenSectie() {
   const f = (v: number, dec: number, trim = false) => fmt(v, dec, trim, taal);
   const gegevens = useProjectStore((s) => s.gegevens);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
+  const k = useNormkeuze();
 
   const wg = klasse(gegevens.windgebied, 2);
   const tc = klasse(gegevens.terreincategorie, 2);
@@ -88,7 +91,8 @@ export default function BelastingenSectie() {
     >
       <div className="rapport-knoop">
         <Kop id="sneeuw" />
-        <Afgeleid
+        {!k.nlTabellen && <LokaleSneeuwInvoer />}
+        {k.nlTabellen && <Afgeleid
           regels={[
             {
               label: t("belastingen.platDak"),
@@ -102,12 +106,14 @@ export default function BelastingenSectie() {
               bron: "NEN-EN 1991-1-3 (5.1)",
             },
           ]}
-        />
+        />}
         <TekstVeld id="sneeuw" hint={t("belastingen.sneeuwHint")} />
       </div>
 
       <div className="rapport-knoop">
         <Kop id="wind" />
+        {!k.nlTabellen && <LokaleWindInvoer />}
+        {k.nlTabellen && <>
         <Afgeleid
           uitProjectgegevens
           regels={[
@@ -175,6 +181,7 @@ export default function BelastingenSectie() {
         <p className="rapport-hint">
           P<sub>rep</sub> = c · q<sub>p</sub>; {t("belastingen.prepLeeg")}
         </p>
+        </>}
       </div>
 
       <div className="rapport-knoop">
@@ -183,9 +190,11 @@ export default function BelastingenSectie() {
 
       <div className="rapport-knoop">
         <Kop id="veranderlijk" />
+        {!k.nlTabellen && <LokaleKlassenInvoer />}
+        {k.nlTabellen && <>
         {b.klassen.length === 0 && <p className="rapport-hint">{t("belastingen.geenKlassen")}</p>}
-        {b.klassen.map((k, i) => (
-          <KlasseKaart key={i} regel={k} index={i} aantal={b.klassen.length} wijzig={wijzigKlassen} />
+        {b.klassen.map((regel, i) => (
+          <KlasseKaart key={i} regel={regel} index={i} aantal={b.klassen.length} wijzig={wijzigKlassen} />
         ))}
         <button
           type="button"
@@ -194,6 +203,7 @@ export default function BelastingenSectie() {
         >
           + {t("belastingen.klasseToevoegen")}
         </button>
+        </>}
       </div>
 
       <div className="rapport-knoop">

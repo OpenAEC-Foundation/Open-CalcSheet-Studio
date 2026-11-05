@@ -21,6 +21,8 @@ import {
 import { noemtVorigeProductnaam, VORIGE_PRODUCTNAAM } from "../../../rapport/standaardteksten";
 import { kFiVoor, projectWaarde } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
+import { useNormkeuze } from "../../../store/actiefBlad";
+import { LocatieInvoer, LokaalBouwwerkInvoer, LokaleFactorenInvoer } from "./LokaalVelden";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
 import { Afgeleid, Keuze, Kop, Sectie, TekstVak, Veld, Vink, useRapport, type Optie } from "./velden";
@@ -79,6 +81,7 @@ export default function UitgangspuntenSectie() {
   const rapport = useRapport();
   const u = rapport.uitgangspunten;
   const gegevens = useProjectStore((s) => s.gegevens);
+  const k = useNormkeuze();
 
   const cc = klasse(gegevens.CC, 2);
   const rc = klasse(gegevens.RC, 2);
@@ -109,7 +112,8 @@ export default function UitgangspuntenSectie() {
             <option key={s.en} value={inTaal(s, taal)} />
           ))}
         </datalist>
-        <Afgeleid
+        {!k.nlTabellen && <LokaalBouwwerkInvoer k={k} />}
+        {k.nlTabellen && <Afgeleid
           uitProjectgegevens
           regels={[
             { label: t("uitgangspunten.gevolgklasse"), waarde: `CC${cc}` },
@@ -138,7 +142,7 @@ export default function UitgangspuntenSectie() {
               bron: t("algemeen.tabel", { nummer: "B5" }),
             },
           ]}
-        />
+        />}
       </div>
 
       <div className="rapport-knoop">
@@ -209,7 +213,7 @@ export default function UitgangspuntenSectie() {
 
       <div className="rapport-knoop">
         <Kop id="factoren" />
-        <p className="rapport-hint">{t("uitgangspunten.factorenHint", { cc })}</p>
+        {k.nlTabellen ? <p className="rapport-hint">{t("uitgangspunten.factorenHint", { cc })}</p> : <LokaleFactorenInvoer />}
       </div>
 
       <div className="rapport-knoop">
@@ -236,14 +240,17 @@ export default function UitgangspuntenSectie() {
                 placeholder={t("uitgangspunten.bronVoorbeeld")}
               />
             </div>
-            <Afgeleid
-              regels={[
-                {
-                  label: t("uitgangspunten.normBouwjaar"),
-                  waarde: Number.isFinite(bouwjaar) ? normVoorBouwjaar(bouwjaar) : t("uitgangspunten.bouwjaarInvullen"),
-                },
-              ]}
-            />
+            {/* De oude voorschriften zijn Nederlands. */}
+            {k.land.code === "NL" && (
+              <Afgeleid
+                regels={[
+                  {
+                    label: t("uitgangspunten.normBouwjaar"),
+                    waarde: Number.isFinite(bouwjaar) ? normVoorBouwjaar(bouwjaar) : t("uitgangspunten.bouwjaarInvullen"),
+                  },
+                ]}
+              />
+            )}
             <div className="rapport-rij">
               <Keuze
                 label={t("uitgangspunten.berekeningBeschikbaar")}
@@ -276,6 +283,7 @@ export default function UitgangspuntenSectie() {
           toevoegen={t("uitgangspunten.eisToevoegen")}
         />
         <p className="rapport-hint">{t("uitgangspunten.eisUitleg")}</p>
+        {!k.nlTabellen && <p className="rapport-hint">{t("lokaal.vervormingen")}</p>}
       </div>
 
       {SLOTTEKSTEN.map((id) => (
@@ -290,6 +298,8 @@ export default function UitgangspuntenSectie() {
                 : undefined
             }
           />
+          {/* Het blok aardbeving: de tekst, en buiten de Nederlandse tabellen wat de locatie levert. */}
+          {id === "aardbeving" && !k.nlTabellen && <LocatieInvoer onderwerp="aardbeving" />}
         </div>
       ))}
     </Sectie>
