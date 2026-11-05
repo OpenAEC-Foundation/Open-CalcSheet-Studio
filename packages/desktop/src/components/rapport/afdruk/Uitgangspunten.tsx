@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import {
   belastingfactorTabel,
   beta,
-  fmt,
   getal,
   inspectieniveau,
   klasse,
@@ -46,17 +45,19 @@ export function Bouwwerk({ w }: { w: RapportWeergave }) {
   const rc = klasse(w.gegevens.RC, 2);
   const jaren = getal(projectWaarde(w.gegevens, "DesignLife"));
   const levensduur = Number.isFinite(jaren) ? jaren : 50;
+  const { t, f } = w;
+  const tabel = (nummer: string) => t("algemeen.tabel", { nummer });
   return (
     <>
-      <Veld label="Soort bouwwerk" waarde={w.rapport.uitgangspunten.soortBouwwerk} invoer />
-      <Veld label="Constructiegevolgklasse" waarde={`CC${cc}`} invoer />
-      <Veld label="Betrouwbaarheidsklasse" waarde={`RC${rc}`} />
-      <Veld label="Ontwerplevensduurklasse" waarde={String(levensduurklasse(levensduur))} />
-      <Veld label="Ontwerplevensduur (t)" waarde={fmt(levensduur, 0)} norm="tabel NB.1–2.1" />
-      <Veld label="β" waarde={fmt(beta(rc), 1)} norm="tabel B2" />
-      <Veld label={<>K<sub>FI</sub></>} waarde={fmt(kFiVoor(cc), 2)} norm="tabel B3" />
-      <Veld label="Ontwerp- en berekeningssupervisie" waarde={ontwerpSupervisie(rc)} norm="tabel B4" />
-      <Veld label="Inspectie tijdens uitvoering" waarde={inspectieniveau(rc)} norm="tabel B5" />
+      <Veld label={t("afdruk.bouwwerk.soort")} waarde={w.rapport.uitgangspunten.soortBouwwerk} invoer />
+      <Veld label={t("afdruk.bouwwerk.gevolgklasse")} waarde={`CC${cc}`} invoer />
+      <Veld label={t("afdruk.bouwwerk.betrouwbaarheidsklasse")} waarde={`RC${rc}`} />
+      <Veld label={t("afdruk.bouwwerk.levensduurklasse")} waarde={String(levensduurklasse(levensduur))} />
+      <Veld label={t("afdruk.bouwwerk.levensduur")} waarde={f(levensduur, 0)} norm={tabel("NB.1–2.1")} />
+      <Veld label="β" waarde={f(beta(rc), 1)} norm={tabel("B2")} />
+      <Veld label={<>K<sub>FI</sub></>} waarde={f(kFiVoor(cc), 2)} norm={tabel("B3")} />
+      <Veld label={t("afdruk.bouwwerk.supervisie")} waarde={ontwerpSupervisie(rc)} norm={tabel("B4")} />
+      <Veld label={t("afdruk.bouwwerk.inspectie")} waarde={inspectieniveau(rc)} norm={tabel("B5")} />
     </>
   );
 }
@@ -65,9 +66,9 @@ export function Bouwwerk({ w }: { w: RapportWeergave }) {
 export function Brand({ w }: { w: RapportWeergave }) {
   const b = w.rapport.uitgangspunten.brand;
   const eisen: [string, string][] = [
-    ["Brandwerendheidseis hoofddraagconstructie", b.hoofddraagconstructie],
-    ["Brandwerendheidseis brandscheiding", b.brandscheiding],
-    ["Brandwerendheidseis vluchtroute", b.vluchtroute],
+    [w.t("afdruk.brand.hoofddraagconstructie"), b.hoofddraagconstructie],
+    [w.t("afdruk.brand.brandscheiding"), b.brandscheiding],
+    [w.t("afdruk.brand.vluchtroute"), b.vluchtroute],
   ];
   return (
     <>
@@ -95,8 +96,8 @@ export function Materialen({ w }: { w: RapportWeergave }) {
   return (
     <>
       <Rij houd>
-        <Cel k={type[0]} n={type[1]} b o l klasse="rpa-kop-donker">Materiaaltype</Cel>
-        <Cel k={soort[0]} n={soort[1]} b o l r klasse="rpa-kop-donker rpa-midden">Soort</Cel>
+        <Cel k={type[0]} n={type[1]} b o l klasse="rpa-kop-donker">{w.t("afdruk.materialen.type")}</Cel>
+        <Cel k={soort[0]} n={soort[1]} b o l r klasse="rpa-kop-donker rpa-midden">{w.t("afdruk.materialen.soort")}</Cel>
       </Rij>
       {materialenRijen(u.materialen, u.bevestiging).map(({ materiaal: m, bevestiging: f, eersteBevestiging: eerste }, i) => (
         <Rij key={i}>
@@ -156,12 +157,13 @@ export function Conservering({ w }: { w: RapportWeergave }) {
  * lijn ertussen, zoals in de referentie.
  */
 export function Factoren({ w }: { w: RapportWeergave }) {
-  const rijen = belastingfactorTabel(klasse(w.gegevens.CC, 2));
+  const rijen = belastingfactorTabel(klasse(w.gegevens.CC, 2), w.taal);
+  const { t } = w;
   return (
     <>
       <Rij houd>
-        <Cel k={1} b o l klasse="rpa-kop-donker">Groep</Cel>
-        <Cel k={2} n={2} b o klasse="rpa-kop-donker">Naam</Cel>
+        <Cel k={1} b o l klasse="rpa-kop-donker">{t("afdruk.factoren.groep")}</Cel>
+        <Cel k={2} n={2} b o klasse="rpa-kop-donker">{t("afdruk.factoren.naam")}</Cel>
         <Cel k={4} b o klasse="rpa-kop-donker rpa-midden">γ<sub>Gkj;inf</sub></Cel>
         <Cel k={5} b o klasse="rpa-kop-donker rpa-midden">γ<sub>Gkj;sup</sub></Cel>
         <Cel k={6} b o klasse="rpa-kop-donker rpa-midden">γ<sub>Q;1</sub></Cel>
@@ -169,10 +171,10 @@ export function Factoren({ w }: { w: RapportWeergave }) {
       </Rij>
       <Rij klasse="rpa-cursief" houd>
         <Cel k={1} n={3} o />
-        <Cel k={4} o klasse="rpa-midden">gunstig</Cel>
-        <Cel k={5} o klasse="rpa-midden">ongunstig</Cel>
-        <Cel k={6} o klasse="rpa-midden">overheers.</Cel>
-        <Cel k={7} o klasse="rpa-midden">overige</Cel>
+        <Cel k={4} o klasse="rpa-midden">{t("afdruk.factoren.gunstig")}</Cel>
+        <Cel k={5} o klasse="rpa-midden">{t("afdruk.factoren.ongunstig")}</Cel>
+        <Cel k={6} o klasse="rpa-midden">{t("afdruk.factoren.overheersend")}</Cel>
+        <Cel k={7} o klasse="rpa-midden">{t("afdruk.factoren.overige")}</Cel>
       </Rij>
       {rijen.map((r, i) => {
         const volgendeNvt = rijen[i + 1]?.cellen === null;
@@ -185,7 +187,7 @@ export function Factoren({ w }: { w: RapportWeergave }) {
                 <Cel key={j} k={4 + j} o l r={j === 3} klasse="rpa-midden"><Index t={c} /></Cel>
               ))
             ) : (
-              <Cel k={4} n={4} o={!volgendeNvt} l r>niet van toepassing</Cel>
+              <Cel k={4} n={4} o={!volgendeNvt} l r>{t("afdruk.factoren.nietVanToepassing")}</Cel>
             )}
             {r.opmerking && <Cel k={8} n={2}>{r.opmerking}</Cel>}
           </Rij>
@@ -200,26 +202,29 @@ export function Bestaand({ w }: { w: RapportWeergave }) {
   const b = w.rapport.uitgangspunten.bestaand;
   const jaar = getal(b.bouwjaar);
   const norm = Number.isFinite(jaar) ? normVoorBouwjaar(jaar) : "";
+  const { t } = w;
+  // Ja en Nee zijn codes (het paneel zet ze); iets anders staat er zoals het is getypt.
+  const jaNee = (v: string) => (v === "Ja" ? t("algemeen.ja") : v === "Nee" ? t("algemeen.nee") : v);
   return (
     <>
       <Rij>
-        <Cel k={1} n={3} o>Bouwjaar bouwwerk</Cel>
+        <Cel k={1} n={3} o>{t("afdruk.bestaand.bouwjaar")}</Cel>
         <Cel k={4} o klasse="rpa-invoer">{b.bouwjaar}</Cel>
-        <Cel k={6} o>Bron</Cel>
+        <Cel k={6} o>{t("afdruk.bestaand.bron")}</Cel>
         <Cel k={7} n={2} o klasse="rpa-invoer">{b.bron}</Cel>
       </Rij>
       <Rij>
-        <Cel k={1} n={3} o>Norm</Cel>
+        <Cel k={1} n={3} o>{t("afdruk.bestaand.norm")}</Cel>
         <Cel k={4} o>{norm}</Cel>
-        <Cel k={7} n={2} o>afgeleid uit bouwjaar</Cel>
+        <Cel k={7} n={2} o>{t("afdruk.bestaand.afgeleid")}</Cel>
       </Rij>
       <Rij>
-        <Cel k={1} n={3} o>Bestaande berekening beschikbaar</Cel>
-        <Cel k={4} o klasse="rpa-invoer">{b.berekeningBeschikbaar}</Cel>
+        <Cel k={1} n={3} o>{t("afdruk.bestaand.berekening")}</Cel>
+        <Cel k={4} o klasse="rpa-invoer">{jaNee(b.berekeningBeschikbaar)}</Cel>
       </Rij>
       <Rij>
-        <Cel k={1} n={3} o>Materiaalgegevens beschikbaar</Cel>
-        <Cel k={4} o klasse="rpa-invoer">{b.materiaalgegevensBeschikbaar}</Cel>
+        <Cel k={1} n={3} o>{t("afdruk.bestaand.materiaalgegevens")}</Cel>
+        <Cel k={4} o klasse="rpa-invoer">{jaNee(b.materiaalgegevensBeschikbaar)}</Cel>
       </Rij>
     </>
   );
@@ -237,7 +242,7 @@ export function Vervormingen({ w }: { w: RapportWeergave }) {
         </>
       )}
       <Rij houd>
-        <Cel k={1} n={3} b o l klasse="rpa-kop-licht">Onderdeel</Cel>
+        <Cel k={1} n={3} b o l klasse="rpa-kop-licht">{w.t("afdruk.vervormingen.onderdeel")}</Cel>
         {/* Leeg, zoals in de referentie. */}
         <Cel k={4} b o klasse="rpa-kop-licht" />
         <Cel k={5} b o klasse="rpa-kop-licht"><Index t="u_bij" /></Cel>
@@ -246,9 +251,9 @@ export function Vervormingen({ w }: { w: RapportWeergave }) {
       {w.rapport.uitgangspunten.vervormingen.map((r, i) => (
         <Rij key={i}>
           <Cel k={1} n={3} o>{r.onderdeel}</Cel>
-          <Cel k={4} o><Index t={r.ueind} /></Cel>
-          <Cel k={5} o><Index t={r.ubij} /></Cel>
-          <Cel k={6} o><Index t={r.uhor} /></Cel>
+          <Cel k={4} o><Index t={w.n(r.ueind)} /></Cel>
+          <Cel k={5} o><Index t={w.n(r.ubij)} /></Cel>
+          <Cel k={6} o><Index t={w.n(r.uhor)} /></Cel>
         </Rij>
       ))}
     </>

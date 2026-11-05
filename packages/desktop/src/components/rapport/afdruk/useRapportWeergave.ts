@@ -1,9 +1,10 @@
 import { useMemo } from "react";
-import i18next from "i18next";
+import i18next, { type TFunction } from "i18next";
 import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { projectScope, type ProjectGegevens } from "../../../store/projectGegevens";
 import type { BureauProfiel, Rapport } from "../../../rapport/model";
+import { fmt, notatie } from "../../../rapport/normwaarden";
 import {
   bijlageRegels,
   bijlagen as bijlagenVan,
@@ -22,6 +23,9 @@ import type { Resultaat } from "../../calc/bladResultaat";
 /*
  * Alles wat de afdruk van het rapport nodig heeft, op één plek verzameld.
  *
+ * De taal van de afdruk is rapport.taal, niet de taal van de app: de vaste woorden
+ * (`t`), de getallen (`f`, `n`) en de rekenbladen volgen het rapport.
+ *
  * Het afdrukvoorbeeld rendert <RapportAfdruk />, en die leest alleen via deze hook. Wat naar
  * de printer gaat, is een kopie van de vellen van dat voorbeeld (drukvellen.ts).
  */
@@ -36,6 +40,14 @@ export interface RapportBlad {
 }
 
 export interface RapportWeergave {
+  /** De taal van dit rapport op papier. */
+  taal: string;
+  /** Vaste woorden in rapport.taal: namespace "rapport". */
+  t: TFunction<"rapport">;
+  /** Een uitgerekend getal in de notatie van rapport.taal. */
+  f: (v: number, dec: number, trim?: boolean) => string;
+  /** Een getypt getal in de notatie van rapport.taal (notatie in normwaarden.ts). */
+  n: (s: string) => string;
   rapport: Rapport;
   gegevens: ProjectGegevens;
   projectNaam: string;
@@ -74,6 +86,7 @@ export function useRapportWeergave(): RapportWeergave {
   const projectNaam = useProjectStore((s) => s.projectNaam);
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const bureau = useRapportBureau();
+  const { taal } = rapport;
 
   zorgVoorKernstijlen();
 
@@ -81,10 +94,8 @@ export function useRapportWeergave(): RapportWeergave {
   // hoofdstuk zelf staat, telt net zo goed mee als een blad in bijlage A.
   const bladen = useMemo(() => {
     const scope = projectScope(gegevens);
-    return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope) }));
-    // De taal hoort erbij: de uitvoer van een blad volgt de taal van de app.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exemplaren, gegevens, i18next.language]);
+    return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope, taal) }));
+  }, [exemplaren, gegevens, taal]);
 
   const opzet = useMemo(() => {
     const lijst = exemplaren.map(bladVoorOpzet);
@@ -111,5 +122,11 @@ export function useRapportWeergave(): RapportWeergave {
     [bureau.naam, gegevens, projectNaam, rapport.verantwoordelijk, rapport.uitvoerend],
   );
 
-  return { rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul };
+  const woorden = useMemo(() => ({
+    t: i18next.getFixedT(taal, "rapport"),
+    f: (v: number, dec: number, trim = false) => fmt(v, dec, trim, taal),
+    n: (s: string) => notatie(s, taal),
+  }), [taal]);
+
+  return { taal, ...woorden, rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul };
 }

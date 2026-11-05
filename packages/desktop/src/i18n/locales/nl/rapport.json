@@ -72,7 +72,13 @@
     "projectnummer": "Projectnummer",
     "projectnaam": "Projectnaam",
     "opdrachtgever": "Opdrachtgever",
-    "locatie": "Locatie"
+    "locatie": "Locatie",
+    "taal": "Taal van het rapport",
+    "taalHint": "Koppen, vaste woorden, standaardteksten en de rekenbladen in het rapport volgen deze taal. Wat je zelf hebt getypt, blijft staan.",
+    "talen": {
+      "en": "Engels",
+      "nl": "Nederlands"
+    }
   },
   "revisies": {
     "intro": "De eerste revisie geeft de 1ᵉ datum van het rapport, elke latere een regel Datum wijz. De laatste revisie bepaalt de rapportstatus op het voorblad.",
@@ -93,7 +99,7 @@
     "optioneelLeeg": "Leeg laten: dan valt dit onderdeel weg.",
     "rolHint": "De openingszin van de paragraaf; de drie gegevens hieronder staan er als tabel onder.",
     "nieuwbouwKop": "Bij nieuwbouw de kop \"{{titel}}\"",
-    "nieuwbouwAan": "Nieuwbouw: \"Bestaande situatie opnemen\" bij Uitgangspunten staat uit en het blok Bestaande situatie hierboven is leeg. Anders heet het blok \"{{titel}}\".",
+    "nieuwbouwAan": "Nieuwbouw: \"Bestaande situatie opnemen\" bij Uitgangspunten staat uit en het blok {{bestaand}} hierboven is leeg. Anders heet het blok \"{{titel}}\".",
     "nieuwbouwUit": "Staat uit: het blok heet altijd \"{{titel}}\". Een rapport van een eerdere versie opent zo, zodat de afdruk niet verandert.",
     "rol": "Rol",
     "architect": "Bouwkundig adviseur / architect",
@@ -114,7 +120,8 @@
     "leegmaken": "Leegmaken",
     "leegmakenUitleg": "Een leeg optioneel onderdeel valt weg uit het rapport.",
     "leegmakenVraag": "De tekst van dit onderdeel leegmaken?",
-    "variantNaam": "Naam van de variant"
+    "variantNaam": "Naam van de variant",
+    "andereTaal": "Deze tekst staat nog in het {{taal}}, terwijl het rapport in het {{rapportTaal}} is. Teksten worden niet automatisch vertaald."
   },
   "invulvelden": {
     "label": "Invulvelden",
@@ -329,5 +336,95 @@
     "soort": "Marimo",
     "ontbreekt": "Het notebook van dit blad ontbreekt.",
     "nogNietGedraaid": "Dit notebook heeft nog niet gedraaid, dus er is geen uitvoer om af te drukken. Open het blad en druk op Run."
+  },
+  "afdruk": {
+    "voorblad": {
+      "project": "Project",
+      "inOpdrachtVan": "In opdracht van",
+      "adviseur": "Adviseur",
+      "verantwoordelijk": "Verantwoordelijk constructeur",
+      "uitvoerend": "Uitvoerend constructeur",
+      "normen": "Toegepaste Normen",
+      "documentgegevens": "Documentgegevens",
+      "eersteDatumVoor": "1",
+      "eersteDatumSup": "e",
+      "eersteDatumNa": "Datum rapport",
+      "datumWijz": "Datum wijz.",
+      "fase": "Fase in bouwproces",
+      "status": "Rapportstatus",
+      "kenmerk": "Documentkenmerk"
+    },
+    "fasen": {
+      "SO": "SO",
+      "VO": "VO",
+      "DO": "DO",
+      "TO": "TO",
+      "UO": "UO"
+    },
+    "inhoud": {
+      "titel": "Inhoud",
+      "inhoudsopgave": "Inhoudsopgave",
+      "bijlage": "Bijlage"
+    },
+    "bijlageKop": "Bijlage {{letter}} {{titel}}",
+    "zieBijlage": "Zie bijlage {{nummer}}.",
+    "rol": {
+      "rolVan": "Rol van {adviseur} in dit project:",
+      "architect": "Bouwkundig adviseur/Architect:",
+      "datumOnderlegger": "Datum bouwkundige onderlegger:"
+    },
+    "bouwwerk": {
+      "soort": "Soort bouwwerk",
+      "gevolgklasse": "Constructiegevolgklasse",
+      "betrouwbaarheidsklasse": "Betrouwbaarheidsklasse",
+      "levensduurklasse": "Ontwerplevensduurklasse",
+      "levensduur": "Ontwerplevensduur (t)",
+      "supervisie": "Ontwerp- en berekeningssupervisie",
+      "inspectie": "Inspectie tijdens uitvoering"
+    },
+    "brand": {
+      "hoofddraagconstructie": "Brandwerendheidseis hoofddraagconstructie",
+      "brandscheiding": "Brandwerendheidseis brandscheiding",
+      "vluchtroute": "Brandwerendheidseis vluchtroute"
+    },
+    "materialen": {
+      "type": "Materiaaltype",
+      "soort": "Soort"
+    },
+    "factoren": {
+      "groep": "Groep",
+      "naam": "Naam",
+      "gunstig": "gunstig",
+      "ongunstig": "ongunstig",
+      "overheersend": "overheers.",
+      "overige": "overige",
+      "nietVanToepassing": "niet van toepassing"
+    },
+    "bestaand": {
+      "bouwjaar": "Bouwjaar bouwwerk",
+      "bron": "Bron",
+      "norm": "Norm",
+      "afgeleid": "afgeleid uit bouwjaar",
+      "berekening": "Bestaande berekening beschikbaar",
+      "materiaalgegevens": "Materiaalgegevens beschikbaar"
+    },
+    "vervormingen": {
+      "onderdeel": "Onderdeel"
+    },
+    "belastingen": {
+      "platDak": "plat dak",
+      "windgebied": "Windgebied &",
+      "terreincategorie": "Terreincategorie",
+      "gebouwhoogte": "Gebouwhoogte",
+      "klasse": "Belastingklasse",
+      "algemeen": "Algemeen",
+      "ls": "L.S.",
+      "dakPlat": "Dak plat",
+      "dakSchuin": "Dak schuin",
+      "dakQlast": "Dak q-last",
+      "vulling": "vulling",
+      "vloerDaken": "VLOER, DAKEN",
+      "wanden": "WANDEN"
+    }
   }
 }

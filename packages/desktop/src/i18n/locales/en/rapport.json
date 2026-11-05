@@ -63,8 +63,8 @@
       "UO": "construction design"
     },
     "normen": "Applied standards",
-    "verantwoordelijk": "Responsible structural engineer",
-    "uitvoerend": "Executing structural engineer",
+    "verantwoordelijk": "Responsible engineer",
+    "uitvoerend": "Design engineer",
     "geenConstructeurs": "This report has no structural engineers yet. Add them under Settings → Office and update the report in the Office section at the bottom.",
     "adresregels": "Client address lines",
     "adresVoorbeeld": "Street and number\nPostcode and town",
@@ -72,10 +72,16 @@
     "projectnummer": "Project number",
     "projectnaam": "Project name",
     "opdrachtgever": "Client",
-    "locatie": "Location"
+    "locatie": "Location",
+    "taal": "Report language",
+    "taalHint": "Headings, fixed words, standard texts and the calculation sheets in the report follow this language. Text you typed yourself stays as it is.",
+    "talen": {
+      "en": "English",
+      "nl": "Dutch"
+    }
   },
   "revisies": {
-    "intro": "The first revision sets the report's first date; each later one adds a \"Datum wijz.\" (revision date) line. The last revision sets the report status on the cover page.",
+    "intro": "The first revision sets the report's first date; each later one adds a revision date line. The last revision sets the report status on the cover page.",
     "revisie": "Revision",
     "datum": "Date",
     "status": "Status",
@@ -93,7 +99,7 @@
     "optioneelLeeg": "Leave empty to omit this part.",
     "rolHint": "The opening sentence of the section; the three details below appear underneath it as a table.",
     "nieuwbouwKop": "For new construction, use the heading \"{{titel}}\"",
-    "nieuwbouwAan": "New construction: \"Include existing situation\" under Design basis is off and the \"Bestaande situatie\" block above is empty. Otherwise the block is called \"{{titel}}\".",
+    "nieuwbouwAan": "New construction: \"Include existing situation\" under Design basis is off and the \"{{bestaand}}\" block above is empty. Otherwise the block is called \"{{titel}}\".",
     "nieuwbouwUit": "Off: the block is always called \"{{titel}}\". A report from an earlier version opens this way, so its printout does not change.",
     "rol": "Role",
     "architect": "Building consultant / architect",
@@ -114,7 +120,8 @@
     "leegmaken": "Clear",
     "leegmakenUitleg": "An empty optional part is omitted from the report.",
     "leegmakenVraag": "Clear the text of this part?",
-    "variantNaam": "Variant name"
+    "variantNaam": "Variant name",
+    "andereTaal": "This text is still in {{taal}}, while the report is in {{rapportTaal}}. Texts are not translated automatically."
   },
   "invulvelden": {
     "label": "Placeholder fields",
@@ -155,7 +162,7 @@
     "systeem": "System",
     "regelToevoegen": "Add row",
     "slotzin": "Closing sentence",
-    "factorenHint": "The load factors and load combinations follow from consequence class CC{{cc}} according to tables NB.3, NB.4 and NB.5 of NEN-EN 1990. There is nothing to fill in here; the print preview shows the table.",
+    "factorenHint": "The partial factors and combinations of actions follow from consequence class CC{{cc}} according to tables NB.3, NB.4 and NB.5 of NEN-EN 1990. There is nothing to fill in here; the print preview shows the table.",
     "bestaandOpnemen": "Include existing situation",
     "bestaandHint": "Off for new construction: the section is then omitted and the numbering moves up.",
     "bouwjaar": "Year of construction",
@@ -168,7 +175,7 @@
     "materiaalgegevensBeschikbaar": "Material data available",
     "vervormingenHint": "The introductory sentence above the table.",
     "eisToevoegen": "Add requirement",
-    "eisUitleg": "Write a requirement as 0,004l_rep, H/300 or < 20 mm; \"_rep\" is printed as a subscript. An empty cell means: no requirement in that column.",
+    "eisUitleg": "Write a requirement as 0.004l_rep, H/300 or < 20 mm; \"_rep\" is printed as a subscript. An empty cell means: no requirement in that column.",
     "vorigeNaam": "This text mentions the program's previous name ({{naam}}). Standard text ▾ has the text with the current name, Open CalcSheet Studio."
   },
   "belastingen": {
@@ -193,21 +200,21 @@
     "coefficientToevoegen": "Add coefficient",
     "windVoorbeeld": "e.g. facade, pressure",
     "prepLeeg": "without a building height the column stays empty.",
-    "geenKlassen": "No load classes yet.",
-    "klasseToevoegen": "Add load class",
+    "geenKlassen": "No categories of use yet.",
+    "klasseToevoegen": "Add category of use",
     "vloerenDaken": "Floors, roofs",
     "vloeren": "Floors",
     "daken": "Roofs",
     "wanden": "Walls",
     "categorie": "Category",
     "onbekend": "{{waarde}} (unknown)",
-    "klasseVerwijderen": "Remove load class",
+    "klasseVerwijderen": "Remove category of use",
     "onbekendeCategorie": "Unknown category: pick one from the list.",
-    "lichteScheidingswanden": "Lightweight partitions (L.S.)",
+    "lichteScheidingswanden": "Movable partitions (M.P.)",
     "leegIsGeen": "empty = none",
-    "lsHint": "0,5 / 0,8 / 1,2 kN/m² for a wall weight up to 1,0 / 2,0 / 3,0 kN/m, see 6.3.1.2(8).",
+    "lsHint": "0.5 / 0.8 / 1.2 kN/m² for a wall weight up to 1.0 / 2.0 / 3.0 kN/m, see 6.3.1.2(8).",
     "dakhelling": "Roof pitch α",
-    "qlast": "q-load",
+    "qlast": "Roof q-load",
     "bijAlfa": "at α",
     "dakhellingInvullen": "— (enter the roof pitch)",
     "qkDirect": "{{qk}} kN; directly below the roof decking {{direct}} kN"
@@ -329,5 +336,95 @@
     "soort": "Marimo",
     "ontbreekt": "The notebook of this sheet is missing.",
     "nogNietGedraaid": "This notebook has not been run yet, so there is no output to print. Open the sheet and press Run."
+  },
+  "afdruk": {
+    "voorblad": {
+      "project": "Project",
+      "inOpdrachtVan": "Client",
+      "adviseur": "Consultant",
+      "verantwoordelijk": "Responsible engineer",
+      "uitvoerend": "Design engineer",
+      "normen": "Applied standards",
+      "documentgegevens": "Document details",
+      "eersteDatumVoor": "1",
+      "eersteDatumSup": "st",
+      "eersteDatumNa": "issue date",
+      "datumWijz": "Revision date",
+      "fase": "Design stage",
+      "status": "Report status",
+      "kenmerk": "Document reference"
+    },
+    "fasen": {
+      "SO": "Sketch design",
+      "VO": "Preliminary design",
+      "DO": "Final design",
+      "TO": "Technical design",
+      "UO": "Construction design"
+    },
+    "inhoud": {
+      "titel": "Contents",
+      "inhoudsopgave": "Table of contents",
+      "bijlage": "Appendix"
+    },
+    "bijlageKop": "Appendix {{letter}} {{titel}}",
+    "zieBijlage": "See appendix {{nummer}}.",
+    "rol": {
+      "rolVan": "Role of {adviseur} in this project:",
+      "architect": "Building consultant/Architect:",
+      "datumOnderlegger": "Date of architectural base drawings:"
+    },
+    "bouwwerk": {
+      "soort": "Type of structure",
+      "gevolgklasse": "Consequence class",
+      "betrouwbaarheidsklasse": "Reliability class",
+      "levensduurklasse": "Design working life category",
+      "levensduur": "Design working life (t)",
+      "supervisie": "Design supervision level",
+      "inspectie": "Inspection level"
+    },
+    "brand": {
+      "hoofddraagconstructie": "Fire resistance, main structure",
+      "brandscheiding": "Fire resistance, fire separation",
+      "vluchtroute": "Fire resistance, escape route"
+    },
+    "materialen": {
+      "type": "Material type",
+      "soort": "Grade"
+    },
+    "factoren": {
+      "groep": "Group",
+      "naam": "Name",
+      "gunstig": "favour.",
+      "ongunstig": "unfavour.",
+      "overheersend": "leading",
+      "overige": "accomp.",
+      "nietVanToepassing": "not applicable"
+    },
+    "bestaand": {
+      "bouwjaar": "Year of construction",
+      "bron": "Source",
+      "norm": "Standard",
+      "afgeleid": "from year built",
+      "berekening": "Existing calculation available",
+      "materiaalgegevens": "Material data available"
+    },
+    "vervormingen": {
+      "onderdeel": "Element"
+    },
+    "belastingen": {
+      "platDak": "flat roof",
+      "windgebied": "Wind zone &",
+      "terreincategorie": "Terrain category",
+      "gebouwhoogte": "Building height",
+      "klasse": "Category of use",
+      "algemeen": "General",
+      "ls": "M.P.",
+      "dakPlat": "Flat roof",
+      "dakSchuin": "Pitched roof",
+      "dakQlast": "Roof q-load",
+      "vulling": "fill",
+      "vloerDaken": "FLOOR, ROOFS",
+      "wanden": "WALLS"
+    }
   }
 }

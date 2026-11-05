@@ -116,6 +116,11 @@
   overflow-wrap: anywhere;
 }
 
+/* Rechts tegen de volgende cel: een label dat over de kolom ervoor doorloopt. */
+.rpa-wortel .rpa-rechts {
+  text-align: right;
+}
+
 /* Lijnen liggen binnen de regel: de regelhoogte krimpt met de lijndikte,
    zodat alles eronder op het raster blijft. */
 .rpa-wortel .rpa-o {
