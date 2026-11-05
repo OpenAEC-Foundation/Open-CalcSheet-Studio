@@ -8,7 +8,7 @@ import { leesPad } from "../rapport/pad";
 import { datumTekst } from "../rapport/revisies";
 import { standaardTeksten } from "../rapport/standaardteksten";
 import { isNieuwRapport, wisselTaal, zetVeldOpPad } from "../rapport/taalwissel";
-import { landVoorLocale, metLokaal, NEDERLAND, normkeuzeVan, pasRapportAan } from "../rapport/normen/keuze";
+import { landVoorLocale, metLandUit, metLokaal, NEDERLAND, normkeuzeVan, pasRapportAan, pasTemplateToeOpProject } from "../rapport/normen/keuze";
 import { nieuwRapportVolgens, standaardTemplateVan, type Template } from "../rapport/template";
 import { useTemplateStore } from "./rapportTemplates";
 import { rekenversie } from "../components/calc/bladVersie";
@@ -239,6 +239,8 @@ interface ProjectState {
    * één stap, zoals bij een veld: een titel in de opzet heeft geen vast pad.
    */
   werkRapportBij: (fn: (r: Rapport) => Rapport, sleutel?: string) => void;
+  /** Past een template toe op dit project: het rapport, en het land als het template er een heeft. Eén stap ongedaan maken. */
+  pasTemplateToe: (t: Template) => void;
 
   ongedaan: () => void;
   opnieuw: () => void;
@@ -331,8 +333,8 @@ const standaardTemplate = () => standaardTemplateVan(useTemplateStore.getState()
  */
 let systeemLocale: string | undefined = typeof navigator === "undefined" ? undefined : navigator.language;
 
-/** De gegevens van een nieuw project: elk veld op zijn standaard en het land van het systeem. */
-const nieuweGegevens = (): ProjectGegevens => ({ ...legeGegevens(), land: landVoorLocale(systeemLocale) });
+/** De gegevens van een nieuw project: elk veld op zijn standaard en het land van het systeem, of dat uit het standaardtemplate. */
+const nieuweGegevens = (): ProjectGegevens => metLandUit({ ...legeGegevens(), land: landVoorLocale(systeemLocale) }, standaardTemplate());
 
 /**
  * Een nieuw rapport in de taal van de app, volgens het standaardtemplate: revisie A van vandaag,
@@ -754,6 +756,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return { ...metGeschiedenis(s, sleutel ?? null), rapport, dirty: true };
     }),
 
+  pasTemplateToe: (t) =>
+    set((s) => ({ ...metGeschiedenis(s, null), ...pasTemplateToeOpProject(s.gegevens, s.rapport, t), dirty: true })),
+
   ongedaan: () =>
     set((s) => {
       const vorige = s.verleden[s.verleden.length - 1];
@@ -892,7 +897,9 @@ async function volgRegioVanSysteem() {
 function volgStandaardTemplate(vorige: Template | null) {
   const s = useProjectStore.getState();
   if (s.dirty || s.bestandspad || s.exemplaren.length > 0 || vorige === standaardTemplate() || !isNieuwRapport(s.rapport, vorige, normkeuzeVan(s.gegevens))) return;
-  useProjectStore.setState({ rapport: nieuwRapport(s.gegevens) });
+  // Een template met een land neemt dat land mee; zonder land blijft het land staan.
+  const gegevens = metLandUit(s.gegevens, standaardTemplate());
+  useProjectStore.setState({ gegevens, rapport: nieuwRapport(gegevens) });
 }
 useTemplateStore.subscribe((nu, vorig) => {
   if (nu.lijst !== vorig.lijst || nu.standaard !== vorig.standaard) volgStandaardTemplate(standaardTemplateVan(vorig));

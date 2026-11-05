@@ -92,8 +92,10 @@
       "teVeel": "Het bestand heeft te veel onderdelen: de rest is weggelaten.",
       "nieuwereVersie": "Het bestand komt uit een nieuwere versie van de app (formaat {{waarde}}): wat deze versie niet kent, is weggelaten.",
       "geenNaam": "Het bestand heeft geen naam.",
-      "onbekendeTekst": "Teksten bij {{id}} zijn weggelaten: dat onderdeel bestaat niet."
-    }
+      "onbekendeTekst": "Teksten bij {{id}} zijn weggelaten: dat onderdeel bestaat niet.",
+      "onbekendLand": "Het template noemt een land dat deze app niet kent ({{waarde}}): het land van het project blijft."
+    },
+    "landGezet": "Het land van het project is nu {{land}}."
   },
   "algemeen": {
     "omhoog": "Omhoog",

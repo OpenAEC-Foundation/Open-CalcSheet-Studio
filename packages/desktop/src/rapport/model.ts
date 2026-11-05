@@ -331,7 +331,7 @@ export interface Rapport {
   varianten?: Record<string, Tekstvariant[]>;
   /** Uit de opzet gehaald en terug te zetten; de tekst staat nog in `teksten`. */
   weggehaald?: Weggehaald[];
-  /** Het template waar dit rapport mee begon. `land` wordt alleen bewaard en doorgegeven. */
+  /** Het template waar dit rapport mee begon. Het land van het project staat in de projectgegevens; hier wat het template zei. */
   template?: TemplateHerkomst;
   /** De huisstijl uit het template; gaat boven die van het bureau. */
   huisstijl?: Huisstijl;
@@ -751,9 +751,9 @@ export function leesHerkomst(x: unknown): TemplateHerkomst | undefined {
   return land ? { naam, land } : { naam };
 }
 
-/** Een landcode of regio uit een bestand: kort en zonder vreemde tekens. Iets anders geeft undefined. */
+/** Een landcode uit een bestand of template; iets anders dan een code uit de lijst (normen/landen.ts) geeft undefined. */
 export function leesLand(x: unknown): string | undefined {
-  return typeof x === "string" && /^[\p{L}\p{N}_ -]{1,40}$/u.test(x) ? x : undefined;
+  return LANDEN.find((l) => l.code === x)?.code;
 }
 
 /**

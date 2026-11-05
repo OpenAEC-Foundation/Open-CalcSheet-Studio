@@ -13,10 +13,11 @@
  */
 import { inTaal } from "../meertalig.ts";
 import {
-  inNotatie, MEEGELEVERD, standaardBevestiging, standaardMaterialen, standaardVervormingen, standaardWindcoefficienten,
+  inNotatie, leesLand, MEEGELEVERD, standaardBevestiging, standaardMaterialen, standaardVervormingen, standaardWindcoefficienten,
   type LokaleInvoer, type Rapport,
 } from "../model.ts";
 import { STANDAARD_TEKSTEN } from "../standaardteksten.ts";
+import { pasTemplateToe, type Template } from "../template.ts";
 import { EN1990_FACTOREN, EN1990_PSI } from "./en1990.ts";
 import {
   GEEN_BIJLAGE, LANDEN, ONDERWERPEN, LOCATIE_ONDERWERPEN, TWEEDE_GENERATIE, TWEEDE_GENERATIE_TEKST,
@@ -35,13 +36,10 @@ export interface Normkeuze {
   nlTabellen: boolean;
 }
 
+export { leesLand };
+
 export function landVanCode(code: unknown): Land | undefined {
   return LANDEN.find((l) => l.code === code);
-}
-
-/** Een landcode uit een bestand of template; iets anders dan een code uit de lijst geeft undefined. */
-export function leesLand(x: unknown): string | undefined {
-  return landVanCode(x)?.code;
 }
 
 /**
@@ -186,14 +184,6 @@ export function pasRapportAan(r: Rapport, van: Normkeuze, naar: Normkeuze): Rapp
   const meegeleverd = MEEGELEVERD.normen.some((m) => Object.values(m).includes(r.normen));
   const normen = meegeleverd ? normenTekstVan(naar, taal) : r.normen;
 
-  // "Niet voorgeschreven" is alleen in Nederland vanzelf waar.
-  const [nietVoorgeschreven, volgensLocatie] = STANDAARD_TEKSTEN.aardbeving;
-  const tekst = r.teksten.aardbeving ?? "";
-  const isVariant = (v: typeof nietVoorgeschreven) => Object.values(v.tekst).includes(tekst);
-  const aardbeving = !naar.nlTabellen && isVariant(nietVoorgeschreven) ? inTaal(volgensLocatie.tekst, taal)
-    : naar.nlTabellen && isVariant(volgensLocatie) ? inTaal(nietVoorgeschreven.tekst, taal)
-    : tekst;
-
   // De vervormingseisen komen uit de Nederlandse bijlage, de klassen uit de EN.
   const nlEisen = standaardVervormingen(taal);
   const legeEisen = nlEisen.map((v) => ({ ...v, ueind: "", ubij: "", uhor: "" }));
@@ -242,14 +232,48 @@ export function pasRapportAan(r: Rapport, van: Normkeuze, naar: Normkeuze): Rapp
   }
 
   const { lokaal: _oud, ...rest } = r;
-  return {
+  return metLandTekst({
     ...rest,
     normen,
-    teksten: r.teksten.aardbeving === undefined ? r.teksten : { ...r.teksten, aardbeving },
     uitgangspunten: { ...u, vervormingen, materialen, bevestiging },
     belastingen: { ...b, wind: { ...b.wind, coefficienten } },
     ...(Object.keys(lokaal).length > 0 ? { lokaal } : {}),
-  };
+  }, naar);
+}
+
+/**
+ * De meegeleverde tekst over aardbeving: "niet voorgeschreven" is alleen in Nederland vanzelf waar.
+ * Eigen tekst blijft staan; is er niets te doen, dan komt hetzelfde object terug.
+ */
+export function metLandTekst(r: Rapport, k: Normkeuze): Rapport {
+  const tekst = r.teksten.aardbeving;
+  if (tekst === undefined) return r;
+  const [nietVoorgeschreven, volgensLocatie] = STANDAARD_TEKSTEN.aardbeving;
+  const isVariant = (v: typeof nietVoorgeschreven) => Object.values(v.tekst).includes(tekst);
+  const aardbeving = !k.nlTabellen && isVariant(nietVoorgeschreven) ? inTaal(volgensLocatie.tekst, r.taal)
+    : k.nlTabellen && isVariant(volgensLocatie) ? inTaal(nietVoorgeschreven.tekst, r.taal)
+    : tekst;
+  return aardbeving === tekst ? r : { ...r, teksten: { ...r.teksten, aardbeving } };
+}
+
+// ── Het land uit een template ───────────────────────────────────────────────
+
+/** De gegevens met het land uit dit template. Zonder land, of met hetzelfde: dezelfde gegevens. */
+export function metLandUit<G extends Readonly<Record<string, string | undefined>>>(g: G, t: Template | null): G {
+  const land = leesLand(t?.land);
+  return land && land !== g.land ? { ...g, land } : g;
+}
+
+/**
+ * Past een template toe op een project. Een template met een land zet dat land in de
+ * projectgegevens, en het rapport volgt; zonder land blijft het land van het project. Eerst het
+ * template en dan het land: wat het template meebrengt, mag buiten Nederland niet stil de
+ * Nederlandse tekst worden.
+ */
+export function pasTemplateToeOpProject<G extends Readonly<Record<string, string | undefined>>>(g: G, r: Rapport, t: Template): { gegevens: G; rapport: Rapport } {
+  const gegevens = metLandUit(g, t);
+  const naar = normkeuzeVan(gegevens);
+  return { gegevens, rapport: metLandTekst(metLokaal(pasRapportAan(pasTemplateToe(r, t), normkeuzeVan(g), naar), naar), naar) };
 }
 
 // ── De norm van een rekenblad ───────────────────────────────────────────────

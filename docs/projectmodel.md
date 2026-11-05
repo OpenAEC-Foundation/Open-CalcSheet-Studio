@@ -100,6 +100,11 @@ windkaart. Daarbuiten komt daar geen getal uit, ook niet als standaardwaarde. De
 in het rapport, per land apart (`Rapport.lokaal`), zodat een waarde niet stil meegaat naar een
 ander land; een Nederlands rapport heeft dat veld niet en verandert dus niet.
 
+Een rapporttemplate kan het land vastleggen (`Template.land`). Toepassen en een nieuw rapport
+zetten dat land in de projectgegevens (`pasTemplateToeOpProject`, `metLandUit`), en een bewaard
+template neemt het huidige land mee. Een template zonder land verandert het land van het project
+niet.
+
 `windgebied` en `terreincategorie` blijven in de gegevens staan, maar staan alleen op het
 formulier als de Nederlandse tabellen gelden. De rekenbladen rusten op de Eurocodes met de
 Nederlandse bijlage en veranderen niet mee: `bladNormUit` leest uit de rekentekst op welke norm

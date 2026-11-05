@@ -9,6 +9,7 @@
  *      waarden uit EN 1990 als invoer, daarbuiten eigen combinaties;
  *   5  wisselen van land, onbetrouwbare invoer en wisselen van taal;
  *   6  op welke norm een blad rust, als die afwijkt van het gekozen land;
+ *   6b het land uit een template: toepassen, een nieuw rapport en bewaren;
  *   7  de echte afdruk als html, in het Engels en in het Nederlands: Nederland tot op de
  *      letter als voorheen, elders geen Nederlandse uitkomst.
  *
@@ -28,12 +29,14 @@ import {
 } from "../packages/desktop/src/rapport/normen/landen.ts";
 import { EN1990_BRONNEN, EN1990_FACTOREN, EN1990_PSI } from "../packages/desktop/src/rapport/normen/en1990.ts";
 import {
-  bladNormUit, dekkingVan, groothedenVan, landVanCode, landVoorLocale, leesLand, lokaalVan, metLokaal, NEDERLAND, normAfwijking, normenTekstVan, normenVan,
-  normkeuzeVan, pasRapportAan, standaardLokaal, veldZichtbaar,
+  bladNormUit, dekkingVan, groothedenVan, landVanCode, landVoorLocale, leesLand, lokaalVan, metLandTekst, metLandUit, metLokaal, NEDERLAND, normAfwijking, normenTekstVan, normenVan,
+  normkeuzeVan, pasRapportAan, pasTemplateToeOpProject, standaardLokaal, veldZichtbaar,
 } from "../packages/desktop/src/rapport/normen/keuze.ts";
 import { MEEGELEVERD, normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 import { normaliseerOpzet, OPZET, REKENBLOKKEN, TEKST_IDS, zoekKnoop } from "../packages/desktop/src/rapport/opzet.ts";
-import { ongeplaatsteBlokken, plaatsBlok, verwijderKnoop } from "../packages/desktop/src/rapport/template.ts";
+import {
+  ingebouwdTemplate, leesTemplate, nieuwRapportVolgens, ongeplaatsteBlokken, plaatsBlok, schrijfTemplate, templateUitRapport, terugNaarIngebouwd, verwijderKnoop,
+} from "../packages/desktop/src/rapport/template.ts";
 import { STANDAARD_TEKSTEN, standaardTeksten } from "../packages/desktop/src/rapport/standaardteksten.ts";
 import { isNieuwRapport, wisselTaal } from "../packages/desktop/src/rapport/taalwissel.ts";
 import { leesPad, zetOpPad } from "../packages/desktop/src/rapport/pad.ts";
@@ -379,6 +382,79 @@ kop("6. De norm van een blad");
   toets("de melding noemt de norm", normAfwijking(keuze("US"), b).normen.includes("EN 1995-1-1"));
 }
 
+// ── 6b. Het land uit een template ───────────────────────────────────────────
+kop("6b. Het land uit een template");
+/** Een eigen template, met of zonder land. */
+const templateMet = (land, extra = {}) => ({ ...ingebouwdTemplate(), naam: { en: "Ours", nl: "Ons" }, ...(land ? { land } : {}), ...extra });
+const [NIET_VOORGESCHREVEN, VOLGENS_LOCATIE] = STANDAARD_TEKSTEN.aardbeving;
+{
+  const g = legeGegevens();
+  const nl = nieuw("en");
+
+  // Toepassen, met een land: het project volgt, en het rapport ook.
+  const be = pasTemplateToeOpProject(g, nl, templateMet("BE"));
+  gelijk("toepassen: het land komt in de projectgegevens", be.gegevens.land, "BE");
+  gelijk("de andere gegevens blijven", { ...be.gegevens, land: g.land }, g);
+  gelijk("de gegevens van daarvoor blijven staan", g.land, "NL");
+  gelijk("het rapport volgt: de normen en de invoer", [be.rapport.normen, be.rapport.lokaal.BE], [landVanCode("BE").normenTekst.en, standaardLokaal(keuze("BE"), "en")]);
+  gelijk("en de meegeleverde tekst over aardbeving", be.rapport.teksten.aardbeving, VOLGENS_LOCATIE.tekst.en);
+  gelijk("het rapport onthoudt waar het vandaan komt", be.rapport.template, { naam: { en: "Ours", nl: "Ons" }, land: "BE" });
+
+  // Zonder land: het land verandert niet, en Nederland blijft zonder lokale invoer.
+  const zonder = pasTemplateToeOpProject(g, nl, templateMet());
+  toets("zonder land: dezelfde gegevens", zonder.gegevens === g);
+  gelijk("zonder land: het rapport blijft Nederlands", [zonder.rapport.normen, zonder.rapport.lokaal, zonder.rapport.teksten.aardbeving], [nl.normen, undefined, NIET_VOORGESCHREVEN.tekst.en]);
+
+  // Zonder land in een ander land: wat een template meebrengt, mag daar niet stil Nederlands worden.
+  const deG = { ...g, land: "DE" };
+  const deR = pasRapportAan(nl, NEDERLAND, keuze("DE"));
+  const opDe = pasTemplateToeOpProject(deG, deR, templateMet());
+  toets("Duitsland, zonder land: dezelfde gegevens", opDe.gegevens === deG);
+  gelijk("Duitsland, zonder land: normen, tekst en invoer blijven", [opDe.rapport.normen, opDe.rapport.teksten.aardbeving, opDe.rapport.lokaal.DE], [deR.normen, VOLGENS_LOCATIE.tekst.en, deR.lokaal.DE]);
+
+  // Hetzelfde land: niets aan het project.
+  toets("hetzelfde land: dezelfde gegevens", pasTemplateToeOpProject(deG, deR, templateMet("DE")).gegevens === deG);
+
+  // Een eigen tekst uit het template wint van de meegeleverde, ook elders.
+  const eigen = templateMet(undefined, { teksten: { ...ingebouwdTemplate().teksten, aardbeving: [{ label: { en: "Own" }, tekst: { en: "Seismic text of our office." } }] } });
+  gelijk("de tekst uit het template, in Nederland en elders",
+    [pasTemplateToeOpProject(g, nl, eigen).rapport.teksten.aardbeving, pasTemplateToeOpProject(deG, deR, eigen).rapport.teksten.aardbeving], ["Seismic text of our office.", "Seismic text of our office."]);
+  // Getypte tekst blijft, en wat je intypte bij een land ook.
+  const getypt = zetOpPad(zetOpPad(deR, leesPad("teksten.aardbeving"), "Getypt."), leesPad("lokaal.DE.wind.q"), "0.85");
+  const naarDk = pasTemplateToeOpProject(deG, getypt, templateMet("DK"));
+  gelijk("naar een ander land: getypte tekst blijft, en de invoer onder het vorige land", [naarDk.gegevens.land, naarDk.rapport.teksten.aardbeving, naarDk.rapport.lokaal.DE.wind.q, naarDk.rapport.lokaal.DK.wind.q], ["DK", "Getypt.", "0.85", ""]);
+
+  // Terug naar Nederland via een template: de Nederlandse tabellen, en de tekst terug.
+  const terugNl = pasTemplateToeOpProject(deG, deR, templateMet("NL"));
+  gelijk("een template met NL", [terugNl.gegevens.land, normkeuzeVan(terugNl.gegevens).nlTabellen, terugNl.rapport.normen, terugNl.rapport.teksten.aardbeving, terugNl.rapport.lokaal], ["NL", true, nl.normen, NIET_VOORGESCHREVEN.tekst.en, undefined]);
+
+  // Terug naar het ingebouwde: het land blijft, en de tekst mag daar niet Nederlands worden.
+  gelijk("terug naar het ingebouwde in Duitsland", metLandTekst(terugNaarIngebouwd(opDe.rapport), keuze("DE")).teksten.aardbeving, VOLGENS_LOCATIE.tekst.en);
+  toets("niets te doen: hetzelfde object", metLandTekst(nl, NEDERLAND) === nl);
+
+  // Een nieuw rapport.
+  gelijk("een nieuw project: het land uit het template", metLandUit(g, templateMet("BE")).land, "BE");
+  toets("zonder land of zonder template: dezelfde gegevens", metLandUit(g, templateMet()) === g && metLandUit(g, null) === g);
+  const vers = pasRapportAan(nieuwRapportVolgens(VANDAAG, "en", templateMet("BE")), NEDERLAND, keuze("BE"));
+  toets("nieuw volgens het template, in zijn land: nog steeds nieuw", isNieuwRapport(vers, templateMet("BE"), keuze("BE")));
+  toets("met een ander land niet", !isNieuwRapport(vers, templateMet("BE"), keuze("DE")));
+
+  // Bewaren: het land van nu gaat mee, en anders wat het rapport al had.
+  gelijk("bewaren: het huidige land gaat mee", templateUitRapport(deR, { en: "Ours" }, undefined, "DE").land, "DE");
+  gelijk("en wint van het land uit het vorige template", templateUitRapport(be.rapport, { en: "Ours" }, undefined, "DE").land, "DE");
+  gelijk("de Eurocode zonder bijlage kan ook", templateUitRapport(deR, { en: "Ours" }, undefined, GEEN_BIJLAGE).land, GEEN_BIJLAGE);
+  gelijk("en komt terug uit het bestand", leesTemplate(schrijfTemplate(templateUitRapport(deR, { en: "Ours" }, undefined, GEEN_BIJLAGE))).template.land, GEEN_BIJLAGE);
+  gelijk("zonder land van nu: wat het rapport al had", templateUitRapport(be.rapport, { en: "Ours" }).land, "BE");
+
+  // Een land dat de app niet kent: geen land, en dat wordt gemeld.
+  const onbekend = leesTemplate(schrijfTemplate(templateMet("XX")));
+  gelijk("een onbekend land valt weg", onbekend.template.land, undefined);
+  toets("en wordt gemeld", onbekend.meldingen.some((m) => m.soort === "onbekendLand" && m.waarde === "XX"), onbekend.meldingen);
+  toets("een bekend land geeft geen melding", !leesTemplate(schrijfTemplate(templateMet("BE"))).meldingen.some((m) => m.soort === "onbekendLand"));
+  toets("geen land ook niet", !leesTemplate(schrijfTemplate(templateMet())).meldingen.some((m) => m.soort === "onbekendLand"));
+  gelijk("het rapport leest alleen een bekend land", normaliseerRapport({ ...kloon(nl), template: { naam: { en: "Ours" }, land: "XX" } }, VANDAAG, standaardTeksten).template, { naam: { en: "Ours" } });
+}
+
 // ── 7. De echte afdruk ──────────────────────────────────────────────────────
 kop("7. De afdruk als html");
 {
@@ -417,6 +493,34 @@ kop("7. De afdruk als html");
   // Een nieuw project volgt de regio; in deze omgeving is die en-US.
   s().nieuwProject();
   gelijk("nieuwProject: de regio van het systeem", [navigator.language, s().gegevens.land, s().rapport.normen.includes("ASCE")], ["en-US", "US", true]);
+
+  // Een template met een land, in de store: toepassen, ongedaan maken en een nieuw project.
+  zet(nieuw("nl"), { land: "NL" });
+  s().pasTemplateToe(templateMet("BE"));
+  gelijk("pasTemplateToe: land, normen en template", [s().gegevens.land, s().rapport.normen, s().rapport.template.land], ["BE", landVanCode("BE").normenTekst.nl, "BE"]);
+  toets("en het project is gewijzigd", s().dirty);
+  s().ongedaan();
+  gelijk("ongedaan maken zet alles terug", [s().gegevens.land, s().rapport.normen, s().rapport.template], ["NL", "NEN-EN 1990 t/m 1997", undefined]);
+  zet(nieuw("nl"), { land: "DE" });
+  s().pasTemplateToe(templateMet());
+  gelijk("een template zonder land: het land van het project blijft", s().gegevens.land, "DE");
+
+  const t = m.useTemplateStore.getState();
+  const metLand = t.bewaar(templateMet("DK"));
+  t.zetStandaard(metLand);
+  s().nieuwProject();
+  gelijk("een nieuw project volgens een standaardtemplate met land", [s().gegevens.land, s().rapport.normen.includes("DS/EN"), s().rapport.template.land], ["DK", true, "DK"]);
+  // Staat er nog niets in het project, dan volgt het een andere standaard, met zijn land.
+  const metAnderLand = m.useTemplateStore.getState().bewaar({ ...templateMet("FR"), naam: { en: "Other" } });
+  m.useTemplateStore.getState().zetStandaard(metAnderLand);
+  gelijk("een onaangeraakt project volgt de nieuwe standaard, met zijn land", [s().gegevens.land, s().rapport.normen.includes("NF EN")], ["FR", true]);
+  const zonderLand = m.useTemplateStore.getState().bewaar({ ...templateMet(), naam: { en: "Without" } });
+  m.useTemplateStore.getState().zetStandaard(zonderLand);
+  gelijk("een standaard zonder land: het land blijft", s().gegevens.land, "FR");
+  s().nieuwProject();
+  gelijk("een nieuw project met een standaard zonder land: de regio van het systeem", s().gegevens.land, "US");
+  m.useTemplateStore.getState().zetStandaard(null);
+  for (const e of m.useTemplateStore.getState().lijst) m.useTemplateStore.getState().verwijder(e.id);
 
   /** Een rapport voor dit land met alles ingevuld. */
   const ingevuld = (land, taal, gen) => {

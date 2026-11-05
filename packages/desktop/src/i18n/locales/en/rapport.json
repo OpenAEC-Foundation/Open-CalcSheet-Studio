@@ -92,8 +92,10 @@
       "teVeel": "The file has too many parts: the rest was left out.",
       "nieuwereVersie": "The file comes from a newer version of the app (format {{waarde}}): what this version does not know was left out.",
       "geenNaam": "The file has no name.",
-      "onbekendeTekst": "Texts for {{id}} were left out: there is no such part."
-    }
+      "onbekendeTekst": "Texts for {{id}} were left out: there is no such part.",
+      "onbekendLand": "The template names a country this app does not know ({{waarde}}): the country of the project stays."
+    },
+    "landGezet": "The country of the project is now {{land}}."
   },
   "algemeen": {
     "omhoog": "Move up",

@@ -46,7 +46,7 @@ export interface Template {
   leeg?: string[];
   opmaak: Opmaak;
   huisstijl?: Huisstijl;
-  /** Wordt bewaard en doorgegeven (Rapport.template); wat het betekent, staat bij de projectgegevens. */
+  /** Een code uit normen/landen.ts: zet het land in de projectgegevens (pasTemplateToeOpProject in normen/keuze.ts). */
   land?: string;
 }
 
@@ -55,7 +55,7 @@ export type TemplateFout = "teGroot" | "geenJson" | "geenTemplate" | "geenOpzet"
 
 export type TemplateMelding =
   | OpzetMelding
-  | { soort: "nieuwereVersie" | "geenNaam" | "onbekendeTekst"; id?: string; waarde?: string };
+  | { soort: "nieuwereVersie" | "geenNaam" | "onbekendeTekst" | "onbekendLand"; id?: string; waarde?: string };
 
 export type TemplateUitslag =
   | { ok: true; template: Template; meldingen: TemplateMelding[] }
@@ -116,6 +116,7 @@ function leesObject(o: Record<string, unknown>, terugnaam: string): TemplateUits
   const keuze = (v: unknown, standaard: boolean) => (typeof v === "boolean" ? v : standaard);
   const huisstijl = leesHuisstijl(o.huisstijl);
   const land = leesLand(o.land);
+  if (o.land !== undefined && !land) meldingen.push({ soort: "onbekendLand", waarde: typeof o.land === "string" ? o.land : "" });
   return {
     ok: true,
     meldingen,
@@ -173,6 +174,8 @@ function isVariant(tekst: string, varianten: readonly Tekstvariant[]): boolean {
  */
 function isOngemoeid(r: Rapport, id: string, tekst: string): boolean {
   if (normaal(tekst) === "") return true;
+  // Buiten Nederland begint een nieuw rapport hier met de tweede variant (metLandTekst in normen/keuze.ts).
+  if (id === "aardbeving" && isVariant(tekst, STANDAARD_TEKSTEN.aardbeving)) return true;
   const eerste = r.varianten?.[id]?.[0]
     ?? (STANDAARD_IN_NIEUW_RAPPORT.includes(id) ? STANDAARD_TEKSTEN[id]?.[0] : undefined);
   return eerste !== undefined && isVariant(tekst, [eerste]);
@@ -269,9 +272,10 @@ export function nieuwRapportVolgens(datum: string, taal: string, t: Template | n
 /**
  * Maakt een template van dit rapport, om te bewaren. De teksten van nu zijn de teksten waarmee
  * een nieuw rapport begint: getypte tekst wordt de eerste variant, in de taal waarin hij is
- * getypt, en de varianten blijven erachter. De paginakeuzes zitten in de opzet.
+ * getypt, en de varianten blijven erachter. De paginakeuzes zitten in de opzet. `land` is het land
+ * van het project; zonder gaat mee wat het rapport uit zijn template kreeg.
  */
-export function templateUitRapport(r: Rapport, naam: Meertalig, huisstijl?: Huisstijl): Template {
+export function templateUitRapport(r: Rapport, naam: Meertalig, huisstijl?: Huisstijl, land?: string): Template {
   const metPagina = (lijst: readonly Knoop[]): Knoop[] => lijst.map((k) => {
     const { nieuwePagina: standaard, kinderen, ...rest } = k;
     const nieuwePagina = r.nieuwePagina[k.id] ?? standaard;
@@ -311,7 +315,7 @@ export function templateUitRapport(r: Rapport, naam: Meertalig, huisstijl?: Huis
     ...(leeg.length > 0 ? { leeg } : {}),
     opmaak: { ...r.opmaak },
     ...(huisstijl ? { huisstijl: { ...huisstijl } } : {}),
-    ...(r.template?.land ? { land: r.template.land } : {}),
+    ...(land ?? r.template?.land ? { land: land ?? r.template?.land } : {}),
   };
 }
 
