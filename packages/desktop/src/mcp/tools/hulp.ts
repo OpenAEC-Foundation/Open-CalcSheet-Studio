@@ -47,8 +47,8 @@ export const WEG: McpToolAnnotaties = { ...WIJZIGEN, destructiveHint: true };
 
 /** Templateid van een blad dat de gebruiker (of de assistent) zelf schrijft; zie CalcTab. */
 export const LEEG_BLAD = "leeg";
-export const LEEG_BLAD_NAAM = "Blad";
-export const LEEG_BLAD_TEKST = "\"Nieuw blad\n\n";
+export const LEEG_BLAD_NAAM = "Sheet";
+export const LEEG_BLAD_TEKST = "\"New sheet\n\n";
 
 export function zoekBlad(stand: McpProjectStand, id: string): McpBlad | undefined {
   return stand.exemplaren.find((e) => e.id === id);

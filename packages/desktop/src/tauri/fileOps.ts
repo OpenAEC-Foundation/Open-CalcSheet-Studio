@@ -125,7 +125,7 @@ export async function openCalculationFile(): Promise<OpenedFile | null> {
     const { readTextFile } = await import("@tauri-apps/plugin-fs");
 
     const picked = await open({
-      title: "Bestand openen",
+      title: i18next.t("werkruimte:bestandDialoog.openen"),
       multiple: false,
       directory: false,
       filters: SUPPORTED_FILTERS,
@@ -214,7 +214,7 @@ export function kanDirectOpslaan(path: string | null): path is string {
 /** Schrijf een payload over een bestaand bestand heen, zonder dialoog. */
 export async function schrijfCalculationFile(path: string, payload: string): Promise<void> {
   if (!isTauri()) {
-    if (!browserHandle || browserBestandsnaam !== path) throw new Error("Geen geopend bestand om te overschrijven");
+    if (!browserHandle || browserBestandsnaam !== path) throw new Error(i18next.t("werkruimte:bestandDialoog.geenBestand"));
     const writable = await browserHandle.createWritable();
     await writable.write(payload);
     await writable.close();
@@ -246,7 +246,7 @@ export async function saveCalculationFile(
     const scheiding = huidigPad?.match(/[\\/]/)?.[0];
     const map = huidigPad && scheiding ? huidigPad.slice(0, huidigPad.lastIndexOf(scheiding)) : null;
     const path = await save({
-      title: "Bestand opslaan als",
+      title: i18next.t("werkruimte:bestandDialoog.opslaanAls"),
       defaultPath: map ? `${map}${scheiding}${defaultFile}` : defaultFile,
       filters: [
         { name: "OpenAEC Calculation (IFCX)", extensions: ["ifccalculation"] },
@@ -290,4 +290,5 @@ export async function saveCalculationFile(
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   return a.download;
-}
+}import i18next from "i18next";
+

@@ -130,6 +130,16 @@ function losseId(): string {
 }
 
 /**
+ * Een IFCX-bestand zonder project van deze app. Zonder taal: de app zet de melding in de
+ * taal van de gebruiker (werkruimte:bestandDialoog.geenProject), de API geeft deze tekst.
+ */
+export class GeenProjectFout extends Error {
+  constructor() {
+    super("This IFCX file does not contain a project of this app.");
+  }
+}
+
+/**
  * Leest een bestand terug. Accepteert vier vormen:
  *   1. versie 2 — IFCX met een `ocss::project`
  *   2. versie 1 — JSON met `project`
@@ -150,7 +160,7 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
     }
   }
   if (parsed && isIfcxBestand(parsed) && !isProjectIfcx(parsed)) {
-    throw new Error("Dit IFCX-bestand bevat geen project van deze app.");
+    throw new GeenProjectFout();
   }
 
   if (parsed) {

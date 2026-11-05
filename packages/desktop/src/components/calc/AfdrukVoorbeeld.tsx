@@ -68,8 +68,8 @@ function rapportVoet(nummer: number, voetafbeelding: string, bureaunaam: string,
  * loopkop). Het verdelen is voor beide hetzelfde; de maten en de omlijsting
  * van een vel verschillen.
  *
- * De balk erboven, het nummer onder elk vel en wat óp het vel staat, volgen allemaal
- * de taal van de app.
+ * De balk erboven en het nummer onder elk vel volgen de taal van de app, net als wat op
+ * een los blad staat. Wat op een vel van het rapport staat, volgt de taal van het rapport.
  */
 export default function AfdrukVoorbeeld() {
   const { t } = useTranslation("beelden");

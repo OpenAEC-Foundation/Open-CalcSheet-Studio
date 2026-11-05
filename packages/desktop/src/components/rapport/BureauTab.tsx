@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import i18next from "i18next";
 import { useTranslation } from "react-i18next";
 import ThemedSelect from "../ThemedSelect";
 import "../ThemedSelect.css";
@@ -55,7 +56,7 @@ function leesAlsDataUrl(bestand: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const lezer = new FileReader();
     lezer.onload = () => resolve(String(lezer.result));
-    lezer.onerror = () => reject(lezer.error ?? new Error("lezen mislukt"));
+    lezer.onerror = () => reject(lezer.error ?? new Error(i18next.t("settings:bureau.bestandLezenMislukt")));
     lezer.readAsDataURL(bestand);
   });
 }

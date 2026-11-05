@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { ElementRef } from "@ifc-calc/core";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
-import i18next from "../i18n/config";
+import i18next, { LANGUAGES } from "../i18n/config";
 import { leesTaal, normaliseerRapport, standaardRapport, type Rapport } from "../rapport/model";
 import { leesPad } from "../rapport/pad";
 import { datumTekst } from "../rapport/revisies";
@@ -803,17 +803,25 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   markeerOpgeslagen: (bestandspad) => set({ bestandspad, dirty: false }),
 }));
 
+/** Is dit de naam die de app zelf aan een nieuw project gaf, in welke taal dan ook? */
+const isStandaardNaam = (naam: string) =>
+  LANGUAGES.some((l) => i18next.t("werkruimte:project.nieuweNaam", { lng: l.code }) === naam);
+
 /*
  * De bewaarde taal van de app komt pas na het maken van de store binnen, en je kunt hem
  * wisselen voordat je iets hebt gedaan. Een project waar nog niemand aan heeft gezeten,
  * volgt dan de app. Iets dat is geopend of aangeraakt, houdt zijn eigen taal.
  */
-i18next.on("languageChanged", () => {
+function volgTaalVanApp() {
   const s = useProjectStore.getState();
   const taal = appTaal();
   if (s.dirty || s.bestandspad || s.exemplaren.length > 0 || s.rapport.taal === taal || !isNieuwRapport(s.rapport)) return;
-  useProjectStore.setState({ rapport: wisselTaal(s.rapport, taal), projectNaam: nieuweProjectNaam() });
-});
+  useProjectStore.setState({
+    rapport: wisselTaal(s.rapport, taal),
+    ...(isStandaardNaam(s.projectNaam) ? { projectNaam: nieuweProjectNaam() } : {}),
+  });
+}
+i18next.on("languageChanged", volgTaalVanApp);
 
 // Persistentie -------------------------------------------------------------
 // Debounced wegschrijven naar de Tauri-store, zodat de app opent waar je hem
@@ -849,6 +857,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       verborgen: saved.verborgen ?? {},
       dirty: false,
     });
+    volgTaalVanApp();
   }
   // Een expliciete lijst: een nieuw veld moet hier én hierboven bij het
   // hydrateren worden toegevoegd, anders overleeft het geen herstart.

@@ -126,7 +126,8 @@
     "emailVoorbeeld": "name@example.com",
     "constructeurToevoegen": "Add engineer",
     "constructeurVerwijderen": "Remove engineer",
-    "geenConstructeurs": "No engineers yet. In the report you pick the responsible and the executing engineer from this list."
+    "geenConstructeurs": "No engineers yet. In the report you pick the responsible and the executing engineer from this list.",
+    "bestandLezenMislukt": "reading failed"
   },
   "mcp": {
     "intro": "An AI assistant (such as Claude Code, through MCP) or another program (through the REST API) can work with this app: everything you can do in the app, from opening and saving a project to adding sheets, setting inputs, computing and exporting. The server only listens on this computer (127.0.0.1) and requires a token. Changes on this tab apply immediately.",

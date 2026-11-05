@@ -330,7 +330,7 @@ function OpenPanel({
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return t("openPanel.justNow", "Just now");
+    if (diffMin < 1) return t("openPanel.justNow");
     if (diffMin < 60) return t("werkruimte:recent.minuten", { aantal: diffMin });
     const diffHr = Math.floor(diffMin / 60);
     if (diffHr < 24) return t("werkruimte:recent.uren", { aantal: diffHr });
@@ -348,9 +348,9 @@ function OpenPanel({
       >
         <span className="bs-browse-card-icon" dangerouslySetInnerHTML={{ __html: ICONS.open }} />
         <span className="bs-browse-card-info">
-          <span className="bs-browse-card-title">{t("openPanel.browse", "Browse…")}</span>
+          <span className="bs-browse-card-title">{t("openPanel.browse")}</span>
           <span className="bs-browse-card-desc">
-            {t("openPanel.browseDesc", "Open een .cpd of .ifc-calculation bestand vanaf schijf")}
+            {t("openPanel.browseDesc")}
           </span>
         </span>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "auto", opacity: 0.5 }}>
@@ -358,7 +358,7 @@ function OpenPanel({
         </svg>
       </button>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 24, marginBottom: 12 }}>
-        <h2 className="bs-export-title" style={{ margin: 0 }}>{t("openPanel.title", "Recente bestanden")}</h2>
+        <h2 className="bs-export-title" style={{ margin: 0 }}>{t("openPanel.title")}</h2>
         {recentFiles.length > 0 && (
           <button
             onClick={onClearAll}
@@ -371,13 +371,13 @@ function OpenPanel({
               textDecoration: "underline",
             }}
           >
-            {t("openPanel.clearAll", "Wis lijst")}
+            {t("openPanel.clearAll")}
           </button>
         )}
       </div>
       {recentFiles.length === 0 ? (
         <p style={{ color: "var(--theme-text-muted, #888)", fontStyle: "italic" }}>
-          {t("openPanel.noRecent", "No recent files")}
+          {t("openPanel.noRecent")}
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -421,7 +421,7 @@ function OpenPanel({
                   color: "currentColor",
                   flexShrink: 0,
                 }}
-                title={t("openPanel.remove", "Remove")}
+                title={t("openPanel.remove")}
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                   <path d="M3 3l6 6M9 3l-6 6" />

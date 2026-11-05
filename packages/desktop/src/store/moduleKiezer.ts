@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import i18next from "../i18n/config";
 import { templates } from "../templates";
 import { useProjectStore } from "./projectStore";
 import { nieuwVel } from "../components/tekenen/vel";
@@ -58,7 +59,7 @@ export const useModuleKiezer = create<ModuleKiezerState>((set) => ({
   },
   voegLeegBladToe: () => {
     // Net als bij een module: het blad staat meteen in de naamgeefstand.
-    const id = useProjectStore.getState().voegToe(LEEG_BLAD, "Blad", "\"Nieuw blad\n\n");
+    const id = useProjectStore.getState().voegToe(LEEG_BLAD, i18next.t("werkruimte:project.leegBladNaam"), `"${i18next.t("werkruimte:project.leegBladTitel")}\n\n`);
     set({ nieuwId: id, open: false });
   },
 }));

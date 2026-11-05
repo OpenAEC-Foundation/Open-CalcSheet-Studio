@@ -332,7 +332,7 @@ export function bytesNaarBase64(bytes: Uint8Array): Promise<string> {
       const url = String(lezer.result);
       ok(url.slice(url.indexOf(",") + 1));
     };
-    lezer.onerror = () => mis(lezer.error ?? new Error("Bestand lezen mislukt"));
+    lezer.onerror = () => mis(lezer.error ?? new Error(i18next.t("werkruimte:fouten.bestandLezen")));
     lezer.readAsDataURL(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: "application/pdf" }));
   });
 }

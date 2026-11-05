@@ -709,7 +709,7 @@
     "filterZip": "Ingepakte werkmap",
     "lezenMislukt": "Bestanden inlezen mislukt: {{fout}}",
     "schrijvenMislukt": "Werkmap wegschrijven mislukt: {{fout}}",
-    "teGroot": "De werkmap is te groot om in het project te bewaren. Verwijder bestanden in de omgeving.",
+    "teGroot": "De werkmap is groter dan {{mb}} MB.",
     "tab": "Jupyter",
     "paneel": "Jupyter",
     "rij": "Jupyter — werkmap staat in het project",
@@ -761,7 +761,8 @@
       "formule": "Formule: de uitwerking toont de formule, de ingevulde waarden en de uitkomst; eenheden worden vereenvoudigd",
       "voorwaarde": "Voorwaarde: alleen één tak komt in de uitwerking",
       "grafiek": "Grafiek van een functie",
-      "tekening": "Tekening (SVG), ook parametrisch"
+      "tekening": "Tekening (SVG), ook parametrisch",
+      "kopVoorbeeld": "# 1. Invoer"
     },
     "syntaxNoot": "Alles staat ook als knop op de lintab Rekentaal; Help legt het volledig uit.",
     "voorbeeld": "Voorbeeldblad openen",
@@ -829,6 +830,52 @@
     }
   },
   "project": {
-    "nieuweNaam": "Nieuw project"
+    "nieuweNaam": "Nieuw project",
+    "leegBladNaam": "Blad",
+    "leegBladTitel": "Nieuw blad"
+  },
+  "belastingsgevallen": {
+    "titel": "Belastingsgevallen",
+    "nieuw": "Nieuw belastingsgeval",
+    "nieuwKnop": "+ nieuw",
+    "verwijderTitel": "Verwijder {{naam}}",
+    "verwijderVraag": "Verwijder belastingsgeval \"{{naam}}\"?"
+  },
+  "pdfVoorbeeld": {
+    "titel": "PDF voorvertoning — {{naam}}",
+    "kader": "PDF voorvertoning {{naam}}",
+    "bezig": "PDF wordt gegenereerd…",
+    "bezigUitleg": "Rapportengine: de eerste keer kan een paar seconden duren.",
+    "mislukt": "PDF generatie mislukt",
+    "sluiten": "Sluiten",
+    "opslaan": "Opslaan…",
+    "opslaanAls": "Opslaan als…"
+  },
+  "pdfRapport": {
+    "alleenApp": "PDF-rapportgeneratie werkt alleen in de desktop-app, niet in de browser preview.",
+    "opslaanTitel": "PDF rapport opslaan",
+    "filter": "PDF document"
+  },
+  "bestandDialoog": {
+    "openen": "Bestand openen",
+    "opslaanAls": "Bestand opslaan als",
+    "geenBestand": "Geen geopend bestand om te overschrijven",
+    "geenProject": "Dit IFCX-bestand bevat geen project van deze app."
+  },
+  "ifcxBewaren": {
+    "titel": "IFCX opslaan",
+    "alleBestanden": "Alle bestanden"
+  },
+  "normbestanden": {
+    "opslagNietBeschikbaar": "Lokale opslag niet beschikbaar",
+    "lezenMislukt": "Normbestand lezen mislukt",
+    "opslaanMislukt": "Lokale opslag mislukt",
+    "opslaanAfgebroken": "Lokale opslag afgebroken",
+    "geenPdf": "Kies een geldig PDF-bestand",
+    "teGroot": "PDF is groter dan 100 MB"
+  },
+  "fouten": {
+    "bestandLezen": "Bestand lezen mislukt",
+    "geenVellen": "Het afdrukvoorbeeld bouwde geen vellen."
   }
 }

@@ -166,80 +166,80 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
           <RibbonButton icon={settingsIcon} label={t("calc.settings")} size="large" onClick={() => onSettingsClick?.()} />
         </RibbonGroup>
 
-        <RibbonGroup label={t("calc.clipboard", "Klembord")}>
-          <RibbonButton icon={pasteIcon} label={t("calc.paste", "Plakken")} size="large" disabled={!view && !cellen} onClick={cellen ? () => uitvoeren(plakKlembord) : plak} />
+        <RibbonGroup label={t("calc.clipboard")}>
+          <RibbonButton icon={pasteIcon} label={t("calc.paste")} size="large" disabled={!view && !cellen} onClick={cellen ? () => uitvoeren(plakKlembord) : plak} />
           <RibbonButtonStack>
-            <RibbonButton icon={cutIcon} label={t("calc.cut", "Knippen")} size="small" disabled={!view && !cellen} onClick={() => (cellen ? uitvoeren(() => kopieerCellen(true)) : kopieer(true))} />
-            <RibbonButton icon={copyIcon} label={t("calc.copy", "Kopiëren")} size="small" disabled={!view && !cellen} onClick={() => (cellen ? uitvoeren(() => kopieerCellen(false)) : kopieer(false))} />
+            <RibbonButton icon={cutIcon} label={t("calc.cut")} size="small" disabled={!view && !cellen} onClick={() => (cellen ? uitvoeren(() => kopieerCellen(true)) : kopieer(true))} />
+            <RibbonButton icon={copyIcon} label={t("calc.copy")} size="small" disabled={!view && !cellen} onClick={() => (cellen ? uitvoeren(() => kopieerCellen(false)) : kopieer(false))} />
           </RibbonButtonStack>
         </RibbonGroup>
 
-        <RibbonGroup label={t("calc.edit", "Bewerken")}>
+        <RibbonGroup label={t("calc.edit")}>
           <RibbonButtonStack>
             <RibbonButton
               icon={undoIcon}
-              label={t("calc.undo", "Ongedaan")}
+              label={t("calc.undo")}
               size="small"
               disabled={cellen ? !cellenKanOngedaan : !kanOngedaan}
               onClick={cellen ? cellenOngedaan : ongedaan}
             />
             <RibbonButton
               icon={redoIcon}
-              label={t("calc.redo", "Opnieuw")}
+              label={t("calc.redo")}
               size="small"
               disabled={cellen ? !cellenKanOpnieuw : !kanOpnieuw}
               onClick={cellen ? cellenOpnieuw : opnieuw}
             />
-            <RibbonButton icon={searchIcon} label={t("calc.find", "Zoeken")} size="small" disabled={!view} onClick={zoek} />
+            <RibbonButton icon={searchIcon} label={t("calc.find")} size="small" disabled={!view} onClick={zoek} />
           </RibbonButtonStack>
         </RibbonGroup>
 
-        <RibbonGroup label={t("calc.sheets", "Bladen")}>
-          <RibbonButton icon={moduleIcon} label={t("calc.module", "Module")} size="large" onClick={() => openModuleKiezer()} />
-          <RibbonButton icon={blankSheetIcon} label={t("calc.blankSheet", "Leeg blad")} size="large" onClick={leegBlad} />
+        <RibbonGroup label={t("calc.sheets")}>
+          <RibbonButton icon={moduleIcon} label={t("calc.module")} size="large" onClick={() => openModuleKiezer()} />
+          <RibbonButton icon={blankSheetIcon} label={t("calc.blankSheet")} size="large" onClick={leegBlad} />
           <RibbonButton
             icon={spreadsheetIcon}
-            label={t("calc.spreadsheet", "Spreadsheet")}
+            label={t("calc.spreadsheet")}
             size="large"
             onClick={() => voegLeegSpreadsheetToe(useProjectStore.getState().voegSpreadsheetToe)}
           />
           <RibbonButton
             icon={markdownIcon}
-            label={t("calc.markdown", "Markdown")}
+            label={t("calc.markdown")}
             size="large"
             onClick={() => voegLeegMarkdownToe(useProjectStore.getState().voegMarkdownToe)}
           />
           <RibbonButton
             icon={canvasIcon}
-            label={t("calc.canvas", "Canvas")}
+            label={t("calc.canvas")}
             size="large"
             onClick={() => useProjectStore.getState().voegCanvasToe(t("werkruimte:canvas.nieuweNaam"))}
           />
-          <RibbonButton icon={graafIcon} label={t("calc.graaf", "Grafblad")} size="large" onClick={voegLeegGrafbladToe} />
+          <RibbonButton icon={graafIcon} label={t("calc.graaf")} size="large" onClick={voegLeegGrafbladToe} />
           <RibbonButton
             icon={jupyterIcon}
-            label={t("calc.jupyter", "Jupyter")}
+            label={t("calc.jupyter")}
             size="large"
             onClick={() => voegLeegJupyterToe(useProjectStore.getState().voegJupyterToe)}
           />
           <RibbonButton
             icon={marimoIcon}
-            label={t("calc.marimo", "Marimo")}
+            label={t("calc.marimo")}
             size="large"
             onClick={() => voegLeegMarimoToe(useProjectStore.getState().voegMarimoToe)}
           />
         </RibbonGroup>
 
-        <RibbonGroup label={t("calc.output", "Uitvoer")}>
+        <RibbonGroup label={t("calc.output")}>
           <RibbonButton
             icon={previewIcon}
-            label={t("calc.preview", "Voorbeeld")}
+            label={t("calc.preview")}
             size="large"
             onClick={handleVoorbeeld}
           />
           <RibbonButton
             icon={printSheetIcon}
-            label={t("calc.pdfSheet", "PDF blad")}
+            label={t("calc.pdfSheet")}
             size="large"
             disabled={!bladOpen}
             onClick={handlePrintBlad}

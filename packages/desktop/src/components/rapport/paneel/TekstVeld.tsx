@@ -36,9 +36,9 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
   placeholder?: string;
 }) {
   const { t, i18n } = useTranslation("rapport");
-  const rapport = useProjectStore((s) => s.rapport);
-  const tekst = rapport.teksten[id] ?? "";
-  const andereTaal = andereTaalVan(rapport, id);
+  const rapportTaal = useProjectStore((s) => s.rapport.taal);
+  const tekst = useProjectStore((s) => s.rapport.teksten[id] ?? "");
+  const andereTaal = useProjectStore((s) => andereTaalVan(s.rapport, id));
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
   const eigen = useBureauStore((s) => s.eigenTeksten[id] ?? GEEN_EIGEN);
@@ -47,7 +47,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
   // Als gewone tekst: het label in de taal van de app, de tekst in die van het rapport.
   const meegeleverd: EigenVariant[] = (STANDAARD_TEKSTEN[id] ?? GEEN).map((v) => ({
     label: inTaal(v.label, i18n.language),
-    tekst: inTaal(v.tekst, rapport.taal),
+    tekst: inTaal(v.tekst, rapportTaal),
   }));
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -205,7 +205,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
         <span className="rapport-hint">
           {t("tekstveld.andereTaal", {
             taal: t(`document.talen.${andereTaal}`, { defaultValue: andereTaal }),
-            rapportTaal: t(`document.talen.${rapport.taal}`, { defaultValue: rapport.taal }),
+            rapportTaal: t(`document.talen.${rapportTaal}`, { defaultValue: rapportTaal }),
           })}
         </span>
       )}

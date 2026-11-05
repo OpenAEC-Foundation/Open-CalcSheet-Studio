@@ -230,6 +230,23 @@
       "teGroot": "This drawing is too large for a calculation sheet (more than {{max}} elements). Save only the part you need as DXF.",
       "groot": "This drawing has {{aantal}} elements ({{mb}} MB of SVG) and is stored as text in the sheet and the project file. Insert it anyway?",
       "mislukt": "The drawing could not be converted: {{fout}}"
+    },
+    "plek": {
+      "Titel": "Title",
+      "Kop": "Heading",
+      "tekst": "text",
+      "vet": "bold",
+      "cursief": "italic",
+      "onderstreept": "underlined",
+      "opmerking": "note",
+      "naam": "name",
+      "keuze": "choice",
+      "Omschrijving": "Description",
+      "Optie": "Option",
+      "bestand": "file",
+      "voorwaarde": "condition",
+      "DraaibaarModel": "Rotatable model",
+      "waarde": "value"
     }
   },
   "help": {
@@ -285,6 +302,14 @@
       "drieD": "Rotatable 3D view with dimensions from the sheet",
       "iframe": "External page at sheet width; loads only after you confirm",
       "js": "Script with the sheet's values as calc, for example a rotatable model with bibliotheek=three; runs only after you confirm"
+    },
+    "invoeg": {
+      "titel": "\"Project title",
+      "vet": "'<b>Bold</b>",
+      "hoofdstuk": "# 1. Input",
+      "commentaar": "// comment",
+      "include": "#include file.cpd",
+      "jsTitel": "Values from the sheet"
     }
   },
   "editor": {

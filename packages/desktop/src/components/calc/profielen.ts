@@ -264,7 +264,7 @@ function matrix<G extends string>(
   const gekozen = ids
     ? ids.map((id) => {
         const regel = regels.find((r) => r[0] === id);
-        if (!regel) throw new Error(`profielen.ts: onbekend id ${id}`);
+        if (!regel) throw new Error(`profielen.ts: unknown id ${id}`);
         return regel;
       })
     : regels;

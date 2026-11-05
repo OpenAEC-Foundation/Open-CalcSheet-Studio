@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLoadCaseStore } from "../../store/loadCaseStore";
 import "./LoadCaseTabs.css";
 
@@ -8,6 +9,7 @@ import "./LoadCaseTabs.css";
  * against those values.
  */
 export default function LoadCaseTabs() {
+  const { t } = useTranslation("werkruimte");
   const cases = useLoadCaseStore((s) => s.cases);
   const activeId = useLoadCaseStore((s) => s.activeId);
   const switchTo = useLoadCaseStore((s) => s.switchTo);
@@ -25,8 +27,8 @@ export default function LoadCaseTabs() {
   };
 
   return (
-    <div className="load-case-tabs" role="tablist" aria-label="Belastingsgevallen">
-      <div className="load-case-label">Belastingsgevallen</div>
+    <div className="load-case-tabs" role="tablist" aria-label={t("belastingsgevallen.titel")}>
+      <div className="load-case-label">{t("belastingsgevallen.titel")}</div>
       <div className="load-case-strip">
         {cases.map((c) => {
           const isActive = c.id === activeId;
@@ -58,10 +60,10 @@ export default function LoadCaseTabs() {
               {cases.length > 1 && !isEditing && (
                 <button
                   className="load-case-close"
-                  title={`Verwijder ${c.label}`}
+                  title={t("belastingsgevallen.verwijderTitel", { naam: c.label })}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm(`Verwijder belastingsgeval "${c.label}"?`)) removeCase(c.id);
+                    if (confirm(t("belastingsgevallen.verwijderVraag", { naam: c.label }))) removeCase(c.id);
                   }}
                 >
                   ×
@@ -72,10 +74,10 @@ export default function LoadCaseTabs() {
         })}
         <button
           className="load-case-add"
-          title="Nieuw belastingsgeval"
+          title={t("belastingsgevallen.nieuw")}
           onClick={() => addCase()}
         >
-          + nieuw
+          {t("belastingsgevallen.nieuwKnop")}
         </button>
       </div>
     </div>
