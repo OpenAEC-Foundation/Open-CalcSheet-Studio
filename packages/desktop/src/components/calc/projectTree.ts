@@ -121,6 +121,8 @@ export interface ModuleInfo {
   status?: ModuleStatus;
   /** Categorie waaronder hij in de catalogus staat (Staal, Beton, ...). */
   categorie: string;
+  /** De naam in beide talen, bij een module uit de online bibliotheek. */
+  namen?: { nl: string; en: string };
 }
 
 function verzamel(nodes: TreeNode[], categorie: string, uit: Record<string, ModuleInfo>) {
@@ -140,7 +142,7 @@ function verzamel(nodes: TreeNode[], categorie: string, uit: Record<string, Modu
   }
 }
 
-/** Sjabloon-id naar label en status, voor de naamgeving van nieuwe exemplaren. */
+/** Sjabloon-id naar label en status. De naam van een nieuw blad staat in moduleNaam.ts. */
 export const modulesPerTemplate: Record<string, ModuleInfo> = (() => {
   const uit: Record<string, ModuleInfo> = {};
   verzamel(moduleCatalogus, "Algemeen", uit);
