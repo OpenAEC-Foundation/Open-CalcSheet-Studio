@@ -19,7 +19,9 @@
  *   6. de knop "Rapport (PDF)" komt vanuit een koude start tot aan de printdialoog,
  *      met dezelfde vellen en nummers;
  *   7. in de app (nagebootste Rust-schil) vraagt die knop een bestandsnaam en schrijft
- *      hij zonder printdialoog; mislukt dat, dan volgt een melding en de printdialoog.
+ *      hij zonder printdialoog; mislukt dat, dan volgt een melding en de printdialoog;
+ *   8. een project met versies: de revisie op het voorblad, de lijst met wijzigingen bij de
+ *      inhoudsopgave, en bij elke regel de plek op precies die pagina.
  *
  * Met --app-pdf gaan dezelfde controles ook over een PDF die de gebouwde app zelf
  * schreef (scripts/proef-rapport-app.mjs), en moet die pagina voor pagina gelijk zijn
@@ -39,6 +41,11 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bouwGemengdProject, BLADEN, KENMERKEN, LANG, MARKDOWN_KOPPEN, PDF_PAGINAS } from "./lib/gemengd-project.mjs";
+import { bouwProjectBestand } from "../packages/desktop/src/store/projectBestand.ts";
+import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
+import { beginVersies, nieuweVersie } from "../packages/desktop/src/store/versies.ts";
+import { standaardRapport } from "../packages/desktop/src/rapport/model.ts";
+import { standaardTeksten } from "../packages/desktop/src/rapport/standaardteksten.ts";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const REPO = join(hier, "..");
@@ -123,6 +130,7 @@ try {
     console.log(`\n${"═".repeat(72)}\nDe PDF uit de gebouwde app: ${appPdf}\n${"═".repeat(72)}`);
     vergelijk(await controleer(appPdf), paginas);
   }
+  await controleerVersies();
 } catch (e) {
   console.error(e?.stack ?? e);
   fouten++;
@@ -406,4 +414,70 @@ async function controleer(pad) {
   meld(notitie.some((r) => r.includes("foto/ontbreekt.png")), "een afbeelding die er niet is: het adres staat er");
   meld(notitieVellen.reduce((s, p) => s + p.afbeeldingen, 0) >= 2, "de afbeelding uit de tekst staat op papier, naast de werkmap");
   return paginas;
+}
+
+// ── Versies ───────────────────────────────────────────────────────────────────
+
+/** Een project met een tak, zoals de app het opslaat: de lijst maakt de app zelf bij het afdrukvoorbeeld. */
+function bouwVersieProject() {
+  const blad = (id, naam, waarden, source) => ({ id, naam, templateId: "", source, waarden, elementen: [] });
+  const balk = (id, naam, waarden) => blad(id, naam, waarden, "# Balk van hout — EN 1995\nb = ?{100}mm\nh = ?{300}mm\nM_Ed = 12.5*kN*m\nf_m_d = 13.6*N/mm^2\nW_y = b*h^2/6\nUC_buiging = M_Ed/(W_y*f_m_d)\nUC_max = UC_buiging\n");
+  const stand = {
+    exemplaren: [balk("ex-1", "Balk begane grond", {}), balk("ex-2", "Balk verdieping", {}), balk("ex-3", "Balk vervalt", {})],
+    gegevens: { ...legeGegevens(), project_naam: "Project met versies" },
+    rapport: standaardRapport("01-11-2026", standaardTeksten("nl"), "nl"),
+    activeId: "ex-1",
+    versies: beginVersies(),
+    verleden: [],
+    toekomst: [],
+    stapels: {},
+  };
+  const tak = { ...stand, ...nieuweVersie(stand, { id: "v-b", datum: "05-11-2026", omschrijving: "Balk verdieping hoger" }) };
+  const rapport = { ...tak.rapport, teksten: { ...tak.rapport.teksten, inleiding: "Een andere inleiding." }, wijzigingen: { "blad:ex-2": { toelichting: "Op verzoek van de architect." } } };
+  const exemplaren = tak.exemplaren.filter((e) => e.id !== "ex-3").map((e) => (e.id === "ex-2" ? { ...e, waarden: { h: "200" } } : e));
+  return bouwProjectBestand({ versie: 2, naam: "Project met versies", gegevens: tak.gegevens, exemplaren, rapport, versies: tak.versies }, null);
+}
+
+/** De lijst met wijzigingen in een echte PDF: elke regel met zijn pagina, en de plek op die pagina. */
+async function controleerVersies() {
+  console.log("\nVersies");
+  const pad = join(map, "versies.ifccalculation");
+  const uit = join(map, "versies.pdf");
+  writeFileSync(pad, bouwVersieProject());
+  const r = spawnSync(process.execPath, [join(hier, "rapport-pdf.mjs"), pad, uit, "--url", url, "--browser", browser, ...schaal], { encoding: "utf8", timeout: 300000 });
+  if (r.status !== 0) throw new Error(`rapport-pdf.mjs mislukte op het project met versies:\n${r.stdout}\n${r.stderr}`);
+  const paginas = await leesPdf(uit);
+  const voorblad = paginas[0].regels.map((x) => x.tekst);
+  meld(voorblad.some((x) => /^Datum wijz\. B\b.*05-11-2026/.test(x)), "de nieuwe versie is een regel op het voorblad", voorblad.join(" / "));
+  const begin = paginas.findIndex((p) => p.regels.some((x) => x.tekst === "Wijzigingen in deze versie"));
+  const eersteHoofdstuk = paginas.findIndex((p) => p.regels.some((x) => x.tekst === "1 Inleiding"));
+  meld(begin >= 1 && begin < eersteHoofdstuk, "de lijst staat bij de inhoudsopgave, voor hoofdstuk 1", `${begin + 1} en ${eersteHoofdstuk + 1}`);
+  const regels = paginas.slice(begin, eersteHoofdstuk).flatMap((p) => p.regels).filter((x) => x.y > 45);
+  const vanaf = regels.findIndex((x) => x.tekst === "Wijzigingen in deze versie");
+  const lijst = regels.slice(vanaf + 1);
+  const tekstLijst = lijst.map((x) => x.tekst);
+  meld(tekstLijst[0]?.includes("Versie B") && tekstLijst[0]?.includes("Balk verdieping hoger"), "de versie staat erboven", tekstLijst[0]);
+  const metPagina = lijst.flatMap((x) => {
+    const laatste = x.stukken[x.stukken.length - 1];
+    return /^\d+$/.test(laatste.tekst) && laatste.x > 480 ? [{ tekst: x.stukken.slice(0, -1).map((s) => s.tekst).join(" "), pagina: Number(laatste.tekst) }] : [];
+  });
+  meld(metPagina.some((x) => x.tekst === "1 Inleiding"), "de gewijzigde tekst staat erin, met een pagina", tekstLijst.join(" / "));
+  const fout = [];
+  for (const { tekst, pagina } of metPagina) {
+    const blad = /^(A\.\d+) (.+)$/.exec(tekst);
+    const eerst = paginas.slice(eersteHoofdstuk).find((p) => {
+      if (!blad) return p.regels.some((x) => x.tekst === tekst);
+      const stukken = p.regels.flatMap((x) => x.stukken);
+      return stukken.some((nr) => nr.tekst === blad[1] && stukken.some((naam) => naam.tekst === blad[2] && naam.x > nr.x && Math.abs(naam.y - nr.y) < 12));
+    });
+    if (eerst?.n !== pagina) fout.push(`"${tekst}" zegt ${pagina}, staat op ${eerst?.n ?? "geen enkele pagina"}`);
+  }
+  meld(metPagina.some((x) => /^A\.\d+ Balk verdieping$/.test(x.tekst)), "het gewijzigde blad staat erin, met zijn nummer en pagina", metPagina.map((x) => x.tekst).join(" / "));
+  meld(fout.length === 0, `bij elk van de ${metPagina.length} regels staat de plek op die pagina en op geen eerdere`, fout.join("; "));
+  const samen = zonderWit(tekstLijst.join(" "));
+  meld(samen.includes(zonderWit("Invoer: h 300 → 200.")), "met wat er is gewijzigd", tekstLijst.join(" / "));
+  meld(samen.includes(zonderWit("Oordeel: voldoet → voldoet niet.")), "ook het oordeel uit de doorrekening");
+  meld(samen.includes(zonderWit("Op verzoek van de architect.")), "en de toelichting van de gebruiker");
+  meld(samen.includes(zonderWit("Balk vervalt")) && samen.includes("Vervallen."), "een blad dat niet meer bestaat, staat er zonder pagina");
+  meld(paginas.some((p) => p.regels.some((x) => x.tekst === "1 Inleiding")), "de hoofdstukken houden hun nummers");
 }
