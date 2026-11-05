@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { staatBijInhoudsopgave, type Rapportknoop } from "../../../rapport/opzet";
 import { vulIn } from "../../../rapport/invullen";
+import { bladNormUit, normAfwijking } from "../../../rapport/normen/keuze";
+import { bladNormTekst } from "../../calc/BladNorm";
 import { samenvatting } from "../../calc/bladResultaat";
 import { MATEN } from "../../calc/paginering";
 import { bladSoortVan } from "../../calc/bladSoorten";
@@ -12,6 +14,7 @@ import { Cel, Leeg, PaginaCel, Rij, Tekst, Vlak } from "./raster";
 import { Bestaand, Bouwwerk, Brand, Conservering, Factoren, Materialen, Vervormingen } from "./Uitgangspunten";
 import { Groep, Sneeuw, Veranderlijk, Wind } from "./Belastingen";
 import { WijzigingenRegels } from "./Wijzigingen";
+import { LokaleAardbeving } from "./Lokaal";
 
 /*
  * De hoofdstukken van het rapport: koppen met nummering, en per soort inhoud
@@ -118,11 +121,16 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
   const toelichting = w.rapport.toelichting[blad.id] ?? "";
   const inHoofdstuk = blad.bijlage === "";
   const soort = b && bladSoortVan(b.ex);
+  const afwijking = b ? normAfwijking(w.normkeuze, bladNormUit(b.ex.source)) : null;
+  // Een oordeel volgens een ander stelsel is hier geen oordeel: de veilige kant is "niet getoetst".
+  const resultaat = b && afwijking?.soort === "eigen" ? { ...b.resultaat, voldoet: null, nietGetoetst: true } : b?.resultaat;
   return (
     <>
+      {/* Boven de uitkomst: wat eronder staat, geldt volgens die norm. */}
+      {afwijking && <p className="rpa-tekst rpa-normmelding">{bladNormTekst(w.t, afwijking, w.normkeuze, w.taal)}</p>}
       {/* Zonder UC of oordeel zegt de samenvatting niets meer dan de kop. */}
-      {b && (b.resultaat.uc !== null || b.resultaat.voldoet !== null) && (
-        <p className="rpa-tekst">{samenvatting(b.resultaat, w.taal)}</p>
+      {b && resultaat && (b.resultaat.uc !== null || b.resultaat.voldoet !== null) && (
+        <p className="rpa-tekst">{samenvatting(resultaat, w.taal)}</p>
       )}
       {toelichting.trim() && <Tekst tekst={toelichting} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />}
       {inHoofdstuk && b && soort ? (
@@ -169,6 +177,11 @@ function InhoudVan({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
       return <Wind w={w} />;
     case "veranderlijk":
       return <Veranderlijk w={w} />;
+    case "aardbeving":
+      // In Nederland alleen de tekst, zoals een gewoon tekstblok.
+      return w.normkeuze.nlTabellen
+        ? <Tekst tekst={w.rapport.teksten[knoop.id]} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />
+        : <LokaleAardbeving w={w} />;
     case "berekeningen":
       return <BerekeningenInhoud knoop={knoop} w={w} />;
     case "wijzigingen":

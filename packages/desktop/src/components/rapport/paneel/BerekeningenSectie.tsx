@@ -5,7 +5,10 @@ import { rekentaalImageUrls, rekentaalIncludes } from "../../../templates/rekent
 import { bronVoorUitvoer } from "../../../templates/vertalingen";
 import { projectScope } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
+import { bladNormUit, normAfwijking } from "../../../rapport/normen/keuze";
 import { staatInHoofdstuk, type Knoop } from "../../../rapport/opzet";
+import { useNormkeuze } from "../../../store/actiefBlad";
+import { bladNormTekst } from "../../calc/BladNorm";
 import { leesResultaat, samenvatting, type Resultaat } from "../../calc/bladResultaat";
 import { bladSoortVan, bladVoorOpzet } from "../../calc/bladSoorten";
 import { GroeiVeld, Sectie, SubkopMelding, useOpzetStand, useRapport, Vink } from "./velden";
@@ -49,9 +52,10 @@ function useUitkomsten(taal: string): Map<string, Uitkomst> {
  * zelf staat of in bijlage A.
  */
 export default function BerekeningenSectie({ knoop, titel }: { knoop: Knoop; titel: string }) {
-  const { t } = useTranslation("rapport");
+  const { t, i18n } = useTranslation("rapport");
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const zet = useProjectStore((s) => s.zetRapportVeld);
+  const k = useNormkeuze();
   const rapport = useRapport();
   const stand = useOpzetStand();
   const uitkomsten = useUitkomsten(rapport.taal);
@@ -74,7 +78,11 @@ export default function BerekeningenSectie({ knoop, titel }: { knoop: Knoop; tit
       )}
       {exemplaren.map((ex) => {
         const uitkomst = uitkomsten.get(ex.id);
-        const r = uitkomst?.resultaat;
+        const afwijking = normAfwijking(k, bladNormUit(ex.source));
+        // Een oordeel volgens een ander stelsel dan dat van dit land: dan staat er niet getoetst, net als op papier.
+        const r = uitkomst && afwijking?.soort === "eigen"
+          ? { ...uitkomst.resultaat, voldoet: null, nietGetoetst: true }
+          : uitkomst?.resultaat;
         // Zonder UC, oordeel of eigen kop zegt de samenvatting niets meer dan de naam.
         const zegtIets = !!r && (r.titel !== ex.naam || r.uc !== null || r.voldoet !== null);
         const plaats = stand.blad(ex.id);
@@ -94,6 +102,7 @@ export default function BerekeningenSectie({ knoop, titel }: { knoop: Knoop; tit
                 </span>
               )}
             </div>
+            {afwijking && <p className="rapport-melding-blok rapport-hint">{bladNormTekst(t, afwijking, k, i18n.language)}</p>}
             {/* De samenvatting is de tekst zoals hij in het rapport komt. */}
             {r && zegtIets && <p className="rapport-samenvatting">{samenvatting(r, rapport.taal)}</p>}
             {uitkomst?.fout && (

@@ -14,7 +14,8 @@
  * rechtstreeks in Node.
  */
 import { inTaal, type Meertalig } from "./meertalig.ts";
-import { inNotatie, leesTaal, MEEGELEVERD, type Opbouw, type Rapport } from "./model.ts";
+import { inNotatie, leesTaal, MEEGELEVERD, type LokaleInvoer, type Opbouw, type Rapport } from "./model.ts";
+import { NEDERLAND, pasRapportAan, type Normkeuze } from "./normen/keuze.ts";
 import { zetOpPad, type Pad } from "./pad.ts";
 import { zelfdeWaarde } from "./opzet.ts";
 import { variantenVan } from "./standaardteksten.ts";
@@ -41,6 +42,22 @@ function wisselOpbouw(o: Opbouw, naar: string): Opbouw {
   return o.soort === "vlak"
     ? { ...o, lagen: o.lagen.map((l) => ({ ...l, d: n(l.d), rho: n(l.rho), p: n(l.p) })) }
     : { ...o, lagen: o.lagen.map((l) => ({ ...l, p: n(l.p), h: n(l.h), vulling: n(l.vulling) })) };
+}
+
+/** De invoer buiten de Nederlandse tabellen: meegeleverde namen wisselen, getallen krijgen de notatie. */
+function wisselLokaal(l: LokaleInvoer, naar: string): LokaleInvoer {
+  const n = (s: string) => inNotatie(s, naar);
+  const waarden = (w: Record<string, string>) => Object.fromEntries(Object.entries(w).map(([k, v]) => [k, n(v)]));
+  const m = MEEGELEVERD;
+  return {
+    ...l,
+    wind: { ...l.wind, waarden: waarden(l.wind.waarden), q: n(l.wind.q) },
+    sneeuw: { ...l.sneeuw, waarden: waarden(l.sneeuw.waarden), s: n(l.sneeuw.s) },
+    aardbeving: { ...l.aardbeving, waarden: waarden(l.aardbeving.waarden) },
+    factoren: l.factoren.map((f) => ({ ...f, naam: wissel(f.naam, m.factorNaam, naar), gGinf: n(f.gGinf), gGsup: n(f.gGsup), gQ1: n(f.gQ1), gQi: n(f.gQi) })),
+    psi: l.psi.map((p) => ({ naam: wissel(p.naam, m.psiNaam, naar), psi0: n(p.psi0), psi1: n(p.psi1), psi2: n(p.psi2) })),
+    klassen: l.klassen.map((k) => ({ omschrijving: wissel(k.omschrijving, m.psiNaam, naar), qk: n(k.qk), Qk: n(k.Qk) })),
+  };
 }
 
 /**
@@ -115,6 +132,7 @@ export function wisselTaal(r: Rapport, naar: string): Rapport {
       vloerenDaken: b.vloerenDaken.map((o) => wisselOpbouw(o, naar)),
       wanden: b.wanden.map((o) => wisselOpbouw(o, naar)),
     },
+    ...(r.lokaal ? { lokaal: Object.fromEntries(Object.entries(r.lokaal).map(([code, l]) => [code, wisselLokaal(l, naar)])) } : {}),
   };
 }
 
@@ -151,8 +169,9 @@ export function andereTaalVan(r: Rapport, id: string): string | null {
 /**
  * Heeft nog niemand aan dit rapport gezeten? Dan mag het de taal van de app volgen. De
  * datum van de eerste revisie telt niet mee. Met een template: is het precies een nieuw
- * rapport volgens dat template?
+ * rapport volgens dat template? `keuze`: het land van het project, want een nieuw rapport buiten
+ * Nederland begint anders.
  */
-export function isNieuwRapport(r: Rapport, template: Template | null = null): boolean {
-  return zelfdeWaarde(r, nieuwRapportVolgens(r.revisies[0]?.datum ?? "", r.taal, template));
+export function isNieuwRapport(r: Rapport, template: Template | null = null, keuze: Normkeuze = NEDERLAND): boolean {
+  return zelfdeWaarde(r, pasRapportAan(nieuwRapportVolgens(r.revisies[0]?.datum ?? "", r.taal, template), NEDERLAND, keuze));
 }

@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 import { LANGUAGES } from "../../../i18n/config";
 import { inTaal } from "../../../rapport/meertalig";
 import { FASEN, TITELS } from "../../../rapport/model";
+import { dekkingVan } from "../../../rapport/normen/keuze";
+import { useNormkeuze } from "../../../store/actiefBlad";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { useProjectStore } from "../../../store/projectStore";
 import { Afgeleid, Keuze, Sectie, TekstVak, Veld, useRapport, type Optie } from "./velden";
@@ -11,9 +13,10 @@ import { Afgeleid, Keuze, Sectie, TekstVak, Veld, useRapport, type Optie } from 
  * projectgegevens zit.
  */
 export default function DocumentSectie() {
-  const { t } = useTranslation("rapport");
+  const { t, i18n } = useTranslation("rapport");
   const rapport = useRapport();
   const gegevens = useProjectStore((s) => s.gegevens);
+  const k = useNormkeuze();
   const profiel = useBureauStore((s) => s.profiel);
 
   // Zelfde bureau als op papier: het vastgelegde, of zolang dat leeg is het profiel.
@@ -60,7 +63,8 @@ export default function DocumentSectie() {
         />
         <Keuze label={t("document.fase")} pad="fase" waarde={rapport.fase} opties={faseOpties} />
       </div>
-      <Veld label={t("document.normen")} pad="normen" waarde={rapport.normen} />
+      <Veld label={t("document.normen")} pad="normen" waarde={rapport.normen} hint={t("document.normenHint")} />
+      {dekkingVan(k.land) === "verwijzing" && <p className="rapport-hint">{t("lokaal.alleenVerwijzing", { land: inTaal(k.land.naam, i18n.language) })}</p>}
       <div className="rapport-rij">
         <Keuze
           label={t("document.verantwoordelijk")}
@@ -94,6 +98,7 @@ export default function DocumentSectie() {
           { label: t("document.projectnaam"), waarde: gegevens.project_naam || "—" },
           { label: t("document.opdrachtgever"), waarde: gegevens.opdrachtgever || "—" },
           { label: t("document.locatie"), waarde: gegevens.locatie || "—" },
+          { label: t("document.land"), waarde: inTaal(k.land.naam, i18n.language) },
         ]}
       />
     </Sectie>

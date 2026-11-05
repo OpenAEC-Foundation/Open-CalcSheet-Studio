@@ -164,7 +164,28 @@
     "verwijder": "Remove",
     "verwijderLabel": "Remove {{nummer}}",
     "verwijderVraag": "Remove {{nummer}} ({{editie}}) from the local library?",
-    "nietBeschikbaar": "The PDF is no longer available"
+    "nietBeschikbaar": "The PDF is no longer available",
+    "onderwerp": "Topic",
+    "norm": "Standard",
+    "editieKop": "Edition",
+    "uitgever": "Publisher",
+    "bron": "Official source",
+    "teBevestigen": "to be confirmed",
+    "onderwerpen": {
+      "belastingen": "Actions",
+      "wind": "Wind",
+      "sneeuw": "Snow",
+      "aardbeving": "Seismic",
+      "beton": "Concrete",
+      "staal": "Steel",
+      "hout": "Timber",
+      "metselwerk": "Masonry",
+      "funderingen": "Foundations"
+    },
+    "compleet": "These references ({{land}}) were checked at official or clearly reliable sources on 05-11-2026. Always check the current edition.",
+    "verwijzing": "Here ({{land}}) the app only has references: not everything could be confirmed at an official source, and what is marked \"to be confirmed\" still needs checking. Location values are never filled in.",
+    "tweedeGeneratie": "The second generation as far as CEN has demonstrably published it. National annexes are not listed yet: check them ({{land}}).",
+    "overgang": "National publication of the second generation by {{publicatie}}, withdrawal of the first by {{intrekking}}."
   },
   "gegevens": {
     "introGeen": "These values apply to every sheet you add to this project. Each sheet can use them without asking for them again.",
@@ -184,7 +205,9 @@
       "rekenwijze": "Calculation method",
       "project": "Project",
       "grondslagen": "Basis of design (NEN-EN 1990 + NB)",
-      "wind": "Wind (NEN-EN 1991-1-4 + NB)"
+      "wind": "Wind (NEN-EN 1991-1-4 + NB)",
+      "land": "Country and standards",
+      "grondslagenAlgemeen": "Basis of design"
     },
     "velden": {
       "rekenwijze": {
@@ -220,7 +243,9 @@
           "1": "CC1 — low consequences",
           "2": "CC2 — medium consequences",
           "3": "CC3 — high consequences"
-        }
+        },
+        "hintEurocode": "Determines K_FI (EN 1990, table B3): CC1 → 0.9 · CC2 → 1.0 · CC3 → 1.1, unless the national annex says otherwise. Every sheet receives both CC and K_FI.",
+        "hintEigen": "A term from the Eurocodes. Only the sheets that rest on the Eurocodes use it; the class from the standard of this country goes in the report, under Design basis."
       },
       "RC": {
         "label": "Reliability class",
@@ -242,7 +267,9 @@
         "vervallen": {
           "10": "10 years",
           "25": "25 years"
-        }
+        },
+        "hintEurocode": "The categories per use are in EN 1990, table 2.1; the national annex can change them.",
+        "hintEigen": "Only the sheets that rest on the Eurocodes use this value."
       },
       "windgebied": {
         "label": "Wind zone",
@@ -261,8 +288,21 @@
           "2": "II — Undeveloped area (z₀ = 0,2 · z_min = 4)",
           "3": "III — Built-up area (z₀ = 0,5 · z_min = 7)"
         }
+      },
+      "land": {
+        "label": "Country or region",
+        "hint": "Sets which standards the report names and which values it asks for. Outside the Netherlands you enter the location values yourself, with their source; nothing is fetched from an external service."
+      },
+      "eurocode_generatie": {
+        "label": "Generation of the Eurocodes",
+        "hint": "CEN withdraws the first generation by 30-03-2028; which generation applies to this project follows from national rules. The calculation sheets rest on the first generation.",
+        "opties": {
+          "1": "First generation (EN 1990:2002 and further)",
+          "2": "Second generation (EN 1990:2023 and further)"
+        }
       }
-    }
+    },
+    "jaren": "{{jaren}} years"
   },
   "windkaart": {
     "nietGevonden": "Address not found in the Netherlands.",

@@ -3,7 +3,8 @@ import i18next, { type TFunction } from "i18next";
 import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { projectScope, type ProjectGegevens } from "../../../store/projectGegevens";
-import type { BureauProfiel, Rapport } from "../../../rapport/model";
+import type { BureauProfiel, LokaleInvoer, Rapport } from "../../../rapport/model";
+import { lokaalVan, normkeuzeVan, type Normkeuze } from "../../../rapport/normen/keuze";
 import { fmt, notatie } from "../../../rapport/normwaarden";
 import {
   bijlageRegels,
@@ -52,6 +53,10 @@ export interface RapportWeergave {
   n: (s: string) => string;
   rapport: Rapport;
   gegevens: ProjectGegevens;
+  /** Het land en de generatie van het project, en of de Nederlandse tabellen gelden. */
+  normkeuze: Normkeuze;
+  /** De invoer voor dit land, voor wat buiten de Nederlandse tabellen staat. */
+  lokaal: LokaleInvoer;
   projectNaam: string;
   /** Het bureau dat op het rapport staat (zie useRapportBureau). */
   bureau: BureauProfiel;
@@ -136,5 +141,8 @@ export function useRapportWeergave(): RapportWeergave {
     n: (s: string) => notatie(s, taal),
   }), [taal]);
 
-  return { taal, ...woorden, rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul };
+  const normkeuze = useMemo(() => normkeuzeVan(gegevens), [gegevens]);
+  const lokaal = useMemo(() => lokaalVan(rapport, normkeuze), [rapport, normkeuze]);
+
+  return { taal, ...woorden, rapport, gegevens, normkeuze, lokaal, projectNaam, bureau, bladen, ...opzet, invul };
 }

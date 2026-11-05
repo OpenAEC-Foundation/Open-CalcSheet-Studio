@@ -11,6 +11,8 @@
  * bewaart de tekst in zijn eigen taal (`Rapport.taal`), zoals de gebruiker hem ziet.
  */
 import { inTaal, leesMeertalig, leesTaal, type Meertalig } from "./meertalig.ts";
+import { EN1990_FACTOREN, EN1990_PSI } from "./normen/en1990.ts";
+import { LANDEN, TWEEDE_GENERATIE_TEKST } from "./normen/landen.ts";
 import { leesWeggehaald, normaliseerOpzet, type Knoop, type Weggehaald } from "./opzet.ts";
 import { leesVarianten, type Tekstvariant } from "./standaardteksten.ts";
 import type { WijzigingsKeuze, Wijzigingsregel } from "./wijzigingen.ts";
@@ -231,6 +233,38 @@ export interface Belastingen {
   wanden: Opbouw[];
 }
 
+/** Wat de locatie levert: per grootheid (normen/landen.ts) de getypte waarde, en waar die vandaan komt. */
+export interface LokaalBlok {
+  waarden: Record<string, string>;
+  bron: string;
+}
+
+/** 4.5 in een Eurocode-land: de factoren als invoer, in de kolommen van de Nederlandse tabel. */
+export interface Factorregel { groep: string; naam: string; gGinf: string; gGsup: string; gQ1: string; gQi: string; }
+export interface Psiregel { naam: string; psi0: string; psi1: string; psi2: string; }
+/** 4.5 buiten de Eurocodes: de combinatie zoals die norm hem schrijft, bijvoorbeeld "1.2D + 1.6L". */
+export interface Combinatieregel { naam: string; formule: string; }
+/** 5.4 buiten Nederland: geen tabel om uit te kiezen, dus q_k en Q_k zijn invoer. */
+export interface LokaleKlasse { omschrijving: string; qk: string; Qk: string; }
+
+/**
+ * Wat er in een rapport buiten de Nederlandse tabellen wordt ingevuld (normen/keuze.ts). Per
+ * land apart: een waarde uit het ene land gaat niet stil mee naar het andere.
+ */
+export interface LokaleInvoer {
+  /** De klasse uit de norm van dit land (risk category, importance category), als tekst. */
+  veiligheid: string;
+  /** `q`: de stuwdruk waarmee 5.2 rekent, in kN/m²; ingevuld, niet afgeleid. */
+  wind: LokaalBlok & { q: string };
+  /** `s`: de sneeuwbelasting op een plat dak, in kN/m²; ingevuld, niet afgeleid. */
+  sneeuw: LokaalBlok & { s: string };
+  aardbeving: LokaalBlok;
+  factoren: Factorregel[];
+  psi: Psiregel[];
+  combinaties: Combinatieregel[];
+  klassen: LokaleKlasse[];
+}
+
 /**
  * Opmaakkeuzes die met een versie van de rapportopbouw zijn bijgekomen
  * (RAPPORT_VERSIE). Een nieuw rapport heeft ze aan; een ouder rapport krijgt
@@ -289,6 +323,11 @@ export interface Rapport {
   /** Vastgelegde kopie van het bureauprofiel. */
   bureau: BureauProfiel;
   /**
+   * Per land de invoer buiten de Nederlandse tabellen. Ontbreekt in een Nederlands rapport,
+   * dus een oud rapport verandert niet.
+   */
+  lokaal?: Record<string, LokaleInvoer>;
+  /**
    * De eigen kopie van de hoofdstukindeling (opzet.ts), zoals `bureau` een kopie van het
    * profiel is: een gewijzigd template verandert dit rapport niet. Ontbreekt: het ingebouwde
    * template. De velden hieronder ontbreken ook zolang ze niets zeggen.
@@ -298,7 +337,7 @@ export interface Rapport {
   varianten?: Record<string, Tekstvariant[]>;
   /** Uit de opzet gehaald en terug te zetten; de tekst staat nog in `teksten`. */
   weggehaald?: Weggehaald[];
-  /** Het template waar dit rapport mee begon. `land` wordt alleen bewaard en doorgegeven. */
+  /** Het template waar dit rapport mee begon. Het land van het project staat in de projectgegevens; hier wat het template zei. */
   template?: TemplateHerkomst;
   /** De huisstijl uit het template; gaat boven die van het bureau. */
   huisstijl?: Huisstijl;
@@ -423,7 +462,7 @@ const meertalig = (x: Meertalig | string): x is Meertalig => typeof x !== "strin
 /** Per veld wat de app er kan neerzetten; wisselTaal zoekt hierin (taalwissel.ts). */
 export const MEEGELEVERD = {
   titel: TITELS,
-  normen: [NORMEN],
+  normen: [NORMEN, ...LANDEN.filter((l) => l.normenTekst.en !== NORMEN.en).map((l) => l.normenTekst), TWEEDE_GENERATIE_TEKST],
   rol: ROLLEN,
   architect: [NIET_VAN_TOEPASSING],
   datumOnderlegger: [NIET_VAN_TOEPASSING],
@@ -437,6 +476,8 @@ export const MEEGELEVERD = {
   conserveringSysteem: CONSERVERING.map((c) => c.systeem),
   conserveringSlot: [CONSERVERING_SLOT],
   vervormingOnderdeel: VERVORMINGEN.map((v) => v.onderdeel),
+  factorNaam: EN1990_FACTOREN.map((f) => f.naam),
+  psiNaam: EN1990_PSI.map((p) => p.naam),
 } as const satisfies Record<string, readonly Meertalig[]>;
 
 /**
@@ -464,17 +505,37 @@ function standaardRol(taal: string): Rol {
   return { rol: inTaal(ROLLEN[0], taal), architect: inTaal(NIET_VAN_TOEPASSING, taal), datumOnderlegger: inTaal(NIET_VAN_TOEPASSING, taal) };
 }
 
+/** 4.3: de standaardregels, met de klassen uit de EN. */
+export function standaardMaterialen(taal: string): Materiaalregel[] {
+  return MATERIALEN.map((m) => ({
+    type: inTaal(m.type, taal),
+    soort: m.soort,
+    opmerking: typeof m.opmerking === "string" ? m.opmerking : inTaal(m.opmerking, taal),
+  }));
+}
+
+export function standaardBevestiging(taal: string): Bevestigingsregel[] {
+  return BEVESTIGING.map((b) => ({ type: inTaal(b.type, taal), kwaliteit: b.kwaliteit }));
+}
+
+/** 4.8: de eisen die de Nederlandse bijlage geeft, in de notatie van de taal. */
+export function standaardVervormingen(taal: string): Vervormingsregel[] {
+  // `_rep` blijft tekst: de afdruk zet het als subscript.
+  return VERVORMINGEN.map((v) => ({
+    onderdeel: inTaal(v.onderdeel, taal),
+    ueind: inNotatie(v.ueind, taal),
+    ubij: inNotatie(v.ubij, taal),
+    uhor: inNotatie(v.uhor, taal),
+  }));
+}
+
 function standaardUitgangspunten(taal: string): Uitgangspunten {
   return {
     soortBouwwerk: inTaal(SOORTEN_BOUWWERK[0], taal),
     brand: { hoofddraagconstructie: "-", brandscheiding: "-", vluchtroute: "-", verwijzing: "" },
-    materialen: MATERIALEN.map((m) => ({
-      type: inTaal(m.type, taal),
-      soort: m.soort,
-      opmerking: typeof m.opmerking === "string" ? m.opmerking : inTaal(m.opmerking, taal),
-    })),
+    materialen: standaardMaterialen(taal),
     materialenNoot: inTaal(MATERIALEN_NOOT, taal),
-    bevestiging: BEVESTIGING.map((b) => ({ type: inTaal(b.type, taal), kwaliteit: b.kwaliteit })),
+    bevestiging: standaardBevestiging(taal),
     conservering: CONSERVERING.map((c) => ({ onderdeel: inTaal(c.onderdeel, taal), systeem: inTaal(c.systeem, taal) })),
     conserveringSlot: inTaal(CONSERVERING_SLOT, taal),
     bestaand: {
@@ -482,14 +543,13 @@ function standaardUitgangspunten(taal: string): Uitgangspunten {
       // Een code: de afdruk zet hem in de taal van het rapport.
       berekeningBeschikbaar: "Ja", materiaalgegevensBeschikbaar: "Ja",
     },
-    // `_rep` blijft tekst: de afdruk zet het als subscript.
-    vervormingen: VERVORMINGEN.map((v) => ({
-      onderdeel: inTaal(v.onderdeel, taal),
-      ueind: inNotatie(v.ueind, taal),
-      ubij: inNotatie(v.ubij, taal),
-      uhor: inNotatie(v.uhor, taal),
-    })),
+    vervormingen: standaardVervormingen(taal),
   };
+}
+
+/** 5.2: de coëfficiënten waarmee een nieuw rapport begint. */
+export function standaardWindcoefficienten(taal: string): Windcoefficient[] {
+  return ["0,04", "0,40", "0,80", "1,10"].map((c) => ({ omschrijving: "", c: inNotatie(c, taal) }));
 }
 
 function standaardBelastingen(taal: string): Belastingen {
@@ -498,12 +558,7 @@ function standaardBelastingen(taal: string): Belastingen {
     wind: {
       gebouwhoogte: "",
       cscd: "1",
-      coefficienten: [
-        { omschrijving: "", c: n("0,04") },
-        { omschrijving: "", c: n("0,40") },
-        { omschrijving: "", c: n("0,80") },
-        { omschrijving: "", c: n("1,10") },
-      ],
+      coefficienten: standaardWindcoefficienten(taal),
     },
     klassen: [
       { categorie: "A-vloer", lichteScheidingswanden: n("0,80"), dakhelling: "", qlast: "" },
@@ -616,6 +671,35 @@ function normaliseerOpbouw(o: Los): Opbouw | null {
   return null;
 }
 
+function normaliseerBlok(x: unknown): LokaalBlok {
+  const o = object(x) ?? {};
+  return { waarden: tekstRecord(o.waarden), bron: tekst(o.bron, "") };
+}
+
+/** De lokale invoer uit een bestand: alleen landen uit de lijst, en elk veld gecontroleerd. */
+function normaliseerLokaal(x: unknown): Record<string, LokaleInvoer> | undefined {
+  const o = object(x);
+  if (!o) return undefined;
+  const uit: Record<string, LokaleInvoer> = {};
+  for (const [code, v] of Object.entries(o)) {
+    const l = object(v);
+    if (!l || !LANDEN.some((land) => land.code === code)) continue;
+    uit[code] = {
+      veiligheid: tekst(l.veiligheid, ""),
+      wind: { ...normaliseerBlok(l.wind), q: tekst(object(l.wind)?.q, "") },
+      sneeuw: { ...normaliseerBlok(l.sneeuw), s: tekst(object(l.sneeuw)?.s, "") },
+      aardbeving: normaliseerBlok(l.aardbeving),
+      factoren: lijst(l.factoren, [], (r): Factorregel => ({
+        groep: tekst(r.groep, ""), naam: tekst(r.naam, ""), gGinf: tekst(r.gGinf, ""), gGsup: tekst(r.gGsup, ""), gQ1: tekst(r.gQ1, ""), gQi: tekst(r.gQi, ""),
+      })),
+      psi: lijst(l.psi, [], (r): Psiregel => ({ naam: tekst(r.naam, ""), psi0: tekst(r.psi0, ""), psi1: tekst(r.psi1, ""), psi2: tekst(r.psi2, "") })),
+      combinaties: lijst(l.combinaties, [], (r): Combinatieregel => ({ naam: tekst(r.naam, ""), formule: tekst(r.formule, "") })),
+      klassen: lijst(l.klassen, [], (r): LokaleKlasse => ({ omschrijving: tekst(r.omschrijving, ""), qk: tekst(r.qk, ""), Qk: tekst(r.Qk, "") })),
+    };
+  }
+  return Object.keys(uit).length > 0 ? uit : undefined;
+}
+
 /**
  * Een bureauprofiel uit een bestand of de instellingen. Huisstijlvelden die
  * leeg zijn krijgen de standaard: een lege kleur of een leeg lettertype is
@@ -683,9 +767,9 @@ export function leesHerkomst(x: unknown): TemplateHerkomst | undefined {
   return land ? { naam, land } : { naam };
 }
 
-/** Een landcode of regio uit een bestand: kort en zonder vreemde tekens. Iets anders geeft undefined. */
+/** Een landcode uit een bestand of template; iets anders dan een code uit de lijst (normen/landen.ts) geeft undefined. */
 export function leesLand(x: unknown): string | undefined {
-  return typeof x === "string" && /^[\p{L}\p{N}_ -]{1,40}$/u.test(x) ? x : undefined;
+  return LANDEN.find((l) => l.code === x)?.code;
 }
 
 /** Wat de gebruiker met de lijst van wijzigingen deed, uit een bestand. Wat leeg is, is er niet. */
@@ -767,6 +851,7 @@ export function normaliseerRapport(
   // rapport zonder eigen keuze houdt de kop Wijziging en tekst zonder subkoppen.
   const opmaak = object(o.opmaak) ?? {};
   const keuze = (x: unknown, standaard: boolean) => (typeof x === "boolean" ? x : versie < 3 ? false : standaard);
+  const lokaal = normaliseerLokaal(o.lokaal);
 
   return {
     // Een nieuwer rapport houdt zijn hogere versie: zijn eigen bijwerkingen zijn al gedaan.
@@ -853,6 +938,8 @@ export function normaliseerRapport(
       bladenInInhoud: typeof opmaak.bladenInInhoud === "boolean" ? opmaak.bladenInInhoud : versie >= 4 && s.opmaak.bladenInInhoud,
     },
     bureau: normaliseerBureau(o.bureau),
+    // Alleen als het er is: zonder blijft een oud rapport tot op het veld hetzelfde.
+    ...(lokaal ? { lokaal } : {}),
     ...templateVelden(o),
   };
 }

@@ -339,6 +339,11 @@
 }
 
 /* Normverwijzingen: rechts, 8 pt cursief. */
+/* Op welke norm een blad rust, als die afwijkt van het land van het project (BladNorm.tsx). */
+.rpa-wortel .rpa-normmelding {
+  font-style: italic;
+}
+
 .rpa-wortel .rpa-norm {
   font-size: 8pt;
   font-style: italic;

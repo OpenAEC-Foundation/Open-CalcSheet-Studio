@@ -23,6 +23,7 @@ import ModuleKiezer from "./components/calc/ModuleKiezer";
 import BladBijwerken from "./components/calc/BladBijwerken";
 import TekenEditor from "./components/tekenen/TekenEditor";
 import { BladVersieKop, BladVersieMelding } from "./components/calc/BladVersieKop";
+import { BladNormMelding } from "./components/calc/BladNorm";
 import IfcViewerPanel from "./components/calc/IfcViewerPanel";
 import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
@@ -320,6 +321,7 @@ export default function App() {
         <BladVersieKop ex={actief} />
       </div>
       <BladVersieMelding ex={actief} />
+      <BladNormMelding ex={actief} />
     </>
   ) : null;
 

@@ -13,6 +13,7 @@ import {
 } from "../../../rapport/normwaarden";
 import { gevelOpbouw, vlakOpbouw, vullingTekst } from "../../../rapport/opbouw";
 import type { RapportWeergave } from "./useRapportWeergave";
+import { LokaleKlassen, LokaleSneeuw, LokaleWind } from "./Lokaal";
 import { Cel, Eenheid, Leeg, Rij, Tekst, Vlak } from "./raster";
 
 /*
@@ -23,6 +24,7 @@ import { Cel, Eenheid, Leeg, Rij, Tekst, Vlak } from "./raster";
 
 /** 5.1 Sneeuw op een plat dak, s = μ1·Ce·Ct·sk; de tekst eronder. */
 export function Sneeuw({ w }: { w: RapportWeergave }) {
+  if (!w.normkeuze.nlTabellen) return <LokaleSneeuw w={w} />;
   const tekst = w.rapport.teksten.sneeuw ?? "";
   return (
     <>
@@ -47,6 +49,7 @@ export function Sneeuw({ w }: { w: RapportWeergave }) {
  * ψ-factoren voor wind. Zonder gebouwhoogte geen q_p en geen P_rep.
  */
 export function Wind({ w }: { w: RapportWeergave }) {
+  if (!w.normkeuze.nlTabellen) return <LokaleWind w={w} />;
   const { wind } = w.rapport.belastingen;
   const wg = klasse(w.gegevens.windgebied, 2);
   const tc = klasse(w.gegevens.terreincategorie, 2);
@@ -231,6 +234,7 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
 
 /** 5.4 Overige veranderlijke belastingen: de belastingklassen onder elkaar, met een lege regel ertussen. */
 export function Veranderlijk({ w }: { w: RapportWeergave }) {
+  if (!w.normkeuze.nlTabellen) return <LokaleKlassen w={w} />;
   return (
     <>
       {w.rapport.belastingen.klassen.map((bk, i) => (

@@ -164,7 +164,28 @@
     "verwijder": "Verwijder",
     "verwijderLabel": "{{nummer}} verwijderen",
     "verwijderVraag": "{{nummer}} ({{editie}}) uit de lokale bibliotheek verwijderen?",
-    "nietBeschikbaar": "PDF is niet meer beschikbaar"
+    "nietBeschikbaar": "PDF is niet meer beschikbaar",
+    "onderwerp": "Onderwerp",
+    "norm": "Norm",
+    "editieKop": "Editie",
+    "uitgever": "Uitgever",
+    "bron": "Officiële bron",
+    "teBevestigen": "nog te bevestigen",
+    "onderwerpen": {
+      "belastingen": "Belastingen",
+      "wind": "Wind",
+      "sneeuw": "Sneeuw",
+      "aardbeving": "Aardbeving",
+      "beton": "Beton",
+      "staal": "Staal",
+      "hout": "Hout",
+      "metselwerk": "Metselwerk",
+      "funderingen": "Funderingen"
+    },
+    "compleet": "Deze verwijzingen ({{land}}) zijn op 05-11-2026 nagekeken bij officiële of duidelijk betrouwbare bronnen. Controleer altijd de geldende editie.",
+    "verwijzing": "Hier ({{land}}) heeft de app alleen verwijzingen: niet alles is bij een officiële bron bevestigd, en wat als \"nog te bevestigen\" staat, moet nog worden nagekeken. Locatiewaarden zijn nooit voorgevuld.",
+    "tweedeGeneratie": "De tweede generatie, voor zover CEN die aantoonbaar heeft uitgegeven. Nationale bijlagen staan er nog niet bij: controleer die ({{land}}).",
+    "overgang": "Nationale publicatie van de tweede generatie uiterlijk {{publicatie}}, intrekking van de eerste uiterlijk {{intrekking}}."
   },
   "gegevens": {
     "introGeen": "Deze waarden gelden voor elk rekenblad dat je aan dit project toevoegt. Elk blad kan ze gebruiken zonder ze opnieuw te vragen.",
@@ -184,7 +205,9 @@
       "rekenwijze": "Rekenwijze",
       "project": "Project",
       "grondslagen": "Grondslagen (NEN-EN 1990 + NB)",
-      "wind": "Wind (NEN-EN 1991-1-4 + NB)"
+      "wind": "Wind (NEN-EN 1991-1-4 + NB)",
+      "land": "Land en normen",
+      "grondslagenAlgemeen": "Grondslagen"
     },
     "velden": {
       "rekenwijze": {
@@ -220,7 +243,9 @@
           "1": "CC1 — beperkte gevolgen",
           "2": "CC2 — middelmatige gevolgen",
           "3": "CC3 — grote gevolgen"
-        }
+        },
+        "hintEurocode": "Bepaalt K_FI (EN 1990, tabel B3): CC1 → 0,9 · CC2 → 1,0 · CC3 → 1,1, tenzij de nationale bijlage iets anders zegt. Elk blad krijgt zowel CC als K_FI.",
+        "hintEigen": "Een begrip uit de Eurocodes. Alleen de bladen die op de Eurocodes rusten gebruiken het; de klasse uit de norm van dit land komt in het rapport, bij Uitgangspunten."
       },
       "RC": {
         "label": "Betrouwbaarheidsklasse",
@@ -242,7 +267,9 @@
         "vervallen": {
           "10": "10 jaar",
           "25": "25 jaar"
-        }
+        },
+        "hintEurocode": "De categorieën per gebruik staan in EN 1990, tabel 2.1; de nationale bijlage kan ze wijzigen.",
+        "hintEigen": "Alleen de bladen die op de Eurocodes rusten gebruiken deze waarde."
       },
       "windgebied": {
         "label": "Windgebied",
@@ -261,8 +288,21 @@
           "2": "II — Onbebouwd gebied (z₀ = 0,2 · z_min = 4)",
           "3": "III — Bebouwd gebied (z₀ = 0,5 · z_min = 7)"
         }
+      },
+      "land": {
+        "label": "Land of regio",
+        "hint": "Bepaalt welke normen het rapport noemt en om welke waarden het vraagt. Buiten Nederland vul je de locatiewaarden zelf in, met de bron erbij; er wordt niets opgehaald bij een externe dienst."
+      },
+      "eurocode_generatie": {
+        "label": "Generatie van de Eurocodes",
+        "hint": "CEN trekt de eerste generatie uiterlijk 30-03-2028 in; welke generatie voor dit project geldt, volgt uit de nationale regels. De rekenbladen rusten op de eerste generatie.",
+        "opties": {
+          "1": "Eerste generatie (EN 1990:2002 e.v.)",
+          "2": "Tweede generatie (EN 1990:2023 e.v.)"
+        }
       }
-    }
+    },
+    "jaren": "{{jaren}} jaar"
   },
   "windkaart": {
     "nietGevonden": "Adres niet gevonden in Nederland.",
