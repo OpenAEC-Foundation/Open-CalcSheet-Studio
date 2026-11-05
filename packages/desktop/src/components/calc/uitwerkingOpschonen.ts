@@ -6,7 +6,30 @@
 import DOMPurify from "dompurify";
 import { linkNaarBuiten, maakOpschoner } from "./uitwerkingRegels";
 
-export const schoonUitwerking = maakOpschoner(DOMPurify);
+const opschonen = maakOpschoner(DOMPurify);
+
+/**
+ * Zoveel grote uitwerkingen blijven opgeschoond bewaard. Bij een groot blad kost het
+ * opschonen tientallen milliseconden op de hoofddraad, en wisselen tussen bladen en het
+ * afdrukvoorbeeld vragen steeds dezelfde html. De uitkomst hangt alleen van die html af.
+ */
+const BEWAARD = 12;
+const KORT = 4000;
+const bewaard = new Map<string, string>();
+
+export function schoonUitwerking(html: string): string {
+  if (html.length < KORT) return opschonen(html);
+  let schoon = bewaard.get(html);
+  if (schoon === undefined) {
+    schoon = opschonen(html);
+    if (bewaard.size >= BEWAARD) bewaard.delete(bewaard.keys().next().value!);
+  } else {
+    // Achteraan: het langst niet gebruikte gaat het eerst weg.
+    bewaard.delete(html);
+  }
+  bewaard.set(html, schoon);
+  return schoon;
+}
 
 async function openBuiten(url: string) {
   if ("__TAURI_INTERNALS__" in window) {
