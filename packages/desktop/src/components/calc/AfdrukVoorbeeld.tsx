@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { usePrintStore } from "../../store/printStore";
 import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
@@ -166,12 +166,31 @@ export default function AfdrukVoorbeeld() {
     // komt hij er als extra ruimte bij — genoeg om de onderste regel van
     // het vel af te duwen.
     if (eerste) kloon.style.marginTop = "0";
-    if (rapport) {
-      const doelen = [...(kloon.matches("[data-inhoud-doel]") ? [kloon] : []), ...kloon.querySelectorAll<HTMLElement>("[data-inhoud-doel]")];
-      for (const doel of doelen) doel.textContent = String(nummers.get(doel.dataset.inhoudDoel ?? "") ?? "");
-    }
+    // De paginanummers in een inhoudsopgave: die van het rapport en die op het voorblad.
+    const doelen = [...(kloon.matches("[data-inhoud-doel]") ? [kloon] : []), ...kloon.querySelectorAll<HTMLElement>("[data-inhoud-doel]")];
+    for (const doel of doelen) doel.textContent = String(nummers.get(doel.dataset.inhoudDoel ?? "") ?? "");
     return kloon;
-  }, [rapport]);
+  }, []);
+
+  /**
+   * Een klik op een regel van een inhoudsopgave springt naar het vel waar hij naar
+   * wijst, met de loopkop in beeld. Staat de kop een eind lager op dat vel (een
+   * paragraaf midden op een vel van het rapport), dan naar de kop zelf.
+   */
+  const naarInhoud = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    const regel = (e.target as Element).closest<HTMLElement>("[data-naar], .rpa-inhoud .rpa-rij");
+    const anker = regel?.dataset.naar ?? regel?.querySelector<HTMLElement>("[data-inhoud-doel]")?.dataset.inhoudDoel;
+    const nummer = anker ? opgebouwd.current?.nummers.get(anker) : undefined;
+    const vel = nummer ? vellenRef.current?.children[nummer - 1] : undefined;
+    if (!anker || !vel) return;
+    vel.scrollIntoView({ block: "start" });
+    // Een vel buiten beeld heeft nog geen opmaak (AfdrukVoorbeeld.css); na twee frames wel.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const kop = vel.querySelector(`[data-inhoud="${CSS.escape(anker)}"]`);
+      const v = vel.getBoundingClientRect();
+      if (kop && kop.getBoundingClientRect().top - v.top > v.height / 4) kop.scrollIntoView({ block: "start" });
+    }));
+  }, []);
 
   /**
    * Vervangt alleen de blokken die veranderden, als de indeling gelijk bleef. Geeft
@@ -511,7 +530,7 @@ export default function AfdrukVoorbeeld() {
       </div>
 
       <div className="av-vellen" ref={schuifRef}>
-        <div className="av-vellen-binnen" ref={vellenRef} style={{ zoom }} />
+        <div className="av-vellen-binnen" ref={vellenRef} style={{ zoom }} onClick={naarInhoud} />
       </div>
 
       {/* De meetopstelling: buiten beeld, op de breedte van de bladspiegel van deze soort. */}

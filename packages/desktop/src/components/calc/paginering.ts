@@ -120,10 +120,11 @@ const OVERSLAAN = ["rpa-voet"];
 
 /**
  * Regels die zich als kop gedragen zonder een `<h*>` te zijn: het kopblok van
- * een rekenblad, de sectiekop op het voorblad en de kopregel van een tabel in
- * het rapport. Geen van alle hoort los onderaan een vel te staan.
+ * een rekenblad, de sectiekop op het voorblad, de kopregel van de inhoud daaronder
+ * en de kopregel van een tabel in het rapport. Geen van alle hoort los onderaan
+ * een vel te staan.
  */
-const KOPKLASSEN = ["print-blad-kop", "print-sectiekop", "rpa-houd"];
+const KOPKLASSEN = ["print-blad-kop", "print-sectiekop", "print-inhoud-kop", "rpa-houd"];
 
 /** Hoort dit blok bij het blok eronder: een kop (h1–h6) of een regel die zich zo gedraagt. */
 export function houdtBijVolgende(el: Pick<Element, "tagName" | "classList">): boolean {
@@ -133,10 +134,11 @@ export function houdtBijVolgende(el: Pick<Element, "tagName" | "classList">): bo
 /**
  * Wikkels die alleen groeperen: `.ifc-calc` om de uitwerking van een blad,
  * `.rpa-vlak` om de regels van het rapport, `.md-citaat` om een citaat in een
- * Markdown-tekst en `.print-canvas` om de vellen van een canvas-blad. Wat erin zit,
- * wordt los verdeeld.
+ * Markdown-tekst, `.print-canvas` om de vellen van een canvas-blad en
+ * `.print-inhoud` om de regels van de inhoud op het voorblad. Wat erin zit, wordt
+ * los verdeeld.
  */
-const WIKKELS = ["ifc-calc", "rpa-vlak", "md-citaat", "print-canvas"];
+const WIKKELS = ["ifc-calc", "rpa-vlak", "md-citaat", "print-canvas", "print-inhoud"];
 
 /**
  * Haalt de wikkels weg en levert de regels die erin zitten.

@@ -450,6 +450,7 @@
     "inhoudResultaten": "Contents and results",
     "grondslag": "Basis",
     "oordeel": "Verdict",
+    "paginaKolom": "Page",
     "alleVoldoen": "All checked parts are OK.",
     "nietGetoetstEen": "{{n}} of the {{totaal}} parts is not verified; see the sheet concerned.",
     "nietGetoetstMeer": "{{n}} of the {{totaal}} parts are not verified; see the sheets concerned.",

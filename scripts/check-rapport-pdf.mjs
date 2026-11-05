@@ -165,7 +165,15 @@ async function leesPdf(pad) {
     const { fnArray } = await pagina.getOperatorList();
     const afbeeldingen = fnArray.filter((f) => f === pdfjs.OPS.paintImageXObject).length;
     const { width: breedte, height: hoogte } = pagina.getViewport({ scale: 1 });
-    paginas.push({ n, breedte, hoogte, afbeeldingen, regels: regelsVan(items), tekst: items.map((i) => i.str).join("") });
+    // Links naar een plek in hetzelfde document, met de pagina waar ze heen gaan.
+    const links = [];
+    for (const a of await pagina.getAnnotations()) {
+      if (a.subtype !== "Link" || !a.dest) continue;
+      const doel = typeof a.dest === "string" ? await doc.getDestination(a.dest) : a.dest;
+      if (!doel) continue;
+      links.push({ rect: a.rect, naar: (await doc.getPageIndex(doel[0])) + 1 });
+    }
+    paginas.push({ n, breedte, hoogte, afbeeldingen, links, regels: regelsVan(items), tekst: items.map((i) => i.str).join("") });
   }
   return paginas;
 }
@@ -285,13 +293,17 @@ async function controleer(pad) {
   const naInhoud = paginas.slice(eersteHoofdstuk);
 
   // Een regel is: nummer (of niets), titel en rechts een paginanummer.
-  const inhoudsregels = inhoudsPaginas.flatMap((p) => p.regels)
+  const inhoudsregels = inhoudsPaginas.flatMap((p) => p.regels.map((r) => ({ ...r, blad: p })))
     .filter((r) => r.y > 45 && r.tekst !== "Inhoud")
     .map((r) => {
       const laatste = r.stukken[r.stukken.length - 1];
       const heeftPagina = /^\d+$/.test(laatste.tekst) && laatste.x > 480;
       const rest = (heeftPagina ? r.stukken.slice(0, -1) : r.stukken).map((s) => s.tekst).join(" ");
-      return { tekst: rest, pagina: heeftPagina ? Number(laatste.tekst) : null };
+      // De link onder het paginanummer, als die er is.
+      const link = heeftPagina
+        ? r.blad.links.find(({ rect: [x1, y1, x2, y2] }) => laatste.x >= x1 - 1 && laatste.x <= x2 + 1 && r.y >= y1 - 2 && r.y <= y2 + 2)
+        : undefined;
+      return { tekst: rest, pagina: heeftPagina ? Number(laatste.tekst) : null, link };
     });
   const regelVoor = (tekst) => inhoudsregels.find((r) => r.tekst === tekst);
 
@@ -314,6 +326,10 @@ async function controleer(pad) {
   const metNummer = inhoudsregels.filter((r) => r.pagina !== null).length;
   meld(metNummer >= 30, `${metNummer} regels met een paginanummer`);
   meld(misplaatst.length === 0, "bij elke regel staat de kop op die pagina en op geen eerdere", misplaatst.join("; "));
+  // In de PDF klik je door: elk paginanummer is een link naar zijn eigen pagina.
+  const zonderLink = inhoudsregels.filter((r) => r.pagina !== null && r.link?.naar !== r.pagina)
+    .map((r) => `"${r.tekst}" (${r.pagina}${r.link ? ` → ${r.link.naar}` : ", geen link"})`);
+  meld(metNummer > 0 && zonderLink.length === 0, "elk paginanummer is een link naar die pagina", zonderLink.slice(0, 5).join("; "));
 
   const zoek = (titel, voorvoegsel) => inhoudsregels.find((r) => (voorvoegsel ? r.tekst.startsWith(voorvoegsel) : true) && r.tekst.endsWith(titel));
   const bladen = Object.values(BLADEN);
