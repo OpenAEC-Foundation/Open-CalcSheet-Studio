@@ -152,7 +152,7 @@ export const liveOmgeving: McpOmgeving = {
     },
     bewaarProject: async (pad) => {
       await bewaarOudeVersie(pad);
-      await (await fs()).writeTextFile(pad, projectInhoud());
+      await (await fs()).writeTextFile(pad, await projectInhoud());
       useProjectStore.getState().markeerOpgeslagen(pad);
       await onthoud(pad);
     },

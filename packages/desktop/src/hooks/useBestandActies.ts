@@ -1,7 +1,6 @@
 import { useCallback } from "react";
 import { useProjectStore } from "../store/projectStore";
 import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../store/projectBestand";
-import { bladenVoorIfc } from "../store/projectIfcx";
 import { bewaarOpenWerkmappen } from "../store/spreadsheetBlad";
 import {
   openCalculationFile,
@@ -25,9 +24,11 @@ const melding = (sleutel: string, fout?: unknown) =>
  * document, want binnen het OpenAEC-ecosysteem is IFCX de drager waarmee de
  * gereedschappen data uitwisselen. Elk blad wordt doorgerekend voor de uitkomsten
  * in het bestand (store/projectIfcx.ts); een blad dat omvalt blijft erin staan.
+ * Dat doorrekenen vraagt de rekenkern, die pas hier hoeft te laden.
  */
-export function projectInhoud(): string {
+export async function projectInhoud(): Promise<string> {
   const { projectNaam, gegevens, exemplaren, rapport, verborgen } = useProjectStore.getState();
+  const { bladenVoorIfc } = await import("../store/projectIfcx");
   return bouwProjectBestand(
     { versie: PROJECT_FORMAAT_VERSIE, naam: projectNaam, gegevens, exemplaren, rapport, verborgen: Object.keys(verborgen).length ? verborgen : undefined },
     bladenVoorIfc({ exemplaren, gegevens }),
@@ -78,7 +79,7 @@ export function useBestandActies() {
     try {
       await bewaarOpenWerkmappen();
       const { projectNaam, bestandspad } = useProjectStore.getState();
-      const pad = await saveCalculationFile(projectInhoud(), projectNaam, bestandspad);
+      const pad = await saveCalculationFile(await projectInhoud(), projectNaam, bestandspad);
       if (!pad) return;
       useProjectStore.getState().markeerOpgeslagen(pad);
       await onthoud(pad);
@@ -98,7 +99,7 @@ export function useBestandActies() {
     if (!kanDirectOpslaan(pad)) return opslaanAls();
     try {
       await bewaarOpenWerkmappen();
-      await schrijfCalculationFile(pad, projectInhoud());
+      await schrijfCalculationFile(pad, await projectInhoud());
       useProjectStore.getState().markeerOpgeslagen(pad);
     } catch (err) {
       console.error("Save file failed:", err);

@@ -22,9 +22,6 @@ import { version } from "../../package.json";
 import { useMcpStatus, type McpStatus } from "./status";
 import { MCP_SERVERNAAM, MCP_STANDAARD_POORT, geldigePoort, nieuwToken } from "./koppeling";
 import { maakRequestHandler, maakSessies, type McpRequestEvent } from "./requestHandler";
-import { verwerkMcpBericht } from "./dispatcher";
-import { verwerkRest } from "./rest";
-import { MCP_TOOLS } from "./tools";
 import type { McpContext, McpOmgeving } from "./contracts";
 
 const SLEUTEL = {
@@ -47,11 +44,17 @@ const zet = (p: Partial<McpStatus>) => useMcpStatus.setState(p);
 const sessies = maakSessies();
 
 /**
- * De omgeving op de echte stores (omgeving.ts). Pas bij het starten geladen:
- * omgeving.ts gebruikt de functies van Instellingen, en die importeren via de
- * tab weer dit bestand.
+ * De omgeving op de echte stores (omgeving.ts). Pas bij het eerste verzoek geladen,
+ * samen met de tools: dat zijn de hele app en de rekenkern, en een server die aan staat
+ * maar niet wordt gebruikt mag het opstarten niet ophouden. Bovendien gebruikt
+ * omgeving.ts de functies van Instellingen, en die importeren via de tab weer dit bestand.
  */
 let omgeving: McpOmgeving | null = null;
+
+async function deTools() {
+  omgeving ??= (await import("./omgeving")).liveOmgeving;
+  return (await import("./tools")).MCP_TOOLS;
+}
 
 /** Per request vers: de gebruiker kan pauze en alleen-lezen tussendoor omzetten. */
 function context(): McpContext {
@@ -65,12 +68,14 @@ function context(): McpContext {
   };
 }
 
-function verwerk(body: string): Promise<string> {
-  return verwerkMcpBericht(body, { tools: MCP_TOOLS, serverInfo: { name: MCP_SERVERNAAM, version }, context });
+async function verwerk(body: string): Promise<string> {
+  const [tools, { verwerkMcpBericht }] = await Promise.all([deTools(), import("./dispatcher")]);
+  return verwerkMcpBericht(body, { tools, serverInfo: { name: MCP_SERVERNAAM, version }, context });
 }
 
-function verwerkRestRequest(methode: string, pad: string, body: string) {
-  return verwerkRest(methode, pad, body, { tools: MCP_TOOLS, context });
+async function verwerkRestRequest(methode: string, pad: string, body: string) {
+  const [tools, { verwerkRest }] = await Promise.all([deTools(), import("./rest")]);
+  return verwerkRest(methode, pad, body, { tools, context });
 }
 
 // ── Levenscyclus ────────────────────────────────────────────────────────────
@@ -109,7 +114,6 @@ async function startNu(): Promise<void> {
     return;
   }
   opruimen();
-  omgeving ??= (await import("./omgeving")).liveOmgeving;
   const { invoke } = await import("@tauri-apps/api/core");
   const { emit, listen } = await import("@tauri-apps/api/event");
   const { poort, token } = useMcpStatus.getState();
