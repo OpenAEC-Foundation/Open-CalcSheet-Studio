@@ -15,11 +15,19 @@
   background: var(--oa-workspace);
 }
 
+/* De ruimte die het vel inneemt bij deze zoomstand. Een transform in plaats van `zoom`:
+   het vel rekent met schermposities (naarMm), en die geeft elke webview dan hetzelfde. */
+.canvas-schaal {
+  width: calc(210mm * var(--canvas-zoom));
+  margin: 0 auto;
+}
+
 /* De breedte en de zijmarges van een A4, in de letter van de uitdraai. */
 .canvas-papier {
   box-sizing: border-box;
   width: 210mm;
-  margin: 0 auto;
+  transform: scale(var(--canvas-zoom));
+  transform-origin: 0 0;
   padding: 8mm 16mm 16mm;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.12);

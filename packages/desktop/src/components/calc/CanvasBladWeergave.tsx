@@ -1,10 +1,10 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
 import {
   INVOER_BREEDTE, klemOpVel, leesEenheden, maxBreedte, naastDeVouw, nieuwId, opRaster, schrijfEenheden, velBegin, velVan,
-  verwijderEenheid, VEL_BREEDTE, zetEenheid, type Eenheid,
+  verwijderEenheid, VEL_BREEDTE, zetEenheid, zoomNaWiel, type Eenheid,
 } from "../../store/canvasBlad";
 import { registreerBewaarder } from "../../store/spreadsheetBlad";
 import { huisstijlVariabelen } from "../../rapport/model";
@@ -82,6 +82,46 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
   openRef.current = open;
   const [gesleept, zetGesleept] = useState<{ id: string; x: number; y: number } | null>(null);
   const sleep = useRef<Sleep | null>(null);
+
+  const schuif = useRef<HTMLDivElement>(null);
+  const papier = useRef<HTMLDivElement>(null);
+  const [zoom, zetZoom] = useState(1);
+  const zoomDoel = useRef(1);
+  const [papierHoogte, zetPapierHoogte] = useState(0);
+  /** Het punt onder de muis: op het scherm, en op het vel in px bij 100 %. */
+  const anker = useRef<{ cx: number; cy: number; x: number; y: number } | null>(null);
+
+  // Ctrl en scrollen zoomt rond het punt onder de muis. Niet via onWheel: React luistert
+  // passief, en dan zoomt de hele webview mee. Er kunnen meer tikken komen voordat React
+  // heeft getekend, dus de getoonde schaal komt uit het vel zelf en het doel loopt door.
+  useEffect(() => {
+    const el = schuif.current;
+    if (!el) return;
+    const wiel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const p = papier.current!;
+      const r = p.getBoundingClientRect();
+      const getoond = r.width / p.offsetWidth;
+      anker.current = { cx: e.clientX, cy: e.clientY, x: (e.clientX - r.left) / getoond, y: (e.clientY - r.top) / getoond };
+      zoomDoel.current = zoomNaWiel(zoomDoel.current, e.deltaY);
+      zetZoom(zoomDoel.current);
+    };
+    el.addEventListener("wheel", wiel, { passive: false });
+    return () => el.removeEventListener("wheel", wiel);
+  }, []);
+
+  // Na een zoomstap het punt onder de muis op zijn plek houden.
+  useLayoutEffect(() => {
+    const el = schuif.current;
+    const p = papier.current;
+    const a = anker.current;
+    if (!el || !p || !a) return;
+    anker.current = null;
+    const r = p.getBoundingClientRect();
+    el.scrollLeft += r.left + a.x * zoom - a.cx;
+    el.scrollTop += r.top + a.y * zoom - a.cy;
+  }, [zoom]);
 
   /** De huidige tekst uit de store: tussen twee renders kan er al iets zijn veranderd. */
   const huidigeBron = useCallback(
@@ -168,10 +208,14 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
   const onderkant = Math.max(0, ...eenheden.map((u) => u.y + (maten[u.id]?.h ?? 0)), open?.y ?? 0, gesleept?.y ?? 0);
   const aantalVellen = velVan(onderkant) + 2;
 
+  // Een schaal verandert de ruimte in de opmaak niet: die krijgt het vel van .canvas-schaal.
+  useLayoutEffect(() => zetPapierHoogte(papier.current?.offsetHeight ?? 0), [aantalVellen]);
+
   const zichtbaar = eenheden.filter((u) => u.id !== open?.id);
   return (
-    <div className="canvas-weergave">
-      <div className={`canvas-papier print-opmaak${bezig ? " rekent" : ""}`} data-oa-theme="light" style={huisstijlVariabelen(bureau.huisstijl) as CSSProperties}>
+    <div className="canvas-weergave" ref={schuif}>
+      <div className="canvas-schaal" style={{ "--canvas-zoom": zoom, height: papierHoogte * zoom } as CSSProperties}>
+      <div ref={papier} className={`canvas-papier print-opmaak${bezig ? " rekent" : ""}`} data-oa-theme="light" style={huisstijlVariabelen(bureau.huisstijl) as CSSProperties}>
         <div className="canvas-kop">{ex.naam}</div>
         <div
           ref={vlak}
@@ -243,6 +287,7 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
             />
           )}
         </div>
+      </div>
       </div>
     </div>
   );
