@@ -14,12 +14,11 @@
  * rechtstreeks in Node.
  */
 import { inTaal, type Meertalig } from "./meertalig.ts";
-import { inNotatie, leesTaal, MEEGELEVERD, standaardRapport, type Opbouw, type Rapport } from "./model.ts";
+import { inNotatie, leesTaal, MEEGELEVERD, type Opbouw, type Rapport } from "./model.ts";
 import { zetOpPad, type Pad } from "./pad.ts";
-import { STANDAARD_TEKSTEN, standaardTeksten } from "./standaardteksten.ts";
-
-/** Regeleinden en witruimte aan de rand tellen niet mee bij het vergelijken. */
-const normaal = (s: string) => s.replace(/\r\n?/g, "\n").trim();
+import { zelfdeWaarde } from "./opzet.ts";
+import { variantenVan } from "./standaardteksten.ts";
+import { nieuwRapportVolgens, normaal, type Template } from "./template.ts";
 
 /** De meegeleverde waarde die in één van de talen gelijk is aan `waarde`. */
 function zoek(waarde: string, lijst: readonly Meertalig[]): Meertalig | undefined {
@@ -34,8 +33,8 @@ function wissel(waarde: string, lijst: readonly Meertalig[], naar: string): stri
   return m ? inTaal(m, naar) : waarde;
 }
 
-/** De meegeleverde teksten van dit tekst-id. */
-const variantenVan = (id: string): readonly Meertalig[] => (STANDAARD_TEKSTEN[id] ?? []).map((v) => v.tekst);
+/** De meegeleverde teksten van dit tekst-id: uit het template van dit rapport, anders van de app. */
+const tekstenVan = (r: Rapport, id: string): readonly Meertalig[] => variantenVan(r, id).map((v) => v.tekst);
 
 function wisselOpbouw(o: Opbouw, naar: string): Opbouw {
   const n = (s: string) => inNotatie(s, naar);
@@ -55,7 +54,7 @@ export function wisselTaal(r: Rapport, naar: string): Rapport {
   const teksten: Record<string, string> = {};
   const tekstTaal: Record<string, string> = {};
   for (const [id, tekst] of Object.entries(r.teksten)) {
-    const variant = zoek(tekst, variantenVan(id));
+    const variant = zoek(tekst, tekstenVan(r, id));
     teksten[id] = variant ? inTaal(variant, naar) : tekst;
     if (variant || normaal(tekst) === "") continue;
     tekstTaal[id] = r.tekstTaal[id] ?? r.taal;
@@ -125,7 +124,7 @@ export function wisselTaal(r: Rapport, naar: string): Rapport {
  */
 export function metTekst(r: Rapport, id: string, tekst: string): Rapport {
   const { [id]: _oud, ...tekstTaal } = r.tekstTaal;
-  const eigen = normaal(tekst) !== "" && zoek(tekst, variantenVan(id)) === undefined;
+  const eigen = normaal(tekst) !== "" && zoek(tekst, tekstenVan(r, id)) === undefined;
   return {
     ...r,
     teksten: { ...r.teksten, [id]: tekst },
@@ -151,10 +150,9 @@ export function andereTaalVan(r: Rapport, id: string): string | null {
 
 /**
  * Heeft nog niemand aan dit rapport gezeten? Dan mag het de taal van de app volgen. De
- * datum van de eerste revisie telt niet mee.
+ * datum van de eerste revisie telt niet mee. Met een template: is het precies een nieuw
+ * rapport volgens dat template?
  */
-export function isNieuwRapport(r: Rapport): boolean {
-  const datum = r.revisies[0]?.datum ?? "";
-  const vers = standaardRapport(datum, standaardTeksten(r.taal), r.taal);
-  return JSON.stringify(r) === JSON.stringify(vers);
+export function isNieuwRapport(r: Rapport, template: Template | null = null): boolean {
+  return zelfdeWaarde(r, nieuwRapportVolgens(r.revisies[0]?.datum ?? "", r.taal, template));
 }

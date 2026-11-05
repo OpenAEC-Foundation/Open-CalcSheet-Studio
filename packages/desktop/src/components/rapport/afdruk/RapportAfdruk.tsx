@@ -53,14 +53,11 @@ export default function RapportAfdruk() {
   const w = useRapportWeergave();
   const secties = groepeer(hoofdstukStukken(w));
 
-  // Bijlage A: de bladen waarvan de uitwerking niet in het hoofdstuk zelf
-  // staat, in de volgorde en met de nummers van hoofdstuk Berekeningen.
-  const berekeningen = w.knopen.find((k) => k.id === "berekeningen");
-  const inBijlage = (berekeningen?.kinderen ?? []).flatMap((k): BijlageBlad[] => {
-    const blad = k.blad;
-    if (!blad || !blad.bijlage) return [];
+  // Bijlage A: de bladen waarvan de uitwerking niet in hoofdstuk Berekeningen staat,
+  // met de nummers die dat hoofdstuk ook noemt. Is er geen hoofdstuk, dan alle bladen.
+  const inBijlage = w.bijlageBladen.flatMap(({ blad, nummer }): BijlageBlad[] => {
     const b = w.bladen.find((x) => x.ex.id === blad.id);
-    return b ? [{ ...b, nummer: blad.bijlage }] : [];
+    return b ? [{ ...b, nummer }] : [];
   });
   const titelA = w.bijlagen.find((b) => b.letter === "A")?.titel ?? inTaal(BIJLAGE_A, w.taal);
 

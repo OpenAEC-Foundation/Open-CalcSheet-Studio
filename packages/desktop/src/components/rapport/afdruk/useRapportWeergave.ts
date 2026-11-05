@@ -8,9 +8,11 @@ import { fmt, notatie } from "../../../rapport/normwaarden";
 import {
   bijlageRegels,
   bijlagen as bijlagenVan,
+  bladenInBijlage,
   bouwOpzet,
   inhoudsopgave,
   type Bijlage,
+  type Blad,
   type Inhoudsregel,
   type Rapportknoop,
 } from "../../../rapport/opzet";
@@ -60,6 +62,8 @@ export interface RapportWeergave {
   inhoud: Inhoudsregel[];
   /** De bladen in bijlage A voor in de inhoudsopgave; leeg zonder opmaak.bladenInInhoud. */
   inhoudBijlage: Inhoudsregel[];
+  /** De bladen in bijlage A met hun nummer. Zonder hoofdstuk Berekeningen zijn dat ze allemaal. */
+  bijlageBladen: { blad: Blad; nummer: string }[];
   bijlagen: Bijlage[];
   /** Waarden voor de invulvelden in de teksten. */
   invul: Invulwaarden;
@@ -77,7 +81,10 @@ export interface RapportWeergave {
 export function useRapportBureau(): BureauProfiel {
   const vastgelegd = useProjectStore((s) => s.rapport.bureau);
   const profiel = useBureauStore((s) => s.profiel);
-  return vastgelegd.naam ? vastgelegd : profiel;
+  // Een huisstijl uit het template gaat voor, ook bij een rapport zonder vastgelegd bureau.
+  const huisstijl = useProjectStore((s) => s.rapport.huisstijl);
+  const bureau = vastgelegd.naam ? vastgelegd : profiel;
+  return useMemo(() => (huisstijl ? { ...bureau, huisstijl } : bureau), [bureau, huisstijl]);
 }
 
 export function useRapportWeergave(): RapportWeergave {
@@ -104,7 +111,8 @@ export function useRapportWeergave(): RapportWeergave {
     return {
       knopen,
       inhoud: inhoudsopgave(knopen, metBladen),
-      inhoudBijlage: metBladen ? bijlageRegels(knopen) : [],
+      inhoudBijlage: metBladen ? bijlageRegels(rapport, lijst) : [],
+      bijlageBladen: bladenInBijlage(rapport, lijst),
       bijlagen: bijlagenVan(rapport, lijst),
     };
   }, [rapport, exemplaren]);

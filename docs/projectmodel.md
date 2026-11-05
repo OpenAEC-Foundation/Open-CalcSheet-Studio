@@ -182,6 +182,49 @@ De tab Code toont hem in de taal van de app en zet een bewerking regel voor rege
 (`bronNaBewerking` in `components/calc/uitvoerTaal.ts`). De rekenversie, `bronVersie`,
 de invoersleutels en de beelden lezen dus de bron, in elke taal hetzelfde.
 
+## Rapporttemplate
+
+De hoofdstukindeling van een rapport is een boom knopen (`Knoop` in `rapport/opzet.ts`).
+`OPZET` is het ingebouwde template "Standard report": vast in de app en niet te
+overschrijven. Een rapport kan een eigen kopie hebben, `Rapport.opzet` in `ocss::rapport`,
+zoals het een kopie van het bureau heeft. Ontbreekt die, dan geldt het ingebouwde template,
+dus een bestaand project blijft tot op de letter hetzelfde; een gewijzigd template verandert
+geen bestaand rapport. `bouwOpzet` leest de opzet van het rapport en blijft de enige bron
+van de nummers voor het paneel, de inhoudsopgave, het zijpaneel en de afdruk.
+
+Een template is een bestand `*.reporttemplate` (`rapport/template.ts`), JSON:
+
+| veld | |
+|---|---|
+| `formaat` | `open-calcsheet-report-template` |
+| `versie` | 1 |
+| `naam` | de naam per taal; Engels ontbreekt nooit |
+| `opzet` | de knopen: `id`, `titel` per taal, `niveau`, `inhoud`, `optioneel`, `nieuwePagina`, `inspringen`, `kinderen` |
+| `teksten` | per tekst-id de varianten (`label`, `tekst`), zoals `rapport/standaardteksten.ts`; de eerste is de tekst waarmee een nieuw rapport begint |
+| `leeg` | tekst-id's die leeg beginnen, al hebben ze varianten om uit te kiezen (optioneel) |
+| `opmaak` | `constructieprincipe`, `subkoppen`, `bladenInInhoud` |
+| `huisstijl` | gaat in het rapport boven de huisstijl van het bureau (optioneel) |
+| `land` | wordt bewaard en doorgegeven in `Rapport.template` (optioneel) |
+
+Een template is onbetrouwbare invoer. `leesTemplate` controleert elk veld: een bestand dat
+geen template is, geeft een melding en verandert niets; wat in een geldig template niet klopt,
+wordt hersteld en gemeld. Elk id komt één keer voor en is veilig als sleutel en als anker, het
+niveau volgt de diepte, en een onbekende `inhoud` bereikt de afdruk niet.
+
+Een onderdeel is tekst (`inhoud: "tekst"`), alleen een kop (geen `inhoud`), of een rekenblok
+(`REKENBLOKKEN`): de app vult dat zelf. Een rekenblok plaats je uit een lijst, hooguit één keer,
+onder zijn vaste id: daar hangen zijn tekst en keuzes aan. Het heeft geen kinderen. Berekeningen
+staat altijd op het hoogste niveau, omdat de bladen eronder komen. Ontbreekt dat hoofdstuk, dan
+staan alle bladen in bijlage A (`bladenInBijlage`).
+
+Wat je uit de opzet haalt, verdwijnt niet: de tekst blijft in `Rapport.teksten`, het onderdeel
+staat in `Rapport.weggehaald` en komt met zijn tekst terug als je het terugzet. Een getypte
+titel hoort bij de taal van het rapport; een andere taal valt terug op Engels of op wat er wel
+staat. Een template toepassen laat getypte tekst staan; alleen wat niemand aanraakte, volgt het
+template. Eigen templates staan in de instellingen (`store/rapportTemplates.ts`), en één daarvan
+kan de standaard voor nieuwe rapporten zijn. `scripts/check-rapporttemplate.mjs` toetst dit alles,
+ook in de echte afdruk en het echte paneel.
+
 ## Ongedaan maken
 
 Eén stapel voor het hele project (`verleden` / `toekomst` in `projectStore.ts`),

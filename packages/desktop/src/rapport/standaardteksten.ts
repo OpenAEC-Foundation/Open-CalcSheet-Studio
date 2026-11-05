@@ -16,7 +16,8 @@
  * een vette subkop. Een meegeleverde tekst heeft geen subkoppen: een zin die
  * op ":" eindigt is hier altijd een inleidende zin van meer dan vijf woorden.
  */
-import { inTaal, type Meertalig } from "./meertalig.ts";
+import { inTaal, leesMeertalig, type Meertalig } from "./meertalig.ts";
+import { heeftSleutel, isGeldigId } from "./opzet.ts";
 
 export interface Tekstvariant { label: Meertalig; tekst: Meertalig; }
 
@@ -252,6 +253,42 @@ export function standaardTeksten(taal = "en"): Record<string, string> {
   for (const id of STANDAARD_IN_NIEUW_RAPPORT) {
     const eerste = STANDAARD_TEKSTEN[id]?.[0];
     if (eerste) uit[id] = inTaal(eerste.tekst, taal);
+  }
+  return uit;
+}
+
+/**
+ * De varianten die dit rapport bij een tekst-id aanbiedt: die uit zijn template, anders de
+ * meegeleverde. Het keuzemenu en het wisselen van taal lezen allebei hier.
+ */
+export function variantenVan(r: { varianten?: Record<string, Tekstvariant[]> }, id: string): readonly Tekstvariant[] {
+  return r.varianten?.[id] ?? (heeftSleutel(STANDAARD_TEKSTEN, id) ? STANDAARD_TEKSTEN[id] : GEEN_VARIANTEN);
+}
+
+/** Altijd dezelfde lijst: het paneel leest dit in een selector van de store. */
+const GEEN_VARIANTEN: readonly Tekstvariant[] = [];
+
+/** Eén lijst varianten uit een bestand. Zonder leesbare tekst valt een variant weg; zonder label krijgt hij een nummer. */
+export function leesVariantLijst(x: unknown): Tekstvariant[] {
+  if (!Array.isArray(x)) return [];
+  const uit: Tekstvariant[] = [];
+  for (const el of x as unknown[]) {
+    if (el === null || typeof el !== "object") continue;
+    const v = el as Record<string, unknown>;
+    const tekst = leesMeertalig(v.tekst);
+    if (tekst) uit.push({ label: leesMeertalig(v.label) ?? { en: `Variant ${uit.length + 1}` }, tekst });
+  }
+  return uit;
+}
+
+/** Varianten per tekst-id uit een bestand; alleen bruikbare id's met minstens één variant. */
+export function leesVarianten(x: unknown): Record<string, Tekstvariant[]> {
+  const uit: Record<string, Tekstvariant[]> = {};
+  if (x === null || typeof x !== "object" || Array.isArray(x)) return uit;
+  for (const [id, lijst] of Object.entries(x)) {
+    if (!isGeldigId(id)) continue;
+    const varianten = leesVariantLijst(lijst);
+    if (varianten.length > 0) uit[id] = varianten;
   }
   return uit;
 }
