@@ -15,6 +15,7 @@ import enRekentaal from "./locales/en/rekentaal.json";
 import enBeelden from "./locales/en/beelden.json";
 import enTekenen from "./locales/en/tekenen.json";
 import enLibrary from "./locales/en/library.json";
+import enGewichten from "./locales/en/gewichten.json";
 // Dutch
 import nlCommon from "./locales/nl/common.json";
 import nlRibbon from "./locales/nl/ribbon.json";
@@ -27,6 +28,7 @@ import nlRekentaal from "./locales/nl/rekentaal.json";
 import nlBeelden from "./locales/nl/beelden.json";
 import nlTekenen from "./locales/nl/tekenen.json";
 import nlLibrary from "./locales/nl/library.json";
+import nlGewichten from "./locales/nl/gewichten.json";
 
 export const LANGUAGES = [
   { code: "auto", name: "Auto-detect" },
@@ -43,8 +45,9 @@ export const STANDAARD_TAAL = "en";
 // Van de sjabloon: common, ribbon, backstage, settings, feedback. Van deze app:
 // werkruimte (project, panelen, modulekiezer), rapport (het rapportpaneel),
 // rekentaal (tab Rekentaal, taalreferentie, editor), beelden (parametrische beelden)
-// tekenen (tab Tekenen, de tekeneditor) en library (de Library in het projectpaneel).
-const ns = ["common", "ribbon", "backstage", "settings", "feedback", "werkruimte", "rapport", "rekentaal", "beelden", "tekenen", "library"];
+// tekenen (tab Tekenen, de tekeneditor), library (de Library in het projectpaneel) en
+// gewichten (de gewichtenbibliotheek).
+const ns = ["common", "ribbon", "backstage", "settings", "feedback", "werkruimte", "rapport", "rekentaal", "beelden", "tekenen", "library", "gewichten"];
 
 i18next
   .use(LanguageDetector)
@@ -54,10 +57,12 @@ i18next
       en: {
         common: enCommon, ribbon: enRibbon, backstage: enBackstage, settings: enSettings, feedback: enFeedback,
         werkruimte: enWerkruimte, rapport: enRapport, rekentaal: enRekentaal, beelden: enBeelden, tekenen: enTekenen, library: enLibrary,
+        gewichten: enGewichten,
       },
       nl: {
         common: nlCommon, ribbon: nlRibbon, backstage: nlBackstage, settings: nlSettings, feedback: nlFeedback,
         werkruimte: nlWerkruimte, rapport: nlRapport, rekentaal: nlRekentaal, beelden: nlBeelden, tekenen: nlTekenen, library: nlLibrary,
+        gewichten: nlGewichten,
       },
     },
     ns,

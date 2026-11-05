@@ -13,9 +13,17 @@ import {
   type Bibliotheekopbouw,
   type Bouwdeel,
 } from "../../../rapport/gewichten";
+import {
+  alsGevellaagUitRegel,
+  alsLaagUitRegel,
+  alsOpbouwUitRegel,
+  effectieveP,
+  taalVoorRapport,
+} from "../../../rapport/gewichtenBibliotheek";
 import type { Gevellaag, Laag, Opbouw } from "../../../rapport/model";
 import { gevelOpbouw, vlakOpbouw } from "../../../rapport/opbouw";
 import { useProjectStore } from "../../../store/projectStore";
+import GewichtenVenster from "../gewichten/GewichtenVenster";
 import { getalTekst, verplaatst } from "./hulp";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 
@@ -67,12 +75,19 @@ function nieuweOpbouw(soort: Opbouw["soort"]): Opbouw {
  *
  * "Uit bibliotheek" voegt een complete opbouw of een losse laag uit
  * rapport/gewichten.ts in; daarna is het gewone invoer die je kunt aanpassen.
- * De namen in de bibliotheek komen zo in het rapport en blijven Nederlands.
+ * De namen in die lijst komen zo in het rapport en blijven Nederlands.
+ *
+ * "Gewichtenbibliotheek" opent het venster met alle regels en hun bron
+ * (rapport/gewichtenBibliotheek.ts). Een klik zet een regel in de opbouw, als
+ * kopie in getallen: een rapport verandert niet als de bibliotheek verandert.
  */
 export default function OpbouwEditor({ groep, titel }: { groep: Opbouwgroep; titel: string }) {
   const { t } = useTranslation("rapport");
+  const { t: tg, i18n } = useTranslation("gewichten");
   const opbouwen = useProjectStore((s) => s.rapport.belastingen[groep]);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
+  const rapportTaal = useProjectStore((s) => taalVoorRapport(s.rapport, i18n.language));
+  const [venster, setVenster] = useState(false);
 
   const wijzig = (fn: (lijst: Opbouw[]) => Opbouw[]) =>
     werkBij((r) => {
@@ -121,7 +136,18 @@ export default function OpbouwEditor({ groep, titel }: { groep: Opbouwgroep; tit
           titel={t("opbouw.opbouwUitBibliotheekTitel")}
           groepen={bibliotheek}
         />
+        <button type="button" className="rapport-knop" title={tg("knop.opbouwUitleg")} onClick={() => setVenster(true)}>
+          {tg("knop.invoegen")}
+        </button>
       </div>
+      {venster && (
+        <GewichtenVenster
+          open
+          doel={titel}
+          onSluit={() => setVenster(false)}
+          onInvoegen={(r) => wijzig((l) => [...l, alsOpbouwUitRegel(r, rapportTaal)])}
+        />
+      )}
     </div>
   );
 }
@@ -135,7 +161,10 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
   wijzig: (fn: (lijst: Opbouw[]) => Opbouw[]) => void;
 }) {
   const { t } = useTranslation("rapport");
+  const { t: tg, i18n } = useTranslation("gewichten");
   const zet = useProjectStore((s) => s.zetRapportVeld);
+  const rapportTaal = useProjectStore((s) => taalVoorRapport(s.rapport, i18n.language));
+  const [venster, setVenster] = useState(false);
   const vlak = opbouw.soort === "vlak";
 
   // Een laag uit de bibliotheek achteraan in deze opbouw. De opbouw komt uit
@@ -167,11 +196,16 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
         },
       ];
   const menu = (
-    <BibliotheekMenu
-      knop={t("opbouw.laagUitBibliotheek")}
-      titel={t(vlak ? "opbouw.laagUitBibliotheekTitel" : "opbouw.wandUitBibliotheekTitel")}
-      groepen={bibliotheek}
-    />
+    <>
+      <BibliotheekMenu
+        knop={t("opbouw.laagUitBibliotheek")}
+        titel={t(vlak ? "opbouw.laagUitBibliotheekTitel" : "opbouw.wandUitBibliotheekTitel")}
+        groepen={bibliotheek}
+      />
+      <button type="button" className="rapport-knop" title={tg("knop.laagUitleg")} onClick={() => setVenster(true)}>
+        {tg("knop.invoegen")}
+      </button>
+    </>
   );
 
   return (
@@ -221,6 +255,22 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
         <VlakLagen pad={`${pad}.lagen`} lagen={opbouw.lagen} knoppen={menu} />
       ) : (
         <GevelLagen pad={`${pad}.lagen`} lagen={opbouw.lagen} knoppen={menu} />
+      )}
+      {venster && (
+        <GewichtenVenster
+          open
+          doel={opbouw.naam.trim() || t("opbouw.zonderNaam")}
+          onSluit={() => setVenster(false)}
+          kanInvoegen={vlak ? undefined : (r) => effectieveP(r) !== undefined}
+          onInvoegen={(r) => {
+            if (vlak) {
+              voegLaagToe(alsLaagUitRegel(r, rapportTaal));
+              return;
+            }
+            const laag = alsGevellaagUitRegel(r, rapportTaal);
+            if (laag) voegGevellaagToe(laag);
+          }}
+        />
       )}
     </div>
   );

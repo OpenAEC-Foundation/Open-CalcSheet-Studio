@@ -93,6 +93,8 @@ De tweepaalspoer heeft naast de tekening een 3D-studiemodel. Dat toont de poer, 
 
 De formulebibliotheek heeft 137 formules die je met een klik invoegt, elk met een schets die laat zien waar het over gaat. De liggers en de doorsnedegrootheden zetten ook een tekening in het blad die je invoer volgt: de momentenlijn op schaal, of de doorsnede op schaal met haar maten. De bibliotheek in het projectpaneel voegt daar 15 uitgewerkte voorbeelden uit de Eurocodes en de klassieke mechanica aan toe. Die voorbeelden zitten niet in de installer: de app haalt ze bij het opstarten op uit deze repository, zodat [een correctie iedereen bereikt](docs/library.md) zonder nieuwe release. De voorbeelden bewaken hun eigen grenzen: de buigwapening waarschuwt bij een overwapende doorsnede of staven die niet passen, en het voorbeeld van de beugels houdt cot θ binnen de grenzen en toetst afstand en minimumwapening.
 
+De **gewichtenbibliotheek** heeft ruim 2300 eigen gewichten, elk met een bron die je kunt openen: materialen, grond en opslag uit vrij leesbare codes, en per leverancier kanaalplaten, staalplaatvloeren, metselwerk, metalstudwanden, dakpannen, groendaken en gevelplaten. Zoek en filter, voeg een waarde met één klik in een opbouw in, en houd je eigen bibliotheek als `.weightlibrary`-bestand om aan te vullen, samen te voegen en te delen. Een rapport bewaart de getallen en verandert dus niet als de bibliotheek verandert.
+
 | | |
 |---|---|
 | ![Een voorbeeld over knik uit de bibliotheek, uitgewerkt naast het paneel, met Invoegen en Nieuw blad](docs/images/readme/library.png) **Een uitgewerkt voorbeeld uit de bibliotheek** | ![Het invoerscherm van een tweepaalspoer met de wapeningstekening en een 3D-studiemodel](docs/images/readme/two-pile-cap.png) **Tweepaalspoer met tekening en 3D-studiemodel** |
@@ -119,7 +121,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **63 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **64 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.
@@ -130,6 +132,7 @@ Bron van de getallen: de genoemde bestanden en `ls scripts/check-*.mjs`. De stat
 ## Huidige beperkingen
 
 - **De bladen rusten op de Eurocodes met de Nederlandse nationale bijlage.** Een ander land verandert het rapport, niet de berekeningen: buiten de Eurocodes staat er bij een blad "niet getoetst". Voor veel landen is de lijst met normen een verwijzing en staat erbij wat nog te bevestigen is.
+- **De gewichtenbibliotheek is niet compleet.** Er staat in wat met een bron te vinden was. Een aantal grote leveranciers publiceert geen leesbare gewichten en ontbreekt, en bladen worden vervangen: kijk het blad na van het product dat je echt gebruikt.
 - **Controleer de uitkomsten zelf.** De ligger, de tweepaalspoer en de spanningen in een doorsnede hebben de status *nog controleren*. De app vervangt het oordeel van een constructeur niet.
 - **Jupyter en Marimo zijn alleen op Windows getest.** Op macOS en Linux start de kernel waarschijnlijk niet, omdat de webview daar service workers beperkt. Opgeslagen bestanden en afdrukken werken wel.
 - **Notebooks hebben geen netwerk.** `%pip install` werkt niet, en bibliotheken die op JavaScript in hun uitvoer leunen (plotly, bokeh, ipywidgets) tonen niets. Dat is voorlopig een bewuste keuze.
