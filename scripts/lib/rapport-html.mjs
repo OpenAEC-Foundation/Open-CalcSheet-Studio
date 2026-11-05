@@ -63,8 +63,23 @@ const INGANG = `
   import { useModuleKiezer } from "./store/moduleKiezer";
   import { useEditorViewStore } from "./store/editorViewStore";
   import Editor from "./components/calc/Editor";
+  import VersieSectie from "./components/calc/VersieSectie";
+  import VersiesPaneel from "./components/calc/VersiesPaneel";
+  import { maakNieuweVersie, meldVersieProblemen, wisselNaarVersie } from "./store/versieActies";
+  import { registreerBewaarder } from "./store/spreadsheetBlad";
 
   export { i18next, useProjectStore, useBureauStore, useTemplateStore, useModuleKiezer, flushSync };
+  export { maakNieuweVersie, meldVersieProblemen, registreerBewaarder, wisselNaarVersie };
+
+  /** Een onderdeel van de versies in het document, om in te klikken. */
+  const ONDERDELEN = { VersieSectie, VersiesPaneel };
+  export function tekenOnderdeel(naam) {
+    const plek = document.createElement("div");
+    document.body.appendChild(plek);
+    const wortel = createRoot(plek);
+    flushSync(() => wortel.render(createElement(ONDERDELEN[naam])));
+    return { plek, weg: () => { wortel.unmount(); plek.remove(); } };
+  }
 
   /** De echte tab Code: wat erin staat, en typen of weghalen aan het eind van een regel. */
   export function tekenEditor() {

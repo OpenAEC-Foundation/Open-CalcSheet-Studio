@@ -41,7 +41,9 @@ import { JupyterBladInfo, JupyterBladWeergave, JupyterHouder, MarimoBladInfo } f
 import { isJupyterBlad } from "./store/jupyterBlad";
 import { isMarimoBlad } from "./store/marimoBlad";
 import { getSetting } from "./store";
-import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "./store/projectStore";
+import { useProjectStore, PROJECT_ID, RAPPORT_ID, VERSIES_ID } from "./store/projectStore";
+import { meldVersieProblemen } from "./store/versieActies";
+import VersiesPaneel from "./components/calc/VersiesPaneel";
 import { usePrintStore } from "./store/printStore";
 import { useCodeVerzoek } from "./store/codeVerzoek";
 import { useRecentFiles } from "./hooks/useRecentFiles";
@@ -343,9 +345,11 @@ export default function App() {
       const { readTextFile } = await import("@tauri-apps/plugin-fs");
       const raw = await readTextFile(path);
       const name = path.split(/[/\\]/).pop()?.replace(/\.[^.]+$/, "") ?? path;
-      laadProject(leesProjectBestand(raw, name));
+      const gelezen = leesProjectBestand(raw, name);
+      laadProject(gelezen);
       markeerOpgeslagen(path);
       await addRecentFile(path);
+      meldVersieProblemen(gelezen);
     } catch (err) {
       const fout = err instanceof GeenProjectFout ? i18next.t("werkruimte:bestandDialoog.geenProject") : (err as Error).message;
       alert(i18next.t("werkruimte:bestand.openenMislukt", { fout }));
@@ -400,6 +404,10 @@ export default function App() {
             <IfcViewerPanel />
           ) : toontProjectGegevens ? (
             <ProjectGegevensPanel />
+          ) : activeId === VERSIES_ID ? (
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <VersiesPaneel />
+            </div>
           ) : !actief ? (
             <div className="werkruimte-leeg">
               <h2>{t("leeg.titel")}</h2>

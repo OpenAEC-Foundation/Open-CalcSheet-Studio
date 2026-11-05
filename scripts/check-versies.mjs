@@ -10,7 +10,10 @@
  *   6  een bestand met kapotte versies opent de laatste bruikbare stand;
  *   7  vergelijken met de oudertak: toegevoegd, verwijderd, hernoemd, invoer, rekentekst en
  *      uitkomsten uit de bestaande doorrekening; wisselen verandert geen enkel getal;
- *   8  de lijst per pagina: de regels, de toelichting die blijft, en de opzet met het blok. *
+ *   8  de lijst per pagina: de regels, de toelichting die blijft, en de opzet met het blok;
+ *   9  de echte store, afdruk en bediening: het voorblad, de lijst bij de inhoudsopgave, een open
+ *      invoerveld, ongedaan maken en het paneel.
+ *
  * Draaien:  node scripts/check-versies.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
@@ -762,6 +765,390 @@ kop("8. De lijst per pagina");
   gelijk("een onderdeel van het rapport", plek("knoop", "brand"), { nummer: "4.2", anker: "brand" });
   gelijk("het voorblad is pagina 1", plek("voorblad"), { nummer: "", pagina: 1 });
   gelijk("wat vervallen is, heeft geen pagina", [plek("blad", "ex-weg"), plek("knoop", "bestaat-niet"), plek("gegevens")], [{ nummer: "" }, { nummer: "" }, { nummer: "" }]);
+}
+
+// ── 9. De echte store, afdruk en bediening ──────────────────────────────────
+kop("9. De echte store");
+const { laadRapportAfdruk } = await import("./lib/rapport-html.mjs");
+const m = await laadRapportAfdruk();
+const staat = () => m.useProjectStore.getState();
+const klik = (el) => m.flushSync(() => el.click());
+const typ = (el, tekst2) => m.flushSync(() => {
+  const proto = el.tagName === "TEXTAREA" ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, "value").set.call(el, tekst2);
+  el.dispatchEvent(new window.Event("input", { bubbles: true }));
+});
+const nieuwProject = (exemplaren = [balk(), blad("ex-cc", "Factor", {}, BLAD_CC)], taal = "en") => m.flushSync(() => {
+  m.useProjectStore.getState().laadProject({ exemplaren, gegevens: { ...legeGegevens(), CC: "2" }, rapport: nieuwRapport(taal), projectNaam: "Proef" });
+});
+const waardeIn = (id, naam) => staat().exemplaren.find((e) => e.id === id)?.waarden[naam];
+const wachtEven = () => new Promise((k) => setTimeout(k, 0));
+{
+  await m.i18next.changeLanguage("en");
+  nieuwProject();
+  const s0 = staat();
+  gelijk("een project is één versie", s0.versies.lijst.length, 1);
+  gelijk("en is niet gewijzigd", s0.dirty, false);
+  const eerste = s0.versies.actief;
+
+  // Een wissel is geen wijziging, en ongedaan maken loopt er niet doorheen.
+  staat().zetWaarde("ex-balk", "h", "290");
+  staat().zetWaarde("ex-balk", "h", "280");
+  gelijk("doortypen is één stap", staat().verleden.length, 1);
+  await m.maakNieuweVersie({ omschrijving: "Hogere balk" });
+  const b = staat().versies.actief;
+  toets("de nieuwe versie staat open", b !== eerste);
+  gelijk("en heeft een regel in de revisietabel", staat().rapport.revisies.map((r) => [r.code, r.omschrijving]), [["A", staat().versies.lijst[0].inhoud.rapport.revisies[0].omschrijving], ["B", "Hogere balk"]]);
+  gelijk("een nieuwe versie is iets om op te slaan", staat().dirty, true);
+  gelijk("en begint zonder geschiedenis", staat().verleden.length, 0);
+  // Doortypen in hetzelfde veld, direct na de wissel: een eigen stap in de nieuwe versie.
+  staat().zetWaarde("ex-balk", "h", "260");
+  gelijk("doortypen na het maken is een nieuwe stap", staat().verleden.length, 1);
+  staat().ongedaan();
+  gelijk("en ongedaan maken stopt bij de tak", waardeIn("ex-balk", "h"), "280");
+  staat().ongedaan();
+  gelijk("verder gaat het niet", waardeIn("ex-balk", "h"), "280");
+  staat().opnieuw();
+  gelijk("opnieuw werkt", waardeIn("ex-balk", "h"), "260");
+
+  m.useProjectStore.setState({ dirty: false });
+  await m.wisselNaarVersie(eerste);
+  gelijk("wisselen: de waarde van het origineel", waardeIn("ex-balk", "h"), "280");
+  gelijk("een wissel is niets om op te slaan", staat().dirty, false);
+  gelijk("en de eigen stap van het origineel is er nog", staat().verleden.length, 1);
+  staat().zetWaarde("ex-balk", "h", "275");
+  staat().ongedaan();
+  gelijk("ongedaan maken in het origineel", waardeIn("ex-balk", "h"), "280");
+  gelijk("de tak is niet stil veranderd", staat().versies.lijst.find((v) => v.id === b).inhoud.exemplaren.find((e) => e.id === "ex-balk").waarden.h, "260");
+  await m.wisselNaarVersie(b);
+  gelijk("terug in de tak", waardeIn("ex-balk", "h"), "260");
+
+  // Een wissel binnen het venster waarin typen samenvoegt: de stap gaat niet verloren.
+  staat().zetWaarde("ex-balk", "b", "110");
+  gelijk("stap in de tak", staat().verleden.length, 2);
+  await m.wisselNaarVersie(eerste);
+  staat().zetWaarde("ex-balk", "b", "120");
+  const stappen = staat().verleden.length;
+  staat().ongedaan();
+  gelijk("hetzelfde veld na de wissel: een eigen stap in deze versie", [stappen, waardeIn("ex-balk", "b")], [2, undefined]);
+  await m.wisselNaarVersie(b);
+  gelijk("en de andere versie houdt de zijne", waardeIn("ex-balk", "b"), "110");
+
+  // Een open invoerveld.
+  kop("9b. Wisselen met een open invoerveld");
+  const opIn = (id) => (id === staat().versies.actief ? staat().exemplaren : staat().versies.lijst.find((v) => v.id === id).inhoud.exemplaren);
+  const waardeVan = (id, naam) => opIn(id).find((e) => e.id === "ex-balk").waarden[naam];
+  let klaar = false;
+  const afmelden = m.registreerBewaarder(async () => {
+    await wachtEven();
+    staat().zetWaarde("ex-balk", "L", "open-werkmap");
+    klaar = true;
+  });
+  const vanaf = staat().versies.actief;
+  await m.wisselNaarVersie(eerste);
+  afmelden();
+  toets("de bewaarder is gevraagd vóór de wissel", klaar);
+  gelijk("wat openstond staat in de versie waar het getypt is", waardeVan(vanaf, "L"), "open-werkmap");
+  gelijk("en niet in de versie waar je naartoe gaat", waardeVan(eerste, "L"), undefined);
+
+  // Een veld dat vastlegt bij het verlaten.
+  const veld = document.createElement("input");
+  document.body.append(veld);
+  veld.addEventListener("blur", () => staat().zetWaarde("ex-balk", "M", "bij-verlaten"));
+  veld.focus();
+  toets("het veld heeft de focus", document.activeElement === veld);
+  await m.wisselNaarVersie(b);
+  gelijk("een veld dat vastlegt bij verlaten: in zijn eigen versie", [waardeVan(eerste, "M"), waardeVan(b, "M")], ["bij-verlaten", undefined]);
+  veld.remove();
+
+  // Vastleggen net na het verlaten, zoals een aantekening op een PDF.
+  const veld2 = document.createElement("textarea");
+  document.body.append(veld2);
+  veld2.addEventListener("blur", () => setTimeout(() => staat().zetWaarde("ex-balk", "N", "net-erna"), 0));
+  veld2.focus();
+  await m.wisselNaarVersie(eerste);
+  gelijk("vastleggen net na het verlaten: ook in zijn eigen versie", [waardeVan(b, "N"), waardeVan(eerste, "N")], ["net-erna", undefined]);
+  veld2.remove();
+
+  // Ook bij een nieuwe versie.
+  const veld3 = document.createElement("input");
+  document.body.append(veld3);
+  veld3.addEventListener("blur", () => staat().zetWaarde("ex-balk", "P", "voor-de-tak"));
+  veld3.focus();
+  await m.maakNieuweVersie();
+  const c = staat().versies.actief;
+  gelijk("een nieuwe versie begint met wat openstond", [waardeVan(eerste, "P"), waardeVan(c, "P")], ["voor-de-tak", "voor-de-tak"]);
+  veld3.remove();
+
+  // De eerder geopende versie blijft intact bij opslaan en heropenen, in de echte store.
+  const tekst = bouwProjectBestand({ versie: 2, naam: "Proef", gegevens: staat().gegevens, exemplaren: staat().exemplaren, rapport: staat().rapport, versies: staat().versies }, null);
+  const lijstVoor = staat().versies.lijst.map((v) => v.id);
+  m.flushSync(() => staat().laadProject(leesProjectBestand(tekst, "proef")));
+  gelijk("na het openen dezelfde versies", staat().versies.lijst.map((v) => v.id), lijstVoor);
+  gelijk("en geen geschiedenis", [staat().verleden.length, Object.keys(staat().stapels).length], [0, 0]);
+  await m.wisselNaarVersie(b);
+  gelijk("wisselen na het openen", waardeIn("ex-balk", "h"), "260");
+  m.flushSync(() => staat().nieuwProject());
+  gelijk("een nieuw project is weer één versie", staat().versies.lijst.length, 1);
+
+  // Meldingen bij kapotte versies.
+  const meldingen = [];
+  globalThis.alert = (t) => meldingen.push(t);
+  window.alert = globalThis.alert;
+  m.meldVersieProblemen({});
+  gelijk("geen melding zonder probleem", meldingen.length, 0);
+  m.meldVersieProblemen({ versieMeldingen: [{ soort: "versieWeg", code: "B" }, { soort: "bijlageWeg", code: "C", aantal: 2 }, { soort: "onleesbaar" }, { soort: "actiefWeg" }] });
+  toets("de melding noemt de versies, in de taal van de app", meldingen[0]?.includes("Version B cannot be read") && meldingen[0]?.includes("Version C: 2 attachments"), meldingen[0]);
+}
+
+// ── De afdruk ───────────────────────────────────────────────────────────────
+kop("9c. De afdruk");
+{
+  /** Een project met een versie, in deze taal, met een echte wijziging. */
+  const metWijziging = async (taal) => {
+    await m.i18next.changeLanguage(taal);
+    nieuwProject([balk(), blad("ex-cc", "Factor", {}, BLAD_CC), blad("ex-weg", "Vervalt")], taal);
+    await m.maakNieuweVersie({ omschrijving: "Hogere balk" });
+    m.flushSync(() => {
+      staat().zetWaarde("ex-balk", "h", "200,5");
+      staat().verwijder("ex-weg");
+      staat().hernoem("ex-cc", "Factor nieuw");
+      staat().zetRapportVeld("teksten.inleiding", "Een andere inleiding.");
+      staat().werkWijzigingenLijstBij();
+    });
+  };
+  const plek = () => {
+    const p = document.createElement("div");
+    p.innerHTML = m.teken();
+    return p;
+  };
+  const inhoudsTekst = (p) => p.querySelector(".rpa-inhoud").textContent;
+
+  await metWijziging("en");
+  let p = plek();
+  const voorblad = [...p.querySelectorAll(".rpa-voorblad .rpa-rij")].map((r) => [...r.children].map((c) => c.textContent.trim()).join(" | "));
+  gelijk("elke versie is een regel op het voorblad", voorblad.filter((r) => /^(?:1st issue date|Revision date)/.test(r)).map((r) => r.replace(/\d\d-\d\d-\d{4}/, "datum")), ["1st issue date | datum", "Revision date B | datum"]);
+  const blok = p.querySelector('.rpa-inhoud [data-inhoud="wijzigingen"]');
+  toets("de lijst staat bij de inhoudsopgave", blok?.textContent === "Changes in this version");
+  toets("de versie staat erboven", inhoudsTekst(p).includes("Hogere balk"));
+  gelijk("en heeft geen regel in de inhoudsopgave zelf", [...p.querySelectorAll('.rpa-inhoud [data-inhoud-doel="wijzigingen"]')].length, 0);
+  const lijstTekst = inhoudsTekst(p);
+  for (const deel of ["Balk 1", "Input: h 300 → 200.5.", "Verdict: passes → does not pass.", "Results: UC_buiging", "Factor nieuw", "Renamed from Factor.", "Vervalt", "Removed.", "Introduction", "Text changed."]) {
+    toets(`de lijst noemt: ${deel}`, lijstTekst.includes(deel), lijstTekst.slice(-500));
+  }
+  // Elke pagina komt uit een anker dat er echt staat, en de hoofdstukken houden hun nummers.
+  const doelen = [...p.querySelectorAll(".rpa-inhoud [data-inhoud-doel]")].map((e) => e.getAttribute("data-inhoud-doel"));
+  const ankers = new Set([...p.querySelectorAll("[data-inhoud]")].map((e) => e.getAttribute("data-inhoud")));
+  gelijk("elke pagina komt uit een anker op papier", doelen.filter((d) => !ankers.has(d)), []);
+  toets("ook die van een blad in de bijlage", doelen.includes("bijlage-blad-ex-balk") && ankers.has("bijlage-blad-ex-balk"), doelen);
+  toets("een vervallen blad heeft geen pagina", !doelen.includes("bijlage-blad-ex-weg") && !doelen.includes("ex-weg"));
+  const koppen = [...p.querySelectorAll("h1[data-inhoud]")].map((e) => e.textContent.trim());
+  toets("de hoofdstukken houden hun nummers", koppen.includes("1 Introduction") && koppen.includes("2 Project details"), koppen);
+
+  // De keuzes van de gebruiker, op papier.
+  m.flushSync(() => {
+    staat().werkRapportBij((r) => metKeuze(r, "blad:ex-balk", { toelichting: "Balk is lager geworden.\nDe oplegging blijft." }));
+    staat().werkRapportBij((r) => metKeuze(r, "knoop:inleiding", { tekst: "Inleiding herschreven." }));
+    staat().werkRapportBij((r) => metKeuze(r, "blad:ex-weg", { weg: true }));
+  });
+  p = plek();
+  const metKeuzes = inhoudsTekst(p);
+  toets("de toelichting staat erbij", metKeuzes.includes("Balk is lager geworden.") && metKeuzes.includes("De oplegging blijft."));
+  toets("de eigen tekst vervangt die van de app", metKeuzes.includes("Inleiding herschreven.") && !metKeuzes.includes("Text changed."));
+  toets("een weggehaalde regel staat er niet", !metKeuzes.includes("Vervalt"));
+
+  // De lijst in het Nederlands, met de notatie van de taal.
+  await metWijziging("nl");
+  p = plek();
+  const nl2 = inhoudsTekst(p);
+  for (const deel of ["Wijzigingen in deze versie", "Invoer: h 300 → 200,5.", "Oordeel: voldoet → voldoet niet.", "Uitkomsten: UC_buiging", "Hernoemd, was Factor.", "Vervallen.", "Inleiding"]) {
+    toets(`in het Nederlands: ${deel}`, nl2.includes(deel), nl2.slice(-400));
+  }
+
+  // De taal van het rapport wint van die van de app, en een sleutel lekt nergens.
+  await m.i18next.changeLanguage("nl");
+  nieuwProject([balk()], "en");
+  await m.maakNieuweVersie();
+  m.flushSync(() => {
+    staat().zetWaarde("ex-balk", "h", "200");
+    staat().werkWijzigingenLijstBij();
+  });
+  toets("de taal van het rapport wint van die van de app", inhoudsTekst(plek()).includes("Input: h 300 → 200."), inhoudsTekst(plek()).slice(-200));
+
+  const alleDelen = [
+    { soort: "erbij" }, { soort: "weg" }, { soort: "tekst" }, { soort: "inhoud" }, { soort: "hernoemd", van: "x" },
+    { soort: "invoer", lijst: [{ naam: "L", van: "4.2", naar: "4.8" }], meer: 3 }, { soort: "uitkomst", lijst: [{ naam: "UC", naar: "1" }], meer: 0 },
+    { soort: "gegevens", lijst: [{ naam: "CC", van: "2", naar: "3" }], meer: 0 }, { soort: "rekentekst", regels: 1 }, { soort: "rekentekst", regels: 2 },
+    ...["voldoet", "voldoet_niet", "geen_oordeel", "niet_doorgerekend"].map((van) => ({ soort: "oordeel", van, naar: "voldoet" })),
+    ...["pdf", "aantekeningen", "werkmap", "tekst", "graaf", "tekening", "notebook", "elementen"].map((wat) => ({ soort: "bestand", wat })),
+  ];
+  for (const taal of ["en", "nl"]) {
+    const t = m.i18next.getFixedT(taal, "rapport");
+    const { wijzigingTekst } = await import("../packages/desktop/src/rapport/wijzigingen.ts");
+    const zinnen = alleDelen.map((d) => wijzigingTekst({ sleutel: "x", doel: "blad", titel: "", delen: [d] }, t, taal));
+    gelijk(`${taal}: geen enkele sleutel lekt`, zinnen.filter((z) => z.includes("afdruk.") || z.includes("wijzigingen.")), []);
+    toets(`${taal}: de notatie volgt de taal`, zinnen[5].includes(taal === "nl" ? "4,2 → 4,8" : "4.2 → 4.8"), zinnen[5]);
+    toets(`${taal}: de naam van een projectgegeven in de taal`, !/\bCC\b/.test(zinnen[7]) || taal === "x", zinnen[7]);
+  }
+
+  // Een project zonder wijzigingen: de afdruk is wat ze was.
+  await m.i18next.changeLanguage("en");
+  nieuwProject([balk()], "en");
+  const zonder = m.teken();
+  toets("een project met één versie: geen spoor van de lijst", !zonder.includes('data-inhoud="wijzigingen"') && !zonder.includes("Changes in this version"));
+  await m.maakNieuweVersie();
+  m.flushSync(() => staat().werkWijzigingenLijstBij());
+  toets("een tak zonder wijziging: geen lijst", !m.teken().includes('data-inhoud="wijzigingen"'));
+}
+
+// ── De bediening ────────────────────────────────────────────────────────────
+kop("9d. De bediening");
+{
+  await m.i18next.changeLanguage("en");
+  nieuwProject();
+  const eerste = staat().versies.actief;
+  const zijkant = m.tekenOnderdeel("VersieSectie");
+  const rijen = () => [...zijkant.plek.querySelectorAll(".pb-inhoud")];
+  gelijk("in het zijpaneel: één versie en de knop", [rijen().length, zijkant.plek.querySelector(".pb-toevoegen .pb-naam").textContent], [1, "New version"]);
+  gelijk("de naam van de eerste versie: zijn revisie", rijen()[0].querySelector(".pb-inhoud-nummer").textContent, "A");
+
+  // Nieuwe versie: vraag om de omschrijving, Enter maakt hem.
+  klik(zijkant.plek.querySelector(".pb-toevoegen"));
+  const invoer = zijkant.plek.querySelector(".pb-naam-invoer");
+  toets("Nieuwe versie vraagt wat er verandert", !!invoer);
+  typ(invoer, "Kolom versterkt");
+  m.flushSync(() => invoer.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+  await wachtEven();
+  await wachtEven();
+  m.flushSync(() => {});
+  gelijk("de versie is er, en staat open", [staat().versies.lijst.length, revisieVan(staat().versies.actief, staat().rapport).omschrijving], [2, "Kolom versterkt"]);
+  gelijk("het zijpaneel volgt", rijen().map((r) => r.querySelector(".pb-naam").textContent).at(-1), "Kolom versterkt");
+  const b = staat().versies.actief;
+
+  // Klikken op een andere versie wisselt.
+  klik(rijen()[0]);
+  await wachtEven();
+  await wachtEven();
+  gelijk("een klik op een andere versie wisselt", staat().versies.actief, eerste);
+  m.flushSync(() => {});
+  klik(rijen()[0]);
+  gelijk("een klik op de open versie opent het paneel", staat().activeId, "__versies__");
+  klik(rijen()[1]);
+  await wachtEven();
+  await wachtEven();
+  m.flushSync(() => {});
+  gelijk("het paneel blijft open bij het wisselen", [staat().versies.actief, staat().activeId], [b, "__versies__"]);
+  zijkant.weg();
+
+  // De revisietabel in het rapportpaneel.
+  m.flushSync(() => staat().zetWaarde("ex-balk", "h", "200"));
+  const paneel = m.tekenPaneel();
+  await wachtEven();
+  m.flushSync(() => {});
+  const nav = [...paneel.plek.querySelectorAll(".rapport-nav button")].map((x) => x.textContent);
+  toets("de sprongbalk kent de wijzigingen", nav.includes("Changes"), nav);
+  const revisieRijen = [...paneel.plek.querySelectorAll('[data-sectie="revisies"] tbody tr')];
+  gelijk("twee regels in de revisietabel", revisieRijen.length, 2);
+  toets("de regel van de eerdere versie staat vast", revisieRijen[0].querySelector("input").readOnly && revisieRijen[0].querySelector("select").disabled);
+  toets("en kan niet weg", revisieRijen[0].querySelector(".rapport-icoon:last-child").disabled);
+  toets("de eigen regel is te bewerken", !revisieRijen[1].querySelector("input").readOnly && !revisieRijen[1].querySelector("select").disabled);
+  toets("maar kan ook niet weg", revisieRijen[1].querySelector(".rapport-icoon:last-child").disabled);
+  toets("en het paneel zegt het", paneel.plek.querySelector('[data-sectie="revisies"]').textContent.includes("comes from that version"));
+
+  // De lijst, met een toelichting die blijft.
+  const sectie = () => paneel.plek.querySelector('[data-sectie="wijzigingen"]');
+  const regel = () => sectie().querySelector('[data-regel="blad:ex-balk"]');
+  toets("de sectie staat er, met de regel van het blad", !!regel());
+  gelijk("de tekst van de app staat in het veld", regel().querySelectorAll("textarea")[0].value.startsWith("Input: h 300 → 200."), true);
+  m.flushSync(() => m.useProjectStore.setState({ dirty: false }));
+  m.flushSync(() => staat().werkWijzigingenLijstBij());
+  gelijk("de lijst is afgeleid: niets om op te slaan", [staat().dirty, staat().verleden.length > 0], [false, true]);
+  const voor = staat().verleden.length;
+  typ(regel().querySelectorAll("textarea")[1], "Bal");
+  typ(regel().querySelectorAll("textarea")[1], "Balk lager");
+  gelijk("doortypen in de toelichting is één stap", staat().verleden.length, voor + 1);
+  gelijk("de toelichting staat in het rapport", keuzeVan(staat().rapport, "blad:ex-balk").toelichting, "Balk lager");
+  m.flushSync(() => staat().zetWaarde("ex-balk", "h", "190"));
+  await wachtEven();
+  m.flushSync(() => {});
+  gelijk("de lijst wordt opnieuw gemaakt", regel().querySelectorAll("textarea")[0].value.startsWith("Input: h 300 → 190."), true);
+  gelijk("en de toelichting blijft", regel().querySelectorAll("textarea")[1].value, "Balk lager");
+
+  // Een eigen tekst, en terug naar die van de app.
+  typ(regel().querySelectorAll("textarea")[0], "");
+  gelijk("een leeg veld mag even, terwijl je typt", regel().querySelectorAll("textarea")[0].value, "");
+  typ(regel().querySelectorAll("textarea")[0], "Eigen zin");
+  gelijk("een eigen tekst", keuzeVan(staat().rapport, "blad:ex-balk").tekst, "Eigen zin");
+  klik(regel().querySelector(".rapport-link"));
+  toets("terug naar de tekst van de app", keuzeVan(staat().rapport, "blad:ex-balk").tekst === undefined && regel().querySelectorAll("textarea")[0].value.startsWith("Input:"));
+
+  // Weghalen en terugzetten.
+  klik(regel().querySelector(".rapport-icoon"));
+  toets("weghalen: de regel gaat naar de lijst om terug te zetten", !regel() && sectie().querySelector(".rapport-opzet-lijst li")?.textContent.includes("Balk 1"));
+  klik(sectie().querySelector(".rapport-opzet-lijst .rapport-knop"));
+  toets("en terugzetten", !!regel() && keuzeVan(staat().rapport, "blad:ex-balk").weg === undefined);
+  gelijk("met zijn toelichting", regel().querySelectorAll("textarea")[1].value, "Balk lager");
+
+  // Geen verschil meer: de tekst staat apart.
+  m.flushSync(() => staat().zetWaarde("ex-balk", "h", "300"));
+  await wachtEven();
+  m.flushSync(() => {});
+  toets("geen verschil meer: de tekst staat apart en is niet weg", !regel() && sectie().textContent.includes("No longer a difference") && sectie().textContent.includes("Balk lager"), sectie().textContent.slice(-200));
+  m.flushSync(() => staat().zetWaarde("ex-balk", "h", "200"));
+  await wachtEven();
+  m.flushSync(() => {});
+  gelijk("het verschil komt terug, met de toelichting", regel()?.querySelectorAll("textarea")[1].value, "Balk lager");
+
+  // Op het origineel is er geen sectie.
+  await m.wisselNaarVersie(eerste);
+  m.flushSync(() => {});
+  toets("het origineel heeft geen lijst", !sectie());
+  toets("en zijn regel staat niet vast om te bewerken", ![...paneel.plek.querySelectorAll('[data-sectie="revisies"] tbody tr')][0].querySelector("input").readOnly);
+  await m.wisselNaarVersie(b);
+  m.flushSync(() => {});
+  paneel.weg();
+
+  // Het paneel met de versies.
+  const v = m.tekenOnderdeel("VersiesPaneel");
+  const rijenV = () => [...v.plek.querySelectorAll('[data-sectie="lijst"] tbody tr')];
+  gelijk("de tabel: elke versie", rijenV().length, 2);
+  toets("de open versie is te herkennen", rijenV()[1].getAttribute("aria-current") === "true");
+  const verg = v.plek.querySelector('[data-sectie="vergelijking"]');
+  gelijk("de vergelijking noemt de oudertak", verg.querySelector("h2").textContent, "Compared with version A");
+  const kaart = verg.querySelector('[data-blad="ex-balk"]');
+  toets("per blad de invoer", kaart.textContent.includes("Input") && kaart.textContent.includes("300") && kaart.textContent.includes("200"));
+  toets("de uitkomsten", kaart.textContent.includes("Results") && kaart.textContent.includes("UC_max"));
+  toets("en het oordeel", kaart.textContent.includes("passes → does not pass"), kaart.textContent);
+  const zetIn = (label, tekst2) => {
+    const veld = [...v.plek.querySelectorAll('[data-sectie="deze"] .rapport-veld')].find((x) => x.querySelector(".rapport-label").textContent === label);
+    typ(veld.querySelector("input"), tekst2);
+  };
+  zetIn("Description", "Kolom sterker");
+  gelijk("de omschrijving is de regel in de revisietabel", staat().rapport.revisies.at(-1).omschrijving, "Kolom sterker");
+  zetIn("Own name", "Sterke kolom");
+  gelijk("een eigen naam", staat().versies.lijst.at(-1).naam, "Sterke kolom");
+  staat().ongedaan();
+  gelijk("de omschrijving is een stap in ongedaan maken", staat().rapport.revisies.at(-1).omschrijving, "Kolom versterkt");
+  gelijk("de versie leest hem uit haar regel", versieGegevens(staat(), actieveVersie(staat().versies)).omschrijving, "Kolom versterkt");
+
+  // Weghalen: de open versie en het origineel niet.
+  toets("de open versie heeft geen knop om weg te halen", !rijenV()[1].querySelector(".rapport-icoon"));
+  toets("het origineel kan niet weg", rijenV()[0].querySelector(".rapport-icoon").disabled);
+  await m.maakNieuweVersie({ omschrijving: "Derde" });
+  m.flushSync(() => {});
+  globalThis.confirm = () => true;
+  window.confirm = globalThis.confirm;
+  toets("een versie ertussen kan wel", !rijenV()[1].querySelector(".rapport-icoon").disabled);
+  klik(rijenV()[1].querySelector(".rapport-icoon"));
+  gelijk("weg", rijenV().length, 2);
+  gelijk("en de lijn volgt", staat().versies.lijst.at(-1).ouder, eerste);
+  klik(rijenV()[0].querySelector(".rapport-knop"));
+  await wachtEven();
+  await wachtEven();
+  m.flushSync(() => {});
+  gelijk("Openen wisselt", staat().versies.actief, eerste);
+  toets("en het origineel zegt dat er niets te vergelijken valt", v.plek.querySelector('[data-sectie="vergelijking"]').textContent.includes("This is the original"));
+  v.weg();
 }
 
 console.log(fouten === 0 ? "\nVersies: alles klopt." : `\n${fouten} controle(s) gezakt.`);

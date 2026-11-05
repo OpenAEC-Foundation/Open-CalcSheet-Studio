@@ -19,6 +19,7 @@ import Icoon from "../Icoon";
 import BladToevoegen from "./BladToevoegen";
 import LibrarySectie from "./LibrarySectie";
 import InhoudLijst from "./InhoudLijst";
+import VersieSectie from "./VersieSectie";
 import "./ProjectBrowser.css";
 import "./BladVersie.css";
 
@@ -257,6 +258,7 @@ export default function ProjectBrowser() {
   const projectNaam = useProjectStore((s) => s.projectNaam);
   const verborgen = useProjectStore((s) => s.verborgen);
   const zetVerborgen = useProjectStore((s) => s.zetVerborgen);
+  const aantalVersies = useProjectStore((s) => s.versies.lijst.length);
   /** Een verborgen onderdeel terugzetten en openen. */
   const terug = (onderdeel: "gegevens" | "rapport") => {
     zetVerborgen(onderdeel, false);
@@ -326,6 +328,10 @@ export default function ProjectBrowser() {
               <span className="pb-naam">{tw("browser.rapportToevoegen")}</span>
             </button>
           )}
+        </Sectie>
+
+        <Sectie titel={tw("versies.titel")} teller={aantalVersies > 1 ? aantalVersies : undefined}>
+          <VersieSectie />
         </Sectie>
 
         <Sectie titel={tw("browser.bladen")} teller={exemplaren.length}>
