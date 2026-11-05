@@ -67,11 +67,11 @@ export function useBladUitkomst(): BladUitkomst | null {
 
 const GEEN_WAARDEN: Record<string, string> = {};
 
-/** De automatische samenvatting voor hoofdstuk Berekeningen: "Houten balklaag — UC 0,82, voldoet.", in de taal van de app. */
-export function samenvatting(r: Resultaat): string {
+/** De automatische samenvatting voor hoofdstuk Berekeningen: "Houten balklaag — UC 0,82, voldoet.", in de taal van het rapport. */
+export function samenvatting(r: Resultaat, taal: string): string {
   const delen: string[] = [];
-  if (r.uc !== null) delen.push(`UC ${ucTekst(r.uc)}`);
-  if (r.voldoet !== null) delen.push(i18next.t(r.voldoet ? "beelden:afdruk.voldoet" : "beelden:afdruk.voldoetNiet"));
-  else if (r.nietGetoetst) delen.push(i18next.t("beelden:kit.nietGetoetst"));
+  if (r.uc !== null) delen.push(`UC ${ucTekst(r.uc, taal)}`);
+  if (r.voldoet !== null) delen.push(i18next.t(r.voldoet ? "beelden:afdruk.voldoet" : "beelden:afdruk.voldoetNiet", { lng: taal }));
+  else if (r.nietGetoetst) delen.push(i18next.t("beelden:kit.nietGetoetst", { lng: taal }));
   return delen.length > 0 ? `${r.titel} — ${delen.join(", ")}.` : `${r.titel}.`;
 }

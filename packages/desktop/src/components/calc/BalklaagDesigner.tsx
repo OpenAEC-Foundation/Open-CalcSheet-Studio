@@ -6,7 +6,7 @@ import { useActiefExemplaar, useAlleenLezen, useProjectScope } from "../../store
 import { JaNee, IconKeuze, SchemaIcoon, type SchemaSoort } from "./designerKit";
 import {
   KLEUR_M, KLEUR_V, KLEUR_U, Label, Oplegging, LijnLast, PuntLast, KrachtenLijn,
-  RaveelPlattegrond, raveelMaten, raveelHoogte, extremen, randwaarden, nl,
+  RaveelPlattegrond, raveelMaten, raveelHoogte, extremen, randwaarden, nl as nlInTaal,
 } from "./balklaagTekening";
 import { leesBlad, rekenBladDoor, useBladUitkomst } from "./bladResultaat";
 import { belastinggevallen, helften, lijnen, omhullende, wisselOmhullende, type Ligger, type Lijnen } from "./balklaagLijnen";
@@ -237,8 +237,9 @@ export default function BalklaagDesigner() {
   // meer hooks aan dan in de andere en klapt React eruit bij een bladwissel.
   const uitkomst = useBladUitkomst();
   const scope = useProjectScope();
-  // De taal van de app, ook op papier: de uitvoer volgt de taal.
+  // De taal van de app, en op papier die van de uitdraai (afdrukTaal.tsx).
   const { t, i18n } = useTranslation("beelden");
+  const nl = (v: number, dec = 2) => nlInTaal(v, dec, i18n.language);
   const [editing, setEditing] = useState<string | null>(null);
   // Uitkomst van de ontwerpknop. De handtekening is een vingerafdruk van de
   // invoer waarop gezocht is — het profiel zit er bewust NIET in, want dat
