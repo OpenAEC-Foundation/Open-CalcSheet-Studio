@@ -34,8 +34,9 @@ const viteAchtervoegsels = {
       loader: "js",
     }));
     b.onLoad({ filter: /.*/, namespace: "vite-url" }, () => ({ contents: 'export default "";', loader: "js" }));
-    // import.meta.glob bestaat alleen in vite; de beelden van de modules staan niet op papier.
-    b.onLoad({ filter: /ModuleAfbeelding\.tsx$/ }, (a) => ({
+    // import.meta.glob bestaat alleen in vite; de beelden van de modules en de meegeleverde
+    // gewichtenbibliotheek (die het paneel pas laadt als het venster opent) staan niet op papier.
+    b.onLoad({ filter: /(ModuleAfbeelding\.tsx|gewichtenLaden\.ts)$/ }, (a) => ({
       contents: readFileSync(a.path, "utf8").replace(/import\.meta\.glob\([\s\S]*?\)\s*(as [^;]+)?;/, "({});"),
       loader: "tsx",
     }));

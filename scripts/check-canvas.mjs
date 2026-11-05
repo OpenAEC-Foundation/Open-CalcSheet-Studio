@@ -10,7 +10,8 @@
  *   • het merkteken breekt de rekentaal niet: een lezer zonder canvas-blad ziet
  *     een gewoon rekenblad met dezelfde uitkomsten;
  *   • opslaan en heropenen geeft hetzelfde, oude bestanden blijven leesbaar;
- *   • de verdeling over de vellen: een eenheid valt nooit over de vouw.
+ *   • de verdeling over de vellen: een eenheid valt nooit over de vouw;
+ *   • zoomen met Ctrl en scrollen: de richting, heen en terug, en de grenzen.
  *
  * Draaien:  node scripts/check-canvas.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -20,6 +21,7 @@ import {
   CANVAS_BLAD, EERSTE_VEL, EENHEID_MERK, INVOER_BREEDTE, RASTER_MM, VEL_BREEDTE, VEL_HOOGTE,
   isCanvasBlad, heeftEenheden, leesEenheden, schrijfEenheden, zetEenheid, verwijderEenheid,
   nieuwId, maxBreedte, opRaster, klemOpVel, velVan, velBegin, naastDeVouw, legOpVellen,
+  ZOOM_MIN, ZOOM_MAX, zoomNaWiel,
 } from "../packages/desktop/src/store/canvasBlad.ts";
 import { rekenEenhedenDoor, rekenUitwerking } from "../packages/desktop/src/components/calc/canvasRekenen.ts";
 import { bronVoorUitvoer } from "../packages/desktop/src/templates/vertalingen.ts";
@@ -289,6 +291,16 @@ console.log("\nHet raster en de vellen");
   meld(tebreed[0].x === 0, "breder dan het vel: tegen de linkerrand");
   const hoog = legOpVellen([maat(0, 10, 40, VEL_HOOGTE + 100)]);
   meld(hoog[0].vel === 0 && hoog[0].y === 10, "hoger dan een vel: blijft staan, verschuiven helpt niet");
+}
+
+console.log("\nZoomen met Ctrl en scrollen");
+{
+  // Eén tik van een muiswiel is ±100.
+  meld(zoomNaWiel(1, -100) > 1, "omhoog scrollen zoomt in");
+  meld(zoomNaWiel(1, 100) < 1, "omlaag scrollen zoomt uit");
+  meld(Math.abs(zoomNaWiel(zoomNaWiel(1, -100), 100) - 1) < 1e-9, "een tik heen en terug: weer 100%");
+  meld(zoomNaWiel(ZOOM_MAX, -100) === ZOOM_MAX, "verder inzoomen dan de bovengrens kan niet");
+  meld(zoomNaWiel(ZOOM_MIN, 100) === ZOOM_MIN, "verder uitzoomen dan de ondergrens kan niet");
 }
 
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
