@@ -13,6 +13,7 @@ import { leesGraaf } from "../graaf/model.ts";
 import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
 import { isJupyterBlad, leesJupyterWerkmap } from "./jupyterBlad.ts";
 import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
+import { leesVersies, rapportVoorBestand, schrijfVersies, type VersieLijst, type VersieMelding } from "./versies.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -55,6 +56,10 @@ import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
  * lege `source` en daarnaast `pdf`: `{ bestandsnaam, data }`, met in `data` het
  * hele PDF-bestand als base64. Zo zit de PDF in het projectbestand en blijft het
  * project overdraagbaar.
+ *
+ * De knopen van het bestand zijn altijd de actieve versie. De andere versies staan in één attribuut
+ * `ocss::versies` (store/versies.ts) en ontbreken zolang er niets over te zeggen valt. Daarom hoeft de
+ * formaatversie niet omhoog: een app zonder versies leest gewoon de actieve versie, als gewoon project.
  */
 
 export const PROJECT_FORMAAT_VERSIE = 2;
@@ -78,6 +83,8 @@ export interface ProjectPayload {
   rapport?: Rapport;
   /** Uit de projectboom gehaalde onderdelen; ontbreekt als niets verborgen is. */
   verborgen?: Verborgen;
+  /** De versies; de velden hierboven zijn de actieve. Ontbreekt in bestanden zonder versies. */
+  versies?: VersieLijst;
 }
 
 export interface GelezenProject {
@@ -87,6 +94,10 @@ export interface GelezenProject {
   /** Afwezig bij een oud bestand of een los blad; laadProject maakt dan een nieuw rapport. */
   rapport?: Rapport;
   verborgen?: Verborgen;
+  /** Afwezig bij een bestand zonder versies; laadProject maakt er dan één versie van. */
+  versies?: VersieLijst;
+  /** Wat er aan de versies in het bestand niet klopte. De actieve versie is er altijd. */
+  versieMeldingen?: VersieMelding[];
 }
 
 /**
@@ -101,8 +112,11 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
     naam: payload.naam,
     formaatversie: PROJECT_FORMAAT_VERSIE,
     gegevens: payload.gegevens,
-    rapport: payload.rapport,
+    rapport: payload.rapport && rapportVoorBestand(payload.rapport),
     verborgen: payload.verborgen,
+    versies: payload.versies && payload.rapport
+      ? schrijfVersies(payload.versies, { exemplaren: payload.exemplaren, gegevens: payload.gegevens, rapport: payload.rapport })
+      : undefined,
     bladen: payload.exemplaren.map((ex): IfcCalcSheet => ({
       nodes: [],
       ...uitkomsten.get(ex.id),
@@ -118,6 +132,8 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       md: ex.md,
       graaf: ex.graaf,
       ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
+      jupyter: ex.jupyter,
+      marimo: ex.marimo,
     })),
   });
   return JSON.stringify(doc, null, 2);
@@ -164,19 +180,26 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
   }
 
   if (parsed) {
-    const p: { naam?: unknown; gegevens?: unknown; exemplaren?: unknown; rapport?: unknown; verborgen?: unknown } | undefined =
+    const p: { naam?: unknown; gegevens?: unknown; exemplaren?: unknown; rapport?: unknown; verborgen?: unknown; versies?: unknown } | undefined =
       isProjectIfcx(parsed) ? leesProjectIfcx(parsed) : parsed.project;
     if (p && Array.isArray(p.exemplaren)) {
+      const rapportUit = (x: unknown) => normaliseerRapport(x, datumTekst(new Date()), standaardTeksten);
+      // Een bestand met kapotte versies opent gewoon: de knopen zijn de laatste bruikbare stand.
+      const gelezen = p.versies === undefined ? undefined : leesVersies(p.versies, { exemplaren: p.exemplaren, rapport: p.rapport }, {
+        exemplaren: (x) => normaliseerExemplaren(x, bestandsnaam),
+        gegevens: (x) => ({ ...legeGegevens(), ...leesWaarden(x) }),
+        rapport: rapportUit,
+      });
       return {
+        ...(gelezen ? { versies: gelezen.versies } : {}),
+        ...(gelezen && gelezen.meldingen.length > 0 ? { versieMeldingen: gelezen.meldingen } : {}),
         projectNaam: (typeof p.naam === "string" && p.naam) || bestandsnaam,
         gegevens: { ...legeGegevens(), ...((p.gegevens as ProjectGegevens | undefined) ?? {}) },
         exemplaren: normaliseerExemplaren(p.exemplaren, bestandsnaam),
         // Per veld gecontroleerd: het bestand kan van een andere versie van
         // de app komen of met de hand zijn aangepast. Onbekende velden
         // vallen weg, ontbrekende krijgen hun standaardwaarde.
-        rapport: p.rapport
-          ? normaliseerRapport(p.rapport, datumTekst(new Date()), standaardTeksten)
-          : undefined,
+        rapport: p.rapport ? rapportUit(p.rapport) : undefined,
         verborgen: leesVerborgen(p.verborgen),
       };
     }

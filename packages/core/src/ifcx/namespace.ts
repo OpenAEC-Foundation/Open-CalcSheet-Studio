@@ -34,6 +34,7 @@ export const ATTR = {
 
   project: 'ocss::project',
   rapport: 'ocss::rapport',
+  versies: 'ocss::versies',
   blad: 'ocss::blad',
   rekentekst: 'ocss::blad::rekentekst',
   invoer: 'ocss::blad::invoer',
@@ -130,6 +131,8 @@ const RAPPORT = object({
   revisies: opt(lijst(object({
     ...velden(['code', 'datum', 'omschrijving']),
     status: opt(keuze('concept', 'ter goedkeuring', 'definitief')),
+    // De versie waar deze regel bij hoort (ocss::versies); een eigen regel heeft er geen.
+    versieId: opt(TEKST),
   }))),
   teksten: opt(VRIJ),
   rol: opt(object(velden(['rol', 'architect', 'datumOnderlegger']))),
@@ -182,6 +185,8 @@ const RAPPORT = object({
   weggehaald: opt(lijst(VRIJ)),
   template: opt(VRIJ),
   huisstijl: opt(object(velden(['hoofdkleur', 'accentkleur', 'tabeltekst', 'invoerkleur', 'lettertype']))),
+  // Per regel van de lijst met wijzigingen wat de gebruiker ermee deed; de lijst zelf is afgeleid.
+  wijzigingen: opt(VRIJ),
 });
 
 /** De schema's van alles onder `ocss::`. Elk bestand draagt ze zelf mee. */
@@ -194,6 +199,28 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
     }),
   },
   [ATTR.rapport]: { value: RAPPORT },
+  // De andere versies van dit project. De knopen hieromheen zijn de actieve versie: een lezer die
+  // dit attribuut niet kent, ziet een gewoon project. Een `inhoud` is één waarde: een lezer zou
+  // anders de bladen van elke versie als blad van het project tellen.
+  [ATTR.versies]: {
+    value: object({
+      versie: GEHEEL,
+      actief: TEKST,
+      lijst: lijst(object({
+        id: TEKST,
+        code: TEKST,
+        naam: TEKST,
+        datum: TEKST,
+        omschrijving: TEKST,
+        ouder: opt(TEKST),
+        // De bladen, de projectgegevens en het rapport; ontbreekt bij de actieve versie.
+        inhoud: opt(VRIJ),
+      })),
+      // Grote teksten op hun SHA-256: per tekst één keer in het bestand. Een tekst die ook in de
+      // actieve versie staat, staat alleen daar.
+      bijlagen: VRIJ,
+    }),
+  },
   [ATTR.blad]: {
     value: object({
       id: TEKST,

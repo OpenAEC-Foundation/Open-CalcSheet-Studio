@@ -13,7 +13,8 @@
  *   │  └─ blad (IfcGroup)                 ocss::blad, ::rekentekst, ::invoer,
  *   │     │                               ::elementen, ::pdf, ::xlsx, ::markdown, ::uitkomst
  *   │     └─ figuur                       ocss::figuur
- *   └─ Constructierapport                 ocss::rapport
+ *   ├─ Constructierapport                 ocss::rapport
+ *   └─ Versies                            ocss::versies: de andere versies, alleen als die er zijn
  *
  * Een blad is een IfcGroup en geen element: een kruipfactor of een bout is geen
  * bouwdeel. Zo staat elk blad in het document, en hangt een herkend of gekoppeld
@@ -52,6 +53,8 @@ export interface IfcxProjectInvoer {
   /** Het constructierapport; komt ongewijzigd in `ocss::rapport`. */
   rapport?: unknown;
   verborgen?: { gegevens?: boolean; rapport?: boolean };
+  /** De andere versies van het project; komt ongewijzigd in `ocss::versies`. De rest is de actieve versie. */
+  versies?: unknown;
 }
 
 /** Eén blad zoals het uit een document terugkomt: de velden van een exemplaar. */
@@ -80,6 +83,7 @@ export interface IfcxGelezenProject {
   exemplaren: IfcxGelezenBlad[];
   rapport?: unknown;
   verborgen?: { gegevens?: boolean; rapport?: boolean };
+  versies?: unknown;
 }
 
 const KLASSE_VAN: Record<ElementSoort, string> = { paal: 'IfcPile', fundering: 'IfcFooting', balk: 'IfcBeam' };
@@ -371,6 +375,9 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
   const rapportP = onder('rapport');
   const heeftRapport = invoer.rapport !== undefined && invoer.rapport !== null;
   if (heeftRapport) projectKinderen.Constructierapport = rapportP;
+  const versiesP = onder('versies');
+  const heeftVersies = invoer.versies !== undefined && invoer.versies !== null;
+  if (heeftVersies) projectKinderen.Versies = versiesP;
 
   data.push({
     path: wortel,
@@ -432,6 +439,12 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         [ATTR.naam]: typeof titel === 'string' && titel ? titel : 'Constructierapport',
         [ATTR.rapport]: invoer.rapport,
       },
+    });
+  }
+  if (heeftVersies) {
+    data.push({
+      path: versiesP,
+      attributes: { [ATTR.naam]: 'Versies', [ATTR.versies]: invoer.versies },
     });
   }
 
@@ -613,6 +626,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
   });
 
   const rapportKnoop = knopen.find((k) => k.attributes?.[ATTR.rapport]);
+  const versiesKnoop = knopen.find((k) => k.attributes?.[ATTR.versies]);
   const uit: IfcxGelezenProject = {
     formaatversie: typeof project.formaatversie === 'number' ? project.formaatversie : 2,
     naam: tekstVan(wortel.attributes![ATTR.naam]),
@@ -620,6 +634,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     exemplaren,
   };
   if (rapportKnoop) uit.rapport = rapportKnoop.attributes![ATTR.rapport];
+  if (versiesKnoop) uit.versies = versiesKnoop.attributes![ATTR.versies];
   if (project.verborgen && typeof project.verborgen === 'object') uit.verborgen = project.verborgen as IfcxGelezenProject['verborgen'];
   return uit;
 }

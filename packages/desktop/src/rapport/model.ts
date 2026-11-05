@@ -13,6 +13,7 @@
 import { inTaal, leesMeertalig, leesTaal, type Meertalig } from "./meertalig.ts";
 import { leesWeggehaald, normaliseerOpzet, type Knoop, type Weggehaald } from "./opzet.ts";
 import { leesVarianten, type Tekstvariant } from "./standaardteksten.ts";
+import type { WijzigingsKeuze, Wijzigingsregel } from "./wijzigingen.ts";
 
 export { leesTaal };
 
@@ -28,6 +29,11 @@ export interface Revisie {
   datum: string;
   omschrijving: string;
   status: RevisieStatus;
+  /**
+   * De versie waar deze regel bij hoort (store/versies.ts). Ontbreekt bij een eigen regel, en
+   * zolang een project één versie heeft.
+   */
+  versieId?: string;
 }
 
 export interface Constructeur {
@@ -296,6 +302,16 @@ export interface Rapport {
   template?: TemplateHerkomst;
   /** De huisstijl uit het template; gaat boven die van het bureau. */
   huisstijl?: Huisstijl;
+  /**
+   * Wat de gebruiker met de lijst van wijzigingen heeft gedaan, per regel (rapport/wijzigingen.ts).
+   * Blijft bewaard als de lijst opnieuw wordt gemaakt.
+   */
+  wijzigingen?: Record<string, WijzigingsKeuze>;
+  /**
+   * De lijst zelf: wat verschilt met de oudertak. Afgeleid, dus niet in het bestand; de app maakt hem
+   * opnieuw zodra het rapport in beeld komt.
+   */
+  wijzigingsLijst?: Wijzigingsregel[];
 }
 
 export interface TemplateHerkomst {
@@ -672,6 +688,22 @@ export function leesLand(x: unknown): string | undefined {
   return typeof x === "string" && /^[\p{L}\p{N}_ -]{1,40}$/u.test(x) ? x : undefined;
 }
 
+/** Wat de gebruiker met de lijst van wijzigingen deed, uit een bestand. Wat leeg is, is er niet. */
+export function leesWijzigingen(x: unknown): Record<string, WijzigingsKeuze> {
+  const uit: [string, WijzigingsKeuze][] = [];
+  for (const [sleutel, waarde] of Object.entries(object(x) ?? {})) {
+    const o = object(waarde);
+    if (!o) continue;
+    const keuze: WijzigingsKeuze = {
+      ...(typeof o.tekst === "string" && o.tekst !== "" ? { tekst: o.tekst } : {}),
+      ...(typeof o.toelichting === "string" && o.toelichting !== "" ? { toelichting: o.toelichting } : {}),
+      ...(o.weg === true ? { weg: true as const } : {}),
+    };
+    if (Object.keys(keuze).length > 0) uit.push([sleutel, keuze]);
+  }
+  return Object.fromEntries(uit);
+}
+
 /**
  * De velden van een eigen template in een rapport. Alleen wat er is en klopt komt terug: een
  * rapport zonder template krijgt er geen enkel veld bij, en een opzet die alleen uit onzin
@@ -691,6 +723,8 @@ function templateVelden(o: Los): Partial<Rapport> {
   if (template) uit.template = template;
   const huisstijl = leesHuisstijl(o.huisstijl);
   if (huisstijl) uit.huisstijl = huisstijl;
+  const wijzigingen = leesWijzigingen(o.wijzigingen);
+  if (Object.keys(wijzigingen).length > 0) uit.wijzigingen = wijzigingen;
   return uit;
 }
 
@@ -751,6 +785,7 @@ export function normaliseerRapport(
       datum: tekst(r.datum, ""),
       omschrijving: tekst(r.omschrijving, ""),
       status: REVISIE_STATUSSEN.includes(r.status as RevisieStatus) ? (r.status as RevisieStatus) : "concept",
+      ...(typeof r.versieId === "string" && r.versieId !== "" ? { versieId: r.versieId } : {}),
     })),
     // Over de standaardteksten heen: een tekst-id die in het bestand ontbreekt
     // (ouder bestand, of een onderdeel dat later is bijgekomen) krijgt zo zijn
