@@ -165,7 +165,7 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
         // de app komen of met de hand zijn aangepast. Onbekende velden
         // vallen weg, ontbrekende krijgen hun standaardwaarde.
         rapport: p.rapport
-          ? normaliseerRapport(p.rapport, datumTekst(new Date()), standaardTeksten())
+          ? normaliseerRapport(p.rapport, datumTekst(new Date()), standaardTeksten)
           : undefined,
         verborgen: leesVerborgen(p.verborgen),
       };

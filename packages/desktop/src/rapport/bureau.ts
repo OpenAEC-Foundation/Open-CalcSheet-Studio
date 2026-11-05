@@ -11,13 +11,15 @@
  * Elke bewerking geeft een nieuw object terug en laat het oude staan. Zo ziet
  * de store dat er iets veranderd is, en blijft een oude stand bruikbaar.
  */
-import type { Tekstvariant } from "./standaardteksten.ts";
 
 /** Eén plek die weet hoe een profiel eruitziet: zie model.ts. */
 export { normaliseerBureau } from "./model.ts";
 
+/** Een eigen tekstvariant: in de taal waarin hij is getypt, anders dan de meegeleverde. */
+export interface EigenVariant { label: string; tekst: string; }
+
 /** Eigen varianten per tekst-id, in de volgorde waarin ze zijn bewaard. */
-export type EigenTeksten = Record<string, Tekstvariant[]>;
+export type EigenTeksten = Record<string, EigenVariant[]>;
 
 /**
  * Eigen varianten uit de instellingen. Alleen varianten met een tekstlabel en
@@ -29,7 +31,7 @@ export function normaliseerEigenTeksten(x: unknown): EigenTeksten {
   const uit: EigenTeksten = {};
   for (const [id, lijst] of Object.entries(x)) {
     if (!Array.isArray(lijst)) continue;
-    const varianten: Tekstvariant[] = [];
+    const varianten: EigenVariant[] = [];
     for (const v of lijst as unknown[]) {
       if (!v || typeof v !== "object") continue;
       const { label, tekst } = v as Record<string, unknown>;
@@ -47,8 +49,8 @@ export function normaliseerEigenTeksten(x: unknown): EigenTeksten {
  * "Bewaar als eigen variant" onder dezelfde naam werkt die variant bij, in
  * plaats van een tweede met dezelfde naam in de keuzelijst te zetten.
  */
-export function metEigenVariant(eigen: EigenTeksten, id: string, v: Tekstvariant): EigenTeksten {
-  const schoon: Tekstvariant = { label: v.label, tekst: v.tekst };
+export function metEigenVariant(eigen: EigenTeksten, id: string, v: EigenVariant): EigenTeksten {
+  const schoon: EigenVariant = { label: v.label, tekst: v.tekst };
   const lijst = eigen[id] ?? [];
   const i = lijst.findIndex((w) => w.label === schoon.label);
   const nieuw = i < 0 ? [...lijst, schoon] : lijst.map((w, j) => (j === i ? schoon : w));

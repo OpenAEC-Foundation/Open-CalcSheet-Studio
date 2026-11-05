@@ -149,7 +149,7 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
       },
       zetRapportVeld: (pad, waarde) => wijzig("zetRapportVeld", () => (s.rapport = zetOpPad(s.rapport, leesPad(pad), waarde))),
       zetRapportDeel: (pad, waarde) =>
-        wijzig("werkRapportBij", () => (s.rapport = normaliseerRapport(zetOpPad(s.rapport, leesPad(pad), waarde), datumTekst(new Date()), standaardTeksten()))),
+        wijzig("werkRapportBij", () => (s.rapport = normaliseerRapport(zetOpPad(s.rapport, leesPad(pad), waarde), datumTekst(new Date()), standaardTeksten))),
       ongedaan: () => {
         acties.push("ongedaan");
         const vorige = verleden.pop();

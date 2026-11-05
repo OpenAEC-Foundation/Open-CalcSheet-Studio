@@ -235,7 +235,7 @@ const VOLLEDIG = {
   naam: "Proefproject Ü & 'co'",
   gegevens: { ...legeGegevens(), project_nummer: "P-1", project_naam: "Proef", constructeur: "Ir. Voorbeeld", extraVeld: "bewaar mij" },
   verborgen: { gegevens: true },
-  rapport: standaardRapport("01-01-2026", standaardTeksten()),
+  rapport: standaardRapport("01-01-2026", standaardTeksten("nl"), "nl"),
   exemplaren: [
     {
       id: "ex-balk", naam: "BL-01 begane grond", templateId: "balk", source: BLAD_BALK, bronVersie: "abc1234",

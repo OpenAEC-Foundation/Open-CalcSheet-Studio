@@ -2,11 +2,16 @@
  * Het constructierapport van een project: documentgegevens, teksten,
  * uitgangspunten en belastingen.
  *
- * Alleen gegevens en standaardwaarden: geen React en geen imports met waarden,
- * zodat scripts/check-rapport.mjs dit bestand rechtstreeks kan laden. Invoer
- * staat als tekst opgeslagen, net als de projectgegevens: wat de gebruiker
- * typte ("0,56") blijft staan, rekenen gebeurt pas bij het opmaken.
+ * Alleen gegevens en standaardwaarden: geen React, en imports met waarden alleen uit
+ * deze map (met extensie .ts), zodat scripts/check-rapport.mjs dit bestand rechtstreeks
+ * kan laden. Invoer staat als tekst opgeslagen, net als de projectgegevens: wat de
+ * gebruiker typte ("0,56") blijft staan, rekenen gebeurt pas bij het opmaken.
+ *
+ * Wat de app meelevert is meertalig, met Engels als bron (meertalig.ts). Een rapport
+ * bewaart de tekst in zijn eigen taal (`Rapport.taal`), zoals de gebruiker hem ziet.
  */
+import { inTaal, type Meertalig } from "./meertalig.ts";
+
 
 export type Fase = "" | "SO" | "VO" | "DO" | "TO" | "UO";
 export const FASEN: readonly Fase[] = ["SO", "VO", "DO", "TO", "UO"];
@@ -241,6 +246,14 @@ export interface Rapport {
    * Ontbreekt in rapporten van vóór versie 2; normaliseerRapport werkt die bij.
    */
   versie: number;
+  /** De taal van het rapport op papier: koppen, vaste woorden, teksten en rekenbladen. */
+  taal: string;
+  /**
+   * Per tekst-id de taal waarin de gebruiker die tekst typte. Staat die taal anders dan
+   * `taal`, dan meldt het paneel dat de tekst nog vertaald moet worden (taalwissel.ts).
+   * Een meegeleverde variant heeft hier geen regel: die wisselt mee.
+   */
+  tekstTaal: Record<string, string>;
   titel: string;
   kenmerk: string;
   fase: Fase;
@@ -286,93 +299,206 @@ export interface Rapport {
  *   4  de inhoudsopgave noemt ook de bladen (Opmaak). Een ouder rapport zonder
  *      eigen keuze krijgt opmaak.bladenInInhoud = false: de inhoudsopgave blijft
  *      even lang, en de vellen erna verschuiven niet.
+ *   5  het rapport heeft een taal en de meegeleverde teksten zijn meertalig. Een
+ *      ouder rapport krijgt taal = "nl", want zijn inhoud is Nederlands, en wat
+ *      erin ontbreekt wordt Nederlands aangevuld.
  */
-export const RAPPORT_VERSIE = 4;
+export const RAPPORT_VERSIE = 5;
+
+// ── Wat de app meelevert ────────────────────────────────────────────────────
+// Elke waarde die in een nieuw rapport staat of als suggestie wordt aangeboden, in elke
+// taal. Wisselen van taal zoekt hierin (taalwissel.ts): een waarde die gelijk is aan een
+// regel hier, wisselt mee; eigen invoer blijft staan.
+
+/** Suggesties voor de rapporttitel; de eerste is de standaard. */
+export const TITELS: readonly Meertalig[] = [
+  { en: "Structural advice & calculations", nl: "Constructieadvies & berekeningen" },
+  { en: "Structural calculation", nl: "Constructieve berekening" },
+  { en: "Structural advice", nl: "Constructief advies" },
+  { en: "Structural calculations and drawings", nl: "Constructieve berekeningen en tekeningen" },
+  { en: "Assessment of the existing structure", nl: "Beoordeling bestaande constructie" },
+];
+
+/** Suggesties voor de rol in 2.2; de eerste is de standaard. */
+export const ROLLEN: readonly Meertalig[] = [
+  { en: "Lead structural engineer", nl: "Hoofdconstructeur" },
+  { en: "Structural engineer", nl: "Constructeur" },
+  { en: "Structural consultant", nl: "Constructief adviseur" },
+  { en: "Checking engineer", nl: "Controlerend constructeur" },
+];
+
+/** Suggesties voor de soort bouwwerk in 4.1; de eerste is de standaard. */
+export const SOORTEN_BOUWWERK: readonly Meertalig[] = [
+  { en: "Dwelling", nl: "Woning" },
+  { en: "Single-family house", nl: "Eengezinswoning" },
+  { en: "Apartment building", nl: "Appartementencomplex" },
+  { en: "Villa", nl: "Villa" },
+  { en: "Office", nl: "Kantoor" },
+  { en: "Industrial hall", nl: "Bedrijfshal" },
+  { en: "Outbuilding", nl: "Bijgebouw" },
+  { en: "Shed", nl: "Schuur" },
+];
+
+const NORMEN: Meertalig = { en: "NEN-EN 1990 to 1997", nl: "NEN-EN 1990 t/m 1997" };
+const EERSTE_UITGAVE: Meertalig = { en: "First issue", nl: "Eerste uitgave" };
+const NIET_VAN_TOEPASSING: Meertalig = { en: "n/a", nl: "n.v.t." };
+
+/** 4.3: de standaardregels; de sterkteklassen zijn codes en blijven in elke taal gelijk. */
+const MATERIALEN: readonly { type: Meertalig; soort: string; opmerking: Meertalig | string }[] = [
+  {
+    type: { en: "In-situ concrete", nl: "TPG Beton" },
+    soort: "C20/25",
+    opmerking: { en: "(for exposure classes see concrete calculations and drawing)", nl: "(voor milieuklassen zie berekening betononderdelen en tekening)" },
+  },
+  { type: { en: "Timber", nl: "Hout" }, soort: "C24", opmerking: "" },
+  { type: { en: "Wood-based panels", nl: "Plaatmateriaal" }, soort: "CE2+", opmerking: "" },
+  { type: { en: "Reinforcing steel", nl: "Wapeningsstaal" }, soort: "B500", opmerking: "" },
+  { type: { en: "Steel", nl: "Staal" }, soort: "S235", opmerking: "JR" },
+  { type: { en: "Grout under steel", nl: "Ondervoeging staal" }, soort: "K50", opmerking: "" },
+];
+const MATERIALEN_NOOT: Meertalig = { en: "(unless stated otherwise)", nl: "(tenzij anders aangegeven)" };
+const BEVESTIGING: readonly { type: Meertalig; kwaliteit: string }[] = [
+  { type: { en: "Bolts", nl: "Bouten" }, kwaliteit: "8.8" },
+  { type: { en: "Coach screws", nl: "Houtdraaibout" }, kwaliteit: "4.6" },
+  { type: { en: "Chemical anchors", nl: "Chemische Ankers" }, kwaliteit: "5.8" },
+];
+const CONSERVERING: readonly { onderdeel: Meertalig; systeem: Meertalig }[] = [
+  { onderdeel: { en: "External structures", nl: "Buitenconstructies" }, systeem: { en: "Duplex or hot-dip galvanised", nl: "Duplex of thermisch verzinkt" } },
+  { onderdeel: { en: "In cavity walls", nl: "Constructies in spouw" }, systeem: { en: "Hot-dip galvanised", nl: "Thermisch verzinkt" } },
+  { onderdeel: { en: "Internal steelwork", nl: "Staal binnen" }, systeem: { en: "Paint system", nl: "Verf systeem" } },
+];
+const CONSERVERING_SLOT: Meertalig = {
+  en: "Corrosion protection applies to newly installed structural elements.",
+  nl: "Conservering wordt toegepast op nieuw te plaatsen constructieonderdelen.",
+};
+/** 4.8: de eisen zijn getallen en symbolen; die krijgen de notatie van de taal (standaardVervormingen). */
+const VERVORMINGEN: readonly { onderdeel: Meertalig; ueind: string; ubij: string; uhor: string }[] = [
+  { onderdeel: { en: "Vertical deflection of roofs", nl: "Verticale doorbuiging van daken" }, ueind: "0,004l_rep", ubij: "0,004l_rep", uhor: "" },
+  { onderdeel: { en: "Vertical deflection of floors", nl: "Verticale doorbuiging van vloeren" }, ueind: "0,004l_rep", ubij: "0,003l_rep", uhor: "" },
+  { onderdeel: { en: "Floors with masonry walls", nl: "Vloer met steenachtige wanden" }, ueind: "", ubij: "0,002l_rep", uhor: "" },
+  { onderdeel: { en: "Horizontal displacement, building", nl: "Horizontale verplaatsing bouwwerk" }, ueind: "", ubij: "", uhor: "H/300" },
+  { onderdeel: { en: "Horizontal displacement, partition", nl: "Horizontale verplaatsing afscheiding" }, ueind: "", ubij: "", uhor: "< 20 mm" },
+];
+
+const meertalig = (x: Meertalig | string): x is Meertalig => typeof x !== "string";
+
+/** Per veld wat de app er kan neerzetten; wisselTaal zoekt hierin (taalwissel.ts). */
+export const MEEGELEVERD = {
+  titel: TITELS,
+  normen: [NORMEN],
+  rol: ROLLEN,
+  architect: [NIET_VAN_TOEPASSING],
+  datumOnderlegger: [NIET_VAN_TOEPASSING],
+  soortBouwwerk: SOORTEN_BOUWWERK,
+  revisie: [EERSTE_UITGAVE],
+  materiaalType: MATERIALEN.map((m) => m.type),
+  materiaalOpmerking: MATERIALEN.map((m) => m.opmerking).filter(meertalig),
+  materialenNoot: [MATERIALEN_NOOT],
+  bevestiging: BEVESTIGING.map((b) => b.type),
+  conserveringOnderdeel: CONSERVERING.map((c) => c.onderdeel),
+  conserveringSysteem: CONSERVERING.map((c) => c.systeem),
+  conserveringSlot: [CONSERVERING_SLOT],
+  vervormingOnderdeel: VERVORMINGEN.map((v) => v.onderdeel),
+} as const satisfies Record<string, readonly Meertalig[]>;
+
+/** Een taalcode uit een bestand: "en", "nl", "pt-BR". Iets anders geeft undefined. */
+export function leesTaal(x: unknown): string | undefined {
+  return typeof x === "string" && /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(x) ? x : undefined;
+}
+
+/**
+ * Talen die een getal met een decimale komma schrijven. Ook de bron van het
+ * vaste getal in een meegeleverde waarde: die staat hier met een komma.
+ */
+export function decimaleKomma(taal: string): boolean {
+  return /^(nl|de|fr)\b/.test(taal);
+}
+
+/**
+ * Een getal als tekst in de notatie van de taal, ook binnen een eis als "0,004l_rep":
+ * alleen een scheidingsteken tussen twee cijfers verandert. Voor wat de app meelevert en
+ * bij het wisselen van taal; invoer op zich blijft staan zoals hij getypt is.
+ */
+export function inNotatie(s: string, taal: string): string {
+  return decimaleKomma(taal) ? s.replace(/(\d)\.(\d)/g, "$1,$2") : s.replace(/(\d),(\d)/g, "$1.$2");
+}
 
 // ── Standaardwaarden ────────────────────────────────────────────────────────
 // Elke aanroep bouwt verse objecten en lijsten: een rapport dat de store
 // bijwerkt mag nooit een lijst delen met het volgende nieuwe rapport.
 
-function standaardRol(): Rol {
-  return { rol: "Hoofdconstructeur", architect: "n.v.t.", datumOnderlegger: "n.v.t." };
+function standaardRol(taal: string): Rol {
+  return { rol: inTaal(ROLLEN[0], taal), architect: inTaal(NIET_VAN_TOEPASSING, taal), datumOnderlegger: inTaal(NIET_VAN_TOEPASSING, taal) };
 }
 
-function standaardUitgangspunten(): Uitgangspunten {
+function standaardUitgangspunten(taal: string): Uitgangspunten {
   return {
-    soortBouwwerk: "Woning",
+    soortBouwwerk: inTaal(SOORTEN_BOUWWERK[0], taal),
     brand: { hoofddraagconstructie: "-", brandscheiding: "-", vluchtroute: "-", verwijzing: "" },
-    materialen: [
-      { type: "TPG Beton", soort: "C20/25", opmerking: "(voor milieuklassen zie berekening betononderdelen en tekening)" },
-      { type: "Hout", soort: "C24", opmerking: "" },
-      { type: "Plaatmateriaal", soort: "CE2+", opmerking: "" },
-      { type: "Wapeningsstaal", soort: "B500", opmerking: "" },
-      { type: "Staal", soort: "S235", opmerking: "JR" },
-      { type: "Ondervoeging staal", soort: "K50", opmerking: "" },
-    ],
-    materialenNoot: "(tenzij anders aangegeven)",
-    bevestiging: [
-      { type: "Bouten", kwaliteit: "8.8" },
-      { type: "Houtdraaibout", kwaliteit: "4.6" },
-      { type: "Chemische Ankers", kwaliteit: "5.8" },
-    ],
-    conservering: [
-      { onderdeel: "Buitenconstructies", systeem: "Duplex of thermisch verzinkt" },
-      { onderdeel: "Constructies in spouw", systeem: "Thermisch verzinkt" },
-      { onderdeel: "Staal binnen", systeem: "Verf systeem" },
-    ],
-    conserveringSlot: "Conservering wordt toegepast op nieuw te plaatsen constructieonderdelen.",
+    materialen: MATERIALEN.map((m) => ({
+      type: inTaal(m.type, taal),
+      soort: m.soort,
+      opmerking: typeof m.opmerking === "string" ? m.opmerking : inTaal(m.opmerking, taal),
+    })),
+    materialenNoot: inTaal(MATERIALEN_NOOT, taal),
+    bevestiging: BEVESTIGING.map((b) => ({ type: inTaal(b.type, taal), kwaliteit: b.kwaliteit })),
+    conservering: CONSERVERING.map((c) => ({ onderdeel: inTaal(c.onderdeel, taal), systeem: inTaal(c.systeem, taal) })),
+    conserveringSlot: inTaal(CONSERVERING_SLOT, taal),
     bestaand: {
       opnemen: false, bouwjaar: "", bron: "",
+      // Een code: de afdruk zet hem in de taal van het rapport.
       berekeningBeschikbaar: "Ja", materiaalgegevensBeschikbaar: "Ja",
     },
     // `_rep` blijft tekst: de afdruk zet het als subscript.
-    vervormingen: [
-      { onderdeel: "Verticale doorbuiging van daken", ueind: "0,004l_rep", ubij: "0,004l_rep", uhor: "" },
-      { onderdeel: "Verticale doorbuiging van vloeren", ueind: "0,004l_rep", ubij: "0,003l_rep", uhor: "" },
-      { onderdeel: "Vloer met steenachtige wanden", ueind: "", ubij: "0,002l_rep", uhor: "" },
-      { onderdeel: "Horizontale verplaatsing bouwwerk", ueind: "", ubij: "", uhor: "H/300" },
-      { onderdeel: "Horizontale verplaatsing afscheiding", ueind: "", ubij: "", uhor: "< 20 mm" },
-    ],
+    vervormingen: VERVORMINGEN.map((v) => ({
+      onderdeel: inTaal(v.onderdeel, taal),
+      ueind: inNotatie(v.ueind, taal),
+      ubij: inNotatie(v.ubij, taal),
+      uhor: inNotatie(v.uhor, taal),
+    })),
   };
 }
 
-function standaardBelastingen(): Belastingen {
+function standaardBelastingen(taal: string): Belastingen {
+  const n = (s: string) => inNotatie(s, taal);
   return {
     wind: {
       gebouwhoogte: "",
       cscd: "1",
       coefficienten: [
-        { omschrijving: "", c: "0,04" },
-        { omschrijving: "", c: "0,40" },
-        { omschrijving: "", c: "0,80" },
-        { omschrijving: "", c: "1,10" },
+        { omschrijving: "", c: n("0,04") },
+        { omschrijving: "", c: n("0,40") },
+        { omschrijving: "", c: n("0,80") },
+        { omschrijving: "", c: n("1,10") },
       ],
     },
     klassen: [
-      { categorie: "A-vloer", lichteScheidingswanden: "0,80", dakhelling: "", qlast: "" },
-      { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: "2,0" },
+      { categorie: "A-vloer", lichteScheidingswanden: n("0,80"), dakhelling: "", qlast: "" },
+      { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: n("2,0") },
     ],
     vloerenDaken: [],
     wanden: [],
   };
 }
 
-/** Een nieuw rapport. `vandaag` in dd-mm-jjjj; `teksten` komen uit de standaardteksten. */
-export function standaardRapport(vandaag: string, teksten: Record<string, string>): Rapport {
+/** Een nieuw rapport in deze taal. `vandaag` in dd-mm-jjjj; `teksten` komen uit de standaardteksten. */
+export function standaardRapport(vandaag: string, teksten: Record<string, string>, taal = "en"): Rapport {
   return {
     versie: RAPPORT_VERSIE,
-    titel: "Constructieadvies & berekeningen",
+    taal,
+    tekstTaal: {},
+    titel: inTaal(TITELS[0], taal),
     kenmerk: "",
     fase: "",
-    normen: "NEN-EN 1990 t/m 1997",
+    normen: inTaal(NORMEN, taal),
     opdrachtgeverAdres: "",
     verantwoordelijk: "",
     uitvoerend: "",
-    revisies: [{ code: "A", datum: vandaag, omschrijving: "Eerste uitgave", status: "concept" }],
+    revisies: [{ code: "A", datum: vandaag, omschrijving: inTaal(EERSTE_UITGAVE, taal), status: "concept" }],
     teksten: { ...teksten },
-    rol: standaardRol(),
-    uitgangspunten: standaardUitgangspunten(),
-    belastingen: standaardBelastingen(),
+    rol: standaardRol(taal),
+    uitgangspunten: standaardUitgangspunten(taal),
+    belastingen: standaardBelastingen(taal),
     toelichting: {},
     inHoofdstuk: {},
     bijlagen: [],
@@ -495,10 +621,22 @@ export function normaliseerBureau(x: unknown): BureauProfiel {
  * Een rapport uit een bestand of de opslag, aangevuld met standaardwaarden. Onbekende
  * velden vallen weg; verkeerde typen worden standaard. Geneste objecten en lijsten
  * worden per veld gecontroleerd.
+ *
+ * `teksten` mag een functie van de taal zijn, zodat ontbrekende teksten in de taal van
+ * dit rapport komen. `nieuweTaal` geldt als er geen rapport is en voor een rapport van
+ * deze versie zonder bruikbare taal; een rapport van vóór versie 5 is Nederlands.
  */
-export function normaliseerRapport(x: unknown, vandaag: string, teksten: Record<string, string>): Rapport {
-  const s = standaardRapport(vandaag, teksten);
+export function normaliseerRapport(
+  x: unknown,
+  vandaag: string,
+  teksten: Record<string, string> | ((taal: string) => Record<string, string>),
+  nieuweTaal = "en",
+): Rapport {
   const o = object(x);
+  // Zonder geldig versienummer: een rapport van vóór versie 2.
+  const versie = o && typeof o.versie === "number" && Number.isInteger(o.versie) && o.versie >= 1 ? o.versie : 1;
+  const taal = !o ? nieuweTaal : leesTaal(o.taal) ?? (versie < 5 ? "nl" : nieuweTaal);
+  const s = standaardRapport(vandaag, typeof teksten === "function" ? teksten(taal) : teksten, taal);
   if (!o) return s;
 
   const rol = object(o.rol) ?? {};
@@ -510,8 +648,6 @@ export function normaliseerRapport(x: unknown, vandaag: string, teksten: Record<
   const sb = s.belastingen;
   const wind = object(b.wind) ?? {};
 
-  // Zonder geldig versienummer: een rapport van vóór versie 2.
-  const versie = typeof o.versie === "number" && Number.isInteger(o.versie) && o.versie >= 1 ? o.versie : 1;
   const nieuwePagina = waarheidRecord(o.nieuwePagina);
   // Versie 2 zette Projectgegevens standaard op een nieuwe pagina; een ouder
   // rapport zonder eigen keuze loopt door na de inleiding, zoals het was.
@@ -524,6 +660,8 @@ export function normaliseerRapport(x: unknown, vandaag: string, teksten: Record<
   return {
     // Een nieuwer rapport houdt zijn hogere versie: zijn eigen bijwerkingen zijn al gedaan.
     versie: Math.max(versie, RAPPORT_VERSIE),
+    taal,
+    tekstTaal: Object.fromEntries(Object.entries(tekstRecord(o.tekstTaal)).filter(([, t]) => leesTaal(t) !== undefined)),
     titel: tekst(o.titel, s.titel),
     kenmerk: tekst(o.kenmerk, s.kenmerk),
     fase: FASEN.includes(o.fase as Fase) ? (o.fase as Fase) : "",

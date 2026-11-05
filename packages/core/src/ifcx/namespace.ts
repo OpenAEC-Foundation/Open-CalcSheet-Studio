@@ -123,6 +123,8 @@ export const UITKOMST_STATUS = ['voldoet', 'voldoet_niet', 'geen_oordeel', 'niet
 /** Het constructierapport (rapport/model.ts in de app), veld voor veld. */
 const RAPPORT = object({
   versie: opt(GEHEEL),
+  taal: opt(TEKST),
+  tekstTaal: opt(VRIJ),
   ...velden(['titel', 'kenmerk', 'normen', 'opdrachtgeverAdres', 'verantwoordelijk', 'uitvoerend']),
   fase: opt(keuze('', 'SO', 'VO', 'DO', 'TO', 'UO')),
   revisies: opt(lijst(object({

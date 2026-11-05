@@ -52,7 +52,15 @@ function toets(naam, ok, detail) {
   if (!ok) fouten++;
   console.log(`  ${ok ? "OK    " : "FOUT  "} ${naam}${ok || detail === undefined ? "" : `\n         ${typeof detail === "string" ? detail : JSON.stringify(detail)}`}`);
 }
-const zelfde = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+/** Diepe vergelijking; de volgorde van sleutels telt niet. */
+function zelfde(a, b) {
+  if (Object.is(a, b)) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  return ka.length === kb.length && ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && zelfde(a[k], b[k]));
+}
 const gelijk = (naam, kreeg, verwacht) => toets(naam, zelfde(kreeg, verwacht), `kreeg ${JSON.stringify(kreeg)}, verwacht ${JSON.stringify(verwacht)}`);
 const kop = (t) => console.log(`\n${t}`);
 const kloon = (x) => JSON.parse(JSON.stringify(x));
@@ -103,8 +111,12 @@ kop("1. Het model");
     && en.revisies[0].omschrijving !== nl.revisies[0].omschrijving);
   gelijk("getallen in de notatie van de taal", [en.belastingen.klassen[0].lichteScheidingswanden, nl.belastingen.klassen[0].lichteScheidingswanden], ["0.80", "0,80"]);
   gelijk("en in de vervormingseisen, de index blijft", [en.uitgangspunten.vervormingen[0].ueind, nl.uitgangspunten.vervormingen[0].ueind], ["0.004l_rep", "0,004l_rep"]);
-  const rest = JSON.stringify([en.titel, en.normen, en.rol, en.uitgangspunten, en.revisies]);
-  toets("de Engelse standaardwaarden bevatten geen Nederlands", !NL_WOORD.test(rest), rest.match(NL_WOORD)?.[0]);
+  /** Alle tekst in een waarde, zonder de sleutels. */
+  const teksten = (x) => (typeof x === "string" ? [x] : x && typeof x === "object" ? Object.values(x).flatMap(teksten) : []);
+  // De beschikbaarheid in 4.6 is een code (Ja of Nee): de afdruk zet hem in de taal van het rapport.
+  const { bestaand: _codes, ...uitgangspunten } = en.uitgangspunten;
+  const rest = teksten([en.titel, en.normen, en.rol, uitgangspunten, en.revisies]).filter((t) => NL_WOORD.test(t));
+  toets("de Engelse standaardwaarden bevatten geen Nederlands", rest.length === 0, rest);
   for (const [naam, lijst] of Object.entries(MEEGELEVERD)) {
     toets(`meegeleverd ${naam}: Engels en Nederlands`, lijst.every((m) => m.en.trim() !== "" && m.nl?.trim()));
   }
@@ -179,8 +191,10 @@ kop("2. De standaardteksten");
   gelijk("varianten voor precies de tekst-ids", Object.keys(STANDAARD_TEKSTEN).sort(), [...TEKST_IDS].sort());
   const alle = Object.entries(STANDAARD_TEKSTEN).flatMap(([id, l]) => l.map((v) => ({ id, ...v })));
   toets("elke variant in beide talen, label en tekst", alle.every((v) => v.label.en && v.label.nl && v.tekst.en && v.tekst.nl));
-  const nl = alle.filter((v) => NL_WOORD.test(v.tekst.en) || NL_WOORD.test(v.label.en));
-  toets("de Engelse varianten bevatten geen Nederlands", nl.length === 0, nl.map((v) => `${v.id}: ${v.tekst.en}`));
+  // Een invulveld heet in elke taal hetzelfde.
+  const zonderVeld = (t) => t.replace(/\{[A-Za-z]+\}/g, " ");
+  const nl = alle.filter((v) => NL_WOORD.test(zonderVeld(v.tekst.en)) || NL_WOORD.test(v.label.en));
+  toets("de Engelse varianten bevatten geen Nederlands", nl.length === 0, nl.map((v) => `${v.id}: ${v.label.en} / ${(zonderVeld(v.tekst.en).match(NL_WOORD) ?? v.label.en.match(NL_WOORD))?.[0]}`));
   const w = Object.fromEntries(INVULVELDEN.map((v) => [v, "x"]));
   gelijk("Engels: alleen bekende invulvelden", alle.map((v) => vulIn(v.tekst.en, w)).filter((t) => /\{[A-Za-z]+\}/.test(t)), []);
   const velden = (t) => (t.match(/\{[A-Za-z]+\}/g) ?? []).sort();
@@ -200,7 +214,7 @@ kop("2. De normwaarden");
   gelijk("Engels: dezelfde waarden met een punt", rij(2, "en", 1).cellen, ["0.90", "1.35", "1.5ψ0", "1.5ψ0"]);
   gelijk("de formulenummers en codes blijven", belastingfactorTabel(2, "en").slice(0, 6).map((r) => r.naam), belastingfactorTabel(2, "nl").slice(0, 6).map((r) => r.naam));
   gelijk("de combinaties in het Engels", belastingfactorTabel(2, "en").slice(6).map((r) => r.naam),
-    ["Accidental(6.11a/b)", "Characteristic(6.14b)", "Frequent(6.15b)", "Quasi-permanent(6.16b)"]);
+    ["Accidental(6.11a/b)", "Characteristic(6.14b)", "Frequent(6.15b)", "Quasi-perm.(6.16b)"]);
   gelijk("en in het Nederlands", belastingfactorTabel(2, "nl").slice(6).map((r) => r.naam),
     ["Buitengewoon(6.11a/b)", "Karakteristiek(6.14b)", "Frequent(6.15b)", "Quasi-Blijvend(6.16b)"]);
   gelijk("de opmerking", [rij(2, "en", 6).opmerking, rij(2, "nl", 6).opmerking], ["not used", "niet gebruikt"]);
@@ -322,7 +336,8 @@ kop("4. De bladspiegel: past de Engelse tekst in zijn cel?");
     [a.belastingen.terreincategorie, 2], [a.belastingen.gebouwhoogte, 2], [a.belastingen.klasse, 2], [`${a.belastingen.algemeen} qk+${a.belastingen.ls}`, 2],
     [`${a.belastingen.algemeen} qk`, 2], [`${a.belastingen.dakPlat} qk`, 2], [a.belastingen.dakSchuin, 2], [a.belastingen.dakQlast, 2],
     [a.belastingen.vulling, 1, true], [a.rol.architect, 4], [a.rol.datumOnderlegger, 4],
-    [`${a.inhoud.bijlage} A`, 1, true], [`${a.inhoud.bijlage} AA`, 1, true],
+    // Past het niet in de kolom van de nummers, dan loopt het over de kolom ervoor (Inhoud.tsx).
+    [`${a.inhoud.bijlage} AA`, 2, true],
   ];
   for (const [tekst, kolommen, vet] of REGELS) {
     if (tekst === undefined) {
@@ -429,8 +444,10 @@ kop("5. De afdruk als html");
     toets(`de vaste woorden staan er: app op ${app}`, ["Contents", "Introduction", "Design basis", "Loads", "Calculations", "Consequence class", "Design working life (t)"].every((w) => regels.some((r) => r.includes(w))),
       regels.slice(0, 12).join(" | "));
     toets(`de rekenbladen rekenen in het Engels: app op ${app}`, /Timber joist floor/.test(html) && !/Balklaag —/.test(html));
-    toets(`decimalen met een punt in de vaste tabellen: app op ${app}`, regels.some((r) => r === "0.56" || r.includes("0.56")) && !regels.some((r) => /^\d,\d+$/.test(r)), regels.filter((r) => /^\d,\d+$/.test(r)).slice(0, 8).join(" | "));
-    toets("een eigen getal met een komma staat op papier in de notatie van het rapport", regels.every((r) => r !== "0,02"));
+    // Zonder de formules: een index als E_0,05 is een naam, geen getal.
+    const kommas = [...perRegel(html).matchAll(/.{0,60}>(\d+,\d+)</g)].map((k) => k[0]);
+    toets(`getallen met een punt in de vaste tabellen: app op ${app}`, html.includes(">0.56<") && kommas.length === 0, kommas.slice(0, 8).join(" | "));
+    toets(`een eigen getal met een komma staat op papier in de notatie van het rapport: app op ${app}`, html.includes(">0.02<") && html.includes(">4.0<"));
   }
 
   // Dezelfde ankers in beide talen: de inhoudsopgave en het zijpaneel wijzen ernaar.
