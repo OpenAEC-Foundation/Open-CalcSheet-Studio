@@ -66,6 +66,7 @@ export {
 export { bouwProjectStep, type StepOpties } from './ifcx/step.js';
 export { ATTR as IFCX_ATTR, OCSS_SCHEMAS, ifcKlasse } from './ifcx/namespace.js';
 export { ifcGuid, uuidUitIfcGuid, uuidVan } from './ifcx/identiteit.js';
+export { leesUitkomst } from './ifcx/uitkomst.js';
 export type {
   BladFiguur,
   BladOordeel,

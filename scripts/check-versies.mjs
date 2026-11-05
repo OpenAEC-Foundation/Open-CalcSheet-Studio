@@ -7,21 +7,23 @@
  *   3  ongedaan maken loopt per versie en nooit door een wissel heen;
  *   4  het projectbestand: opslaan en heropenen, een oud bestand, een bestand in een oudere app;
  *   5  grote bijlagen staan één keer in het bestand, op hun inhoudshash;
- *   6  een bestand met kapotte versies opent de laatste bruikbare stand.
- *
+ *   6  een bestand met kapotte versies opent de laatste bruikbare stand;
+ *   7  vergelijken met de oudertak: toegevoegd, verwijderd, hernoemd, invoer, rekentekst en
+ *      uitkomsten uit de bestaande doorrekening; wisselen verandert geen enkel getal;
+ *   8  de lijst per pagina: de regels, de toelichting die blijft, en de opzet met het blok. *
  * Draaien:  node scripts/check-versies.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
 import { createHash } from "node:crypto";
 import { sha256 } from "../packages/desktop/src/store/inhoudshash.ts";
 import {
-  actieveVersie, beginVersies, hernoemVersie, inhoudVan, lijnVan, magVerwijderen, nieuweVersie, ouderVan, revisieVan, rijIsVast, verwijderVersie, versieGegevens, wissel,
+  actieveVersie, beginVersies, hernoemVersie, inhoudVan, lijnVan, magVerwijderen, nieuweVersie, ouderVan, revisieVan, rijIsVast, schrijfVersies, verwijderVersie, versieGegevens, wissel,
 } from "../packages/desktop/src/store/versies.ts";
 import { standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 import { standaardTeksten } from "../packages/desktop/src/rapport/standaardteksten.ts";
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { rapportStatus } from "../packages/desktop/src/rapport/revisies.ts";
-import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../packages/desktop/src/store/projectBestand.ts";
+import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE, versiesUitOpslag } from "../packages/desktop/src/store/projectBestand.ts";
 import { PDF_BLAD } from "../packages/desktop/src/store/pdfBijlage.ts";
 import { SPREADSHEET_BLAD } from "../packages/desktop/src/store/spreadsheetBlad.ts";
 import { MARKDOWN_BLAD } from "../packages/desktop/src/store/markdownBlad.ts";
@@ -30,7 +32,16 @@ import { TEKEN_BLAD } from "../packages/desktop/src/store/tekenBlad.ts";
 import { JUPYTER_BLAD } from "../packages/desktop/src/store/jupyterBlad.ts";
 import { MARIMO_BLAD } from "../packages/desktop/src/store/marimoBlad.ts";
 import { legeGraaf } from "../packages/desktop/src/graaf/model.ts";
-import { isProjectIfcx, leesProjectIfcx, OCSS_SCHEMAS } from "../packages/core/dist/index.js";
+import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
+import { maakWijzigingen, metVerseLijst, regelVerschil, vergelijkBladen } from "../packages/desktop/src/store/versieVergelijking.ts";
+import { keuzesZonderVerschil, keuzeVan, MAX_VERANDERINGEN, metKeuze, plekVanRegel, weggehaaldeRegels, zichtbareRegels } from "../packages/desktop/src/rapport/wijzigingen.ts";
+import {
+  bouwOpzet, heeftTekst, inhoudsopgave, inhoudVoorPaneel, knopenVan, OPZET, opzetVan, REKENBLOKKEN,
+} from "../packages/desktop/src/rapport/opzet.ts";
+import { normaliseerRapport } from "../packages/desktop/src/rapport/model.ts";
+import { ongeplaatsteBlokken, plaatsBlok, verwijderKnoop } from "../packages/desktop/src/rapport/template.ts";
+import { paneelGroepen } from "../packages/desktop/src/components/rapport/paneel/hulp.ts";
+import { bouwProjectStep, isProjectIfcx, leesProjectIfcx, leesUitkomst, OCSS_SCHEMAS } from "../packages/core/dist/index.js";
 import { afwijkingen } from "./lib/ifcx-specificatie.mjs";
 
 let fouten = 0;
@@ -328,6 +339,8 @@ kop("4b. Een bestand met versies in een oudere app");
   gelijk("het maakt niet uit of het attribuut er is", { ...leesProjectIfcx(zonderKennis), versies: undefined }, { ...ruw, versies: undefined });
   toets("het hele project is te lezen zonder de versies", leesProjectBestand(JSON.stringify(zonderKennis), "proef").exemplaren.length === 2);
   gelijk("het voorblad noemt de revisies ook daar", ruw.rapport.revisies.map((r) => r.code), ["A", "B"]);
+  const step = bouwProjectStep(doc);
+  gelijk("en een STEP uit dit bestand kent één project", step.match(/IFCPROJECT\(/g)?.length, 1);
 }
 
 // ── 5. Grote bijlagen ───────────────────────────────────────────────────────
@@ -398,6 +411,13 @@ kop("5. Grote bijlagen staan één keer in het bestand");
   };
   const verschil = eerstVerschil(inhoudVanDoc(schrijf(terug)), inhoudVanDoc(metTien));
   toets("opslaan, openen, opslaan: dezelfde inhoud", verschil === null, verschil ?? "");
+
+  // De opgeslagen staat van de app, net zo ingepakt: anders staat de PDF daar elke wissel elf keer.
+  const ingepakt = JSON.stringify(schrijfVersies(tien.versies, tien));
+  gelijk("de opgeslagen staat bewaart hem niet per versie", aantalKeer(ingepakt, pdf), 0);
+  const uitOpslag = versiesUitOpslag(JSON.parse(ingepakt), tien, "proef");
+  gelijk("en komt terug", [uitOpslag.lijst.length, uitOpslag.actief, zoek(uitOpslag.lijst[0].inhoud, "ex-pdf").pdf.data === pdf], [11, tien.versies.actief, true]);
+  gelijk("een project met één versie heeft daar niets bij", schrijfVersies(beginVersies(), beginStand()), undefined);
 
   // Een PDF die alleen in een andere versie staat, ook één keer; en een andere PDF apart.
   let t = beginStand(bladen());
@@ -518,6 +538,230 @@ kop("6. Een bestand met kapotte versies");
   const valsTekst = JSON.stringify(vals).replace('"exemplaren":', '"__proto__":{"gehackt":true},"exemplaren":');
   const gelezen = leesProjectBestand(valsTekst, "proef");
   toets("__proto__ in een versie raakt niets", ({}).gehackt === undefined && gelezen.versies.lijst.length === a.lijst.length);
+}
+
+// ── 7. Vergelijken ──────────────────────────────────────────────────────────
+kop("7. Vergelijken met de oudertak");
+const BLAD_BALK = "# Balk van hout — EN 1995\nb = ?{100}mm\nh = ?{300}mm\nM_Ed = 12.5*kN*m\nf_m_d = 13.6*N/mm^2\nW_y = b*h^2/6\nUC_buiging = M_Ed/(W_y*f_m_d)\nUC_max = UC_buiging\n";
+const BLAD_CC = "# Factor\nf = CC*2\n";
+const balk = (id = "ex-balk", naam = "Balk 1", waarden = {}) => blad(id, naam, waarden, BLAD_BALK);
+const inhoud = (s) => ({ exemplaren: s.exemplaren, gegevens: s.gegevens, rapport: s.rapport });
+const metBlad = (s, id, fn) => ({ ...s, exemplaren: s.exemplaren.map((e) => (e.id === id ? fn(e) : e)) });
+{
+  const begin = () => ({ ...beginStand([balk(), blad("ex-weg", "Vervalt"), blad("ex-cc", "Factor", {}, BLAD_CC)]), gegevens: { ...legeGegevens(), CC: "2" } });
+  const a = begin();
+  gelijk("gelijke stand: geen verschil", vergelijkBladen(inhoud(a), inhoud(a)), []);
+
+  // Toegevoegd, verwijderd, hernoemd: op id, niet op naam.
+  const b = {
+    ...a,
+    exemplaren: [
+      { ...a.exemplaren[0], naam: "Balk 1 begane grond" },
+      a.exemplaren[2],
+      blad("ex-nieuw", "Nieuw blad"),
+      blad("ex-naam", "Vervalt"),
+    ],
+  };
+  const v = vergelijkBladen(inhoud(a), inhoud(b));
+  gelijk("de soorten", v.map((x) => [x.id, x.soort]), [["ex-balk", "gewijzigd"], ["ex-nieuw", "erbij"], ["ex-naam", "erbij"], ["ex-weg", "weg"]]);
+  gelijk("hernoemd: het is hetzelfde blad", [v[0].oudeNaam, v[0].naam, v[0].invoer, v[0].uitkomsten, v[0].rekentekst], ["Balk 1", "Balk 1 begane grond", [], [], null]);
+  gelijk("een blad met de naam van een vervallen blad is een ander blad", v.filter((x) => x.naam === "Vervalt").map((x) => [x.id, x.soort]), [["ex-naam", "erbij"], ["ex-weg", "weg"]]);
+
+  // Invoer en uitkomsten, uit de bestaande doorrekening.
+  const c = metBlad(a, "ex-balk", (e) => ({ ...e, waarden: { h: "200" } }));
+  const [balkVerschil] = vergelijkBladen(inhoud(a), inhoud(c));
+  gelijk("de invoer die anders is, zoals hij meetelt", balkVerschil.invoer, [{ naam: "h", van: "300", naar: "200" }]);
+  const uit = (i) => {
+    const b0 = bladenVoorIfc(i).find((x) => x.id === "ex-balk");
+    return leesUitkomst(b0.nodes, b0.naam, b0.resultaat, b0.fout);
+  };
+  const tekst = (u, naam) => u.variabelen.find((x) => x.naam === naam).tekst;
+  gelijk("de uitkomsten komen uit de bestaande doorrekening", balkVerschil.uitkomsten.find((x) => x.naam === "UC_max"), { naam: "UC_max", van: tekst(uit(inhoud(a)), "UC_max"), naar: tekst(uit(inhoud(c)), "UC_max") });
+  // Handberekening: W = 100·300²/6 = 1,5·10⁶ mm³, σ = 12,5·10⁶/1,5·10⁶ = 8,33 N/mm², UC = 8,33/13,6 = 0,613.
+  // Met h = 200: W = 666 667 mm³, σ = 18,75 N/mm², UC = 18,75/13,6 = 1,379.
+  toets("en kloppen met de hand: 0,613 en 1,379", Math.abs(uit(inhoud(a)).uc - 0.6127) < 0.001 && Math.abs(uit(inhoud(c)).uc - 1.3787) < 0.001, [uit(inhoud(a)).uc, uit(inhoud(c)).uc]);
+  gelijk("de unity checks staan voorop", balkVerschil.uitkomsten.slice(0, 2).map((x) => x.naam), ["UC_buiging", "UC_max"]);
+  gelijk("het oordeel is anders", balkVerschil.oordeel, { van: "voldoet", naar: "voldoet_niet" });
+
+  // Geen schijnverschillen.
+  const seed = metBlad(a, "ex-balk", (e) => ({ ...e, waarden: { b: "100", h: "300" } }));
+  gelijk("een aangevulde standaardwaarde is geen wijziging", vergelijkBladen(inhoud(a), inhoud(seed)), []);
+  const notatie = (x) => metBlad(a, "ex-balk", (e) => ({ ...e, waarden: { h: x } }));
+  gelijk("4,20 en 4.2 zijn dezelfde invoer", vergelijkBladen(inhoud(notatie("300,0")), inhoud(notatie("300"))), []);
+  const crlf = metBlad(a, "ex-balk", (e) => ({ ...e, source: BLAD_BALK.replace(/\n/g, "\r\n") }));
+  gelijk("regeleinden tellen niet", vergelijkBladen(inhoud(a), inhoud(crlf)), []);
+
+  // Rekentekst.
+  const d = metBlad(a, "ex-cc", (e) => ({ ...e, source: `${BLAD_CC}g = f + 1\n` }));
+  gelijk("een regel erbij in de rekentekst", vergelijkBladen(inhoud(a), inhoud(d))[0].rekentekst, { eraf: [], erbij: ["g = f + 1"] });
+  gelijk("een gewijzigde regel", regelVerschil("a\nb\nc", "a\nx\nc"), { eraf: ["b"], erbij: ["x"] });
+  gelijk("gelijke tekst", regelVerschil("a", "a"), null);
+
+  // Projectgegevens werken door in de uitkomst, ook bij een blad zonder eigen wijziging.
+  const e = { ...a, gegevens: { ...a.gegevens, CC: "3" } };
+  const cc = vergelijkBladen(inhoud(a), inhoud(e)).find((x) => x.id === "ex-cc");
+  gelijk("een andere gevolgklasse: de uitkomst volgt", cc?.uitkomsten.find((x) => x.naam === "f"), { naam: "f", van: "4", naar: "6" });
+
+  // Een blad dat omvalt, zonder stil oordeel.
+  const kapot = metBlad(a, "ex-balk", (x) => ({ ...x, source: "# Kapot\nx = 1/onbekend_ding(\n" }));
+  const fout = console.error;
+  console.error = () => {};
+  const kv = vergelijkBladen(inhoud(a), inhoud(kapot))[0];
+  console.error = fout;
+  gelijk("een blad dat omvalt: niet doorgerekend", kv.oordeel, { van: "voldoet", naar: "niet_doorgerekend" });
+
+  // Andere soorten bladen.
+  const pdfBlad = (data, extra = {}) => ({ id: "ex-pdf", naam: "PDF", templateId: PDF_BLAD, source: "", waarden: {}, elementen: [], pdf: { bestandsnaam: "a.pdf", data, ...extra } });
+  const bestand = (x, y) => vergelijkBladen(inhoud(beginStand([x])), inhoud(beginStand([y])))[0]?.bestand;
+  gelijk("een vervangen PDF", bestand(pdfBlad("QUJD"), pdfBlad("REVG")), ["pdf"]);
+  gelijk("aantekeningen op dezelfde PDF", bestand(pdfBlad("QUJD"), pdfBlad("QUJD", { opPapier: false })), ["aantekeningen"]);
+  const mdBlad = (tekst2) => ({ id: "ex-md", naam: "T", templateId: MARKDOWN_BLAD, source: "", waarden: {}, elementen: [], md: { bestandsnaam: "a.md", tekst: tekst2 } });
+  gelijk("een andere Markdown-tekst", bestand(mdBlad("a"), mdBlad("b")), ["tekst"]);
+  const xl = (data) => ({ id: "ex-x", naam: "X", templateId: SPREADSHEET_BLAD, source: "", waarden: {}, elementen: [], xlsx: { bestandsnaam: "a.xlsx", data } });
+  gelijk("een andere werkmap", bestand(xl("QUJD"), xl("REVG")), ["werkmap"]);
+
+  // Wisselen verandert geen enkel getal.
+  let s = { ...beginStand([balk("ex-balk", "Balk 1", { h: "280" }), blad("ex-cc", "Factor", {}, BLAD_CC)]), gegevens: { ...legeGegevens(), CC: "2" } };
+  const eerste = s.versies.actief;
+  const getallen = (x) => JSON.stringify(bladenVoorIfc(x).map((b0) => ({ id: b0.id, u: leesUitkomst(b0.nodes, b0.naam, b0.resultaat, b0.fout) })));
+  const voor = getallen(s);
+  s = maak(s, "v-b");
+  gelijk("een nieuwe versie: dezelfde getallen", getallen(s), voor);
+  s = metBlad(s, "ex-balk", (x) => ({ ...x, waarden: { h: "200" } }));
+  const inB = getallen(s);
+  toets("de wijziging telt in de nieuwe versie", inB !== voor);
+  for (let i = 0; i < 3; i++) {
+    s = naar(s, eerste);
+    gelijk(`wissel ${i + 1}: het origineel rekent hetzelfde`, getallen(s), voor);
+    s = naar(s, "v-b");
+    gelijk(`wissel ${i + 1}: de tak rekent hetzelfde`, getallen(s), inB);
+  }
+  const terug = heropen(schrijf(s));
+  gelijk("na opslaan en heropenen: de tak", getallen(terug), inB);
+  gelijk("en het origineel", getallen(naar(terug, eerste)), voor);
+}
+
+// ── 8. De lijst per pagina ──────────────────────────────────────────────────
+kop("8. De lijst per pagina");
+{
+  const r0 = nieuwRapport("en");
+  const begin = () => {
+    const s = { ...beginStand([balk(), blad("ex-weg", "Vervalt"), blad("ex-cc", "Factor", {}, BLAD_CC)]), rapport: r0, gegevens: { ...legeGegevens(), CC: "2" } };
+    return maak(s, "v-b");
+  };
+  const ouderVanStand = (s) => inhoudVan(s, s.versies.lijst[0].id);
+  const regels = (s) => maakWijzigingen(ouderVanStand(s), inhoud(s));
+
+  let s = begin();
+  gelijk("een verse tak: geen regels, ook niet door zijn regel in de revisietabel", regels(s), []);
+  toets("zonder verschil blijft het hetzelfde rapport", metVerseLijst(s) === s.rapport);
+  gelijk("het origineel heeft geen lijst", metVerseLijst(naar(s, s.versies.lijst[0].id)).wijzigingsLijst, undefined);
+
+  s = metBlad(s, "ex-balk", (e) => ({ ...e, waarden: { h: "200" } }));
+  s = { ...s, exemplaren: [...s.exemplaren.filter((e) => e.id !== "ex-weg"), blad("ex-nieuw", "Nieuw blad")] };
+  s = { ...s, gegevens: { ...s.gegevens, CC: "3", project_naam: "Andere naam", locatie: "Elders" } };
+  s = { ...s, rapport: { ...s.rapport, kenmerk: "2026-001", teksten: { ...s.rapport.teksten, inleiding: "Andere inleiding", belendingen: "Nieuwe tekst" }, uitgangspunten: { ...s.rapport.uitgangspunten, soortBouwwerk: "Office" }, toelichting: { "ex-cc": "Toelichting op factor" } } };
+  const lijst = regels(s);
+  gelijk("de regels, in de volgorde van het rapport", lijst.map((r) => r.sleutel), ["voorblad", "knoop:inleiding", "knoop:belendingen", "knoop:bouwwerk", "gegevens", "blad:ex-balk", "blad:ex-cc", "blad:ex-nieuw", "blad:ex-weg"]);
+  const van = (sleutel) => lijst.find((r) => r.sleutel === sleutel);
+  gelijk("het voorblad: de gegevens en wat in het rapport staat", van("voorblad").delen, [{ soort: "gegevens", lijst: [{ naam: "project_naam", van: "", naar: "Andere naam" }], meer: 0 }, { soort: "inhoud" }]);
+  gelijk("een tekst", van("knoop:inleiding").delen, [{ soort: "tekst" }]);
+  gelijk("een tekst die er nieuw is", van("knoop:belendingen").delen, [{ soort: "erbij" }]);
+  gelijk("de kop in de taal van het rapport", van("knoop:inleiding").titel, "Introduction");
+  gelijk("een rekenblok met zijn gegevens", van("knoop:bouwwerk").delen, [{ soort: "inhoud" }, { soort: "gegevens", lijst: [{ naam: "CC", van: "2", naar: "3" }], meer: 0 }]);
+  gelijk("gegevens zonder eigen plek op papier", van("gegevens").delen, [{ soort: "gegevens", lijst: [{ naam: "locatie", van: "", naar: "Elders" }], meer: 0 }]);
+  gelijk("een blad: de invoer, het oordeel en de uitkomst", van("blad:ex-balk").delen.map((d) => d.soort), ["invoer", "oordeel", "uitkomst"]);
+  gelijk("een blad met alleen een andere uitkomst, en een andere toelichting", van("blad:ex-cc").delen.map((d) => d.soort), ["uitkomst", "tekst"]);
+  gelijk("een blad erbij", van("blad:ex-nieuw").delen, [{ soort: "erbij" }]);
+  gelijk("een blad weg, met zijn oude naam", [van("blad:ex-weg").delen, van("blad:ex-weg").titel], [[{ soort: "weg" }], "Vervalt"]);
+
+  // Op papier beknopt.
+  const veel = metBlad(s, "ex-balk", (e) => ({ ...e, source: Array.from({ length: 12 }, (_, i) => `x${i} = ?{${i}}`).join("\n") }));
+  const veelOuder = { ...ouderVanStand(s), exemplaren: [blad("ex-balk", "Balk 1", {}, Array.from({ length: 12 }, (_, i) => `x${i} = ?{${i + 1}}`).join("\n"))] };
+  const delen = maakWijzigingen(veelOuder, inhoud(veel)).find((r) => r.sleutel === "blad:ex-balk").delen;
+  const inv = delen.find((d) => d.soort === "invoer");
+  gelijk("op papier hoogstens een paar waarden, de rest telt", [inv.lijst.length, inv.meer], [MAX_VERANDERINGEN, 12 - MAX_VERANDERINGEN]);
+
+  // Bijwerken: hetzelfde object als er niets is veranderd, en de keuzes blijven.
+  const r1 = metVerseLijst(s);
+  gelijk("de lijst staat in het rapport", r1.wijzigingsLijst.length, lijst.length);
+  s = { ...s, rapport: r1 };
+  toets("opnieuw maken zonder verschil: hetzelfde rapport", metVerseLijst(s) === s.rapport);
+
+  // De keuzes van de gebruiker.
+  s = { ...s, rapport: metKeuze(s.rapport, "blad:ex-balk", { toelichting: "Balk is hoger gemaakt" }) };
+  s = { ...s, rapport: metKeuze(s.rapport, "knoop:inleiding", { tekst: "Inleiding herschreven" }) };
+  s = { ...s, rapport: metKeuze(s.rapport, "blad:ex-nieuw", { weg: true }) };
+  toets("hetzelfde nog eens: hetzelfde rapport", metKeuze(s.rapport, "blad:ex-nieuw", { weg: true }) === s.rapport);
+  gelijk("een regel weghalen", [zichtbareRegels(s.rapport).some((r) => r.sleutel === "blad:ex-nieuw"), weggehaaldeRegels(s.rapport).map((r) => r.sleutel)], [false, ["blad:ex-nieuw"]]);
+
+  // Opnieuw maken na een wijziging.
+  s = metBlad(s, "ex-balk", (e) => ({ ...e, waarden: { h: "250" } }));
+  s = { ...s, rapport: metVerseLijst(s) };
+  gelijk("de lijst is bijgewerkt", s.rapport.wijzigingsLijst.find((r) => r.sleutel === "blad:ex-balk").delen.find((d) => d.soort === "invoer").lijst[0].naar, "250");
+  gelijk("de toelichting blijft behouden", keuzeVan(s.rapport, "blad:ex-balk").toelichting, "Balk is hoger gemaakt");
+  gelijk("de eigen tekst ook", keuzeVan(s.rapport, "knoop:inleiding").tekst, "Inleiding herschreven");
+  gelijk("en wat weg is, blijft weg", weggehaaldeRegels(s.rapport).map((r) => r.sleutel), ["blad:ex-nieuw"]);
+
+  // Het verschil verdwijnt: de tekst komt niet op papier, en is niet weg.
+  const oudeInleiding = ouderVanStand(s).rapport.teksten.inleiding;
+  s = { ...s, rapport: { ...s.rapport, teksten: { ...s.rapport.teksten, inleiding: oudeInleiding } } };
+  s = { ...s, rapport: metVerseLijst(s) };
+  toets("geen verschil meer: de regel is weg uit de lijst", !s.rapport.wijzigingsLijst.some((r) => r.sleutel === "knoop:inleiding"));
+  gelijk("de tekst blijft bewaard", keuzesZonderVerschil(s.rapport), [{ sleutel: "knoop:inleiding", keuze: { tekst: "Inleiding herschreven" } }]);
+  s = { ...s, rapport: { ...s.rapport, teksten: { ...s.rapport.teksten, inleiding: "Weer anders" } } };
+  s = { ...s, rapport: metVerseLijst(s) };
+  gelijk("het verschil komt terug, en de tekst ook", [s.rapport.wijzigingsLijst.some((r) => r.sleutel === "knoop:inleiding"), keuzeVan(s.rapport, "knoop:inleiding").tekst], [true, "Inleiding herschreven"]);
+
+  // Alleen een blad dat alles terugzet.
+  const terugGezet = metKeuze(metKeuze(s.rapport, "blad:ex-balk", { toelichting: "" }), "knoop:inleiding", { tekst: undefined });
+  gelijk("een lege eigen tekst mag even bestaan, terwijl iemand typt", keuzeVan(metKeuze(s.rapport, "knoop:inleiding", { tekst: "" }), "knoop:inleiding").tekst, "");
+  gelijk("leeg is geen keuze", [keuzeVan(terugGezet, "blad:ex-balk"), keuzeVan(terugGezet, "knoop:inleiding")], [{}, {}]);
+
+  // Opslaan en heropenen.
+  const gelezen = heropen(schrijf(s));
+  gelijk("de keuzes gaan mee in het bestand", gelezen.rapport.wijzigingen, s.rapport.wijzigingen);
+  toets("de lijst is afgeleid: die maakt de app opnieuw", gelezen.rapport.wijzigingsLijst === undefined);
+  gelijk("en is dan dezelfde", metVerseLijst(gelezen).wijzigingsLijst, s.rapport.wijzigingsLijst);
+  gelijk("onzin in een bestand valt weg", normaliseerRapport({ wijzigingen: { a: { toelichting: 3, tekst: "" }, b: "x", c: { weg: true, tekst: "t", bla: 1 } }, wijzigingsLijst: [1] }, VANDAAG, standaardTeksten).wijzigingen, { c: { tekst: "t", weg: true } });
+  toets("en een lijst uit een bestand wordt niet gelezen", !("wijzigingsLijst" in normaliseerRapport({ wijzigingsLijst: [1] }, VANDAAG, standaardTeksten)));
+
+  // De opzet: het blok staat erin, en een rapport zonder lijst blijft precies wat het was.
+  toets("het blok staat in de lijst met rekenblokken", REKENBLOKKEN.some((k) => k.inhoud === "wijzigingen"));
+  toets("en in het ingebouwde template, zodat een nieuwe versie hem meteen toont", knopenVan(OPZET).some((k) => k.inhoud === "wijzigingen"));
+  toets("met een vast id, zonder tekst", !heeftTekst(knopenVan(OPZET).find((k) => k.inhoud === "wijzigingen")));
+  const kaal = nieuwRapport("en");
+  const nummers = (r, bladen = []) => inhoudsopgave(bouwOpzet(r, bladen), true).map((i) => `${i.nummer} ${i.titel}`);
+  toets("zonder lijst valt het blok weg", !bouwOpzet(kaal, []).some((k) => k.inhoud === "wijzigingen"));
+  const metLijstR = { ...kaal, wijzigingsLijst: [{ sleutel: "voorblad", doel: "voorblad", titel: "", delen: [{ soort: "inhoud" }] }] };
+  const blok = bouwOpzet(metLijstR, []).find((k) => k.inhoud === "wijzigingen");
+  toets("met een lijst staat het erin, zonder nummer", blok && blok.nummer === "");
+  gelijk("de nummers van de hoofdstukken veranderen niet", nummers(metLijstR), nummers(kaal));
+  gelijk("en het zijpaneel ook niet", inhoudVoorPaneel(metLijstR, []).map((r) => r.nummer), inhoudVoorPaneel(kaal, []).map((r) => r.nummer));
+  const alleenWeg = { ...metLijstR, wijzigingen: { voorblad: { weg: true } } };
+  toets("alle regels weggehaald: het blok valt weg", !bouwOpzet(alleenWeg, []).some((k) => k.inhoud === "wijzigingen"));
+  gelijk("het paneel: geen teksthoofdstuk, het blok heeft een eigen sectie", paneelGroepen(OPZET).flatMap((g) => (g.soort === "teksten" ? g.knopen.map((k) => k.id) : [g.soort])).includes("wijzigingen"), false);
+
+  // Verplaatsen in de opzet.
+  const zonder = verwijderKnoop(metLijstR, "wijzigingen");
+  toets("weghalen kan, en dan valt de lijst weg", !bouwOpzet(zonder, []).some((k) => k.inhoud === "wijzigingen"));
+  toets("en het blok staat weer in de lijst om te plaatsen", ongeplaatsteBlokken(zonder).some((k) => k.inhoud === "wijzigingen"));
+  const onder = plaatsBlok(zonder, "wijzigingen", "projectgegevens");
+  const genest = bouwOpzet(onder, []).find((k) => k.id === "projectgegevens").kinderen.at(-1);
+  gelijk("onder een hoofdstuk is het een gewone paragraaf met een nummer", [genest.inhoud, genest.nummer], ["wijzigingen", "2.3"]);
+  const terugBoven = plaatsBlok(zonder, "wijzigingen", null);
+  gelijk("op het hoogste niveau weer bij de inhoudsopgave", bouwOpzet(terugBoven, []).find((k) => k.inhoud === "wijzigingen").nummer, "");
+  gelijk("een oud template zonder het blok: geen lijst, en verder niets", opzetVan(zonder).some((k) => k.inhoud === "wijzigingen"), false);
+
+  // Waar een regel op papier staat.
+  const k = bouwOpzet({ ...metLijstR, inHoofdstuk: { "ex-b": true } }, [{ id: "ex-a", naam: "A" }, { id: "ex-b", naam: "B" }]);
+  const bijlage = [{ blad: { id: "ex-a", naam: "A" }, nummer: "A.1" }];
+  const plek = (doel, id) => plekVanRegel({ sleutel: "x", doel, id, titel: "", delen: [] }, k, bijlage);
+  gelijk("een blad in bijlage A: het anker daar", plek("blad", "ex-a"), { nummer: "A.1", anker: "bijlage-blad-ex-a" });
+  gelijk("een blad in het hoofdstuk: zijn paragraaf", plek("blad", "ex-b"), { nummer: "6.2", anker: "ex-b" });
+  gelijk("een onderdeel van het rapport", plek("knoop", "brand"), { nummer: "4.2", anker: "brand" });
+  gelijk("het voorblad is pagina 1", plek("voorblad"), { nummer: "", pagina: 1 });
+  gelijk("wat vervallen is, heeft geen pagina", [plek("blad", "ex-weg"), plek("knoop", "bestaat-niet"), plek("gegevens")], [{ nummer: "" }, { nummer: "" }, { nummer: "" }]);
 }
 
 console.log(fouten === 0 ? "\nVersies: alles klopt." : `\n${fouten} controle(s) gezakt.`);

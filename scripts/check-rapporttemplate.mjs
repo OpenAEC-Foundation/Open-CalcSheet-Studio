@@ -272,7 +272,7 @@ kop("3. De opzet bewerken");
   const hoofdstuk = r1.opzet.at(-1);
   gelijk("een nieuw hoofdstuk: achteraan, niveau 1, met een eigen id", [hoofdstuk.niveau, hoofdstuk.inhoud, r1.opzet.length], [1, "tekst", OPZET.length + 1]);
   toets("het begint op een nieuwe pagina, zoals elk hoofdstuk", hoofdstuk.nieuwePagina === true);
-  toets("het ingebouwde blijft", opzetVan(r0) === OPZET && OPZET.length === 6);
+  toets("het ingebouwde blijft", opzetVan(r0) === OPZET && OPZET.length === 7);
   const r2 = voegKnoopToe(r1, hoofdstuk.id);
   const paragraaf = r2.opzet.at(-1).kinderen[0];
   gelijk("een paragraaf eronder is niveau 2", paragraaf.niveau, 2);
@@ -394,7 +394,7 @@ kop("3. De opzet bewerken");
   gelijk("de lijst overleeft opslaan en openen", opnieuwGelezen(zonder).weggehaald, zonder.weggehaald);
 
   // Rekenblokken.
-  gelijk("alle rekenblokken", REKENBLOKKEN.map((k) => k.inhoud), ["rol", "bouwwerk", "brand", "materialen", "conservering", "factoren", "bestaand", "vervormingen", "sneeuw", "wind", "veranderlijk", "blijvend", "berekeningen"]);
+  gelijk("alle rekenblokken", REKENBLOKKEN.map((k) => k.inhoud), ["rol", "bouwwerk", "brand", "materialen", "conservering", "factoren", "bestaand", "vervormingen", "sneeuw", "wind", "veranderlijk", "blijvend", "wijzigingen", "berekeningen"]);
   gelijk("in het ingebouwde template staan ze allemaal", ongeplaatsteBlokken(r0), []);
   toets("een geplaatst blok kan niet nog eens", plaatsBlok(r0, "wind", "belastingen") === r0);
   const windWeg = verwijderKnoop(r0, "wind");
@@ -663,7 +663,7 @@ kop("7. De afdruk");
   const eigen = r.opzet.at(-1).id;
   r = hernoemKnoop(r, eigen, "Executive summary");
   r = metTekst(r, eigen, "Short version of the report.");
-  for (let i = 0; i < 6; i++) r = verplaatsKnoop(r, eigen, -1);
+  for (let i = 0; i < OPZET.length; i++) r = verplaatsKnoop(r, eigen, -1);
   r = verwijderKnoop(r, "belastingen");
   r = hernoemKnoop(r, "uitgangspunten", "Basis of design");
   const plek = teken(r);

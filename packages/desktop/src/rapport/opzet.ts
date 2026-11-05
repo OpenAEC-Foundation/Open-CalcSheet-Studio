@@ -19,7 +19,8 @@ export type Inhoud =
   | "tekst" | "rol"
   | "bouwwerk" | "brand" | "materialen" | "conservering" | "factoren" | "bestaand" | "vervormingen"
   | "sneeuw" | "wind" | "veranderlijk" | "blijvend"
-  | "berekeningen";
+  | "berekeningen"
+  | "wijzigingen";
 
 export interface Knoop {
   /** Ook de sleutel in rapport.teksten als inhoud "tekst" is (of een tekst bij een tabel heeft). */
@@ -134,6 +135,9 @@ export const OPZET: readonly Knoop[] = diepVast<Knoop[]>([
       { id: "blijvend", titel: { en: "Permanent loads(G)", nl: "Blijvende belastingen(G)" }, niveau: 2, inhoud: "blijvend", optioneel: true },
     ],
   },
+  // Valt weg zonder wijzigingen, dus in elke eerste versie. Op dit niveau staat het onder de
+  // inhoudsopgave, zonder nummer (staatBijInhoudsopgave): de hoofdstukken houden hun nummers.
+  { id: "wijzigingen", titel: { en: "Changes in this version", nl: "Wijzigingen in deze versie" }, niveau: 1, inhoud: "wijzigingen", optioneel: true },
   // Valt weg zonder rekenbladen.
   { id: "berekeningen", titel: { en: "Calculations", nl: "Berekeningen" }, niveau: 1, inhoud: "berekeningen", optioneel: true, nieuwePagina: true },
 ]);
@@ -459,6 +463,8 @@ function isLeeg(k: Knoop, r: Rapport, bladen: readonly Blad[]): boolean {
       return r.belastingen.vloerenDaken.length === 0 && r.belastingen.wanden.length === 0;
     case "berekeningen":
       return bladen.length === 0;
+    case "wijzigingen":
+      return !(r.wijzigingsLijst ?? []).some((w) => !(r.wijzigingen && heeftSleutel(r.wijzigingen, w.sleutel) && r.wijzigingen[w.sleutel].weg));
     case undefined:
       return (k.kinderen ?? []).every((c) => isLeeg(c, r, bladen));
     default:
@@ -542,14 +548,25 @@ function bouwKnoop(k: Knoop, nummer: string, r: Rapport, bladen: Blad[]): Rappor
 }
 
 /**
+ * Staat dit hoofdstuk bij de inhoudsopgave en niet als eigen hoofdstuk? De lijst met wijzigingen op
+ * het hoogste niveau wel, waar hij ook in de opzet staat: hij heeft geen nummer en geen regel in de
+ * inhoudsopgave, zodat de hoofdstukken van een nieuwe versie dezelfde nummers houden. Onder een
+ * hoofdstuk is hij een gewone paragraaf.
+ */
+export function staatBijInhoudsopgave(hoofdstuk: Pick<Rapportknoop, "inhoud">): boolean {
+  return hoofdstuk.inhoud === "wijzigingen";
+}
+
+/**
  * Nummert, laat lege optionele knopen weg, voegt per blad een paragraaf toe aan
  * "berekeningen" (bijlage "A.1", "A.2", …). Zonder bladen valt "berekeningen"
  * weg; de bijlageletters (bijlagen()) houden dan hun plek: B blijft B.
  */
 export function bouwOpzet(r: Rapport, bladen: Blad[]): Rapportknoop[] {
+  let nummer = 0;
   return opzetVan(r)
     .filter((k) => !valtWeg(k, r, bladen))
-    .map((k, i) => bouwKnoop(k, String(i + 1), r, bladen));
+    .map((k) => bouwKnoop(k, staatBijInhoudsopgave(k) ? "" : String(++nummer), r, bladen));
 }
 
 export interface Inhoudsregel {
@@ -578,6 +595,7 @@ function bladRegels(nummer: string, titel: string, anker: string, koppen: readon
 export function inhoudsopgave(knopen: Rapportknoop[], metBladen = false): Inhoudsregel[] {
   const regels: Inhoudsregel[] = [];
   for (const h of knopen) {
+    if (staatBijInhoudsopgave(h)) continue;
     regels.push({ nummer: h.nummer, titel: h.titel, niveau: 1, anker: h.id });
     if (h.inhoud === "berekeningen") {
       if (!metBladen) continue;

@@ -24,11 +24,13 @@ export type PaneelGroep =
  * Hoe de opzet over de secties van het paneel valt, in de volgorde van het rapport. Uitgangspunten,
  * Belastingen en Berekeningen hebben een eigen sectie met een eigen uitleg; opeenvolgende andere
  * hoofdstukken delen er één. Voor het ingebouwde template is dat de indeling die het paneel altijd
- * had: hoofdstuk 1 t/m 3, dan die drie.
+ * had: hoofdstuk 1 t/m 3, dan die drie. De lijst met wijzigingen op het hoogste niveau staat bij de
+ * inhoudsopgave en dus niet tussen de hoofdstukken: die heeft een eigen sectie.
  */
 export function paneelGroepen(opzet: readonly Knoop[]): PaneelGroep[] {
   const uit: PaneelGroep[] = [];
   for (const k of opzet) {
+    if (k.inhoud === "wijzigingen") continue;
     if (k.inhoud === "berekeningen") uit.push({ soort: "berekeningen", knoop: k });
     else if (k.inhoud === undefined && k.id === "uitgangspunten") uit.push({ soort: "uitgangspunten", knoop: k });
     else if (k.inhoud === undefined && k.id === "belastingen") uit.push({ soort: "belastingen", knoop: k });

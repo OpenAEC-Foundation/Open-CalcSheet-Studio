@@ -13,7 +13,7 @@
  * Zonder React en zonder stores: scripts/check-versies.mjs laadt dit bestand rechtstreeks in Node.
  */
 import { inNotatie, type Rapport } from "./model.ts";
-import { heeftSleutel } from "./opzet.ts";
+import { bijlageBladAnker, heeftSleutel, type Rapportknoop } from "./opzet.ts";
 
 /** Een waarde die anders is: zonder `van` is hij erbij gekomen, zonder `naar` vervallen. */
 export interface Verandering {
@@ -66,13 +66,14 @@ export function keuzeVan(r: Pick<Rapport, "wijzigingen">, sleutel: string): Wijz
 
 /**
  * Zet een deel van de keuze voor een regel. Leeg is geen keuze: het veld verdwijnt, en daarmee zo nodig
- * de regel en het hele veld van het rapport. Niets veranderd: hetzelfde rapport.
+ * de regel en het hele veld van het rapport. Alleen een lege eigen tekst mag even bestaan: daar typt
+ * iemand in; op papier geldt dan de tekst van de app (regelTekst). Niets veranderd: hetzelfde rapport.
  */
 export function metKeuze(r: Rapport, sleutel: string, deel: Partial<Record<keyof WijzigingsKeuze, string | true | undefined>>): Rapport {
   const oud = keuzeVan(r, sleutel);
   const samen = { ...oud, ...deel };
   const nieuw: WijzigingsKeuze = {
-    ...(samen.tekst ? { tekst: samen.tekst as string } : {}),
+    ...(typeof samen.tekst === "string" ? { tekst: samen.tekst } : {}),
     ...(samen.toelichting ? { toelichting: samen.toelichting as string } : {}),
     ...(samen.weg ? { weg: true as const } : {}),
   };
@@ -104,11 +105,45 @@ export function keuzesZonderVerschil(r: Pick<Rapport, "wijzigingen" | "wijziging
     .map(([sleutel, keuze]) => ({ sleutel, keuze }));
 }
 
+/** Waar een regel op papier staat: het nummer, en het anker waar de pagina vandaan komt. */
+export interface RegelPlek {
+  nummer: string;
+  anker?: string;
+  /** Een vaste pagina: het voorblad is altijd de eerste. */
+  pagina?: number;
+}
+
+/**
+ * De plek van een regel in dit rapport, uit dezelfde bron als de inhoudsopgave. Een blad in bijlage A
+ * staat daar met zijn uitwerking. Wat vervallen is, of geen eigen plek heeft, heeft geen pagina.
+ */
+export function plekVanRegel(
+  regel: Pick<Wijzigingsregel, "doel" | "id">,
+  knopen: readonly Rapportknoop[],
+  bijlageBladen: readonly { blad: { id: string }; nummer: string }[],
+): RegelPlek {
+  if (regel.doel === "voorblad") return { nummer: "", pagina: 1 };
+  if (regel.doel !== "blad" && regel.doel !== "knoop") return { nummer: "" };
+  if (regel.doel === "blad") {
+    const inBijlage = bijlageBladen.find((b) => b.blad.id === regel.id);
+    if (inBijlage) return { nummer: inBijlage.nummer, anker: bijlageBladAnker(inBijlage.blad.id) };
+  }
+  const zoek = (lijst: readonly Rapportknoop[]): Rapportknoop | undefined => {
+    for (const k of lijst) {
+      const hier = k.id === regel.id ? k : zoek(k.kinderen);
+      if (hier) return hier;
+    }
+    return undefined;
+  };
+  const knoop = zoek(knopen);
+  return knoop ? { nummer: knoop.nummer, anker: knoop.id } : { nummer: "" };
+}
+
 export type Vertaal = (sleutel: string, opties?: Record<string, unknown>) => string;
 
-/** Een rijtje waarden: `L 4,2 → 4,8, b 75 → 100 en 3 meer`, in de notatie van de taal. */
+/** Een rijtje waarden: `L 4,2 → 4,8, b 75 → 100 en 3 meer`, in de notatie van de taal, en mm² als mm². */
 function rijtje(lijst: readonly Verandering[], meer: number, t: Vertaal, taal: string, naam: (n: string) => string): string {
-  const waarde = (s: string | undefined) => (s === undefined || s === "" ? "—" : inNotatie(s, taal));
+  const waarde = (s: string | undefined) => (s === undefined || s === "" ? "—" : inNotatie(s, taal).replace(/\^2\b/g, "²").replace(/\^3\b/g, "³"));
   const delen = lijst.map((v) => `${naam(v.naam)} ${waarde(v.van)} → ${waarde(v.naar)}`);
   return meer > 0 ? `${delen.join(", ")} ${t("afdruk.wijzigingen.meer", { aantal: meer })}` : delen.join(", ");
 }
@@ -127,6 +162,12 @@ export function regelKop(regel: Wijzigingsregel, t: Vertaal): string {
     default:
       return regel.titel;
   }
+}
+
+/** De tekst van een regel: wat de gebruiker ervan maakte, of anders wat de app zegt. */
+export function regelTekst(regel: Wijzigingsregel, r: Pick<Rapport, "wijzigingen">, t: Vertaal, taal: string): string {
+  const eigen = keuzeVan(r, regel.sleutel).tekst;
+  return eigen && eigen.trim() !== "" ? eigen : wijzigingTekst(regel, t, taal);
 }
 
 /** Wat de app zelf over een regel zegt. `t` is van namespace rapport: op papier of op het scherm. */
