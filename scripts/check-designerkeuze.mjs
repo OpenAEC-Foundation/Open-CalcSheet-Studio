@@ -19,9 +19,16 @@ const keuze = readFileSync(join(SRC, "components/calc/designerKeuze.tsx"), "utf8
 const markers = [...keuze.matchAll(/marker: "([^"]+)"/g)].map((m) => m[1]);
 if (markers.length === 0) throw new Error("geen herkenningsteksten gevonden in designerKeuze.tsx");
 
+// De werkruimte kent de herkenningsteksten ook zonder de beelden (designerHerkenning.ts):
+// valt er daar een weg, dan staat een blad zonder beeld in beeld.
+const herkenning = readFileSync(join(SRC, "components/calc/designerHerkenning.ts"), "utf8");
+const lijst = [...(herkenning.match(/HERKENNINGSPUNTEN = \[([\s\S]*?)\]/)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+const lijstenGelijk = lijst.join("|") === markers.join("|");
+console.log(`  ${lijstenGelijk ? "OK    " : "FOUT  "} designerHerkenning.ts noemt dezelfde herkenningsteksten als designerKeuze.tsx`);
+
 const OVERSLAAN = new Set(["index.ts", "rekentaal-includes.ts"]);
 const TPL_DIR = join(SRC, "templates");
-let fouten = 0, gekoppeld = 0;
+let fouten = lijstenGelijk ? 0 : 1, gekoppeld = 0;
 for (const bestand of readdirSync(TPL_DIR).filter((f) => f.endsWith(".ts") && !OVERSLAAN.has(f))) {
   const bron = readFileSync(join(TPL_DIR, bestand), "utf8");
   // De bladtekst zelf: de template-literal na `export const x = `.

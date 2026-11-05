@@ -4,7 +4,7 @@ import BalklaagDesigner from "./BalklaagDesigner";
 import DoorsnedeDesigner from "./DoorsnedeDesigner";
 import LiggerDesigner from "./LiggerDesigner";
 import TweepaalspoerDesigner from "./TweepaalspoerDesigner";
-import { hoortBij } from "../../templates/vertalingen";
+import { hoortBij } from "../../templates/hoortBij";
 
 /**
  * Welk parametrisch beeld hoort bij een rekenblad.
@@ -31,7 +31,4 @@ export function designerVoor(source: string): ReactElement | null {
   return treffer ? treffer.beeld() : null;
 }
 
-/** Heeft dit blad een parametrisch beeld? */
-export function heeftDesigner(source: string): boolean {
-  return DESIGNERS.some((d) => hoortBij(source, d.marker));
-}
+export { heeftDesigner } from "./designerHerkenning";

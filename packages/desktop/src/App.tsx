@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { Suspense, useState, useEffect, useCallback, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import i18next from "./i18n/config";
 import TitleBar from "./components/TitleBar";
@@ -8,36 +8,24 @@ import StatusBar from "./components/StatusBar";
 import Backstage from "./components/backstage/Backstage";
 import SettingsDialog, { applyTheme, applyTextSize } from "./components/settings/SettingsDialog";
 import Modal from "./components/Modal";
-import HelpPanel from "./components/calc/HelpPanel";
 import Welkom, { welkomBijStart } from "./components/Welkom";
-import Editor from "./components/calc/Editor";
-import Preview from "./components/calc/Preview";
 import SplitPane from "./components/calc/SplitPane";
 import ProjectBrowser from "./components/calc/ProjectBrowser";
-import { designerVoor } from "./components/calc/designerKeuze";
+import { heeftDesigner } from "./components/calc/designerHerkenning";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
-import RapportPanel from "./components/rapport/RapportPanel";
 import { vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
-import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
-import ModuleKiezer from "./components/calc/ModuleKiezer";
-import BladBijwerken from "./components/calc/BladBijwerken";
-import TekenEditor from "./components/tekenen/TekenEditor";
 import { BladVersieKop, BladVersieMelding } from "./components/calc/BladVersieKop";
-import IfcViewerPanel from "./components/calc/IfcViewerPanel";
-import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
-import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
-import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
 import FeedbackDialog from "./components/FeedbackDialog";
-import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
+import { lui, warmLuiOp } from "./components/lui";
 import { isPdfBlad } from "./store/pdfBijlage";
 import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
+import { useBladBijwerken } from "./store/bladBijwerken";
+import { useModuleKiezer } from "./store/moduleKiezer";
+import { useTeken } from "./components/tekenen/tekenStore";
 import { isMarkdownBlad } from "./store/markdownBlad";
 import { isCanvasBlad } from "./store/canvasBlad";
-import { GraafBladInfo, GraafBladWeergave } from "./components/graaf/GraafBladWeergave";
 import { isGraafBlad } from "./store/graafBlad";
-import { TekenbladInfo, TekenbladWeergave } from "./components/calc/TekenbladWeergave";
 import { isTekenBlad } from "./store/tekenBlad";
-import { JupyterBladInfo, JupyterBladWeergave, JupyterHouder, MarimoBladInfo } from "./components/calc/JupyterBladWeergave";
 import { isJupyterBlad } from "./store/jupyterBlad";
 import { isMarimoBlad } from "./store/marimoBlad";
 import { getSetting } from "./store";
@@ -51,8 +39,60 @@ import { useBestandActies } from "./hooks/useBestandActies";
 import { GeenProjectFout, leesProjectBestand } from "./store/projectBestand";
 import { startbestand } from "./tauri/fileOps";
 import type { AngleMode } from "@ifc-calc/core";
-import { zetHoekmodus, useBladResultaat } from "./rekenen/doorrekening";
+import { warmRekenWorker, zetHoekmodus, useBladResultaat } from "./rekenen/doorrekening";
 import { UNITS_DEFAULTS, type UnitsSettings } from "./components/settings/SettingsDialog";
+
+/*
+ * Wat niet in het eerste scherm staat, laadt pas als het in beeld komt, met zijn eigen
+ * bibliotheken (CodeMirror, de tekeneditor, het rapport en de rekenkern). Zo staat het
+ * venster er sneller; `warmOp` hieronder haalt het daarna alvast binnen.
+ */
+const Editor = lui(() => import("./components/calc/Editor"));
+const Preview = lui(() => import("./components/calc/Preview"));
+const BeeldVanBlad = lui(() => import("./components/calc/BeeldVanBlad"));
+const HelpPanel = lui(() => import("./components/calc/HelpPanel"));
+const RapportPanel = lui(() => import("./components/rapport/RapportPanel"));
+const AfdrukVoorbeeld = lui(() => import("./components/calc/AfdrukVoorbeeld"));
+const ModuleKiezer = lui(() => import("./components/calc/ModuleKiezer"));
+const BladBijwerken = lui(() => import("./components/calc/BladBijwerken"));
+const TekenEditor = lui(() => import("./components/tekenen/TekenEditor"));
+const IfcViewerPanel = lui(() => import("./components/calc/IfcViewerPanel"));
+const CanvasBladWeergave = lui(() => import("./components/calc/CanvasBladWeergave").then((m) => ({ default: m.CanvasBladWeergave })));
+const pdfDeel = () => import("./components/calc/PdfBladWeergave");
+const PdfBladWeergave = lui(() => pdfDeel().then((m) => ({ default: m.PdfBladWeergave })));
+const PdfBladInfo = lui(() => pdfDeel().then((m) => ({ default: m.PdfBladInfo })));
+const werkmapDeel = () => import("./components/calc/SpreadsheetBladWeergave");
+const SpreadsheetBladWeergave = lui(() => werkmapDeel().then((m) => ({ default: m.SpreadsheetBladWeergave })));
+const SpreadsheetBladInfo = lui(() => werkmapDeel().then((m) => ({ default: m.SpreadsheetBladInfo })));
+const SpreadsheetHouder = lui(() => werkmapDeel().then((m) => ({ default: m.SpreadsheetHouder })));
+const markdownDeel = () => import("./components/calc/MarkdownBladWeergave");
+const MarkdownWeergave = lui(() => markdownDeel().then((m) => ({ default: m.MarkdownWeergave })));
+const MarkdownBladInfo = lui(() => markdownDeel().then((m) => ({ default: m.MarkdownBladInfo })));
+const MarkdownBron = lui(() => import("./components/calc/MarkdownBron"));
+const graafDeel = () => import("./components/graaf/GraafBladWeergave");
+const GraafBladWeergave = lui(() => graafDeel().then((m) => ({ default: m.GraafBladWeergave })));
+const GraafBladInfo = lui(() => graafDeel().then((m) => ({ default: m.GraafBladInfo })));
+const tekenbladDeel = () => import("./components/calc/TekenbladWeergave");
+const TekenbladWeergave = lui(() => tekenbladDeel().then((m) => ({ default: m.TekenbladWeergave })));
+const TekenbladInfo = lui(() => tekenbladDeel().then((m) => ({ default: m.TekenbladInfo })));
+const jupyterDeel = () => import("./components/calc/JupyterBladWeergave");
+const JupyterBladWeergave = lui(() => jupyterDeel().then((m) => ({ default: m.JupyterBladWeergave })));
+const JupyterBladInfo = lui(() => jupyterDeel().then((m) => ({ default: m.JupyterBladInfo })));
+const MarimoBladInfo = lui(() => jupyterDeel().then((m) => ({ default: m.MarimoBladInfo })));
+const JupyterHouder = lui(() => jupyterDeel().then((m) => ({ default: m.JupyterHouder })));
+
+/** Een houder die een zwaar onderdeel in leven houdt, staat er vanaf het eerste blad van zijn soort. */
+function useOoit(nu: boolean): boolean {
+  const [ooit, zetOoit] = useState(nu);
+  if (nu && !ooit) zetOoit(true);
+  return ooit || nu;
+}
+
+/** De worker en de schermen alvast klaarzetten; het eerste blad gaat voor. */
+function warmOp() {
+  warmRekenWorker();
+  warmLuiOp([ModuleKiezer, Preview, BeeldVanBlad, Editor, AfdrukVoorbeeld]);
+}
 
 /**
  * Een paneel van de werkruimte met een kopregel (CODE, VISUEEL, UITWERKING),
@@ -64,11 +104,13 @@ function WerkPaneel({ titel, info, papier, children }: { titel: string; info?: R
     <section className="werk-paneel">
       <div className="werk-paneel-kop">
         <span className="werk-paneel-titel">{titel}</span>
-        {info && <span className="werk-paneel-info">{info}</span>}
+        {info && <span className="werk-paneel-info"><Suspense fallback={null}>{info}</Suspense></span>}
       </div>
       {/* Het beeld en de uitwerking zijn papier: in elk thema licht, net als
           het afdrukvoorbeeld (themes.css). De code volgt het thema. */}
-      <div className="werk-paneel-body" data-oa-theme={papier ? "light" : undefined}>{children}</div>
+      <div className="werk-paneel-body" data-oa-theme={papier ? "light" : undefined}>
+        <Suspense fallback={null}>{children}</Suspense>
+      </div>
     </section>
   );
 }
@@ -104,6 +146,7 @@ export default function App() {
   useEffect(() => {
     welkomBijStart().then((tonen) => { if (tonen) setWelkomOpen(true); });
   }, []);
+  useEffect(warmOp, []);
   const openSettings = useCallback((tab = "general") => {
     setSettingsTab(tab);
     setSettingsOpen(true);
@@ -223,7 +266,6 @@ export default function App() {
     if ((printSoort === "rapport") !== (activeId === RAPPORT_ID)) sluitVoorbeeld();
   }, [printVoorbeeld, printSoort, activeId, sluitVoorbeeld]);
 
-  const designerPane = designerVoor(source);
   // Het projectgegevens-formulier is geen rekenblad: geen editor, geen
   // uitwerking, geen splitsing — alleen het formulier.
   const toontProjectGegevens = activeId === PROJECT_ID;
@@ -233,7 +275,7 @@ export default function App() {
   const toontRapport = activeId === RAPPORT_ID;
   const rapportVoorbeeld = printVoorbeeld && printSoort === "rapport";
   const rapportWerkruimte = toontRapport && (rapportVoorbeeld || activeView !== "ifc");
-  const hasDesigner = designerPane !== null && !toontProjectGegevens;
+  const hasDesigner = heeftDesigner(source) && !toontProjectGegevens;
   // Een PDF-blad heeft geen code, beeld of uitwerking: alleen zijn pagina's.
   const pdfBlad = actief !== null && isPdfBlad(actief);
   // Idem een spreadsheet-blad: alleen zijn werkmap.
@@ -252,6 +294,12 @@ export default function App() {
   const jupyterBlad = actief !== null && isJupyterBlad(actief);
   // En een Marimo-blad: ook alleen zijn omgeving.
   const marimoBlad = actief !== null && isMarimoBlad(actief);
+  // De houders en vensters die nog niets te doen hebben, hoeven nog niet geladen te zijn.
+  const heeftWerkmap = useOoit(exemplaren.some(isSpreadsheetBlad));
+  const heeftOmgeving = useOoit(exemplaren.some((e) => isJupyterBlad(e) || isMarimoBlad(e)));
+  const kiezerGeladen = useOoit(useModuleKiezer((s) => s.open));
+  const bijwerkenGeladen = useOoit(useBladBijwerken((s) => s.ids !== null));
+  const tekenenGeladen = useOoit(useTeken((s) => s.open));
   const mode = hasDesigner ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
@@ -259,7 +307,7 @@ export default function App() {
       <Editor />
     </WerkPaneel>
   );
-  const beeldPaneel = <WerkPaneel titel={t("paneel.visueel")} papier>{designerPane}</WerkPaneel>;
+  const beeldPaneel = <WerkPaneel titel={t("paneel.visueel")} papier><BeeldVanBlad source={source} /></WerkPaneel>;
   const uitwerkingPaneel = (
     <WerkPaneel titel={t("paneel.uitwerking")} info={actief ? <UcInfo blad={actief.id} /> : null} papier>
       <Preview />
@@ -380,6 +428,7 @@ export default function App() {
       <main className="main-view" style={{ flex: 1, minHeight: 0, display: "flex" }}>
         <ProjectBrowser />
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+          <Suspense fallback={null}>
           {rapportWerkruimte ? (
             <>
               {rapportTabs}
@@ -489,13 +538,16 @@ export default function App() {
               </div>
             </>
           )}
+          </Suspense>
         </div>
       </main>
       {welkomOpen && <Welkom onSluit={() => setWelkomOpen(false)} />}
       <StatusBar />
-      <SpreadsheetHouder />
+      <Suspense fallback={null}>
+        {heeftWerkmap && <SpreadsheetHouder />}
+        {heeftOmgeving && <JupyterHouder />}
+      </Suspense>
       <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
-      <JupyterHouder />
       <Backstage
         open={backstageOpen}
         onClose={() => setBackstageOpen(false)}
@@ -515,11 +567,13 @@ export default function App() {
       />
       {/* De rekentaal in het kort; een fragment aanklikken voegt het in op de cursor. */}
       <Modal open={helpOpen} onClose={() => setHelpOpen(false)} title={t("ribbon:calc.helpButton")} width={760} height="80vh" className="help-dialoog">
-        <HelpPanel />
+        <Suspense fallback={null}><HelpPanel /></Suspense>
       </Modal>
-      <ModuleKiezer />
-      <BladBijwerken />
-      <TekenEditor />
+      <Suspense fallback={null}>
+        {kiezerGeladen && <ModuleKiezer />}
+        {bijwerkenGeladen && <BladBijwerken />}
+        {tekenenGeladen && <TekenEditor />}
+      </Suspense>
     </>
   );
 }

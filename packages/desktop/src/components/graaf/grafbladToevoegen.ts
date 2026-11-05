@@ -4,11 +4,6 @@ import { useProjectStore } from "../../store/projectStore";
 import { GrafBestandFout, leesGrafBestand } from "../../graaf/grafBestand";
 import { kiesBestanden } from "../calc/jupyterBlad";
 
-/** Een leeg grafblad achteraan het project; het opent meteen. */
-export function voegLeegGrafbladToe() {
-  useProjectStore.getState().voegGraafToe(i18next.t("werkruimte:graaf.nieuweNaam"));
-}
-
 /**
  * Leest een grafbestand in: op het blad `id`, of op een nieuw blad met de naam uit het bestand.
  * Wat niet meerekent, staat op de graaf met een melding, en wordt hier ook één keer genoemd.

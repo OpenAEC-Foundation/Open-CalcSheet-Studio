@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import RibbonGroup from "./RibbonGroup";
 import RibbonButton from "./RibbonButton";
 import RibbonButtonStack from "./RibbonButtonStack";
-import { Uitklap } from "./RekentaalTab";
+import { Uitklap } from "./Uitklap";
 import {
   autoSomIcon, copyIcon, cutIcon, functieIcon, kolomInvoegenIcon, kolomPassendIcon, omlaagIcon, papierrandIcon, pasteIcon, rechtsIcon,
   rijInvoegenIcon, rijPassendIcon, sorteerIcon, vastzettenIcon, verwijderIcon,

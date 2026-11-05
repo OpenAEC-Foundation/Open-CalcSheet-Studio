@@ -1,18 +1,21 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { Suspense, useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { lui } from "../lui";
 import RibbonTab from "./RibbonTab";
 import CalcTab from "./CalcTab";
-import IfcTab from "./IfcTab";
-import RekentaalTab from "./RekentaalTab";
-import SpreadsheetTab from "./SpreadsheetTab";
-import PdfTab from "./PdfTab";
-import TekenenTab from "../tekenen/TekenenTab";
 import { toonTekenen, useTeken, verbergTekenen } from "../tekenen/tekenStore";
 import { useEditorViewStore } from "../../store/editorViewStore";
 import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
 import { usePdfViewer } from "../../store/pdfViewer";
 import { vraagCode } from "../../store/codeVerzoek";
 import "./Ribbon.css";
+
+/* Alleen de tab Start staat in het eerste scherm; de rest laadt bij het openen. */
+const IfcTab = lui(() => import("./IfcTab"));
+const RekentaalTab = lui(() => import("./RekentaalTab"));
+const SpreadsheetTab = lui(() => import("./SpreadsheetTab"));
+const PdfTab = lui(() => import("./PdfTab"));
+const TekenenTab = lui(() => import("../tekenen/TekenenTab"));
 
 interface RibbonProps {
   onFileTabClick?: () => void;
@@ -183,14 +186,14 @@ export default function Ribbon({ onFileTabClick, onSettingsClick, onHelpClick, o
             className={`ribbon-content-panel ribbon-panel-exit-${direction}`}
             key={`prev-${prevTab}`}
           >
-            {renderContent(prevTab)}
+            <Suspense fallback={null}>{renderContent(prevTab)}</Suspense>
           </div>
         )}
         <div
           className={`ribbon-content-panel${animating ? ` ribbon-panel-enter-${direction}` : ""}`}
           key={`active-${activeTab}`}
         >
-          {renderContent(activeTab)}
+          <Suspense fallback={null}>{renderContent(activeTab)}</Suspense>
         </div>
       </div>
     </div>

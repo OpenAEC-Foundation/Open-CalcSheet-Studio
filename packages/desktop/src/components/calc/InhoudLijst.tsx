@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { RAPPORT_ID, useProjectStore } from "../../store/projectStore";
 import { useInhoudPaginas } from "../../store/inhoudPaginas";
 import { inhoudVoorPaneel } from "../../rapport/opzet";
-import { bladVoorOpzet } from "./bladSoorten";
+import { bladVoorOpzet } from "./bladOpzet";
 
 /**
  * De inhoud van het rapport in het zijpaneel, zodat je tijdens het werken de nummers al ziet: de

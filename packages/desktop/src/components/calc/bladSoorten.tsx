@@ -7,7 +7,7 @@ import { MARKDOWN_BLAD } from "../../store/markdownBlad";
 import { GRAAF_BLAD } from "../../store/graafBlad";
 import { TEKEN_BLAD } from "../../store/tekenBlad";
 import { MARIMO_BLAD } from "../../store/marimoBlad";
-import type { Blad, BladPlek, Inhoudskop } from "../../rapport/opzet";
+import type { BladPlek, Inhoudskop } from "../../rapport/opzet";
 import type { Maten } from "./paginering";
 import { papier, usePdfPaginas, usePdfVersie } from "./pdfBlad";
 import { useWerkmapVersie } from "./spreadsheetBlad";
@@ -15,7 +15,7 @@ import { useMarkdownVersie } from "./markdownBlad";
 import { PdfPaginas } from "./PdfBladWeergave";
 import { SpreadsheetVellen } from "./SpreadsheetBladWeergave";
 import { MarkdownPapier, MarkdownRapportKeuze } from "./MarkdownBladWeergave";
-import { koppenVoorInhoud } from "./markdownRegels";
+import { OPZET, bladVoorOpzet } from "./bladOpzet";
 import { GraafVellen } from "../graaf/GraafAfdruk";
 import { TekenbladAfdruk, TekenvelOpPapier } from "./TekenbladWeergave";
 import { MarimoPapier } from "./MarimoPapier";
@@ -54,12 +54,12 @@ export interface BladSoort {
   useOnderkop?: (ex: Exemplaar) => Array<string | undefined>;
   /** Verandert als er iets klaar is getekend: het afdrukvoorbeeld verdeelt dan opnieuw. */
   useVersie?: () => number;
-  /** Waar de uitwerking staat zolang de gebruiker niets koos. Zonder: in de bijlage. */
+  /** Waar de uitwerking staat zolang de gebruiker niets koos. Zonder: in de bijlage. Staat in bladOpzet.ts. */
   plek?: BladPlek;
   /**
    * Regels onder de naam van het blad in de inhoudsopgave, zoals koppen uit een
    * bestand. Het anker van een regel staat op papier als `data-inhoud` op die kop.
-   * Zonder: alleen de naam van het blad.
+   * Zonder: alleen de naam van het blad. Staat in bladOpzet.ts.
    */
   inhoudsKoppen?: (ex: Exemplaar) => Inhoudskop[];
   /** Een eigen keuze op de kaart van dit blad in het paneel Rapport. */
@@ -94,8 +94,7 @@ const SOORTEN: readonly BladSoort[] = [
     // Een geladen afbeelding.
     useVersie: useMarkdownVersie,
     useOnderkop: (ex) => [ex.md?.bestandsnaam],
-    plek: "hoofdstuk",
-    inhoudsKoppen: (ex) => (ex.md && !ex.md.koppenUit ? koppenVoorInhoud(ex.md.tekst, ex) : []),
+    ...OPZET[MARKDOWN_BLAD],
     RapportKeuze: MarkdownRapportKeuze,
   },
   {
@@ -127,11 +126,7 @@ export function useBladSoortenVersie(): string {
   return SOORTEN.map((s) => s.useVersie?.() ?? 0).join("|");
 }
 
-/** Een blad zoals de opzet van het rapport het leest (rapport/opzet.ts). */
-export function bladVoorOpzet(ex: Exemplaar): Blad {
-  const soort = bladSoortVan(ex);
-  return { id: ex.id, naam: ex.naam, plek: soort?.plek, koppen: soort?.inhoudsKoppen?.(ex) };
-}
+export { bladVoorOpzet };
 
 /**
  * Een blad van een aangemelde soort als eigen onderdeel van de uitdraai: de kop

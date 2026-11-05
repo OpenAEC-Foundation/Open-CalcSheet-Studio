@@ -1,6 +1,5 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { openSearchPanel } from "@codemirror/search";
 import RibbonGroup from "./RibbonGroup";
 import RibbonButton from "./RibbonButton";
 import RibbonButtonStack from "./RibbonButtonStack";
@@ -37,7 +36,7 @@ import { voegLeegSpreadsheetToe } from "../calc/spreadsheetBlad";
 import { voegLeegMarkdownToe } from "../calc/markdownBlad";
 import { kopieer as kopieerCellen, plakKlembord } from "../calc/spreadsheetKlembord";
 import { ongedaan as cellenOngedaan, opnieuw as cellenOpnieuw, uitvoeren } from "../calc/spreadsheetOpdrachten";
-import { voegLeegGrafbladToe } from "../graaf/grafbladToevoegen";
+import { voegLeegGrafbladToe } from "../graaf/leegGrafblad";
 import { voegLeegJupyterToe } from "../calc/jupyterBlad";
 import { voegLeegMarimoToe } from "../calc/marimoBlad";
 import { kanRapportPdfSchrijven, kiesRapportPdf } from "../../tauri/rapportPdf";
@@ -97,7 +96,7 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
   }, [view]);
 
   const zoek = useCallback(() => {
-    if (view) openSearchPanel(view);
+    if (view) void import("@codemirror/search").then(({ openSearchPanel }) => openSearchPanel(view));
   }, [view]);
 
   /**

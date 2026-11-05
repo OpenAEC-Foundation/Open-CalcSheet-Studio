@@ -1,10 +1,13 @@
 import { ucTekst } from "./bladLezen";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, Suspense, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
 import { PROJECT_VELDEN, kFiVoor, keuzesVoor, vervallenKeuze, type Keuze, type VeldDef } from "../../store/projectGegevens";
-import WindAreaMap from "./WindAreaMap";
+import { lui } from "../lui";
 import "./ProjectGegevensPanel.css";
+
+/* De kaart komt pas na het eerste scherm binnen, met Leaflet; het formulier staat er eerder. */
+const WindAreaMap = lui(() => import("./WindAreaMap"), { warm: false });
 
 /**
  * De koppen van PROJECT_VELDEN, naar hun sleutel onder gegevens.groepen in
@@ -157,12 +160,14 @@ export default function ProjectGegevensPanel() {
                   {t("gegevens.kaart")}
                 </button>
                 {kaartOpen && (
+                  <Suspense fallback={null}>
                   <WindAreaMap
                     initialAddress={gegevens.locatie ?? ""}
                     onWindGebiedChange={(gebied) => {
                       if (gebied) zetGegeven("windgebied", String(gebied));
                     }}
                   />
+                  </Suspense>
                 )}
               </div>
             )}

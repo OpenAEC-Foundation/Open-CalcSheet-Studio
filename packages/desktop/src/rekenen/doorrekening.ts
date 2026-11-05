@@ -14,7 +14,7 @@
  */
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import i18next from "i18next";
-import { setAngleMode, type AngleMode } from "@ifc-calc/core";
+import type { AngleMode } from "@ifc-calc/core";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
@@ -62,6 +62,11 @@ function meld() {
   for (const l of luisteraars) l();
 }
 
+/** Start de worker alvast, zodat het eerste blad niet ook nog op de rekenkern hoeft te wachten. */
+export function warmRekenWorker() {
+  deWorker();
+}
+
 function deWorker(): Worker {
   if (!worker) {
     worker = new Worker(new URL("./rekenWorker.ts", import.meta.url), { type: "module" });
@@ -95,7 +100,10 @@ function vraag(v: RekenVerzoek) {
  * stand maakt alle bewaarde uitkomsten ongeldig.
  */
 export function zetHoekmodus(mode: AngleMode) {
-  setAngleMode(mode);
+  // De rekenkern op de UI-thread laadt los van het eerste scherm. Wat hem gebruikt, draait
+  // pas nadat dit is uitgevoerd: die import lost op zodra de kern er is, vóór het volgende
+  // tekenen of verzoek.
+  void import("@ifc-calc/core").then((kern) => kern.setAngleMode(mode));
   if (mode === hoekmodus) return;
   hoekmodus = mode;
   uitkomsten.clear();
