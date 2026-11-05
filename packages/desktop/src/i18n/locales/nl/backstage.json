@@ -33,13 +33,6 @@
     "justNow": "Zojuist",
     "remove": "Verwijderen"
   },
-  "importPanel": {
-    "title": "Importeren",
-    "fromFile": "Importeren uit bestand",
-    "fromFileDesc": "Gegevens importeren uit ondersteunde bestandsindelingen",
-    "fromTemplate": "Importeren uit sjabloon",
-    "fromTemplateDesc": "Laad een vooraf gemaakt sjabloon als startpunt"
-  },
   "extensions": "Uitbreidingen",
   "extInstalled": "Geïnstalleerd",
   "extBrowse": "Bladeren",

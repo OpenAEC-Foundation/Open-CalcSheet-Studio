@@ -290,7 +290,6 @@
   },
   "ifc": {
     "kopieer": "Copy",
-    "exporteer": "Export",
     "docs": "{{type}} — buildingSMART documentation",
     "bezig": "Building the IFC document…",
     "mislukt": "The IFC document could not be built. See the console.",
@@ -764,15 +763,13 @@
       "tekening": "Drawing (SVG), also parametric",
       "kopVoorbeeld": "# 1. Input"
     },
-    "syntaxNoot": "Every element is on the Calculation language ribbon tab; Help explains them all.",
     "voorbeeld": "Open the example sheet",
     "voorbeeldUitleg": "A worked sheet that shows the whole language, with explanation.",
     "module": "Add a module",
     "moduleUitleg": "A ready-made check, such as the timber joist floor.",
     "leegBlad": "Blank sheet",
     "leegBladUitleg": "Write your own calculation from scratch.",
-    "bijStart": "Show at startup",
-    "beginnen": "Start"
+    "bijStart": "Show at startup"
   },
   "tekenblad": {
     "tab": "Drawing sheet",
@@ -833,23 +830,6 @@
     "nieuweNaam": "New project",
     "leegBladNaam": "Sheet",
     "leegBladTitel": "New sheet"
-  },
-  "belastingsgevallen": {
-    "titel": "Load cases",
-    "nieuw": "New load case",
-    "nieuwKnop": "+ new",
-    "verwijderTitel": "Remove {{naam}}",
-    "verwijderVraag": "Remove load case \"{{naam}}\"?"
-  },
-  "pdfVoorbeeld": {
-    "titel": "PDF preview — {{naam}}",
-    "kader": "PDF preview {{naam}}",
-    "bezig": "Generating PDF…",
-    "bezigUitleg": "Report engine: the first time can take a few seconds.",
-    "mislukt": "PDF generation failed",
-    "sluiten": "Close",
-    "opslaan": "Saving…",
-    "opslaanAls": "Save as…"
   },
   "pdfRapport": {
     "alleenApp": "PDF report generation only works in the desktop app, not in the browser preview.",

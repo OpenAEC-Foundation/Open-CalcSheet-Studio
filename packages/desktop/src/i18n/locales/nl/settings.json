@@ -28,12 +28,7 @@
   },
   "general": {
     "application": "Applicatie",
-    "language": "Taal",
-    "startup": "Opstarten",
-    "restoreSession": "Laatste sessie herstellen bij opstarten",
-    "checkUpdates": "Automatisch controleren op updates",
-    "author": "Auteur",
-    "authorName": "Auteursnaam"
+    "language": "Taal"
   },
   "appearance": {
     "theme": "Thema",
@@ -62,23 +57,8 @@
     "insertSpaces": "Spaties invoegen in plaats van tabs",
     "nSpaces": "{{count}} spaties"
   },
-  "files": {
-    "autoSave": "Automatisch opslaan",
-    "autoSaveOption": "Automatisch opslaan",
-    "off": "Uit",
-    "afterDelay": "Na vertraging",
-    "onFocusChange": "Bij focuswijziging",
-    "onWindowChange": "Bij vensterwijziging",
-    "encoding": "Bestandscodering",
-    "defaultEncoding": "Standaardcodering",
-    "backup": "Back-up",
-    "autoBackup": "Automatische back-ups maken"
-  },
   "shortcuts": {
     "placeholder": "Configuratie van sneltoetsen verschijnt hier."
-  },
-  "plugins": {
-    "placeholder": "Beheer van invoegtoepassingen verschijnt hier."
   },
   "bureau": {
     "intro": "Deze gegevens en de huisstijl komen op alles wat op papier komt: het rapport, losse bladen en de titelhoek van tekeningen. Een rapport gebruikt dit profiel tot je het in het rapport vastlegt met Bijwerken uit bureauprofiel; daarna veranderen wijzigingen hier dat rapport niet meer.",

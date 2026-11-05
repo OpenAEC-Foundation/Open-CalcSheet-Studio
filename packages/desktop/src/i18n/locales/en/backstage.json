@@ -33,13 +33,6 @@
     "justNow": "Just now",
     "remove": "Remove"
   },
-  "importPanel": {
-    "title": "Import",
-    "fromFile": "Import from File",
-    "fromFileDesc": "Import data from supported file formats",
-    "fromTemplate": "Import from Template",
-    "fromTemplateDesc": "Load a pre-built template as a starting point"
-  },
   "extensions": "Extensions",
   "extInstalled": "Installed",
   "extBrowse": "Browse Catalog",

@@ -28,12 +28,7 @@
   },
   "general": {
     "application": "Application",
-    "language": "Language",
-    "startup": "Startup",
-    "restoreSession": "Restore last session on startup",
-    "checkUpdates": "Check for updates automatically",
-    "author": "Author",
-    "authorName": "Author name"
+    "language": "Language"
   },
   "appearance": {
     "theme": "Theme",
@@ -62,23 +57,8 @@
     "insertSpaces": "Insert spaces instead of tabs",
     "nSpaces": "{{count}} spaces"
   },
-  "files": {
-    "autoSave": "Auto Save",
-    "autoSaveOption": "Auto save",
-    "off": "Off",
-    "afterDelay": "After delay",
-    "onFocusChange": "On focus change",
-    "onWindowChange": "On window change",
-    "encoding": "File Encoding",
-    "defaultEncoding": "Default encoding",
-    "backup": "Backup",
-    "autoBackup": "Create automatic backups"
-  },
   "shortcuts": {
     "placeholder": "Keyboard shortcuts configuration will appear here."
-  },
-  "plugins": {
-    "placeholder": "Plugin management will appear here."
   },
   "bureau": {
     "intro": "These details and the house style appear on everything that goes on paper: the report, single sheets and the title block of drawings. A report uses this profile until you store it in the report with Update from office profile; after that, changes here no longer affect that report.",

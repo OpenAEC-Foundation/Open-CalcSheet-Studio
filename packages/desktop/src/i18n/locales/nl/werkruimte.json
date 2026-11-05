@@ -290,7 +290,6 @@
   },
   "ifc": {
     "kopieer": "Kopieer",
-    "exporteer": "Exporteer",
     "docs": "{{type}} — BuildingSMART docs",
     "bezig": "Het IFC-document wordt opgebouwd…",
     "mislukt": "Het IFC-document kon niet worden opgebouwd. Zie de console.",
@@ -764,15 +763,13 @@
       "tekening": "Tekening (SVG), ook parametrisch",
       "kopVoorbeeld": "# 1. Invoer"
     },
-    "syntaxNoot": "Alles staat ook als knop op de lintab Rekentaal; Help legt het volledig uit.",
     "voorbeeld": "Voorbeeldblad openen",
     "voorbeeldUitleg": "Een uitgewerkt blad dat de hele rekentaal laat zien, met uitleg.",
     "module": "Module toevoegen",
     "moduleUitleg": "Een kant-en-klare toetsing, zoals de houten balklaag.",
     "leegBlad": "Leeg blad",
     "leegBladUitleg": "Schrijf je eigen berekening vanaf nul.",
-    "bijStart": "Tonen bij opstarten",
-    "beginnen": "Beginnen"
+    "bijStart": "Tonen bij opstarten"
   },
   "tekenblad": {
     "tab": "Tekenblad",
@@ -833,23 +830,6 @@
     "nieuweNaam": "Nieuw project",
     "leegBladNaam": "Blad",
     "leegBladTitel": "Nieuw blad"
-  },
-  "belastingsgevallen": {
-    "titel": "Belastingsgevallen",
-    "nieuw": "Nieuw belastingsgeval",
-    "nieuwKnop": "+ nieuw",
-    "verwijderTitel": "Verwijder {{naam}}",
-    "verwijderVraag": "Verwijder belastingsgeval \"{{naam}}\"?"
-  },
-  "pdfVoorbeeld": {
-    "titel": "PDF voorvertoning — {{naam}}",
-    "kader": "PDF voorvertoning {{naam}}",
-    "bezig": "PDF wordt gegenereerd…",
-    "bezigUitleg": "Rapportengine: de eerste keer kan een paar seconden duren.",
-    "mislukt": "PDF generatie mislukt",
-    "sluiten": "Sluiten",
-    "opslaan": "Opslaan…",
-    "opslaanAls": "Opslaan als…"
   },
   "pdfRapport": {
     "alleenApp": "PDF-rapportgeneratie werkt alleen in de desktop-app, niet in de browser preview.",
