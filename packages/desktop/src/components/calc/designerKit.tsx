@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import i18next from "i18next";
 import { useTranslation } from "react-i18next";
+import { hoortBij } from "../../templates/vertalingen";
 import { useProjectStore } from "../../store/projectStore";
 import { useActiefExemplaar, useAlleenLezen, useProjectGetal } from "../../store/actiefBlad";
 import { ucTekst, type BladUitkomst } from "./bladResultaat";
@@ -67,7 +68,7 @@ export function useDesigner(marker: string, defaults: Record<string, number>): D
   const wrapRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 640, h: 520 });
 
-  const actief = !!exemplaar?.source.includes(marker);
+  const actief = !!exemplaar && hoortBij(exemplaar.source, marker);
   const ref = Math.round(useProjectGetal("rekenwijze", 1)) === 1;
 
   useEffect(() => {

@@ -10,6 +10,7 @@ import type { BladVertaling } from "../components/calc/uitvoerTaal";
  */
 export const tweepaalspoerEn: BladVertaling = {
   marker: "\"Tweepaalspoer —",
+  markerVertaald: "\"Two-pile cap —",
   tekst: {
     "Tweepaalspoer — gewapend beton volgens EN 1992-1-1": "Two-pile cap — reinforced concrete to EN 1992-1-1",
     "Gewapendbetonnen poer op twee palen met een centrische, verticale kolomlast, berekend met een staafwerkmodel. De tekening en de toetsing gebruiken dezelfde invoer en dezelfde gekozen staven": "Reinforced concrete cap on two piles with a concentric, vertical column load, designed with a strut-and-tie model. The drawing and the checks use the same input and the same chosen bars",
@@ -257,5 +258,15 @@ export const tweepaalspoerEn: BladVertaling = {
     D_nodig: "D_req",
     F_fr: "F_freq",
     "F_fr,t": "F_freq,t",
+  },
+  code: {
+    "Naar boven afgerond: 1,004 staat er als 1,01 en nooit als 1,00": "Rounded up: 1.004 appears as 1.01 and never as 1.00",
+    "De hoogte waarop de wapening ligt: van onderkant poer tot het hart van de trekband": "The height of the reinforcement: from the underside of the cap to the centre of the tie",
+    "Zonder dwarsstaven is er geen spreiding: de diagonaal blijft zo breed als de kleinste knoop": "Without transverse bars there is no spreading: the strut stays as wide as the smallest node",
+    "De knoop mag alleen op k<sub>2</sub> rekenen met echte omsluiting: twee haarspelden per paal, die met de onderbenen boven de paal de splijtkracht dragen": "The node may only use k<sub>2</sub> with real confinement: two hairpins per pile, whose lower legs above the pile carry the splitting force",
+    "De verankering begint bij de binnenkant van de paal (6.5.4(7)), met de paal naar buiten verschoven; voor twee lagen de bovenste, die het kortst is": "The anchorage starts at the inner face of the pile (6.5.4(7)), with the pile shifted outwards; for two layers the upper one, which is the shortest",
+    "Hefboomsarm voor de BGT: een staafwerk dat de lineair-elastische spanningen volgt (5.6.4(2))": "Lever arm for the SLS: a strut-and-tie model that follows the linear elastic stresses (5.6.4(2))",
+    "De vereiste dekking (4.4.1.2, 4.4.1.3 van de NB): S4 bij 50 jaar, S6 bij 100 jaar, in tabel 4.4N steeds 5 mm per klasse": "The required cover (4.4.1.2, 4.4.1.3 of the NB): S4 at 50 years, S6 at 100 years, in table 4.4N always 5 mm per class",
+    "Vrije ruimte tussen evenwijdige staven, 8.2(2) van de NB. Een noemer van 0 of minder is geen geldige afstand": "Clear space between parallel bars, 8.2(2) of the NB. A denominator of 0 or less is not a valid spacing",
   },
 };

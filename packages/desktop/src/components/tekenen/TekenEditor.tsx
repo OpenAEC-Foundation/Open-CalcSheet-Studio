@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useActieveBron, useActieveWaarden, useProjectScope } from "../../store/actiefBlad";
+import { codeInTaal } from "../../templates/vertalingen";
 import { useProjectStore } from "../../store/projectStore";
 import { isTekenBlad } from "../../store/tekenBlad";
 import { koppelingen, schoonUitdrukking, type Opgelost } from "./model";
@@ -84,13 +85,15 @@ export default function TekenEditor() {
 }
 
 function Venster() {
-  const { t } = useTranslation("tekenen");
+  const { t, i18n } = useTranslation("tekenen");
   const vak = useAnker();
   const tekening = useTeken((s) => s.tekening);
   const doel = useTeken((s) => s.doel);
   const gewijzigd = useTeken((s) => s.gewijzigd);
   const melding = useTeken((s) => s.melding);
-  const bron = useActieveBron();
+  // De tekst zoals de editor hem toont: een plek in een tekening telt in die tekst.
+  const bladBron = useActieveBron();
+  const bron = useMemo(() => codeInTaal(bladBron, i18n.language), [bladBron, i18n.language]);
   const waarden = useActieveWaarden();
   const scope = useProjectScope();
   const [toonCode, setToonCode] = useState(false);

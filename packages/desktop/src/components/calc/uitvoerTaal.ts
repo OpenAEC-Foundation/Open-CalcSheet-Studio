@@ -19,6 +19,12 @@
  * Een symbool in lopende tekst (`b<sub>sparing</sub>`) volgt de weergavenamen; die
  * gelden ook voor de formules (zie `render` in de kern).
  *
+ * De tab Code toont diezelfde tekst in de taal van de app (vertaalVoorCode), ook de
+ * tekst op verborgen regels en het commentaar: die staat nergens anders in beeld. Ook
+ * dan blijft de rekentekst de bron. Een bewerking gaat regel voor regel terug in de bron
+ * (bronNaBewerking): wat niet is aangeraakt blijft precies de bron, met zijn rekenversie;
+ * wat er getypt is, is eigen tekst.
+ *
  * Geen imports: scripts/check-uitvoer-taal.mjs laadt dit bestand rechtstreeks in Node.
  */
 
@@ -26,10 +32,16 @@
 export interface BladVertaling {
   /** Herkenningspunt in de bladtekst, zoals bij de parametrische beelden (designerKeuze.tsx). */
   marker: string;
+  /** Hetzelfde punt in de vertaling: een blad waarvan de kop in de tab Code is aangepast of dat helemaal vertaald is. */
+  markerVertaald: string;
+  /** Wat alleen in de bron staat, als de kop in beide talen gelijk is. Zonder: `marker`. */
+  kenmerkBron?: string;
   /** Tekst in de bron → tekst in de uitvoer. Zonder rechte apostrof: die scheidt tekst en expressie. */
   tekst: Readonly<Record<string, string>>;
   /** Naam in de code → naam in beeld, bijvoorbeeld `b_sparing` → `b_opening`; een komma mag. */
   namen: Readonly<Record<string, string>>;
+  /** Tekst die alleen in de tab Code staat: op verborgen regels en in commentaar. */
+  code?: Readonly<Record<string, string>>;
 }
 
 /** Wat de doorloop aan een stukje tekst vraagt. */
@@ -175,11 +187,19 @@ function regelDelen(regel: string): { code: boolean; stuk: string }[] {
   return uit;
 }
 
+/** Commentaar achter `//`: alleen de tekst erachter. Een adres (https://) is geen commentaar. */
+function inCommentaar(regel: string, bezoek: Bezoek): string {
+  return regel.replace(/(^|\s)\/\/(\s*)([^\r]*)(\r?)$/, (_m, voor: string, spatie: string, tekst: string, eind: string) => `${voor}//${spatie}${bezoek(tekst, false)}${eind}`);
+}
+
 /**
  * Loopt de tekst van een blad af en geeft elk stukje tekst aan `bezoek`, met de vraag
  * of het op een verborgen regel staat. Geeft de bron terug met wat `bezoek` teruggaf.
+ *
+ * Met `alles` ook wat alleen in de code zelf te zien is: de tekst op verborgen regels
+ * en commentaar, ook in een `@3d`- of `@js`-blok.
  */
-export function doorloop(bron: string, bezoek: Bezoek, opIfcx?: (regel: string) => string): string {
+export function doorloop(bron: string, bezoek: Bezoek, opIfcx?: (regel: string) => string, alles = false): string {
   const stand = { inTag: false };
   let blok: "" | "select" | "svg" | "overslaan" = "";
   let verborgen = false;
@@ -205,7 +225,7 @@ export function doorloop(bron: string, bezoek: Bezoek, opIfcx?: (regel: string) 
       }
       if (blok === "overslaan") {
         if (/^@end\b/.test(t)) blok = "";
-        return regel;
+        return alles ? inCommentaar(regel, bezoek) : regel;
       }
       if (t === "") return regel;
       if (/^@select\b/.test(t)) {
@@ -223,6 +243,7 @@ export function doorloop(bron: string, bezoek: Bezoek, opIfcx?: (regel: string) 
       if (/^@iframe\b/.test(t)) return regel.replace(/\btitel="([^"]*)"/, (_m, titel: string) => `titel="${bezoek(titel, verborgen)}"`);
       if (/^@ifcx\b/.test(t)) return opIfcx ? opIfcx(regel) : regel;
       if (/^@/.test(t)) return regel;
+      if (alles && t.startsWith("//")) return inCommentaar(regel, bezoek);
       if (t.startsWith('"')) return `${inspring}"${bezoek(t.slice(1), verborgen)}`;
       if (/^#{1,6}\s/.test(t)) {
         const m = t.match(/^(#{1,6}\s+)(.*)$/) as RegExpMatchArray;
@@ -237,8 +258,8 @@ export function doorloop(bron: string, bezoek: Bezoek, opIfcx?: (regel: string) 
         .map((d, i, delen) => {
           const sep = i < delen.length - 1 ? "'" : "";
           if (d.code) return inCode(d.stuk, bezoek, verborgen) + sep;
-          // Toelichting op een verborgen regel staat nergens in beeld.
-          if (verborgen) return d.stuk + sep;
+          // Toelichting op een verborgen regel staat nergens in beeld, behalve in de code.
+          if (verborgen && !alles) return d.stuk + sep;
           return loopTekst(d.stuk, stand, (s) => bezoek(s, verborgen)) + sep;
         })
         .join("");
@@ -278,6 +299,92 @@ export function uitvoerBron(bron: string, v: BladVertaling | null, taal: string)
   const uit = { bron: vertaalBron(bron, v, taal), namen: gevouwenNamen(v.namen) };
   laatste = { bron, v, taal, uit };
   return uit;
+}
+
+/**
+ * De bladtekst zoals de tab Code hem toont. Elke regel blijft op zijn plek; dat is waar
+ * bronNaBewerking en de regelnummers van een foutmelding op rusten. De code blijft staan,
+ * dus ook de namen van de variabelen: de invoer hangt daaraan.
+ */
+export function vertaalVoorCode(bron: string, v: BladVertaling): string {
+  return doorloop(bron, (s) => {
+    const [voor, kern, na] = ontleed(s);
+    return kern === "" ? s : voor + (v.code?.[kern] ?? v.tekst[kern] ?? kern) + na;
+  }, undefined, true);
+}
+
+const terugTabellen = new WeakMap<BladVertaling, Map<string, string>>();
+
+/** Van de vertaling terug naar de bron. Twee bronteksten met dezelfde vertaling: de eerste. */
+function terugTabel(v: BladVertaling): Map<string, string> {
+  let tabel = terugTabellen.get(v);
+  if (!tabel) {
+    tabel = new Map();
+    for (const lijst of [v.tekst, v.code ?? {}]) {
+      for (const [bron, vertaald] of Object.entries(lijst)) if (!tabel.has(vertaald)) tabel.set(vertaald, bron);
+    }
+    terugTabellen.set(v, tabel);
+  }
+  return tabel;
+}
+
+/**
+ * Een helemaal vertaalde bladtekst (geplakt, of via de API gezet) terug in de taal van de
+ * bron, met dezelfde tabel. Wat niet in de tabel staat, is eigen tekst en blijft staan.
+ */
+export function vertaalTerug(bron: string, v: BladVertaling): string {
+  const tabel = terugTabel(v);
+  return doorloop(bron, (s) => {
+    const [voor, kern, na] = ontleed(s);
+    return kern === "" ? s : voor + (tabel.get(kern) ?? kern) + na;
+  }, (regel) => regel.replace(/\s+taal=\S+/, ""), true);
+}
+
+/** Wat de tab Code toont en de bron waar dat bij hoort: voor het terugzetten van een bewerking. */
+export interface CodeStand {
+  bron: string;
+  code: string;
+}
+
+/**
+ * De bron na een bewerking in de tab Code. `code` is wat er stond, `nieuw` wat er nu
+ * staat, en die twee hebben per regel hetzelfde nummer als `bron`. Een regel die niet is
+ * aangeraakt, blijft de regel uit de bron; een aangeraakte regel staat erin zoals hij is
+ * getypt, en is daarmee eigen tekst.
+ *
+ * Is de tekst weer gelijk aan `schoon` (de stand voordat de bewerking begon), dan is
+ * de bron weer die van toen: typen en weer weghalen laat de rekenversie staan.
+ */
+export function bronNaBewerking(bron: string, code: string, nieuw: string, schoon?: CodeStand): string {
+  if (schoon && nieuw === schoon.code) return schoon.bron;
+  if (nieuw === code) return bron;
+  // Een regeleinde telt niet mee: de editor zet alles om naar \n.
+  const b = bron.split(/\r?\n/);
+  const c = code.split(/\r?\n/);
+  const n = nieuw.split(/\r?\n/);
+  if (b.length !== c.length) return nieuw;
+  // Evenveel regels: per regel. Zoeken en vervangen raakt zo alleen wat echt verandert.
+  if (n.length === c.length) return n.map((r, i) => (r === c[i] ? b[i] : r)).join("\n");
+  // Regels erbij of eraf: wat aan het begin en het eind gelijk is, blijft de bron.
+  let voor = 0;
+  while (voor < c.length && voor < n.length && c[voor] === n[voor]) voor++;
+  let na = 0;
+  while (na < c.length - voor && na < n.length - voor && c[c.length - 1 - na] === n[n.length - 1 - na]) na++;
+  return [...b.slice(0, voor), ...n.slice(voor, n.length - na), ...b.slice(b.length - na)].join("\n");
+}
+
+/**
+ * Elk stukje tekst met letters dat in de tab Code staat, dus ook op verborgen regels en in
+ * commentaar. Voor de controle (check-code-taal.mjs).
+ */
+export function codeTeksten(bron: string): string[] {
+  const uit = new Set<string>();
+  doorloop(bron, (s) => {
+    const [, kern] = ontleed(s);
+    if (/\p{L}/u.test(kern.replace(/<[^>]+>/g, ""))) uit.add(kern);
+    return s;
+  }, undefined, true);
+  return [...uit];
 }
 
 /**

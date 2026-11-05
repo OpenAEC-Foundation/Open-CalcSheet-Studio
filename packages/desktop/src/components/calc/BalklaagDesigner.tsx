@@ -11,7 +11,7 @@ import {
 import { leesBlad, rekenBladDoor, useBladUitkomst } from "./bladResultaat";
 import { belastinggevallen, helften, lijnen, omhullende, wisselOmhullende, type Ligger, type Lijnen } from "./balklaagLijnen";
 import { balklaagKent, kdefUitKlimaat } from "./balklaagBlad";
-import { weergaveNaamVoor } from "../../templates/vertalingen";
+import { hoortBij, weergaveNaamVoor } from "../../templates/vertalingen";
 import "./VoetplaatDesigner.css"; // hergebruik vd-* stijlen
 
 /**
@@ -260,7 +260,7 @@ export default function BalklaagDesigner() {
   // Push the displayed defaults into the shared store on open / case switch, so
   // the rekensheet evaluates with the same inputs the picture shows. Only fills
   // missing keys — user-set values are never overwritten.
-  const isBalklaag = source.includes(MARKER);
+  const isBalklaag = hoortBij(source, MARKER);
   useEffect(() => {
     if (!isBalklaag) return;
     const seed: Record<string, string> = {};

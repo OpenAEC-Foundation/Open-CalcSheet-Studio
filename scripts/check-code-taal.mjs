@@ -39,7 +39,7 @@ const kop = (t) => console.log(`\n${t}`);
 
 /** De kale bladtekst: zonder de TypeScript eromheen, zoals de app hem invoegt. */
 const blad = (bestand, begin) => {
-  const t = laadTemplate(bestand);
+  const t = laadTemplate(bestand).replace(/\r\n/g, "\n");
   return t.slice(t.indexOf(begin));
 };
 const PROJECT = { CC: 2, K_FI: 1, rekenwijze: 0, DesignLife: 50, RC: 2 };
@@ -66,11 +66,12 @@ const MODULES = [
 ];
 
 // ── 2. Wat de tab Code toont ────────────────────────────────────────────────
-kop("2. De tab Code in het Engels");
+kop("1. De tab Code in het Engels");
 /** Nederlandse woorden; de korte alleen in kleine letters, want EN is ook een normnummer. */
 const NL = /\b(?:het|een|van|bij|met|voor|uit|naar|niet|geen|alleen|maar|ook|dan|wordt|worden|staat|staan|veld|balk|balken|ligger|steunpunt|oplegging|opleggingen|overstek|doorbuiging|buiging|afschuiving|oplegdruk|trilling|trillingen|raveelbalk|wisselbalk|sparing|onderslag|balklaag|veranderlijk|voldoet|voldoen|toets|toetsing|invoer|hoogte|breedte|lengte|lasten|puntlast|belasting|belastingen|belastinggeval|combinatie|combinaties|omhullende|maatgevend|maatgevende|eigen|gewicht|kruip|eindstand|grootste|kleinste|zakking|dwarskracht|staal|hout|profiel|materiaal|doorsnede|klasse|tabel|formule|samenvatting|aangenomen|paal|palen|poer|kolom|wapening|beugel|beugels|staaf|staven|trekband|invullen|geldig|ongeldig|deze|hier|moet|mag|kan|zoals|wanneer|omdat|waar|tussen|onder|boven|tegen|alle|elke|geeft|heeft|komt|blijft)\b/i;
 const NL_KLEIN = /\b(?:de|en|op|als|te|om|is de|zijn)\b/;
-const leesbaar = (t) => t.replace(/<(sub|sup|code)>[^<]*<\/\1>/g, " ").replace(/<[^>]+>/g, " ").replace(/\bEN \d[\d-]*/g, " ");
+// Zonder symbolen, normnummers, bestandsnamen en functies uit de rekentaal: die zijn code.
+const leesbaar = (t) => t.replace(/<(sub|sup|code)>[^<]*<\/\1>/g, " ").replace(/<[^>]+>/g, " ").replace(/\bEN \d[\d-]*/g, " ").replace(/\b\w+\.ts\b/g, " ").replace(/\b[\p{L}_]+\(/gu, " ");
 for (const m of MODULES) {
   const code = codeInTaal(m.bron, "en");
   gelijk(`${m.id}: evenveel regels als de bron`, code.split("\n").length, m.bron.split("\n").length);
@@ -89,7 +90,7 @@ for (const m of MODULES) {
 gelijk("een eigen blad blijft zoals het is", codeInTaal('"Eigen blad\n\'Eigen tekst\nx = 1', "en"), '"Eigen blad\n\'Eigen tekst\nx = 1');
 
 // ── 3. De getoonde tekst rekent hetzelfde ───────────────────────────────────
-kop("3. Dezelfde invoer, getallen en oordelen");
+kop("2. Dezelfde invoer, getallen en oordelen");
 for (const m of MODULES) {
   const code = codeInTaal(m.bron, "en");
   const velden = (t) => invoervelden(parse(t)).map((f) => [f.naam, f.soort, f.beginwaarde, f.eenheid, f.keuzes.map((k) => k.value)]);
@@ -108,7 +109,7 @@ for (const m of MODULES) {
 }
 
 // ── 4. Terugzetten ──────────────────────────────────────────────────────────
-kop("4. Een bewerking gaat regel voor regel terug in de bron");
+kop("3. Een bewerking gaat regel voor regel terug in de bron");
 {
   const { bron } = MODULES[1];
   const code = codeInTaal(bron, "en");
@@ -141,10 +142,11 @@ kop("4. Een bewerking gaat regel voor regel terug in de bron");
   nogEens[i + 1] = `${nogEens[i + 1]}`;
   gelijk("verder bewerken: de eerste bewerking blijft staan", bronNaBewerking(s1, ander.join("\n"), nogEens.join("\n")), s1);
   toets("met een andere regelindeling: de nieuwe tekst", bronNaBewerking("a\nb", "c", "d\ne") === "d\ne");
+  gelijk("een bron met CRLF: de andere regels blijven de bron", bronNaBewerking("a\r\nb\r\nc", "A\r\nB\r\nC", "A\nX\nC"), "a\nX\nc");
 }
 
 // ── 5. Rekenversie, eigen code, verouderd ───────────────────────────────────
-kop("5. De rekenversie verspringt niet");
+kop("4. De rekenversie verspringt niet");
 for (const m of MODULES) {
   const ex = { templateId: m.id, source: m.bron, bronVersie: rekenversie(m.bron) };
   const sjablonen = { [m.id]: m.bron };
@@ -166,7 +168,7 @@ for (const m of MODULES) {
 }
 
 // ── 6. Herkennen ────────────────────────────────────────────────────────────
-kop("6. De beelden en de vertaling herkennen het blad");
+kop("5. De beelden en de vertaling herkennen het blad");
 for (const m of MODULES) {
   if (!m.marker) continue;
   toets(`${m.id}: de bron wordt herkend`, hoortBij(m.bron, m.marker));
@@ -190,7 +192,7 @@ toets("een ander blad wordt niet herkend", !hoortBij('"Eigen blad\nx = 1', "Balk
 }
 
 // ── 7. Het andersom ─────────────────────────────────────────────────────────
-kop("7. Engelse tekst in een Nederlands rapport");
+kop("6. Engelse tekst in een Nederlands rapport");
 for (const m of MODULES) {
   const code = codeInTaal(m.bron, "en");
   // Een bewerkte regel is eigen tekst, en die blijft staan; de rest is en blijft de bron.
@@ -227,7 +229,7 @@ for (const m of MODULES) {
   const leeg = () => store().laadProject({ projectNaam: "x", gegevens: {}, exemplaren: [], rapport: store().rapport });
   const namen = () => store().exemplaren.map((e) => e.naam);
 
-  kop("1. De naam van een nieuw blad");
+  kop("7. De naam van een nieuw blad");
   await a.i18next.changeLanguage("en");
   leeg();
   for (const id of ["ligger", "balklaag", "tweepaalspoer", "doorsnede-spanningen", "rekentaal-demo"]) a.useModuleKiezer.getState().voegToe(id);
@@ -255,24 +257,52 @@ for (const m of MODULES) {
   store().selecteer("ex-1");
   const e = a.tekenEditor();
   const code = codeInTaal(ligger, "en");
-  await new Promise((klaar) => setTimeout(klaar, 50));
+  /** De editor neemt tekst van buiten over zodra er even niet getypt is. */
+  const tot = async (klaar) => {
+    for (let i = 0; i < 200 && !klaar(); i++) await new Promise((k) => setTimeout(k, 25));
+  };
+  await tot(() => e.tekst().length > 0);
   toets("de editor toont de Engelse tekst", e.tekst() === code, e.tekst().slice(0, 120));
   toets("en de bron blijft de Nederlandse", store().exemplaren[0].source === ligger);
   const regel = code.split("\n").findIndex((x) => x.startsWith("# "));
   e.typ(regel, " x");
-  await new Promise((klaar) => setTimeout(klaar, 50));
+  await tot(() => store().exemplaren[0].source !== ligger);
   const s1 = store().exemplaren[0].source;
   gelijk("typen: alleen die regel verandert in de bron", s1.split("\n").flatMap((r, j) => (r === ligger.split("\n")[j] ? [] : [j])), [regel]);
   toets("en de editor houdt wat er getypt is", e.tekst().split("\n")[regel] === `${code.split("\n")[regel]} x`);
   e.haalWeg(regel, 2);
-  await new Promise((klaar) => setTimeout(klaar, 50));
+  await tot(() => store().exemplaren[0].source === ligger);
   toets("weghalen: de oude bron, dus de oude rekenversie", store().exemplaren[0].source === ligger);
+  e.typ(regel, " y");
+  await tot(() => store().exemplaren[0].source !== ligger);
   store().ongedaan();
-  store().opnieuw();
+  await tot(() => e.tekst() === code);
+  toets("ongedaan maken: de bron terug, en de editor toont hem in het Engels", store().exemplaren[0].source === ligger && e.tekst() === code);
   await a.i18next.changeLanguage("nl");
-  await new Promise((klaar) => setTimeout(klaar, 50));
-  toets("de app op Nederlands: de editor toont de bron", e.tekst() === store().exemplaren[0].source);
+  await tot(() => e.tekst() === ligger);
+  toets("de app op Nederlands: de editor toont de bron", e.tekst() === ligger);
+  e.typ(regel, " z");
+  await tot(() => store().exemplaren[0].source !== ligger);
+  gelijk("in het Nederlands typen werkt zoals altijd", store().exemplaren[0].source, e.tekst());
   e.sluit();
+
+  kop("9. De naam van een nieuw blad via de API");
+  const { MCP_TOOLS } = await import("../packages/desktop/src/mcp/tools.ts");
+  const { maakApp, maakContext } = await import("./lib/mcpproef.mjs");
+  const app = maakApp({ sjablonen: { ligger, balklaag: MODULES[0].bron } });
+  const ctx = maakContext(app.omgeving)();
+  const roep = (naam, args = {}) => MCP_TOOLS.find((t) => t.name === naam).handler(args, ctx);
+  const uit = async (naam, args) => (await roep(naam, args)).data;
+  gelijk("in het Engels: de naam van het blad", (await uit("sheet_add", { templateId: "ligger" })).name, "Beam 1");
+  gelijk("in het Engels: een andere module", (await uit("sheet_add", { templateId: "balklaag" })).name, "Timber joist floor 1");
+  const lijst = (await uit("modules_list")).modules;
+  gelijk("modules_list: naam en groep in het Engels", [lijst.find((m) => m.templateId === "ligger").name, lijst.find((m) => m.templateId === "ligger").category], ["Beam (timber or steel)", "General"]);
+  gelijk("een eigen naam blijft staan", (await uit("sheet_add", { templateId: "ligger", name: "Eigen ligger" })).name, "Eigen ligger");
+  await roep("settings_set", { language: "nl" });
+  gelijk("in het Nederlands", (await uit("sheet_add", { templateId: "ligger" })).name, "Ligger 1");
+  gelijk("bestaande namen blijven staan", (await uit("project_get")).sheets[0].name, "Beam 1");
+  gelijk("de module van een blad in het Nederlands", (await uit("project_get")).sheets[0].module, "Ligger (hout of staal)");
+  toets("de bron via de API blijft de bron", (await uit("sheet_get", { id: (await uit("project_get")).sheets[0].id, evaluate: false })).source === ligger);
 }
 
 console.log(fouten === 0 ? "\nTab Code en bladnaam in de taal van de app: alles in orde." : `\n${fouten} controle(s) gezakt.`);
