@@ -286,8 +286,9 @@ async function ronde(pad, url) {
       },
     };
 
-    // Het welkomstvenster weg, als dat er staat.
-    await wacht(300);
+    // Het welkomstvenster weg, als dat er staat. Eerst de tijd die iemand nodig heeft om
+    // te gaan klikken: de app haalt dan wat de eerste handelingen vragen binnen.
+    await wacht(2000);
     await evalueer(`document.querySelector(".welkom-sluit")?.click()`);
 
     const openKiezer = `document.querySelector(".pb-blad-toevoegen button").click();
@@ -366,7 +367,12 @@ async function ronde(pad, url) {
     cdp.sluit?.();
     proc.kill();
     await wacht(300);
-    rmSync(profiel, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    // Een browser die net stopte kan zijn profiel nog even vasthouden; de meting is dan al binnen.
+    try {
+      rmSync(profiel, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+    } catch {
+      console.error(`Tijdelijk profiel blijft staan: ${profiel}`);
+    }
   }
 }
 
