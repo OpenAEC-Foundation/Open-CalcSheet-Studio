@@ -9,6 +9,7 @@ import { rekenUitwerking, type CanvasUitwerking } from "./canvasRekenen";
 import { isJupyterBlad } from "../../store/jupyterBlad";
 import { werkmapHtml } from "./jupyterPapier";
 import { papier } from "./pdfBlad";
+import { bewaardeDoorrekening, rekenSleutel } from "../../rekenen/doorrekening";
 
 /*
  * Een rekenblad doorrekenen voor op papier.
@@ -39,6 +40,10 @@ export interface DoorgerekendBlad {
   eenheden?: CanvasUitwerking[];
 }
 
+/** Zoveel bladen die hier zijn doorgerekend blijven bewaard, voor een rapport van meer bladen. */
+const BEWAARD = 24;
+const bewaard = new Map<string, DoorgerekendBlad>();
+
 /**
  * Rekent één blad door met de projectgegevens als scope, voor de uitvoer in `taal`:
  * zonder taal die van de app (losse uitdraai), in het rapport die van het rapport.
@@ -65,6 +70,17 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>, taa
       : `<p class="nb-tekst-los">${t("jupyterBlad.ontbreekt")}</p>`;
     return { html, resultaat: { titel: ex.naam, norm: t("jupyterBlad.soort"), uc: null, voldoet: null } };
   }
+  // Dezelfde berekening als de worker maakt: het blad dat net op het scherm stond, is al
+  // klaar, en een blad dat niet veranderde hoeft niet opnieuw. Elk voorbeeld en elke
+  // wijziging aan een ander blad zou anders alle bladen op de hoofddraad doorrekenen.
+  const sleutel = rekenSleutel(taal, ex.naam, scope, ex.waarden, ex.source);
+  const klaar = bewaard.get(sleutel);
+  if (klaar) return klaar;
+  const vanWorker = bewaardeDoorrekening(sleutel);
+  if (vanWorker?.uitkomst) {
+    return { html: vanWorker.html, resultaat: vanWorker.uitkomst.resultaat, eenheden: vanWorker.eenheden };
+  }
+
   let html: string;
   let eenheden: CanvasUitwerking[] | undefined;
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
@@ -75,6 +91,8 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>, taa
     html = uitwerking.html;
     eenheden = uitwerking.eenheden;
     resultaat = leesResultaat(uitwerking.nodes, ex.naam);
+    if (bewaard.size >= BEWAARD) bewaard.delete(bewaard.keys().next().value!);
+    bewaard.set(sleutel, { html, resultaat, eenheden });
   } catch (err) {
     html = `<p class="calc-text" style="color:#b91c1c">${i18next.t("beelden:afdruk.nietDoorgerekend", { lng: taal })} ${
       (err as Error).message

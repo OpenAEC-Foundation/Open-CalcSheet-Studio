@@ -110,6 +110,25 @@ function abonneer(l: () => void) {
 }
 
 /**
+ * Waar een doorrekening van afhangt, als één tekst. De invoegsels van de rekentaal staan
+ * er niet bij: die veranderen niet zolang de app draait.
+ */
+export function rekenSleutel(
+  taal: string,
+  naam: string,
+  scope: Record<string, unknown>,
+  waarden: Record<string, string>,
+  source: string,
+): string {
+  return [hoekmodus, taal, naam, JSON.stringify(scope), JSON.stringify(waarden), source].join("\u0000");
+}
+
+/** Wat de worker voor deze sleutel al uitrekende, voor de afdruk (bladDoorrekenen.ts). */
+export function bewaardeDoorrekening(sleutel: string): Doorrekening | null {
+  return uitkomsten.get(sleutel) ?? null;
+}
+
+/**
  * De UC en het oordeel van een blad, zodra het in deze sessie is doorgerekend;
  * tot dan null. Rekent zelf niets: de projectboom laat alleen zien wat de
  * werkruimte al uitrekende.
@@ -135,7 +154,7 @@ export function useDoorrekening(
   // taal: de uitvoer volgt de app, en wie deze hook gebruikt, tekent bij een
   // taalwissel opnieuw (useTranslation in de uitwerking en in het beeld).
   const taal = i18next.language ?? "";
-  const sleutel = [hoekmodus, taal, naam, JSON.stringify(scope), JSON.stringify(waarden), source].join("\u0000");
+  const sleutel = rekenSleutel(taal, naam, scope, waarden, source);
   const hier = useSyncExternalStore(abonneer, () => uitkomsten.get(sleutel) ?? null);
 
   useEffect(() => {
