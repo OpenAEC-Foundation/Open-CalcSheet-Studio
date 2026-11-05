@@ -1,0 +1,303 @@
+/* De gewichtenbibliotheek: zelfde tokens als de formulebibliotheek en het projectpaneel. */
+
+.gew-sectie {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--theme-border);
+  border-bottom: none;
+}
+
+.gew-venster .modal-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+  min-height: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.gew-venster .modal-footer {
+  justify-content: space-between;
+}
+
+.gew-voet-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gew-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(110px, 1fr));
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.gew-zoek {
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  background: var(--oa-field);
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.gew-zoek:focus {
+  outline: none;
+  border-color: var(--oa-focus);
+}
+
+.gew-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  flex-shrink: 0;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
+}
+
+.gew-doel {
+  color: var(--theme-accent-tint);
+}
+
+.gew-eigen-stand {
+  margin-left: auto;
+}
+
+.gew-tekstknop {
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--theme-accent-tint);
+  cursor: pointer;
+}
+
+.gew-tekstknop:hover {
+  text-decoration: underline;
+}
+
+.gew-melding {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  background: var(--theme-bg-lighter);
+  font-size: var(--oa-size-label);
+  line-height: 1.4;
+  color: var(--theme-text);
+}
+
+.gew-melding-fout {
+  border-color: var(--theme-accent);
+  color: var(--theme-accent-tint);
+}
+
+.gew-lijst {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+}
+
+.gew-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--oa-size-body);
+  color: var(--theme-text);
+}
+
+.gew-tabel th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 5px 8px;
+  background: var(--theme-bg-lighter);
+  border-bottom: 1px solid var(--theme-border);
+  font-size: var(--oa-size-label);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.gew-tabel td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--theme-border);
+  vertical-align: top;
+}
+
+.gew-tabel tbody tr:hover {
+  background: var(--theme-hover);
+}
+
+.gew-tabel .gew-groep td {
+  padding: 8px 8px 3px;
+  background: var(--theme-surface);
+  font-size: var(--oa-size-label);
+  font-weight: 600;
+  color: var(--theme-accent-tint);
+}
+
+.gew-naam {
+  overflow-wrap: anywhere;
+}
+
+.gew-kenmerk {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
+  white-space: nowrap;
+}
+
+.gew-aandacht {
+  border-color: var(--theme-accent);
+  color: var(--theme-accent-tint);
+}
+
+.gew-opmerking {
+  display: block;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
+}
+
+.gew-tabel .gew-getal {
+  font-family: var(--oa-font-numbers);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.gew-afgeleid {
+  color: var(--theme-text-secondary);
+}
+
+.gew-bron {
+  max-width: 220px;
+  font-size: var(--oa-size-label);
+  overflow-wrap: anywhere;
+}
+
+.gew-bron a {
+  color: var(--theme-accent-tint);
+  text-decoration: none;
+}
+
+.gew-bron a:hover {
+  text-decoration: underline;
+}
+
+.gew-datum {
+  display: block;
+  color: var(--theme-text-secondary);
+}
+
+.gew-actie {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.gew-invoegen {
+  padding: 2px 8px;
+}
+
+.gew-weg {
+  margin-left: 4px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--oa-radius-small);
+  background: transparent;
+  color: var(--theme-text-secondary);
+  cursor: pointer;
+}
+
+.gew-weg:hover {
+  background: var(--theme-ribbon-btn-hover);
+  border-color: var(--theme-ribbon-btn-hover-border);
+  color: var(--theme-accent-tint);
+}
+
+.gew-meer {
+  display: block;
+  margin: 8px auto;
+}
+
+.gew-leeg {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  color: var(--theme-text-secondary);
+}
+
+/* ─── Een regel toevoegen ─────────────────────────────────────────────── */
+
+.gew-formulier {
+  flex-shrink: 0;
+  max-height: 45%;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  background: var(--theme-bg-lighter);
+}
+
+.gew-formulier-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px 10px;
+}
+
+.gew-veld {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-secondary);
+}
+
+.gew-veld .settings-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.gew-veld-met-eenheid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px;
+  align-items: end;
+  gap: 4px;
+}
+
+.gew-formulier-voet {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.gew-fout {
+  margin-right: auto;
+  font-size: var(--oa-size-label);
+  color: var(--theme-accent-tint);
+}
+
+@media (max-width: 760px) {
+  .gew-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .gew-zoek {
+    grid-column: 1 / -1;
+  }
+}
