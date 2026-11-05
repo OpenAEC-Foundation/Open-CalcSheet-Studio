@@ -14,6 +14,38 @@
 
 .pg-kop,
 .pg-groep,
+/* De normen van het gekozen land: een smalle tabel in de kolom van het formulier. */
+.pg-normen {
+  margin: 0 0 var(--oa-space-md);
+}
+
+.pg-normen table {
+  width: 100%;
+  margin: var(--oa-space-sm) 0;
+  border-collapse: collapse;
+  font-size: var(--oa-size-body);
+  line-height: 1.4;
+}
+
+.pg-normen th,
+.pg-normen td {
+  padding: 3px 8px 3px 0;
+  border-bottom: 1px solid var(--theme-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.pg-normen th {
+  font-weight: 600;
+  color: var(--theme-text-secondary);
+}
+
+.pg-normlink {
+  color: var(--theme-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .pg-voet {
   max-width: 680px;
   margin-left: auto;

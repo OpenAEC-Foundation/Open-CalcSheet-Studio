@@ -1,7 +1,8 @@
 import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Exemplaar } from "../../store/projectStore";
-import { ExemplaarContext } from "../../store/actiefBlad";
+import { ExemplaarContext, useBladNorm } from "../../store/actiefBlad";
+import { BladNormRegel } from "./BladNorm";
 import { designerVoor } from "./designerKeuze";
 import { ucTekst, type Resultaat } from "./bladResultaat";
 import { rekenversie } from "./bladVersie";
@@ -83,6 +84,15 @@ export function Oordeel({ r }: { r: Resultaat }) {
 }
 
 /**
+ * Het oordeel in de kop van een blad. Rust het blad op een ander stelsel dan dat van het land van
+ * het project, dan is een oordeel daar niets waard: dan staat er "niet getoetst".
+ */
+function KopOordeel({ ex, r }: { ex: Exemplaar; r: Resultaat }) {
+  const afwijking = useBladNorm(ex.source);
+  return <Oordeel r={afwijking?.soort === "eigen" ? { ...r, voldoet: null, nietGetoetst: true } : r} />;
+}
+
+/**
  * Eén rekenblad in de uitdraai: de kop, het parametrische beeld, dan de
  * uitwerking. `nummer` is het volgnummer bij de losse bladen en het
  * bijlagenummer ("A.2") in het rapport.
@@ -144,9 +154,10 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
         </span>
         <span className="print-blad-uitkomst">
           {resultaat.uc !== null && <span className="print-blad-uc">UC {ucTekst(resultaat.uc, i18n.language)}</span>}
-          <Oordeel r={resultaat} />
+          <KopOordeel ex={ex} r={resultaat} />
         </span>
       </header>
+      <BladNormRegel ex={ex} />
       {projectregel}
       {beeld && (
         <div className="print-beeld">

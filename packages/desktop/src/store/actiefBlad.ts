@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo } from "react";
 import { useProjectStore, type Exemplaar } from "./projectStore";
 import { belastingFactoren, kFiVoor, projectScope } from "./projectGegevens";
+import { bladNormUit, normAfwijking, normkeuzeVan, type NormAfwijking, type Normkeuze } from "../rapport/normen/keuze";
 
 /**
  * Kleine haakjes rond het actieve rekenblad.
@@ -48,6 +49,19 @@ export function useZetActieveWaarde(): (naam: string, waarde: string) => void {
 export function useProjectScope(): Record<string, unknown> {
   const gegevens = useProjectStore((s) => s.gegevens);
   return useMemo(() => projectScope(gegevens), [gegevens]);
+}
+
+/** Het land en de generatie van het project. */
+export function useNormkeuze(): Normkeuze {
+  const land = useProjectStore((s) => s.gegevens.land);
+  const generatie = useProjectStore((s) => s.gegevens.eurocode_generatie);
+  return useMemo(() => normkeuzeVan({ land, eurocode_generatie: generatie }), [land, generatie]);
+}
+
+/** Wijkt de norm waarop deze rekentekst rust af van wat in dit project geldt? */
+export function useBladNorm(source: string): NormAfwijking | null {
+  const k = useNormkeuze();
+  return useMemo(() => normAfwijking(k, bladNormUit(source)), [k, source]);
 }
 
 /**

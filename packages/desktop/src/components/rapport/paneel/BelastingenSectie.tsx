@@ -19,7 +19,9 @@ import {
   windQp,
 } from "../../../rapport/normwaarden";
 import { useProjectStore } from "../../../store/projectStore";
+import { useNormkeuze } from "../../../store/actiefBlad";
 import { getalTekst, verplaatst } from "./hulp";
+import { LokaleKlassenInvoer, LokaleSneeuwInvoer, LokaleWindInvoer } from "./LokaalVelden";
 import OpbouwEditor from "./OpbouwEditor";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
@@ -72,11 +74,13 @@ export default function BelastingenSectie({ knoop, titel, children }: { knoop: K
 function SneeuwInvoer() {
   const { t } = useTranslation("rapport");
   const taal = useRapport().taal;
+  const k = useNormkeuze();
   const f = (v: number, dec: number) => fmt(v, dec, false, taal);
   return (
     <>
       <Kop id="sneeuw" />
-      <Afgeleid
+      {!k.nlTabellen && <LokaleSneeuwInvoer />}
+      {k.nlTabellen && <Afgeleid
         regels={[
           {
             label: t("belastingen.platDak"),
@@ -90,13 +94,25 @@ function SneeuwInvoer() {
             bron: "NEN-EN 1991-1-3 (5.1)",
           },
         ]}
-      />
+      />}
       <TekstVeld id="sneeuw" hint={t("belastingen.sneeuwHint")} />
     </>
   );
 }
 
+/** 5.2: de kaart en de berekening gelden alleen met de Nederlandse tabellen. */
 function WindInvoer() {
+  const k = useNormkeuze();
+  if (k.nlTabellen) return <NederlandseWindInvoer />;
+  return (
+    <>
+      <Kop id="wind" />
+      <LokaleWindInvoer />
+    </>
+  );
+}
+
+function NederlandseWindInvoer() {
   const { t } = useTranslation("rapport");
   const rapport = useRapport();
   const b = rapport.belastingen;
@@ -191,8 +207,17 @@ function VeranderlijkInvoer() {
   const { t } = useTranslation("rapport");
   const klassen = useRapport().belastingen.klassen;
   const werkBij = useProjectStore((s) => s.werkRapportBij);
+  const norm = useNormkeuze();
   const wijzigKlassen = (fn: (lijst: Belastingklasse[]) => Belastingklasse[]) =>
     werkBij((r) => ({ ...r, belastingen: { ...r.belastingen, klassen: fn(r.belastingen.klassen) } }));
+  if (!norm.nlTabellen) {
+    return (
+      <>
+        <Kop id="veranderlijk" />
+        <LokaleKlassenInvoer />
+      </>
+    );
+  }
   return (
     <>
       <Kop id="veranderlijk" />

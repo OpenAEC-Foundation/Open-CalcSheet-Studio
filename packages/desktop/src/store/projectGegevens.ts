@@ -12,6 +12,8 @@
  * Zie `projectStore.ts` voor die scheiding.
  */
 
+import { LANDEN } from "../rapport/normen/landen.ts";
+
 export type VeldType = "tekst" | "keuze";
 
 export interface Keuze {
@@ -65,6 +67,32 @@ export const PROJECT_VELDEN: VeldDef[] = [
   { groep: "Project", naam: "constructeur", label: "Structural engineer", type: "tekst", standaard: "" },
   { groep: "Project", naam: "locatie", label: "Location", type: "tekst", standaard: "" },
   { groep: "Project", naam: "onderdeel", label: "Part", type: "tekst", standaard: "" },
+
+  // ── Land en normen ───────────────────────────────────────────────────────
+  // Een code zonder getal, dus geen variabele voor de rekenbladen (projectScope). Standaard
+  // Nederland: een oud project kent dit veld niet. Een nieuw project krijgt de regio van het
+  // systeem (landVoorLocale in rapport/normen/keuze.ts, projectStore.ts).
+  {
+    groep: "Country and standards",
+    naam: "land",
+    label: "Country or region",
+    type: "keuze",
+    standaard: "NL",
+    opties: LANDEN.map((l) => ({ label: l.naam.en, waarde: l.code })),
+    hint: "Sets which standards the report names and which values it asks for. Outside the Netherlands you enter the location values yourself, with their source; nothing is fetched from an external service.",
+  },
+  {
+    groep: "Country and standards",
+    naam: "eurocode_generatie",
+    label: "Generation of the Eurocodes",
+    type: "keuze",
+    standaard: "1",
+    opties: [
+      { label: "First generation (EN 1990:2002 and further)", waarde: "1" },
+      { label: "Second generation (EN 1990:2023 and further)", waarde: "2" },
+    ],
+    hint: "CEN withdraws the first generation by 30-03-2028; which generation applies to this project follows from national rules. The calculation sheets rest on the first generation.",
+  },
 
   // ── Grondslagen (NEN-EN 1990 + NB) ───────────────────────────────────────
   {

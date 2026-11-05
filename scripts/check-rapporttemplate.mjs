@@ -394,7 +394,7 @@ kop("3. De opzet bewerken");
   gelijk("de lijst overleeft opslaan en openen", opnieuwGelezen(zonder).weggehaald, zonder.weggehaald);
 
   // Rekenblokken.
-  gelijk("alle rekenblokken", REKENBLOKKEN.map((k) => k.inhoud), ["rol", "bouwwerk", "brand", "materialen", "conservering", "factoren", "bestaand", "vervormingen", "sneeuw", "wind", "veranderlijk", "blijvend", "berekeningen"]);
+  gelijk("alle rekenblokken", REKENBLOKKEN.map((k) => k.inhoud), ["rol", "bouwwerk", "brand", "materialen", "conservering", "factoren", "bestaand", "vervormingen", "aardbeving", "sneeuw", "wind", "veranderlijk", "blijvend", "berekeningen"]);
   gelijk("in het ingebouwde template staan ze allemaal", ongeplaatsteBlokken(r0), []);
   toets("een geplaatst blok kan niet nog eens", plaatsBlok(r0, "wind", "belastingen") === r0);
   const windWeg = verwijderKnoop(r0, "wind");

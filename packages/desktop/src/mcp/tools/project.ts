@@ -233,7 +233,7 @@ export const PROJECTTOOLS: McpToolDef[] = [
     name: "project_set_data",
     kind: "mutate",
     description:
-      "Set project data fields (see projectData in project_get). Project data applies to every sheet, e.g. CC (consequence class), windgebied (wind region), terreincategorie (terrain category), DesignLife, project_nummer. " +
+      "Set project data fields (see projectData in project_get). Project data applies to every sheet, e.g. CC (consequence class), windgebied (wind region), terreincategorie (terrain category), DesignLife, project_nummer, land (country code; the report follows it), eurocode_generatie (1 or 2). " +
       "Pass name and value, or values {name: value} for several. For a choice field pass one of its option values (a label or the part of the label before ' — ' is also accepted). Only existing fields can be set; nothing is written if one value is invalid.",
     inputSchema: objectSchema({
       name: { type: "string", enum: PROJECT_VELDEN.map((v) => v.naam), description: "Field name." },

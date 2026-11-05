@@ -18,7 +18,7 @@ import type { Rapport } from "./model.ts";
 export type Inhoud =
   | "tekst" | "rol"
   | "bouwwerk" | "brand" | "materialen" | "conservering" | "factoren" | "bestaand" | "vervormingen"
-  | "sneeuw" | "wind" | "veranderlijk" | "blijvend"
+  | "sneeuw" | "wind" | "veranderlijk" | "blijvend" | "aardbeving"
   | "berekeningen";
 
 export interface Knoop {
@@ -119,7 +119,8 @@ export const OPZET: readonly Knoop[] = diepVast<Knoop[]>([
       { id: "montage", titel: { en: "Erection and construction stages", nl: "Montage en bouwfase" }, niveau: 2, inhoud: "tekst" },
       { id: "rekenprogrammatuur", titel: { en: "Calculation software", nl: "Toegepaste rekenprogrammatuur" }, niveau: 2, inhoud: "tekst" },
       { id: "temperatuur", titel: { en: "Thermal actions", nl: "Temperatuursinvloeden" }, niveau: 2, inhoud: "tekst" },
-      { id: "aardbeving", titel: { en: "Seismic actions", nl: "Aardbevingen" }, niveau: 2, inhoud: "tekst" },
+      // De tekst `aardbeving`, en buiten de Nederlandse tabellen de grootheden van het land eronder.
+      { id: "aardbeving", titel: { en: "Seismic actions", nl: "Aardbevingen" }, niveau: 2, inhoud: "aardbeving" },
     ],
   },
   {
@@ -175,7 +176,7 @@ export const REKENBLOKKEN: readonly Knoop[] = diepVast((() => {
 })());
 
 /** Inhoudssoorten met een tekst in rapport.teksten naast hun tabel. */
-const MET_TEKST: readonly Inhoud[] = ["rol", "vervormingen", "sneeuw"];
+const MET_TEKST: readonly Inhoud[] = ["rol", "vervormingen", "sneeuw", "aardbeving"];
 
 /** Heeft deze knoop een tekst in rapport.teksten (onder zijn eigen id)? */
 export function heeftTekst(k: Knoop): boolean {
@@ -276,7 +277,8 @@ export function normaliseerOpzet(x: unknown, begin: Knoop["niveau"] = 1): { opze
       }
       aantal++;
       const genoemd = typeof o.id === "string" ? o.id : undefined;
-      const blok = BLOK_VAN.get(o.inhoud);
+      // Een template van vóór het blok aardbeving had hier een gewone tekst, onder hetzelfde id.
+      const blok = BLOK_VAN.get(o.id === "aardbeving" && o.inhoud === "tekst" ? "aardbeving" : o.inhoud);
       const inhoud = blok?.inhoud ?? (o.inhoud === "tekst" ? "tekst" : undefined);
       const onbekend = o.inhoud !== undefined && inhoud === undefined;
       if (onbekend) meldingen.push({ soort: "onbekendeInhoud", id: genoemd, waarde: String(o.inhoud) });

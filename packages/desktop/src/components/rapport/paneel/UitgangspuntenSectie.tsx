@@ -22,6 +22,8 @@ import {
 import type { Inhoud, Knoop } from "../../../rapport/opzet";
 import { kFiVoor, projectWaarde } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
+import { useNormkeuze } from "../../../store/actiefBlad";
+import { LocatieInvoer, LokaalBouwwerkInvoer, LokaleFactorenInvoer } from "./LokaalVelden";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
 import { Afgeleid, Keuze, Kop, Sectie, TekstVak, Veld, Vink, useRapport, type Optie } from "./velden";
@@ -87,6 +89,7 @@ function BouwwerkInvoer() {
   const rapport = useRapport();
   const u = rapport.uitgangspunten;
   const gegevens = useProjectStore((s) => s.gegevens);
+  const k = useNormkeuze();
   const cc = klasse(gegevens.CC, 2);
   const rc = klasse(gegevens.RC, 2);
   const jaren = getal(projectWaarde(gegevens, "DesignLife"));
@@ -107,7 +110,8 @@ function BouwwerkInvoer() {
           <option key={s.en} value={inTaal(s, taal)} />
         ))}
       </datalist>
-      <Afgeleid
+      {!k.nlTabellen && <LokaalBouwwerkInvoer k={k} />}
+      {k.nlTabellen && <Afgeleid
         uitProjectgegevens
         regels={[
           { label: t("uitgangspunten.gevolgklasse"), waarde: `CC${cc}` },
@@ -136,7 +140,7 @@ function BouwwerkInvoer() {
             bron: t("algemeen.tabel", { nummer: "B5" }),
           },
         ]}
-      />
+      />}
     </>
   );
 }
@@ -228,10 +232,11 @@ function ConserveringInvoer() {
 function FactorenInvoer() {
   const { t } = useTranslation("rapport");
   const cc = klasse(useProjectStore((s) => s.gegevens).CC, 2);
+  const k = useNormkeuze();
   return (
     <>
       <Kop id="factoren" />
-      <p className="rapport-hint">{t("uitgangspunten.factorenHint", { cc })}</p>
+      {k.nlTabellen ? <p className="rapport-hint">{t("uitgangspunten.factorenHint", { cc })}</p> : <LokaleFactorenInvoer />}
     </>
   );
 }
@@ -241,6 +246,7 @@ function BestaandInvoer() {
   const u = useRapport().uitgangspunten;
   const bouwjaar = getal(u.bestaand.bouwjaar);
   const jaNeeOpties = jaNee(t);
+  const k = useNormkeuze();
   return (
     <>
       <Kop id="bestaand-situatie" />
@@ -266,14 +272,17 @@ function BestaandInvoer() {
               placeholder={t("uitgangspunten.bronVoorbeeld")}
             />
           </div>
-          <Afgeleid
-            regels={[
-              {
-                label: t("uitgangspunten.normBouwjaar"),
-                waarde: Number.isFinite(bouwjaar) ? normVoorBouwjaar(bouwjaar) : t("uitgangspunten.bouwjaarInvullen"),
-              },
-            ]}
-          />
+          {/* De oude voorschriften zijn Nederlands. */}
+          {k.land.code === "NL" && (
+            <Afgeleid
+              regels={[
+                {
+                  label: t("uitgangspunten.normBouwjaar"),
+                  waarde: Number.isFinite(bouwjaar) ? normVoorBouwjaar(bouwjaar) : t("uitgangspunten.bouwjaarInvullen"),
+                },
+              ]}
+            />
+          )}
           <div className="rapport-rij">
             <Keuze
               label={t("uitgangspunten.berekeningBeschikbaar")}
@@ -297,6 +306,7 @@ function BestaandInvoer() {
 function VervormingenInvoer() {
   const { t } = useTranslation("rapport");
   const u = useRapport().uitgangspunten;
+  const k = useNormkeuze();
   return (
     <>
       <TekstVeld id="vervormingen" kop={<Kop id="vervormingen" />} hint={t("uitgangspunten.vervormingenHint")} />
@@ -308,6 +318,18 @@ function VervormingenInvoer() {
         toevoegen={t("uitgangspunten.eisToevoegen")}
       />
       <p className="rapport-hint">{t("uitgangspunten.eisUitleg")}</p>
+      {!k.nlTabellen && <p className="rapport-hint">{t("lokaal.vervormingen")}</p>}
+    </>
+  );
+}
+
+/** De tekst, en buiten de Nederlandse tabellen wat de locatie levert. */
+function AardbevingInvoer() {
+  const k = useNormkeuze();
+  return (
+    <>
+      <TekstVeld id="aardbeving" kop={<Kop id="aardbeving" />} />
+      {!k.nlTabellen && <LocatieInvoer onderwerp="aardbeving" />}
     </>
   );
 }
@@ -321,4 +343,5 @@ export const UITGANGSPUNT_BLOKKEN: Partial<Record<Inhoud, ComponentType>> = {
   factoren: FactorenInvoer,
   bestaand: BestaandInvoer,
   vervormingen: VervormingenInvoer,
+  aardbeving: AardbevingInvoer,
 };

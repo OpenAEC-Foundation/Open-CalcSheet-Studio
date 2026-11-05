@@ -92,8 +92,10 @@
       "teVeel": "The file has too many parts: the rest was left out.",
       "nieuwereVersie": "The file comes from a newer version of the app (format {{waarde}}): what this version does not know was left out.",
       "geenNaam": "The file has no name.",
-      "onbekendeTekst": "Texts for {{id}} were left out: there is no such part."
-    }
+      "onbekendeTekst": "Texts for {{id}} were left out: there is no such part.",
+      "onbekendLand": "The template names a country this app does not know ({{waarde}}): the country of the project stays."
+    },
+    "landGezet": "The country of the project is now {{land}}."
   },
   "algemeen": {
     "omhoog": "Move up",
@@ -157,7 +159,9 @@
     "talen": {
       "en": "English",
       "nl": "Dutch"
-    }
+    },
+    "normenHint": "Follows the country in the project data. Text you typed yourself stays.",
+    "land": "Country or region"
   },
   "revisies": {
     "intro": "The first revision sets the report's first date; each later one adds a revision date line. The last revision sets the report status on the cover page.",
@@ -504,6 +508,64 @@
       "vulling": "fill",
       "vloerDaken": "FLOOR, ROOFS",
       "wanden": "WALLS"
+    },
+    "lokaal": {
+      "teBevestigen": "to be confirmed",
+      "bron": "Source",
+      "nietIngevuld": "not entered",
+      "veiligheid": "Safety or risk class",
+      "normenKop": "Standards applied: {{land}}",
+      "editieTeBevestigen": "edition to be confirmed",
+      "onderwerpen": {
+        "belastingen": "Actions",
+        "wind": "Wind",
+        "sneeuw": "Snow",
+        "aardbeving": "Seismic",
+        "beton": "Concrete",
+        "staal": "Steel",
+        "hout": "Timber",
+        "metselwerk": "Masonry",
+        "funderingen": "Foundations"
+      },
+      "combinatie": "Combination",
+      "formule": "Formula",
+      "combinatiesNietIngevuld": "Load combinations: not entered.",
+      "factorenAanbevolen": "Recommended values from EN 1990, unless changed for this project; the national annex can change them.",
+      "factorenGeneratie2": "Second generation: the factors follow from EN 1990:2023 and its national annex.",
+      "belasting": "Action",
+      "sneeuwPlatDak": "Snow load on a flat roof s",
+      "stuwdruk": "Velocity pressure q",
+      "klassenNietIngevuld": "Imposed loads: not entered."
+    },
+    "bladNorm": {
+      "eigen": "This sheet rests on {{normen}} (Eurocodes), not on the standards chosen for this project ({{land}}). Its results are no check to those standards.",
+      "bijlage": "This sheet rests on {{normen}} with the Dutch national annex, not with the choices of this project ({{land}}). Check its values against the standard that applies there.",
+      "zonderBijlage": "This sheet rests on {{normen}}, without the national choices of this project ({{land}}). Check its values against the standard that applies there.",
+      "generatie": "This sheet rests on the first generation of the Eurocodes ({{normen}}), while this project uses the second generation."
     }
+  },
+  "lokaal": {
+    "invullen": "Enter what applies at the location ({{land}}), with its source. The values are not fetched or filled in for you: they come from the map or table in the standard.",
+    "teBevestigen": "Not yet confirmed at an official source: check this quantity against the standard.",
+    "bron": "Source of these values",
+    "bronVoorbeeld": "e.g. national annex, map or table, date",
+    "bronHint": "Shown in the report under these values.",
+    "norm": "Standard:",
+    "editieTeBevestigen": "edition to be confirmed",
+    "waardenBron": "Where the values are published",
+    "sneeuwPlatDak": "Snow load on a flat roof s",
+    "stuwdruk": "Velocity pressure q used in this report",
+    "nietBerekend": "Follows from the standard of this country; you enter it, the app does not calculate it here.",
+    "klassenUitleg": "The imposed loads are not in the app here ({{land}}): enter q_k and Q_k from the standard.",
+    "factorenAanbevolen": "Recommended values from EN 1990 ({{land}}). The national annex can change them: check them and adjust them here.",
+    "factorenGeneratie2": "Second generation: there is no public source with the final factors of EN 1990:2023, so nothing is filled in. Enter them from the standard and its national annex.",
+    "psiKop": "ψ factors (EN 1990, table A1.1)",
+    "combinatiesUitleg": "No Eurocodes here ({{land}}): enter the load combinations as the standard writes them.",
+    "combinatieToevoegen": "Add combination",
+    "formuleVoorbeeld": "e.g. 1.2D + 1.6L",
+    "vervormingen": "These limits are not filled in outside the Netherlands: enter the limits that apply in this country.",
+    "levensduur": "{{jaren}} years",
+    "veiligheidHint": "The class from the standard that applies here ({{land}}), for instance a risk or importance category. Empty: not shown in the report.",
+    "alleenVerwijzing": "Here ({{land}}) the app only has references to the standards, and not everything could be confirmed. See the project data."
   }
 }

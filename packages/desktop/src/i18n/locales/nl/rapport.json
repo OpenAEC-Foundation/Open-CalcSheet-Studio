@@ -92,8 +92,10 @@
       "teVeel": "Het bestand heeft te veel onderdelen: de rest is weggelaten.",
       "nieuwereVersie": "Het bestand komt uit een nieuwere versie van de app (formaat {{waarde}}): wat deze versie niet kent, is weggelaten.",
       "geenNaam": "Het bestand heeft geen naam.",
-      "onbekendeTekst": "Teksten bij {{id}} zijn weggelaten: dat onderdeel bestaat niet."
-    }
+      "onbekendeTekst": "Teksten bij {{id}} zijn weggelaten: dat onderdeel bestaat niet.",
+      "onbekendLand": "Het template noemt een land dat deze app niet kent ({{waarde}}): het land van het project blijft."
+    },
+    "landGezet": "Het land van het project is nu {{land}}."
   },
   "algemeen": {
     "omhoog": "Omhoog",
@@ -157,7 +159,9 @@
     "talen": {
       "en": "Engels",
       "nl": "Nederlands"
-    }
+    },
+    "normenHint": "Volgt het land in de projectgegevens. Tekst die je zelf typte blijft staan.",
+    "land": "Land of regio"
   },
   "revisies": {
     "intro": "De eerste revisie geeft de 1ᵉ datum van het rapport, elke latere een regel Datum wijz. De laatste revisie bepaalt de rapportstatus op het voorblad.",
@@ -504,6 +508,64 @@
       "vulling": "vulling",
       "vloerDaken": "VLOER, DAKEN",
       "wanden": "WANDEN"
+    },
+    "lokaal": {
+      "teBevestigen": "nog te bevestigen",
+      "bron": "Bron",
+      "nietIngevuld": "niet ingevuld",
+      "veiligheid": "Veiligheids- of risicoklasse",
+      "normenKop": "Toegepaste normen: {{land}}",
+      "editieTeBevestigen": "editie nog te bevestigen",
+      "onderwerpen": {
+        "belastingen": "Belastingen",
+        "wind": "Wind",
+        "sneeuw": "Sneeuw",
+        "aardbeving": "Aardbeving",
+        "beton": "Beton",
+        "staal": "Staal",
+        "hout": "Hout",
+        "metselwerk": "Metselwerk",
+        "funderingen": "Funderingen"
+      },
+      "combinatie": "Combinatie",
+      "formule": "Formule",
+      "combinatiesNietIngevuld": "Belastingcombinaties: niet ingevuld.",
+      "factorenAanbevolen": "Aanbevolen waarden uit EN 1990, tenzij voor dit project gewijzigd; de nationale bijlage kan ze wijzigen.",
+      "factorenGeneratie2": "Tweede generatie: de factoren volgen uit EN 1990:2023 en de nationale bijlage.",
+      "belasting": "Belasting",
+      "sneeuwPlatDak": "Sneeuwbelasting op een plat dak s",
+      "stuwdruk": "Stuwdruk q",
+      "klassenNietIngevuld": "Opgelegde belastingen: niet ingevuld."
+    },
+    "bladNorm": {
+      "eigen": "Dit blad rust op {{normen}} (Eurocodes), niet op de normen die voor dit project zijn gekozen ({{land}}). De uitkomsten zijn geen toetsing aan die normen.",
+      "bijlage": "Dit blad rust op {{normen}} met de Nederlandse nationale bijlage, niet met de keuzes van dit project ({{land}}). Controleer de waarden aan de norm die daar geldt.",
+      "zonderBijlage": "Dit blad rust op {{normen}}, zonder de nationale keuzes van dit project ({{land}}). Controleer de waarden aan de norm die daar geldt.",
+      "generatie": "Dit blad rust op de eerste generatie Eurocodes ({{normen}}), terwijl dit project de tweede generatie volgt."
     }
+  },
+  "lokaal": {
+    "invullen": "Vul in wat op de locatie geldt ({{land}}), met de bron erbij. De waarden worden niet opgehaald en niet voorgevuld: ze komen uit de kaart of de tabel in de norm.",
+    "teBevestigen": "Nog niet bevestigd bij een officiële bron: controleer deze grootheid in de norm.",
+    "bron": "Bron van deze waarden",
+    "bronVoorbeeld": "bijv. nationale bijlage, kaart of tabel, datum",
+    "bronHint": "Staat in het rapport onder deze waarden.",
+    "norm": "Norm:",
+    "editieTeBevestigen": "editie nog te bevestigen",
+    "waardenBron": "Waar de waarden staan",
+    "sneeuwPlatDak": "Sneeuwbelasting op een plat dak s",
+    "stuwdruk": "Stuwdruk q in dit rapport",
+    "nietBerekend": "Volgt uit de norm van dit land; je vult hem in, de app rekent hem hier niet uit.",
+    "klassenUitleg": "De opgelegde belastingen staan hier niet in de app ({{land}}): vul q_k en Q_k in uit de norm.",
+    "factorenAanbevolen": "Aanbevolen waarden uit EN 1990 ({{land}}). De nationale bijlage kan ze wijzigen: controleer ze en pas ze hier aan.",
+    "factorenGeneratie2": "Tweede generatie: er is geen openbare bron met de definitieve factoren van EN 1990:2023, dus er is niets voorgevuld. Vul ze in uit de norm en de nationale bijlage.",
+    "psiKop": "ψ-factoren (EN 1990, tabel A1.1)",
+    "combinatiesUitleg": "Hier geen Eurocodes ({{land}}): vul de belastingcombinaties in zoals de norm ze schrijft.",
+    "combinatieToevoegen": "Combinatie toevoegen",
+    "formuleVoorbeeld": "bijv. 1.2D + 1.6L",
+    "vervormingen": "Deze eisen zijn buiten Nederland niet voorgevuld: vul de eisen in die in dit land gelden.",
+    "levensduur": "{{jaren}} jaar",
+    "veiligheidHint": "De klasse uit de norm die hier geldt ({{land}}), bijvoorbeeld een risico- of belangcategorie. Leeg: niet in het rapport.",
+    "alleenVerwijzing": "Hier ({{land}}) heeft de app alleen verwijzingen naar de normen, en niet alles is bevestigd. Zie de projectgegevens."
   }
 }
