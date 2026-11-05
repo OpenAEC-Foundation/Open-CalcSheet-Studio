@@ -177,6 +177,11 @@ de ankers op papier veranderen niet met de taal. `scripts/check-rapport-talen.mj
 een oud rapport naast de html van vóór de talen (`scripts/fixtures/rapport-oud-*.html`)
 en doorzoekt een compleet Engels rapport op Nederlandse woorden.
 
+De rekentekst van een blad (`source`) is altijd de bron, in de taal van de module.
+De tab Code toont hem in de taal van de app en zet een bewerking regel voor regel terug
+(`bronNaBewerking` in `components/calc/uitvoerTaal.ts`). De rekenversie, `bronVersie`,
+de invoersleutels en de beelden lezen dus de bron, in elke taal hetzelfde.
+
 ## Ongedaan maken
 
 Eén stapel voor het hele project (`verleden` / `toekomst` in `projectStore.ts`),

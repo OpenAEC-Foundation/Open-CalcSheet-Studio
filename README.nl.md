@@ -117,7 +117,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **61 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **62 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.
@@ -136,7 +136,7 @@ Bron van de getallen: de genoemde bestanden en `ls scripts/check-*.mjs`. De stat
 - **Een grafbestand komt niet altijd volledig over.** Nodes die deze app niet heeft, scripts en de meeste geometrie blijven met een melding op de graaf staan en rekenen niet.
 - **Waarden uit een spreadsheet komen nog niet in rekenbladen.** Een spreadsheet staat voorlopig op zichzelf.
 - **Het rapport rechtstreeks naar PDF kan alleen op Windows.** Andere platforms gebruiken de printdialoog.
-- **Sommige tekst blijft voorlopig Nederlands.** De app, de bladen en het rapport volgen je taal, maar de rekentekst in de tab Code en sommige namen in de IFC-boom zijn Nederlands.
+- **Sommige tekst blijft voorlopig Nederlands.** De app, de bladen, de tab Code en het rapport volgen je taal, maar de namen van de variabelen in de modules en sommige namen in de IFC-boom zijn Nederlands.
 - **Pagina-einden kunnen iets verschillen per schermschaal.** Op 100% en 150% kunnen een paar regels op een ander vel komen.
 - **Geen WebRTC in de app.** Het is overal geblokkeerd, dus een externe pagina in `@iframe` die het nodig heeft, werkt niet.
 - **Open FEM Studio-projecten zijn er nog niet.** Het menu-item is zichtbaar maar staat uit.
