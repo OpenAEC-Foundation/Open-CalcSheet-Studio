@@ -168,6 +168,10 @@ kop("1. Het gegevensbestand");
   // Op het voorblad staat de tekst vanaf kolom 6: nog vijf kolommen.
   const voorblad = LANDEN.flatMap((l) => [l.normenTekst.en, l.normenTekst.nl]).filter((t) => em(t) * 10 > 5 * 53.8 - 2.8);
   gelijk("elke tekst op het voorblad past", voorblad, []);
+  // Een grootheid staat met zijn symbool op vijf kolommen; daarachter de waarde.
+  const grootheid = LANDEN.flatMap((l) => LOCATIE_ONDERWERPEN.flatMap((o) => l.locatie[o].grootheden.flatMap((g) => [`${g.naam.en} ${g.symbool}`, `${g.naam.nl} ${g.symbool}`])))
+    .filter((t) => em(t) * 10 > 5 * 53.8 - 2.8);
+  gelijk("elke grootheid past op papier", [...new Set(grootheid)], []);
 }
 
 // ── 2. De keuze van het land ────────────────────────────────────────────────
