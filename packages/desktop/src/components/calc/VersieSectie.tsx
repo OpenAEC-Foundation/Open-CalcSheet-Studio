@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { usePrintStore } from "../../store/printStore";
 import { useProjectStore, VERSIES_ID } from "../../store/projectStore";
 import { maakNieuweVersie, wisselNaarVersie } from "../../store/versieActies";
 import { lijnVan, versieGegevens, type Versie } from "../../store/versies";
@@ -16,8 +17,13 @@ export default function VersieSectie() {
   const rapport = useProjectStore((s) => s.rapport);
   const selecteer = useProjectStore((s) => s.selecteer);
   const activeId = useProjectStore((s) => s.activeId);
+  const sluitVoorbeeld = usePrintStore((s) => s.sluitVoorbeeld);
   const [nieuw, setNieuw] = useState(false);
   const stand = { versies, exemplaren, gegevens, rapport };
+  const openPaneel = () => {
+    sluitVoorbeeld();
+    selecteer(VERSIES_ID);
+  };
 
   const rij = (v: Versie) => {
     const { code, datum, omschrijving } = versieGegevens(stand, v);
@@ -31,7 +37,7 @@ export default function VersieSectie() {
         style={{ paddingLeft: `${(lijnVan(versies, v.id).length - 1) * 10 + 12}px`, fontWeight: actief ? 600 : undefined }}
         aria-current={actief ? "true" : undefined}
         title={actief ? t("versies.openUitleg", { naam, datum }) : t("versies.wisselUitleg", { naam, datum })}
-        onClick={() => (actief ? selecteer(VERSIES_ID) : void wisselNaarVersie(v.id))}
+        onClick={() => (actief ? openPaneel() : void wisselNaarVersie(v.id))}
       >
         <span className="pb-inhoud-nummer">{code}</span>
         <span className="pb-naam">{naam}</span>

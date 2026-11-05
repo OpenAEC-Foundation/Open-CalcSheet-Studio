@@ -196,11 +196,13 @@ export function maakWijzigingen(oud: VersieInhoud, nieuw: VersieInhoud): Wijzigi
   const b = nieuw.rapport;
   const uit: Wijzigingsregel[] = [];
 
-  // De projectgegevens, op de plek waar ze op papier staan.
+  // De projectgegevens, op de plek waar ze op papier staan. Een naam uit een bestand kan alles zijn.
+  const veld = (g: Record<string, string>, naam: string) => (heeftSleutel(g, naam) ? g[naam] : "");
+  const knoopVan = (naam: string) => (heeftSleutel(GEGEVENS_IN_KNOOP, naam) ? GEGEVENS_IN_KNOOP[naam] : undefined);
   const gegevens = Object.keys({ ...nieuw.gegevens, ...oud.gegevens })
-    .filter((naam) => (oud.gegevens[naam] ?? "") !== (nieuw.gegevens[naam] ?? ""))
-    .map((naam): Verandering => ({ naam, van: oud.gegevens[naam] ?? "", naar: nieuw.gegevens[naam] ?? "" }));
-  const inKnoop = (id: string) => gegevens.filter((g) => GEGEVENS_IN_KNOOP[g.naam] === id);
+    .filter((naam) => veld(oud.gegevens, naam) !== veld(nieuw.gegevens, naam))
+    .map((naam): Verandering => ({ naam, van: veld(oud.gegevens, naam), naar: veld(nieuw.gegevens, naam) }));
+  const inKnoop = (id: string) => gegevens.filter((g) => knoopVan(g.naam) === id);
 
   const voorblad: WijzigingsDeel[] = [];
   const opVoorblad = gegevens.filter((g) => VOORBLAD_GEGEVENS.has(g.naam));
@@ -227,7 +229,10 @@ export function maakWijzigingen(oud: VersieInhoud, nieuw: VersieInhoud): Wijzigi
     if (delen.length > 0) uit.push({ sleutel: `knoop:${k.id}`, doel: "knoop", id: k.id, titel: titelVan(nu, b), delen });
   }
 
-  const overig = gegevens.filter((g) => !VOORBLAD_GEGEVENS.has(g.naam) && (GEGEVENS_IN_KNOOP[g.naam] === undefined || !ids.has(GEGEVENS_IN_KNOOP[g.naam])));
+  const overig = gegevens.filter((g) => {
+    const knoop = knoopVan(g.naam);
+    return !VOORBLAD_GEGEVENS.has(g.naam) && (knoop === undefined || !ids.has(knoop));
+  });
   if (overig.length > 0) uit.push({ sleutel: "gegevens", doel: "gegevens", titel: "", delen: [beknopt("gegevens", overig)] });
   if (!zelfdeWaarde(a.bijlagen, b.bijlagen)) uit.push({ sleutel: "bijlagen", doel: "bijlagen", titel: "", delen: [{ soort: "inhoud" }] });
   if (!zelfdeWaarde(opzetVan(a), opzetVan(b))) uit.push({ sleutel: "opzet", doel: "opzet", titel: "", delen: [{ soort: "inhoud" }] });
@@ -235,7 +240,7 @@ export function maakWijzigingen(oud: VersieInhoud, nieuw: VersieInhoud): Wijzigi
   // De bladen, ook als alleen hun toelichting in het rapport anders is.
   const verschillen = vergelijkBladen(oud, nieuw);
   const perBlad = new Map(verschillen.map((v) => [v.id, v]));
-  const toelichtingAnders = (id: string) => (a.toelichting[id] ?? "").trim() !== (b.toelichting[id] ?? "").trim();
+  const toelichtingAnders = (id: string) => veld(a.toelichting, id).trim() !== veld(b.toelichting, id).trim();
   for (const ex of nieuw.exemplaren) {
     const v = perBlad.get(ex.id);
     const anders = toelichtingAnders(ex.id) && oud.exemplaren.some((e) => e.id === ex.id);

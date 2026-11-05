@@ -278,6 +278,11 @@ const versieAttribuut = (tekst) => JSON.parse(tekst).data.find((k) => k.attribut
   const stand = heropen(tekstOud);
   gelijk("en is na het openen één versie", [stand.versies.lijst.length, versieGegevens(stand, actieveVersie(stand.versies)).code], [1, "A"]);
   gelijk("met al zijn bladen", stand.exemplaren.map((e) => [e.id, e.waarden]), oud.exemplaren.map((e) => [e.id, e.waarden]));
+  gelijk("geopend en weer opgeslagen: het verliest niets, en het bestand blijft wat het was", inhoudVanDoc(schrijf(stand)), inhoudVanDoc(tekstOud));
+  const nogOuder = leesProjectBestand(JSON.stringify({ project: { naam: "Oud", gegevens: legeGegevens(), exemplaren: [blad("ex-1", "Oud blad", { L: "1" })] } }), "oud");
+  gelijk("een bestand in de oudste vorm: ook één versie", [nogOuder.versies, nogOuder.exemplaren[0].waarden.L], [undefined, "1"]);
+  const kaleTekst = leesProjectBestand("x = 1\n", "kaal");
+  gelijk("en een kale rekentekst ook", [kaleTekst.versies, kaleTekst.exemplaren.length], [undefined, 1]);
 
   // Een eigen naam is wel iets om te bewaren.
   const genoemd = { ...oud, versies: hernoemVersie(oud.versies, oud.versies.actief, "Origineel") };
@@ -726,6 +731,9 @@ kop("8. De lijst per pagina");
   gelijk("de keuzes gaan mee in het bestand", gelezen.rapport.wijzigingen, s.rapport.wijzigingen);
   toets("de lijst is afgeleid: die maakt de app opnieuw", gelezen.rapport.wijzigingsLijst === undefined);
   gelijk("en is dan dezelfde", metVerseLijst(gelezen).wijzigingsLijst, s.rapport.wijzigingsLijst);
+  const vreemd = { ...inhoud(s), gegevens: { ...s.gegevens, constructor: "x", __proto__: null } };
+  const vreemdeRegels = maakWijzigingen(ouderVanStand(s), vreemd);
+  gelijk("een gegeven met een vreemde naam is gewoon een gegeven", vreemdeRegels.find((r) => r.sleutel === "gegevens").delen[0].lijst.find((g) => g.naam === "constructor"), { naam: "constructor", van: "", naar: "x" });
   gelijk("onzin in een bestand valt weg", normaliseerRapport({ wijzigingen: { a: { toelichting: 3, tekst: "" }, b: "x", c: { weg: true, tekst: "t", bla: 1 } }, wijzigingsLijst: [1] }, VANDAAG, standaardTeksten).wijzigingen, { c: { tekst: "t", weg: true } });
   toets("en een lijst uit een bestand wordt niet gelezen", !("wijzigingsLijst" in normaliseerRapport({ wijzigingsLijst: [1] }, VANDAAG, standaardTeksten)));
 
