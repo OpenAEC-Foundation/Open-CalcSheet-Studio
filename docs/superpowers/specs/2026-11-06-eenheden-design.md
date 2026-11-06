@@ -115,14 +115,21 @@ bedoelde:
 | Spanning en E-modulus | N/mm², MPa, GPa | N/mm², MPa, GPa, psi, ksi |
 | Volumegewicht | kN/m³ | kN/m³, pcf |
 | Massa | kg, t | kg, t, lb |
-| Temperatuur | °C, K | °C, °F |
+| Temperatuur | °C | °C, °F |
 | Hoek | (bestaande instelling) | deg, rad, gra |
 
 - **Afspraak voor druk:** vlakbelasting en spanning hebben dezelfde dimensie. Een
   eenheid van de schrijver onder 100 kPa telt als vlakbelasting, vanaf 100 kPa als
   spanning.
-- **Andere dimensies:** een dimensie die niet in de tabel staat (een veerstijfheid
-  in kN/m³, een rekenfactor met eenheid) blijft zoals de schrijver hem toont.
+- **Herkend aan de naam waar dat moet.** Lengtes, oppervlaktes en drukken
+  herkent `grootheidVan` aan de naam van de eenheid: ft, yd en mi zijn lengte, in
+  is maat, psi en ksi zijn spanning, psf en ksf zijn vlakbelasting. Alleen een
+  onbekende druk valt op de grens van 100 kPa.
+- **Een temperatuur in K blijft staan.** In een blad is dat bijna altijd een
+  verschil (ΔT = 20 K). Omgerekend als absolute temperatuur zou 20 K −423,7 °F
+  worden. Alleen °C gaat naar °F.
+- **Andere dimensies:** een dimensie die niet in de tabel staat (een rekenfactor
+  met eenheid, 1/K) blijft zoals de schrijver hem toont.
 - **De herkenning is één functie, met eigen controles:** `grootheidVan(eenheid)`
   in een nieuwe module `packages/core/src/eenheidstelsel.ts`.
 
@@ -189,8 +196,8 @@ Pas bij het tonen rekent een waarde om naar de eenheid van zijn grootheid.
   - Zonder notatie blijven het 4 significante cijfers.
   - Een vaste notatie van de schrijver (`:F2`, `#round 2`) houdt in een andere
     eenheid dezelfde relatieve nauwkeurigheid. Het nieuwe aantal decimalen is
-    het oude plus de afgeronde log10 van (eenheid van de schrijver / eenheid van
-    het stelsel), met minimaal 0 en maximaal 6. Voorbeeld: `:F2` in mm wordt in
+    het oude plus de afgeronde log10 van (eenheid van het stelsel / eenheid van
+    de schrijver), met minimaal 0 en maximaal 6. Voorbeeld: `:F2` in mm wordt in
     inch `:F3` (log10 25,4 ≈ 1,4 → 1), dus 1234,57 mm → 48,605 in.
   - `round(x; n)` is rekenen, geen weergave, en blijft wat het is.
 - **Opmaak van eenheden:** m², kN·m en °C, zoals nu. `psi` en `ksi` blijven letters.
@@ -307,8 +314,8 @@ Een nieuw script `scripts/check-eenheidstelsel.mjs`:
 - **`grootheidVan`:** voor elke rij van de tabel, de afspraak voor druk, en een
   onbekende dimensie die blijft staan.
 - **Weergave:**
-  - een paar vaste omrekeningen (4500 mm → 14.76 ft, 10 kN·m → 7.376 kip·ft,
-    235 N/mm² → 34.08 ksi);
+  - een paar vaste omrekeningen (4,5 m → 14.76 ft, 4500 mm → 177.2 in,
+    10 kN·m → 7.376 kip·ft, 235 N/mm² → 34.08 ksi);
   - geen gemengde eenheden op een regel met ingevulde waarden;
   - de notatie `:F2` na omrekening.
 - **Invoer:**
