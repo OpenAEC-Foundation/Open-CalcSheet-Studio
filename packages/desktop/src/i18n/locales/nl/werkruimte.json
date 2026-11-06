@@ -302,7 +302,7 @@
     },
     "situatie": {
       "titel": "Locatie op de kaart",
-      "hint": "Zoek een adres waar ook ter wereld, of klik op de kaart om de speld te plaatsen. De speld kun je slepen.",
+      "hint": "Zoek een adres waar ook ter wereld, of klik op de kaart om de speld te plaatsen. De speld kun je slepen. Zoeken, de kaarten en de meting van het water gebruiken diensten van OpenStreetMap (Nominatim, kaarttegels, Overpass); het adres of het punt wordt daarvoor naar die diensten gestuurd.",
       "adres": "Adres of plaats",
       "adresVoorbeeld": "Adres, plaats of coördinaten",
       "zoeken": "Zoeken",
@@ -315,7 +315,8 @@
       "kaartenVernieuwen": "Kaarten vernieuwen",
       "kaartenBezig": "Kaarten maken…",
       "kaartenMislukt": "De kaarten konden niet worden gemaakt. Controleer je internetverbinding en probeer het opnieuw; de bestaande kaarten blijven staan.",
-      "verouderd": "De kaarten in het rapport horen bij een ander punt. Vernieuw ze met de knop.",
+      "verouderd": "De kaarten in het rapport horen bij een ander punt, een andere taal of andere eenheden. Vernieuw ze met de knop.",
+      "erpGevonden": "Gevonden: {{naam}}",
       "waterMeten": "Afstand tot open water meten",
       "waterBezig": "Afstand meten…",
       "waterMislukt": "De afstand tot open water kon niet worden gemeten. Controleer je internetverbinding en probeer het later opnieuw; een eerdere meting blijft staan.",

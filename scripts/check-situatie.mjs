@@ -21,7 +21,7 @@ import { afstandM, dichtstePuntOpLijn, oppervlakteM2 } from "../packages/desktop
 import { waterVraag, dichtstbijzijndWater, meetWater } from "../packages/desktop/src/kaart/overpass.ts";
 import { locatieUitErp, nieuweLocatieTekst } from "../packages/desktop/src/kaart/erpnext.ts";
 import { herkomstVan, geheimActies, adresToegestaan } from "../packages/desktop/src/tauri/erpnextGeheim.ts";
-import { KAARTEN, normaliseerSituatie, onderschrift, situatieBijPunt, waterTekst } from "../packages/desktop/src/rapport/situatie.ts";
+import { KAARTEN, normaliseerSituatie, onderschrift, situatieActueel, situatieBijPunt, stelselSleutel, waterTekst } from "../packages/desktop/src/rapport/situatie.ts";
 import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 
 let fouten = 0;
@@ -303,6 +303,21 @@ console.log("\nDe situatie in het rapport");
   meld(situatieBijPunt(goed, p) === "actueel", "hetzelfde punt is actueel");
   meld(situatieBijPunt(goed, null) === "geen", "zonder punt: geen");
   meld(situatieBijPunt(undefined, p) === "geen", "zonder situatie: geen");
+
+  // Taal en eenhedenstelsel bij het maken.
+  const metTaal = { ...goed, taal: "nl", stelsel: "blad" };
+  meld(toon(normaliseerSituatie(metTaal)) === toon(metTaal), "taal en stelsel blijven behouden", toon(normaliseerSituatie(metTaal)));
+  const zonderTaal = normaliseerSituatie(goed);
+  meld(!("taal" in zonderTaal) && !("stelsel" in zonderTaal), "een oude situatie zonder taal en stelsel blijft zonder");
+  meld(!("taal" in normaliseerSituatie({ ...goed, taal: 5, stelsel: "" })), "taal en stelsel die geen tekst zijn vallen weg");
+  meld(situatieActueel(metTaal, p, "nl", "blad") === "actueel", "zelfde punt, taal en stelsel: actueel");
+  meld(situatieActueel(metTaal, p, "en", "blad") === "verouderd", "andere rapporttaal: verouderd");
+  meld(situatieActueel(metTaal, p, "nl", "us") === "verouderd", "ander eenhedenstelsel: verouderd");
+  meld(situatieActueel(metTaal, { lat: 52.0907 + 50 / 111320, lon: 5.1214 }, "nl", "blad") === "verouderd", "ander punt: verouderd");
+  meld(situatieActueel(goed, p, "en", "us") === "actueel", "oude situatie zonder taal en stelsel telt als actueel");
+  meld(situatieActueel(metTaal, null, "nl", "blad") === "geen" && situatieActueel(undefined, p, "nl", "blad") === "geen", "zonder punt of situatie: geen");
+  meld(stelselSleutel({}) === "blad" && stelselSleutel({ eenheden: "us" }) === "us", "stelselSleutel: standaard blad, anders de keuze");
+  meld(stelselSleutel({ eenheden: "eigen", eenheden_eigen: "{\"m\":\"ft\"}" }) !== stelselSleutel({ eenheden: "eigen", eenheden_eigen: "{}" }), "stelselSleutel: bij eigen telt de eigen keuze mee");
 
   const teksten = { inleiding: "x" };
   const oud = JSON.parse(JSON.stringify(standaardRapport("06-11-2026", teksten, "nl")));

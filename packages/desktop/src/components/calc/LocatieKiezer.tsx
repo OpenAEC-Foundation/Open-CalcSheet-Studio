@@ -12,7 +12,7 @@ import { erpnextIngevuld, erpnextProjectVeld, heeftErpnextGeheim, leesErpnextIns
 import { maakKaartbeeld } from "../../kaart/beeld.ts";
 import { schaalTekst } from "../../kaart/tegels.ts";
 import { meetWater } from "../../kaart/overpass.ts";
-import { KAARTEN, situatieBijPunt, waterTekst, type Kaartbeeld, type Water } from "../../rapport/situatie.ts";
+import { KAARTEN, situatieActueel, situatieBijPunt, stelselSleutel, waterTekst, type Kaartbeeld, type Water } from "../../rapport/situatie.ts";
 import { useBeeldEenheden } from "./useBeeldEenheden";
 import type { BeeldEenheden } from "./beeldEenheden";
 import "./LocatieKiezer.css";
@@ -112,7 +112,10 @@ export default function LocatieKiezer() {
   const eenheden = useBeeldEenheden();
   const eenhedenRef = useRef(eenheden);
   eenhedenRef.current = eenheden;
-  const stand = situatieBijPunt(situatie, punt);
+  const rapportTaal = useProjectStore((s) => s.rapport.taal);
+  const stelsel = stelselSleutel(gegevens);
+  // Verouderd: een ander punt, of een andere rapporttaal of ander eenhedenstelsel dan bij het maken.
+  const stand = situatieActueel(situatie, punt, rapportTaal, stelsel);
 
   const [tekst, setTekst] = useState(gegevens.locatie ?? "");
   const [uitkomsten, setUitkomsten] = useState<Uitkomst[]>([]);
@@ -162,6 +165,9 @@ export default function LocatieKiezer() {
       // Het water hoort bij het oude punt en blijft alleen staan als het punt hetzelfde is; dan
       // krijgt de omgevingskaart ook weer zijn lijn.
       const voor = useProjectStore.getState().rapport.situatie;
+      // Taal en eenhedenstelsel waarmee de teksten in de beelden worden gezet.
+      const taal = useProjectStore.getState().rapport.taal;
+      const stelsel = stelselSleutel(useProjectStore.getState().gegevens);
       const behoud = voor && situatieBijPunt(voor, p) === "actueel" ? voor.water : undefined;
       try {
         const kaarten: Kaartbeeld[] = [];
@@ -183,6 +189,8 @@ export default function LocatieKiezer() {
             punt: p,
             datum: vandaag(),
             kaarten,
+            taal,
+            stelsel,
             ...(behoud !== undefined ? { water: behoud } : {}),
           },
         }));
@@ -231,7 +239,10 @@ export default function LocatieKiezer() {
           kaarten.push(await beeldVan(p, k, eenhedenRef.current, water));
           if (verlopen()) return;
         }
-        werkRapportBij((r) => (r.situatie ? { ...r, situatie: { ...r.situatie, water, kaarten, datum: vandaag() } } : r));
+        const state = useProjectStore.getState();
+        const taal = state.rapport.taal;
+        const stelsel = stelselSleutel(state.gegevens);
+        werkRapportBij((r) => (r.situatie ? { ...r, situatie: { ...r.situatie, water, kaarten, datum: vandaag(), taal, stelsel } } : r));
         setWaterMelding(null);
       } catch {
         if (nummer !== waterNummer.current) return;
@@ -318,6 +329,10 @@ export default function LocatieKiezer() {
       inzoomen.current = true;
       setUitkomsten([]);
       setMelding(null);
+      // Bij een adres: wat er gevonden is, want de eerste uitkomst telt. Coördinaten zijn zelf het punt.
+      if (leesCoordinaten(veld.slice(0, MAX_ERP_TEKST).trim()) === null) {
+        setErpMelding(t("gegevens.situatie.erpGevonden", { naam: schoonErp(plek.naam) }));
+      }
       void maakKaarten(plek.punt);
     } catch (e) {
       if (nummer !== erpNummer.current) return;
@@ -327,17 +342,23 @@ export default function LocatieKiezer() {
     }
   }, [projectNummer, i18n.language, t, zetGegevens, maakKaarten]);
 
+  /**
+   * Zet het punt (en de locatietekst als die leeg is) in één wijziging. Een gekozen zoekuitkomst of
+   * ingetypte coördinaten (`bevestig`) maken de kaarten opnieuw. Een klik of slepen op de kaart
+   * niet, zodat een speld slepen niet elke keer tegels haalt: dan beslist de gebruiker met de knop.
+   * Het eerste punt van het project maakt de kaarten wel vanzelf.
+   */
   const zetPunt = useCallback(
-    (p: Punt, naam?: string) => {
+    (p: Punt, opties?: { naam?: string; bevestig?: boolean }) => {
       stopErp();
-      zetGegeven("locatie_punt", puntJson(p));
+      setErpMelding(null);
       const huidig = useProjectStore.getState().gegevens.locatie ?? "";
-      if (naam && !huidig.trim()) zetGegeven("locatie", naam);
-      // Het eerste punt van het project maakt de kaarten vanzelf; daarna beslist de gebruiker
-      // met de knop, zodat een speld slepen niet elke keer tegels haalt.
-      if (!useProjectStore.getState().rapport.situatie) void maakKaarten(p);
+      const waarden: Record<string, string> = { locatie_punt: puntJson(p) };
+      if (opties?.naam && !huidig.trim()) waarden.locatie = opties.naam;
+      zetGegevens(waarden);
+      if (opties?.bevestig || !useProjectStore.getState().rapport.situatie) void maakKaarten(p);
     },
-    [zetGegeven, maakKaarten, stopErp],
+    [zetGegevens, maakKaarten, stopErp],
   );
 
   const zoek = useCallback(async () => {
@@ -351,7 +372,7 @@ export default function LocatieKiezer() {
     const coord = leesCoordinaten(vraag);
     if (coord) {
       inzoomen.current = true;
-      zetPunt(coord);
+      zetPunt(coord, { bevestig: true });
       setBezig(false);
       return;
     }
@@ -371,7 +392,7 @@ export default function LocatieKiezer() {
 
   const kies = (u: Uitkomst) => {
     inzoomen.current = true;
-    zetPunt(u.punt, u.naam);
+    zetPunt(u.punt, { naam: u.naam, bevestig: true });
     setUitkomsten([]);
     setMelding(null);
   };

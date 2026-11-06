@@ -42,7 +42,7 @@
     "naarProjectgegevens": "Wijzigen in Projectgegevens →",
     "situatieTonen": "Situatiepagina",
     "situatieHint": "Een pagina met kaarten van de plek van het project, direct na het voorblad.",
-    "situatieVerouderd": "De kaarten horen bij een ander punt dan de locatie van het project. Op papier staan ze met hun eigen punt.",
+    "situatieVerouderd": "De kaarten horen bij een ander punt, een andere taal of andere eenheden dan het project nu heeft. Vernieuw ze bij de projectgegevens; op papier staat een waarschuwing.",
     "situatieGeenLocatie": "De situatiepagina verschijnt pas weer in het rapport als het project een locatie heeft. De kaarten blijven bewaard en komen terug als je opnieuw een punt kiest.",
     "situatieBeeld": "Kaart van de situatie, {{naam}}"
   },
@@ -373,6 +373,7 @@
     },
     "situatie": {
       "titel": "Situatie",
+      "verouderd": "Let op: deze kaarten horen bij een eerdere locatie, een andere taal of andere eenheden. Vernieuw ze bij de projectgegevens.",
       "onderschrift": "{{kaart}} · ca. {{afstand}}",
       "kaarten": {
         "gebied": "Gebied",
