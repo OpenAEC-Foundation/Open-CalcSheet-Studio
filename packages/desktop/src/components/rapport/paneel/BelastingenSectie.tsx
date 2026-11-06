@@ -100,7 +100,7 @@ export default function BelastingenSectie() {
               waarde: (
                 <>
                   s = μ<sub>1</sub>·C<sub>e</sub>·C<sub>t</sub>·s<sub>k</sub> = {f(SNEEUW.mu1, 1)} ×{" "}
-                  {f(SNEEUW.ce, 1)} × {f(SNEEUW.ct, 1)} × {fe(SNEEUW.sk, "kN/m²", 1)} ={" "}
+                  {f(SNEEUW.ce, 1)} × {f(SNEEUW.ct, 1)} × {e.doel("kN/m²") ? fe(SNEEUW.sk, "kN/m²", 2) : f(SNEEUW.sk, 1)} ={" "}
                   {me(sneeuwPlatDak(), "kN/m²", 2)}
                 </>
               ),

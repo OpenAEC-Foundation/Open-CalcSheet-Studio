@@ -71,12 +71,13 @@ export function Wind({ w }: { w: RapportWeergave }) {
     <>
       <Cel k={2} o>z<sub>0</sub></Cel>
       <Cel k={3} o>{fe(u.z0, "m", 3, true)}</Cel>
-      <Cel k={4} o />
+      {/* Zonder eenheid zoals de referentie; omgerekend wel, anders is ft niet van m te onderscheiden. */}
+      <Cel k={4} o>{w.eenheden.doel("m") && <Eenheid e="m" />}</Cel>
     </>,
     <>
       <Cel k={2} o>z<sub>min</sub></Cel>
       <Cel k={3} o>{fe(u.zmin, "m", 0)}</Cel>
-      <Cel k={4} o />
+      <Cel k={4} o>{w.eenheden.doel("m") && <Eenheid e="m" />}</Cel>
     </>,
     <>
       <Cel k={2} o>c<sub>s</sub>*c<sub>d</sub></Cel>
@@ -291,7 +292,7 @@ function GevelTabel({ opbouw, w }: { opbouw: Extract<Opbouw, { soort: "gevel" }>
     <>
       <Rij klasse="rpa-vet" houd>
         <Cel k={1} b o l klasse="rpa-kop-licht">{opbouw.naam}</Cel>
-        <Cel k={2} b o klasse="rpa-kop-licht">p<sub>rep</sub></Cel>
+        <Cel k={2} b o klasse="rpa-kop-licht">p<sub>rep</sub>{w.eenheden.doel("kN/m2") && <Eenheid e="kN/m2" />}</Cel>
         <Cel k={3} b o klasse="rpa-kop-licht">h<Eenheid e="m" /></Cel>
         <Cel k={4} b o klasse="rpa-kop-licht">{w.t("afdruk.belastingen.vulling")}</Cel>
         <Cel k={5} n={2} b o r klasse="rpa-kop-licht">q<sub>rep</sub></Cel>

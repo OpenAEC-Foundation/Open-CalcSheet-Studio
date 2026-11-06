@@ -3,6 +3,7 @@ import {
   doelInStelsel,
   eenheidInBeeld,
   eenheidUitBeeld,
+  invoerNaarBron,
   omrekenen,
   toonInvoer,
   type Stelsel,
@@ -42,6 +43,13 @@ export interface BeeldEenheden {
    * getypt; `null` als er niets om te rekenen is (geen stelsel, geen getal): dan blijft de tekst.
    */
   getypt(tekst: string, bron: string, opmaak: (v: number, dec: number) => string): string | null;
+  /**
+   * Wat een rapportveld opslaat als iemand `tekst` typt in een veld in de eenheid in beeld:
+   * het getal in `bron`, op zes cijfers, met een komma als het rapport die gebruikt. `null`:
+   * nog niets opslaan (een tussenstand); `fout`: deze tekst past niet bij het veld. Zonder
+   * omrekening de tekst letterlijk.
+   */
+  opslag(tekst: string, bron: string, komma: boolean): { waarde: string } | { fout: string } | null;
 }
 
 /** Een getal zoals iemand het in het rapport typt: met een punt of een komma. */
@@ -103,8 +111,32 @@ export function beeldEenheden(stelsel: Stelsel | undefined): BeeldEenheden {
       const t = tekst.trim();
       if (!d || !GETYPT_GETAL.test(t)) return null;
       const rekenBron = eenheidUitBeeld(bron);
-      const dec = (t.split(/[.,]/)[1] ?? "").length;
-      return opmaak(omrekenen(parseFloat(t.replace(",", ".")), rekenBron, d), decimalenNa(dec, rekenBron, d));
+      const v = omrekenen(parseFloat(t.replace(",", ".")), rekenBron, d);
+      // Evenveel nauwkeurigheid als getypt, met minstens twee en hooguit drie significante
+      // cijfers: 0,07 m wordt 0,23 ft (niet 0,2), en een waarde die uit een omgerekende invoer
+      // komt (2.39401 kN/m², 50 psf getypt) wordt 50 en niet 50,0000.
+      const nauw = decimalenNa((t.split(/[.,]/)[1] ?? "").length, rekenBron, d);
+      const voor = (k: number) => (v === 0 ? nauw : Math.max(0, k - 1 - Math.floor(Math.log10(Math.abs(v)))));
+      const minstens = Math.max(nauw, voor(2));
+      const dec = Math.min(minstens, voor(3));
+      const uit = opmaak(v, dec);
+      // Ingekort: dan geen nullen achteraan die er niet getypt zijn (30,0 wordt 30).
+      return dec < minstens ? uit.replace(/([.,]\d*?)0+$/, "$1").replace(/[.,]$/, "") : uit;
+    },
+    opslag: (tekst, bron, komma) => {
+      const d = doel(bron);
+      if (!d) return { waarde: tekst };
+      const t = eenheidUitBeeld(tekst);
+      if (t === "") return { waarde: "" };
+      // Halverwege een exponent ("1e", "1e-"): nog niets; anders rekent mathjs 1·e uit.
+      if (/[eE][-+]?$/.test(t)) return null;
+      const terug = invoerNaarBron(t, d, eenheidUitBeeld(bron));
+      if ("fout" in terug) return terug;
+      const n = Number(terug.waarde.replace(",", "."));
+      if (!Number.isFinite(n)) return null;
+      // Zes cijfers, net als in het veld: meer is schijnprecisie op papier.
+      const s = String(parseFloat(n.toPrecision(6)));
+      return { waarde: komma ? s.replace(".", ",") : s };
     },
   };
 }

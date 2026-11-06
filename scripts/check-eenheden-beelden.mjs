@@ -59,11 +59,29 @@ meld(zonder.invoer("2.0", "mm") === "2.0", "zonder stelsel blijft een opgeslagen
 console.log("\nEen getypte waarde in het rapport (op papier)");
 // 2,4 kN/m² = 50,13 psf: één decimaal in kN/m² is er nul in psf (1 psf = 0,048 kN/m²).
 meld(us.getypt("2,4", "kN/m²", opmaak) === "50", "2,4 kN/m² wordt 50 psf", String(us.getypt("2,4", "kN/m²", opmaak)));
-meld(us.getypt("0.07", "m", opmaak) === "0.2", "0.07 m wordt 0.2 ft", String(us.getypt("0.07", "m", opmaak)));
+// Minstens twee significante cijfers: 0,07 m = 0,2297 ft, en d × ρ = p moet op papier kloppen.
+meld(us.getypt("0.07", "m", opmaak) === "0.23", "0.07 m wordt 0.23 ft (minstens twee significante cijfers)", String(us.getypt("0.07", "m", opmaak)));
+// Een waarde die uit een omgerekende invoer komt, staat op zes cijfers: geen schijnprecisie op papier.
+meld(us.getypt("2.39401", "kN/m²", opmaak) === "50", "2.39401 kN/m² (50 psf getypt) staat als 50, niet als 50.0000", String(us.getypt("2.39401", "kN/m²", opmaak)));
+meld(us.getypt("9.144", "m", opmaak) === "30", "9.144 m (30 ft getypt) staat als 30, niet als 30.00", String(us.getypt("9.144", "m", opmaak)));
+meld(us.getypt("2.35", "kN/m²", opmaak) === "49.1", "2.35 kN/m² staat als 49.1 psf", String(us.getypt("2.35", "kN/m²", opmaak)));
 meld(us.getypt("25", "kN/m3", opmaak) === "159", "25 kN/m³ wordt 159 pcf", String(us.getypt("25", "kN/m3", opmaak)));
 meld(us.getypt("", "m", opmaak) === null && us.getypt("hoog", "m", opmaak) === null, "leeg of geen getal: null, de aanroeper laat de tekst staan");
 meld(zonder.getypt("2,4", "kN/m²", opmaak) === null, "zonder stelsel: null, de tekst blijft zoals getypt");
 meld(us.getypt("30", "°", opmaak) === null, "een eenheid buiten het stelsel: null");
+
+console.log("\nWat een rapportveld opslaat (opslag)");
+const op = (t, bron, komma = false) => JSON.stringify(us.opslag(t, bron, komma));
+meld(op("50", "kN/m²") === '{"waarde":"2.39401"}', "50 psf: 2.39401 kN/m², op zes cijfers", op("50", "kN/m²"));
+meld(op("50,1", "kN/m²", true) === '{"waarde":"2,39880"}' || op("50,1", "kN/m²", true) === '{"waarde":"2,3988"}', "met een decimale komma: 2,3988 kN/m²", op("50,1", "kN/m²", true));
+meld(op("12 m", "m") === '{"waarde":"12"}', "12 m in een veld in ft: 12 m", op("12 m", "m"));
+meld(op("2 kN/m²", "kN/m²") === '{"waarde":"2"}', "2 kN/m² met een ²: 2 kN/m²", op("2 kN/m²", "kN/m²"));
+meld(op("1e", "kN/m²") === "null" && op("1e-", "kN/m²") === "null" && op("-", "kN/m²") === "null",
+  "een tussenstand (1e, 1e-, -) slaat niets op; geen getal e = 2,718", `${op("1e", "kN/m²")} ${op("1e-", "kN/m²")} ${op("-", "kN/m²")}`);
+meld(op("2,", "kN/m²", true) === '{"waarde":"0,0957605"}', "2, (halverwege 2,5): als 2 psf opgeslagen, met een komma", op("2,", "kN/m²", true));
+meld(op("", "kN/m²") === '{"waarde":""}', "leeg: leeg opgeslagen", op("", "kN/m²"));
+meld("fout" in us.opslag("3 kip", "kN/m²", false), "3 kip in een veld in psf: een fout", op("3 kip", "kN/m²"));
+meld(JSON.stringify(zonder.opslag("2,4", "kN/m²", true)) === '{"waarde":"2,4"}', "zonder stelsel: de tekst letterlijk", JSON.stringify(zonder.opslag("2,4", "kN/m²", true)));
 
 console.log("\nWat het stelsel niet kent, blijft");
 for (const e of ["mm/kN", "°", "min", "%", ""]) {
