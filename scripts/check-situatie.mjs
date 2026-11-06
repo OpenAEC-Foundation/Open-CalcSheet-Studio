@@ -17,6 +17,8 @@ import { parseNominatim, zoekAdres } from "../packages/desktop/src/kaart/nominat
 import {
   tegelPositie, metersPerPixel, zoomVoor, uitsnede, schaalbalk, schaalTekst,
 } from "../packages/desktop/src/kaart/tegels.ts";
+import { afstandM, dichtstePuntOpLijn, oppervlakteM2 } from "../packages/desktop/src/kaart/afstand.ts";
+import { waterVraag, dichtstbijzijndWater, meetWater } from "../packages/desktop/src/kaart/overpass.ts";
 import { KAARTEN, normaliseerSituatie, onderschrift, situatieBijPunt } from "../packages/desktop/src/rapport/situatie.ts";
 import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 
@@ -252,6 +254,53 @@ console.log("\nDe situatie in het rapport");
   const terug = normaliseerRapport(JSON.parse(JSON.stringify(mijn)), "06-11-2026", teksten, "nl");
   meld(toon(terug.situatie) === toon(goed), "de situatie komt na een rondgang via JSON gelijk terug");
   meld(!("situatie" in normaliseerRapport({ ...oud, situatie: wereld }, "06-11-2026", teksten, "nl")), "een kapotte situatie in het rapport valt weg");
+}
+
+console.log("\nAfstand en oppervlakte");
+{
+  const d = afstandM({ lat: 52.0907, lon: 5.1214 }, { lat: 52.3676, lon: 4.9041 });
+  meld(Math.abs(d - 34000) <= 300, "Utrecht-Amsterdam is ca. 34 km", String(d));
+  const lijn = [{ lat: 52, lon: 5 }, { lat: 52, lon: 5.01 }];
+  const boven = { lat: 52 + 100 / 111195, lon: 5.005 };
+  const r = dichtstePuntOpLijn(boven, lijn);
+  meld(Math.abs(r.afstand - 100) <= 0.5, "100 m boven een oost-west lijn is 100 m", String(r.afstand));
+  meld(Math.abs(r.punt.lat - 52) < 1e-6 && Math.abs(r.punt.lon - 5.005) < 1e-6, "het dichtste punt ligt loodrecht eronder", toon(r.punt));
+  const voorbij = dichtstePuntOpLijn({ lat: 52, lon: 4.99 }, lijn);
+  meld(bijna(voorbij.punt.lon, 5, 1e-9) && voorbij.afstand > 600, "voorbij het eind: het eindpunt", toon(voorbij));
+  const m = 100 / 111195;
+  const vierkant = [{ lat: 52, lon: 5 }, { lat: 52, lon: 5 + m / Math.cos(52 * Math.PI / 180) }, { lat: 52 + m, lon: 5 + m / Math.cos(52 * Math.PI / 180) }, { lat: 52 + m, lon: 5 }, { lat: 52, lon: 5 }];
+  const a = oppervlakteM2(vierkant);
+  meld(Math.abs(a - 10000) <= 100, "vierkant van 100 x 100 m is 10 000 m2", String(a));
+}
+
+console.log("\nOpen water zoeken");
+{
+  const fixture = JSON.parse(readFileSync(new URL("./fixtures/overpass-water.json", import.meta.url), "utf8"));
+  const p = { lat: 52, lon: 5 };
+  const w = dichtstbijzijndWater(p, fixture);
+  meld(w !== null && Math.abs(w.afstand - 800) <= 2 && w.naam === "Testmeer", "het meer op 800 m, met zijn naam (vijver, sloot en kust tellen niet)", toon(w));
+  meld(dichtstbijzijndWater(p, { elements: [] }) === null, "een leeg antwoord geeft null");
+  meld(dichtstbijzijndWater(p, null) === null && dichtstbijzijndWater(p, "kapot") === null, "een kapot antwoord geeft null");
+  const midden = dichtstbijzijndWater({ lat: 52, lon: 5 + 1200 / (111195 * Math.cos(52 * Math.PI / 180)) }, fixture);
+  meld(midden !== null && midden.afstand === 0 && midden.naam === "Testmeer", "midden in het meer is de afstand 0", toon(midden));
+  const zonderMeer = { elements: fixture.elements.filter((e) => e.id !== 1003) };
+  const kust = dichtstbijzijndWater(p, zonderMeer);
+  meld(kust !== null && Math.abs(kust.afstand - 3000) <= 2 && kust.naam === "", "zonder meer: de kust op 3 km, zonder naam", toon(kust));
+  const stuw = dichtstbijzijndWater(p, { elements: fixture.elements.filter((e) => e.id === 2001 || e.id === 1001) });
+  meld(stuw !== null && Math.abs(stuw.afstand - 5000) <= 2 && stuw.naam === "Teststuwmeer", "een relation met twee ringdelen: het stuwmeer op 5 km", toon(stuw));
+  const q = waterVraag(p, 10000);
+  meld(q.includes("around:10000") && q.includes("coastline") && q.includes("out geom") && q.includes("[timeout:25]"), "waterVraag: straal, kustlijn, out geom en timeout", q);
+  let aanroepen = 0, gezien;
+  const nep = async (url, opties) => {
+    aanroepen++; gezien = { url: String(url), opties };
+    return { ok: true, status: 200, json: async () => fixture };
+  };
+  const uit = await meetWater(p, nep);
+  meld(aanroepen === 1 && gezien.opties.method === "POST" && String(gezien.opties.body).startsWith("data=") && gezien.url === "https://overpass-api.de/api/interpreter" && gezien.opties.signal !== undefined, "meetWater doet een POST met data= en een time-out", toon(gezien));
+  meld(uit !== null && Math.abs(uit.afstand - 800) <= 2, "meetWater geeft het meer", toon(uit));
+  let fout = "";
+  try { await meetWater(p, async () => ({ ok: false, status: 429, json: async () => ({}) })); } catch (e) { fout = e.message; }
+  meld(fout === "HTTP 429", "een HTTP-fout geeft een Error met de status", fout);
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles OK");
