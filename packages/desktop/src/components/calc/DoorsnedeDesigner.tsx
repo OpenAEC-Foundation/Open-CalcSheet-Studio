@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useDesigner, Dim, UitkomstKop, IconKeuze } from "./designerKit";
+import { useDesigner, Dim, UitkomstKop, IconKeuze, fmt } from "./designerKit";
+import type { BeeldEenheden } from "./beeldEenheden";
 import { useBladUitkomst } from "./bladResultaat";
 import { maakDoorsnede, VORM } from "./doorsnedeDefinitie";
 import { tekenDoorsnede, type DoorsnedeTeksten } from "./doorsnedeTekening";
@@ -43,20 +44,32 @@ const MIN_TEKENING = 340;
 /** De stap van de pijltjestoetsen per veld. */
 const STAP: Record<string, number> = { h: 10, b: 10, D: 10, t: 1, t_w: 0.5, t_f: 0.5, r: 1, N_x: 10, M_y: 5, M_z: 5, V_y: 5, V_z: 5, f_y: 5 };
 
+/** Een stap van de pijltjes in een andere eenheid, op één cijfer: 10 mm is in inch 0,4. */
+function mooieStap(s: number, terugval: number): number {
+  if (!Number.isFinite(s) || s <= 0) return terugval;
+  const p = 10 ** Math.floor(Math.log10(s));
+  return parseFloat((Math.round(s / p) * p).toPrecision(1));
+}
+
 /**
  * Een getal typen, ook met een min of een komma ervoor: de waarde gaat pas als het een getal
  * is. Een veld met type number zou een losse min leeg doorgeven. De pijltjes omhoog en omlaag
- * tellen, zodat je het veld ziet meebewegen.
+ * tellen, zodat je het veld ziet meebewegen. Het veld staat in het eenhedenstelsel van het
+ * project; wat je typt, gaat terug in de eenheid van het blad (`eenheid`).
  */
-function Veld({ waarde, stap, onWijzig }: { waarde: number; stap: number; onWijzig: (w: number) => void }) {
+function Veld({ waarde, stap, onWijzig, eenheid, be }: {
+  waarde: number; stap: number; onWijzig: (w: number) => void; eenheid: string; be: BeeldEenheden;
+}) {
   const [tekst, setTekst] = useState<string | null>(null);
+  const inBeeld = be.invoer(waarde, eenheid);
+  const stapInBeeld = be.doel(eenheid) ? mooieStap(be.waarde(stap, eenheid), stap) : stap;
   return (
     <input
       type="text"
       inputMode="decimal"
-      value={tekst ?? String(waarde)}
+      value={tekst ?? inBeeld}
       onFocus={(e) => {
-        setTekst(String(waarde));
+        setTekst(inBeeld);
         e.currentTarget.select();
       }}
       onChange={(e) => {
@@ -66,15 +79,16 @@ function Veld({ waarde, stap, onWijzig }: { waarde: number; stap: number; onWijz
           onWijzig(0);
           return;
         }
-        const n = parseFloat(v.replace(",", "."));
-        if (Number.isFinite(n)) onWijzig(n);
+        const n = be.terug(v, eenheid);
+        if (n !== null) onWijzig(n);
       }}
       onKeyDown={(e) => {
         if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
         e.preventDefault();
-        const n = Math.round((waarde + (e.key === "ArrowUp" ? stap : -stap)) * 1000) / 1000;
+        const nu = parseFloat(inBeeld) || 0;
+        const n = Math.round((nu + (e.key === "ArrowUp" ? stapInBeeld : -stapInBeeld)) * 1000) / 1000;
         setTekst(String(n));
-        onWijzig(n);
+        onWijzig(be.terug(String(n), eenheid) ?? waarde);
       }}
       onBlur={() => setTekst(null)}
     />
@@ -114,8 +128,25 @@ export default function DoorsnedeDesigner() {
   const uitkomst = useBladUitkomst();
   const exemplaar = useActiefExemplaar();
   const alleenLezen = useAlleenLezen();
-  const { t } = useTranslation("beelden");
-  const teksten = useMemo(() => t("doorsnede.tekening", { returnObjects: true }) as unknown as DoorsnedeTeksten, [t]);
+  const { t, i18n } = useTranslation("beelden");
+  const eenheden = ctx.eenheden;
+  const teksten = useMemo(() => {
+    const basis = t("doorsnede.tekening", { returnObjects: true }) as unknown as DoorsnedeTeksten;
+    // In het eenhedenstelsel van het project de maten en de spanningen omgerekend, met het
+    // minteken van de tekening; zonder omrekening tekent de tekening zelf in mm en N/mm².
+    const opmaak = (v: number, dec: number) => {
+      const s = fmt(Math.abs(v), dec, i18n.language);
+      return v < 0 && Number(s.replace(",", ".")) !== 0 ? `−${s}` : s;
+    };
+    return {
+      ...basis,
+      ...(eenheden.doel("mm") ? { maat: (mm: number) => eenheden.tekst(mm, "mm", 0, opmaak) } : {}),
+      ...(eenheden.doel("N/mm²") ? {
+        eenheid: eenheden.eenheid("N/mm²"),
+        spanning: (w: number) => opmaak(eenheden.waarde(w, "N/mm²"), eenheden.decimalen(Math.abs(w) >= 1000 ? 0 : 1, "N/mm²")),
+      } : {}),
+    };
+  }, [t, eenheden, i18n.language]);
 
   // De maat van het hele paneel en van de invoer: daarmee kiest het beeld zijn indeling, en
   // zo hoog mag de tekening worden als ze er samen onder elkaar staan.
@@ -160,8 +191,8 @@ export default function DoorsnedeDesigner() {
   /** Symbool en eenheid staan er altijd; de omschrijving valt weg als de invoer boven de tekening staat. */
   const rij = (symbool: ReactNode, eenheid: string, sleutel: string, naam = sleutel) => (
     <label title={v(sleutel)}>
-      <span>{symbool} ({eenheid})<span className="ds-lang">, {v(sleutel)}</span></span>
-      <Veld waarde={d(naam)} stap={STAP[naam] ?? 1} onWijzig={(w) => set(naam, w)} />
+      <span>{symbool} ({eenheden.eenheid(eenheid)})<span className="ds-lang">, {v(sleutel)}</span></span>
+      <Veld waarde={d(naam)} stap={STAP[naam] ?? 1} eenheid={eenheid} be={eenheden} onWijzig={(w) => set(naam, w)} />
     </label>
   );
 
@@ -224,7 +255,7 @@ export default function DoorsnedeDesigner() {
             <div className="vd-stage" style={{ width: tekening.breedte * schaal, height: tekening.hoogte * schaal, background: "transparent", border: "none", borderRadius: 0 }}>
               <div className="vd-svg vd-svg-pas" dangerouslySetInnerHTML={inhoud} />
               {!alleenLezen && tekening.maten.map((m) => (
-                <Dim key={m.naam} ctx={ctx} name={m.naam} value={m.waarde} x={m.x * schaal} y={m.y * schaal} label={m.label} />
+                <Dim key={m.naam} ctx={ctx} name={m.naam} value={m.waarde} x={m.x * schaal} y={m.y * schaal} label={m.label} eenheid="mm" />
               ))}
             </div>
           </div>

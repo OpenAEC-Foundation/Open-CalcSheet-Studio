@@ -18,7 +18,15 @@ export const TEKST_SLEUTELS = [
   "komma", "ongeldig", "nogNiet", "sigmaZ", "sigmaY", "tauZ", "tauY", "eenheid",
   "neutraal", "neutraalBuiten", "geenMoment", "maxLegenda", "minLegenda", "vLegenda", "tauZLegenda", "tauYLegenda", "afspraak1", "afspraak2",
 ] as const;
-export type DoorsnedeTeksten = Record<(typeof TEKST_SLEUTELS)[number], string>;
+export type DoorsnedeTeksten = Record<(typeof TEKST_SLEUTELS)[number], string> & {
+  /**
+   * In het eenhedenstelsel van het project, alleen als dat omrekent: een maat in mm en
+   * een spanning in N/mm² als getal in de eenheid in beeld (`eenheid` hoort daarbij).
+   * Zonder deze functies staan de getallen in mm en N/mm², zoals altijd.
+   */
+  maat?: (mm: number) => string;
+  spanning?: (w: number) => string;
+};
 
 export interface DoorsnedeMaat {
   /** Naam van de invoer in het blad. */
@@ -245,7 +253,10 @@ export function tekenDoorsnede(
     const s = (a >= 1000 ? a.toFixed(0) : a.toFixed(1)).replace(".", t.komma);
     return `${w < 0 && Number(s.replace(t.komma, ".")) !== 0 ? "−" : ""}${s}`;
   };
-  const fmt = (w: number) => `${getal(w)} ${t.eenheid}`;
+  // Een spanning in beeld: in N/mm², of in het stelsel van het project.
+  const spanning = t.spanning ?? getal;
+  const maat = t.maat ?? ((w: number) => getal(w).replace(/[,.]0$/, ""));
+  const fmt = (w: number) => `${spanning(w)} ${t.eenheid}`;
   const maten: DoorsnedeMaat[] = [];
   const leeg = { sigmaZ: [] as Punt[], tauZ: [] as Punt[], sigmaY: [] as Punt[], tauY: [] as Punt[] };
   const omhul = (svg: string, H: number) => `<svg xmlns="http://www.w3.org/2000/svg" width="${r(W)}" height="${r(H)}" viewBox="0 0 ${r(W)} ${r(H)}"><rect x="0" y="0" width="${r(W)}" height="${r(H)}" fill="#ffffff"/>${svg}</svg>`;
@@ -363,11 +374,11 @@ export function tekenDoorsnede(
   const eigen = !def.profiel;
   const opKnop = interactief && eigen;
   svg.push(lijn(X(yLo), yM, X(yHi), yM, MAAT, 0.9), lijn(X(yLo), yM - 3, X(yLo), yM + 3, MAAT, 1), lijn(X(yHi), yM - 3, X(yHi), yM + 3, MAAT, 1));
-  if (!opKnop) svg.push(tekst((X(yLo) + X(yHi)) / 2, yM - 3, `${maatB} = ${getal(def.B).replace(/[,.]0$/, "")}`, "middle", MAAT, 9));
+  if (!opKnop) svg.push(tekst((X(yLo) + X(yHi)) / 2, yM - 3, `${maatB} = ${maat(def.B)}`, "middle", MAAT, 9));
   if (def.vorm !== 3 && def.vorm !== 4) {
     svg.push(lijn(xM, Y(zLo), xM, Y(zHi), MAAT, 0.9), lijn(xM - 3, Y(zLo), xM + 3, Y(zLo), MAAT, 1), lijn(xM - 3, Y(zHi), xM + 3, Y(zHi), MAAT, 1));
     const mid = (Y(zLo) + Y(zHi)) / 2;
-    if (!opKnop) svg.push(`<text x="${r(xM - 3)}" y="${r(mid)}" text-anchor="middle" fill="${MAAT}" font-size="9" font-family="Arial, Helvetica, sans-serif" transform="rotate(-90 ${r(xM - 3)} ${r(mid)})">h = ${esc(getal(def.H).replace(/[,.]0$/, ""))}</text>`);
+    if (!opKnop) svg.push(`<text x="${r(xM - 3)}" y="${r(mid)}" text-anchor="middle" fill="${MAAT}" font-size="9" font-family="Arial, Helvetica, sans-serif" transform="rotate(-90 ${r(xM - 3)} ${r(mid)})">h = ${esc(maat(def.H))}</text>`);
     if (opKnop) maten.push({ naam: "h", waarde: def.H, x: xM - 2, y: mid, label: "h" });
   }
   if (opKnop) maten.push({ naam: maatB, waarde: def.B, x: (X(yLo) + X(yHi)) / 2, y: yM, label: maatB });
@@ -398,12 +409,12 @@ export function tekenDoorsnede(
     const yTitel = Yd(zLo) - 7;
     svg.push(tekst(x1, yTitel, t.sigmaZ, "start", GRIJS, 9.5, ' font-weight="700"'));
     svg.push(tekst(x2, yTitel, t.tauZ, "start", GRIJS, 9.5, ' font-weight="700"'));
-    svg.push(tekenDiagram({ soort: "v", x0: x1, y0: 0, maat: dB, plek: Yd, punten: lijnen.sigmaZ, kleurPlus: TREK, kleurMin: DRUK, labels: lijnen.sigmaZ, soortLabel: "eind", fmt: getal, deel: "sigma-z" }));
-    svg.push(tekenDiagram({ soort: "v", x0: x2, y0: 0, maat: dB, plek: Yd, punten: lijnen.tauZ, kleurPlus: SCHUIF, kleurMin: SCHUIF, labels: piek(lijnen.tauZ), soortLabel: "piek", fmt: getal, deel: "tau-z" }));
+    svg.push(tekenDiagram({ soort: "v", x0: x1, y0: 0, maat: dB, plek: Yd, punten: lijnen.sigmaZ, kleurPlus: TREK, kleurMin: DRUK, labels: lijnen.sigmaZ, soortLabel: "eind", fmt: spanning, deel: "sigma-z" }));
+    svg.push(tekenDiagram({ soort: "v", x0: x2, y0: 0, maat: dB, plek: Yd, punten: lijnen.tauZ, kleurPlus: SCHUIF, kleurMin: SCHUIF, labels: piek(lijnen.tauZ), soortLabel: "piek", fmt: spanning, deel: "tau-z" }));
     svg.push(tekst(mL, yBoven + 7, t.sigmaY, "start", GRIJS, 9.5, ' font-weight="700"'));
-    svg.push(tekenDiagram({ soort: "h", x0: 0, y0: rij1, maat: rH - 10, plek: Xd, punten: lijnen.sigmaY, kleurPlus: TREK, kleurMin: DRUK, labels: lijnen.sigmaY, soortLabel: "eind", fmt: getal, deel: "sigma-y" }));
+    svg.push(tekenDiagram({ soort: "h", x0: 0, y0: rij1, maat: rH - 10, plek: Xd, punten: lijnen.sigmaY, kleurPlus: TREK, kleurMin: DRUK, labels: lijnen.sigmaY, soortLabel: "eind", fmt: spanning, deel: "sigma-y" }));
     svg.push(tekst(mL, rij1 + rH + 7, t.tauY, "start", GRIJS, 9.5, ' font-weight="700"'));
-    svg.push(tekenDiagram({ soort: "h", x0: 0, y0: rij2, maat: rH - 10, plek: Xd, punten: lijnen.tauY, kleurPlus: SCHUIF, kleurMin: SCHUIF, labels: piek(lijnen.tauY), soortLabel: "piek", fmt: getal, deel: "tau-y" }));
+    svg.push(tekenDiagram({ soort: "h", x0: 0, y0: rij2, maat: rH - 10, plek: Xd, punten: lijnen.tauY, kleurPlus: SCHUIF, kleurMin: SCHUIF, labels: piek(lijnen.tauY), soortLabel: "piek", fmt: spanning, deel: "tau-y" }));
 
     // ── markeringen in het veld ─────────────────────────────────────────────
     const uiterst = (fn: (a: number, c: number) => boolean) => def.hoekpunten.reduce((m, p) => (fn(σ(p[0], p[1]), σ(m[0], m[1])) ? p : m), def.hoekpunten[0]);
@@ -431,8 +442,8 @@ export function tekenDoorsnede(
     }
     svg.push(`<rect x="${r(lx)}" y="${r(ly0)}" width="${r(lb)}" height="9" fill="none" stroke="${LIJN}" stroke-width="0.6"/>`);
     if (nulOp > 0 && nulOp < 1) svg.push(lijn(lx + lb * nulOp, ly0, lx + lb * nulOp, ly0 + 12, LIJN, 0.7));
-    svg.push(tekst(lx, ly0 + 19, getal(σmin), "start", DRUK, 9));
-    svg.push(tekst(lx + lb, ly0 + 19, getal(σmax), "end", TREK, 9));
+    svg.push(tekst(lx, ly0 + 19, spanning(σmin), "start", DRUK, 9));
+    svg.push(tekst(lx + lb, ly0 + 19, spanning(σmax), "end", TREK, 9));
     svg.push(tekst(lx + lb / 2, ly0 + 19, t.eenheid, "middle", GRIJS, 8.5));
     svg.push(`</g>`);
     const regels: [string, string][] = [

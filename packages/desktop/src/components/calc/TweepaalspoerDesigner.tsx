@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useDesigner, Dim, UitkomstKop } from "./designerKit";
+import { useDesigner, Dim, UitkomstKop, fmt } from "./designerKit";
 import { useBladUitkomst } from "./bladResultaat";
 import { maakPoer } from "./poerDefinitie";
 import { tekenPoer, TEKENING_MIN_BREEDTE, type TekeningTeksten } from "./poerTekening";
@@ -75,7 +75,8 @@ export default function TweepaalspoerDesigner() {
   const uitkomst = useBladUitkomst();
   const exemplaar = useActiefExemplaar();
   const alleenLezen = useAlleenLezen();
-  const { t } = useTranslation("beelden");
+  const { t, i18n } = useTranslation("beelden");
+  const eenheden = ctx.eenheden;
 
   const teksten: TekeningTeksten = useMemo(() => ({
     bovenaanzicht: t("tweepaalspoer.bovenaanzicht"),
@@ -102,7 +103,9 @@ export default function TweepaalspoerDesigner() {
     dekkingOnder: t("tweepaalspoer.dekkingOnder"),
     dekkingZij: t("tweepaalspoer.dekkingZij"),
     staafwerk: t("tweepaalspoer.staafwerk"),
-  }), [t]);
+    // De maten op papier in het eenhedenstelsel; zonder omrekening het getal in mm, zoals altijd.
+    ...(eenheden.doel("mm") ? { maat: (mm: number) => eenheden.tekst(mm, "mm", 0, (w, n) => fmt(w, n, i18n.language)) } : {}),
+  }), [t, eenheden, i18n.language]);
 
   // De breedte van het hele paneel: die hangt niet af van de indeling, de maat van de
   // tekeningkolom wel. Daarop kiezen zou de indeling heen en weer laten springen.
@@ -232,7 +235,7 @@ export default function TweepaalspoerDesigner() {
             <div className="vd-stage" style={{ width: tekening.breedte * schaal, height: tekening.hoogte * schaal, background: "transparent", border: "none", borderRadius: 0 }}>
               <div className="vd-svg vd-svg-pas" dangerouslySetInnerHTML={inhoud} />
               {!alleenLezen && tekening.maten.map((m) => (
-                <Dim key={m.naam} ctx={ctx} name={m.naam} value={m.waarde} x={m.x * schaal} y={m.y * schaal} label={m.label} />
+                <Dim key={m.naam} ctx={ctx} name={m.naam} value={m.waarde} x={m.x * schaal} y={m.y * schaal} label={m.label} eenheid="mm" />
               ))}
             </div>
           </div>

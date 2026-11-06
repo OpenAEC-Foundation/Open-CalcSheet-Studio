@@ -37,6 +37,11 @@ export interface TekeningTeksten {
   dekkingOnder: string;
   dekkingZij: string;
   staafwerk: string;
+  /**
+   * Een maat in mm zoals hij op een maatlijn staat. Zonder deze functie het getal in mm;
+   * de aanroeper geeft hem mee als het eenhedenstelsel van het project omrekent.
+   */
+  maat?: (mm: number) => string;
 }
 
 export interface Maat {
@@ -114,6 +119,7 @@ function maatV(y0: number, y1: number, x: number, ext: number | null, t: string 
  */
 export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number, interactief = false): Tekening {
   const maten: Maat[] = [];
+  const m = t.maat ?? r;
   const W = Math.max(TEKENING_MIN_BREEDTE, breedte);
   const mL = 46;
   const mR = 16;
@@ -190,12 +196,12 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   uit.push(`</g>`);
   // maten van het bovenaanzicht
   const yMaatP = maatPlan;
-  uit.push(maatH(X(p.paalX[0]), X(p.paalX[1]), yMaatP, Y(-p.b / 2), interactief ? null : `${r(p.a)}`));
+  uit.push(maatH(X(p.paalX[0]), X(p.paalX[1]), yMaatP, Y(-p.b / 2), interactief ? null : m(p.a)));
   maten.push({ naam: "a_hoh", waarde: p.a, x: (X(p.paalX[0]) + X(p.paalX[1])) / 2, y: yMaatP, label: "a" });
   const overstek = (p.l - p.a) / 2;
-  uit.push(maatH(X(-p.l / 2), X(p.paalX[0]), yMaatP, Y(-p.b / 2), overstek * s > 22 ? `${r(overstek)}` : null));
-  uit.push(maatH(X(p.paalX[1]), X(p.l / 2), yMaatP, Y(-p.b / 2), overstek * s > 22 ? `${r(overstek)}` : null));
-  uit.push(maatV(Y(p.b / 2), Y(-p.b / 2), mL - 14, X(-p.l / 2), interactief ? null : `${r(p.b)}`));
+  uit.push(maatH(X(-p.l / 2), X(p.paalX[0]), yMaatP, Y(-p.b / 2), overstek * s > 22 ? m(overstek) : null));
+  uit.push(maatH(X(p.paalX[1]), X(p.l / 2), yMaatP, Y(-p.b / 2), overstek * s > 22 ? m(overstek) : null));
+  uit.push(maatV(Y(p.b / 2), Y(-p.b / 2), mL - 14, X(-p.l / 2), interactief ? null : m(p.b)));
   maten.push({ naam: "b_poer", waarde: p.b, x: mL - 20, y: (Y(p.b / 2) + Y(-p.b / 2)) / 2, label: "b" });
 
   // ── snedelijnen: A-A door de palen, B-B boven de rechterpaal ──────────────
@@ -281,12 +287,12 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
     // Een witte rand om de tekst: hij staat tussen de beugels en de zijstaven.
     const HALO = ' paint-order="stroke" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"';
     uit.push(tekst(X(-xKnoop) + (X(-p.model.eK) - X(-xKnoop)) * 0.5 + 8, Z((zT + zD) / 2) + 4, `θ = ${r(Math.round(p.model.hoek))}°`, "start", MODEL, 10, HALO));
-    uit.push(tekst(X(0), Z(zT + p.model.z * 0.32), `z = ${r(Math.round(p.model.z))}, d = ${r(Math.round(p.model.d))}`, "middle", MODEL, 10, HALO));
+    uit.push(tekst(X(0), Z(zT + p.model.z * 0.32), `z = ${m(Math.round(p.model.z))}, d = ${m(Math.round(p.model.d))}`, "middle", MODEL, 10, HALO));
   }
   uit.push(`</g>`);
-  uit.push(maatH(X(-p.l / 2), X(p.l / 2), maatOnder, null, interactief ? null : `${r(p.l)}`));
+  uit.push(maatH(X(-p.l / 2), X(p.l / 2), maatOnder, null, interactief ? null : m(p.l)));
   maten.push({ naam: "l_poer", waarde: p.l, x: X(0), y: maatOnder, label: "l" });
-  uit.push(maatV(poerTop, poerOnder, mL - 14, X(-p.l / 2), interactief ? null : `${r(p.h)}`));
+  uit.push(maatV(poerTop, poerOnder, mL - 14, X(-p.l / 2), interactief ? null : m(p.h)));
   maten.push({ naam: "h_poer", waarde: p.h, x: mL - 20, y: (poerTop + poerOnder) / 2, label: "h" });
 
   // ── dwarsdoorsnede boven een paal ─────────────────────────────────────────
