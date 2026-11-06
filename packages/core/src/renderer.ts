@@ -340,13 +340,21 @@ function renderInputPrompt(node: {
   unit: string;
   currentValue: string;
   standaard?: string;
+  toonEenheid?: string;
 }): string {
   // Een leeggemaakt veld rekent met de standaardwaarde (`?{5000}`, anders 0)
   // en toont hem grijs als placeholder.
   const placeholder = node.standaard !== undefined ? `\n    placeholder="${escapeHtml(node.standaard)}"` : '';
-  const unitSuffix = node.unit
-    ? `<span class="calc-input-unit">${escapeHtml(node.unit)}</span>`
+  const toon = node.toonEenheid ?? node.unit;
+  const unitSuffix = toon
+    ? `<span class="calc-input-unit">${escapeHtml(toon)}</span>`
     : '';
+  // De eenheid van de bladtekst, en die in beeld: zo rekent de app wat je typt terug
+  // (invoerNaarBron), ook "5 m" in een veld in mm.
+  const eenheden = (node.unit ? `
+    data-eenheid="${escapeHtml(node.unit)}"` : '')
+    + (node.toonEenheid ? `
+    data-toon-eenheid="${escapeHtml(node.toonEenheid)}"` : '');
   // Een tekstveld en geen type="number": daarin is een tussenstand als "0," of
   // "0." ongeldig en leest de waarde als leeg, zodat een getal met een komma of
   // punt niet in te typen was. inputmode="decimal" geeft op een tablet toch het
@@ -355,7 +363,7 @@ function renderInputPrompt(node: {
   <label class="calc-input-label">${escapeHtml(weergaveNaam(node.label))} =</label>
   <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false"
     class="calc-input-value"
-    data-prompt="${escapeHtml(node.name)}"
+    data-prompt="${escapeHtml(node.name)}"${eenheden}
     value="${escapeHtml(node.currentValue)}"${placeholder} />
   ${unitSuffix}
 </div>`;

@@ -1,6 +1,6 @@
 import type { MathNode } from 'mathjs';
 import { math, isEenheidNaam } from './eenheden.js';
-import { decimalenNa, doelInStelsel, type Stelsel } from './eenheidstelsel.js';
+import { decimalenNa, doelInStelsel, toonInvoer, type Stelsel } from './eenheidstelsel.js';
 import type { AstNode, ConditionalNode, EvaluatedNode, InStelsel, MatrixUitkomst, OpdrachtNode } from './types.js';
 import { losStelselOp, rangVan, eigenSymmetrisch } from './matrixrekening.js';
 import { bouwDrieDScene } from './drieD.js';
@@ -1643,13 +1643,22 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
           }
         }
         if (!node.hidden) {
+          // In het eenhedenstelsel toont het veld zijn waarde in de eenheid van het
+          // stelsel; opgeslagen blijft hij in de eenheid van de bladtekst.
+          let toon: string | null = null;
+          try {
+            toon = huidigStelsel && node.unit ? doelInStelsel(node.unit, huidigStelsel) : null;
+          } catch {
+            toon = null;
+          }
           result.push({
             type: 'input-prompt',
             name: node.name,
             label: node.label,
             unit: node.unit,
-            currentValue: invoer,
-            standaard,
+            currentValue: toon ? toonInvoer(invoer, node.unit, toon) : invoer,
+            standaard: toon && standaard !== undefined ? toonInvoer(standaard, node.unit, toon) : standaard,
+            ...(toon ? { toonEenheid: toon } : {}),
           });
         }
         break;

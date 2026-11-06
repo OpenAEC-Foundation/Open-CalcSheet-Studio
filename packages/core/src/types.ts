@@ -445,6 +445,11 @@ export interface EvaluatedInputPrompt {
   currentValue: string;
   /** De standaardwaarde van het veld (`?{5000}`, anders "0"); placeholder van een leeg veld. */
   standaard?: string;
+  /**
+   * De eenheid waarin het veld zijn waarde toont, als het eenhedenstelsel hem omrekent;
+   * `currentValue` en `standaard` staan dan in die eenheid. Opgeslagen wordt in `unit`.
+   */
+  toonEenheid?: string;
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }

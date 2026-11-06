@@ -121,6 +121,48 @@ export function decimalenNa(decimalen: number, bron: string, doel: string): numb
   return Number.isFinite(d) ? Math.min(6, Math.max(0, d)) : decimalen;
 }
 
+/** Een kaal getal zoals iemand het typt: met een punt of een komma als decimaalteken. */
+const KAAL_GETAL = /^[-+]?(\d+([.,]\d*)?|[.,]\d+)([eE][-+]?\d+)?$/;
+
+/**
+ * Een opgeslagen invoer (een kaal getal in de eenheid van de bladtekst) in een
+ * andere eenheid, voor in het invoerveld: op 6 significante cijfers. Wat geen getal
+ * is (leeg, een tussenstand), blijft zoals het is.
+ */
+export function toonInvoer(waarde: string, bron: string, doel: string): string {
+  const t = waarde.trim();
+  if (!KAAL_GETAL.test(t)) return waarde;
+  const n = math.unit(parseFloat(t.replace(',', '.')), bron).toNumber(doel);
+  return String(parseFloat(n.toPrecision(6)));
+}
+
+/**
+ * Wat iemand in een invoerveld typt, terug naar de eenheid van de bladtekst. Een kaal
+ * getal geldt in de eenheid naast het veld (`toon`), een getal met een eenheid in die
+ * eenheid. Een tussenstand ("0,", "-", leeg) of een kaal getal in de eigen eenheid
+ * blijft letterlijk, zodat typen gewoon werkt. Een eenheid met een andere dimensie
+ * geeft een fout, en dan wordt er niets opgeslagen.
+ */
+export function invoerNaarBron(tekst: string, toon: string, bron: string): { waarde: string } | { fout: string } {
+  const t = tekst.trim();
+  if (KAAL_GETAL.test(t)) {
+    if (toon.replace(/\s+/g, '') === bron.replace(/\s+/g, '')) return { waarde: tekst };
+    const n = math.unit(parseFloat(t.replace(',', '.')), toon).toNumber(bron);
+    return { waarde: String(parseFloat(n.toPrecision(12))) };
+  }
+  const metEenheid = t.match(/^([-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:[eE][-+]?\d+)?)\s*([\p{L}°].*)$/u);
+  if (!metEenheid) return { waarde: tekst };
+  let u;
+  try {
+    u = math.unit(parseFloat(metEenheid[1].replace(',', '.')), metEenheid[2].trim());
+  } catch {
+    // Een eenheid die nog niet af is ("5 k"): laten staan tot hij compleet is.
+    return { waarde: tekst };
+  }
+  if (!u.equalBase(math.unit(bron))) return { fout: `${metEenheid[2].trim()} does not fit a field in ${bron}` };
+  return { waarde: String(parseFloat(u.toNumber(bron).toPrecision(12))) };
+}
+
 /**
  * De doeleenheid van een waarde in dit stelsel, of `null` als hij blijft zoals hij
  * is: geen grootheid, geen eenheid in het stelsel, of al in die eenheid.
