@@ -125,6 +125,8 @@ export default function SettingsDialog({
   const originalText = useRef("standard");
   const originalUnits = useRef<UnitsSettings>(UNITS_DEFAULTS);
   const originalBureau = useRef<BureauProfiel>(leegBureau());
+  // Pas na het lezen bewaren: anders wist een snelle klik op Opslaan adres en sleutel.
+  const erpnextGelezen = useRef(false);
 
   // Reset draft to current values when dialog opens
   useEffect(() => {
@@ -151,7 +153,11 @@ export default function SettingsDialog({
       setDraftBureau(profiel);
       // Het geheim zelf komt nooit terug uit de sleutelbos; alleen of het er is.
       setDraftErpnext(LEEG_ERPNEXT);
-      leesErpnextInstellingen().then((w) => setDraftErpnext({ instellingen: w, geheim: "", wissen: false }));
+      erpnextGelezen.current = false;
+      leesErpnextInstellingen().then((w) => {
+        erpnextGelezen.current = true;
+        setDraftErpnext({ instellingen: w, geheim: "", wissen: false });
+      });
       heeftErpnextGeheim().then(setHeeftGeheim);
     }
   }, [open, theme, startTab]);
@@ -216,7 +222,7 @@ export default function SettingsDialog({
 
     // Adres, sleutel en veld gaan naar de instellingen; het geheim alleen naar de
     // sleutelbos, en alleen als er een nieuw is getypt of Wissen is gekozen.
-    void bewaarErpnextInstellingen(draftErpnext.instellingen);
+    if (erpnextGelezen.current) void bewaarErpnextInstellingen(draftErpnext.instellingen);
     const geheim = draftErpnext.geheim.trim();
     if (isTauri() && (geheim !== "" || draftErpnext.wissen)) {
       zetErpnextGeheim(geheim)
