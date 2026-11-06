@@ -97,7 +97,7 @@ const INDELING = {
   kN: "kracht", "kN m": "moment", "kN / m": "lijnlast",
   "kN / m^2": "vlakbelasting", psf: "vlakbelasting",
   "N / mm^2": "spanning", MPa: "spanning", psi: "spanning",
-  "kN / m^3": "volumegewicht", kg: "massa", degC: "temperatuur",
+  "kN / m^3": "volumegewicht", kg: "massa", degC: null,
   K: null, "K^-1": null, "1 / s": null,
 };
 for (const [eenheid, verwacht] of Object.entries(INDELING)) {
@@ -116,7 +116,6 @@ toont("L = 4.5 m", "L", "14.76 ft");
 toont("b = 4500 mm", "b", "177.2 in");
 toont("M = 10 kN*m", "M", "7.376 kip ft");
 toont("f = 235 N/mm^2", "f", "34.08 ksi");
-toont("T = 20 degC", "T", "68 degF");
 meld(inStelsel("dT = 20 K", "dT") === undefined, "een temperatuurverschil in K blijft staan");
 const v = inStelsel("v = [1; 2] m", "v");
 meld(/3\.281/.test(v?.result ?? "") && /6\.562/.test(v?.result ?? "") && /ft/.test(v?.result ?? "") && !/\bm\b/.test(v?.result ?? ""),
@@ -142,6 +141,32 @@ const proj = alleNodes(evaluate(parse("F = 2 kipf\nG = F to kN", { eenheden: ["k
   { eigenEenheden: [{ naam: "kipf", uitdrukking: "1000 lbf" }] })).find((n) => n.name === "G");
 meld(proj?.result === "8.896 kN", "een eenheid van het project geldt in het blad: 2 kipf = 8.896 kN", proj?.result);
 meld((uitkomst("F = 2 kipf", "F") ?? "").startsWith("Error:"), "en daarna niet meer");
+
+console.log("\nBevindingen van het nakijken");
+// 1. Een nieuwe basiseenheid bij elke doorrekening opnieuw (de app rekent bij elke toets).
+for (let ronde = 1; ronde <= 3; ronde++) {
+  gelijk(".EUR = 1\nP = 100 EUR", "P", "100 EUR", `een nieuwe basiseenheid werkt ook bij doorrekening ${ronde}`);
+}
+meld((uitkomst("P = 100 EUR", "P") ?? "").startsWith("Error:"), "en daarna nog steeds niet in een blad zonder de definitie");
+// 2. Een regel die een eenheid gebruikt vóór die bestond (tijdens het typen), daarna mét definitie.
+uitkomst("G = 3 dozen", "G");
+gelijk(".dozen = 12 kg\nG = 3 dozen\nH = G to kg", "H", "36 kg", "een eigen eenheid werkt ook als dezelfde regel eerder zonder definitie werd doorgerekend");
+// 3. Een stelsel verandert nooit een rekenwaarde, ook niet bij een temperatuur met #round of :F1.
+const rondT = node("#round 1\nT = 20.123 degC\nU = T", "T", US);
+const rondU = node("#round 1\nT = 20.123 degC\nU = T", "U", US);
+meld(rondT?.result === "20.12 degC" && rondU?.result === "20.12 degC",
+  "#round met een temperatuur: in het stelsel geen fout in de rekenwaarde", `${rondT?.result} / ${rondU?.result}`);
+const f1 = node("T = 20.123 degC:F1", "T", US);
+meld(f1?.getoond === "20.1 degC", "T:F1 houdt zijn notatie", JSON.stringify({ getoond: f1?.getoond, inStelsel: f1?.inStelsel }));
+meld(decimalenNa(1, "degC", "degF") === 1, "decimalenNa met een verschoven eenheid (°C → °F) is een getal", decimalenNa(1, "degC", "degF"));
+// 4. Zonder stelsel blijft een enkele letter na een getal een variabele (L, h, b zijn ook eenheden in mathjs).
+for (const [expr, letter] of [["0.7 L", "L"], ["0.5 h", "h"], ["2 b", "b"]]) {
+  const l = exprToLatex(expr);
+  meld(!l.includes(`\\text{${letter}}`), `${expr}: ${letter} blijft een variabele`, l);
+}
+// 5. Een temperatuur gaat (nog) niet om: een verschil in °C is niet van een absolute temperatuur te onderscheiden.
+meld(inStelsel("T = 20 degC", "T") === undefined, "een temperatuur in °C blijft staan");
+meld(inStelsel("T_1 = 30 degC\nT_2 = 20 degC\ndT = T_1 - T_2", "dT") === undefined, "een temperatuurverschil in °C blijft staan");
 
 console.log("\nModules");
 const PROJECT = { CC: 2, K_FI: 1, rekenwijze: 1 };

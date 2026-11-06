@@ -115,7 +115,6 @@ bedoelde:
 | Spanning en E-modulus | N/mm², MPa, GPa | N/mm², MPa, GPa, psi, ksi |
 | Volumegewicht | kN/m³ | kN/m³, pcf |
 | Massa | kg, t | kg, t, lb |
-| Temperatuur | °C | °C, °F |
 | Hoek | (bestaande instelling) | deg, rad, gra |
 
 - **Afspraak voor druk:** vlakbelasting en spanning hebben dezelfde dimensie. Een
@@ -125,9 +124,10 @@ bedoelde:
   herkent `grootheidVan` aan de naam van de eenheid: ft, yd en mi zijn lengte, in
   is maat, psi en ksi zijn spanning, psf en ksf zijn vlakbelasting. Alleen een
   onbekende druk valt op de grens van 100 kPa.
-- **Een temperatuur in K blijft staan.** In een blad is dat bijna altijd een
-  verschil (ΔT = 20 K). Omgerekend als absolute temperatuur zou 20 K −423,7 °F
-  worden. Alleen °C gaat naar °F.
+- **Een temperatuur rekent (nog) niet om.** In K is het in een blad bijna altijd een
+  verschil (ΔT = 20 K): omgerekend als absolute temperatuur zou 20 K −423,7 °F worden.
+  Ook in °C is een verschil (30 °C − 20 °C) niet van een absolute temperatuur te
+  onderscheiden; het zou als 50 °F in beeld komen in plaats van 18 °F. Zie "Later".
 - **Andere dimensies:** een dimensie die niet in de tabel staat (een rekenfactor
   met eenheid, 1/K) blijft zoals de schrijver hem toont.
 - **De herkenning is één functie, met eigen controles:** `grootheidVan(eenheid)`
@@ -155,7 +155,6 @@ bedoelde:
 | Spanning en E-modulus | N/mm² | MPa | ksi |
 | Volumegewicht | kN/m³ | kN/m³ | pcf |
 | Massa | kg | kg | lb |
-| Temperatuur | °C | °C | °F |
 
 **SI (mm)** is de gewone Eurocode-praktijk en ziet eruit als de meeste modules nu.
 **SI (m)** zet alles in meters.
@@ -338,6 +337,8 @@ De bestaande controles blijven slagen. Het aantal controlescripts in de README g
 
 ## Later
 
+- **Temperatuur in °F**, zodra een blad absolute temperaturen en verschillen uit elkaar kan
+  houden.
 - **Voet en inch met breuken** (5'-6 ½") als notatie voor lengte, en als invoer.
 - **Een bibliotheek met eigen eenheden in Instellingen** voor alle projecten.
 - **Normen per land die een stelsel voorstellen**, bijvoorbeeld US customary bij

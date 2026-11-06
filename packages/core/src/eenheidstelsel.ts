@@ -22,8 +22,7 @@ export type Grootheid =
   | 'vlakbelasting'
   | 'spanning'
   | 'volumegewicht'
-  | 'massa'
-  | 'temperatuur';
+  | 'massa';
 
 /** De eenheid per grootheid, in de schrijfwijze van de rekenkern (`kip ft`, `N / mm^2`). */
 export type Stelsel = Partial<Record<Grootheid, string>>;
@@ -34,19 +33,19 @@ export const STELSELS = {
     lengte: 'm', maat: 'mm', oppervlakte: 'm^2', doorsnedeOppervlakte: 'mm^2',
     weerstandsmoment: 'mm^3', traagheidsmoment: 'mm^4', kracht: 'kN', moment: 'kN m',
     lijnlast: 'kN / m', vlakbelasting: 'kN / m^2', spanning: 'N / mm^2',
-    volumegewicht: 'kN / m^3', massa: 'kg', temperatuur: 'degC',
+    volumegewicht: 'kN / m^3', massa: 'kg',
   },
   'si-m': {
     lengte: 'm', maat: 'm', oppervlakte: 'm^2', doorsnedeOppervlakte: 'm^2',
     weerstandsmoment: 'm^3', traagheidsmoment: 'm^4', kracht: 'kN', moment: 'kN m',
     lijnlast: 'kN / m', vlakbelasting: 'kPa', spanning: 'MPa',
-    volumegewicht: 'kN / m^3', massa: 'kg', temperatuur: 'degC',
+    volumegewicht: 'kN / m^3', massa: 'kg',
   },
   us: {
     lengte: 'ft', maat: 'in', oppervlakte: 'ft^2', doorsnedeOppervlakte: 'in^2',
     weerstandsmoment: 'in^3', traagheidsmoment: 'in^4', kracht: 'kip', moment: 'kip ft',
     lijnlast: 'klf', vlakbelasting: 'psf', spanning: 'ksi',
-    volumegewicht: 'pcf', massa: 'lb', temperatuur: 'degF',
+    volumegewicht: 'pcf', massa: 'lb',
   },
 } as const satisfies Record<string, Required<Stelsel>>;
 
@@ -54,8 +53,11 @@ export const STELSELS = {
  * Herkend aan de naam. De dimensie alleen is hier niet genoeg: een overspanning
  * (m) en een doorsnedemaat (mm) zijn allebei een lengte, en een vlakbelasting en
  * een spanning hebben allebei de dimensie van een druk. De schrijver van het blad
- * koos de eenheid, en daarmee de grootheid. Een temperatuur in K staat er niet in:
- * in een blad is dat bijna altijd een verschil.
+ * koos de eenheid, en daarmee de grootheid.
+ *
+ * Een temperatuur rekent (nog) niet om. In K is het in een blad bijna altijd een
+ * verschil, en ook in °C is een verschil (30 °C − 20 °C) niet van een absolute
+ * temperatuur te onderscheiden: omgerekend als absolute temperatuur zou het fout zijn.
  */
 const OP_NAAM: Record<string, Grootheid> = {
   m: 'lengte', km: 'lengte', ft: 'lengte', yd: 'lengte', mi: 'lengte',
@@ -66,7 +68,6 @@ const OP_NAAM: Record<string, Grootheid> = {
   'mm^4': 'traagheidsmoment', 'cm^4': 'traagheidsmoment', 'm^4': 'traagheidsmoment', 'in^4': 'traagheidsmoment', 'inch^4': 'traagheidsmoment',
   'kN/m^2': 'vlakbelasting', 'N/m^2': 'vlakbelasting', kPa: 'vlakbelasting', Pa: 'vlakbelasting', psf: 'vlakbelasting', ksf: 'vlakbelasting',
   'N/mm^2': 'spanning', 'kN/mm^2': 'spanning', MPa: 'spanning', GPa: 'spanning', psi: 'spanning', ksi: 'spanning',
-  degC: 'temperatuur', degF: 'temperatuur',
 };
 
 /** Herkend aan de dimensie, voor eenheden die niet in OP_NAAM staan (`N mm`, `lbf / ft`). */
@@ -113,9 +114,11 @@ export function grootheidVan(naam: string): Grootheid | null {
  * (doel / bron), tussen 0 en 6. `:F2` in mm wordt in inch `:F3`.
  */
 export function decimalenNa(decimalen: number, bron: string, doel: string): number {
-  const verhouding = math.unit(1, doel).toNumber(bron);
-  const d = decimalen + Math.round(Math.log10(verhouding));
-  return Math.min(6, Math.max(0, d));
+  // De grootte van één stap in de doeleenheid, uitgedrukt in de bron: ook goed voor
+  // een eenheid met een verschuiving, zoals een temperatuur.
+  const stap = Math.abs(math.unit(2, doel).toNumber(bron) - math.unit(1, doel).toNumber(bron));
+  const d = decimalen + Math.round(Math.log10(stap));
+  return Number.isFinite(d) ? Math.min(6, Math.max(0, d)) : decimalen;
 }
 
 /**

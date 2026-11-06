@@ -1292,14 +1292,32 @@ function ontleedExpr(expr: string): MathNode {
 
 /** Berekent een expressie met de betekenis in de rekentaal (zie vertaalRekentaal). */
 function reken(expr: string, scope: Scope): unknown {
-  let c = gecompileerd.get(expr);
+  // Bij het compileren legt mathjs vast of een naam een eenheid is. Met eigen
+  // eenheden hangt dat van het blad af; die horen dus in de sleutel.
+  const sleutel = eigenSleutel ? `${eigenSleutel} ${expr}` : expr;
+  let c = gecompileerd.get(sleutel);
   if (!c) {
     c = vertaalRekentaal(ontleedExpr(expr)).compile();
     if (gecompileerd.size >= CACHE_MAX) gecompileerd.clear();
-    gecompileerd.set(expr, c);
+    gecompileerd.set(sleutel, c);
   }
   return c.evaluate(scope);
 }
+
+/** De eigen eenheden die nu bestaan, als deel van de cachesleutel van `reken`. */
+let eigenSleutel = '';
+const actieveEigen = new Set<string>();
+function werkEigenSleutelBij(): void {
+  eigenSleutel = [...actieveEigen].sort().join(',');
+}
+
+/**
+ * Nieuwe basiseenheden (`.EUR = 1`), per proces één keer gemaakt. mathjs kan een
+ * basisdimensie niet weghalen; een tweede `createUnit('EUR')` zou falen. Na het blad
+ * gaat alleen de eenheid uit de tabel, en een volgend blad zet hem terug.
+ */
+const basisEenheden = new Map<string, unknown>();
+const eenhedenTabel = math.Unit as unknown as { UNITS: Record<string, unknown>; deleteUnit(naam: string): void };
 
 export interface Scope {
   [key: string]: unknown;
@@ -1437,22 +1455,39 @@ function maakEenheid(naam: string, uitdrukking: string, scope: Scope, stand: Sta
     return `Error: ${(err as Error).message}`;
   }
   try {
-    if (isUnit(waarde)) math.createUnit(naam, waarde.toString());
-    else if (waarde === 1) math.createUnit(naam);
-    else return 'Error: a custom unit is 1 (a new base unit) or follows from another unit, as in .kipf = 1000 lbf';
+    if (isUnit(waarde)) {
+      math.createUnit(naam, waarde.toString());
+    } else if (waarde === 1) {
+      const basis = basisEenheden.get(naam);
+      if (basis) {
+        eenhedenTabel.UNITS[naam] = basis;
+        // Leegt het geheugen van mathjs voor het opzoeken van eenheden.
+        eenhedenTabel.deleteUnit(' ');
+      } else {
+        math.createUnit(naam);
+        basisEenheden.set(naam, eenhedenTabel.UNITS[naam]);
+      }
+    } else {
+      return 'Error: a custom unit is 1 (a new base unit) or follows from another unit, as in .kipf = 1000 lbf';
+    }
   } catch (err) {
     return `Error: ${(err as Error).message}`;
   }
   stand.eenheden.push(naam);
+  actieveEigen.add(naam);
+  werkEigenSleutelBij();
   return null;
 }
 
 /** Haalt de eigen eenheden van een blad weer weg, de laatste eerst. */
 function ruimEenhedenOp(stand: Stand): void {
   // `deleteUnit` bestaat in mathjs 13, maar staat niet in de typen.
-  const unit = math.Unit as unknown as { deleteUnit(naam: string): void };
-  for (const naam of stand.eenheden.reverse()) unit.deleteUnit(naam);
+  for (const naam of stand.eenheden.reverse()) {
+    eenhedenTabel.deleteUnit(naam);
+    actieveEigen.delete(naam);
+  }
   stand.eenheden = [];
+  werkEigenSleutelBij();
 }
 
 /** Voert een opdracht uit (zie OpdrachtNode en Stand). */
@@ -2462,6 +2497,16 @@ function opmaakInStelsel(opmaak: Opmaak, bron: unknown, doel: unknown): Opmaak {
 
 /** De velden van een uitkomst in het stelsel (InStelsel), of `null` als hij blijft zoals hij is. */
 function stelselVelden(value: unknown, opmaak?: Opmaak): InStelsel | null {
+  // Een fout in de weergave mag nooit de rekenwaarde raken: dan blijft de waarde
+  // zoals het blad hem toont.
+  try {
+    return stelselVeldenOnveilig(value, opmaak);
+  } catch {
+    return null;
+  }
+}
+
+function stelselVeldenOnveilig(value: unknown, opmaak?: Opmaak): InStelsel | null {
   const omgezet = inHetStelsel(value);
   if (omgezet === null) return null;
   const opmaakNa = opmaak ? opmaakInStelsel(opmaak, value, omgezet) : undefined;

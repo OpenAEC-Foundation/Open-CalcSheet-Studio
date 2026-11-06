@@ -250,8 +250,10 @@ function operatorToLatex(nd: AnyNode): string {
         // Een naam direct achter een getal die de rekenkern als eenheid kent, is
         // een eenheid, ook als hij als Griekse letter te lezen is: 50 psi is geen
         // 50 ψ. Elders blijft `psi` de variabele ψ, zoals in de Eurocode.
+        // Alleen een naam die anders een Griekse letter zou worden: een enkele letter
+        // na een getal (0.7 L, 0.5 h) blijft een variabele, zoals altijd.
         const eenheidNaGetal = rightNd.type === 'SymbolNode' && n(args[0]).type === 'ConstantNode'
-          && isEenheidNaam(rightNd.name!);
+          && GREEK[rightNd.name!] !== undefined && isEenheidNaam(rightNd.name!);
         const right = eenheidNaGetal ? unitToLatex(rightNd.name!) : args[1] ? nodeToLatex(args[1]) : '';
         // If left is a number and right is a unit, use thin space
         if (rightNd.type === 'SymbolNode' && (eenheidNaGetal || isKnownUnit(rightNd.name!))) {
