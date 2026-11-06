@@ -20,6 +20,7 @@ import {
 import { afstandM, dichtstePuntOpLijn, oppervlakteM2 } from "../packages/desktop/src/kaart/afstand.ts";
 import { waterVraag, dichtstbijzijndWater, meetWater } from "../packages/desktop/src/kaart/overpass.ts";
 import { locatieUitErp, nieuweLocatieTekst } from "../packages/desktop/src/kaart/erpnext.ts";
+import { herkomstVan, geheimActies, adresToegestaan } from "../packages/desktop/src/tauri/erpnextGeheim.ts";
 import { KAARTEN, normaliseerSituatie, onderschrift, situatieBijPunt, waterTekst } from "../packages/desktop/src/rapport/situatie.ts";
 import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 
@@ -397,6 +398,25 @@ console.log("\nOpen water zoeken");
   meld((await bericht(() => meetWater(p, async () => ({ ok: true, status: 200, json: async () => ({ elements: fixture.elements, remark: "runtime error: out of memory" }) })))) !== "", "een remark bij gedeeltelijke elements laat meetWater falen");
   meld((await bericht(async () => dichtstbijzijndWater(p, { elements: [], remark: "runtime error: out of memory" }))) !== "", "dichtstbijzijndWater gooit bij een geheugenfout");
   meld(dichtstbijzijndWater(p, { elements: [], remark: "Hallo" }) === null, "een remark zonder fout laat null staan");
+}
+
+console.log("\nHet geheim van de ERPNext-koppeling hoort bij de herkomst van het adres");
+{
+  const A = "https://a.example.test", B = "https://b.example.test";
+  const g = (...a) => toon(geheimActies(...a));
+  meld(herkomstVan("https://a.example.test/erp/pad") === A, "herkomst: alleen schema, host en poort");
+  meld(herkomstVan("") === null && herkomstVan("kapot") === null && herkomstVan("ftp://a.example.test") === null && herkomstVan("http://a.example.test") === null, "leeg, ongeldig, ftp en http buiten localhost: geen herkomst");
+  meld(herkomstVan("http://localhost:8000/x") === "http://localhost:8000", "http://localhost mag");
+  meld(adresToegestaan("") && adresToegestaan(A) && !adresToegestaan("http://a.example.test"), "adresToegestaan");
+  meld(g(A, B, "", true) === toon({ wisVoor: A }), "wissen bij A, adres naar B: A wordt gewist, B niet", g(A, B, "", true));
+  meld(g(A, "", "", false) === toon({ wisVoor: A }), "adres leeggemaakt: het geheim van A wordt gewist", g(A, "", "", false));
+  meld(g(A, "kapot", "x", false) === toon({ wisVoor: A }), "ongeldig nieuw adres: oud geheim gewist, niets bewaard", g(A, "kapot", "x", false));
+  meld(g(A, A + "/ander/pad", "", false) === "{}", "alleen een ander pad: niets gewist", g(A, A + "/ander/pad", "", false));
+  meld(g(A, A + "/ander/pad", "", true) === toon({ wisVoor: A + "/ander/pad" }), "ander pad met Wissen: wist de herkomst", g(A, A + "/ander/pad", "", true));
+  meld(g(A, B, "geheim", false) === toon({ wisVoor: A, bewaarVoor: B }), "A naar B met nieuw geheim: A gewist, B bewaard", g(A, B, "geheim", false));
+  meld(g("", A, "geheim", false) === toon({ bewaarVoor: A }), "eerste keer: bewaren voor A", g("", A, "geheim", false));
+  meld(g(A, A, "geheim", false) === toon({ bewaarVoor: A }), "nieuw geheim, zelfde herkomst: bewaren", g(A, A, "geheim", false));
+  meld(g("", "http://a.example.test", "geheim", false) === "{}", "onjuist adres: geen geheim bewaard", g("", "http://a.example.test", "geheim", false));
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles OK");

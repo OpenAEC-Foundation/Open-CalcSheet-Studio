@@ -250,6 +250,20 @@ export default function LocatieKiezer() {
     setWaterMelding(null);
   }, [puntLat, puntLon]);
 
+  // De instellingen of het geheim kunnen veranderen terwijl het paneel openstaat.
+  const [erpVersie, setErpVersie] = useState(0);
+  useEffect(() => {
+    const op = () => setErpVersie((n) => n + 1);
+    window.addEventListener("erpnext-changed", op);
+    return () => window.removeEventListener("erpnext-changed", op);
+  }, []);
+
+  // Een melding en een lopende opdracht horen bij het project waarvoor ze zijn gemaakt.
+  useEffect(() => {
+    stopErp();
+    setErpMelding(null);
+  }, [projectNummer, stopErp]);
+
   useEffect(() => {
     let weg = false;
     setErpBeschikbaar(false);
@@ -266,7 +280,7 @@ export default function LocatieKiezer() {
     return () => {
       weg = true;
     };
-  }, [projectNummer]);
+  }, [projectNummer, erpVersie]);
 
   /**
    * Haalt het locatieveld van het project uit ERPNext en zet het punt daarop. Het oude punt

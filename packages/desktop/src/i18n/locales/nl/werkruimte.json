@@ -321,7 +321,7 @@
       "waterMislukt": "De afstand tot open water kon niet worden gemeten. Controleer je internetverbinding en probeer het later opnieuw; een eerdere meting blijft staan.",
       "erpOvernemen": "Overnemen uit ERPNext",
       "erpBezig": "Ophalen uit ERPNext…",
-      "erpLeeg": "Het veld {{veld}} van dit project in ERPNext is leeg. De huidige locatie blijft staan.",
+      "erpLeeg": "Het veld {{veld}} van dit project in ERPNext is leeg of bestaat niet. De huidige locatie blijft staan.",
       "erpNietGevonden": "De locatie uit ERPNext is niet gevonden. De huidige locatie blijft staan.",
       "erpMislukt": "Overnemen uit ERPNext is mislukt: {{fout}}. De huidige locatie blijft staan."
     }

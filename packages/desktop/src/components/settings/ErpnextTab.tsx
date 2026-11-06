@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { ErpnextInstellingen } from "../../tauri/erpnext";
+import { adresToegestaan, herkomstVan } from "../../tauri/erpnextGeheim";
 import "./ErpnextTab.css";
 
 /**
@@ -38,15 +39,29 @@ export default function ErpnextTab({
 
   // Het geheim hoort bij het adres: zonder adres is er niets om het bij te bewaren.
   const zonderAdres = concept.instellingen.adres.trim() === "";
+  const adresFout = !adresToegestaan(concept.instellingen.adres);
   const geheimStatus = zonderAdres
     ? t("erpnext.geheimEerstAdres")
-    : concept.geheim.trim() !== ""
+    : adresFout
+      ? t("erpnext.geheimAdresOnjuist")
+      : concept.geheim.trim() !== ""
       ? t("erpnext.geheimNieuw")
       : concept.wissen
         ? t("erpnext.geheimWist")
         : heeftGeheim
           ? t("erpnext.geheimBewaard")
           : t("erpnext.geheimGeen");
+
+  // Het geheim en Wissen horen bij de herkomst van het adres: een andere herkomst laat
+  // een getypt geheim of een gekozen Wissen vervallen. Alleen een ander pad niet.
+  const zetAdres = (adres: string) => {
+    const andere = herkomstVan(adres) !== herkomstVan(concept.instellingen.adres);
+    onChange({
+      ...concept,
+      instellingen: { ...concept.instellingen, adres },
+      ...(andere ? { geheim: "", wissen: false } : {}),
+    });
+  };
 
   return (
     <div className="erpnext-tab">
@@ -64,10 +79,15 @@ export default function ErpnextTab({
             placeholder={t("erpnext.adresVoorbeeld")}
             spellCheck={false}
             autoComplete="off"
-            onChange={(e) => zet({ adres: e.target.value })}
+            onChange={(e) => zetAdres(e.target.value)}
           />
         </label>
         <p className="settings-description erpnext-hint">{t("erpnext.adresUitleg")}</p>
+        {adresFout && (
+          <p className="settings-description erpnext-waarschuwing" role="alert">
+            {t("erpnext.adresOnjuist")}
+          </p>
+        )}
 
         <label className="settings-row">
           <span className="settings-label">{t("erpnext.sleutel")}</span>
@@ -88,14 +108,14 @@ export default function ErpnextTab({
               type="password"
               value={concept.geheim}
               aria-label={t("erpnext.geheim")}
-              disabled={!desktop || zonderAdres}
+              disabled={!desktop || zonderAdres || adresFout}
               spellCheck={false}
               autoComplete="new-password"
               onChange={(e) => onChange({ ...concept, geheim: e.target.value, wissen: false })}
             />
             <button
               className="settings-btn settings-btn-secondary erpnext-knop"
-              disabled={!desktop || zonderAdres || !heeftGeheim || concept.wissen}
+              disabled={!desktop || zonderAdres || adresFout || !heeftGeheim || concept.wissen}
               onClick={() => onChange({ ...concept, geheim: "", wissen: true })}
             >
               {t("erpnext.wissen")}

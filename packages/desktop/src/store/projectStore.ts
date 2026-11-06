@@ -711,7 +711,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   zetGegevens: (waarden) =>
     set((s) => ({
-      ...metGeschiedenis(s, `gegevens:${Object.keys(waarden).join(",")}`),
+      ...metGeschiedenis(s, null),
       gegevens: { ...s.gegevens, ...waarden },
       dirty: true,
     })),

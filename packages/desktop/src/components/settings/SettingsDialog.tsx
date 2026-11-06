@@ -16,6 +16,7 @@ import {
   leesErpnextInstellingen,
   zetErpnextGeheim,
 } from "../../tauri/erpnext";
+import { geheimActies } from "../../tauri/erpnextGeheim";
 import { version as pakketVersie } from "../../../package.json";
 import "../ThemedSelect.css";
 import "./SettingsDialog.css";
@@ -137,6 +138,8 @@ export default function SettingsDialog({
   const originalBureau = useRef<BureauProfiel>(leegBureau());
   // Pas na het lezen bewaren: anders wist een snelle klik op Opslaan adres en sleutel.
   const erpnextGelezen = useRef(false);
+  // Het bewaarde adres van het openen: Opslaan wist daarvan het geheim als de herkomst wisselt.
+  const erpnextBewaardAdres = useRef("");
   // Wat Opslaan voor ERPNext nog doet. Openen wacht daarop, zodat het de bewaarde stand
   // en de juiste status van het geheim toont.
   const erpnextBezig = useRef<Promise<unknown>>(Promise.resolve());
@@ -172,6 +175,7 @@ export default function SettingsDialog({
         .then(leesErpnextInstellingen)
         .then((w) => {
           erpnextGelezen.current = true;
+          erpnextBewaardAdres.current = w.adres;
           setDraftErpnext({ instellingen: w, geheim: "", wissen: false });
         });
     }
@@ -264,12 +268,21 @@ export default function SettingsDialog({
           void toonMelding(t("erpnext.bewarenMislukt", { fout: String(fout) }));
         })
       : Promise.resolve();
-    const geheimBewaard = isTauri() && (geheim !== "" || erpnext.wissen)
-      ? zetErpnextGeheim(erpnext.instellingen.adres, geheim).catch((fout) => {
-          void toonMelding(t("erpnext.geheimMislukt", { fout: String(fout) }));
-        })
+    const acties = geheimActies(erpnextBewaardAdres.current, erpnext.instellingen.adres, geheim, erpnext.wissen);
+    const geheimFout = (fout: unknown) => {
+      void toonMelding(t("erpnext.geheimMislukt", { fout: String(fout) }));
+    };
+    // Eerst het geheim van de oude herkomst wissen, dan het nieuwe bewaren.
+    const geheimBewaard = isTauri()
+      ? (async () => {
+          if (acties.wisVoor !== undefined) await zetErpnextGeheim(acties.wisVoor, "");
+          if (acties.bewaarVoor !== undefined) await zetErpnextGeheim(acties.bewaarVoor, geheim);
+        })().catch(geheimFout)
       : Promise.resolve();
-    erpnextBezig.current = Promise.all([instellingenBewaard, geheimBewaard]);
+    erpnextBezig.current = Promise.all([instellingenBewaard, geheimBewaard]).then(() => {
+      // De kaartkiezer leest instellingen en geheim opnieuw, ook als het paneel openstaat.
+      window.dispatchEvent(new CustomEvent("erpnext-changed"));
+    });
     setDraftErpnext(LEEG_ERPNEXT);
 
     onClose();

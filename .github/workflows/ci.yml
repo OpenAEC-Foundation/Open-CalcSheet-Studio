@@ -111,3 +111,9 @@ jobs:
       - name: Build Tauri app
         working-directory: packages/desktop
         run: npm run tauri build -- --no-bundle
+
+      # De beveiligingstests van de ERPNext-koppeling (adres, herkomst, doorverwijzing);
+      # de test met de echte sleutelbos is #[ignore] en blijft overgeslagen.
+      - name: Test de ERPNext-koppeling (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib erpnext

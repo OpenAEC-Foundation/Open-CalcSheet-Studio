@@ -195,6 +195,8 @@
     "geheimWist": "Het geheim wordt gewist bij Opslaan.",
     "geheimUitleg": "Het geheim staat in de sleutelbos van het besturingssysteem, bij de host van dit adres; niet in de instellingen, en het is hier niet terug te lezen. Een ander adres krijgt het niet.",
     "geheimMislukt": "Het API-geheim kon niet in de sleutelbos worden bewaard of gewist: {{fout}}",
+    "adresOnjuist": "Het adres moet beginnen met https:// (of http://localhost om te testen). Er wordt geen geheim bewaard.",
+    "geheimAdresOnjuist": "Het adres is niet toegestaan: er wordt geen geheim bewaard.",
     "geheimEerstAdres": "Het geheim hoort bij het adres: vul eerst het adres in.",
     "bewarenMislukt": "De ERPNext-instellingen konden niet worden bewaard: {{fout}}",
     "locatie": "Locatie",
