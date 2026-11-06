@@ -310,7 +310,12 @@
       "nietGevonden": "Nothing found for this search.",
       "zoekenMislukt": "Searching failed. Check your internet connection and try again; you can also click the map.",
       "geenPunt": "No location chosen",
-      "wis": "Clear location"
+      "wis": "Clear location",
+      "kaartenMaken": "Create maps",
+      "kaartenVernieuwen": "Refresh maps",
+      "kaartenBezig": "Creating maps…",
+      "kaartenMislukt": "The maps could not be created. Check your internet connection and try again; the existing maps stay in place.",
+      "verouderd": "The maps in the report belong to a different point. Refresh them with the button."
     }
   },
   "windkaart": {

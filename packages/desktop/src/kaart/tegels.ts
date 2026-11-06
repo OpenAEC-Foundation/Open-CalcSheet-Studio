@@ -1,8 +1,10 @@
 /**
  * De tegelwiskunde van de situatiekaart: Web Mercator met tegels van 256 px,
- * zoals de kaarttegels van OpenStreetMap. Zonder imports, zodat de
+ * zoals de kaarttegels van OpenStreetMap. Zonder runtime-imports (alleen een type), zodat de
  * controlescripts het direct in Node laden.
  */
+
+import type { BeeldEenheden } from "../components/calc/beeldEenheden";
 
 export const TEGEL = 256;
 export const MAX_ZOOM = 19;
@@ -80,4 +82,23 @@ export function schaalbalk(lat: number, zoom: number, maxPx: number): { meters: 
     }
   }
   return { meters: beste, px: beste / mpp };
+}
+
+/**
+ * De lengte van de schaalbalk in tekst, in het eenhedenstelsel van het project:
+ * "500 m" en "2 km", of in US customary "1,640 ft" en "1.2 mi" (vanaf 5280 ft in mijlen).
+ * Het getal volgt de notatie van de taal.
+ */
+export function schaalTekst(meters: number, eenheden: BeeldEenheden, taal: string): string {
+  const fmt = (v: number, dec: number) =>
+    new Intl.NumberFormat(taal, { maximumFractionDigits: dec }).format(v);
+  const eenheid = eenheden.eenheid("m");
+  const v = eenheden.waarde(meters, "m");
+  if (eenheid === "ft") {
+    return v >= 5280 ? `${fmt(v / 5280, 1)} mi` : `${fmt(v, 0)} ft`;
+  }
+  if (eenheid === "m") {
+    return v >= 1000 ? `${fmt(v / 1000, 1)} km` : `${fmt(v, 0)} m`;
+  }
+  return `${fmt(v, 1)} ${eenheid}`;
 }

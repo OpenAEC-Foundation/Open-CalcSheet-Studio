@@ -112,3 +112,10 @@
   font-size: var(--oa-size-body);
   color: var(--theme-text-secondary);
 }
+
+.lk-kaarten {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}

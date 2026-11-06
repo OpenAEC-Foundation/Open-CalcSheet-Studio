@@ -14,7 +14,7 @@ import {
 } from "../packages/desktop/src/kaart/punt.ts";
 import { parseNominatim, zoekAdres } from "../packages/desktop/src/kaart/nominatim.ts";
 import {
-  tegelPositie, metersPerPixel, zoomVoor, uitsnede, schaalbalk,
+  tegelPositie, metersPerPixel, zoomVoor, uitsnede, schaalbalk, schaalTekst,
 } from "../packages/desktop/src/kaart/tegels.ts";
 import { KAARTEN, normaliseerSituatie, situatieBijPunt } from "../packages/desktop/src/rapport/situatie.ts";
 import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
@@ -171,6 +171,19 @@ console.log("\nZoeken bij de dienst");
   let signaal = null;
   await zoekAdres("y", "en", async (_u, init) => { signaal = init.signal; return { ok: true, status: 200, json: async () => [] }; });
   meld(signaal instanceof AbortSignal, "zoekAdres geeft standaard een signaal mee");
+}
+
+console.log("\nHet schaallabel");
+{
+  const si = { eenheid: () => "m", waarde: (v) => v };
+  const us = { eenheid: () => "ft", waarde: (v) => v / 0.3048 };
+  meld(schaalTekst(500, si, "nl") === "500 m", "500 m is 500 m", schaalTekst(500, si, "nl"));
+  meld(schaalTekst(2000, si, "nl") === "2 km", "2000 m is 2 km", schaalTekst(2000, si, "nl"));
+  meld(schaalTekst(5000, si, "en") === "5 km" && schaalTekst(1500, si, "nl") === "1,5 km", "5 km en 1,5 km (komma in het Nederlands)", schaalTekst(1500, si, "nl"));
+  meld(schaalTekst(500, us, "en") === "1,640 ft", "US: 500 m is 1,640 ft", schaalTekst(500, us, "en"));
+  meld(schaalTekst(2000, us, "en") === "1.2 mi", "US: 2000 m is 1.2 mi", schaalTekst(2000, us, "en"));
+  meld(schaalTekst(2000, us, "nl") === "1,2 mi" && schaalTekst(500, us, "nl") === "1.640 ft", "US in het Nederlands: komma", schaalTekst(2000, us, "nl"));
+  meld(schaalTekst(1609.344, us, "en") === "1 mi" && schaalTekst(1600, us, "en") === "5,249 ft", "vanaf 5280 ft gaat het naar mi", schaalTekst(1600, us, "en"));
 }
 
 console.log("\nDe situatie in het rapport");
