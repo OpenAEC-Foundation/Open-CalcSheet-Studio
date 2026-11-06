@@ -70,6 +70,11 @@ export interface McpEenheden {
   defaultForce: "N" | "kN" | "MN";
   defaultStress: "Pa" | "kPa" | "MPa" | "GPa" | "N/mm^2";
   returnAngleUnits: boolean;
+  /**
+   * Het eenhedenstelsel voor een nieuw project (Instellingen, tab Units). Het stelsel van een
+   * open project is het projectgegeven `eenheden` (project_data_set).
+   */
+  stelsel?: "blad" | "si-mm" | "si-m" | "us" | "eigen";
 }
 
 export interface McpInstellingen {

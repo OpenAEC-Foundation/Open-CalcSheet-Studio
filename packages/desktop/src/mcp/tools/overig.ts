@@ -84,6 +84,11 @@ const EENHEDEN_SCHEMA = objectSchema({
   defaultForce: { type: "string", enum: ["N", "kN", "MN"] },
   defaultStress: { type: "string", enum: ["Pa", "kPa", "MPa", "GPa", "N/mm^2"] },
   returnAngleUnits: { type: "boolean" },
+  stelsel: {
+    type: "string",
+    enum: ["blad", "si-mm", "si-m", "us", "eigen"],
+    description: "Unit system for new projects: 'blad' (as written in the sheet), 'si-mm', 'si-m', 'us' (US customary) or 'eigen' (per quantity). The open project's own system is the project data field 'eenheden'.",
+  },
 });
 
 const WEERGAVEN: McpWeergave[] = ["code-visual", "code-output", "visual-output", "print-preview", "ifc"];
@@ -354,7 +359,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     name: "settings_set",
     kind: "mutate",
     description:
-      "Change app settings, as Settings does: theme, language ('auto' follows the system), textSize, and units (any subset of angleMode, defaultLength, defaultForce, defaultStress, returnAngleUnits). " +
+      "Change app settings, as Settings does: theme, language ('auto' follows the system), textSize, and units (any subset of angleMode, defaultLength, defaultForce, defaultStress, returnAngleUnits, stelsel). " +
       "Takes effect immediately and is saved.",
     inputSchema: objectSchema({
       theme: { type: "string", enum: THEMAS },

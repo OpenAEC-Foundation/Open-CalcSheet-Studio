@@ -43,6 +43,7 @@ De releaseworkflow weigert bestanden te publiceren die niet ondertekend zijn: Wi
 
 - **Gratis en open.** LGPL-3.0. Geen licentiekosten, geen account.
 - **Je kunt elke stap nalopen.** Een uitkomst toont naam, formule, ingevulde waarden en resultaat, met eenheden.
+- **Metrisch of Amerikaans.** Kies per project een eenhedenstelsel: SI (mm), SI (m), US customary, of per grootheid je eigen eenheid. Uitkomsten, invoervelden, tekeningen en het rapport volgen het, en de toetsing blijft precies hetzelfde. Je kunt ook eigen eenheden maken, zoals `.kipf = 1000 lbf`.
 - **Eén project, één rapport.** Voorblad, inhoudsopgave en paginanummers lopen door over alle bladen, van welke soort ook. Het zijpaneel toont de inhoud en alle nummers terwijl je werkt.
 - **Het juiste blad voor elk onderdeel.** Tekst, canvas, spreadsheet, nodegraaf, tekening, notebook, Markdown of PDF, naast elkaar in één project.
 - **Verander een getal en de toets volgt.** Bladen rekenen door terwijl je typt, en een tekening of 3D-model kan zijn maten uit het blad halen.
@@ -138,6 +139,7 @@ Bron van de getallen: de genoemde bestanden en `ls scripts/check-*.mjs`. De stat
 - **De bibliotheek heeft de eerste keer internet nodig.** Zonder verbinding blijft hij leeg tot hij een keer is opgehaald. Daarna gebruikt hij de laatste stand.
 - **Een grafbestand komt niet altijd volledig over.** Nodes die deze app niet heeft, scripts en de meeste geometrie blijven met een melding op de graaf staan en rekenen niet.
 - **Waarden uit een spreadsheet komen nog niet in rekenbladen.** Een spreadsheet staat voorlopig op zichzelf.
+- **Nog geen voet-en-inch met breuken.** 5'-6 ½" kun je nog niet typen of tonen, en een temperatuur blijft in de eenheid van het blad. Toelichtingen die waarden uit een norm citeren, de gewichtenbibliotheek en de tekeningen die een blad zelf maakt, houden ook hun eigen eenheden.
 - **Het rapport rechtstreeks naar PDF kan alleen op Windows.** Andere platforms gebruiken de printdialoog.
 - **Sommige tekst blijft voorlopig Nederlands.** De app, de bladen, de tab Code en het rapport volgen je taal, maar de namen van de variabelen in de modules en sommige namen in de IFC-boom zijn Nederlands.
 - **Pagina-einden kunnen iets verschillen per schermschaal.** Op 100% en 150% kunnen een paar regels op een ander vel komen.

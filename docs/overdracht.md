@@ -122,6 +122,13 @@ Een nieuwe module bestaat uit een rekenblad in `packages/desktop/src/templates`
 nodig een parametrisch beeld (`*Designer.tsx`, gekoppeld in
 `designerKeuze.tsx`), een catalogusbeeld en een eigen `scripts/check-<module>.mjs`.
 
+Een parametrisch beeld toont maten en lasten in het eenhedenstelsel van het project en
+rekent zelf in de eenheden van het blad. Geef daarvoor in `designerKit.tsx` `Dim` een
+`eenheid`; `Force` rekent `unit` vanzelf om. Een getalveld is `StelselGetal`. Een vaste
+tekst met een eenheid gaat via `ctx.eenheden.tekst()`, en een label met "(mm)" via
+`ctx.eenheden.label()` (`beeldEenheden.ts`). Zonder stelsel ziet het beeld er dan uit
+zoals altijd.
+
 ## 7. Open punten
 
 Zie [backlog.md](backlog.md): IFC-export en rapportengine.

@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Via de API en MCP kies je ook het eenhedenstelsel voor een nieuw project (`units.stelsel` in `settings_set`); het stelsel van het open project is het projectgegeven `eenheden`
 - Het rapport volgt het eenhedenstelsel van het project: de belastingen en de laagopbouw op papier en in het rapportpaneel, met hun eenheden ([psf], [ft], [pcf]). Wat je in het paneel typt, wordt opgeslagen in de eenheid van het rapport; een getal met een andere eenheid erachter (12 m) geldt in die eenheid
 - De parametrische beelden volgen het eenhedenstelsel van het project: maten, lasten, momenten en spanningen in de tekeningen van de ligger, de balklaag, de tweepaalspoer en de doorsnede, en hun invoervelden. Een maat die je in een tekening typt, gaat terug in de eenheid van het blad
 - Eenhedenstelsel per project, bij de projectgegevens: SI (mm), SI (m), US customary of per grootheid een eigen keuze. Uitkomsten, ingevulde formules, invoervelden, het afdrukvoorbeeld en het rapport staan in die eenheden; de berekening en de unity checks blijven gelijk. Eigen eenheden voor het hele project (kipf = 1000 lbf). Instellingen, tab Units, kiest het stelsel voor een nieuw project

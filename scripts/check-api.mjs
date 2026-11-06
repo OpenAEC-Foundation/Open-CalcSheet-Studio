@@ -291,6 +291,9 @@ console.log("Export en app:");
 
   const s1 = await api("PATCH", "/api/v1/settings", { theme: "dark", units: { angleMode: "deg" } });
   meld(s1.status === 200 && s1.data.theme === "dark" && s1.data.units.angleMode === "deg" && s1.data.units.defaultLength === "mm", "PATCH /settings: thema en één eenheid, de rest blijft", kort(s1));
+  const s3 = await api("PATCH", "/api/v1/settings", { units: { stelsel: "us" } });
+  meld(s3.status === 200 && s3.data.units.stelsel === "us" && s3.data.units.angleMode === "deg", "PATCH /settings: het eenhedenstelsel voor een nieuw project, de rest blijft", kort(s3));
+  meld((await api("PATCH", "/api/v1/settings", { units: { stelsel: "imperial" } })).status === 400, "PATCH /settings: onbekend eenhedenstelsel 400");
   meld((await api("PATCH", "/api/v1/settings", { theme: "roze" })).status === 400, "PATCH /settings: onbekend thema 400");
   meld((await api("PATCH", "/api/v1/settings", {})).status === 400, "PATCH /settings: leeg 400");
   const s2 = await api("GET", "/api/v1/settings");

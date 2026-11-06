@@ -127,6 +127,11 @@ de alleen-lezenstand.
 | `GET /settings` | `settings_get` | lezen | — |
 | `PATCH /settings` | `settings_set` | wijzigen | theme, language, textSize, units |
 
+`units.stelsel` kiest het eenhedenstelsel voor een nieuw project: `blad`, `si-mm`, `si-m`,
+`us` of `eigen`. Het stelsel van het open project is het projectgegeven `eenheden`
+(`project_data_set`). Uitkomsten van `sheet_evaluate`, `calc_evaluate` en `sheet_get` blijven in de
+eenheden van het blad; zie [projectmodel.md](projectmodel.md#eenheden).
+
 Vaste routes: `GET /api/v1` (overzicht met alle routes), `GET /api/v1/tools`
 (elke tool met JSON-schema en routes), `POST /api/v1/tools/{naam}` en
 `GET /api/v1/openapi.json`.

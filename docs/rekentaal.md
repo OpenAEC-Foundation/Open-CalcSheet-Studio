@@ -23,6 +23,15 @@ zijn in deze taal geschreven.
   nieuwe basiseenheid, `.kipf = 1000 lbf` een eenheid uit een andere. De eenheid geldt vanaf
   die regel tot het einde van het blad. Een naam die al een eenheid of variabele is, of een
   getal zonder eenheid anders dan 1, geeft een fout.
+- **Eigen eenheden van het project:** in de projectgegevens, onder Units. Ze gelden in elk
+  blad zonder `.naam =`. Een blad kan zo'n eenheid niet opnieuw maken: `.naam =` met
+  dezelfde naam geeft de fout dat hij al bestaat.
+- **Invoervelden (`?`):** je kunt een eenheid meetypen. `5 m` in een veld in mm wordt
+  5000 mm, `3/4` geldt in de eenheid naast het veld, en een eenheid die niet past of nog
+  niet af is, krijgt een rode rand en wordt niet opgeslagen. Opgeslagen wordt altijd in de
+  eenheid van de bladtekst.
+- **Temperatuur** rekent niet om naar een ander stelsel: in een blad is het bijna altijd
+  een verschil. Voet-en-inch met breuken (5'-6 ½") komt later.
 - **Eenhedenstelsel:** `evaluate(nodes, waarden, scope, { stelsel })` toont elke waarde in de
   eenheid van zijn grootheid (`STELSELS` in `eenheidstelsel.ts`: SI (mm), SI (m) en US
   customary). Alleen de weergave verandert: `result`, `unit` en `waarde` blijven in de
