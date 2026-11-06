@@ -70,7 +70,8 @@
     "geen": "none",
     "dekkingOnder": "Soffit to link",
     "dekkingZij": "cover at sides and top",
-    "staafwerk": "Orange: checked truss. Dimensions in {{eenheid}}.",
+    "staafwerk": "Orange: checked truss. Dimensions in mm.",
+    "staafwerkKort": "Orange: checked truss.",
     "koppen": {
       "geometrie": "Piles and column",
       "overig": "Side bars and hairpins",

@@ -199,8 +199,11 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   uit.push(maatH(X(p.paalX[0]), X(p.paalX[1]), yMaatP, Y(-p.b / 2), interactief ? null : m(p.a)));
   maten.push({ naam: "a_hoh", waarde: p.a, x: (X(p.paalX[0]) + X(p.paalX[1])) / 2, y: yMaatP, label: "a" });
   const overstek = (p.l - p.a) / 2;
-  uit.push(maatH(X(-p.l / 2), X(p.paalX[0]), yMaatP, Y(-p.b / 2), overstek * s > 22 ? m(overstek) : null));
-  uit.push(maatH(X(p.paalX[1]), X(p.l / 2), yMaatP, Y(-p.b / 2), overstek * s > 22 ? m(overstek) : null));
+  // De maat van het overstek alleen als hij past: ongeveer 5,5 px per teken.
+  const overstekTekst = m(overstek);
+  const past = overstek * s > Math.max(22, overstekTekst.length * 5.5);
+  uit.push(maatH(X(-p.l / 2), X(p.paalX[0]), yMaatP, Y(-p.b / 2), past ? overstekTekst : null));
+  uit.push(maatH(X(p.paalX[1]), X(p.l / 2), yMaatP, Y(-p.b / 2), past ? overstekTekst : null));
   uit.push(maatV(Y(p.b / 2), Y(-p.b / 2), mL - 14, X(-p.l / 2), interactief ? null : m(p.b)));
   maten.push({ naam: "b_poer", waarde: p.b, x: mL - 20, y: (Y(p.b / 2) + Y(-p.b / 2)) / 2, label: "b" });
 

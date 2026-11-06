@@ -70,7 +70,8 @@
     "geen": "geen",
     "dekkingOnder": "Onder tot beugel",
     "dekkingZij": "dekking zij en boven",
-    "staafwerk": "Oranje: getoetst staafwerk. Maten in {{eenheid}}.",
+    "staafwerk": "Oranje: getoetst staafwerk. Maten in mm.",
+    "staafwerkKort": "Oranje: getoetst staafwerk.",
     "koppen": {
       "geometrie": "Palen en kolom",
       "overig": "Zijstaven en haarspelden",

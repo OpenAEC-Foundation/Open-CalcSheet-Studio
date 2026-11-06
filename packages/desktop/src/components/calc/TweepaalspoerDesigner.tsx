@@ -102,7 +102,8 @@ export default function TweepaalspoerDesigner() {
     geen: t("tweepaalspoer.geen"),
     dekkingOnder: t("tweepaalspoer.dekkingOnder"),
     dekkingZij: t("tweepaalspoer.dekkingZij"),
-    staafwerk: t("tweepaalspoer.staafwerk", { eenheid: eenheden.eenheid("mm") }),
+    // Omgerekend draagt elke maat zijn eenheid; anders staat er dat de maten in mm zijn.
+    staafwerk: eenheden.doel("mm") ? t("tweepaalspoer.staafwerkKort") : t("tweepaalspoer.staafwerk"),
     // De maten op papier in het eenhedenstelsel; zonder omrekening het getal in mm, zoals altijd.
     ...(eenheden.doel("mm") ? { maat: (mm: number) => eenheden.tekst(mm, "mm", 0, (w, n) => fmt(w, n, i18n.language)) } : {}),
   }), [t, eenheden, i18n.language]);

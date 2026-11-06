@@ -201,7 +201,8 @@ const MACHT: Record<string, string> = { '¹': '', '²': '^2', '³': '^3', '⁴':
 
 /**
  * Een eenheid zoals een beeld of tabel hem schrijft, in de schrijfwijze van de rekenkern:
- * kN/m² → kN/m^2, kN/m¹ en kN/m1 → kN/m, kNm en kN·m → kN m.
+ * kN/m² → kN/m^2, kN/m¹ en kN/m1 → kN/m, kNm, kN·m en kN.m → kN m. kNm/m (een moment per
+ * meter) blijft zoals hij is: als kN zou hij in het stelsel als kracht in beeld komen.
  */
 export function eenheidUitBeeld(e: string): string {
   return e
@@ -209,7 +210,8 @@ export function eenheidUitBeeld(e: string): string {
     .replace(/[¹²³⁴]/g, (m) => MACHT[m])
     .replace(/(\p{L})([1-4])(?![\p{L}\p{N}])/gu, (_, l: string, n: string) => (n === '1' ? l : `${l}^${n}`))
     .replace(/·/g, ' ')
-    .replace(/^([kMG]?N)m(?=$|[\s^/])/, '$1 m');
+    .replace(/(\p{L})\.(\p{L})/gu, '$1 $2')
+    .replace(/^([kMG]?N)m(?=$|[\s^])/, '$1 m');
 }
 
 /** Een eenheid zoals de rekenkern hem schrijft, netjes in beeld: kN / m^2 → kN/m², kip ft → kip·ft. */

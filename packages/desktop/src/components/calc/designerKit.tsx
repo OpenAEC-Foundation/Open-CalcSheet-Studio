@@ -235,32 +235,33 @@ export function StelselGetal({ eenheden, eenheid, waarde, onWijzig, step, placeh
   eenheden: BeeldEenheden;
   eenheid: string;
   waarde: number | string;
-  onWijzig: (w: number) => void;
+  /** Het getal in de eenheid van het blad, en als tekst: zonder omrekening precies wat er getypt is. */
+  onWijzig: (w: number, tekst: string) => void;
   step?: number;
+  /** Een getal rekent mee om; een tekst ("fabrikantgegeven") blijft staan. */
   placeholder?: string | number;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "type" | "step" | "placeholder">) {
   // Wat je typt, blijft staan zolang het veld de focus heeft: een tussenstand ("1.", leeg)
   // zou anders meteen terugspringen naar de omgerekende waarde.
   const [tekst, setTekst] = useState<string | null>(null);
-  const inBeeld = (w: number | string) =>
-    typeof w === "string" && w.trim() === "" ? "" : eenheden.invoer(typeof w === "number" ? w : parseFloat(w), eenheid);
   if (eenheden.doel(eenheid) === null) {
     return (
       <input {...rest} type="number" step={step} value={waarde} placeholder={placeholder === undefined ? undefined : String(placeholder)}
-        onChange={(e) => onWijzig(parseFloat(e.target.value))} />
+        onChange={(e) => onWijzig(parseFloat(e.target.value), e.target.value)} />
     );
   }
+  const inBeeld = eenheden.invoer(waarde, eenheid);
   return (
-    <input {...rest} type="number" step="any" value={tekst ?? inBeeld(waarde)}
-      placeholder={placeholder === undefined ? undefined : inBeeld(placeholder)}
-      onFocus={(e) => { setTekst(inBeeld(waarde)); rest.onFocus?.(e); }}
+    <input {...rest} type="number" step="any" value={tekst ?? inBeeld}
+      placeholder={typeof placeholder === "number" ? eenheden.invoer(placeholder, eenheid) : placeholder}
+      onFocus={(e) => { setTekst(inBeeld); rest.onFocus?.(e); }}
       onBlur={(e) => { setTekst(null); rest.onBlur?.(e); }}
       onChange={(e) => {
         setTekst(e.target.value);
         // Leeg: terug naar de standaard, net als in een gewoon getalveld.
-        if (e.target.value.trim() === "") { onWijzig(NaN); return; }
+        if (e.target.value.trim() === "") { onWijzig(NaN, ""); return; }
         const n = eenheden.terug(e.target.value, eenheid);
-        if (n !== null) onWijzig(n);
+        if (n !== null) onWijzig(n, String(n));
       }} />
   );
 }

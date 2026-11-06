@@ -459,13 +459,16 @@ export default function BalklaagDesigner() {
     Number.isFinite(v) ? eenheden.tekst(v, bron, dec, nl) : `— ${eenheden.eenheid(bron)}`;
   const tg = (v: number, bron: string, dec = 2) => tekst(eenheden.waarde(v, bron), eenheden.decimalen(dec, bron));
   const lb = (sleutel: string, bron = "mm") => eenheden.label(t(sleutel), bron);
+  // Een maatgetal op een maatlijn: zonder omrekening kaal in mm, zoals altijd; omgerekend
+  // met de eenheid erachter, anders staat er een getal zonder te zeggen in welke eenheid.
+  const maatGetal = (v: number, dec = 0) => (eenheden.doel("mm") ? te(v, "mm", dec) : nl(v, dec));
   /** Een getalveld in het stelsel; `ruwGetal` voor een veld dat leeg mag zijn (de standaard). */
   const getal = (naam: string, waarde: number, stap: number, eenheid = "mm") => (
     <StelselGetal eenheden={eenheden} eenheid={eenheid} step={stap} waarde={waarde} onWijzig={(w) => setVal(naam, w)} />
   );
   const ruwGetal = (naam: string, stap: number, eenheid: string, placeholder?: string | number) => (
     <StelselGetal eenheden={eenheden} eenheid={eenheid} step={stap} waarde={ruw(naam)} placeholder={placeholder}
-      onWijzig={(w) => zetBladWaarde(naam, Number.isFinite(w) ? String(w) : "")} />
+      onWijzig={(_, tekst) => zetBladWaarde(naam, tekst)} />
   );
 
   // ── de ontwerpknop: het blad per profiel doorrekenen ───────────────────────
@@ -933,7 +936,7 @@ export default function BalklaagDesigner() {
                 {/* Op papier tekent de plattegrond de maatgetallen zelf; op het
                     scherm staan er klikbare maten, boven en links naast hun lijn. */}
                 <svg width={W} height={H} className="vd-svg">
-                  <RaveelPlattegrond W={W} H={H} {...raveel} getallen={alleenLezen} />
+                  <RaveelPlattegrond W={W} H={H} {...raveel} getallen={alleenLezen} maat={maatGetal} />
                 </svg>
                 {!alleenLezen && (() => {
                   const m = raveelMaten(W, H, raveel);
@@ -1010,7 +1013,7 @@ export default function BalklaagDesigner() {
               <Dim name="t_vloer" value={tVloer} x={boardR - 26} y={yBoard + tV / 2} step={1} />
               <div className="vd-dim-ro" style={{ left: x0 + jW / 2, top: yJoist + jH / 2 }}>{nl(b, 0)}×{nl(h, 0)}</div>
               {tActief && Number.isFinite(bEf) && bEf > 0 && (
-                <div className="vd-dim-ro" style={{ left: x0 + 2 * sp + jW / 2, top: yBoard - 20 }}>b<sub>ef</sub> = {nl(bEf, 0)}</div>
+                <div className="vd-dim-ro" style={{ left: x0 + 2 * sp + jW / 2, top: yBoard - 20 }}>b<sub>ef</sub> = {maatGetal(bEf)}</div>
               )}
             </div>
           </div>
@@ -1239,8 +1242,8 @@ export default function BalklaagDesigner() {
                       <Label x={(mx1 + mx2) / 2} y={yBalk + 28} kleur={KLEUR_G}>w = {tg(gW, "kN/m")} + {te(qW, "kN/m")}</Label>
                       <line x1={mx1} y1={yMaat} x2={X(a1)} y2={yMaat} className="vd-dimmeasure" markerStart="url(#bdDim3)" markerEnd="url(#bdDim3)" />
                       <line x1={X(a1)} y1={yMaat} x2={mx2} y2={yMaat} className="vd-dimmeasure" markerEnd="url(#bdDim3)" />
-                      <Label x={(mx1 + X(a1)) / 2} y={yMaat - 5} kleur="#1d4ed8">{nl(lStaart, 0)}</Label>
-                      <Label x={(X(a1) + mx2) / 2} y={yMaat - 5} kleur="#1d4ed8">{nl(L * 1000 - lStaart, 0)}</Label>
+                      <Label x={(mx1 + X(a1)) / 2} y={yMaat - 5} kleur="#1d4ed8">{maatGetal(lStaart)}</Label>
+                      <Label x={(X(a1) + mx2) / 2} y={yMaat - 5} kleur="#1d4ed8">{maatGetal(L * 1000 - lStaart)}</Label>
                     </svg>
                   </div>
                 </div>

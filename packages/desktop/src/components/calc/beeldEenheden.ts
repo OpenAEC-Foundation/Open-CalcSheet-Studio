@@ -28,8 +28,11 @@ export interface BeeldEenheden {
   decimalen(dec: number, bron: string): number;
   /** Het getal met de eenheid erachter, opgemaakt met de notatie van het beeld. */
   tekst(v: number, bron: string, dec: number, opmaak: (v: number, dec: number) => string): string;
-  /** De waarde in een bewerkveld: zes significante cijfers in de eenheid in beeld. */
-  invoer(v: number, bron: string): string;
+  /**
+   * De waarde in een bewerkveld: zes significante cijfers in de eenheid in beeld. Een opgeslagen
+   * tekst die geen getal is (leeg, een uitdrukking), blijft staan; zonder omrekening altijd letterlijk.
+   */
+  invoer(v: number | string, bron: string): string;
   /** Een getypt getal in de eenheid in beeld, terug naar de bron; `null` als het geen getal is. */
   terug(getypt: string, bron: string): number | null;
   /** Een label met de eenheid tussen haakjes ("Cantilever a (mm)"), met de eenheid in beeld. */
