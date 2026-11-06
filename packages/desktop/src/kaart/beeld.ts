@@ -59,6 +59,9 @@ function isVolledig(
   );
 }
 
+/** Het lettertype van alle teksten in het beeld; meten en tekenen gebruiken dezelfde. */
+const lettertype = (fs: number) => `${fs}px sans-serif`;
+
 /** Een rode speld waarvan de punt op (x, y) staat. */
 function tekenSpeld(c: CanvasRenderingContext2D, x: number, y: number, h: number) {
   const r = h * 0.2;
@@ -94,7 +97,7 @@ function tekenLabel(
   uitlijning: "left" | "right" | "center",
   fs: number,
 ) {
-  c.font = `${fs}px sans-serif`;
+  c.font = lettertype(fs);
   const b = c.measureText(tekst).width;
   const pad = fs * 0.3;
   const x0 = uitlijning === "left" ? x : uitlijning === "right" ? x - b : x - b / 2;
@@ -175,7 +178,7 @@ export async function maakKaartbeeld(
     }
     c.restore();
     // Het label blijft altijd binnen het beeld, ook voor water aan de rand of daarbuiten.
-    c.font = `${fs}px sans-serif`;
+    c.font = lettertype(fs);
     const halve = c.measureText(opties.water.label).width / 2 + fs * 0.3;
     const lx = Math.min(Math.max(wx, halve), k.breedte - halve);
     const ly = Math.min(Math.max(wy - fs * 0.8, fs * 1.5), k.hoogte - fs * 4);
@@ -189,7 +192,7 @@ export async function maakKaartbeeld(
   const by = k.hoogte - marge - fs * 1.9;
   c.fillStyle = "rgba(255,255,255,0.85)";
   const tekst = opties.schaalLabel(balk.meters);
-  c.font = `${fs}px sans-serif`;
+  c.font = lettertype(fs);
   const tb = Math.max(balk.px, c.measureText(tekst).width);
   c.fillRect(marge - fs * 0.3, by - fs * 0.3, tb + fs * 0.6, fs * 2.2);
   c.fillStyle = "#222222";

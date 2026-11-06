@@ -210,6 +210,25 @@ console.log("\nDe onderschriften op papier");
   meld(o("locatie", 17, us, "en") === "Location · about 1,345 ft", "en, US: Location · about 1,345 ft", o("locatie", 17, us, "en"));
 }
 
+console.log("\nDe regel Afstand tot open water");
+{
+  const woorden = (taal) => JSON.parse(readFileSync(new URL(`../packages/desktop/src/i18n/locales/${taal}/rapport.json`, import.meta.url), "utf8"));
+  const maakT = (taal) => (sleutel, opties = {}) => {
+    const tekst = sleutel.split(".").reduce((o, d) => o?.[d], woorden(taal));
+    return typeof tekst === "string" ? tekst.replace(/\{\{(\w+)\}\}/g, (_, n) => String(opties[n] ?? "")) : sleutel;
+  };
+  const si = { eenheid: () => "m", waarde: (v) => v };
+  const us = { eenheid: () => "ft", waarde: (v) => v / 0.3048 };
+  const plas = { afstand: 820, naam: "Noorderplas", punt: { lat: 52.09, lon: 5.12 } };
+  const w = (water, eenh, taal) => waterTekst(water, eenh, taal, maakT(taal));
+  meld(w(plas, si, "nl") === "820 m (Noorderplas)", "nl, SI: 820 m (Noorderplas)", w(plas, si, "nl"));
+  meld(w(plas, us, "en") === "2,690 ft (Noorderplas)", "en, US: 2,690 ft (Noorderplas)", w(plas, us, "en"));
+  meld(w(plas, us, "nl") === "2.690 ft (Noorderplas)", "nl, US: 2.690 ft (Noorderplas)", w(plas, us, "nl"));
+  meld(w(null, si, "nl") === "geen open water binnen 10 km", "null in nl: geen open water binnen 10 km", w(null, si, "nl"));
+  meld(w(null, us, "en") === "no open water within 10 km", "null in en: no open water within 10 km", w(null, us, "en"));
+  meld(w({ ...plas, naam: "" }, si, "nl") === "820 m", "zonder naam alleen de afstand", w({ ...plas, naam: "" }, si, "nl"));
+}
+
 console.log("\nDe situatie in het rapport");
 {
   meld(toon(KAARTEN) === toon([
