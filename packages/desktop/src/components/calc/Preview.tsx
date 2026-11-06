@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { defaultStyles } from "@ifc-calc/core";
+import { defaultStyles, invoerNaarBron, toonInvoer } from "@ifc-calc/core";
 import {
   useActiefExemplaar,
   useActieveBron,
@@ -46,7 +46,7 @@ export default function Preview() {
   // rekent het blad opnieuw door en vervangt de hele uitwerking, dus ook dit
   // veld; zonder deze administratie verloor het na één teken de focus en kwam
   // de rest van de invoer nergens terecht.
-  const typtIn = useRef<{ naam: string; start: number; eind: number } | null>(null);
+  const typtIn = useRef<{ naam: string; start: number; eind: number; tekst: string } | null>(null);
 
   useEffect(() => {
     ensureCoreStyles();
@@ -179,15 +179,46 @@ export default function Preview() {
     for (const inp of prompts) {
       const varName = inp.dataset.prompt;
       if (!varName) continue;
+      // De eenheid van de bladtekst, en die in beeld als het eenhedenstelsel hem
+      // omrekent (renderer.ts). Opgeslagen wordt altijd in de eenheid van de bladtekst.
+      const bron = inp.dataset.eenheid;
+      const toon = inp.dataset.toonEenheid;
       const stored = selectValues[varName];
-      if (stored !== undefined) inp.value = String(stored);
+      // Zolang je typt, staat er wat je typte: teruggerekend en weer omgezet zou
+      // "12," halverwege "12" worden.
+      const getyptNu = typtIn.current?.naam === varName ? typtIn.current.tekst : undefined;
+      // De waarde zoals hij in beeld staat als niemand typt: omgerekend naar het stelsel.
+      const inBeeld = stored === undefined ? undefined : bron && toon ? toonInvoer(String(stored), bron, toon) : String(stored);
+      if (getyptNu !== undefined) inp.value = getyptNu;
+      else if (inBeeld !== undefined) inp.value = inBeeld;
+      // "12" in een veld in inch, of "5 m" in een veld in mm: terug naar de eenheid van de
+      // bladtekst. Een eenheid die niet past of nog niet af is, krijgt een rode rand en
+      // wordt niet opgeslagen; ook als het veld opnieuw getekend wordt.
+      const lees = (tekst: string) => {
+        const terug = bron ? invoerNaarBron(tekst, toon ?? bron, bron) : { waarde: tekst };
+        if ("fout" in terug) {
+          inp.classList.add("calc-input-fout");
+          inp.title = terug.fout;
+        } else {
+          inp.classList.remove("calc-input-fout");
+          inp.removeAttribute("title");
+        }
+        return terug;
+      };
+      if (getyptNu !== undefined && bron) lees(getyptNu);
       const handler = () => {
         typtIn.current = {
           naam: varName,
           start: inp.selectionStart ?? inp.value.length,
           eind: inp.selectionEnd ?? inp.value.length,
+          tekst: inp.value,
         };
-        setSelectValue(varName, inp.value);
+        const terug = lees(inp.value);
+        if ("fout" in terug) return;
+        // Terug naar wat er stond (177.165 in een veld in inch): de opgeslagen waarde
+        // houden, anders wordt 4500 mm na één keer typen 4499,991.
+        if (toon && inp.value.trim() === inBeeld) return;
+        setSelectValue(varName, terug.waarde);
       };
       // Pas bij het echt verlaten van het veld de administratie loslaten. De
       // browser stuurt ook een blur als het veld vervangen wordt, en dan hangt

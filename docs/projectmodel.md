@@ -161,6 +161,23 @@ Dat gaat bewust via de browser en niet via de Rust-rapportengine — zie
 `docs/backlog.md`. De engine slaat tekeningen over, en zonder de
 `openaec-reports`-repo is de app niet eens te bouwen.
 
+## Eenheden
+
+Het eenhedenstelsel hoort bij het project en staat in de projectgegevens, zodat opslaan,
+het herstelbestand, IFCX en ongedaan maken vanzelf meewerken (`store/projectEenheden.ts`):
+
+| Sleutel | Inhoud |
+| --- | --- |
+| `eenheden` | `blad` (zoals in het blad, de standaard), `si-mm`, `si-m`, `us` of `eigen`; een keuzeveld in `PROJECT_VELDEN`, maar geen variabele in de bladen |
+| `eenheden_eigen` | bij `eigen`: de eenheid per grootheid, als JSON (`{"kracht":"N"}`) |
+| `eenheden_lijst` | de eigen eenheden van het project, als JSON (`[{"naam":"kipf","uitdrukking":"1000 lbf"}]`) |
+
+Het stelsel raakt alleen de weergave: de uitwerking, het afdrukvoorbeeld en het rapport.
+`ex.waarden` blijven in de eenheid van de bladtekst; een invoerveld rekent wat je typt
+terug. De parametrische beelden en de IFCX-export rekenen in de eenheden van het blad.
+Een nieuw project krijgt het stelsel uit Instellingen, tab Units. Zie
+[het ontwerp](superpowers/specs/2026-11-06-eenheden-design.md).
+
 ## Taal van het rapport
 
 Het rapport heeft een eigen taal, `Rapport.taal` in `ocss::rapport`, los van de taal

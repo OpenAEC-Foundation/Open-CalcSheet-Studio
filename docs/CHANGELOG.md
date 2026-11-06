@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Eenhedenstelsel per project, bij de projectgegevens: SI (mm), SI (m), US customary of per grootheid een eigen keuze. Uitkomsten, ingevulde formules, invoervelden, het afdrukvoorbeeld en het rapport staan in die eenheden; de berekening en de unity checks blijven gelijk. Eigen eenheden voor het hele project (kipf = 1000 lbf). Instellingen, tab Units, kiest het stelsel voor een nieuw project
+- In een invoerveld kun je een eenheid meetypen: 5 m in een veld in mm wordt 5000 mm, en een eenheid die niet past krijgt een rode rand
 - Amerikaanse eenheden voor constructies: ksi, psf, ksf, plf, klf en pcf, naast in, ft, lbf, kip en psi. Een getal in psi staat in een formule niet meer als de Griekse letter ψ, en in een moment staat de lengte achteraan (kip ft)
 - Eigen eenheden in een blad met `.naam = uitdrukking`, zoals `.kipf = 1000 lbf` of `.EUR = 1`, ook in `.cpd`-bestanden (#22)
 - Inhoud met paginanummers: op het voorblad van de losse bladen staat bij elk blad de pagina waar het begint, en een lange inhoud loopt door op het volgende vel in plaats van eraf te vallen. In het afdrukvoorbeeld springt een klik op een regel naar dat blad, ook in de inhoudsopgave van het rapport; in de PDF is elk paginanummer een link

@@ -20,8 +20,14 @@ self.onmessage = (e: MessageEvent<RekenVerzoek>) => {
     setAngleMode(v.hoekmodus as AngleMode);
     // De uitvoer in de taal van de app; de getallen en het oordeel lezen hetzelfde.
     const uitvoer = bronVoorUitvoer(v.source, v.taal);
-    const opties = { includes: new Map(v.includes), imageUrls: new Map(v.imageUrls) };
-    const { nodes, html, eenheden } = rekenUitwerking(uitvoer.bron, v.waarden, v.scope, opties, uitvoer.namen);
+    const evalOpties = v.evalOpties ?? {};
+    // De eigen eenheden van het project gelden al bij het lezen (ParseOptions.eenheden).
+    const opties = {
+      includes: new Map(v.includes),
+      imageUrls: new Map(v.imageUrls),
+      eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam),
+    };
+    const { nodes, html, eenheden } = rekenUitwerking(uitvoer.bron, v.waarden, v.scope, opties, uitvoer.namen, evalOpties);
     antwoord = {
       sleutel: v.sleutel,
       html,

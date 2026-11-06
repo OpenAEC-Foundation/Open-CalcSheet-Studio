@@ -14,7 +14,7 @@
  * Draaien:  node scripts/check-eenheidstelsel.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
-import { parse, evaluate, exprToLatex, render, grootheidVan, decimalenNa, STELSELS } from "../packages/core/dist/index.js";
+import { parse, evaluate, exprToLatex, render, grootheidVan, decimalenNa, STELSELS, toonInvoer, invoerNaarBron, zetProjectEenheden } from "../packages/core/dist/index.js";
 import { laadTemplate, reken } from "./lib/refcheck.mjs";
 
 let fouten = 0;
@@ -167,6 +167,46 @@ for (const [expr, letter] of [["0.7 L", "L"], ["0.5 h", "h"], ["2 b", "b"]]) {
 // 5. Een temperatuur gaat (nog) niet om: een verschil in °C is niet van een absolute temperatuur te onderscheiden.
 meld(inStelsel("T = 20 degC", "T") === undefined, "een temperatuur in °C blijft staan");
 meld(inStelsel("T_1 = 30 degC\nT_2 = 20 degC\ndT = T_1 - T_2", "dT") === undefined, "een temperatuurverschil in °C blijft staan");
+
+console.log("\nInvoer");
+meld(toonInvoer("4500", "mm", "in") === "177.165", "4500 mm in een veld in inch: 177.165", toonInvoer("4500", "mm", "in"));
+const terug = (tekst, toon, bron) => JSON.stringify(invoerNaarBron(tekst, toon, bron));
+meld(terug("12", "in", "mm") === '{"waarde":"304.8"}', "12 getypt in een veld in inch: 304.8 mm", terug("12", "in", "mm"));
+meld(terug("12,5", "in", "mm") === '{"waarde":"317.5"}', "12,5 inch: 317.5 mm", terug("12,5", "in", "mm"));
+meld(terug("5 m", "mm", "mm") === '{"waarde":"5000"}', "5 m in een veld in mm: 5000", terug("5 m", "mm", "mm"));
+meld("fout" in invoerNaarBron("3 kip", "mm", "mm"), "3 kip in een veld in mm: een fout", terug("3 kip", "mm", "mm"));
+meld(terug("12", "mm", "mm") === '{"waarde":"12"}', "een kaal getal in de eigen eenheid blijft letterlijk", terug("12", "mm", "mm"));
+meld(terug("12,", "in", "mm") === '{"waarde":"304.8"}', "een getal halverwege (12,) rekent al om: 304.8 mm", terug("12,", "in", "mm"));
+meld(terug("-", "in", "mm") === '{"waarde":"-"}' && terug("", "in", "mm") === '{"waarde":""}', "wat nog geen getal is, blijft staan", terug("-", "in", "mm"));
+const veldUS = alleNodes(evaluate(parse("b = ?{4500}mm"), {}, {}, US)).find((n) => n.name === "b");
+meld(veldUS?.toonEenheid === "in" && veldUS?.currentValue === "177.165", "een invoerveld in mm toont in US customary 177.165 in",
+  JSON.stringify({ toon: veldUS?.toonEenheid, waarde: veldUS?.currentValue }));
+const veldZonder = alleNodes(evaluate(parse("b = ?{4500}mm"))).find((n) => n.name === "b");
+meld(veldZonder?.toonEenheid === undefined, "zonder stelsel geen andere eenheid");
+const veldHtml = render(evaluate(parse("b = ?{4500}mm"), {}, {}, US));
+meld(veldHtml.includes('data-toon-eenheid="in"') && veldHtml.includes('data-eenheid="mm"'), "het veld draagt de eenheid van de bron en die in beeld", veldHtml.slice(0, 300));
+const aantal = alleNodes(evaluate(parse("n = ?{4}"), {}, {}, US)).find((n) => n.name === "n");
+meld(aantal?.toonEenheid === undefined && aantal?.currentValue === "4", "een veld zonder eenheid verandert niet", JSON.stringify(aantal));
+
+console.log("\nBevindingen van het nakijken, stap 2");
+meld(terug("3/4", "in", "mm") === '{"waarde":"19.05"}', "3/4 in een veld in inch: 19.05 mm", terug("3/4", "in", "mm"));
+meld(terug("2*6", "in", "mm") === '{"waarde":"304.8"}', "2*6 in een veld in inch: 304.8 mm", terug("2*6", "in", "mm"));
+meld(terug("3/4", "mm", "mm") === '{"waarde":"3/4"}', "zonder omrekening blijft een uitdrukking letterlijk", terug("3/4", "mm", "mm"));
+meld("fout" in invoerNaarBron("3 ki", "mm", "mm"), "een eenheid die nog niet af is (3 ki) wordt niet opgeslagen", terug("3 ki", "mm", "mm"));
+let gooit = false;
+try { toonInvoer("3", "kipf", "kip"); } catch { gooit = true; }
+meld(!gooit, "toonInvoer met een onbekende eenheid gooit geen fout");
+meld(terug("3 kipf", "kipf", "kipf") === '{"waarde":"3"}', "3 kipf in een veld in kipf: 3", terug("3 kipf", "kipf", "kipf"));
+const kipfVeld = alleNodes(evaluate(parse(".kipf = 1000 lbf\nF = ?{2}kipf"), {}, {}, US)).find((n) => n.name === "F");
+meld(kipfVeld?.toonEenheid === undefined, "een veld in een eigen eenheid van het blad rekent niet om", JSON.stringify(kipfVeld?.toonEenheid));
+const fouteKeuze = alleNodes(evaluate(parse("F = ?{2}kN\nG = F*2"), {}, {}, { stelsel: { kracht: "kg" } })).find((n) => n.name === "G");
+meld(!String(fouteKeuze?.result).startsWith("Error"), "een eenheid in het stelsel met de verkeerde dimensie breekt het blad niet", fouteKeuze?.result);
+const fouten2 = zetProjectEenheden([{ naam: "d", uitdrukking: "5" }, { naam: "kipf", uitdrukking: "1000 lbf" }, { naam: "kipf2", uitdrukking: "2 kipf" }]);
+meld(fouten2.has(0) && !fouten2.has(1) && !fouten2.has(2), "projecteenheden: een ongeldige geeft een melding, de rest werkt", JSON.stringify([...fouten2]));
+gelijk("F = 2 kipf2\nG = F to kN", "G", "17.79 kN", "een projecteenheid uit een andere geldt in elk blad (2 kipf2 = 4 kipf = 17.79 kN)");
+gelijk("d = 3\nz = 12 / 2 d", "z", "18", "een afgewezen projecteenheid (d) laat een variabele d met rust");
+zetProjectEenheden([]);
+meld((uitkomst("F = 2 kipf", "F") ?? "").startsWith("Error:"), "zonder projecteenheden is kipf weer onbekend");
 
 console.log("\nModules");
 const PROJECT = { CC: 2, K_FI: 1, rekenwijze: 1 };

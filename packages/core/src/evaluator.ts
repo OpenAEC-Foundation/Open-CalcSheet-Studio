@@ -1,6 +1,6 @@
 import type { MathNode } from 'mathjs';
-import { math, isEenheidNaam } from './eenheden.js';
-import { decimalenNa, doelInStelsel, type Stelsel } from './eenheidstelsel.js';
+import { math, isEenheidNaam, geldigeEenheidNaam } from './eenheden.js';
+import { decimalenNa, doelInStelsel, toonInvoer, type Stelsel } from './eenheidstelsel.js';
 import type { AstNode, ConditionalNode, EvaluatedNode, InStelsel, MatrixUitkomst, OpdrachtNode } from './types.js';
 import { losStelselOp, rangVan, eigenSymmetrisch } from './matrixrekening.js';
 import { bouwDrieDScene } from './drieD.js';
@@ -1348,15 +1348,27 @@ export function evaluate(
   opties: EvalOpties = {},
 ): EvaluatedNode[] {
   const scope: Scope = { ...(initialScope ?? {}) };
+  return metOpties(scope, opties, (stand) => evaluateNodes(nodes, scope, selectValues || {}, stand));
+}
+
+/**
+ * Voert een doorrekening uit met de opties van de app en zet daarna alles terug:
+ * `#deg`, `#rad`, `#gra` gelden alleen in dit blad, net als het stelsel en de eigen
+ * eenheden (die van het blad en die van het project).
+ */
+function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T): T {
   const appModus = currentAngleMode;
   const vorigStelsel = huidigStelsel;
   huidigStelsel = opties.stelsel;
   const stand = nieuweStand();
   try {
-    for (const e of opties.eigenEenheden ?? []) maakEenheid(e.naam, e.uitdrukking, scope, stand);
-    return evaluateNodes(nodes, scope, selectValues || {}, stand);
+    // Een ongeldige of al bestaande naam slaat over; zo'n melding toont het projectpaneel
+    // (zetProjectEenheden).
+    for (const e of opties.eigenEenheden ?? []) {
+      if (geldigeEenheidNaam(e.naam)) maakEenheid(e.naam, e.uitdrukking, scope, stand);
+    }
+    return doe(stand);
   } finally {
-    // `#deg`, `#rad`, `#gra` gelden alleen in dit blad, en de eigen eenheden ook.
     currentAngleMode = appModus;
     huidigStelsel = vorigStelsel;
     ruimEenhedenOp(stand);
@@ -1382,16 +1394,10 @@ export function evaluateMetScope(
   nodes: AstNode[],
   selectValues?: SelectValues,
   initialScope?: Scope,
+  opties: EvalOpties = {},
 ): { nodes: EvaluatedNode[]; scope: Scope } {
   const scope: Scope = { ...(initialScope ?? {}) };
-  const appModus = currentAngleMode;
-  const stand = nieuweStand();
-  try {
-    return { nodes: evaluateNodes(nodes, scope, selectValues || {}, stand), scope };
-  } finally {
-    currentAngleMode = appModus;
-    ruimEenhedenOp(stand);
-  }
+  return metOpties(scope, opties, (stand) => ({ nodes: evaluateNodes(nodes, scope, selectValues || {}, stand), scope }));
 }
 
 /** Rekent één uitdrukking uit met de betekenis van de rekentaal. Werpt bij een fout. */
@@ -1479,6 +1485,38 @@ function maakEenheid(naam: string, uitdrukking: string, scope: Scope, stand: Sta
   return null;
 }
 
+/**
+ * De eigen eenheden van het project, blijvend op deze kant (de app). Zo kennen alle
+ * routes ze: de uitwerking, de beelden, de IFCX-export, MCP en het terugrekenen van een
+ * invoerveld. Elke aanroep vervangt de vorige set. Een regel zonder naam of uitdrukking
+ * slaat over; een ongeldige geeft een melding per plek in de lijst.
+ */
+const projectStand: Stand = nieuweStand();
+let projectFouten: ReadonlyMap<number, string> = new Map();
+
+export function zetProjectEenheden(lijst: readonly { naam: string; uitdrukking: string }[]): ReadonlyMap<number, string> {
+  ruimEenhedenOp(projectStand);
+  const fouten = new Map<number, string>();
+  lijst.forEach((e, i) => {
+    const naam = e.naam.trim();
+    const uitdrukking = e.uitdrukking.trim();
+    if (!naam || !uitdrukking) return;
+    if (!geldigeEenheidNaam(naam)) {
+      fouten.set(i, `Error: ${naam} cannot be a unit name: use two or more letters and no existing unit`);
+      return;
+    }
+    const fout = maakEenheid(naam, uitdrukking, {}, projectStand);
+    if (fout) fouten.set(i, fout);
+  });
+  projectFouten = fouten;
+  return fouten;
+}
+
+/** De meldingen van de laatste zetProjectEenheden, per plek in de lijst. */
+export function projectEenheidFouten(): ReadonlyMap<number, string> {
+  return projectFouten;
+}
+
 /** Haalt de eigen eenheden van een blad weer weg, de laatste eerst. */
 function ruimEenhedenOp(stand: Stand): void {
   // `deleteUnit` bestaat in mathjs 13, maar staat niet in de typen.
@@ -1520,17 +1558,12 @@ function voerOpdrachtUit(node: OpdrachtNode, stand: Stand): void {
  * from a parent sheet without rendering its output. Errors are silently
  * ignored — partial scope is still returned.
  */
-export function extractScope(nodes: AstNode[], selectValues?: SelectValues, initialScope?: Scope): Scope {
+export function extractScope(nodes: AstNode[], selectValues?: SelectValues, initialScope?: Scope, opties: EvalOpties = {}): Scope {
   const scope: Scope = { ...(initialScope ?? {}) };
-  const appModus = currentAngleMode;
-  const stand = nieuweStand();
   try {
-    evaluateNodes(nodes, scope, selectValues || {}, stand);
+    metOpties(scope, opties, (stand) => evaluateNodes(nodes, scope, selectValues || {}, stand));
   } catch {
     /* swallow — best-effort scope extraction */
-  } finally {
-    currentAngleMode = appModus;
-    ruimEenhedenOp(stand);
   }
   // Strip internal flags.
   delete scope[BREAK_FLAG];
@@ -1643,13 +1676,36 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
           }
         }
         if (!node.hidden) {
+          // In het eenhedenstelsel toont het veld zijn waarde in de eenheid van het
+          // stelsel; opgeslagen blijft hij in de eenheid van de bladtekst.
+          // Een veld in een eigen eenheid rekent niet om: het scherm kent die eenheid
+          // niet altijd, en zou wat je typt dan niet terug kunnen rekenen.
+          const eigen = (node.unit.match(/[\p{L}_][\p{L}\p{N}_]*/gu) ?? []).some((n) => actieveEigen.has(n));
+          let toon: string | null = null;
+          let currentValue = invoer;
+          let standaardInBeeld = standaard;
+          try {
+            toon = huidigStelsel && node.unit && !eigen ? doelInStelsel(node.unit, huidigStelsel) : null;
+            if (toon) {
+              // Een eenheid in het stelsel die niet bij het veld past (met de hand
+              // bewerkt project): dan zoals in het blad.
+              math.unit(1, node.unit).toNumber(toon);
+              currentValue = toonInvoer(invoer, node.unit, toon);
+              if (standaard !== undefined) standaardInBeeld = toonInvoer(standaard, node.unit, toon);
+            }
+          } catch {
+            toon = null;
+            currentValue = invoer;
+            standaardInBeeld = standaard;
+          }
           result.push({
             type: 'input-prompt',
             name: node.name,
             label: node.label,
             unit: node.unit,
-            currentValue: invoer,
-            standaard,
+            currentValue,
+            standaard: standaardInBeeld,
+            ...(toon ? { toonEenheid: toon } : {}),
           });
         }
         break;

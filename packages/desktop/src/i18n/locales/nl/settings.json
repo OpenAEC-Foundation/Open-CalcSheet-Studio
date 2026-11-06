@@ -21,10 +21,15 @@
     "rad": "Radialen (rad)",
     "gra": "Gradianen (grad)",
     "returnAngleUnits": "Hoeken mét eenheid teruggeven",
-    "defaults": "Standaard weergave-eenheden",
+    "defaults": "Nieuwe projecten",
     "length": "Lengte",
     "force": "Kracht",
-    "stress": "Spanning / druk"
+    "stress": "Spanning / druk",
+    "stelsel": "Eenhedenstelsel",
+    "stelsels": {
+      "blad": "Zoals in het blad"
+    },
+    "stelselHint": "Een nieuw project begint met dit eenhedenstelsel. Elk project houdt zijn eigen keuze, bij de projectgegevens."
   },
   "general": {
     "application": "Applicatie",

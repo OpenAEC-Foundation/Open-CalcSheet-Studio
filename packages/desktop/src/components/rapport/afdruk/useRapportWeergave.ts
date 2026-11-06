@@ -3,6 +3,7 @@ import i18next, { type TFunction } from "i18next";
 import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { projectScope, type ProjectGegevens } from "../../../store/projectGegevens";
+import { evalOptiesVan } from "../../../store/projectEenheden";
 import type { BureauProfiel, Rapport } from "../../../rapport/model";
 import { fmt, notatie } from "../../../rapport/normwaarden";
 import {
@@ -94,7 +95,9 @@ export function useRapportWeergave(): RapportWeergave {
   // hoofdstuk zelf staat, telt net zo goed mee als een blad in bijlage A.
   const bladen = useMemo(() => {
     const scope = projectScope(gegevens);
-    return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope, taal) }));
+    // In het eenhedenstelsel van het project, net als op het scherm.
+    const evalOpties = evalOptiesVan(gegevens);
+    return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope, taal, evalOpties) }));
   }, [exemplaren, gegevens, taal]);
 
   const opzet = useMemo(() => {

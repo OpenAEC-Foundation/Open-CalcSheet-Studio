@@ -21,10 +21,15 @@
     "rad": "Radians (rad)",
     "gra": "Gradians (grad)",
     "returnAngleUnits": "Return angles with unit attached",
-    "defaults": "Default display units",
+    "defaults": "New projects",
     "length": "Length",
     "force": "Force",
-    "stress": "Stress / pressure"
+    "stress": "Stress / pressure",
+    "stelsel": "Unit system",
+    "stelsels": {
+      "blad": "As written in the sheet"
+    },
+    "stelselHint": "A new project starts with this unit system. Each project keeps its own choice, under Project data."
   },
   "general": {
     "application": "Application",
