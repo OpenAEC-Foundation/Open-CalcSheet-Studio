@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
@@ -23,18 +23,35 @@ const WERELD: [number, number] = [25, 10];
 
 /** Een klik op de kaart zet de speld daar. */
 function KlikOpKaart({ onKlik }: { onKlik: (p: Punt) => void }) {
-  useMapEvents({ click: (e) => onKlik({ lat: e.latlng.lat, lon: e.latlng.lng }) });
+  useMapEvents({
+    click: (e) => {
+      // Leaflet geeft de lengtegraad niet genormaliseerd terug (bij zoom 1 of na schuiven bijv. 190).
+      const l = e.latlng.wrap();
+      onKlik({ lat: l.lat, lon: l.lng });
+    },
+  });
   return null;
 }
 
-/** Na een zoekuitkomst gaat de kaart naar de plek; bij een klik of slepen blijft hij staan. */
-function NaarPlek({ doel }: { doel: Punt | null }) {
+/**
+ * Houdt het punt in beeld: staat het buiten de kaart (ongedaan maken, een ander project, een
+ * wijziging via de API), dan schuift de kaart ernaartoe. Na een zoekuitkomst (`inzoomen`)
+ * gaat de kaart ook dichterbij. Bij een klik of slepen blijft hij staan.
+ */
+function VolgPunt({ punt, inzoomen }: { punt: Punt | null; inzoomen: MutableRefObject<boolean> }) {
   const kaart = useMap();
-  const vorige = useRef<Punt | null>(null);
-  if (doel && doel !== vorige.current) {
-    vorige.current = doel;
-    kaart.setView([doel.lat, doel.lon], 15);
-  }
+  const lat = punt?.lat;
+  const lon = punt?.lon;
+  useEffect(() => {
+    if (lat === undefined || lon === undefined) return;
+    const doel = L.latLng(lat, lon);
+    if (inzoomen.current) {
+      inzoomen.current = false;
+      kaart.setView(doel, 15);
+    } else if (!kaart.getBounds().contains(doel)) {
+      kaart.setView(doel, Math.max(kaart.getZoom(), 15));
+    }
+  }, [lat, lon, kaart, inzoomen]);
   return null;
 }
 
@@ -48,11 +65,12 @@ export default function LocatieKiezer() {
   const zetGegeven = useProjectStore((s) => s.zetGegeven);
   const punt = leesPunt(gegevens.locatie_punt);
 
-  const [tekst, setTekst] = useState("");
+  const [tekst, setTekst] = useState(gegevens.locatie ?? "");
   const [uitkomsten, setUitkomsten] = useState<Uitkomst[]>([]);
   const [bezig, setBezig] = useState(false);
   const [melding, setMelding] = useState<string | null>(null);
-  const [naarPlek, setNaarPlek] = useState<Punt | null>(null);
+  // Gezet bij een zoekuitkomst: de kaart gaat dan ook dichterbij.
+  const inzoomen = useRef(false);
   // Alleen het laatste antwoord telt als je snel twee keer zoekt.
   const volgnummer = useRef(0);
 
@@ -74,8 +92,8 @@ export default function LocatieKiezer() {
     // Een paar coördinaten hoeft niet bij de dienst te worden opgezocht.
     const coord = leesCoordinaten(vraag);
     if (coord) {
+      inzoomen.current = true;
       zetPunt(coord);
-      setNaarPlek({ ...coord });
       setBezig(false);
       return;
     }
@@ -94,8 +112,8 @@ export default function LocatieKiezer() {
   }, [tekst, i18n.language, t, zetPunt]);
 
   const kies = (u: Uitkomst) => {
+    inzoomen.current = true;
     zetPunt(u.punt, u.naam);
-    setNaarPlek({ ...u.punt });
     setUitkomsten([]);
     setMelding(null);
   };
@@ -142,6 +160,8 @@ export default function LocatieKiezer() {
           center={punt ? [punt.lat, punt.lon] : WERELD}
           zoom={punt ? 15 : 2}
           className="lk-leaflet"
+          scrollWheelZoom={false}
+          worldCopyJump
         >
           <TileLayer
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -154,13 +174,13 @@ export default function LocatieKiezer() {
               draggable
               eventHandlers={{
                 dragend: (e) => {
-                  const p = (e.target as L.Marker).getLatLng();
+                  const p = (e.target as L.Marker).getLatLng().wrap();
                   zetPunt({ lat: p.lat, lon: p.lng });
                 },
               }}
             />
           )}
-          <NaarPlek doel={naarPlek} />
+          <VolgPunt punt={punt} inzoomen={inzoomen} />
           <KlikOpKaart onKlik={(p) => zetPunt(p)} />
         </MapContainer>
       </div>

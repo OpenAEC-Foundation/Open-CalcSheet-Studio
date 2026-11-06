@@ -156,6 +156,19 @@ console.log("\nZoeken bij de dienst");
   const tel = async () => { drie.push(Date.now()); return { ok: true, status: 200, json: async () => [] }; };
   await Promise.all([zoekAdres("a", "en", tel), zoekAdres("b", "en", tel)]);
   meld(drie.length === 2 && drie[1] - drie[0] >= 1000, "twee gelijktijdige aanroepen komen ook minstens 1000 ms uit elkaar", toon(drie.length === 2 ? drie[1] - drie[0] : drie));
+  // Een verbinding die nooit antwoordt: het signaal breekt de vraag af.
+  const hangend = (_url, init) => new Promise((_ok, fout) => {
+    init.signal.addEventListener("abort", () => fout(init.signal.reason));
+  });
+  const t0 = Date.now();
+  const houdWakker = setTimeout(() => {}, 2000); // AbortSignal.timeout houdt Node zelf niet wakker
+  let timeoutFout = null;
+  try { await zoekAdres("x", "en", hangend, 300); } catch (e) { timeoutFout = e; }
+  clearTimeout(houdWakker);
+  meld(timeoutFout instanceof Error && Date.now() - t0 < 3000, "een vastgelopen verbinding geeft binnen de tijdslimiet een Error", String(timeoutFout));
+  let signaal = null;
+  await zoekAdres("y", "en", async (_u, init) => { signaal = init.signal; return { ok: true, status: 200, json: async () => [] }; });
+  meld(signaal instanceof AbortSignal, "zoekAdres geeft standaard een signaal mee");
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles OK");

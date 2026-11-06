@@ -13,6 +13,7 @@ export interface Uitkomst {
 
 const BASIS = "https://nominatim.openstreetmap.org/search";
 const MIN_TUSSENTIJD_MS = 1000;
+const TIJDSLIMIET_MS = 10000;
 
 /** De geldige regels uit een antwoord (format=jsonv2); de rest valt weg. */
 export function parseNominatim(json: unknown): Uitkomst[] {
@@ -46,15 +47,22 @@ function wachtOpBeurt(): Promise<void> {
   return beurt;
 }
 
-/** Zoekt een adres of plaats; maximaal 5 uitkomsten. Een HTTP-fout geeft een Error met de status. */
+/**
+ * Zoekt een adres of plaats; maximaal 5 uitkomsten. Een HTTP-fout geeft een Error met de status;
+ * geen antwoord binnen de tijdslimiet (standaard 10 s) geeft ook een Error.
+ */
 export async function zoekAdres(
   tekst: string,
   taal: string,
   f: typeof fetch = fetch,
+  tijdslimietMs: number = TIJDSLIMIET_MS,
 ): Promise<Uitkomst[]> {
   await wachtOpBeurt();
   const url = `${BASIS}?format=jsonv2&limit=5&q=${encodeURIComponent(tekst)}`;
-  const antwoord = await f(url, { headers: { "Accept-Language": taal } });
+  const antwoord = await f(url, {
+    headers: { "Accept-Language": taal },
+    signal: AbortSignal.timeout(tijdslimietMs),
+  });
   if (!antwoord.ok) throw new Error(`HTTP ${antwoord.status}`);
   return parseNominatim(await antwoord.json());
 }
