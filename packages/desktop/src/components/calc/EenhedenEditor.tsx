@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { STELSELS, projectEenheidFouten, type Grootheid } from "@ifc-calc/core";
+import { STELSELS, eenheidInBeeld, projectEenheidFouten, type Grootheid } from "@ifc-calc/core";
 import { useProjectStore } from "../../store/projectStore";
 import {
   GROOTHEID_KEUZES,
@@ -8,16 +8,6 @@ import {
   stelselKeuzeVan,
   type EigenEenheid,
 } from "../../store/projectEenheden";
-
-/** Een eenheid zoals de rekenkern hem schrijft, netjes in beeld: kN / m^2 → kN/m², kip ft → kip·ft. */
-export function eenheidInBeeld(e: string): string {
-  return e
-    .replace(/\s*\/\s*/g, "/")
-    .replace(/\^2/g, "²")
-    .replace(/\^3/g, "³")
-    .replace(/\^4/g, "⁴")
-    .replace(/ /g, "·");
-}
 
 /**
  * Onder het keuzeveld voor het eenhedenstelsel in de projectgegevens: bij "eigen" de

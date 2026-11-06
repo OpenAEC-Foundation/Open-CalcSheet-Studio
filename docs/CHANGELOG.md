@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- De parametrische beelden volgen het eenhedenstelsel van het project: maten, lasten, momenten en spanningen in de tekeningen van de ligger, de balklaag, de tweepaalspoer en de doorsnede, en hun invoervelden. Een maat die je in een tekening typt, gaat terug in de eenheid van het blad
 - Eenhedenstelsel per project, bij de projectgegevens: SI (mm), SI (m), US customary of per grootheid een eigen keuze. Uitkomsten, ingevulde formules, invoervelden, het afdrukvoorbeeld en het rapport staan in die eenheden; de berekening en de unity checks blijven gelijk. Eigen eenheden voor het hele project (kipf = 1000 lbf). Instellingen, tab Units, kiest het stelsel voor een nieuw project
 - In een invoerveld kun je een eenheid meetypen: 5 m in een veld in mm wordt 5000 mm, en een eenheid die niet past krijgt een rode rand
 - Amerikaanse eenheden voor constructies: ksi, psf, ksf, plf, klf en pcf, naast in, ft, lbf, kip en psi. Een getal in psi staat in een formule niet meer als de Griekse letter ψ, en in een moment staat de lengte achteraan (kip ft)

@@ -192,6 +192,38 @@ export function invoerNaarBron(tekst: string, toon: string, bron: string): { waa
   }
 }
 
+/** Een getal van de ene eenheid in de andere: `omrekenen(4500, "mm", "in")` is 177,165. */
+export function omrekenen(waarde: number, van: string, naar: string): number {
+  return math.unit(waarde, van).toNumber(naar);
+}
+
+const MACHT: Record<string, string> = { '¹': '', '²': '^2', '³': '^3', '⁴': '^4' };
+
+/**
+ * Een eenheid zoals een beeld of tabel hem schrijft, in de schrijfwijze van de rekenkern:
+ * kN/m² → kN/m^2, kN/m¹ en kN/m1 → kN/m, kNm, kN·m en kN.m → kN m. kNm/m (een moment per
+ * meter) blijft zoals hij is: als kN zou hij in het stelsel als kracht in beeld komen.
+ */
+export function eenheidUitBeeld(e: string): string {
+  return e
+    .trim()
+    .replace(/[¹²³⁴]/g, (m) => MACHT[m])
+    .replace(/(\p{L})([1-4])(?![\p{L}\p{N}])/gu, (_, l: string, n: string) => (n === '1' ? l : `${l}^${n}`))
+    .replace(/·/g, ' ')
+    .replace(/(\p{L})\.(\p{L})/gu, '$1 $2')
+    .replace(/^([kMG]?N)m(?=$|[\s^])/, '$1 m');
+}
+
+/** Een eenheid zoals de rekenkern hem schrijft, netjes in beeld: kN / m^2 → kN/m², kip ft → kip·ft. */
+export function eenheidInBeeld(e: string): string {
+  return e
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/\^2/g, '²')
+    .replace(/\^3/g, '³')
+    .replace(/\^4/g, '⁴')
+    .replace(/ /g, '·');
+}
+
 /**
  * De doeleenheid van een waarde in dit stelsel, of `null` als hij blijft zoals hij
  * is: geen grootheid, geen eenheid in het stelsel, of al in die eenheid.

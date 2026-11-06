@@ -37,6 +37,11 @@ export interface TekeningTeksten {
   dekkingOnder: string;
   dekkingZij: string;
   staafwerk: string;
+  /**
+   * Een maat in mm zoals hij op een maatlijn staat. Zonder deze functie het getal in mm;
+   * de aanroeper geeft hem mee als het eenhedenstelsel van het project omrekent.
+   */
+  maat?: (mm: number) => string;
 }
 
 export interface Maat {
@@ -114,6 +119,7 @@ function maatV(y0: number, y1: number, x: number, ext: number | null, t: string 
  */
 export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number, interactief = false): Tekening {
   const maten: Maat[] = [];
+  const m = t.maat ?? r;
   const W = Math.max(TEKENING_MIN_BREEDTE, breedte);
   const mL = 46;
   const mR = 16;
@@ -190,12 +196,15 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   uit.push(`</g>`);
   // maten van het bovenaanzicht
   const yMaatP = maatPlan;
-  uit.push(maatH(X(p.paalX[0]), X(p.paalX[1]), yMaatP, Y(-p.b / 2), interactief ? null : `${r(p.a)}`));
+  uit.push(maatH(X(p.paalX[0]), X(p.paalX[1]), yMaatP, Y(-p.b / 2), interactief ? null : m(p.a)));
   maten.push({ naam: "a_hoh", waarde: p.a, x: (X(p.paalX[0]) + X(p.paalX[1])) / 2, y: yMaatP, label: "a" });
   const overstek = (p.l - p.a) / 2;
-  uit.push(maatH(X(-p.l / 2), X(p.paalX[0]), yMaatP, Y(-p.b / 2), overstek * s > 22 ? `${r(overstek)}` : null));
-  uit.push(maatH(X(p.paalX[1]), X(p.l / 2), yMaatP, Y(-p.b / 2), overstek * s > 22 ? `${r(overstek)}` : null));
-  uit.push(maatV(Y(p.b / 2), Y(-p.b / 2), mL - 14, X(-p.l / 2), interactief ? null : `${r(p.b)}`));
+  // De maat van het overstek alleen als hij past: ongeveer 5,5 px per teken.
+  const overstekTekst = m(overstek);
+  const past = overstek * s > Math.max(22, overstekTekst.length * 5.5);
+  uit.push(maatH(X(-p.l / 2), X(p.paalX[0]), yMaatP, Y(-p.b / 2), past ? overstekTekst : null));
+  uit.push(maatH(X(p.paalX[1]), X(p.l / 2), yMaatP, Y(-p.b / 2), past ? overstekTekst : null));
+  uit.push(maatV(Y(p.b / 2), Y(-p.b / 2), mL - 14, X(-p.l / 2), interactief ? null : m(p.b)));
   maten.push({ naam: "b_poer", waarde: p.b, x: mL - 20, y: (Y(p.b / 2) + Y(-p.b / 2)) / 2, label: "b" });
 
   // ── snedelijnen: A-A door de palen, B-B boven de rechterpaal ──────────────
@@ -209,14 +218,14 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   // ── legenda, onder de tekening ────────────────────────────────────────────
   const lagenTekst = tb.lagen.length === 2 ? t.lagen : t.laag;
   const regels: [string, string][] = [
-    [TREK, `${t.trekband}: ${tb.n}Ø${r(tb.d)}, ${tb.lagen.length} ${lagenTekst}, ${t.hoh} ${r(tb.s)}`],
-    [TREK, tb.omgebogen ? `${t.omgebogen}, ${t.been} ${r(tb.lOp)}, ${t.doorn} ${r(tb.doorn)}` : t.rechteStaaf],
+    [TREK, `${t.trekband}: ${tb.n}Ø${r(tb.d)}, ${tb.lagen.length} ${lagenTekst}, ${t.hoh} ${m(tb.s)}`],
+    [TREK, tb.omgebogen ? `${t.omgebogen}, ${t.been} ${m(tb.lOp)}, ${t.doorn} ${m(tb.doorn)}` : t.rechteStaaf],
     [BEUGEL, `${t.beugels}: Ø${r(bg.d)}-${r(bg.s)}, ${r(bg.sneden)} ${t.sneden}`],
     [OVERIG, `${t.zijstaven}: ${p.zij.n > 0 ? `${p.zij.n}Ø${r(p.zij.d)} ${t.perZijvlak}` : t.geen}`],
     [OVERIG, `${t.bovenstaven}: ${p.boven.n > 0 ? `${p.boven.n}Ø${r(p.boven.d)}` : t.geen}`],
     [HAARSPELD, `${t.haarspelden}: ${p.haarspelden.n > 0 ? `${p.haarspelden.n}Ø${r(p.haarspelden.d)} ${t.perPaal}` : t.geen}`],
     [DWARSSTAAF, `${t.dwarsstaven}: ${dw.n > 0 ? `${dw.n}Ø${r(dw.d)} ${t.perHelft}` : t.geen}`],
-    [TEKST, `${t.dekkingOnder} ${r(p.c_o)}, ${t.dekkingZij} ${r(p.c_z)}`],
+    [TEKST, `${t.dekkingOnder} ${m(p.c_o)}, ${t.dekkingZij} ${m(p.c_z)}`],
     [MODEL, t.staafwerk],
   ];
   const perKolom = Math.ceil(regels.length / kolommen);
@@ -281,12 +290,12 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
     // Een witte rand om de tekst: hij staat tussen de beugels en de zijstaven.
     const HALO = ' paint-order="stroke" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"';
     uit.push(tekst(X(-xKnoop) + (X(-p.model.eK) - X(-xKnoop)) * 0.5 + 8, Z((zT + zD) / 2) + 4, `θ = ${r(Math.round(p.model.hoek))}°`, "start", MODEL, 10, HALO));
-    uit.push(tekst(X(0), Z(zT + p.model.z * 0.32), `z = ${r(Math.round(p.model.z))}, d = ${r(Math.round(p.model.d))}`, "middle", MODEL, 10, HALO));
+    uit.push(tekst(X(0), Z(zT + p.model.z * 0.32), `z = ${m(Math.round(p.model.z))}, d = ${m(Math.round(p.model.d))}`, "middle", MODEL, 10, HALO));
   }
   uit.push(`</g>`);
-  uit.push(maatH(X(-p.l / 2), X(p.l / 2), maatOnder, null, interactief ? null : `${r(p.l)}`));
+  uit.push(maatH(X(-p.l / 2), X(p.l / 2), maatOnder, null, interactief ? null : m(p.l)));
   maten.push({ naam: "l_poer", waarde: p.l, x: X(0), y: maatOnder, label: "l" });
-  uit.push(maatV(poerTop, poerOnder, mL - 14, X(-p.l / 2), interactief ? null : `${r(p.h)}`));
+  uit.push(maatV(poerTop, poerOnder, mL - 14, X(-p.l / 2), interactief ? null : m(p.h)));
   maten.push({ naam: "h_poer", waarde: p.h, x: mL - 20, y: (poerTop + poerOnder) / 2, label: "h" });
 
   // ── dwarsdoorsnede boven een paal ─────────────────────────────────────────
@@ -323,7 +332,7 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   }
   for (const y of p.boven.y) uit.push(`<circle data-staaf="boven-dwars" cx="${r(XD(y))}" cy="${r(Z(p.boven.z))}" r="${r(dB / 2)}" fill="${OVERIG}"/>`);
   uit.push(`</g>`);
-  uit.push(maatH(XD(-p.b / 2), XD(p.b / 2), maatOnder, null, `${r(p.b)}`));
+  uit.push(maatH(XD(-p.b / 2), XD(p.b / 2), maatOnder, null, m(p.b)));
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${r(W)}" height="${r(H)}" viewBox="0 0 ${r(W)} ${r(H)}">${uit.join("")}</svg>`;
   return { svg, breedte: W, hoogte: H, maten };
