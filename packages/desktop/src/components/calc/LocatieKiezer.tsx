@@ -7,7 +7,7 @@ import "leaflet/dist/leaflet.css";
 import { useProjectStore } from "../../store/projectStore";
 import { leesCoordinaten, leesPunt, puntJson, puntTekst, type Punt } from "../../kaart/punt.ts";
 import { zoekAdres, type Uitkomst } from "../../kaart/nominatim.ts";
-import { locatieUitErp } from "../../kaart/erpnext.ts";
+import { locatieUitErp, nieuweLocatieTekst } from "../../kaart/erpnext.ts";
 import { erpnextIngevuld, erpnextProjectVeld, heeftErpnextGeheim, leesErpnextInstellingen } from "../../tauri/erpnext";
 import { maakKaartbeeld } from "../../kaart/beeld.ts";
 import { schaalTekst } from "../../kaart/tegels.ts";
@@ -138,9 +138,13 @@ export default function LocatieKiezer() {
   const [erpMelding, setErpMelding] = useState<string | null>(null);
   // Alleen de laatste opdracht telt.
   const erpNummer = useRef(0);
-  // De tekst die de vorige keer uit ERPNext kwam: is het veld Locatie daar nog gelijk aan, dan
-  // mag een nieuwe tekst het vervangen.
-  const laatsteErpTekst = useRef("");
+  const zetGegevens = useProjectStore((s) => s.zetGegevens);
+  // Elke handeling van de gebruiker die het punt zet of wist, maakt een lopend overnemen
+  // achterhaald.
+  const stopErp = useCallback(() => {
+    erpNummer.current++;
+    setErpBezig(false);
+  }, []);
 
   /**
    * Maakt de drie kaarten achter elkaar en schrijft ze pas als alle drie klaar zijn, met één
@@ -272,6 +276,8 @@ export default function LocatieKiezer() {
   const neemOverUitErp = useCallback(async () => {
     const nummer = ++erpNummer.current;
     const project = projectNummer;
+    // Het punt zoals het was bij de klik: is het veranderd als het antwoord komt, dan telt het niet.
+    const puntVoor = useProjectStore.getState().gegevens.locatie_punt ?? "";
     setErpMelding(null);
     setErpBezig(true);
     try {
@@ -285,18 +291,16 @@ export default function LocatieKiezer() {
       const plek = await locatieUitErp(veld, (v) => zoekAdres(v, i18n.language));
       // Intussen een andere opdracht of een ander project: dit antwoord telt niet meer.
       if (nummer !== erpNummer.current) return;
-      if ((useProjectStore.getState().gegevens.project_nummer ?? "").trim() !== project) return;
+      const nu = useProjectStore.getState().gegevens;
+      if ((nu.project_nummer ?? "").trim() !== project || (nu.locatie_punt ?? "") !== puntVoor) return;
       if (!plek) {
         setErpMelding(t("gegevens.situatie.erpNietGevonden"));
         return;
       }
-      zetGegeven("locatie_punt", puntJson(plek.punt));
-      const huidig = (useProjectStore.getState().gegevens.locatie ?? "").trim();
-      if (!huidig || huidig === laatsteErpTekst.current) {
-        zetGegeven("locatie", veld);
-        setTekst(veld);
-      }
-      laatsteErpTekst.current = veld;
+      // Punt, Locatie en de ERPNext-tekst in één wijziging.
+      const locatie = nieuweLocatieTekst(nu.locatie ?? "", nu.locatie_erp ?? "", veld);
+      zetGegevens({ locatie_punt: puntJson(plek.punt), locatie, locatie_erp: veld });
+      setTekst(locatie);
       inzoomen.current = true;
       setUitkomsten([]);
       setMelding(null);
@@ -307,10 +311,11 @@ export default function LocatieKiezer() {
     } finally {
       if (nummer === erpNummer.current) setErpBezig(false);
     }
-  }, [projectNummer, i18n.language, t, zetGegeven, maakKaarten]);
+  }, [projectNummer, i18n.language, t, zetGegevens, maakKaarten]);
 
   const zetPunt = useCallback(
     (p: Punt, naam?: string) => {
+      stopErp();
       zetGegeven("locatie_punt", puntJson(p));
       const huidig = useProjectStore.getState().gegevens.locatie ?? "";
       if (naam && !huidig.trim()) zetGegeven("locatie", naam);
@@ -318,13 +323,14 @@ export default function LocatieKiezer() {
       // met de knop, zodat een speld slepen niet elke keer tegels haalt.
       if (!useProjectStore.getState().rapport.situatie) void maakKaarten(p);
     },
-    [zetGegeven, maakKaarten],
+    [zetGegeven, maakKaarten, stopErp],
   );
 
   const zoek = useCallback(async () => {
     const vraag = tekst.trim();
     if (!vraag) return;
     const nummer = ++volgnummer.current;
+    stopErp();
     setMelding(null);
     setUitkomsten([]);
     // Een paar coördinaten hoeft niet bij de dienst te worden opgezocht.
@@ -347,7 +353,7 @@ export default function LocatieKiezer() {
     } finally {
       if (nummer === volgnummer.current) setBezig(false);
     }
-  }, [tekst, i18n.language, t, zetPunt]);
+  }, [tekst, i18n.language, t, zetPunt, stopErp]);
 
   const kies = (u: Uitkomst) => {
     inzoomen.current = true;
@@ -357,6 +363,7 @@ export default function LocatieKiezer() {
   };
 
   const wis = () => {
+    stopErp();
     zetGegeven("locatie_punt", "");
   };
 

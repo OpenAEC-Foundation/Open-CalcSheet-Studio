@@ -27,3 +27,13 @@ export async function locatieUitErp(tekst: string, zoek: (t: string) => Promise<
   const gevonden = await zoek(schoon);
   return gevonden[0] ?? null;
 }
+
+/**
+ * De nieuwe tekst voor het veld Locatie na het overnemen uit ERPNext: de ERPNext-tekst als
+ * Locatie leeg is of nog gelijk aan de tekst die de vorige keer uit ERPNext kwam; anders blijft
+ * de eigen tekst van de gebruiker staan.
+ */
+export function nieuweLocatieTekst(huidig: string, vorigeErp: string, nieuweErp: string): string {
+  const h = huidig.trim();
+  return !h || h === vorigeErp.trim() ? nieuweErp : huidig;
+}

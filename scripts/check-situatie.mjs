@@ -19,7 +19,7 @@ import {
 } from "../packages/desktop/src/kaart/tegels.ts";
 import { afstandM, dichtstePuntOpLijn, oppervlakteM2 } from "../packages/desktop/src/kaart/afstand.ts";
 import { waterVraag, dichtstbijzijndWater, meetWater } from "../packages/desktop/src/kaart/overpass.ts";
-import { locatieUitErp } from "../packages/desktop/src/kaart/erpnext.ts";
+import { locatieUitErp, nieuweLocatieTekst } from "../packages/desktop/src/kaart/erpnext.ts";
 import { KAARTEN, normaliseerSituatie, onderschrift, situatieBijPunt, waterTekst } from "../packages/desktop/src/rapport/situatie.ts";
 import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 
@@ -193,6 +193,10 @@ console.log("\nLocatie uit ERPNext");
   let fout = null;
   try { await locatieUitErp("Utrecht", async () => { throw new Error("HTTP 429"); }); } catch (e) { fout = e; }
   meld(fout instanceof Error, "een fout van zoek komt door (de aanroeper meldt hem)");
+  meld(nieuweLocatieTekst("", "", "Domplein 1") === "Domplein 1", "Locatie leeg: de ERPNext-tekst");
+  meld(nieuweLocatieTekst("Oud adres", "Oud adres", "Nieuw adres") === "Nieuw adres", "Locatie gelijk aan de vorige ERPNext-tekst: vervangen");
+  meld(nieuweLocatieTekst("Eigen tekst", "Oud adres", "Nieuw adres") === "Eigen tekst", "een eigen tekst blijft staan");
+  meld(nieuweLocatieTekst("Eigen tekst", "", "Nieuw adres") === "Eigen tekst", "zonder vorige ERPNext-tekst blijft een eigen tekst staan");
 }
 
 console.log("\nHet schaallabel");

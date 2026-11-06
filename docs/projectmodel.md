@@ -215,7 +215,7 @@ veld bij het project met die naam in ERPNext (standaard `custom_location`). Coö
 een adres gaat via de zoekdienst; het punt vervangt `locatie_punt` pas als het gevonden is, en de kaarten
 worden daarna opnieuw gemaakt. Het geheim staat in de sleutelbos van het besturingssysteem, per
 herkomst (schema, host en poort) van het adres, en komt nooit in het project. Het veld bestaat niet standaard
-in ERPNext: een beheerder maakt een Custom Field `custom_location` (Data) op Project.
+in ERPNext: een beheerder maakt een Custom Field `custom_location` (Data) op Project. De tekst die de laatste keer uit ERPNext kwam staat als `locatie_erp` in de projectgegevens; alleen een leeg veld Locatie, of een gelijk aan `locatie_erp`, wordt door een nieuwe tekst vervangen.
 
 ## Taal van het rapport
 
