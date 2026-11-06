@@ -39,7 +39,11 @@
     "gewoneTekst_one": "blijft gewone tekst.",
     "gewoneTekst_other": "blijven gewone tekst.",
     "subkoppenAanzetten": "Subkoppen aanzetten voor dit rapport",
-    "naarProjectgegevens": "Wijzigen in Projectgegevens →"
+    "naarProjectgegevens": "Wijzigen in Projectgegevens →",
+    "situatieTonen": "Situatiepagina",
+    "situatieHint": "Een pagina met kaarten van de plek van het project, direct na het voorblad.",
+    "situatieVerouderd": "De kaarten horen bij een ander punt dan de locatie van het project. Op papier staan ze met hun eigen punt.",
+    "situatieBeeld": "Kaart van de situatie, {{naam}}"
   },
   "rijen": {
     "toevoegen": "Rij toevoegen",
@@ -365,6 +369,22 @@
       "titel": "Inhoud",
       "inhoudsopgave": "Inhoudsopgave",
       "bijlage": "Bijlage"
+    },
+    "situatie": {
+      "titel": "Situatie",
+      "onderschrift": "{{kaart}} · ca. {{afstand}}",
+      "kaarten": {
+        "gebied": "Gebied",
+        "omgeving": "Omgeving",
+        "locatie": "Locatie"
+      },
+      "adres": "Adres",
+      "coordinaten": "Coördinaten",
+      "terreincategorie": "Terreincategorie",
+      "keuze": "(keuze van de constructeur)",
+      "water": "Afstand tot open water",
+      "kaart": "Kaart",
+      "bron": "© OpenStreetMap contributors, {{datum}}"
     },
     "bijlageKop": "Bijlage {{letter}} {{titel}}",
     "zieBijlage": "Zie bijlage {{nummer}}.",

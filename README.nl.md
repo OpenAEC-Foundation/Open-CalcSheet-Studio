@@ -44,7 +44,7 @@ De releaseworkflow weigert bestanden te publiceren die niet ondertekend zijn: Wi
 - **Gratis en open.** LGPL-3.0. Geen licentiekosten, geen account.
 - **Je kunt elke stap nalopen.** Een uitkomst toont naam, formule, ingevulde waarden en resultaat, met eenheden.
 - **Metrisch of Amerikaans.** Kies per project een eenhedenstelsel: SI (mm), SI (m), US customary, of per grootheid je eigen eenheid. Uitkomsten, invoervelden, tekeningen en het rapport volgen het, en de toetsing blijft precies hetzelfde. Je kunt ook eigen eenheden maken, zoals `.kipf = 1000 lbf`.
-- **Eén project, één rapport.** Voorblad, inhoudsopgave en paginanummers lopen door over alle bladen, van welke soort ook. Het zijpaneel toont de inhoud en alle nummers terwijl je werkt.
+- **Eén project, één rapport.** Voorblad, inhoudsopgave en paginanummers lopen door over alle bladen, van welke soort ook, en een optionele situatiepagina toont kaarten van OpenStreetMap van de projectlocatie. Het zijpaneel toont de inhoud en alle nummers terwijl je werkt.
 - **Het juiste blad voor elk onderdeel.** Tekst, canvas, spreadsheet, nodegraaf, tekening, notebook, Markdown of PDF, naast elkaar in één project.
 - **Verander een getal en de toets volgt.** Bladen rekenen door terwijl je typt, en een tekening of 3D-model kan zijn maten uit het blad halen.
 - **Je gegevens blijven open.** Het projectbestand is IFCX, en je kunt IFC4x3 exporteren.

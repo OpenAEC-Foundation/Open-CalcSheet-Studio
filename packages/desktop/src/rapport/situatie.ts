@@ -6,6 +6,8 @@
  * direct in Node laden.
  */
 import { leesPunt, puntJson, type Punt } from "../kaart/punt.ts";
+import { schaalTekst } from "../kaart/tegels.ts";
+import type { BeeldEenheden } from "../components/calc/beeldEenheden.ts";
 
 export type KaartId = "gebied" | "omgeving" | "locatie";
 
@@ -110,4 +112,22 @@ function afstandMeter(a: Punt, b: Punt): number {
 export function situatieBijPunt(s: Situatie | undefined, p: Punt | null): "geen" | "actueel" | "verouderd" {
   if (!s || !p) return "geen";
   return afstandMeter(s.punt, p) > 1 ? "verouderd" : "actueel";
+}
+
+/**
+ * Het onderschrift onder een kaart op papier, bijvoorbeeld "Omgeving · ca. 2 km":
+ * de naam van de kaart en de breedte van het beeld in het eenhedenstelsel van het
+ * project, in de taal van het rapport (`t` is de vertaler van die taal).
+ */
+export function onderschrift(
+  id: KaartId,
+  eenheden: BeeldEenheden,
+  taal: string,
+  t: (sleutel: string, opties?: Record<string, unknown>) => string,
+): string {
+  const meters = KAARTEN.find((k) => k.id === id)?.meters ?? 0;
+  return t("afdruk.situatie.onderschrift", {
+    kaart: t(`afdruk.situatie.kaarten.${id}`),
+    afstand: schaalTekst(meters, eenheden, taal),
+  });
 }

@@ -8,6 +8,7 @@ import { BIJLAGE_A, bijlageAnker, bijlageBladAnker } from "../../../rapport/opze
 import { useRapportWeergave, type RapportBlad } from "./useRapportWeergave";
 import { hoofdstukStukken, type Stuk } from "./Knopen";
 import Voorblad from "./Voorblad";
+import Situatie from "./Situatie";
 import Inhoud from "./Inhoud";
 import "./RapportAfdruk.css";
 
@@ -44,7 +45,7 @@ function Voet({ bureau }: { bureau: BureauProfiel }) {
 type BijlageBlad = RapportBlad & { nummer: string };
 
 /**
- * Het volledige constructierapport: voorblad, inhoud, de hoofdstukken en
+ * Het volledige constructierapport: voorblad, situatie (als die er is), inhoud, de hoofdstukken en
  * bijlage A. Elke `section` begint op een nieuw vel — in het afdrukvoorbeeld
  * omdat de verdeling dat zo doet, bij het printen via `break-before`. Alles staat in de
  * taal van het rapport, ook de beelden en de kop van een blad (AfdrukTaal).
@@ -69,6 +70,7 @@ export default function RapportAfdruk() {
     <div className="rpa-wortel" style={huisstijlVariabelen(w.bureau.huisstijl) as CSSProperties}>
       <Voet bureau={w.bureau} />
       <Voorblad w={w} />
+      <Situatie w={w} />
       <Inhoud w={w} />
       {secties.map((stukken) => (
         <section key={stukken[0].sleutel} className="rpa-sectie">
