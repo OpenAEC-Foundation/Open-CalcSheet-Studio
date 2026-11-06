@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { ElementRef } from "@ifc-calc/core";
+import { zetProjectEenheden, type ElementRef } from "@ifc-calc/core";
+import { ruweEigenEenheden } from "./projectEenheden";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
 import i18next, { LANGUAGES } from "../i18n/config";
@@ -836,6 +837,21 @@ function schedulePersist(snapshot: Persisted) {
     timer = null;
   }, 400);
 }
+
+/*
+ * De eigen eenheden van het project bestaan op deze kant blijvend in de rekenkern
+ * (zetProjectEenheden), zodat elke route ze kent: de uitwerking, de beelden, de
+ * IFCX-export, MCP en het terugrekenen van een invoerveld. Alleen bij een andere lijst
+ * opnieuw. De worker krijgt ze per verzoek mee (rekenen/doorrekening.ts).
+ */
+let vorigeEenhedenLijst: string | undefined = "\u0000";
+function volgProjectEenheden(g: ProjectGegevens) {
+  if (g.eenheden_lijst === vorigeEenhedenLijst) return;
+  vorigeEenhedenLijst = g.eenheden_lijst;
+  zetProjectEenheden(ruweEigenEenheden(g));
+}
+volgProjectEenheden(useProjectStore.getState().gegevens);
+useProjectStore.subscribe((s) => volgProjectEenheden(s.gegevens));
 
 /** Het eenhedenstelsel voor een nieuw project (Instellingen, tab Units). */
 let stelselVoorNieuw = "blad";

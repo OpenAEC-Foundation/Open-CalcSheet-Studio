@@ -1,5 +1,6 @@
 export { parse, type ParseOptions } from './parser.js';
-export { evaluate, extractScope, setAngleMode, type EvalOpties } from './evaluator.js';
+export { evaluate, extractScope, setAngleMode, zetProjectEenheden, projectEenheidFouten, type EvalOpties } from './evaluator.js';
+export { geldigeEenheidNaam } from './eenheden.js';
 export { STELSELS, grootheidVan, decimalenNa, doelInStelsel, toonInvoer, invoerNaarBron, type Grootheid, type Stelsel } from './eenheidstelsel.js';
 export { rekenUitdrukking, uitkomstTekst } from './evaluator.js';
 export { analyseerRekenblok, rekenRekenblok, rekenWaarde, type RekenblokAnalyse, type RekenblokUitkomst } from './rekenblok.js';

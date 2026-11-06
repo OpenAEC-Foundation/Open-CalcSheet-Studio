@@ -132,35 +132,64 @@ const KAAL_GETAL = /^[-+]?(\d+([.,]\d*)?|[.,]\d+)([eE][-+]?\d+)?$/;
 export function toonInvoer(waarde: string, bron: string, doel: string): string {
   const t = waarde.trim();
   if (!KAAL_GETAL.test(t)) return waarde;
-  const n = math.unit(parseFloat(t.replace(',', '.')), bron).toNumber(doel);
-  return String(parseFloat(n.toPrecision(6)));
+  try {
+    const n = math.unit(parseFloat(t.replace(',', '.')), bron).toNumber(doel);
+    return String(parseFloat(n.toPrecision(6)));
+  } catch {
+    // Een eenheid die deze kant niet kent (een eigen eenheid die alleen tijdens het
+    // rekenen bestaat): dan zoals opgeslagen.
+    return waarde;
+  }
 }
 
 /**
- * Wat iemand in een invoerveld typt, terug naar de eenheid van de bladtekst. Een kaal
- * getal geldt in de eenheid naast het veld (`toon`), een getal met een eenheid in die
- * eenheid. Een tussenstand ("0,", "-", leeg) of een kaal getal in de eigen eenheid
- * blijft letterlijk, zodat typen gewoon werkt. Een eenheid met een andere dimensie
- * geeft een fout, en dan wordt er niets opgeslagen.
+ * Wat iemand in een invoerveld typt, terug naar de eenheid van de bladtekst.
+ *
+ * - Een getal of uitdrukking zonder eenheid (12, 3/4, 2*6) geldt in de eenheid naast het
+ *   veld (`toon`). Zonder omrekening (`toon` is `bron`) blijft de tekst letterlijk staan,
+ *   zoals altijd: de rekenkern rekent hem uit.
+ * - Met een eenheid (5 m, 12 in) geldt hij in die eenheid.
+ * - Wat nog geen getal is en geen letters heeft ("-", leeg, "1e"), blijft staan: zo typt het.
+ * - Een eenheid die niet bij het veld past of nog niet af is ("3 kip", "3 ki"), geeft een
+ *   fout; dan wordt er niets opgeslagen.
  */
 export function invoerNaarBron(tekst: string, toon: string, bron: string): { waarde: string } | { fout: string } {
+  const zelfde = toon.replace(/\s+/g, '') === bron.replace(/\s+/g, '');
+  const getal = (n: number) => ({ waarde: String(parseFloat(n.toPrecision(12))) });
+  const geenWaarde = (t: string) => ({ fout: `"${t}" is not a value for a field in ${bron}` });
   const t = tekst.trim();
-  if (KAAL_GETAL.test(t)) {
-    if (toon.replace(/\s+/g, '') === bron.replace(/\s+/g, '')) return { waarde: tekst };
-    const n = math.unit(parseFloat(t.replace(',', '.')), toon).toNumber(bron);
-    return { waarde: String(parseFloat(n.toPrecision(12))) };
+  if (t === '') return { waarde: tekst };
+  // De eenheid van het veld zelf erachter ("3 kipf" in een veld in kipf): alleen het getal.
+  if (zelfde && t.endsWith(bron.trim())) {
+    const voor = t.slice(0, t.length - bron.trim().length).trim();
+    if (KAAL_GETAL.test(voor)) return { waarde: voor };
   }
-  const metEenheid = t.match(/^([-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:[eE][-+]?\d+)?)\s*([\p{L}°].*)$/u);
-  if (!metEenheid) return { waarde: tekst };
-  let u;
   try {
-    u = math.unit(parseFloat(metEenheid[1].replace(',', '.')), metEenheid[2].trim());
+    if (KAAL_GETAL.test(t)) {
+      if (zelfde) return { waarde: tekst };
+      return getal(math.unit(parseFloat(t.replace(',', '.')), toon).toNumber(bron));
+    }
+    let v: unknown;
+    try {
+      v = math.evaluate(t.replace(/,/g, '.'));
+    } catch {
+      // Zonder letters (op een exponent na) is het een tussenstand: laten staan.
+      if (!/\p{L}/u.test(t.replace(/[eE][-+]?\d*$/, ''))) return { waarde: tekst };
+      return geenWaarde(t);
+    }
+    if (typeof v === 'number') {
+      if (zelfde) return { waarde: tekst };
+      return Number.isFinite(v) ? getal(math.unit(v, toon).toNumber(bron)) : geenWaarde(t);
+    }
+    const u = v as { equalBase?: (o: unknown) => boolean; toNumber?: (e: string) => number };
+    if (typeof u?.equalBase === 'function' && typeof u.toNumber === 'function') {
+      if (!u.equalBase(math.unit(bron))) return { fout: `${t} does not fit a field in ${bron}` };
+      return getal(u.toNumber(bron));
+    }
+    return geenWaarde(t);
   } catch {
-    // Een eenheid die nog niet af is ("5 k"): laten staan tot hij compleet is.
-    return { waarde: tekst };
+    return geenWaarde(t);
   }
-  if (!u.equalBase(math.unit(bron))) return { fout: `${metEenheid[2].trim()} does not fit a field in ${bron}` };
-  return { waarde: String(parseFloat(u.toNumber(bron).toPrecision(12))) };
 }
 
 /**

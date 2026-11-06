@@ -1,4 +1,4 @@
-import { STELSELS, type EvalOpties, type Grootheid, type Stelsel } from "@ifc-calc/core";
+import { STELSELS, geldigeEenheidNaam, type EvalOpties, type Grootheid, type Stelsel } from "@ifc-calc/core";
 import type { ProjectGegevens } from "./projectGegevens";
 
 /**
@@ -57,19 +57,33 @@ export function eigenStelselVan(g: ProjectGegevens): Stelsel {
   const uit: Stelsel = {};
   for (const grootheid of Object.keys(GROOTHEID_KEUZES) as Grootheid[]) {
     const e = ruw[grootheid];
-    if (typeof e === "string" && e.trim()) uit[grootheid] = e;
+    // Alleen een keuze uit de lijst: een met de hand bewerkte eenheid met de verkeerde
+    // dimensie zou elk blad met zo'n waarde breken.
+    if (typeof e === "string" && GROOTHEID_KEUZES[grootheid].includes(e)) uit[grootheid] = e;
   }
   return uit;
 }
 
-/** De eigen eenheden van het project; een onvolledige regel valt weg. */
-export function eigenEenhedenVan(g: ProjectGegevens): EigenEenheid[] {
+/** De lijst eigen eenheden zoals hij in de gegevens staat, ook met regels die nog niet af zijn. */
+export function ruweEigenEenheden(g: ProjectGegevens): EigenEenheid[] {
   const ruw = leesJson<unknown[]>(g.eenheden_lijst, [], Array.isArray);
-  return ruw.flatMap((r) =>
-    isObject(r) && typeof r.naam === "string" && typeof r.uitdrukking === "string" && r.naam.trim() && r.uitdrukking.trim()
-      ? [{ naam: r.naam.trim(), uitdrukking: r.uitdrukking.trim() }]
-      : [],
-  );
+  return ruw.map((r) => ({
+    naam: isObject(r) && typeof r.naam === "string" ? r.naam : "",
+    uitdrukking: isObject(r) && typeof r.uitdrukking === "string" ? r.uitdrukking : "",
+  }));
+}
+
+/**
+ * De eigen eenheden van het project die meedoen: een regel die niet af is of een naam die
+ * niet mag (één letter, een bestaande eenheid) valt weg. Het projectpaneel toont waarom
+ * (zetProjectEenheden in de rekenkern).
+ */
+export function eigenEenhedenVan(g: ProjectGegevens): EigenEenheid[] {
+  return ruweEigenEenheden(g).flatMap((r) => {
+    const naam = r.naam.trim();
+    const uitdrukking = r.uitdrukking.trim();
+    return naam && uitdrukking && geldigeEenheidNaam(naam) ? [{ naam, uitdrukking }] : [];
+  });
 }
 
 /** De keuze van het project; een onbekende waarde telt als "blad". */

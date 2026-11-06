@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { STELSELS, type Grootheid } from "@ifc-calc/core";
+import { STELSELS, projectEenheidFouten, type Grootheid } from "@ifc-calc/core";
 import { useProjectStore } from "../../store/projectStore";
 import {
   GROOTHEID_KEUZES,
-  eigenEenhedenVan,
   eigenStelselVan,
+  ruweEigenEenheden,
   stelselKeuzeVan,
   type EigenEenheid,
 } from "../../store/projectEenheden";
@@ -30,10 +30,10 @@ export default function EenhedenEditor() {
   const zetGegeven = useProjectStore((s) => s.zetGegeven);
   const keuze = stelselKeuzeVan(gegevens);
   const eigen = { ...STELSELS["si-mm"], ...eigenStelselVan(gegevens) };
-  const lijst = eigenEenhedenVan(gegevens);
-  // Een regel die nog wordt ingevuld (lege naam of uitdrukking) blijft in de tekst staan;
-  // eigenEenhedenVan laat hem weg, dus de bewerker leest de ruwe lijst.
-  const ruw = ruweLijst(gegevens.eenheden_lijst) ?? lijst;
+  // De ruwe lijst: ook een regel die nog wordt ingevuld, blijft staan.
+  const ruw = ruweEigenEenheden(gegevens);
+  // De meldingen per regel; de store werkt ze bij zodra de lijst verandert (projectStore.ts).
+  const fouten = projectEenheidFouten();
 
   const zetEigen = (g: Grootheid, eenheid: string) =>
     zetGegeven("eenheden_eigen", JSON.stringify({ ...eigenStelselVan(gegevens), [g]: eenheid }));
@@ -78,6 +78,7 @@ export default function EenhedenEditor() {
             <button type="button" onClick={() => zetLijst(ruw.filter((_, j) => j !== i))}>
               {t("gegevens.eenheden.verwijder")}
             </button>
+            {fouten.has(i) && <span className="pg-eenheid-fout">{fouten.get(i)!.replace(/^Error:\s*/, "")}</span>}
           </div>
         ))}
         <button type="button" className="pg-eenheid-erbij" onClick={() => zetLijst([...ruw, { naam: "", uitdrukking: "" }])}>
@@ -86,19 +87,4 @@ export default function EenhedenEditor() {
       </div>
     </div>
   );
-}
-
-/** De lijst zoals hij in de gegevens staat, ook met regels die nog niet af zijn. */
-function ruweLijst(tekst: string | undefined): EigenEenheid[] | null {
-  if (!tekst) return null;
-  try {
-    const x: unknown = JSON.parse(tekst);
-    if (!Array.isArray(x)) return null;
-    return x.map((r) => ({
-      naam: typeof r?.naam === "string" ? r.naam : "",
-      uitdrukking: typeof r?.uitdrukking === "string" ? r.uitdrukking : "",
-    }));
-  } catch {
-    return null;
-  }
 }

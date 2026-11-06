@@ -187,8 +187,25 @@ export default function Preview() {
       // Zolang je typt, staat er wat je typte: teruggerekend en weer omgezet zou
       // "12," halverwege "12" worden.
       const getyptNu = typtIn.current?.naam === varName ? typtIn.current.tekst : undefined;
+      // De waarde zoals hij in beeld staat als niemand typt: omgerekend naar het stelsel.
+      const inBeeld = stored === undefined ? undefined : bron && toon ? toonInvoer(String(stored), bron, toon) : String(stored);
       if (getyptNu !== undefined) inp.value = getyptNu;
-      else if (stored !== undefined) inp.value = bron && toon ? toonInvoer(String(stored), bron, toon) : String(stored);
+      else if (inBeeld !== undefined) inp.value = inBeeld;
+      // "12" in een veld in inch, of "5 m" in een veld in mm: terug naar de eenheid van de
+      // bladtekst. Een eenheid die niet past of nog niet af is, krijgt een rode rand en
+      // wordt niet opgeslagen; ook als het veld opnieuw getekend wordt.
+      const lees = (tekst: string) => {
+        const terug = bron ? invoerNaarBron(tekst, toon ?? bron, bron) : { waarde: tekst };
+        if ("fout" in terug) {
+          inp.classList.add("calc-input-fout");
+          inp.title = terug.fout;
+        } else {
+          inp.classList.remove("calc-input-fout");
+          inp.removeAttribute("title");
+        }
+        return terug;
+      };
+      if (getyptNu !== undefined && bron) lees(getyptNu);
       const handler = () => {
         typtIn.current = {
           naam: varName,
@@ -196,16 +213,11 @@ export default function Preview() {
           eind: inp.selectionEnd ?? inp.value.length,
           tekst: inp.value,
         };
-        // "12" in een veld in inch, of "5 m" in een veld in mm: terug naar de eenheid
-        // van de bladtekst. Een eenheid die niet past, wordt niet opgeslagen.
-        const terug = bron ? invoerNaarBron(inp.value, toon ?? bron, bron) : { waarde: inp.value };
-        if ("fout" in terug) {
-          inp.classList.add("calc-input-fout");
-          inp.title = terug.fout;
-          return;
-        }
-        inp.classList.remove("calc-input-fout");
-        inp.removeAttribute("title");
+        const terug = lees(inp.value);
+        if ("fout" in terug) return;
+        // Terug naar wat er stond (177.165 in een veld in inch): de opgeslagen waarde
+        // houden, anders wordt 4500 mm na één keer typen 4499,991.
+        if (toon && inp.value.trim() === inBeeld) return;
         setSelectValue(varName, terug.waarde);
       };
       // Pas bij het echt verlaten van het veld de administratie loslaten. De

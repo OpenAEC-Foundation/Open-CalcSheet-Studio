@@ -6,7 +6,7 @@
  * Draaien:  node scripts/check-eenheden-project.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
-import { evalOptiesVan, eigenNamenVan, GROOTHEID_KEUZES } from "../packages/desktop/src/store/projectEenheden.ts";
+import { evalOptiesVan, eigenNamenVan, eigenStelselVan, GROOTHEID_KEUZES } from "../packages/desktop/src/store/projectEenheden.ts";
 import { PROJECT_VELDEN, projectScope, legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { rekenUitwerking } from "../packages/desktop/src/components/calc/canvasRekenen.ts";
 
@@ -37,6 +37,12 @@ console.log("\nEigen eenheden van het project");
 const project = { eenheden_lijst: JSON.stringify([{ naam: "kipf", uitdrukking: "1000 lbf" }]) };
 meld(JSON.stringify(eigenNamenVan(project)) === '["kipf"]', "de namen voor het lezen van de bladen", JSON.stringify(eigenNamenVan(project)));
 meld(eigenNamenVan({ eenheden_lijst: "[kapot" }).length === 0, "kapotte lijst: geen namen");
+
+console.log("\nBevindingen van het nakijken");
+meld(eigenStelselVan({ eenheden_eigen: '{"kracht":"kg","maat":"in"}' }).kracht === undefined && eigenStelselVan({ eenheden_eigen: '{"maat":"in"}' }).maat === "in",
+  "een eigen keuze buiten de lijst van de grootheid telt niet", JSON.stringify(eigenStelselVan({ eenheden_eigen: '{"kracht":"kg"}' })));
+const namen = eigenNamenVan({ eenheden_lijst: JSON.stringify([{ naam: "d", uitdrukking: "5" }, { naam: "kip", uitdrukking: "2 lbf" }, { naam: "kipf", uitdrukking: "1000 lbf" }]) });
+meld(JSON.stringify(namen) === '["kipf"]', "een te korte naam (d) en een bestaande eenheid (kip) doen niet mee", JSON.stringify(namen));
 
 console.log("\nDe uitwerking");
 const us = rekenUitwerking("L = 4.5 m", {}, {}, {}, undefined, evalOptiesVan({ eenheden: "us" }));

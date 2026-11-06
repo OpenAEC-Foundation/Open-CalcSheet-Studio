@@ -25,6 +25,17 @@ const AMERIKAANS: [string, string][] = [
 
 for (const [naam, definitie] of AMERIKAANS) math.createUnit(naam, definitie);
 
+/** De eenheden die de rekenkern zelf kent, vóór eigen eenheden van een blad of project. */
+const INGEBOUWD: ReadonlySet<string> = new Set(Object.keys((math.Unit as unknown as { UNITS: object }).UNITS));
+
+/**
+ * Mag dit de naam van een eigen eenheid zijn? Minstens twee tekens (een enkele letter is
+ * in een blad bijna altijd een variabele: d, h, t) en geen eenheid die de kern al kent.
+ */
+export function geldigeEenheidNaam(naam: string): boolean {
+  return /^[\p{L}_][\p{L}\p{N}_]+$/u.test(naam) && !INGEBOUWD.has(naam);
+}
+
 /** Is dit een eenheid zonder waarde, zoals de rekenkern de naam leest? */
 export function isEenheidNaam(naam: string): boolean {
   return math.Unit.isValuelessUnit(naam);

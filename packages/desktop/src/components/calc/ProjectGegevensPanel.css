@@ -239,3 +239,11 @@
 .pg-eenheid-erbij:hover {
   background: var(--theme-hover);
 }
+
+/* Een eigen eenheid die niet kan (een naam van één letter, een bestaande eenheid, een
+   definitie die niet rekent): de melding onder de regel. */
+.pg-eenheid-fout {
+  grid-column: 1 / -1;
+  font-size: var(--oa-size-label);
+  color: var(--oa-danger, #b91c1c);
+}
