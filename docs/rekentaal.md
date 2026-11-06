@@ -14,6 +14,21 @@ zijn in deze taal geschreven.
 - **Meerdere bladen:** dezelfde module kan er meerdere keren in, elk met eigen invoer; de
   projectgegevens gelden voor alle bladen.
 
+## Eenheden
+
+- **Metrisch en Amerikaans:** naast de eenheden van mathjs (`mm`, `kN`, `in`, `ft`, `lbf`,
+  `kip`, `psi`, …) kent de kern `ksi`, `psf`, `ksf`, `plf`, `klf` en `pcf`. `lb` is massa;
+  kracht is `lbf` of `kip`. Alle eenheden staan in `packages/core/src/eenheden.ts`.
+- **Eigen eenheden:** `.naam = uitdrukking`, zoals in het `.cpd`-formaat. `.EUR = 1` maakt een
+  nieuwe basiseenheid, `.kipf = 1000 lbf` een eenheid uit een andere. De eenheid geldt vanaf
+  die regel tot het einde van het blad. Een naam die al een eenheid of variabele is, of een
+  getal zonder eenheid anders dan 1, geeft een fout.
+- **Eenhedenstelsel:** `evaluate(nodes, waarden, scope, { stelsel })` toont elke waarde in de
+  eenheid van zijn grootheid (`STELSELS` in `eenheidstelsel.ts`: SI (mm), SI (m) en US
+  customary). Alleen de weergave verandert: `result`, `unit` en `waarde` blijven in de
+  eenheid van het blad, de omgerekende vorm staat in `inStelsel`. Zie
+  [het ontwerp](superpowers/specs/2026-11-06-eenheden-design.md).
+
 ## Syntax
 
 - `"Title`, `'tekst`, `// commentaar`
