@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { defaultStyles } from "@ifc-calc/core";
+import { defaultStyles, invoerNaarBron, toonInvoer } from "@ifc-calc/core";
 import {
   useActiefExemplaar,
   useActieveBron,
@@ -46,7 +46,7 @@ export default function Preview() {
   // rekent het blad opnieuw door en vervangt de hele uitwerking, dus ook dit
   // veld; zonder deze administratie verloor het na één teken de focus en kwam
   // de rest van de invoer nergens terecht.
-  const typtIn = useRef<{ naam: string; start: number; eind: number } | null>(null);
+  const typtIn = useRef<{ naam: string; start: number; eind: number; tekst: string } | null>(null);
 
   useEffect(() => {
     ensureCoreStyles();
@@ -179,15 +179,34 @@ export default function Preview() {
     for (const inp of prompts) {
       const varName = inp.dataset.prompt;
       if (!varName) continue;
+      // De eenheid van de bladtekst, en die in beeld als het eenhedenstelsel hem
+      // omrekent (renderer.ts). Opgeslagen wordt altijd in de eenheid van de bladtekst.
+      const bron = inp.dataset.eenheid;
+      const toon = inp.dataset.toonEenheid;
       const stored = selectValues[varName];
-      if (stored !== undefined) inp.value = String(stored);
+      // Zolang je typt, staat er wat je typte: teruggerekend en weer omgezet zou
+      // "12," halverwege "12" worden.
+      const getyptNu = typtIn.current?.naam === varName ? typtIn.current.tekst : undefined;
+      if (getyptNu !== undefined) inp.value = getyptNu;
+      else if (stored !== undefined) inp.value = bron && toon ? toonInvoer(String(stored), bron, toon) : String(stored);
       const handler = () => {
         typtIn.current = {
           naam: varName,
           start: inp.selectionStart ?? inp.value.length,
           eind: inp.selectionEnd ?? inp.value.length,
+          tekst: inp.value,
         };
-        setSelectValue(varName, inp.value);
+        // "12" in een veld in inch, of "5 m" in een veld in mm: terug naar de eenheid
+        // van de bladtekst. Een eenheid die niet past, wordt niet opgeslagen.
+        const terug = bron ? invoerNaarBron(inp.value, toon ?? bron, bron) : { waarde: inp.value };
+        if ("fout" in terug) {
+          inp.classList.add("calc-input-fout");
+          inp.title = terug.fout;
+          return;
+        }
+        inp.classList.remove("calc-input-fout");
+        inp.removeAttribute("title");
+        setSelectValue(varName, terug.waarde);
       };
       // Pas bij het echt verlaten van het veld de administratie loslaten. De
       // browser stuurt ook een blur als het veld vervangen wordt, en dan hangt

@@ -795,6 +795,12 @@ export const defaultStyles = `
   box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
 }
 
+/* Een eenheid die niet bij het veld past ("3 kip" in een veld in mm): niet opgeslagen. */
+.calc-input-value.calc-input-fout {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.2);
+}
+
 .calc-input-unit {
   font-size: 0.9em;
   color: #92400E;
