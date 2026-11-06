@@ -5,7 +5,7 @@ import { FASEN, TITELS } from "../../../rapport/model";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { useProjectStore } from "../../../store/projectStore";
 import { leesPunt } from "../../../kaart/punt";
-import { situatieBijPunt } from "../../../rapport/situatie";
+import { situatieActueel, stelselSleutel } from "../../../rapport/situatie";
 import { Afgeleid, Keuze, Sectie, TekstVak, Veld, useRapport, type Optie } from "./velden";
 
 /**
@@ -20,7 +20,7 @@ export default function DocumentSectie() {
   const werkBij = useProjectStore((s) => s.werkRapportBij);
   const situatie = rapport.situatie;
   const projectPunt = leesPunt(gegevens.locatie_punt);
-  const verouderd = situatieBijPunt(situatie, projectPunt) === "verouderd";
+  const verouderd = situatieActueel(situatie, projectPunt, rapport.taal, stelselSleutel(gegevens)) === "verouderd";
 
   // Zelfde bureau als op papier: het vastgelegde, of zolang dat leeg is het profiel.
   const bureau = rapport.bureau.naam ? rapport.bureau : profiel;

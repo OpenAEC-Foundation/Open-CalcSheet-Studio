@@ -6,8 +6,17 @@ import Modal from "../Modal";
 import ThemedSelect from "../ThemedSelect";
 import BureauTab from "../rapport/BureauTab";
 import McpTab from "./McpTab";
+import ErpnextTab, { type ErpnextConcept } from "./ErpnextTab";
 import { useBureauStore } from "../../store/bureauProfiel";
 import { leegBureau, type BureauProfiel } from "../../rapport/model";
+import {
+  ERPNEXT_STANDAARD,
+  bewaarErpnextInstellingen,
+  heeftErpnextGeheim,
+  leesErpnextInstellingen,
+  zetErpnextGeheim,
+} from "../../tauri/erpnext";
+import { geheimActies } from "../../tauri/erpnextGeheim";
 import { version as pakketVersie } from "../../../package.json";
 import "../ThemedSelect.css";
 import "./SettingsDialog.css";
@@ -35,7 +44,24 @@ export function themeId(theme?: string): string {
      const TAB_IDS = ["general", "appearance", "calculation", "about"] as const;
    ─────────────────────────────────────────────────────────── */
 // "mcp": API en AI-assistent (McpTab.tsx). Die tab werkt direct, niet via Opslaan.
-const TAB_IDS = ["general", "appearance", "units", "bureau", "mcp", "about"] as const;
+// "erpnext": de koppeling met ERPNext (ErpnextTab.tsx), wel via Opslaan.
+const TAB_IDS = ["general", "appearance", "units", "bureau", "mcp", "erpnext", "about"] as const;
+
+const LEEG_ERPNEXT: ErpnextConcept = { instellingen: ERPNEXT_STANDAARD, geheim: "", wissen: false };
+
+function isTauri(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
+/** Een waarschuwing in een venster van het systeem; mislukt dat, dan alleen in de console. */
+async function toonMelding(tekst: string): Promise<void> {
+  try {
+    const { message } = await import("@tauri-apps/plugin-dialog");
+    await message(tekst, { kind: "warning" });
+  } catch (err) {
+    console.warn("Melding niet getoond:", err);
+  }
+}
 
 /** Persisted under the "units" settings key. Defaults match the calculation language. */
 export interface UnitsSettings {
@@ -100,6 +126,8 @@ export default function SettingsDialog({
   const [draftText, setDraftText] = useState("standard");
   const [draftUnits, setDraftUnits] = useState<UnitsSettings>(UNITS_DEFAULTS);
   const [draftBureau, setDraftBureau] = useState<BureauProfiel>(leegBureau);
+  const [draftErpnext, setDraftErpnext] = useState<ErpnextConcept>(LEEG_ERPNEXT);
+  const [heeftGeheim, setHeeftGeheim] = useState(false);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
 
   // Snapshot of original values when dialog opens, for reverting on Cancel
@@ -108,6 +136,13 @@ export default function SettingsDialog({
   const originalText = useRef("standard");
   const originalUnits = useRef<UnitsSettings>(UNITS_DEFAULTS);
   const originalBureau = useRef<BureauProfiel>(leegBureau());
+  // Pas na het lezen bewaren: anders wist een snelle klik op Opslaan adres en sleutel.
+  const erpnextGelezen = useRef(false);
+  // Het bewaarde adres van het openen: Opslaan wist daarvan het geheim als de herkomst wisselt.
+  const erpnextBewaardAdres = useRef("");
+  // Wat Opslaan voor ERPNext nog doet. Openen wacht daarop, zodat het de bewaarde stand
+  // en de juiste status van het geheim toont.
+  const erpnextBezig = useRef<Promise<unknown>>(Promise.resolve());
 
   // Reset draft to current values when dialog opens
   useEffect(() => {
@@ -132,8 +167,38 @@ export default function SettingsDialog({
       const profiel = useBureauStore.getState().profiel;
       originalBureau.current = profiel;
       setDraftBureau(profiel);
+      // Het geheim zelf komt nooit terug uit de sleutelbos; alleen of het er is (hieronder).
+      setDraftErpnext(LEEG_ERPNEXT);
+      setHeeftGeheim(false);
+      erpnextGelezen.current = false;
+      erpnextBezig.current
+        .then(leesErpnextInstellingen)
+        .then((w) => {
+          erpnextGelezen.current = true;
+          erpnextBewaardAdres.current = w.adres;
+          setDraftErpnext({ instellingen: w, geheim: "", wissen: false });
+        });
     }
   }, [open, theme, startTab]);
+
+  // Het geheim hoort bij het adres: na elke wijziging van het adres opnieuw vragen of er
+  // een is, even na het typen, en alleen het laatste antwoord telt.
+  const erpnextAdres = draftErpnext.instellingen.adres;
+  useEffect(() => {
+    if (!open) return;
+    let actueel = true;
+    const timer = window.setTimeout(() => {
+      erpnextBezig.current
+        .then(() => heeftErpnextGeheim(erpnextAdres))
+        .then((ja) => {
+          if (actueel) setHeeftGeheim(ja);
+        });
+    }, 300);
+    return () => {
+      actueel = false;
+      window.clearTimeout(timer);
+    };
+  }, [open, erpnextAdres]);
 
   // Live theme preview — apply immediately when the user picks one in the dropdown.
   // Saved only on Save; reverted on Cancel.
@@ -164,6 +229,8 @@ export default function SettingsDialog({
     applyTextSize(originalText.current);
     setDraftUnits(originalUnits.current);
     setDraftBureau(originalBureau.current);
+    // Een getypt geheim blijft niet in het geheugen staan.
+    setDraftErpnext(LEEG_ERPNEXT);
     onClose();
   };
 
@@ -191,6 +258,33 @@ export default function SettingsDialog({
       ),
     });
 
+    // Adres, sleutel en veld gaan naar de instellingen; het geheim alleen naar de
+    // sleutelbos, bij het adres van nu, en alleen als er een nieuw is getypt of Wissen is
+    // gekozen. Een fout komt in een melding. Het volgende openen wacht op beide.
+    const erpnext = draftErpnext;
+    const geheim = erpnext.geheim.trim();
+    const instellingenBewaard = erpnextGelezen.current
+      ? bewaarErpnextInstellingen(erpnext.instellingen).catch((fout) => {
+          void toonMelding(t("erpnext.bewarenMislukt", { fout: String(fout) }));
+        })
+      : Promise.resolve();
+    const acties = geheimActies(erpnextBewaardAdres.current, erpnext.instellingen.adres, geheim, erpnext.wissen);
+    const geheimFout = (fout: unknown) => {
+      void toonMelding(t("erpnext.geheimMislukt", { fout: String(fout) }));
+    };
+    // Eerst het geheim van de oude herkomst wissen, dan het nieuwe bewaren.
+    const geheimBewaard = isTauri()
+      ? (async () => {
+          if (acties.wisVoor !== undefined) await zetErpnextGeheim(acties.wisVoor, "");
+          if (acties.bewaarVoor !== undefined) await zetErpnextGeheim(acties.bewaarVoor, geheim);
+        })().catch(geheimFout)
+      : Promise.resolve();
+    erpnextBezig.current = Promise.all([instellingenBewaard, geheimBewaard]).then(() => {
+      // De kaartkiezer leest instellingen en geheim opnieuw, ook als het paneel openstaat.
+      window.dispatchEvent(new CustomEvent("erpnext-changed"));
+    });
+    setDraftErpnext(LEEG_ERPNEXT);
+
     onClose();
   };
 
@@ -209,6 +303,7 @@ export default function SettingsDialog({
     setDraftUnits(UNITS_DEFAULTS);
     // Het bureauprofiel blijft staan: dat zijn bureaugegevens, geen voorkeur.
     // Voor de huisstijl heeft de tab Bureau een eigen knop "Standaard huisstijl".
+    // De ERPNext-koppeling blijft om dezelfde reden staan.
     setConfirmResetOpen(false);
   };
 
@@ -263,6 +358,14 @@ export default function SettingsDialog({
             <BureauTab profiel={draftBureau} onChange={setDraftBureau} />
           )}
           {activeTab === "mcp" && <McpTab />}
+          {activeTab === "erpnext" && (
+            <ErpnextTab
+              concept={draftErpnext}
+              onChange={setDraftErpnext}
+              heeftGeheim={heeftGeheim}
+              desktop={isTauri()}
+            />
+          )}
           {activeTab === "about" && <AboutTabContent />}
         </div>
       </div>

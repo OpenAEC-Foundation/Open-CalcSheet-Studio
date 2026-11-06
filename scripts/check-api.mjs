@@ -164,6 +164,14 @@ let liggerId;
   meld(sitZet.status === 200 && app.s.rapport.situatie.kaarten[0].jpeg === jpeg, "PATCH /report: het opgeslagen rapport houdt de jpeg", kort(sitZet));
   const sitVervang = await api("PATCH", "/api/v1/report", { path: "situatie", value: app.s.rapport.situatie });
   meld(sitVervang.status === 200 && !JSON.stringify(sitVervang.data).includes(jpeg) && sitVervang.data.set.situatie.kaarten[0].bytes === 9, "PATCH /report: het antwoord heeft bytes, geen jpeg", kort(sitVervang));
+  // Lezen en terugschrijven (zonder jpeg, met bytes) houdt de kaarten.
+  const teruggelezen = (await api("GET", "/api/v1/report?path=situatie")).data.value;
+  const terug = await api("PATCH", "/api/v1/report", { path: "situatie", value: teruggelezen });
+  meld(terug.status === 200 && app.s.rapport.situatie?.kaarten.length === 1 && app.s.rapport.situatie.kaarten[0].jpeg === jpeg,
+    "PATCH /report: get en weer terug laat de kaarten staan", kort(terug));
+  const terugVol = await api("PATCH", "/api/v1/report", { values: { "situatie.kaarten": [{ id: "omgeving", zoom: 15, bytes: 9 }, { id: "gebied", zoom: 12, bytes: 3 }] } });
+  meld(terugVol.status === 200 && app.s.rapport.situatie?.kaarten.length === 1 && app.s.rapport.situatie.kaarten[0].id === "omgeving" && app.s.rapport.situatie.kaarten[0].jpeg === jpeg,
+    "PATCH /report: een kaart zonder bestaande tegenhanger valt weg", kort(terugVol));
   delete app.s.rapport.situatie;
 
   const conflict = await api("POST", "/api/v1/project/new");

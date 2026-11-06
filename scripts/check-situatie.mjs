@@ -19,7 +19,9 @@ import {
 } from "../packages/desktop/src/kaart/tegels.ts";
 import { afstandM, dichtstePuntOpLijn, oppervlakteM2 } from "../packages/desktop/src/kaart/afstand.ts";
 import { waterVraag, dichtstbijzijndWater, meetWater } from "../packages/desktop/src/kaart/overpass.ts";
-import { KAARTEN, normaliseerSituatie, onderschrift, situatieBijPunt, waterTekst } from "../packages/desktop/src/rapport/situatie.ts";
+import { locatieUitErp, nieuweLocatieTekst } from "../packages/desktop/src/kaart/erpnext.ts";
+import { herkomstVan, geheimActies, adresToegestaan } from "../packages/desktop/src/tauri/erpnextGeheim.ts";
+import { KAARTEN, normaliseerSituatie, onderschrift, situatieActueel, situatieBijPunt, stelselSleutel, waterTekst } from "../packages/desktop/src/rapport/situatie.ts";
 import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 
 let fouten = 0;
@@ -176,6 +178,28 @@ console.log("\nZoeken bij de dienst");
   meld(signaal instanceof AbortSignal, "zoekAdres geeft standaard een signaal mee");
 }
 
+console.log("\nLocatie uit ERPNext");
+{
+  let aangeroepen = 0;
+  const nep = async (t) => { aangeroepen++; return [{ punt: { lat: 52.37, lon: 4.89 }, naam: `gevonden: ${t}` }, { punt: { lat: 1, lon: 2 }, naam: "tweede" }]; };
+  const coord = await locatieUitErp("52.09, 5.12", nep);
+  meld(coord !== null && gelijk(coord.punt, 52.09, 5.12) && coord.naam === "52.09, 5.12" && aangeroepen === 0, "coördinaten gaan direct, zonder zoek, met de tekst als naam", toon(coord));
+  const adres = await locatieUitErp("Domplein 1, Utrecht", nep);
+  meld(adres !== null && gelijk(adres.punt, 52.37, 4.89) && adres.naam === "gevonden: Domplein 1, Utrecht" && aangeroepen === 1, "een adres geeft de eerste uitkomst van zoek", toon(adres));
+  meld((await locatieUitErp("", nep)) === null && (await locatieUitErp("  \n ", nep)) === null && aangeroepen === 1, "een lege tekst geeft null, zonder zoek");
+  meld((await locatieUitErp("Nergens", async () => [])) === null, "een adres zonder uitkomst geeft null");
+  let vraag = "";
+  await locatieUitErp(`  ${"x".repeat(500)}  `, async (t) => { vraag = t; return []; });
+  meld(vraag === "x".repeat(200), "de vraag aan zoek is getrimd en op 200 tekens begrensd", String(vraag.length));
+  let fout = null;
+  try { await locatieUitErp("Utrecht", async () => { throw new Error("HTTP 429"); }); } catch (e) { fout = e; }
+  meld(fout instanceof Error, "een fout van zoek komt door (de aanroeper meldt hem)");
+  meld(nieuweLocatieTekst("", "", "Domplein 1") === "Domplein 1", "Locatie leeg: de ERPNext-tekst");
+  meld(nieuweLocatieTekst("Oud adres", "Oud adres", "Nieuw adres") === "Nieuw adres", "Locatie gelijk aan de vorige ERPNext-tekst: vervangen");
+  meld(nieuweLocatieTekst("Eigen tekst", "Oud adres", "Nieuw adres") === "Eigen tekst", "een eigen tekst blijft staan");
+  meld(nieuweLocatieTekst("Eigen tekst", "", "Nieuw adres") === "Eigen tekst", "zonder vorige ERPNext-tekst blijft een eigen tekst staan");
+}
+
 console.log("\nHet schaallabel");
 {
   const si = { eenheid: () => "m", waarde: (v) => v };
@@ -280,6 +304,21 @@ console.log("\nDe situatie in het rapport");
   meld(situatieBijPunt(goed, null) === "geen", "zonder punt: geen");
   meld(situatieBijPunt(undefined, p) === "geen", "zonder situatie: geen");
 
+  // Taal en eenhedenstelsel bij het maken.
+  const metTaal = { ...goed, taal: "nl", stelsel: "blad" };
+  meld(toon(normaliseerSituatie(metTaal)) === toon(metTaal), "taal en stelsel blijven behouden", toon(normaliseerSituatie(metTaal)));
+  const zonderTaal = normaliseerSituatie(goed);
+  meld(!("taal" in zonderTaal) && !("stelsel" in zonderTaal), "een oude situatie zonder taal en stelsel blijft zonder");
+  meld(!("taal" in normaliseerSituatie({ ...goed, taal: 5, stelsel: "" })), "taal en stelsel die geen tekst zijn vallen weg");
+  meld(situatieActueel(metTaal, p, "nl", "blad") === "actueel", "zelfde punt, taal en stelsel: actueel");
+  meld(situatieActueel(metTaal, p, "en", "blad") === "verouderd", "andere rapporttaal: verouderd");
+  meld(situatieActueel(metTaal, p, "nl", "us") === "verouderd", "ander eenhedenstelsel: verouderd");
+  meld(situatieActueel(metTaal, { lat: 52.0907 + 50 / 111320, lon: 5.1214 }, "nl", "blad") === "verouderd", "ander punt: verouderd");
+  meld(situatieActueel(goed, p, "en", "us") === "actueel", "oude situatie zonder taal en stelsel telt als actueel");
+  meld(situatieActueel(metTaal, null, "nl", "blad") === "geen" && situatieActueel(undefined, p, "nl", "blad") === "geen", "zonder punt of situatie: geen");
+  meld(stelselSleutel({}) === "blad" && stelselSleutel({ eenheden: "us" }) === "us", "stelselSleutel: standaard blad, anders de keuze");
+  meld(stelselSleutel({ eenheden: "eigen", eenheden_eigen: "{\"m\":\"ft\"}" }) !== stelselSleutel({ eenheden: "eigen", eenheden_eigen: "{}" }), "stelselSleutel: bij eigen telt de eigen keuze mee");
+
   const teksten = { inleiding: "x" };
   const oud = JSON.parse(JSON.stringify(standaardRapport("06-11-2026", teksten, "nl")));
   meld(!("situatie" in normaliseerRapport(oud, "06-11-2026", teksten, "nl")), "een rapport zonder situatie krijgt er geen");
@@ -374,6 +413,25 @@ console.log("\nOpen water zoeken");
   meld((await bericht(() => meetWater(p, async () => ({ ok: true, status: 200, json: async () => ({ elements: fixture.elements, remark: "runtime error: out of memory" }) })))) !== "", "een remark bij gedeeltelijke elements laat meetWater falen");
   meld((await bericht(async () => dichtstbijzijndWater(p, { elements: [], remark: "runtime error: out of memory" }))) !== "", "dichtstbijzijndWater gooit bij een geheugenfout");
   meld(dichtstbijzijndWater(p, { elements: [], remark: "Hallo" }) === null, "een remark zonder fout laat null staan");
+}
+
+console.log("\nHet geheim van de ERPNext-koppeling hoort bij de herkomst van het adres");
+{
+  const A = "https://a.example.test", B = "https://b.example.test";
+  const g = (...a) => toon(geheimActies(...a));
+  meld(herkomstVan("https://a.example.test/erp/pad") === A, "herkomst: alleen schema, host en poort");
+  meld(herkomstVan("") === null && herkomstVan("kapot") === null && herkomstVan("ftp://a.example.test") === null && herkomstVan("http://a.example.test") === null, "leeg, ongeldig, ftp en http buiten localhost: geen herkomst");
+  meld(herkomstVan("http://localhost:8000/x") === "http://localhost:8000", "http://localhost mag");
+  meld(adresToegestaan("") && adresToegestaan(A) && !adresToegestaan("http://a.example.test"), "adresToegestaan");
+  meld(g(A, B, "", true) === toon({ wisVoor: A }), "wissen bij A, adres naar B: A wordt gewist, B niet", g(A, B, "", true));
+  meld(g(A, "", "", false) === toon({ wisVoor: A }), "adres leeggemaakt: het geheim van A wordt gewist", g(A, "", "", false));
+  meld(g(A, "kapot", "x", false) === toon({ wisVoor: A }), "ongeldig nieuw adres: oud geheim gewist, niets bewaard", g(A, "kapot", "x", false));
+  meld(g(A, A + "/ander/pad", "", false) === "{}", "alleen een ander pad: niets gewist", g(A, A + "/ander/pad", "", false));
+  meld(g(A, A + "/ander/pad", "", true) === toon({ wisVoor: A + "/ander/pad" }), "ander pad met Wissen: wist de herkomst", g(A, A + "/ander/pad", "", true));
+  meld(g(A, B, "geheim", false) === toon({ wisVoor: A, bewaarVoor: B }), "A naar B met nieuw geheim: A gewist, B bewaard", g(A, B, "geheim", false));
+  meld(g("", A, "geheim", false) === toon({ bewaarVoor: A }), "eerste keer: bewaren voor A", g("", A, "geheim", false));
+  meld(g(A, A, "geheim", false) === toon({ bewaarVoor: A }), "nieuw geheim, zelfde herkomst: bewaren", g(A, A, "geheim", false));
+  meld(g("", "http://a.example.test", "geheim", false) === "{}", "onjuist adres: geen geheim bewaard", g("", "http://a.example.test", "geheim", false));
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles OK");

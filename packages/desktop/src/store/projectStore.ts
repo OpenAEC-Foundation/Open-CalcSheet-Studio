@@ -221,6 +221,8 @@ interface ProjectState {
   zetElementen: (id: string, elementen: ElementRef[]) => void;
 
   zetGegeven: (naam: string, waarde: string) => void;
+  /** Meerdere projectgegevens in één wijziging (één stap ongedaan maken). */
+  zetGegevens: (waarden: Record<string, string>) => void;
   zetProjectNaam: (naam: string) => void;
 
   /**
@@ -704,6 +706,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set((s) => ({
       ...metGeschiedenis(s, `gegeven:${naam}`),
       gegevens: { ...s.gegevens, [naam]: waarde },
+      dirty: true,
+    })),
+
+  zetGegevens: (waarden) =>
+    set((s) => ({
+      ...metGeschiedenis(s, null),
+      gegevens: { ...s.gegevens, ...waarden },
       dirty: true,
     })),
 

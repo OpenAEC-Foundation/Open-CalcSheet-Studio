@@ -31,6 +31,20 @@ tauri-plugin-fs = "2"
 # MCP-brug (src/mcp_bridge.rs): een klein HTTP-doorgeefluik op 127.0.0.1 voor
 # een AI-assistent. Pure Rust, zonder TLS (alleen loopback).
 tiny_http = "0.12"
+# ERPNext (src/erpnext.rs): het verzoek gaat via Rust, vanwege CORS. ureq met rustls
+# (ring), zonder OpenSSL of native-tls, zodat het op elk platform zonder extra
+# systeempakket bouwt. `native-certs`: de certificaten van het besturingssysteem, zodat
+# een ERPNext met een eigen (bedrijfs-)CA ook werkt. `url` staat al in de boom (tauri,
+# ureq) en toetst het adres.
+ureq = { version = "2", default-features = false, features = ["tls", "json", "native-certs"] }
+url = "2"
+# Het API-geheim staat in de sleutelbos van het besturingssysteem. Zonder deze
+# platformvlaggen valt keyring 3 terug op een nep-opslag die niets bewaart. Op Linux
+# gebruikt de Secret Service libdbus; die bouwt tao al (zelfde systeempakket).
+# `crypto-rust` versleutelt de sessie met de Secret Service, in pure Rust.
+keyring = { version = "3", features = ["windows-native", "apple-native", "linux-native-sync-persistent", "crypto-rust"] }
+# Het geheim en de header met het geheim worden na gebruik gewist.
+zeroize = "1"
 
 # OpenAEC-rapportengine — optioneel, standaard uit.
 #
