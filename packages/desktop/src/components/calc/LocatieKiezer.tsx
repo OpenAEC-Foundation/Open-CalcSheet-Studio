@@ -7,6 +7,8 @@ import "leaflet/dist/leaflet.css";
 import { useProjectStore } from "../../store/projectStore";
 import { leesCoordinaten, leesPunt, puntJson, puntTekst, type Punt } from "../../kaart/punt.ts";
 import { zoekAdres, type Uitkomst } from "../../kaart/nominatim.ts";
+import { locatieUitErp } from "../../kaart/erpnext.ts";
+import { erpnextIngevuld, erpnextProjectVeld, heeftErpnextGeheim, leesErpnextInstellingen } from "../../tauri/erpnext";
 import { maakKaartbeeld } from "../../kaart/beeld.ts";
 import { schaalTekst } from "../../kaart/tegels.ts";
 import { meetWater } from "../../kaart/overpass.ts";
@@ -29,6 +31,15 @@ const speld = L.icon({
 const WERELD: [number, number] = [25, 10];
 
 const BRON = "© OpenStreetMap contributors";
+
+/** Hoeveel tekens van een tekst of foutmelding uit ERPNext we tonen of bewaren. */
+const MAX_ERP_TEKST = 200;
+
+/** Tekst van buiten (ERPNext, de server): getrimd en begrensd, alleen om als tekst te tonen. */
+function schoonErp(v: unknown): string {
+  const tekst = v instanceof Error ? v.message : typeof v === "string" ? v : "";
+  return tekst.replace(/\s+/g, " ").trim().slice(0, MAX_ERP_TEKST);
+}
 
 /** Vandaag in de tijd van de gebruiker, als "JJJJ-MM-DD". */
 function vandaag(): string {
@@ -119,6 +130,17 @@ export default function LocatieKiezer() {
   const [waterMelding, setWaterMelding] = useState<string | null>(null);
   // Alleen de laatste meting telt.
   const waterNummer = useRef(0);
+  // Overnemen uit ERPNext: de knop staat er alleen met ingevulde instellingen, een geheim voor
+  // dat adres en een projectnummer.
+  const projectNummer = (gegevens.project_nummer ?? "").trim();
+  const [erpBeschikbaar, setErpBeschikbaar] = useState(false);
+  const [erpBezig, setErpBezig] = useState(false);
+  const [erpMelding, setErpMelding] = useState<string | null>(null);
+  // Alleen de laatste opdracht telt.
+  const erpNummer = useRef(0);
+  // De tekst die de vorige keer uit ERPNext kwam: is het veld Locatie daar nog gelijk aan, dan
+  // mag een nieuwe tekst het vervangen.
+  const laatsteErpTekst = useRef("");
 
   /**
    * Maakt de drie kaarten achter elkaar en schrijft ze pas als alle drie klaar zijn, met één
@@ -224,6 +246,69 @@ export default function LocatieKiezer() {
     setWaterMelding(null);
   }, [puntLat, puntLon]);
 
+  useEffect(() => {
+    let weg = false;
+    setErpBeschikbaar(false);
+    if (!projectNummer) return;
+    void (async () => {
+      try {
+        const w = await leesErpnextInstellingen();
+        const ok = erpnextIngevuld(w) && (await heeftErpnextGeheim(w.adres));
+        if (!weg) setErpBeschikbaar(ok);
+      } catch {
+        if (!weg) setErpBeschikbaar(false);
+      }
+    })();
+    return () => {
+      weg = true;
+    };
+  }, [projectNummer]);
+
+  /**
+   * Haalt het locatieveld van het project uit ERPNext en zet het punt daarop. Het oude punt
+   * vervangt pas als er een nieuw punt is; bij een fout of niets gevonden blijft het staan.
+   * Daarna worden de kaarten opnieuw gemaakt.
+   */
+  const neemOverUitErp = useCallback(async () => {
+    const nummer = ++erpNummer.current;
+    const project = projectNummer;
+    setErpMelding(null);
+    setErpBezig(true);
+    try {
+      const w = await leesErpnextInstellingen();
+      const veld = schoonErp(await erpnextProjectVeld(w, project));
+      if (nummer !== erpNummer.current) return;
+      if (!veld) {
+        setErpMelding(t("gegevens.situatie.erpLeeg", { veld: w.veld }));
+        return;
+      }
+      const plek = await locatieUitErp(veld, (v) => zoekAdres(v, i18n.language));
+      // Intussen een andere opdracht of een ander project: dit antwoord telt niet meer.
+      if (nummer !== erpNummer.current) return;
+      if ((useProjectStore.getState().gegevens.project_nummer ?? "").trim() !== project) return;
+      if (!plek) {
+        setErpMelding(t("gegevens.situatie.erpNietGevonden"));
+        return;
+      }
+      zetGegeven("locatie_punt", puntJson(plek.punt));
+      const huidig = (useProjectStore.getState().gegevens.locatie ?? "").trim();
+      if (!huidig || huidig === laatsteErpTekst.current) {
+        zetGegeven("locatie", veld);
+        setTekst(veld);
+      }
+      laatsteErpTekst.current = veld;
+      inzoomen.current = true;
+      setUitkomsten([]);
+      setMelding(null);
+      void maakKaarten(plek.punt);
+    } catch (e) {
+      if (nummer !== erpNummer.current) return;
+      setErpMelding(t("gegevens.situatie.erpMislukt", { fout: schoonErp(e) }));
+    } finally {
+      if (nummer === erpNummer.current) setErpBezig(false);
+    }
+  }, [projectNummer, i18n.language, t, zetGegeven, maakKaarten]);
+
   const zetPunt = useCallback(
     (p: Punt, naam?: string) => {
       zetGegeven("locatie_punt", puntJson(p));
@@ -297,6 +382,14 @@ export default function LocatieKiezer() {
           {bezig ? t("gegevens.situatie.zoekt") : t("gegevens.situatie.zoeken")}
         </button>
       </div>
+      {erpBeschikbaar && (
+        <div className="lk-kaarten">
+          <button type="button" className="lk-knop" onClick={() => void neemOverUitErp()} disabled={erpBezig}>
+            {erpBezig ? t("gegevens.situatie.erpBezig") : t("gegevens.situatie.erpOvernemen")}
+          </button>
+        </div>
+      )}
+      {erpMelding && <div className="lk-melding" role="status">{erpMelding}</div>}
       {melding && <div className="lk-melding" role="status">{melding}</div>}
       {uitkomsten.length > 0 && (
         <ul className="lk-uitkomsten">

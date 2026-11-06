@@ -318,7 +318,12 @@
       "verouderd": "De kaarten in het rapport horen bij een ander punt. Vernieuw ze met de knop.",
       "waterMeten": "Afstand tot open water meten",
       "waterBezig": "Afstand meten…",
-      "waterMislukt": "De afstand tot open water kon niet worden gemeten. Controleer je internetverbinding en probeer het later opnieuw; een eerdere meting blijft staan."
+      "waterMislukt": "De afstand tot open water kon niet worden gemeten. Controleer je internetverbinding en probeer het later opnieuw; een eerdere meting blijft staan.",
+      "erpOvernemen": "Overnemen uit ERPNext",
+      "erpBezig": "Ophalen uit ERPNext…",
+      "erpLeeg": "Het veld {{veld}} van dit project in ERPNext is leeg. De huidige locatie blijft staan.",
+      "erpNietGevonden": "De locatie uit ERPNext is niet gevonden. De huidige locatie blijft staan.",
+      "erpMislukt": "Overnemen uit ERPNext is mislukt: {{fout}}. De huidige locatie blijft staan."
     }
   },
   "windkaart": {

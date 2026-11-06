@@ -19,6 +19,7 @@ import {
 } from "../packages/desktop/src/kaart/tegels.ts";
 import { afstandM, dichtstePuntOpLijn, oppervlakteM2 } from "../packages/desktop/src/kaart/afstand.ts";
 import { waterVraag, dichtstbijzijndWater, meetWater } from "../packages/desktop/src/kaart/overpass.ts";
+import { locatieUitErp } from "../packages/desktop/src/kaart/erpnext.ts";
 import { KAARTEN, normaliseerSituatie, onderschrift, situatieBijPunt, waterTekst } from "../packages/desktop/src/rapport/situatie.ts";
 import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 
@@ -174,6 +175,24 @@ console.log("\nZoeken bij de dienst");
   let signaal = null;
   await zoekAdres("y", "en", async (_u, init) => { signaal = init.signal; return { ok: true, status: 200, json: async () => [] }; });
   meld(signaal instanceof AbortSignal, "zoekAdres geeft standaard een signaal mee");
+}
+
+console.log("\nLocatie uit ERPNext");
+{
+  let aangeroepen = 0;
+  const nep = async (t) => { aangeroepen++; return [{ punt: { lat: 52.37, lon: 4.89 }, naam: `gevonden: ${t}` }, { punt: { lat: 1, lon: 2 }, naam: "tweede" }]; };
+  const coord = await locatieUitErp("52.09, 5.12", nep);
+  meld(coord !== null && gelijk(coord.punt, 52.09, 5.12) && coord.naam === "52.09, 5.12" && aangeroepen === 0, "coördinaten gaan direct, zonder zoek, met de tekst als naam", toon(coord));
+  const adres = await locatieUitErp("Domplein 1, Utrecht", nep);
+  meld(adres !== null && gelijk(adres.punt, 52.37, 4.89) && adres.naam === "gevonden: Domplein 1, Utrecht" && aangeroepen === 1, "een adres geeft de eerste uitkomst van zoek", toon(adres));
+  meld((await locatieUitErp("", nep)) === null && (await locatieUitErp("  \n ", nep)) === null && aangeroepen === 1, "een lege tekst geeft null, zonder zoek");
+  meld((await locatieUitErp("Nergens", async () => [])) === null, "een adres zonder uitkomst geeft null");
+  let vraag = "";
+  await locatieUitErp(`  ${"x".repeat(500)}  `, async (t) => { vraag = t; return []; });
+  meld(vraag === "x".repeat(200), "de vraag aan zoek is getrimd en op 200 tekens begrensd", String(vraag.length));
+  let fout = null;
+  try { await locatieUitErp("Utrecht", async () => { throw new Error("HTTP 429"); }); } catch (e) { fout = e; }
+  meld(fout instanceof Error, "een fout van zoek komt door (de aanroeper meldt hem)");
 }
 
 console.log("\nHet schaallabel");

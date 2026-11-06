@@ -209,6 +209,14 @@ bij het vernieuwen van de kaarten blijft `water` alleen staan als het punt gelij
 `report_get` en `report_set` geven per kaart
 alleen `{id, zoom, bytes}` terug, niet de JPEG.
 
+Bij de locatie staat de knop "Overnemen uit ERPNext", als de ERPNext-instellingen (adres, API-sleutel,
+veldnaam) gevuld zijn, er een API-geheim is voor dat adres en `project_nummer` gevuld is. De knop leest dat
+veld bij het project met die naam in ERPNext (standaard `custom_location`). Coördinaten gaan direct,
+een adres gaat via de zoekdienst; het punt vervangt `locatie_punt` pas als het gevonden is, en de kaarten
+worden daarna opnieuw gemaakt. Het geheim staat in de sleutelbos van het besturingssysteem, per
+herkomst (schema, host en poort) van het adres, en komt nooit in het project. Het veld bestaat niet standaard
+in ERPNext: een beheerder maakt een Custom Field `custom_location` (Data) op Project.
+
 ## Taal van het rapport
 
 Het rapport heeft een eigen taal, `Rapport.taal` in `ocss::rapport`, los van de taal
