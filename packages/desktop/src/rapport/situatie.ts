@@ -44,6 +44,10 @@ export interface Situatie {
   /** "JJJJ-MM-DD": de dag waarop de kaarten zijn gemaakt. */
   datum: string;
   kaarten: Kaartbeeld[];
+  /** De rapporttaal waarin de teksten in de beelden zijn gezet. Afwezig (oude situatie): telt als actueel. */
+  taal?: string;
+  /** De sleutel van het eenhedenstelsel van het project bij het maken (zie `stelselSleutel`). */
+  stelsel?: string;
   /**
    * Het gemeten open water. Afwezig: nog niet gemeten. `null`: gemeten, en er ligt geen
    * open water binnen de zoekstraal (10 km).
@@ -99,8 +103,16 @@ export function normaliseerSituatie(x: unknown): Situatie | undefined {
     punt: JSON.parse(puntJson(punt)) as Punt,
     datum: o.datum,
     kaarten,
+    ...(typeof o.taal === "string" && o.taal ? { taal: o.taal } : {}),
+    ...(typeof o.stelsel === "string" && o.stelsel ? { stelsel: o.stelsel } : {}),
     ...(water !== undefined ? { water } : {}),
   };
+}
+
+/** De sleutel van het eenhedenstelsel van het project: de keuze, bij "eigen" met de eigen eenheden erbij. */
+export function stelselSleutel(g: { eenheden?: string; eenheden_eigen?: string }): string {
+  const keuze = g.eenheden || "blad";
+  return keuze === "eigen" ? `eigen:${g.eenheden_eigen ?? ""}` : keuze;
 }
 
 const AARDSTRAAL = 6371008.8;
@@ -120,6 +132,24 @@ function afstandMeter(a: Punt, b: Punt): number {
 export function situatieBijPunt(s: Situatie | undefined, p: Punt | null): "geen" | "actueel" | "verouderd" {
   if (!s || !p) return "geen";
   return afstandMeter(s.punt, p) > 1 ? "verouderd" : "actueel";
+}
+
+/**
+ * Zijn de kaarten nog goed voor het project? "verouderd" als het punt verschilt (zie
+ * `situatieBijPunt`) of als de rapporttaal of het eenhedenstelsel anders is dan bij het
+ * maken: de teksten in de beelden staan vast. Een situatie zonder `taal` of `stelsel`
+ * (oud) wordt op dat onderdeel niet vergeleken.
+ */
+export function situatieActueel(
+  s: Situatie | undefined,
+  p: Punt | null,
+  taal: string,
+  stelsel: string,
+): "geen" | "actueel" | "verouderd" {
+  const stand = situatieBijPunt(s, p);
+  if (stand !== "actueel" || !s) return stand;
+  if ((s.taal !== undefined && s.taal !== taal) || (s.stelsel !== undefined && s.stelsel !== stelsel)) return "verouderd";
+  return "actueel";
 }
 
 /** Afgerond op twee significante cijfers: 26308 wordt 26000, 3459 wordt 3500, 411 wordt 410. */

@@ -48,6 +48,27 @@ function zonderBeelden(x: unknown): unknown {
   return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, zonderBeelden(v)]));
 }
 
+/**
+ * Een waarde voor het pad `situatie` (of eronder): een kaart met een bekende id maar zonder
+ * `jpeg` (zoals report_get hem geeft, met `bytes`) krijgt de JPEG van die id uit de huidige
+ * situatie terug. Een kaart zonder bestaande tegenhanger blijft zoals hij is en valt later weg.
+ */
+function vulBeeldenAan(pad: string, waarde: unknown, huidig: unknown): unknown {
+  if (pad !== "situatie" && !pad.startsWith("situatie.")) return waarde;
+  const kaarten = (huidig as { situatie?: { kaarten?: { id: string; jpeg: string }[] } } | undefined)?.situatie?.kaarten ?? [];
+  const aanvullen = (x: unknown): unknown => {
+    if (Array.isArray(x)) return x.map(aanvullen);
+    if (x === null || typeof x !== "object") return x;
+    const o = x as Record<string, unknown>;
+    if (typeof o.id === "string" && typeof o.jpeg !== "string") {
+      const bestaand = kaarten.find((k) => k.id === o.id);
+      if (bestaand) return { ...o, jpeg: bestaand.jpeg };
+    }
+    return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, aanvullen(v)]));
+  };
+  return aanvullen(waarde);
+}
+
 const EXTENSIE = ".ifccalculation";
 
 function metExtensie(pad: string): string {
@@ -368,7 +389,7 @@ export const PROJECTTOOLS: McpToolDef[] = [
       for (const [pad, waarde] of gevraagd) {
         if (typeof waarde === "string" || typeof waarde === "boolean") ctx.omgeving.acties.zetRapportVeld(pad, waarde);
         else if (typeof waarde === "number") ctx.omgeving.acties.zetRapportVeld(pad, String(waarde));
-        else ctx.omgeving.acties.zetRapportDeel(pad, waarde);
+        else ctx.omgeving.acties.zetRapportDeel(pad, vulBeeldenAan(pad, waarde, ctx.omgeving.stand().rapport));
       }
       const na = ctx.omgeving.stand().rapport;
       return ok({ set: Object.fromEntries(gevraagd.map(([pad]) => [pad, zonderBeelden(opPad(na, pad).waarde)])) });

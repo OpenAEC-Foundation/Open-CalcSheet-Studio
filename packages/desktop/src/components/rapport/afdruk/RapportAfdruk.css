@@ -560,6 +560,15 @@ html.rapportdruk .rpa-drukvellen .av-pagina:last-child {
 
 /* ─── Situatie: de kaarten van de plek ───────────────────────── */
 
+.rpa-wortel .rpa-sit-waarschuwing {
+  margin: 0 var(--rpa-cel) 4pt;
+  padding: 2pt 4pt;
+  border: 0.5pt solid #000;
+  font-size: 8pt;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
 .rpa-wortel .rpa-sit-beelden {
   padding: 0 var(--rpa-cel);
 }

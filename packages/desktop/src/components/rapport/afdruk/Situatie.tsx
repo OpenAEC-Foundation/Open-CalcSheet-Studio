@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { klasse } from "../../../rapport/normwaarden";
 import { leesPunt, puntTekst } from "../../../kaart/punt";
-import { onderschrift, situatieBijPunt, waterTekst, type KaartId, type Situatie as SituatieModel } from "../../../rapport/situatie";
+import { onderschrift, situatieActueel, situatieBijPunt, stelselSleutel, waterTekst, type KaartId, type Situatie as SituatieModel } from "../../../rapport/situatie";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { Cel, Leeg, Rij, Vlak } from "./raster";
 
@@ -48,6 +48,8 @@ export default function Situatie({ w }: { w: RapportWeergave }) {
   if (!situatie || !situatie.tonen || leesPunt(gegevens.locatie_punt) === null) return null;
   // Het adres hoort bij het punt van het project; horen de kaarten bij een ander punt, dan blijft het weg.
   const adresHoortErbij = situatieBijPunt(situatie, leesPunt(gegevens.locatie_punt)) === "actueel";
+  // Andere plek, taal of eenheden dan bij het maken: de kaarten kloppen niet meer met de pagina.
+  const verouderd = situatieActueel(situatie, leesPunt(gegevens.locatie_punt), taal, stelselSleutel(gegevens)) === "verouderd";
   const terrein = t(`afdruk.situatie.terrein.${klasse(gegevens.terreincategorie, 2)}`);
   // Afwezig is niet gemeten ("—"); null is gemeten zonder open water binnen 10 km.
   const water = situatie.water === undefined ? "—" : waterTekst(situatie.water, w.eenheden, taal, t);
@@ -56,6 +58,7 @@ export default function Situatie({ w }: { w: RapportWeergave }) {
     <section className="rpa-sectie rpa-situatie">
       <Vlak>
         <h1 className="rpa-h1">{t("afdruk.situatie.titel")}</h1>
+        {verouderd && <p className="rpa-sit-waarschuwing" role="alert">{t("afdruk.situatie.verouderd")}</p>}
         <div className="rpa-sit-beelden">
           <Kaart situatie={situatie} id="omgeving" w={w} />
           <div className="rpa-sit-paar">

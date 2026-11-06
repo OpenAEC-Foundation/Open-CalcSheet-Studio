@@ -27,3 +27,14 @@ export async function setSetting<T>(key: string, value: T): Promise<void> {
     // silently fail if store unavailable
   }
 }
+
+/**
+ * Als setSetting, maar een fout komt terug in plaats van stil te verdwijnen, en de
+ * waarde staat daarna op schijf (niet pas bij het automatisch bewaren). Voor instellingen
+ * waarvan de gebruiker moet weten dat ze niet bewaard zijn.
+ */
+export async function setSettingOfFout<T>(key: string, value: T): Promise<void> {
+  const store = await getStore();
+  await store.set(key, value);
+  await store.save();
+}

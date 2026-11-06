@@ -42,7 +42,7 @@
     "naarProjectgegevens": "Edit in Project data →",
     "situatieTonen": "Site location page",
     "situatieHint": "A page with maps of the project site, right after the cover.",
-    "situatieVerouderd": "The maps belong to a different point than the project location. On paper they are shown with their own point.",
+    "situatieVerouderd": "The maps belong to a different point, language or units than the project now has. Refresh them in the project data; a warning is printed on the page.",
     "situatieGeenLocatie": "The site location page only appears in the report when the project has a location. The maps are kept and return when you choose a point again.",
     "situatieBeeld": "Site map, {{naam}}"
   },
@@ -373,6 +373,7 @@
     },
     "situatie": {
       "titel": "Site location",
+      "verouderd": "Note: these maps belong to an earlier location, a different language or different units. Refresh them in the project data.",
       "onderschrift": "{{kaart}} · about {{afstand}}",
       "kaarten": {
         "gebied": "Area",

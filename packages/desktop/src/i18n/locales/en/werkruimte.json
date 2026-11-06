@@ -302,7 +302,7 @@
     },
     "situatie": {
       "titel": "Site location",
-      "hint": "Search for an address anywhere in the world, or click the map to place the pin. You can drag the pin.",
+      "hint": "Search for an address anywhere in the world, or click the map to place the pin. You can drag the pin. Searching, the maps and the water measurement use OpenStreetMap services (Nominatim, map tiles, Overpass); the address or point is sent to those services for this.",
       "adres": "Address or place",
       "adresVoorbeeld": "Address, place or coordinates",
       "zoeken": "Search",
@@ -315,10 +315,16 @@
       "kaartenVernieuwen": "Refresh maps",
       "kaartenBezig": "Creating maps…",
       "kaartenMislukt": "The maps could not be created. Check your internet connection and try again; the existing maps stay in place.",
-      "verouderd": "The maps in the report belong to a different point. Refresh them with the button.",
+      "verouderd": "The maps in the report belong to a different point, language or units. Refresh them with the button.",
+      "erpGevonden": "Found: {{naam}}",
       "waterMeten": "Measure distance to open water",
       "waterBezig": "Measuring distance…",
-      "waterMislukt": "The distance to open water could not be measured. Check your internet connection and try again later; an earlier measurement stays in place."
+      "waterMislukt": "The distance to open water could not be measured. Check your internet connection and try again later; an earlier measurement stays in place.",
+      "erpOvernemen": "Take over from ERPNext",
+      "erpBezig": "Fetching from ERPNext…",
+      "erpLeeg": "The field {{veld}} of this project in ERPNext is empty or does not exist. The current location stays in place.",
+      "erpNietGevonden": "The location from ERPNext could not be found. The current location stays in place.",
+      "erpMislukt": "Taking over from ERPNext failed: {{fout}}. The current location stays in place."
     }
   },
   "windkaart": {
