@@ -363,8 +363,8 @@ function renderInputPrompt(node: {
   <label class="calc-input-label">${escapeHtml(weergaveNaam(node.label))} =</label>
   <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false"
     class="calc-input-value"
-    data-prompt="${escapeHtml(node.name)}"${eenheden}
-    value="${escapeHtml(node.currentValue)}"${placeholder} />
+    data-prompt="${escapeHtml(node.name)}"
+    value="${escapeHtml(node.currentValue)}"${placeholder}${eenheden} />
   ${unitSuffix}
 </div>`;
 }
