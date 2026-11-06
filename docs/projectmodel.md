@@ -172,10 +172,21 @@ het herstelbestand, IFCX en ongedaan maken vanzelf meewerken (`store/projectEenh
 | `eenheden_eigen` | bij `eigen`: de eenheid per grootheid, als JSON (`{"kracht":"N"}`) |
 | `eenheden_lijst` | de eigen eenheden van het project, als JSON (`[{"naam":"kipf","uitdrukking":"1000 lbf"}]`) |
 
-Het stelsel raakt alleen de weergave: de uitwerking, het afdrukvoorbeeld en het rapport.
-`ex.waarden` blijven in de eenheid van de bladtekst; een invoerveld rekent wat je typt
-terug. De parametrische beelden en de IFCX-export rekenen in de eenheden van het blad.
-Een nieuw project krijgt het stelsel uit Instellingen, tab Units. Zie
+Het stelsel raakt alleen de weergave, overal waar een waarde in beeld komt:
+
+- **De uitwerking en het afdrukvoorbeeld:** `ex.waarden` blijven in de eenheid van de
+  bladtekst. Een invoerveld toont de waarde in het stelsel en rekent terug wat je typt.
+- **De parametrische beelden:** ze rekenen in de eenheden van het blad en tonen maten, lasten
+  en spanningen in het stelsel (`components/calc/beeldEenheden.ts`). Wat je in een beeld
+  typt, gaat terug in de eenheid van het blad.
+- **Het rapport:** het slaat zijn invoer op in zijn eigen eenheid (m, kN/m², kN/m³), op zes
+  cijfers en met de decimale komma van zijn taal (`rapport/paneel/EenheidInvoer.tsx`).
+  Op papier staan de waarden in het stelsel (`fe` en `ne` in `useRapportWeergave.ts`).
+- **De IFCX-export** blijft in de eenheden van het blad.
+
+Een nieuw project krijgt het stelsel uit Instellingen, tab Units. Dat is `units.stelsel` in
+de instellingen, ook via `settings_set`. Het stelsel van het open project is het
+projectgegeven `eenheden`, ook via `project_data_set`. Zie
 [het ontwerp](superpowers/specs/2026-11-06-eenheden-design.md).
 
 ## Taal van het rapport

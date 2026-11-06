@@ -43,6 +43,7 @@ The release workflow refuses to publish files that are not signed: Windows with 
 
 - **Free and open.** LGPL-3.0. No licence fees, no account.
 - **You can check every step.** A result shows its name, formula, filled-in values and outcome, with units.
+- **Metric or US units.** Pick a unit system per project: SI (mm), SI (m), US customary, or your own unit for each quantity. Results, input fields, drawings and the report follow it, and the checks stay exactly the same. Define your own units too, such as `.kipf = 1000 lbf`.
 - **One project, one report.** Cover, table of contents and page numbers run through all sheets, whatever kind they are. The side panel shows the contents and all numbers as you work.
 - **The right sheet for each part.** Text, canvas, spreadsheet, node graph, drawing, notebook, Markdown or PDF, side by side in one project.
 - **Change a number, the check follows.** Sheets recalculate while you type, and a drawing or a 3D model can take its sizes from the sheet.
@@ -136,6 +137,7 @@ Count sources: the files named above and `ls scripts/check-*.mjs`. A module stat
 - **The library needs internet the first time.** Without a connection it stays empty until it has been fetched once. After that it uses the last version.
 - **A graph file is not always complete.** Nodes this app does not have, scripts and most geometry stay on the graph with a message and do not calculate.
 - **Spreadsheet values do not reach calculation sheets yet.** A spreadsheet stands on its own for now.
+- **No feet-and-inches with fractions yet.** You cannot type or show 5'-6 ½" yet, and temperatures stay in the unit of the sheet. Explanatory notes that quote values from a standard, the weights library and the drawings a sheet makes itself also keep their own units.
 - **Report straight to PDF is Windows only.** Other platforms use the print dialog.
 - **Some text stays in Dutch for now.** The app, the sheets, the Code tab and the report follow your language, but the variable names in the modules and some names in the IFC tree are Dutch.
 - **Page breaks can differ slightly between screen scales.** At 100% and 150% a few lines can move to another page.
