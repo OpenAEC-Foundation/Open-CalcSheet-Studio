@@ -557,3 +557,33 @@ html.rapportdruk .rpa-drukvellen .av-pagina:last-child {
     content: none;
   }
 }
+
+/* ─── Situatie: de kaarten van de plek ───────────────────────── */
+
+.rpa-wortel .rpa-sit-beelden {
+  padding: 0 var(--rpa-cel);
+}
+
+.rpa-wortel .rpa-sit-kaart {
+  margin: 0;
+}
+
+.rpa-wortel .rpa-sit-kaart img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 0.25pt solid #000;
+}
+
+.rpa-wortel .rpa-sit-kaart figcaption {
+  padding: 1mm 0 0;
+  font-size: 8pt;
+  line-height: 1.3;
+}
+
+.rpa-wortel .rpa-sit-paar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4mm;
+  margin-top: 4mm;
+}

@@ -3,7 +3,7 @@
  * uitgangspunten en belastingen.
  *
  * Alleen gegevens en standaardwaarden: geen React, en imports met waarden alleen uit
- * deze map (met extensie .ts), zodat scripts/check-rapport.mjs dit bestand rechtstreeks
+ * deze map en uit kaart/ (met extensie .ts, zonder React), zodat scripts/check-rapport.mjs dit bestand rechtstreeks
  * kan laden. Invoer staat als tekst opgeslagen, net als de projectgegevens: wat de
  * gebruiker typte ("0,56") blijft staan, rekenen gebeurt pas bij het opmaken.
  *
@@ -11,6 +11,7 @@
  * bewaart de tekst in zijn eigen taal (`Rapport.taal`), zoals de gebruiker hem ziet.
  */
 import { inTaal, type Meertalig } from "./meertalig.ts";
+import { normaliseerSituatie, type Situatie } from "./situatie.ts";
 
 
 export type Fase = "" | "SO" | "VO" | "DO" | "TO" | "UO";
@@ -277,6 +278,11 @@ export interface Rapport {
   /** Per knoop-id uit opzet.ts: begint op een nieuwe pagina (overschrijft de standaard). */
   nieuwePagina: Record<string, boolean>;
   opmaak: Opmaak;
+  /**
+   * De pagina Situatie met kaarten van de plek van het project. Ontbreekt zolang er geen
+   * kaarten zijn gemaakt; een nieuw optioneel veld, dus RAPPORT_VERSIE blijft gelijk.
+   */
+  situatie?: Situatie;
   /** Vastgelegde kopie van het bureauprofiel. */
   bureau: BureauProfiel;
 }
@@ -656,6 +662,7 @@ export function normaliseerRapport(
   // rapport zonder eigen keuze houdt de kop Wijziging en tekst zonder subkoppen.
   const opmaak = object(o.opmaak) ?? {};
   const keuze = (x: unknown, standaard: boolean) => (typeof x === "boolean" ? x : versie < 3 ? false : standaard);
+  const situatie = normaliseerSituatie(o.situatie);
 
   return {
     // Een nieuwer rapport houdt zijn hogere versie: zijn eigen bijwerkingen zijn al gedaan.
@@ -740,6 +747,7 @@ export function normaliseerRapport(
       subkoppen: keuze(opmaak.subkoppen, s.opmaak.subkoppen),
       bladenInInhoud: typeof opmaak.bladenInInhoud === "boolean" ? opmaak.bladenInInhoud : versie >= 4 && s.opmaak.bladenInInhoud,
     },
+    ...(situatie ? { situatie } : {}),
     bureau: normaliseerBureau(o.bureau),
   };
 }

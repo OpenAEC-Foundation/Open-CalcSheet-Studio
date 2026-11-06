@@ -39,7 +39,12 @@
     "gewoneTekst_one": "blijft gewone tekst.",
     "gewoneTekst_other": "blijven gewone tekst.",
     "subkoppenAanzetten": "Subkoppen aanzetten voor dit rapport",
-    "naarProjectgegevens": "Wijzigen in Projectgegevens →"
+    "naarProjectgegevens": "Wijzigen in Projectgegevens →",
+    "situatieTonen": "Situatiepagina",
+    "situatieHint": "Een pagina met kaarten van de plek van het project, direct na het voorblad.",
+    "situatieVerouderd": "De kaarten horen bij een ander punt dan de locatie van het project. Op papier staan ze met hun eigen punt.",
+    "situatieGeenLocatie": "De situatiepagina verschijnt pas weer in het rapport als het project een locatie heeft. De kaarten blijven bewaard en komen terug als je opnieuw een punt kiest.",
+    "situatieBeeld": "Kaart van de situatie, {{naam}}"
   },
   "rijen": {
     "toevoegen": "Rij toevoegen",
@@ -365,6 +370,27 @@
       "titel": "Inhoud",
       "inhoudsopgave": "Inhoudsopgave",
       "bijlage": "Bijlage"
+    },
+    "situatie": {
+      "titel": "Situatie",
+      "onderschrift": "{{kaart}} · ca. {{afstand}}",
+      "kaarten": {
+        "gebied": "Gebied",
+        "omgeving": "Omgeving",
+        "locatie": "Locatie"
+      },
+      "adres": "Adres",
+      "coordinaten": "Coördinaten",
+      "terreincategorie": "Terreincategorie",
+      "terrein": {
+        "1": "0 (zee of kustgebied)",
+        "2": "II (onbebouwd gebied)",
+        "3": "III (bebouwd gebied)"
+      },
+      "keuze": "(keuze van de constructeur)",
+      "water": "Afstand tot open water",
+      "kaart": "Kaart",
+      "bron": "© OpenStreetMap contributors, {{datum}}"
     },
     "bijlageKop": "Bijlage {{letter}} {{titel}}",
     "zieBijlage": "Zie bijlage {{nummer}}.",

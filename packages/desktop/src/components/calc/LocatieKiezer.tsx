@@ -6,6 +6,10 @@ import "leaflet/dist/leaflet.css";
 import { useProjectStore } from "../../store/projectStore";
 import { leesCoordinaten, leesPunt, puntJson, puntTekst, type Punt } from "../../kaart/punt.ts";
 import { zoekAdres, type Uitkomst } from "../../kaart/nominatim.ts";
+import { maakKaartbeeld } from "../../kaart/beeld.ts";
+import { schaalTekst } from "../../kaart/tegels.ts";
+import { KAARTEN, situatieBijPunt, type Kaartbeeld } from "../../rapport/situatie.ts";
+import { useBeeldEenheden } from "./useBeeldEenheden";
 import "./LocatieKiezer.css";
 
 // Dezelfde speld als op de windkaart (de standaardafbeeldingen van Leaflet
@@ -20,6 +24,15 @@ const speld = L.icon({
 });
 
 const WERELD: [number, number] = [25, 10];
+
+const BRON = "© OpenStreetMap contributors";
+
+/** Vandaag in de tijd van de gebruiker, als "JJJJ-MM-DD". */
+function vandaag(): string {
+  const d = new Date();
+  const twee = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${twee(d.getMonth() + 1)}-${twee(d.getDate())}`;
+}
 
 /** Een klik op de kaart zet de speld daar. */
 function KlikOpKaart({ onKlik }: { onKlik: (p: Punt) => void }) {
@@ -64,6 +77,12 @@ export default function LocatieKiezer() {
   const gegevens = useProjectStore((s) => s.gegevens);
   const zetGegeven = useProjectStore((s) => s.zetGegeven);
   const punt = leesPunt(gegevens.locatie_punt);
+  const situatie = useProjectStore((s) => s.rapport.situatie);
+  const werkRapportBij = useProjectStore((s) => s.werkRapportBij);
+  const eenheden = useBeeldEenheden();
+  const eenhedenRef = useRef(eenheden);
+  eenhedenRef.current = eenheden;
+  const stand = situatieBijPunt(situatie, punt);
 
   const [tekst, setTekst] = useState(gegevens.locatie ?? "");
   const [uitkomsten, setUitkomsten] = useState<Uitkomst[]>([]);
@@ -73,14 +92,67 @@ export default function LocatieKiezer() {
   const inzoomen = useRef(false);
   // Alleen het laatste antwoord telt als je snel twee keer zoekt.
   const volgnummer = useRef(0);
+  const [kaartenBezig, setKaartenBezig] = useState(false);
+  const [kaartenMelding, setKaartenMelding] = useState<string | null>(null);
+  // Alleen de laatste opdracht om kaarten te maken telt.
+  const kaartNummer = useRef(0);
+
+  /**
+   * Maakt de drie kaarten achter elkaar en schrijft ze pas als alle drie klaar zijn, met één
+   * wijziging van het rapport. Bij een fout blijft de oude situatie staan.
+   */
+  const maakKaarten = useCallback(
+    async (p: Punt) => {
+      const nummer = ++kaartNummer.current;
+      setKaartenMelding(null);
+      setKaartenBezig(true);
+      try {
+        const kaarten: Kaartbeeld[] = [];
+        for (const k of KAARTEN) {
+          // Is de opdracht intussen vervangen, dan haalt hij geen tegels meer.
+          if (nummer !== kaartNummer.current) return;
+          kaarten.push(
+            await maakKaartbeeld(p, k, {
+              bron: BRON,
+              // Het label volgt de taal van het rapport, zoals de rest van de afdruk.
+              schaalLabel: (m) => schaalTekst(m, eenhedenRef.current, useProjectStore.getState().rapport.taal),
+            }),
+          );
+        }
+        if (nummer !== kaartNummer.current) return;
+        // Het punt kan intussen verplaatst of gewist zijn: dan horen deze kaarten er niet meer bij.
+        const nu = leesPunt(useProjectStore.getState().gegevens.locatie_punt);
+        if (!nu || situatieBijPunt({ tonen: true, punt: p, datum: "", kaarten }, nu) !== "actueel") return;
+        // Bij vernieuwen blijft het vinkje zoals het was; het water hoort bij het oude punt en
+        // blijft alleen staan als het punt hetzelfde is.
+        werkRapportBij((r) => {
+          const oud = r.situatie;
+          const water = oud?.water && situatieBijPunt(oud, p) === "actueel" ? oud.water : undefined;
+          return {
+            ...r,
+            situatie: { tonen: oud ? oud.tonen : true, punt: p, datum: vandaag(), kaarten, ...(water ? { water } : {}) },
+          };
+        });
+      } catch {
+        if (nummer !== kaartNummer.current) return;
+        setKaartenMelding(t("gegevens.situatie.kaartenMislukt"));
+      } finally {
+        if (nummer === kaartNummer.current) setKaartenBezig(false);
+      }
+    },
+    [i18n.language, t, werkRapportBij],
+  );
 
   const zetPunt = useCallback(
     (p: Punt, naam?: string) => {
       zetGegeven("locatie_punt", puntJson(p));
       const huidig = useProjectStore.getState().gegevens.locatie ?? "";
       if (naam && !huidig.trim()) zetGegeven("locatie", naam);
+      // Het eerste punt van het project maakt de kaarten vanzelf; daarna beslist de gebruiker
+      // met de knop, zodat een speld slepen niet elke keer tegels haalt.
+      if (!useProjectStore.getState().rapport.situatie) void maakKaarten(p);
     },
-    [zetGegeven],
+    [zetGegeven, maakKaarten],
   );
 
   const zoek = useCallback(async () => {
@@ -184,6 +256,21 @@ export default function LocatieKiezer() {
           <KlikOpKaart onKlik={(p) => zetPunt(p)} />
         </MapContainer>
       </div>
+      {punt && (
+        <div className="lk-kaarten">
+          <button type="button" className="lk-knop" onClick={() => void maakKaarten(punt)} disabled={kaartenBezig}>
+            {kaartenBezig
+              ? t("gegevens.situatie.kaartenBezig")
+              : situatie
+                ? t("gegevens.situatie.kaartenVernieuwen")
+                : t("gegevens.situatie.kaartenMaken")}
+          </button>
+          {stand === "verouderd" && !kaartenBezig && (
+            <span className="lk-melding" role="status">{t("gegevens.situatie.verouderd")}</span>
+          )}
+        </div>
+      )}
+      {kaartenMelding && <div className="lk-melding" role="status">{kaartenMelding}</div>}
       <div className="lk-voet">
         <span className="lk-coord">
           {punt ? puntTekst(punt, i18n.language) : t("gegevens.situatie.geenPunt")}

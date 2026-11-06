@@ -7,6 +7,7 @@ import { PROJECT_VELDEN, geldendeWaarde, type VeldDef } from "../../store/projec
 import { leesPad } from "../../rapport/pad.ts";
 import { LEZEN, NIEUW, WEG, WIJZIGEN, alsTekst, fout, objectSchema, ok, tekstOfGetal, zoekBlad } from "./hulp.ts";
 import { lijstVan } from "./bladen.ts";
+import { base64Bytes } from "../../store/pdfBijlage.ts";
 
 // ── Projectgegevens ─────────────────────────────────────────────────────────
 
@@ -31,6 +32,21 @@ function kiesOptie(v: VeldDef, invoer: string): string | null {
 }
 
 // ── Bestanden ───────────────────────────────────────────────────────────────
+
+/**
+ * Het rapport voor in een antwoord: een kaartbeeld van de situatiepagina heeft daar `bytes`
+ * (de grootte van de JPEG) in plaats van de base64-tekst, zoals een PDF-blad. Het opgeslagen
+ * rapport blijft ongemoeid.
+ */
+function zonderBeelden(x: unknown): unknown {
+  if (Array.isArray(x)) return x.map(zonderBeelden);
+  if (x === null || typeof x !== "object") return x;
+  const o = x as Record<string, unknown>;
+  if (typeof o.jpeg === "string" && typeof o.id === "string") {
+    return { id: o.id, zoom: o.zoom, bytes: base64Bytes(o.jpeg) };
+  }
+  return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, zonderBeelden(v)]));
+}
 
 const EXTENSIE = ".ifccalculation";
 
@@ -317,10 +333,10 @@ export const PROJECTTOOLS: McpToolDef[] = [
     handler: (args, ctx) => {
       const rapport = ctx.omgeving.stand().rapport;
       const pad = typeof args.path === "string" ? args.path.trim() : "";
-      if (!pad) return ok({ report: rapport });
+      if (!pad) return ok({ report: zonderBeelden(rapport) });
       const gevonden = opPad(rapport, pad);
       if (!gevonden.gevonden) return fout("NOT_FOUND", `The report has nothing at "${pad}".`);
-      return ok({ path: pad, value: gevonden.waarde });
+      return ok({ path: pad, value: zonderBeelden(gevonden.waarde) });
     },
   },
 
@@ -355,7 +371,7 @@ export const PROJECTTOOLS: McpToolDef[] = [
         else ctx.omgeving.acties.zetRapportDeel(pad, waarde);
       }
       const na = ctx.omgeving.stand().rapport;
-      return ok({ set: Object.fromEntries(gevraagd.map(([pad]) => [pad, opPad(na, pad).waarde])) });
+      return ok({ set: Object.fromEntries(gevraagd.map(([pad]) => [pad, zonderBeelden(opPad(na, pad).waarde)])) });
     },
   },
 

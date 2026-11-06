@@ -870,3 +870,19 @@ p.rapport-hint {
   color: var(--theme-text-secondary);
   border-top: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.15));
 }
+
+/* Situatiepagina: de drie kaarten klein onder het vinkje. */
+.rapport-situatie-beelden {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.rapport-situatie-beelden img {
+  flex: 1 1 0;
+  min-width: 0;
+  max-height: 64px;
+  object-fit: cover;
+  border: 1px solid var(--theme-border, #8884);
+  border-radius: 2px;
+}

@@ -9,13 +9,16 @@
  *
  * Draaien:  node scripts/check-situatie.mjs
  */
+import { readFileSync } from "node:fs";
 import {
   leesPunt, puntJson, leesCoordinaten, puntTekst,
 } from "../packages/desktop/src/kaart/punt.ts";
 import { parseNominatim, zoekAdres } from "../packages/desktop/src/kaart/nominatim.ts";
 import {
-  tegelPositie, metersPerPixel, zoomVoor, uitsnede, schaalbalk,
+  tegelPositie, metersPerPixel, zoomVoor, uitsnede, schaalbalk, schaalTekst,
 } from "../packages/desktop/src/kaart/tegels.ts";
+import { KAARTEN, normaliseerSituatie, onderschrift, situatieBijPunt } from "../packages/desktop/src/rapport/situatie.ts";
+import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -169,6 +172,86 @@ console.log("\nZoeken bij de dienst");
   let signaal = null;
   await zoekAdres("y", "en", async (_u, init) => { signaal = init.signal; return { ok: true, status: 200, json: async () => [] }; });
   meld(signaal instanceof AbortSignal, "zoekAdres geeft standaard een signaal mee");
+}
+
+console.log("\nHet schaallabel");
+{
+  const si = { eenheid: () => "m", waarde: (v) => v };
+  const us = { eenheid: () => "ft", waarde: (v) => v / 0.3048 };
+  meld(schaalTekst(500, si, "nl") === "500 m", "500 m is 500 m", schaalTekst(500, si, "nl"));
+  meld(schaalTekst(2000, si, "nl") === "2 km", "2000 m is 2 km", schaalTekst(2000, si, "nl"));
+  meld(schaalTekst(5000, si, "en") === "5 km" && schaalTekst(1500, si, "nl") === "1,5 km", "5 km en 1,5 km (komma in het Nederlands)", schaalTekst(1500, si, "nl"));
+  meld(schaalTekst(500, us, "en") === "1,640 ft", "US: 500 m is 1,640 ft", schaalTekst(500, us, "en"));
+  meld(schaalTekst(2000, us, "en") === "1.2 mi", "US: 2000 m is 1.2 mi", schaalTekst(2000, us, "en"));
+  meld(schaalTekst(2000, us, "nl") === "1,2 mi" && schaalTekst(500, us, "nl") === "1.640 ft", "US in het Nederlands: komma", schaalTekst(2000, us, "nl"));
+  meld(schaalTekst(1609.344, us, "en") === "1 mi" && schaalTekst(1600, us, "en") === "5,249 ft", "vanaf 5280 ft gaat het naar mi", schaalTekst(1600, us, "en"));
+}
+
+console.log("\nDe onderschriften op papier");
+{
+  // Een t die de echte vertaalbestanden leest, met {{naam}}-invulling zoals i18next.
+  const woorden = (taal) => JSON.parse(readFileSync(new URL(`../packages/desktop/src/i18n/locales/${taal}/rapport.json`, import.meta.url), "utf8"));
+  const maakT = (taal) => (sleutel, opties = {}) => {
+    const tekst = sleutel.split(".").reduce((o, d) => o?.[d], woorden(taal));
+    return typeof tekst === "string" ? tekst.replace(/\{\{(\w+)\}\}/g, (_, n) => String(opties[n] ?? "")) : sleutel;
+  };
+  const si = { eenheid: () => "m", waarde: (v) => v };
+  const us = { eenheid: () => "ft", waarde: (v) => v / 0.3048 };
+  // Utrecht: de zoomniveaus die zoomVoor kiest, met de werkelijke breedte van het beeld.
+  const lat = 52.0907;
+  const o = (id, zoom, eenh, taal) => onderschrift(id, zoom, lat, eenh, taal, maakT(taal));
+  meld(zoomVoor({ lat, lon: 5.1214 }, 1180, 2000) === 15, "omgeving (1180 px, 2000 m) geeft zoom 15");
+  meld(o("omgeving", 15, si, "nl") === "Omgeving · ca. 3,5 km", "nl, zoom 15: Omgeving · ca. 3,5 km (3464 m)", o("omgeving", 15, si, "nl"));
+  meld(o("omgeving", 15, us, "en") === "Surroundings · about 2.2 mi", "en, US: Surroundings · about 2.2 mi", o("omgeving", 15, us, "en"));
+  meld(o("gebied", 11, si, "en") === "Area · about 26 km", "en, zoom 11: Area · about 26 km (26,3 km)", o("gebied", 11, si, "en"));
+  meld(o("locatie", 17, si, "nl") === "Locatie · ca. 410 m", "nl, zoom 17: Locatie · ca. 410 m (411 m)", o("locatie", 17, si, "nl"));
+  meld(o("locatie", 17, us, "en") === "Location · about 1,345 ft", "en, US: Location · about 1,345 ft", o("locatie", 17, us, "en"));
+}
+
+console.log("\nDe situatie in het rapport");
+{
+  meld(toon(KAARTEN) === toon([
+    { id: "gebied", meters: 15000, breedte: 560, hoogte: 460 },
+    { id: "omgeving", meters: 2000, breedte: 1180, hoogte: 640 },
+    { id: "locatie", meters: 300, breedte: 560, hoogte: 460 },
+  ]), "KAARTEN: gebied, omgeving en locatie met hun maten", toon(KAARTEN));
+  const goed = {
+    tonen: true, punt: { lat: 52.0907, lon: 5.1214 }, datum: "2026-11-06",
+    kaarten: [
+      { id: "gebied", zoom: 11, jpeg: "QUJD" },
+      { id: "omgeving", zoom: 15, jpeg: "REVG" },
+      { id: "locatie", zoom: 17, jpeg: "R0hJ" },
+    ],
+  };
+  meld(toon(normaliseerSituatie(goed)) === toon(goed), "een goede situatie komt ongewijzigd terug", toon(normaliseerSituatie(goed)));
+  const metWater = { ...goed, water: { afstand: 120, naam: "Vecht", punt: { lat: 52.09, lon: 5.12 } } };
+  meld(toon(normaliseerSituatie(metWater)) === toon(metWater), "het water blijft behouden", toon(normaliseerSituatie(metWater)));
+  meld(!("water" in normaliseerSituatie({ ...goed, water: { afstand: "ver" } })), "een kapot water valt weg");
+  const wereld = { ...goed, kaarten: [{ id: "wereld", zoom: 1, jpeg: "QUJD" }] };
+  meld(normaliseerSituatie(wereld) === undefined, "alleen een kaart met id wereld geeft undefined");
+  const mix = normaliseerSituatie({ ...goed, kaarten: [{ id: "wereld", zoom: 1, jpeg: "QUJD" }, goed.kaarten[0], { id: "locatie", zoom: 17 }] });
+  meld(mix !== undefined && mix.kaarten.length === 1 && mix.kaarten[0].id === "gebied", "een kaart met onbekende id of zonder jpeg valt weg", toon(mix));
+  meld(normaliseerSituatie({ ...goed, kaarten: [] }) === undefined, "kaarten: [] geeft undefined");
+  meld(normaliseerSituatie({ ...goed, punt: { lat: 200, lon: 5 } }) === undefined, "punt met lat 200 geeft undefined");
+  meld(normaliseerSituatie("situatie") === undefined && normaliseerSituatie(null) === undefined && normaliseerSituatie([goed]) === undefined, "een tekst, null en een lijst geven undefined");
+  meld(normaliseerSituatie({ ...goed, tonen: "ja" })?.tonen === true, "tonen dat geen boolean is: standaard aan");
+  meld(normaliseerSituatie({ ...goed, tonen: false })?.tonen === false, "tonen: false blijft");
+
+  const p = { lat: 52.0907, lon: 5.1214 };
+  meld(situatieBijPunt(goed, { lat: 52.0907 + 0.5 / 111320, lon: 5.1214 }) === "actueel", "0,5 m ernaast is actueel");
+  meld(situatieBijPunt(goed, { lat: 52.0907 + 50 / 111320, lon: 5.1214 }) === "verouderd", "50 m ernaast is verouderd");
+  meld(situatieBijPunt(goed, p) === "actueel", "hetzelfde punt is actueel");
+  meld(situatieBijPunt(goed, null) === "geen", "zonder punt: geen");
+  meld(situatieBijPunt(undefined, p) === "geen", "zonder situatie: geen");
+
+  const teksten = { inleiding: "x" };
+  const oud = JSON.parse(JSON.stringify(standaardRapport("06-11-2026", teksten, "nl")));
+  meld(!("situatie" in normaliseerRapport(oud, "06-11-2026", teksten, "nl")), "een rapport zonder situatie krijgt er geen");
+  const mijn = normaliseerRapport({ ...oud, situatie: goed }, "06-11-2026", teksten, "nl");
+  meld(toon(mijn.situatie) === toon(goed), "een rapport met situatie houdt hem", toon(mijn.situatie));
+  const terug = normaliseerRapport(JSON.parse(JSON.stringify(mijn)), "06-11-2026", teksten, "nl");
+  meld(toon(terug.situatie) === toon(goed), "de situatie komt na een rondgang via JSON gelijk terug");
+  meld(!("situatie" in normaliseerRapport({ ...oud, situatie: wereld }, "06-11-2026", teksten, "nl")), "een kapotte situatie in het rapport valt weg");
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles OK");

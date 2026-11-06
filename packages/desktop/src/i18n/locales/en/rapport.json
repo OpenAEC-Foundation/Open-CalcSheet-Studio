@@ -39,7 +39,12 @@
     "gewoneTekst_one": "stays plain text.",
     "gewoneTekst_other": "stay plain text.",
     "subkoppenAanzetten": "Turn on subheadings for this report",
-    "naarProjectgegevens": "Edit in Project data →"
+    "naarProjectgegevens": "Edit in Project data →",
+    "situatieTonen": "Site location page",
+    "situatieHint": "A page with maps of the project site, right after the cover.",
+    "situatieVerouderd": "The maps belong to a different point than the project location. On paper they are shown with their own point.",
+    "situatieGeenLocatie": "The site location page only appears in the report when the project has a location. The maps are kept and return when you choose a point again.",
+    "situatieBeeld": "Site map, {{naam}}"
   },
   "rijen": {
     "toevoegen": "Add row",
@@ -365,6 +370,27 @@
       "titel": "Contents",
       "inhoudsopgave": "Table of contents",
       "bijlage": "Appendix"
+    },
+    "situatie": {
+      "titel": "Site location",
+      "onderschrift": "{{kaart}} · about {{afstand}}",
+      "kaarten": {
+        "gebied": "Area",
+        "omgeving": "Surroundings",
+        "locatie": "Location"
+      },
+      "adres": "Address",
+      "coordinaten": "Coordinates",
+      "terreincategorie": "Terrain category",
+      "terrein": {
+        "1": "0 (sea or coastal area)",
+        "2": "II (undeveloped area)",
+        "3": "III (built-up area)"
+      },
+      "keuze": "(chosen by the structural engineer)",
+      "water": "Distance to open water",
+      "kaart": "Map",
+      "bron": "© OpenStreetMap contributors, {{datum}}"
     },
     "bijlageKop": "Appendix {{letter}} {{titel}}",
     "zieBijlage": "See appendix {{nummer}}.",

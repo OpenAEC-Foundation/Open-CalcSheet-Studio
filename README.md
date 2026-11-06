@@ -44,7 +44,7 @@ The release workflow refuses to publish files that are not signed: Windows with 
 - **Free and open.** LGPL-3.0. No licence fees, no account.
 - **You can check every step.** A result shows its name, formula, filled-in values and outcome, with units.
 - **Metric or US units.** Pick a unit system per project: SI (mm), SI (m), US customary, or your own unit for each quantity. Results, input fields, drawings and the report follow it, and the checks stay exactly the same. Define your own units too, such as `.kipf = 1000 lbf`.
-- **One project, one report.** Cover, table of contents and page numbers run through all sheets, whatever kind they are. The side panel shows the contents and all numbers as you work.
+- **One project, one report.** Cover, table of contents and page numbers run through all sheets, whatever kind they are, and an optional site-location page shows OpenStreetMap maps of the project site. The side panel shows the contents and all numbers as you work.
 - **The right sheet for each part.** Text, canvas, spreadsheet, node graph, drawing, notebook, Markdown or PDF, side by side in one project.
 - **Change a number, the check follows.** Sheets recalculate while you type, and a drawing or a 3D model can take its sizes from the sheet.
 - **Your data stays open.** The project file is IFCX, and you can export IFC4x3.
