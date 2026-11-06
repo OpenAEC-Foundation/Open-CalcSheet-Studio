@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import i18next from "i18next";
 import { useTranslation } from "react-i18next";
 import { hoortBij } from "../../templates/vertalingen";
 import { useProjectStore } from "../../store/projectStore";
-import { evalOptiesVan } from "../../store/projectEenheden";
 import { useActiefExemplaar, useAlleenLezen, useProjectGetal } from "../../store/actiefBlad";
 import { ucTekst, type BladUitkomst } from "./bladResultaat";
-import { beeldEenheden, type BeeldEenheden } from "./beeldEenheden";
+import type { BeeldEenheden } from "./beeldEenheden";
+import { useBeeldEenheden } from "./useBeeldEenheden";
 
 /**
  * Gedeelde bouwstenen voor de parametrische beelden.
@@ -51,18 +51,7 @@ export interface DesignerCtx {
   eenheden: BeeldEenheden;
 }
 
-/**
- * Het eenhedenstelsel van het project voor een beeld. Alleen de keuze en de eigen keuze
- * per grootheid tellen; een wijziging in de rest van de projectgegevens maakt niets nieuw.
- */
-export function useBeeldEenheden(): BeeldEenheden {
-  const keuze = useProjectStore((s) => s.gegevens.eenheden);
-  const eigen = useProjectStore((s) => s.gegevens.eenheden_eigen);
-  return useMemo(
-    () => beeldEenheden(evalOptiesVan({ eenheden: keuze, eenheden_eigen: eigen }).stelsel),
-    [keuze, eigen],
-  );
-}
+export { useBeeldEenheden };
 
 /**
  * Koppelt een module aan het blad dat openstaat: seedt de defaults in dát

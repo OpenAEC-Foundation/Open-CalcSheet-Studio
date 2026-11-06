@@ -25,6 +25,8 @@ import { gevelOpbouw, vlakOpbouw } from "../../../rapport/opbouw";
 import { useProjectStore } from "../../../store/projectStore";
 import GewichtenVenster from "../gewichten/GewichtenVenster";
 import { getalTekst, verplaatst } from "./hulp";
+import type { BeeldEenheden } from "../../calc/beeldEenheden";
+import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 
 /** De twee groepen van 5.5. */
@@ -43,20 +45,21 @@ const BOUWDEEL_KOP: Record<Bouwdeel, string> = {
   wand: "belastingen.wanden",
 };
 
-function vlakKolommen(t: TFunction<"rapport">): Kolom<Laag>[] {
+/** De lagen in het eenhedenstelsel van het project; opgeslagen in m, kN/m³ en kN/m². */
+function vlakKolommen(t: TFunction<"rapport">, e: BeeldEenheden): Kolom<Laag>[] {
   return [
     { sleutel: "naam", kop: t("opbouw.laag") },
-    { sleutel: "d", kop: "d [m]", breedte: "5.5em", getal: true },
-    { sleutel: "rho", kop: "ρ [kN/m³]", breedte: "6.5em", getal: true },
-    { sleutel: "p", kop: "p [kN/m²]", breedte: "6.5em", getal: true, placeholder: "d × ρ" },
+    { sleutel: "d", kop: `d [${e.eenheid("m")}]`, breedte: "5.5em", getal: true, eenheid: "m" },
+    { sleutel: "rho", kop: `ρ [${e.eenheid("kN/m³")}]`, breedte: "6.5em", getal: true, eenheid: "kN/m³" },
+    { sleutel: "p", kop: `p [${e.eenheid("kN/m²")}]`, breedte: "6.5em", getal: true, placeholder: "d × ρ", eenheid: "kN/m²" },
   ];
 }
 
-function gevelKolommen(t: TFunction<"rapport">): Kolom<Gevellaag>[] {
+function gevelKolommen(t: TFunction<"rapport">, e: BeeldEenheden): Kolom<Gevellaag>[] {
   return [
     { sleutel: "naam", kop: t("opbouw.laag") },
-    { sleutel: "p", kop: <>p<sub>rep</sub> [kN/m²]</>, breedte: "7em", getal: true },
-    { sleutel: "h", kop: "h [m]", breedte: "5.5em", getal: true },
+    { sleutel: "p", kop: <>p<sub>rep</sub> [{e.eenheid("kN/m²")}]</>, breedte: "7em", getal: true, eenheid: "kN/m²" },
+    { sleutel: "h", kop: `h [${e.eenheid("m")}]`, breedte: "5.5em", getal: true, eenheid: "m" },
     { sleutel: "vulling", kop: t("opbouw.vulling"), breedte: "5.5em", getal: true, placeholder: "90%" },
   ];
 }
@@ -83,6 +86,7 @@ function nieuweOpbouw(soort: Opbouw["soort"]): Opbouw {
  */
 export default function OpbouwEditor({ groep, titel }: { groep: Opbouwgroep; titel: string }) {
   const { t } = useTranslation("rapport");
+  const eenheden = useBeeldEenheden();
   const { t: tg, i18n } = useTranslation("gewichten");
   const opbouwen = useProjectStore((s) => s.rapport.belastingen[groep]);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
@@ -104,7 +108,7 @@ export default function OpbouwEditor({ groep, titel }: { groep: Opbouwgroep; tit
     naam: t(BOUWDEEL_KOP[deel]),
     regels: opbouwenVoor([deel]).map((o) => ({
       label: o.naam,
-      uittreksel: opbouwTekst(o, t),
+      uittreksel: opbouwTekst(o, t, eenheden),
       kies: () => wijzig((l) => [...l, alsOpbouw(o)]),
     })),
   }));
@@ -126,10 +130,10 @@ export default function OpbouwEditor({ groep, titel }: { groep: Opbouwgroep; tit
       ))}
       <div className="rapport-knoppen">
         <button type="button" className="rapport-knop" onClick={() => wijzig((l) => [...l, nieuweOpbouw("vlak")])}>
-          + {t("opbouw.vlakopbouw")}
+          + {eenheden.label(t("opbouw.vlakopbouw"), "kN/m²")}
         </button>
         <button type="button" className="rapport-knop" onClick={() => wijzig((l) => [...l, nieuweOpbouw("gevel")])}>
-          + {t("opbouw.gevelopbouw")}
+          + {eenheden.label(t("opbouw.gevelopbouw"), "kN/m¹")}
         </button>
         <BibliotheekMenu
           knop={t("opbouw.opbouwUitBibliotheek")}
@@ -162,6 +166,7 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
 }) {
   const { t } = useTranslation("rapport");
   const { t: tg, i18n } = useTranslation("gewichten");
+  const eenheden = useBeeldEenheden();
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const rapportTaal = useProjectStore((s) => taalVoorRapport(s.rapport, i18n.language));
   const [venster, setVenster] = useState(false);
@@ -190,7 +195,7 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
           naam: t(BOUWDEEL_KOP.wand),
           regels: opbouwenVoor(["wand"]).map((o) => ({
             label: o.naam,
-            uittreksel: opbouwTekst(o, t),
+            uittreksel: opbouwTekst(o, t, eenheden),
             kies: () => voegGevellaagToe(alsGevellaag(o)),
           })),
         },
@@ -218,7 +223,7 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
           placeholder={t(vlak ? "opbouw.naamVlak" : "opbouw.naamGevel")}
           onChange={(e) => zet(`${pad}.naam`, e.target.value)}
         />
-        <span className="rapport-soort">{t(vlak ? "opbouw.soortVlak" : "opbouw.soortGevel")}</span>
+        <span className="rapport-soort">{t(vlak ? "opbouw.soortVlak" : "opbouw.soortGevel", { eenheid: eenheden.eenheid(vlak ? "kN/m²" : "kN/m¹") })}</span>
         <button
           type="button"
           className="rapport-icoon"
@@ -276,22 +281,28 @@ function OpbouwKaart({ opbouw, pad, index, aantal, bouwdelen, wijzig }: {
   );
 }
 
+/** Een berekend getal in het eenhedenstelsel, of "—". */
+function inStelsel(e: BeeldEenheden, v: number | null | undefined, bron: string, dec: number): string {
+  return getalTekst(typeof v === "number" ? e.waarde(v, bron) : v, e.decimalen(dec, bron));
+}
+
 function VlakLagen({ pad, lagen, knoppen }: { pad: string; lagen: Laag[]; knoppen: ReactNode }) {
   const { t } = useTranslation("rapport");
+  const e = useBeeldEenheden();
   const { regels, som } = useMemo(() => vlakOpbouw(lagen), [lagen]);
   return (
     <RijenTabel<Laag>
       pad={pad}
       rijen={lagen}
-      kolommen={vlakKolommen(t)}
+      kolommen={vlakKolommen(t, e)}
       nieuweRij={() => ({ naam: "", d: "", rho: "", p: "" })}
       toevoegen={t("opbouw.laagToevoegen")}
       knoppen={knoppen}
-      extra={[{ kop: t("opbouw.berekend"), breedte: "6em", waarde: (_rij, i) => getalTekst(regels[i]?.p, 2) }]}
+      extra={[{ kop: t("opbouw.berekend"), breedte: "6em", waarde: (_rij, i) => inStelsel(e, regels[i]?.p, "kN/m²", 2) }]}
       voet={
         <p className="rapport-som">
           <span>{t("opbouw.totaal")}</span>
-          <strong>{getalTekst(som, 2)} kN/m²</strong>
+          <strong>{inStelsel(e, som, "kN/m²", 2)} {e.eenheid("kN/m²")}</strong>
         </p>
       }
     />
@@ -300,20 +311,21 @@ function VlakLagen({ pad, lagen, knoppen }: { pad: string; lagen: Laag[]; knoppe
 
 function GevelLagen({ pad, lagen, knoppen }: { pad: string; lagen: Gevellaag[]; knoppen: ReactNode }) {
   const { t } = useTranslation("rapport");
+  const e = useBeeldEenheden();
   const { regels, som } = useMemo(() => gevelOpbouw(lagen), [lagen]);
   return (
     <RijenTabel<Gevellaag>
       pad={pad}
       rijen={lagen}
-      kolommen={gevelKolommen(t)}
+      kolommen={gevelKolommen(t, e)}
       nieuweRij={() => ({ naam: "", p: "", h: "", vulling: "" })}
       toevoegen={t("opbouw.laagToevoegen")}
       knoppen={knoppen}
-      extra={[{ kop: "q [kN/m¹]", breedte: "6em", waarde: (_rij, i) => getalTekst(regels[i]?.q, 2) }]}
+      extra={[{ kop: `q [${e.eenheid("kN/m¹")}]`, breedte: "6em", waarde: (_rij, i) => inStelsel(e, regels[i]?.q, "kN/m¹", 2) }]}
       voet={
         <p className="rapport-som">
           <span>{t("opbouw.totaal")}</span>
-          <strong>{getalTekst(som, 2)} kN/m¹</strong>
+          <strong>{inStelsel(e, som, "kN/m¹", 2)} {e.eenheid("kN/m¹")}</strong>
         </p>
       }
     />
@@ -325,10 +337,10 @@ function GevelLagen({ pad, lagen, knoppen }: { pad: string; lagen: Gevellaag[]; 
  * laag met een toelichting komt die erachter (die toelichting komt uit de
  * bibliotheek en blijft Nederlands).
  */
-function opbouwTekst(o: Bibliotheekopbouw, t: TFunction<"rapport">): string {
+function opbouwTekst(o: Bibliotheekopbouw, t: TFunction<"rapport">, e: BeeldEenheden): string {
   const n = o.lagen.length;
   const toe = n === 1 && o.lagen[0].opmerking ? ` · ${o.lagen[0].opmerking}` : "";
-  return `${t("opbouw.aantalLagen", { count: n })} · ${getalTekst(somVan(o), 2)} kN/m²${toe}`;
+  return `${t("opbouw.aantalLagen", { count: n })} · ${inStelsel(e, somVan(o), "kN/m²", 2)} ${e.eenheid("kN/m²")}${toe}`;
 }
 
 interface Menuregel {

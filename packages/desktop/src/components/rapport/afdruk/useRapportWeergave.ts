@@ -4,6 +4,8 @@ import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { projectScope, type ProjectGegevens } from "../../../store/projectGegevens";
 import { evalOptiesVan } from "../../../store/projectEenheden";
+import type { BeeldEenheden } from "../../calc/beeldEenheden";
+import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
 import type { BureauProfiel, Rapport } from "../../../rapport/model";
 import { fmt, notatie } from "../../../rapport/normwaarden";
 import {
@@ -49,6 +51,15 @@ export interface RapportWeergave {
   f: (v: number, dec: number, trim?: boolean) => string;
   /** Een getypt getal in de notatie van rapport.taal (notatie in normwaarden.ts). */
   n: (s: string) => string;
+  /** Het eenhedenstelsel van het project (beeldEenheden.ts). */
+  eenheden: BeeldEenheden;
+  /**
+   * Als `f`, voor een waarde in de eenheid `bron` ("kN/m2", "m"): in het eenhedenstelsel van
+   * het project, met evenveel nauwkeurigheid. Zonder stelsel precies `f`.
+   */
+  fe: (v: number, bron: string, dec: number, trim?: boolean) => string;
+  /** Als `n`, voor een getypte waarde in de eenheid `bron`: in het stelsel; zonder stelsel precies `n`. */
+  ne: (s: string, bron: string) => string;
   rapport: Rapport;
   gegevens: ProjectGegevens;
   projectNaam: string;
@@ -87,6 +98,7 @@ export function useRapportWeergave(): RapportWeergave {
   const projectNaam = useProjectStore((s) => s.projectNaam);
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const bureau = useRapportBureau();
+  const eenheden = useBeeldEenheden();
   const { taal } = rapport;
 
   zorgVoorKernstijlen();
@@ -129,7 +141,11 @@ export function useRapportWeergave(): RapportWeergave {
     t: i18next.getFixedT(taal, "rapport"),
     f: (v: number, dec: number, trim = false) => fmt(v, dec, trim, taal),
     n: (s: string) => notatie(s, taal),
-  }), [taal]);
+    eenheden,
+    fe: (v: number, bron: string, dec: number, trim = false) =>
+      fmt(eenheden.waarde(v, bron), eenheden.decimalen(dec, bron), trim, taal),
+    ne: (s: string, bron: string) => eenheden.getypt(s, bron, (v, dec) => fmt(v, dec, false, taal)) ?? notatie(s, taal),
+  }), [taal, eenheden]);
 
   return { taal, ...woorden, rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul };
 }

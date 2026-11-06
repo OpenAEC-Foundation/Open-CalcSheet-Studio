@@ -37,7 +37,15 @@ export interface BeeldEenheden {
   terug(getypt: string, bron: string): number | null;
   /** Een label met de eenheid tussen haakjes ("Cantilever a (mm)"), met de eenheid in beeld. */
   label(tekst: string, bron: string): string;
+  /**
+   * Een getypte waarde ("2,4") op papier in het stelsel, met evenveel nauwkeurigheid als
+   * getypt; `null` als er niets om te rekenen is (geen stelsel, geen getal): dan blijft de tekst.
+   */
+  getypt(tekst: string, bron: string, opmaak: (v: number, dec: number) => string): string | null;
 }
+
+/** Een getal zoals iemand het in het rapport typt: met een punt of een komma. */
+const GETYPT_GETAL = /^[-+]?(\d+([.,]\d*)?|[.,]\d+)$/;
 
 /** Zonder rekenruis: 304,79999999999995 wordt 304,8. */
 const schoon = (n: number) => parseFloat(n.toPrecision(12));
@@ -90,5 +98,13 @@ export function beeldEenheden(stelsel: Stelsel | undefined): BeeldEenheden {
       return d ? schoon(omrekenen(n, d, eenheidUitBeeld(bron))) : n;
     },
     label: (tekst, bron) => (doel(bron) ? tekst.split(`(${bron})`).join(`(${eenheid(bron)})`) : tekst),
+    getypt: (tekst, bron, opmaak) => {
+      const d = doel(bron);
+      const t = tekst.trim();
+      if (!d || !GETYPT_GETAL.test(t)) return null;
+      const rekenBron = eenheidUitBeeld(bron);
+      const dec = (t.split(/[.,]/)[1] ?? "").length;
+      return opmaak(omrekenen(parseFloat(t.replace(",", ".")), rekenBron, d), decimalenNa(dec, rekenBron, d));
+    },
   };
 }

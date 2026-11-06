@@ -56,6 +56,15 @@ meld(us.invoer("4500", "mm") === "177.165" && us.invoer("", "mm") === "" && us.i
   "een opgeslagen tekst: een getal rekent om, leeg en een uitdrukking blijven staan", `${us.invoer("4500", "mm")} | ${us.invoer("2*2250", "mm")}`);
 meld(zonder.invoer("2.0", "mm") === "2.0", "zonder stelsel blijft een opgeslagen tekst letterlijk (2.0)", zonder.invoer("2.0", "mm"));
 
+console.log("\nEen getypte waarde in het rapport (op papier)");
+// 2,4 kN/m² = 50,13 psf: één decimaal in kN/m² is er nul in psf (1 psf = 0,048 kN/m²).
+meld(us.getypt("2,4", "kN/m²", opmaak) === "50", "2,4 kN/m² wordt 50 psf", String(us.getypt("2,4", "kN/m²", opmaak)));
+meld(us.getypt("0.07", "m", opmaak) === "0.2", "0.07 m wordt 0.2 ft", String(us.getypt("0.07", "m", opmaak)));
+meld(us.getypt("25", "kN/m3", opmaak) === "159", "25 kN/m³ wordt 159 pcf", String(us.getypt("25", "kN/m3", opmaak)));
+meld(us.getypt("", "m", opmaak) === null && us.getypt("hoog", "m", opmaak) === null, "leeg of geen getal: null, de aanroeper laat de tekst staan");
+meld(zonder.getypt("2,4", "kN/m²", opmaak) === null, "zonder stelsel: null, de tekst blijft zoals getypt");
+meld(us.getypt("30", "°", opmaak) === null, "een eenheid buiten het stelsel: null");
+
 console.log("\nWat het stelsel niet kent, blijft");
 for (const e of ["mm/kN", "°", "min", "%", ""]) {
   meld(us.doel(e) === null && us.eenheid(e) === e && us.waarde(3, e) === 3, `"${e}" blijft zoals hij is`);

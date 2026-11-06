@@ -4,6 +4,7 @@ import { leesPad, zetOpPad } from "../../../rapport/pad";
 import { useProjectStore } from "../../../store/projectStore";
 import { opPad, verplaatst } from "./hulp";
 import type { Optie } from "./velden";
+import { EenheidInvoer } from "./EenheidInvoer";
 
 /**
  * Een bewerkbare tabel van rijen in het rapport: revisies, materialen,
@@ -28,6 +29,8 @@ export interface Kolom<T> {
   keuzes?: readonly Optie[];
   /** Een getal: rechts uitgelijnd. */
   getal?: boolean;
+  /** De eenheid waarin de cel wordt opgeslagen ("kN/m²"); in beeld in het eenhedenstelsel. */
+  eenheid?: string;
 }
 
 /** Een kolom die niet bewerkt wordt maar uit de rij volgt, zoals P_rep of een berekende p. */
@@ -137,6 +140,15 @@ export default function RijenTabel<T extends object>({
                           </option>
                         ))}
                       </select>
+                    ) : k.eenheid ? (
+                      <EenheidInvoer
+                        waarde={waarde}
+                        eenheid={k.eenheid}
+                        placeholder={k.placeholder}
+                        lijst={k.lijst}
+                        className={k.getal ? "rapport-getal" : undefined}
+                        onWijzig={(w) => zet(celPad, w)}
+                      />
                     ) : (
                       <input
                         type="text"

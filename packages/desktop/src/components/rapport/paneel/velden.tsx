@@ -14,6 +14,8 @@ import { bouwOpzet, titelVan, type Rapportknoop } from "../../../rapport/opzet";
 import { bladVoorOpzet } from "../../calc/bladSoorten";
 import { PROJECT_ID, useProjectStore } from "../../../store/projectStore";
 import { vindKnoop } from "./hulp";
+import { EenheidInvoer } from "./EenheidInvoer";
+import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
 
 /**
  * Bouwstenen van het rapportpaneel: velden die aan een pad in het rapport
@@ -188,7 +190,10 @@ export function NieuwePagina({ id }: { id: string }) {
 
 // ─── Velden ────────────────────────────────────────────────────────────
 
-/** Een tekstregel van het rapport, gebonden aan `pad`. */
+/**
+ * Een tekstregel van het rapport, gebonden aan `pad`. Met een `eenheid` ("kN/m²") staat de
+ * waarde in het eenhedenstelsel van het project en wordt hij in die eenheid opgeslagen.
+ */
 export function Veld({ label, pad, waarde, hint, placeholder, lijst, eenheid }: {
   label: ReactNode;
   pad: string;
@@ -200,18 +205,23 @@ export function Veld({ label, pad, waarde, hint, placeholder, lijst, eenheid }: 
   eenheid?: string;
 }) {
   const zet = useProjectStore((s) => s.zetRapportVeld);
+  const eenheden = useBeeldEenheden();
   return (
     <label className="rapport-veld">
       <span className="rapport-label">{label}</span>
       <span className="rapport-invoer">
-        <input
-          type="text"
-          value={waarde}
-          placeholder={placeholder}
-          list={lijst}
-          onChange={(e) => zet(pad, e.target.value)}
-        />
-        {eenheid && <span className="rapport-eenheid">{eenheid}</span>}
+        {eenheid ? (
+          <EenheidInvoer waarde={waarde} eenheid={eenheid} placeholder={placeholder} lijst={lijst} onWijzig={(w) => zet(pad, w)} />
+        ) : (
+          <input
+            type="text"
+            value={waarde}
+            placeholder={placeholder}
+            list={lijst}
+            onChange={(e) => zet(pad, e.target.value)}
+          />
+        )}
+        {eenheid && <span className="rapport-eenheid">{eenheden.eenheid(eenheid)}</span>}
       </span>
       {hint && <span className="rapport-hint">{hint}</span>}
     </label>
