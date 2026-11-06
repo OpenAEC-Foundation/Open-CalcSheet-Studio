@@ -14,19 +14,22 @@ const BASIS = "https://overpass-api.de/api/interpreter";
 const TIJDSLIMIET_MS = 40000;
 const MIN_OPPERVLAKTE_M2 = 10000;
 
-/** Soorten natuurlijk water die geen open water zijn. */
-const GEEN_OPEN_WATER = ["pond", "ditch", "drain", "basin", "wastewater", "fish_pass", "moat", "reflecting_pool", "stream_pool"];
+/** Soorten natuurlijk water die open water zijn; zonder soort telt het ook (mits groot genoeg). Alles anders niet. */
+const OPEN_WATER = ["lake", "reservoir", "river", "lagoon", "oxbow", "canal"];
 
 /** De Overpass-vraag: kustlijnen, meren e.d., baaien en zeeën binnen `straalM` meter van `p`. */
 export function waterVraag(p: Punt, straalM: number): string {
   const rond = `(around:${straalM},${p.lat},${p.lon})`;
-  const soort = `["water"!~"^(${GEEN_OPEN_WATER.join("|")})$"]`;
+  const soort = `["water"~"^(${OPEN_WATER.join("|")})$"]`;
+  const zonderSoort = `[!"water"]`;
   return [
     "[out:json][timeout:25];",
     "(",
     `  way["natural"="coastline"]${rond};`,
     `  way["natural"="water"]${soort}${rond};`,
+    `  way["natural"="water"]${zonderSoort}${rond};`,
     `  relation["natural"="water"]${soort}${rond};`,
+    `  relation["natural"="water"]${zonderSoort}${rond};`,
     `  way["natural"="bay"]${rond};`,
     `  relation["natural"="bay"]${rond};`,
     `  way["place"="sea"]${rond};`,
@@ -104,7 +107,7 @@ function kandidaat(el: Los): Kandidaat | undefined {
   const naam = tekst(tags.name);
   const kust = tags.natural === "coastline";
   const zee = tags.natural === "bay" || tags.place === "sea";
-  const meer = tags.natural === "water" && !GEEN_OPEN_WATER.includes(tekst(tags.water));
+  const meer = tags.natural === "water" && (tags.water === undefined || OPEN_WATER.includes(tekst(tags.water)));
   if (!kust && !zee && !meer) return undefined;
 
   let buitenLijnen: Punt[][];
@@ -136,18 +139,23 @@ function kandidaat(el: Los): Kandidaat | undefined {
     return zee ? { naam, buiten: buitenLijnen, binnen: [], vlak: false } : undefined;
   }
   const binnenRingen = binnenLijnen.filter(gesloten);
-  if (meer) {
-    const opp = buitenRingen.reduce((s, r) => s + oppervlakteM2(r), 0) - binnenRingen.reduce((s, r) => s + oppervlakteM2(r), 0);
-    if (opp < MIN_OPPERVLAKTE_M2) return undefined;
-  }
+  // elk vlak (meer, baai of zee) moet minstens 1 ha zijn
+  const opp = buitenRingen.reduce((s, r) => s + oppervlakteM2(r), 0) - binnenRingen.reduce((s, r) => s + oppervlakteM2(r), 0);
+  if (opp < MIN_OPPERVLAKTE_M2) return undefined;
   return { naam, buiten: buitenRingen, binnen: binnenRingen, vlak: true };
 }
 
 /**
  * Het dichtstbijzijnde open water uit een Overpass-antwoord (`out geom;`), of null.
  * Ligt het punt in een vlak (en niet in een eiland erin), dan is de afstand 0.
+ * Een antwoord met een `remark` over een runtime error, time-out of geheugen geeft een Error.
  */
 export function dichtstbijzijndWater(p: Punt, antwoord: unknown): Water | null {
+  // Overpass meldt een time-out of te weinig geheugen met HTTP 200, een remark en lege of halve elements
+  const remark = object(antwoord)?.remark;
+  if (typeof remark === "string" && /runtime error|query timed out|out of memory/i.test(remark)) {
+    throw new Error(`Overpass: ${remark}`);
+  }
   const elementen = object(antwoord)?.elements;
   if (!Array.isArray(elementen)) return null;
   let beste: Water | null = null;

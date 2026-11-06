@@ -301,6 +301,42 @@ console.log("\nOpen water zoeken");
   let fout = "";
   try { await meetWater(p, async () => ({ ok: false, status: 429, json: async () => ({}) })); } catch (e) { fout = e.message; }
   meld(fout === "HTTP 429", "een HTTP-fout geeft een Error met de status", fout);
+
+  // Fixronde 1: de regel voor open water, gaten en fouten van de dienst
+  const RAD = Math.PI / 180;
+  const pm = (oost, noord) => ({ lat: 52 + noord / 111195, lon: 5 + oost / (111195 * Math.cos(52 * RAD)) });
+  const ring = (w, o, z, n) => [pm(w, z), pm(o, z), pm(o, n), pm(w, n), pm(w, z)];
+  const vlakEl = (id, w, o, z, n, tags) => ({ type: "way", id, geometry: ring(w, o, z, n), tags });
+  const eenmalig = (...els) => dichtstbijzijndWater(p, { elements: els });
+  meld(eenmalig(vlakEl(1, 100, 150, -25, 25, { natural: "water", water: "lake" })) === null, "een meer van 0,25 ha valt af op oppervlakte");
+  const zonderSoort = eenmalig(vlakEl(2, 300, 500, -100, 100, { natural: "water" }));
+  meld(zonderSoort !== null && Math.abs(zonderSoort.afstand - 300) <= 2, "natural=water zonder water-tag van 4 ha telt", toon(zonderSoort));
+  meld(eenmalig(vlakEl(3, 300, 550, -100, 100, { natural: "water", water: "stream" })) === null, "water=stream van 5 ha telt niet");
+  meld(eenmalig(vlakEl(4, 300, 550, -100, 100, { natural: "water", water: "lock" })) === null, "water=lock van 5 ha telt niet");
+  meld(eenmalig(vlakEl(5, 300, 350, -25, 25, { natural: "bay" })) === null, "een baai van 0,25 ha valt af op oppervlakte");
+  meld(eenmalig(vlakEl(6, 300, 500, -100, 100, { place: "sea", name: "Zeetje" }))?.naam === "Zeetje", "een zee van 4 ha telt");
+  const metGat = {
+    type: "relation", id: 7, tags: { type: "multipolygon", natural: "water", water: "lake", name: "Eilandmeer" },
+    members: [
+      { type: "way", ref: 71, role: "outer", geometry: ring(-500, 500, -500, 500) },
+      { type: "way", ref: 72, role: "inner", geometry: ring(-50, 50, -50, 50) },
+    ],
+  };
+  const inGat = eenmalig(metGat);
+  meld(inGat !== null && inGat.afstand > 40 && inGat.afstand < 60, "in het gat (eiland) van een meer is de afstand tot de oever, niet 0", toon(inGat));
+  const naastGat = dichtstbijzijndWater(pm(200, 0), { elements: [metGat] });
+  meld(naastGat !== null && naastGat.afstand === 0, "in het meer naast het eiland is de afstand 0", toon(naastGat));
+  const vraag = waterVraag(p, 10000);
+  meld(vraag.includes("lake|reservoir|river|lagoon|oxbow|canal") && vraag.includes('[!"water"]') && !vraag.includes("pond"), "waterVraag volgt de lijst van toegestane soorten", vraag);
+
+  const bericht = async (f) => { try { await f(); return ""; } catch (e) { return e.message; } };
+  meld((await bericht(() => meetWater(p, async () => ({ ok: false, status: 503, json: async () => ({}) })))) === "HTTP 503", "HTTP 503 laat meetWater falen");
+  meld((await bericht(() => meetWater(p, async () => { throw new TypeError("fetch failed"); }))) === "fetch failed", "een netwerkfout laat meetWater falen");
+  const remark = "runtime error: Query timed out in \"query\" at line 3 after 26 seconds.";
+  meld((await bericht(() => meetWater(p, async () => ({ ok: true, status: 200, json: async () => ({ elements: [], remark }) })))).includes("Query timed out"), "een remark over een time-out (HTTP 200, lege elements) laat meetWater falen");
+  meld((await bericht(() => meetWater(p, async () => ({ ok: true, status: 200, json: async () => ({ elements: fixture.elements, remark: "runtime error: out of memory" }) })))) !== "", "een remark bij gedeeltelijke elements laat meetWater falen");
+  meld((await bericht(async () => dichtstbijzijndWater(p, { elements: [], remark: "runtime error: out of memory" }))) !== "", "dichtstbijzijndWater gooit bij een geheugenfout");
+  meld(dichtstbijzijndWater(p, { elements: [], remark: "Hallo" }) === null, "een remark zonder fout laat null staan");
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles OK");
