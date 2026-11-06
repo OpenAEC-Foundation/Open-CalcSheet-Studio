@@ -70,7 +70,7 @@
     "geen": "none",
     "dekkingOnder": "Soffit to link",
     "dekkingZij": "cover at sides and top",
-    "staafwerk": "Orange: checked truss. Dimensions in mm.",
+    "staafwerk": "Orange: checked truss. Dimensions in {{eenheid}}.",
     "koppen": {
       "geometrie": "Piles and column",
       "overig": "Side bars and hairpins",
@@ -382,7 +382,7 @@
       "trilling": "vibrations",
       "nietAangetoond": "not demonstrated",
       "trillingNvt": "vibrations n/a",
-      "trekOplegging": "uplift at bearing {{kn}} kN",
+      "trekOplegging": "uplift at bearing {{kn}}",
       "plaat": "panel",
       "lijmnaad": "glue line",
       "flensbreedte": "flange width",

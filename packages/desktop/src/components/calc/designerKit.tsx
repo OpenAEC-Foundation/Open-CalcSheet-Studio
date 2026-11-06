@@ -225,6 +225,46 @@ export function Force(props: {
   );
 }
 
+/**
+ * Een getalveld in het paneel van een beeld, in het eenhedenstelsel van het project.
+ * `waarde` en `onWijzig` zijn in de eenheid van het blad (`eenheid`); een lege `waarde`
+ * (een veld dat terugvalt op de standaard) blijft leeg. Rekent het stelsel de eenheid
+ * niet om, dan werkt het veld precies zoals een gewoon getalveld.
+ */
+export function StelselGetal({ eenheden, eenheid, waarde, onWijzig, step, placeholder, ...rest }: {
+  eenheden: BeeldEenheden;
+  eenheid: string;
+  waarde: number | string;
+  onWijzig: (w: number) => void;
+  step?: number;
+  placeholder?: string | number;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "type" | "step" | "placeholder">) {
+  // Wat je typt, blijft staan zolang het veld de focus heeft: een tussenstand ("1.", leeg)
+  // zou anders meteen terugspringen naar de omgerekende waarde.
+  const [tekst, setTekst] = useState<string | null>(null);
+  const inBeeld = (w: number | string) =>
+    typeof w === "string" && w.trim() === "" ? "" : eenheden.invoer(typeof w === "number" ? w : parseFloat(w), eenheid);
+  if (eenheden.doel(eenheid) === null) {
+    return (
+      <input {...rest} type="number" step={step} value={waarde} placeholder={placeholder === undefined ? undefined : String(placeholder)}
+        onChange={(e) => onWijzig(parseFloat(e.target.value))} />
+    );
+  }
+  return (
+    <input {...rest} type="number" step="any" value={tekst ?? inBeeld(waarde)}
+      placeholder={placeholder === undefined ? undefined : inBeeld(placeholder)}
+      onFocus={(e) => { setTekst(inBeeld(waarde)); rest.onFocus?.(e); }}
+      onBlur={(e) => { setTekst(null); rest.onBlur?.(e); }}
+      onChange={(e) => {
+        setTekst(e.target.value);
+        // Leeg: terug naar de standaard, net als in een gewoon getalveld.
+        if (e.target.value.trim() === "") { onWijzig(NaN); return; }
+        const n = eenheden.terug(e.target.value, eenheid);
+        if (n !== null) onWijzig(n);
+      }} />
+  );
+}
+
 /** Afgeleide maat — grijs en niet klikbaar. */
 export function Ro(props: { text: string; x: number; y: number; title?: string; kleur?: string }) {
   return (

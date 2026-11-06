@@ -32,6 +32,8 @@ export interface BeeldEenheden {
   invoer(v: number, bron: string): string;
   /** Een getypt getal in de eenheid in beeld, terug naar de bron; `null` als het geen getal is. */
   terug(getypt: string, bron: string): number | null;
+  /** Een label met de eenheid tussen haakjes ("Cantilever a (mm)"), met de eenheid in beeld. */
+  label(tekst: string, bron: string): string;
 }
 
 /** Zonder rekenruis: 304,79999999999995 wordt 304,8. */
@@ -84,5 +86,6 @@ export function beeldEenheden(stelsel: Stelsel | undefined): BeeldEenheden {
       const d = doel(bron);
       return d ? schoon(omrekenen(n, d, eenheidUitBeeld(bron))) : n;
     },
+    label: (tekst, bron) => (doel(bron) ? tekst.split(`(${bron})`).join(`(${eenheid(bron)})`) : tekst),
   };
 }

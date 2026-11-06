@@ -1,6 +1,6 @@
 import { liggerOplossing, liggerStatus } from "@ifc-calc/core";
 import { useTranslation } from "react-i18next";
-import { useDesigner, Dim, Force, Ro, Defs, HDim, fmt, clamp, UitkomstKop } from "./designerKit";
+import { useDesigner, Dim, Force, Ro, Defs, HDim, StelselGetal, fmt, clamp, UitkomstKop } from "./designerKit";
 import { useBladUitkomst } from "./bladResultaat";
 import "./VoetplaatDesigner.css";
 
@@ -66,7 +66,6 @@ export default function LiggerDesigner() {
   const { d, set, box, wrapRef } = ctx;
   // Een getal met zijn eenheid in het stelsel van het project (beeldEenheden.ts).
   const metEenheid = (v: number, bron: string, dec: number) => ctx.eenheden.tekst(v, bron, dec, (w, n) => fmt(w, n, i18n.language));
-  const num = (e: { target: { value: string } }) => parseFloat(e.target.value.replace(",", "."));
 
   // ── geometrie, zoals het blad hem opbouwt ─────────────────────────────────
   const systeem = clamp(Math.round(d("systeem")), 1, 4);
@@ -170,13 +169,13 @@ export default function LiggerDesigner() {
             </select>
           </label>
           {nScharnier >= 1 && (
-            <label>{t("ligger.scharnierX", { n: 1 })}
-              <input type="number" step={0.1} value={d("x_h1")} onChange={(e) => set("x_h1", num(e))} />
+            <label>{ctx.eenheden.label(t("ligger.scharnierX", { n: 1 }), "m")}
+              <StelselGetal eenheden={ctx.eenheden} eenheid="m" step={0.1} waarde={d("x_h1")} onWijzig={(w) => set("x_h1", w)} />
             </label>
           )}
           {nScharnier >= 2 && (
-            <label>{t("ligger.scharnierX", { n: 2 })}
-              <input type="number" step={0.1} value={d("x_h2")} onChange={(e) => set("x_h2", num(e))} />
+            <label>{ctx.eenheden.label(t("ligger.scharnierX", { n: 2 }), "m")}
+              <StelselGetal eenheden={ctx.eenheden} eenheid="m" step={0.1} waarde={d("x_h2")} onWijzig={(w) => set("x_h2", w)} />
             </label>
           )}
           <span className="gd-note">{t("ligger.noot")}</span>

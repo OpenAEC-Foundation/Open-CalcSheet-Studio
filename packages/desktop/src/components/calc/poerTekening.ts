@@ -215,14 +215,14 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   // ── legenda, onder de tekening ────────────────────────────────────────────
   const lagenTekst = tb.lagen.length === 2 ? t.lagen : t.laag;
   const regels: [string, string][] = [
-    [TREK, `${t.trekband}: ${tb.n}Ø${r(tb.d)}, ${tb.lagen.length} ${lagenTekst}, ${t.hoh} ${r(tb.s)}`],
-    [TREK, tb.omgebogen ? `${t.omgebogen}, ${t.been} ${r(tb.lOp)}, ${t.doorn} ${r(tb.doorn)}` : t.rechteStaaf],
+    [TREK, `${t.trekband}: ${tb.n}Ø${r(tb.d)}, ${tb.lagen.length} ${lagenTekst}, ${t.hoh} ${m(tb.s)}`],
+    [TREK, tb.omgebogen ? `${t.omgebogen}, ${t.been} ${m(tb.lOp)}, ${t.doorn} ${m(tb.doorn)}` : t.rechteStaaf],
     [BEUGEL, `${t.beugels}: Ø${r(bg.d)}-${r(bg.s)}, ${r(bg.sneden)} ${t.sneden}`],
     [OVERIG, `${t.zijstaven}: ${p.zij.n > 0 ? `${p.zij.n}Ø${r(p.zij.d)} ${t.perZijvlak}` : t.geen}`],
     [OVERIG, `${t.bovenstaven}: ${p.boven.n > 0 ? `${p.boven.n}Ø${r(p.boven.d)}` : t.geen}`],
     [HAARSPELD, `${t.haarspelden}: ${p.haarspelden.n > 0 ? `${p.haarspelden.n}Ø${r(p.haarspelden.d)} ${t.perPaal}` : t.geen}`],
     [DWARSSTAAF, `${t.dwarsstaven}: ${dw.n > 0 ? `${dw.n}Ø${r(dw.d)} ${t.perHelft}` : t.geen}`],
-    [TEKST, `${t.dekkingOnder} ${r(p.c_o)}, ${t.dekkingZij} ${r(p.c_z)}`],
+    [TEKST, `${t.dekkingOnder} ${m(p.c_o)}, ${t.dekkingZij} ${m(p.c_z)}`],
     [MODEL, t.staafwerk],
   ];
   const perKolom = Math.ceil(regels.length / kolommen);

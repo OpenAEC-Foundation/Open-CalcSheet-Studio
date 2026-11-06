@@ -47,6 +47,11 @@ meld(bijna(us.terug("12", "mm"), 304.8, 1e-9), "12 getypt in inch is 304,8 mm", 
 meld(us.terug("12", "mm") === 304.8, "zonder rekenruis: precies 304.8", String(us.terug("12", "mm")));
 meld(bijna(us.terug(us.invoer(4500, "mm"), "mm"), 4500, 1e-5), "heen en terug blijft 4500 mm (op 6 cijfers)", String(us.terug(us.invoer(4500, "mm"), "mm")));
 
+meld(us.label("Cantilever a (mm)", "mm") === "Cantilever a (in)", "een label: (mm) wordt (in)", us.label("Cantilever a (mm)", "mm"));
+meld(us.label("E-modulus (N/mm²)", "N/mm²") === "E-modulus (ksi)", "een label: (N/mm²) wordt (ksi)", us.label("E-modulus (N/mm²)", "N/mm²"));
+meld(us.label("Opening width", "mm") === "Opening width", "een label zonder eenheid blijft");
+meld(zonder.label("Cantilever a (mm)", "mm") === "Cantilever a (mm)", "zonder stelsel blijft het label");
+
 console.log("\nWat het stelsel niet kent, blijft");
 for (const e of ["mm/kN", "°", "min", "%", ""]) {
   meld(us.doel(e) === null && us.eenheid(e) === e && us.waarde(3, e) === 3, `"${e}" blijft zoals hij is`);

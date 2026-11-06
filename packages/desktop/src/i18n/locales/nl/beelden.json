@@ -70,7 +70,7 @@
     "geen": "geen",
     "dekkingOnder": "Onder tot beugel",
     "dekkingZij": "dekking zij en boven",
-    "staafwerk": "Oranje: getoetst staafwerk. Maten in mm.",
+    "staafwerk": "Oranje: getoetst staafwerk. Maten in {{eenheid}}.",
     "koppen": {
       "geometrie": "Palen en kolom",
       "overig": "Zijstaven en haarspelden",
@@ -382,7 +382,7 @@
       "trilling": "trilling",
       "nietAangetoond": "niet aangetoond",
       "trillingNvt": "trilling n.v.t.",
-      "trekOplegging": "trek oplegging {{kn}} kN",
+      "trekOplegging": "trek oplegging {{kn}}",
       "plaat": "plaat",
       "lijmnaad": "lijmnaad",
       "flensbreedte": "flensbreedte",

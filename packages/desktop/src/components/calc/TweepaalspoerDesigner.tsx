@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useDesigner, Dim, UitkomstKop, fmt } from "./designerKit";
+import { useDesigner, Dim, UitkomstKop, StelselGetal, fmt } from "./designerKit";
 import { useBladUitkomst } from "./bladResultaat";
 import { maakPoer } from "./poerDefinitie";
 import { tekenPoer, TEKENING_MIN_BREEDTE, type TekeningTeksten } from "./poerTekening";
@@ -102,7 +102,7 @@ export default function TweepaalspoerDesigner() {
     geen: t("tweepaalspoer.geen"),
     dekkingOnder: t("tweepaalspoer.dekkingOnder"),
     dekkingZij: t("tweepaalspoer.dekkingZij"),
-    staafwerk: t("tweepaalspoer.staafwerk"),
+    staafwerk: t("tweepaalspoer.staafwerk", { eenheid: eenheden.eenheid("mm") }),
     // De maten op papier in het eenhedenstelsel; zonder omrekening het getal in mm, zoals altijd.
     ...(eenheden.doel("mm") ? { maat: (mm: number) => eenheden.tekst(mm, "mm", 0, (w, n) => fmt(w, n, i18n.language)) } : {}),
   }), [t, eenheden, i18n.language]);
@@ -141,10 +141,12 @@ export default function TweepaalspoerDesigner() {
     : smal ? Math.min(380, Math.max(240, Math.round(box.w * 0.62)))
     : Math.max(MODEL_MIN, Math.floor(box.h - tekening.hoogte * schaal - MODEL_KOP - TUSSENRUIMTE));
 
-  const getal = (naam: string, stap = 10) => (
-    <input type="number" step={stap} value={d(naam)}
-      onChange={(e) => set(naam, parseFloat(e.target.value.replace(",", ".")) || 0)} />
+  // Een maat ("mm") staat in het eenhedenstelsel van het project; een aantal niet.
+  const getal = (naam: string, stap = 10, eenheid = "") => (
+    <StelselGetal eenheden={eenheden} eenheid={eenheid} step={stap} waarde={d(naam)}
+      onWijzig={(w) => set(naam, w || 0)} />
   );
+  const veld = (sleutel: string) => eenheden.label(t(`tweepaalspoer.velden.${sleutel}`), "mm");
   const diameter = (naam: string) => (
     <select value={Math.round(d(naam))} onChange={(e) => set(naam, parseInt(e.target.value))}>
       {DIAMETERS.map((w) => <option key={w} value={w}>Ø{w}</option>)}
@@ -178,12 +180,12 @@ export default function TweepaalspoerDesigner() {
               <option value={2}>{t("tweepaalspoer.keuzes.rond")}</option>
             </select>
           </label>
-          <label>{t("tweepaalspoer.velden.afwijking")}{getal("e_p")}</label>
+          <label>{veld("afwijking")}{getal("e_p", 10, "mm")}</label>
 
           <span className="vd-ctrl-h">{t("tweepaalspoer.trekband")}</span>
           <label>{t("tweepaalspoer.velden.aantal")}{getal("n_t", 1)}</label>
           <label>{t("tweepaalspoer.velden.diameter")}{diameter("d_t")}</label>
-          <label>{t("tweepaalspoer.velden.hoh")}{getal("s_t", 5)}</label>
+          <label>{veld("hoh")}{getal("s_t", 5, "mm")}</label>
           <label>{t("tweepaalspoer.velden.lagen")}
             <select value={Math.round(d("lagen"))} onChange={(e) => set("lagen", parseInt(e.target.value))}>
               <option value={1}>1</option>
@@ -198,14 +200,14 @@ export default function TweepaalspoerDesigner() {
           </label>
           {Math.round(d("vorm_t")) === 2 && (
             <>
-              <label>{t("tweepaalspoer.velden.been")}{getal("l_op", 25)}</label>
-              <label>{t("tweepaalspoer.velden.doorn")}{getal("D_m", 5)}</label>
+              <label>{veld("been")}{getal("l_op", 25, "mm")}</label>
+              <label>{veld("doorn")}{getal("D_m", 5, "mm")}</label>
             </>
           )}
 
           <span className="vd-ctrl-h">{t("tweepaalspoer.beugels")}</span>
           <label>{t("tweepaalspoer.velden.diameter")}{diameter("d_s")}</label>
-          <label>{t("tweepaalspoer.velden.hoh")}{getal("s_s", 25)}</label>
+          <label>{veld("hoh")}{getal("s_s", 25, "mm")}</label>
           <label>{t("tweepaalspoer.velden.sneden")}{getal("n_s", 2)}</label>
 
           <span className="vd-ctrl-h">{t("tweepaalspoer.koppen.overig")}</span>

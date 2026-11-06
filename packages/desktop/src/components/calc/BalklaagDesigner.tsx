@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
 import { useActiefExemplaar, useAlleenLezen, useProjectScope } from "../../store/actiefBlad";
-import { JaNee, IconKeuze, SchemaIcoon, type SchemaSoort } from "./designerKit";
+import { JaNee, IconKeuze, SchemaIcoon, StelselGetal, useBeeldEenheden, type SchemaSoort } from "./designerKit";
 import {
   KLEUR_M, KLEUR_V, KLEUR_U, Label, Oplegging, LijnLast, PuntLast, KrachtenLijn,
   RaveelPlattegrond, raveelMaten, raveelHoogte, extremen, randwaarden, nl as nlInTaal,
@@ -240,6 +240,8 @@ export default function BalklaagDesigner() {
   // De taal van de app, en op papier die van de uitdraai (afdrukTaal.tsx).
   const { t, i18n } = useTranslation("beelden");
   const nl = (v: number, dec = 2) => nlInTaal(v, dec, i18n.language);
+  // Het eenhedenstelsel van het project: wat in beeld staat, rekent om (beeldEenheden.ts).
+  const eenheden = useBeeldEenheden();
   const [editing, setEditing] = useState<string | null>(null);
   // Uitkomst van de ontwerpknop. De handtekening is een vingerafdruk van de
   // invoer waarop gezocht is — het profiel zit er bewust NIET in, want dat
@@ -451,6 +453,20 @@ export default function BalklaagDesigner() {
   const EI = tRekent && Number.isFinite(EIt) ? EIt : uitBlad("E_mean") * uitBlad("I_y") * 1e-9;
   const tekenbaar = [Pg, qq, FQ, gG, gQ, kdef, psi2, EI].every(Number.isFinite) && EI > 0;
   const tekst = (v: number, dec = 2) => (Number.isFinite(v) ? nl(v, dec) : "—");
+  // In het stelsel: het getal met zijn eenheid, alleen het getal, en een label met de
+  // eenheid tussen haakjes. Zonder omrekening precies zoals hierboven, met de eenheid erachter.
+  const te = (v: number, bron: string, dec = 2) =>
+    Number.isFinite(v) ? eenheden.tekst(v, bron, dec, nl) : `— ${eenheden.eenheid(bron)}`;
+  const tg = (v: number, bron: string, dec = 2) => tekst(eenheden.waarde(v, bron), eenheden.decimalen(dec, bron));
+  const lb = (sleutel: string, bron = "mm") => eenheden.label(t(sleutel), bron);
+  /** Een getalveld in het stelsel; `ruwGetal` voor een veld dat leeg mag zijn (de standaard). */
+  const getal = (naam: string, waarde: number, stap: number, eenheid = "mm") => (
+    <StelselGetal eenheden={eenheden} eenheid={eenheid} step={stap} waarde={waarde} onWijzig={(w) => setVal(naam, w)} />
+  );
+  const ruwGetal = (naam: string, stap: number, eenheid: string, placeholder?: string | number) => (
+    <StelselGetal eenheden={eenheden} eenheid={eenheid} step={stap} waarde={ruw(naam)} placeholder={placeholder}
+      onWijzig={(w) => zetBladWaarde(naam, Number.isFinite(w) ? String(w) : "")} />
+  );
 
   // ── de ontwerpknop: het blad per profiel doorrekenen ───────────────────────
   // Alles waarop de ontwerpzoektocht gebaseerd was, behalve het profiel.
@@ -567,22 +583,36 @@ export default function BalklaagDesigner() {
   const yBoard = mTop + Math.max(0, (availH - blockH) / 2);  // verticaal gecentreerd
   const yJoist = yBoard + tV;
 
+  // Een klikbare maat in mm. In een ander eenhedenstelsel staat hij omgerekend, met de
+  // eenheid erachter, en gaat een getypt getal terug in mm; ongewijzigd verlaten schrijft niets.
   function Dim(props: { name: string; value: number; x: number; y: number; step?: number; anker?: "end" }) {
     const { name, value, x, y, step = 5, anker } = props;
     const isEd = editing === name;
+    const omgerekend = eenheden.doel("mm") !== null;
+    const invoer = eenheden.invoer(value, "mm");
+    const commit = (raw: string) => {
+      if (!omgerekend) setVal(name, parseFloat(raw));
+      else if (raw.trim() !== invoer) {
+        const n = eenheden.terug(raw, "mm");
+        if (n !== null) setVal(name, n);
+      }
+      setEditing(null);
+    };
     return (
       <div className="vd-dim" style={{ left: x, top: y, ...(anker === "end" ? { transform: "translate(-100%, -50%)" } : {}) }}>
         {isEd ? (
-          <input className="vd-dim-input" type="number" step={step} defaultValue={value} autoFocus
+          <input className="vd-dim-input" type="number" step={omgerekend ? "any" : step} defaultValue={omgerekend ? invoer : value} autoFocus
             onFocus={(e) => e.currentTarget.select()}
-            onBlur={(e) => { setVal(name, parseFloat(e.target.value)); setEditing(null); }}
+            onBlur={(e) => commit(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") { setVal(name, parseFloat((e.target as HTMLInputElement).value)); setEditing(null); }
+              if (e.key === "Enter") commit((e.target as HTMLInputElement).value);
               if (e.key === "Escape") setEditing(null);
             }} />
         ) : (
           <button className="vd-dim-num" title={t("kit.klikWijzig", { naam: weergaveNaamVoor(source, i18n.language, name) })} onClick={() => setEditing(name)}>
-            {Number.isInteger(value) ? value : value.toFixed(0)}
+            {omgerekend
+              ? <>{tg(value, "mm", 0)}<small>{eenheden.eenheid("mm")}</small></>
+              : Number.isInteger(value) ? value : value.toFixed(0)}
           </button>
         )}
       </div>
@@ -628,59 +658,50 @@ export default function BalklaagDesigner() {
           )}
           {onderslag && (
             <label title={t("balklaag.belasteBreedteUitleg")}>
-              <span className="vd-help">{t("balklaag.belasteBreedte")}</span>
-              <input type="number" step={0.05} value={bOnd} onChange={(e) => setVal("b_ond", parseFloat(e.target.value))} />
+              <span className="vd-help">{lb("balklaag.belasteBreedte", "m")}</span>
+              {getal("b_ond", bOnd, 0.05, "m")}
             </label>
           )}
           {schema === 2 && (
-            <label>{t("balklaag.overstek")}
-              <input type="number" step={50} value={aOver}
-                onChange={(e) => setVal("a_over", parseFloat(e.target.value))} />
+            <label>{lb("balklaag.overstek")}
+              {getal("a_over", aOver, 50)}
             </label>
           )}
           {schema === 3 && (
-            <label>{t("balklaag.tweedeOverspanning")}
-              <input type="number" step={100} value={LVeld2}
-                onChange={(e) => setVal("L_veld2", parseFloat(e.target.value))} />
+            <label>{lb("balklaag.tweedeOverspanning")}
+              {getal("L_veld2", LVeld2, 100)}
             </label>
           )}
           {schema === 3 && kent.steun && (
             <label title={t("balklaag.opleglengteSteunUitleg")}>
-              <span className="vd-help">{t("balklaag.opleglengteSteun")}</span>
-              <input type="number" step={10} value={aSteun}
-                onChange={(e) => setVal("a_steun", parseFloat(e.target.value))} />
+              <span className="vd-help">{lb("balklaag.opleglengteSteun")}</span>
+              {getal("a_steun", aSteun, 10)}
             </label>
           )}
           {schema === 4 && (
             <>
-              <label>{t("balklaag.breedteSparing")}
-                <input type="number" step={100} value={bSparing}
-                  onChange={(e) => setVal("b_sparing", parseFloat(e.target.value))} />
+              <label>{lb("balklaag.breedteSparing")}
+                {getal("b_sparing", bSparing, 100)}
               </label>
-              <label>{t("balklaag.staartlengte")}
-                <input type="number" step={100} value={lStaart}
-                  onChange={(e) => setVal("l_staart", parseFloat(e.target.value))} />
+              <label>{lb("balklaag.staartlengte")}
+                {getal("l_staart", lStaart, 100)}
               </label>
               {metWissel && (
                 <>
                   <label title={t("balklaag.wissel.lengteSparingUitleg")}>
-                    <span className="vd-help">{t("balklaag.wissel.lengteSparing")}</span>
-                    <input type="number" step={100} value={lSparing}
-                      onChange={(e) => setVal("l_sparing", parseFloat(e.target.value))} />
+                    <span className="vd-help">{lb("balklaag.wissel.lengteSparing")}</span>
+                    {getal("l_sparing", lSparing, 100)}
                   </label>
                   <span className="vd-ctrl-h">{t("balklaag.wissel.kop")}</span>
                   <label title={t("balklaag.wissel.overspanningUitleg")}>
-                    <span className="vd-help">{t("balklaag.wissel.overspanning")}</span>
-                    <input type="number" step={100} value={ruw("L_w")} placeholder={String(LwStandaard)}
-                      onChange={(e) => zetBladWaarde("L_w", e.target.value)} />
+                    <span className="vd-help">{lb("balklaag.wissel.overspanning")}</span>
+                    {ruwGetal("L_w", 100, "mm", LwStandaard)}
                   </label>
-                  <label>{t("balklaag.wissel.breedte")}
-                    <input type="number" step={1} value={ruw("b_w")} placeholder={String(b)}
-                      onChange={(e) => zetBladWaarde("b_w", e.target.value)} />
+                  <label>{lb("balklaag.wissel.breedte")}
+                    {ruwGetal("b_w", 1, "mm", b)}
                   </label>
-                  <label>{t("balklaag.wissel.hoogte")}
-                    <input type="number" step={1} value={ruw("h_w")} placeholder={String(h)}
-                      onChange={(e) => zetBladWaarde("h_w", e.target.value)} />
+                  <label>{lb("balklaag.wissel.hoogte")}
+                    {ruwGetal("h_w", 1, "mm", h)}
                   </label>
                   <label>{t("balklaag.wissel.aantal")}
                     <select value={nW} onChange={(e) => setVal("n_w", parseInt(e.target.value))}>
@@ -708,11 +729,11 @@ export default function BalklaagDesigner() {
           </label>
           {zelf && (
             <>
-              <label>{t("balklaag.breedteB")}
-                <input type="number" step={1} value={bZelf} onChange={(e) => setVal("b_zelf", parseFloat(e.target.value))} />
+              <label>{lb("balklaag.breedteB")}
+                {getal("b_zelf", bZelf, 1)}
               </label>
-              <label>{t("balklaag.hoogteH")}
-                <input type="number" step={1} value={hZelf} onChange={(e) => setVal("h_zelf", parseFloat(e.target.value))} />
+              <label>{lb("balklaag.hoogteH")}
+                {getal("h_zelf", hZelf, 1)}
               </label>
             </>
           )}
@@ -735,11 +756,11 @@ export default function BalklaagDesigner() {
                   <p className="vd-ontwerp-melding">
                     {t(plaat === 5 ? "balklaag.tbalk.fabrikantSpaanplaat" : "balklaag.tbalk.fabrikantMultiplex")}
                   </p>
-                  {[...PLAAT_INVOER, ...(plaat === 5 ? PLAAT_FACTOREN.map((p) => ({ ...p, stap: 0.05 })) : [])].map((p) => (
+                  {[...PLAAT_INVOER.map((p) => ({ ...p, eenheid: "N/mm²" })),
+                    ...(plaat === 5 ? PLAAT_FACTOREN.map((p) => ({ ...p, stap: 0.05, eenheid: "" })) : [])].map((p) => (
                     <label key={p.naam}>
-                      <span>{p.sym} {t(`balklaag.tbalk.invoer.${p.sleutel}`)}</span>
-                      <input type="number" step={p.stap} value={ruw(p.naam)} placeholder={t("balklaag.tbalk.fabrikantgegeven")}
-                        onChange={(e) => zetBladWaarde(p.naam, e.target.value)} />
+                      <span>{p.sym} {lb(`balklaag.tbalk.invoer.${p.sleutel}`, p.eenheid)}</span>
+                      {ruwGetal(p.naam, p.stap, p.eenheid, t("balklaag.tbalk.fabrikantgegeven"))}
                     </label>
                   ))}
                 </>
@@ -754,23 +775,23 @@ export default function BalklaagDesigner() {
             <span>{t("balklaag.ontwerp.uitleg")}</span>
           </div>
           {ontwerpMelding && <p className="vd-ontwerp-melding">{ontwerpMelding}</p>}
-          <label>{t("balklaag.dagmaat")}
-            <input type="number" step={100} value={Ld} onChange={(e) => setVal("L_d", parseFloat(e.target.value))} />
+          <label>{lb("balklaag.dagmaat")}
+            {getal("L_d", Ld, 100)}
           </label>
-          <label>{t("balklaag.opleglengte")}
-            <input type="number" step={5} value={aOpl} onChange={(e) => setVal("a_opl", parseFloat(e.target.value))} />
+          <label>{lb("balklaag.opleglengte")}
+            {getal("a_opl", aOpl, 5)}
           </label>
-          <label>{t("balklaag.hoh")}
-            <input type="number" step={10} value={hoh} onChange={(e) => setVal("hoh", parseFloat(e.target.value))} />
+          <label>{lb("balklaag.hoh")}
+            {getal("hoh", hoh, 10)}
           </label>
-          <label>{t("balklaag.dikteBeschot")}
-            <input type="number" step={1} value={tVloer} onChange={(e) => setVal("t_vloer", parseFloat(e.target.value))} />
+          <label>{lb("balklaag.dikteBeschot")}
+            {getal("t_vloer", tVloer, 1)}
           </label>
-          <label>{t("balklaag.eBeschot")}
-            <input type="number" step={100} value={eBeschot} onChange={(e) => setVal("E_beschot", parseFloat(e.target.value))} />
+          <label>{lb("balklaag.eBeschot", "N/mm²")}
+            {getal("E_beschot", eBeschot, 100, "N/mm²")}
           </label>
-          <label>{t("balklaag.breedteVloer")}
-            <input type="number" step={0.5} value={bVloer} onChange={(e) => setVal("b_vloer", parseFloat(e.target.value))} />
+          <label>{lb("balklaag.breedteVloer", "m")}
+            {getal("b_vloer", bVloer, 0.5, "m")}
           </label>
 
           <span className="vd-ctrl-h">{t("balklaag.materiaal")}</span>
@@ -800,19 +821,19 @@ export default function BalklaagDesigner() {
           </label>
 
           <span className="vd-ctrl-h">{t("balklaag.belasting")}</span>
-          <label>G<sub>k</sub> (kN/m²)
-            <input type="number" step={0.1} value={gk} onChange={(e) => setVal("G_k", parseFloat(e.target.value))} />
+          <label>G<sub>k</sub> ({eenheden.eenheid("kN/m²")})
+            {getal("G_k", gk, 0.1, "kN/m²")}
           </label>
-          <label>Q<sub>k</sub> (kN/m²)
-            <input type="number" step={0.5} value={qk} onChange={(e) => setVal("Q_k", parseFloat(e.target.value))} />
+          <label>Q<sub>k</sub> ({eenheden.eenheid("kN/m²")})
+            {getal("Q_k", qk, 0.5, "kN/m²")}
           </label>
-          <label>F<sub>k</sub> (kN)
-            <input type="number" step={0.5} value={Fk} onChange={(e) => setVal("F_k", parseFloat(e.target.value))} />
+          <label>F<sub>k</sub> ({eenheden.eenheid("kN")})
+            {getal("F_k", Fk, 0.5, "kN")}
           </label>
           {kent.gedragen && (onderslag || schema === 4) && (
             <label title={t("balklaag.gedragenUitleg")}>
-              <span className="vd-help">g<sub>bl</sub> {t("balklaag.gedragen")}</span>
-              <input type="number" step={0.01} value={gBl} onChange={(e) => setVal("g_bl", parseFloat(e.target.value))} />
+              <span className="vd-help">g<sub>bl</sub> {lb("balklaag.gedragen", "kN/m²")}</span>
+              {getal("g_bl", gBl, 0.01, "kN/m²")}
             </label>
           )}
           <label>{t("balklaag.categorie")}
@@ -946,8 +967,8 @@ export default function BalklaagDesigner() {
               {tActief ? t("balklaag.tbalk.kop") : t("balklaag.doorsnede")}
               {tActief && Number.isFinite(bEf) && (
                 <span className="vd-caption-waarde">
-                  {" "}· b<sub>ef</sub> = {nl(bEf, 0)} mm {t("balklaag.tbalk.inHetVeld")}
-                  {(schema === 2 || schema === 3) && Number.isFinite(bEfS) && <>, {nl(bEfS, 0)} mm {t("balklaag.tbalk.bijHetSteunpunt")}</>}
+                  {" "}· b<sub>ef</sub> = {te(bEf, "mm", 0)} {t("balklaag.tbalk.inHetVeld")}
+                  {(schema === 2 || schema === 3) && Number.isFinite(bEfS) && <>, {te(bEfS, "mm", 0)} {t("balklaag.tbalk.bijHetSteunpunt")}</>}
                 </span>
               )}
             </div>
@@ -1034,16 +1055,16 @@ export default function BalklaagDesigner() {
                       <LijnLast x1={sx1} x2={sxE} yTop={gTop} yBalk={yBalk} kleur={KLEUR_G} />
                       {Fk > 0 && (
                         <PuntLast x={xF} yTop={qTop - (kort_ ? 14 : 18)} yBalk={yBalk} kleur={KLEUR_F}
-                          label={<>F<tspan baselineShift="sub" fontSize={8}>Q,k</tspan> = {tekst(FQ)} kN</>} />
+                          label={<>F<tspan baselineShift="sub" fontSize={8}>Q,k</tspan> = {te(FQ, "kN")}</>} />
                       )}
                       {/* labels als laatste: de puntlast loopt er dan niet doorheen */}
                       {qk > 0 && (
                         <Label x={sx1 + (sxE - sx1) * (kort ? 0.74 : 0.68)} y={qTop - 6} kleur={KLEUR_Q}>
-                          q<tspan baselineShift="sub" fontSize={8}>q,k</tspan> = {tekst(qq)} kN/m{kort ? "" : ` · ${t("balklaag.veranderlijk")}`}
+                          q<tspan baselineShift="sub" fontSize={8}>q,k</tspan> = {te(qq, "kN/m")}{kort ? "" : ` · ${t("balklaag.veranderlijk")}`}
                         </Label>
                       )}
                       <Label x={sx1 + (sxE - sx1) * (kort ? 0.26 : 0.3)} y={gTop - 6} kleur={KLEUR_G}>
-                        P<tspan baselineShift="sub" fontSize={8}>g,k</tspan> = {tekst(Pg)} kN/m{kort ? "" : ` · ${t("balklaag.permanent")}`}
+                        P<tspan baselineShift="sub" fontSize={8}>g,k</tspan> = {te(Pg, "kN/m")}{kort ? "" : ` · ${t("balklaag.permanent")}`}
                       </Label>
                       {/* de balk */}
                       <rect x={sx1} y={yBalk} width={sxE - sx1} height={12} fill="#E3C08A" stroke="#8B6F47" strokeWidth={1.5} />
@@ -1098,7 +1119,7 @@ export default function BalklaagDesigner() {
             const asV = 26 + bV.pos * sV;                    // positieve dwarskracht staat erboven
             // Waarden bij de uitersten: de veldmomenten onder de as, het steunmoment
             // erboven; de dwarskracht aan de randen van elk veld.
-            const alsLabel = (p: { x: number; v: number }) => ({ ...p, tekst: `${nl(p.v)} kNm` });
+            const alsLabel = (p: { x: number; v: number }) => ({ ...p, tekst: te(p.v, "kNm") });
             const MlabelsVeld = extremen(Momh.boven, grenzen).filter((p) => p.v > 0).map(alsLabel);
             const MlabelsSteun = extremen(Momh.onder, grenzen).filter((p) => p.v < 0).map(alsLabel);
             // Een waarde aan het begin of het eind van de ligger staat buiten de
@@ -1118,7 +1139,7 @@ export default function BalklaagDesigner() {
               const afstand = buiten ? 3 : 5;
               const diepte = Math.abs(p.v) * sV;
               return {
-                x: p.x, v: p.v, tekst: `${nl(p.v)} kN`, naast: buiten,
+                x: p.x, v: p.v, tekst: te(p.v, "kN"), naast: buiten,
                 anker: (naarRechts ? "start" : "end") as "start" | "end", dx: naarRechts ? afstand : -afstand,
                 dy: buiten && p.v < 0 && diepte < 26 ? 26 - diepte : 0,
               };
@@ -1133,7 +1154,7 @@ export default function BalklaagDesigner() {
             return (
               <>
                 <div className="vd-canvas">
-                  <div className="vd-caption">{t("balklaag.mLijn")} <span className="vd-caption-waarde">· M<sub>y,Ed</sub> = {tekst(MyEd)} kNm</span></div>
+                  <div className="vd-caption">{t("balklaag.mLijn")} <span className="vd-caption-waarde">· M<sub>y,Ed</sub> = {te(MyEd, "kNm")}</span></div>
                   <div className="vd-stage" style={{ width: W, height: mH, background: "transparent", border: "none", borderRadius: 0 }}>
                     {tekenbaar && (
                       <svg width={W} height={mH} className="vd-svg">
@@ -1148,12 +1169,12 @@ export default function BalklaagDesigner() {
                   </div>
                   {omhullend && (
                     <div className="vd-noot" style={{ width: W }}>
-                      {t("balklaag.omhullendNoot")} M<sub>y,Ed</sub> = {tekst(MyEd)} kNm.
+                      {t("balklaag.omhullendNoot")} M<sub>y,Ed</sub> = {te(MyEd, "kNm")}.
                     </div>
                   )}
                 </div>
                 <div className="vd-canvas">
-                  <div className="vd-caption">{t("balklaag.vLijn")} <span className="vd-caption-waarde">· V<sub>z,Ed</sub> = {tekst(VzEd)} kN</span></div>
+                  <div className="vd-caption">{t("balklaag.vLijn")} <span className="vd-caption-waarde">· V<sub>z,Ed</sub> = {te(VzEd, "kN")}</span></div>
                   <div className="vd-stage" style={{ width: W, height: vH, background: "transparent", border: "none", borderRadius: 0 }}>
                     {tekenbaar && (
                       <svg width={W} height={vH} className="vd-svg">
@@ -1210,12 +1231,12 @@ export default function BalklaagDesigner() {
                         </marker>
                       </defs>
                       <LijnLast x1={mx1} x2={mx2} yTop={gTop} yBalk={yBalk} kleur={KLEUR_G} />
-                      <PuntLast x={X(a1)} yTop={gTop - 30} yBalk={yBalk} kleur={KLEUR_F} label={<>F = {tekst(FG1)} + {tekst(FQ1)} = {tekst(F1)} kN</>} />
-                      {tweeRav && <PuntLast x={X(a2)} yTop={gTop - 14} yBalk={yBalk} kleur={KLEUR_F} label={<>F = {tekst(F2)} kN</>} />}
+                      <PuntLast x={X(a1)} yTop={gTop - 30} yBalk={yBalk} kleur={KLEUR_F} label={<>F = {tg(FG1, "kN")} + {tg(FQ1, "kN")} = {te(F1, "kN")}</>} />
+                      {tweeRav && <PuntLast x={X(a2)} yTop={gTop - 14} yBalk={yBalk} kleur={KLEUR_F} label={<>F = {te(F2, "kN")}</>} />}
                       <rect x={mx1} y={yBalk} width={mx2 - mx1} height={12} fill="#D9A866" stroke="#8B6F47" strokeWidth={1.5} />
                       <Oplegging x={mx1} y={yBalk + 12} soort="scharnier" />
                       <Oplegging x={mx2} y={yBalk + 12} soort="rol" />
-                      <Label x={(mx1 + mx2) / 2} y={yBalk + 28} kleur={KLEUR_G}>w = {tekst(gW)} + {tekst(qW)} kN/m</Label>
+                      <Label x={(mx1 + mx2) / 2} y={yBalk + 28} kleur={KLEUR_G}>w = {tg(gW, "kN/m")} + {te(qW, "kN/m")}</Label>
                       <line x1={mx1} y1={yMaat} x2={X(a1)} y2={yMaat} className="vd-dimmeasure" markerStart="url(#bdDim3)" markerEnd="url(#bdDim3)" />
                       <line x1={X(a1)} y1={yMaat} x2={mx2} y2={yMaat} className="vd-dimmeasure" markerEnd="url(#bdDim3)" />
                       <Label x={(mx1 + X(a1)) / 2} y={yMaat - 5} kleur="#1d4ed8">{nl(lStaart, 0)}</Label>
@@ -1224,24 +1245,24 @@ export default function BalklaagDesigner() {
                   </div>
                 </div>
                 <div className="vd-canvas">
-                  <div className="vd-caption">{t("balklaag.wissel.mLijn")} <span className="vd-caption-waarde">· M<sub>Ed</sub> = {tekst(uitBlad("M_Ed_w"))} kNm</span></div>
+                  <div className="vd-caption">{t("balklaag.wissel.mLijn")} <span className="vd-caption-waarde">· M<sub>Ed</sub> = {te(uitBlad("M_Ed_w"), "kNm")}</span></div>
                   <div className="vd-stage" style={{ width: W, height: mH, background: "transparent", border: "none", borderRadius: 0 }}>
                     <svg width={W} height={mH} className="vd-svg">
                       <KrachtenLijn x1={mx1} x2={mx2} tot={L} asY={asMw} schaal={sMw} f={omw.M} omlaag kleur={KLEUR_M} tekens
-                        labels={[{ x: xPiek, v: omw.M(xPiek), tekst: `${nl(omw.M(xPiek))} kNm` }]} />
+                        labels={[{ x: xPiek, v: omw.M(xPiek), tekst: te(omw.M(xPiek), "kNm") }]} />
                       <Oplegging x={mx1} y={asMw} soort="scharnier" g={4.5} />
                       <Oplegging x={mx2} y={asMw} soort="rol" g={4.5} />
                     </svg>
                   </div>
                 </div>
                 <div className="vd-canvas">
-                  <div className="vd-caption">{t("balklaag.wissel.vLijn")} <span className="vd-caption-waarde">· V<sub>Ed</sub> = {tekst(uitBlad("V_Ed_w"))} kN</span></div>
+                  <div className="vd-caption">{t("balklaag.wissel.vLijn")} <span className="vd-caption-waarde">· V<sub>Ed</sub> = {te(uitBlad("V_Ed_w"), "kN")}</span></div>
                   <div className="vd-stage" style={{ width: W, height: vH, background: "transparent", border: "none", borderRadius: 0 }}>
                     <svg width={W} height={vH} className="vd-svg">
                       <KrachtenLijn x1={mx1} x2={mx2} tot={L} asY={asVw} schaal={sVw} f={omw.Vmax} omlaag={false} kleur={KLEUR_V} breekpunten={breek} arcering tekens
-                        labels={[{ x: 0, v: omw.Vmax(L * 1e-6), tekst: `${nl(omw.Vmax(L * 1e-6))} kN`, anker: "start", dx: 5 }]} />
+                        labels={[{ x: 0, v: omw.Vmax(L * 1e-6), tekst: te(omw.Vmax(L * 1e-6), "kN"), anker: "start", dx: 5 }]} />
                       <KrachtenLijn x1={mx1} x2={mx2} tot={L} asY={asVw} schaal={sVw} f={omw.Vmin} omlaag={false} kleur={KLEUR_V} breekpunten={breek} arcering tekens
-                        labels={[{ x: L, v: omw.Vmin(L * (1 - 1e-6)), tekst: `${nl(omw.Vmin(L * (1 - 1e-6)))} kN`, anker: "end", dx: -5 }]} />
+                        labels={[{ x: L, v: omw.Vmin(L * (1 - 1e-6)), tekst: te(omw.Vmin(L * (1 - 1e-6)), "kN"), anker: "end", dx: -5 }]} />
                       <Oplegging x={mx1} y={asVw} soort="scharnier" g={4.5} />
                       <Oplegging x={mx2} y={asVw} soort="rol" g={4.5} />
                     </svg>
@@ -1257,10 +1278,10 @@ export default function BalklaagDesigner() {
             <div className="vd-caption">
               {t("balklaag.doorbuigingKop")}{" "}
               <span className="vd-caption-waarde">
-                · w<sub>fin</sub> = {tekst(wfin, 1)} mm, {t("balklaag.grens")} {tekst(wlim, 1)} mm
-                {Number.isFinite(wbij) && <> · w<sub>bij</sub> = {tekst(wbij, 1)} mm, {t("balklaag.grens")} {tekst(wlimBij, 1)} mm</>}
+                · w<sub>fin</sub> = {te(wfin, "mm", 1)}, {t("balklaag.grens")} {te(wlim, "mm", 1)}
+                {Number.isFinite(wbij) && <> · w<sub>bij</sub> = {te(wbij, "mm", 1)}, {t("balklaag.grens")} {te(wlimBij, "mm", 1)}</>}
                 {(schema === 2 || schema === 3) && Number.isFinite(wfin2) && (
-                  <> · {schema === 2 ? t("balklaag.uiteinde") : t("balklaag.veld2")}: {tekst(wfin2, 1)} mm, {t("balklaag.grens")} {tekst(wlim2, 1)} mm</>
+                  <> · {schema === 2 ? t("balklaag.uiteinde") : t("balklaag.veld2")}: {te(wfin2, "mm", 1)}, {t("balklaag.grens")} {te(wlim2, "mm", 1)}</>
                 )}
               </span>
             </div>
@@ -1305,7 +1326,7 @@ export default function BalklaagDesigner() {
                         <g key={i}>
                           <circle cx={X(v.x)} cy={y} r={3} fill={KLEUR_U.lijn} />
                           <Label x={X(v.x)} y={y + (uFin(v.x) >= 0 ? 17 : -9)} kleur={teVeel ? "#b91c1c" : KLEUR_U.lijn}>
-                            w<tspan baselineShift="sub" fontSize={8}>fin</tspan> = {tekst(v.w, 1)} mm{teVeel ? ` > ${tekst(v.lim, 1)} mm` : ` ≤ ${tekst(v.lim, 1)} mm`}
+                            w<tspan baselineShift="sub" fontSize={8}>fin</tspan> = {te(v.w, "mm", 1)}{teVeel ? ` > ${te(v.lim, "mm", 1)}` : ` ≤ ${te(v.lim, "mm", 1)}`}
                           </Label>
                         </g>
                       );
@@ -1344,7 +1365,7 @@ export default function BalklaagDesigner() {
                 extra={Number.isFinite(f1) ? `f₁ = ${f1.toFixed(1)} Hz${trilNvt ? `, ${t("balklaag.uc.nietAangetoond")}` : ""}` : undefined} />
             : <span className="vd-uc-nvt">{t("balklaag.uc.trillingNvt")}</span>}
           {Number.isFinite(rMin) && rMin < 0 && (
-            <span className="vd-uc-chip bad">{t("balklaag.uc.trekOplegging", { kn: nl(-rMin, 2) })}</span>
+            <span className="vd-uc-chip bad">{t("balklaag.uc.trekOplegging", { kn: te(-rMin, "kN") })}</span>
           )}
         </span>
       </div>
