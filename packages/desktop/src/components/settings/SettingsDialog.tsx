@@ -52,6 +52,16 @@ function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
+/** Een waarschuwing in een venster van het systeem; mislukt dat, dan alleen in de console. */
+async function toonMelding(tekst: string): Promise<void> {
+  try {
+    const { message } = await import("@tauri-apps/plugin-dialog");
+    await message(tekst, { kind: "warning" });
+  } catch (err) {
+    console.warn("Melding niet getoond:", err);
+  }
+}
+
 /** Persisted under the "units" settings key. Defaults match the calculation language. */
 export interface UnitsSettings {
   angleMode: "deg" | "rad" | "gra";
@@ -127,6 +137,9 @@ export default function SettingsDialog({
   const originalBureau = useRef<BureauProfiel>(leegBureau());
   // Pas na het lezen bewaren: anders wist een snelle klik op Opslaan adres en sleutel.
   const erpnextGelezen = useRef(false);
+  // Wat Opslaan voor ERPNext nog doet. Openen wacht daarop, zodat het de bewaarde stand
+  // en de juiste status van het geheim toont.
+  const erpnextBezig = useRef<Promise<unknown>>(Promise.resolve());
 
   // Reset draft to current values when dialog opens
   useEffect(() => {
@@ -151,16 +164,37 @@ export default function SettingsDialog({
       const profiel = useBureauStore.getState().profiel;
       originalBureau.current = profiel;
       setDraftBureau(profiel);
-      // Het geheim zelf komt nooit terug uit de sleutelbos; alleen of het er is.
+      // Het geheim zelf komt nooit terug uit de sleutelbos; alleen of het er is (hieronder).
       setDraftErpnext(LEEG_ERPNEXT);
+      setHeeftGeheim(false);
       erpnextGelezen.current = false;
-      leesErpnextInstellingen().then((w) => {
-        erpnextGelezen.current = true;
-        setDraftErpnext({ instellingen: w, geheim: "", wissen: false });
-      });
-      heeftErpnextGeheim().then(setHeeftGeheim);
+      erpnextBezig.current
+        .then(leesErpnextInstellingen)
+        .then((w) => {
+          erpnextGelezen.current = true;
+          setDraftErpnext({ instellingen: w, geheim: "", wissen: false });
+        });
     }
   }, [open, theme, startTab]);
+
+  // Het geheim hoort bij het adres: na elke wijziging van het adres opnieuw vragen of er
+  // een is, even na het typen, en alleen het laatste antwoord telt.
+  const erpnextAdres = draftErpnext.instellingen.adres;
+  useEffect(() => {
+    if (!open) return;
+    let actueel = true;
+    const timer = window.setTimeout(() => {
+      erpnextBezig.current
+        .then(() => heeftErpnextGeheim(erpnextAdres))
+        .then((ja) => {
+          if (actueel) setHeeftGeheim(ja);
+        });
+    }, 300);
+    return () => {
+      actueel = false;
+      window.clearTimeout(timer);
+    };
+  }, [open, erpnextAdres]);
 
   // Live theme preview — apply immediately when the user picks one in the dropdown.
   // Saved only on Save; reverted on Cancel.
@@ -221,17 +255,21 @@ export default function SettingsDialog({
     });
 
     // Adres, sleutel en veld gaan naar de instellingen; het geheim alleen naar de
-    // sleutelbos, en alleen als er een nieuw is getypt of Wissen is gekozen.
-    if (erpnextGelezen.current) void bewaarErpnextInstellingen(draftErpnext.instellingen);
-    const geheim = draftErpnext.geheim.trim();
-    if (isTauri() && (geheim !== "" || draftErpnext.wissen)) {
-      zetErpnextGeheim(geheim)
-        .catch(async (fout) => {
-          const { message } = await import("@tauri-apps/plugin-dialog");
-          await message(t("erpnext.geheimMislukt", { fout: String(fout) }), { kind: "warning" });
+    // sleutelbos, bij het adres van nu, en alleen als er een nieuw is getypt of Wissen is
+    // gekozen. Een fout komt in een melding. Het volgende openen wacht op beide.
+    const erpnext = draftErpnext;
+    const geheim = erpnext.geheim.trim();
+    const instellingenBewaard = erpnextGelezen.current
+      ? bewaarErpnextInstellingen(erpnext.instellingen).catch((fout) => {
+          void toonMelding(t("erpnext.bewarenMislukt", { fout: String(fout) }));
         })
-        .catch((err) => console.warn("Melding niet getoond:", err));
-    }
+      : Promise.resolve();
+    const geheimBewaard = isTauri() && (geheim !== "" || erpnext.wissen)
+      ? zetErpnextGeheim(erpnext.instellingen.adres, geheim).catch((fout) => {
+          void toonMelding(t("erpnext.geheimMislukt", { fout: String(fout) }));
+        })
+      : Promise.resolve();
+    erpnextBezig.current = Promise.all([instellingenBewaard, geheimBewaard]);
     setDraftErpnext(LEEG_ERPNEXT);
 
     onClose();

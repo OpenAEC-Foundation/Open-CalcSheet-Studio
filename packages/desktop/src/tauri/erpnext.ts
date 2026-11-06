@@ -6,10 +6,14 @@
  * besturingssysteem, en het komt niet terug naar de frontend. De frontend kan alleen
  * vragen of er een geheim is.
  *
+ * Het geheim hoort bij de herkomst van het adres (schema, host en poort): bewaren en
+ * vragen gaan dus altijd met het adres erbij. Na een ander adres is er geen geheim, tot
+ * er een voor dat adres is bewaard.
+ *
  * Het verzoek zelf gaat via Rust, vanwege CORS. In de browser (npm run dev) bestaan de
  * commando's niet: dan is er geen geheim, en weigert het verzoek.
  */
-import { getSetting, setSetting } from "../store";
+import { getSetting, setSetting, setSettingOfFout } from "../store";
 
 /** Wat in de instellingen staat, onder de sleutel `erpnext`. */
 export interface ErpnextInstellingen {
@@ -47,33 +51,45 @@ export async function leesErpnextInstellingen(): Promise<ErpnextInstellingen> {
   return normaliseerErpnext(await getSetting<Partial<ErpnextInstellingen>>("erpnext", ERPNEXT_STANDAARD));
 }
 
+/**
+ * Bewaart de instellingen. In de desktop-app komt een fout terug, zodat de gebruiker hem
+ * ziet; in de browser is er geen opslag en gaat het stil, zoals bij de andere instellingen.
+ */
 export async function bewaarErpnextInstellingen(w: ErpnextInstellingen): Promise<void> {
-  await setSetting("erpnext", normaliseerErpnext(w));
+  if (isTauri()) await setSettingOfFout("erpnext", normaliseerErpnext(w));
+  else await setSetting("erpnext", normaliseerErpnext(w));
 }
 
-/** Zijn adres en sleutel ingevuld? Het geheim vraag je apart met heeftErpnextGeheim. */
+/** Zijn adres, sleutel en veld ingevuld? Het geheim vraag je apart met heeftErpnextGeheim. */
 export function erpnextIngevuld(w: ErpnextInstellingen): boolean {
   return w.adres !== "" && w.sleutel !== "" && w.veld !== "";
 }
 
-/** Staat er een API-geheim in de sleutelbos? Buiten de desktop-app: nee. */
-export async function heeftErpnextGeheim(): Promise<boolean> {
-  if (!isTauri()) return false;
+/**
+ * Staat er een API-geheim in de sleutelbos voor de herkomst van `adres`? Een leeg of
+ * ongeldig adres, of buiten de desktop-app: nee.
+ */
+export async function heeftErpnextGeheim(adres: string): Promise<boolean> {
+  if (!isTauri() || adres.trim() === "") return false;
   const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<boolean>("erpnext_heeft_geheim").catch(() => false);
+  return invoke<boolean>("erpnext_heeft_geheim", { adres: adres.trim() }).catch(() => false);
 }
 
-/** Bewaart het API-geheim in de sleutelbos; een leeg geheim wist het. */
-export async function zetErpnextGeheim(geheim: string): Promise<void> {
+/**
+ * Bewaart het API-geheim voor de herkomst van `adres` in de sleutelbos; een leeg geheim
+ * wist het. Een ongeldig adres geeft een fout, en dan wordt er niets bewaard.
+ */
+export async function zetErpnextGeheim(adres: string, geheim: string): Promise<void> {
   if (!isTauri()) throw new Error("ERPNext: desktop app only");
   const { invoke } = await import("@tauri-apps/api/core");
-  await invoke("erpnext_zet_geheim", { geheim });
+  await invoke("erpnext_zet_geheim", { adres: adres.trim(), geheim });
 }
 
 /**
  * De tekst van het locatieveld van project `project` (de naam in ERPNext, dus het
  * projectnummer); "" als het veld leeg is. Een fout komt terug als tekst, met de
- * HTTP-status als die er is ("HTTP 404 …").
+ * HTTP-status als die er is ("HTTP 404 …"). Zonder geheim voor dit adres: de fout
+ * "no API secret in the keychain", en er gaat geen verzoek uit.
  */
 export async function erpnextProjectVeld(w: ErpnextInstellingen, project: string): Promise<string> {
   if (!isTauri()) throw new Error("ERPNext: desktop app only");

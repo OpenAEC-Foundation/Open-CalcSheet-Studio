@@ -17,7 +17,7 @@ export interface ErpnextConcept {
 /**
  * Tab ERPNext in Instellingen: het adres, de API-sleutel, het API-geheim en de naam van
  * het locatieveld. Werkt zoals de andere tabs via Opslaan en Annuleren; het geheim gaat
- * bij Opslaan naar de sleutelbos (src/tauri/erpnext.ts).
+ * bij Opslaan naar de sleutelbos, bij de herkomst van het adres (src/tauri/erpnext.ts).
  */
 export default function ErpnextTab({
   concept,
@@ -27,7 +27,7 @@ export default function ErpnextTab({
 }: {
   concept: ErpnextConcept;
   onChange: (volgende: ErpnextConcept) => void;
-  /** Staat er een geheim in de sleutelbos? */
+  /** Staat er een geheim in de sleutelbos voor het adres in het concept? */
   heeftGeheim: boolean;
   /** Draait de app als desktop-app? In de browser kan hij ERPNext niet bereiken. */
   desktop: boolean;
@@ -36,13 +36,17 @@ export default function ErpnextTab({
   const zet = (deel: Partial<ErpnextInstellingen>) =>
     onChange({ ...concept, instellingen: { ...concept.instellingen, ...deel } });
 
-  const geheimStatus = concept.geheim.trim() !== ""
-    ? t("erpnext.geheimNieuw")
-    : concept.wissen
-      ? t("erpnext.geheimWist")
-      : heeftGeheim
-        ? t("erpnext.geheimBewaard")
-        : t("erpnext.geheimGeen");
+  // Het geheim hoort bij het adres: zonder adres is er niets om het bij te bewaren.
+  const zonderAdres = concept.instellingen.adres.trim() === "";
+  const geheimStatus = zonderAdres
+    ? t("erpnext.geheimEerstAdres")
+    : concept.geheim.trim() !== ""
+      ? t("erpnext.geheimNieuw")
+      : concept.wissen
+        ? t("erpnext.geheimWist")
+        : heeftGeheim
+          ? t("erpnext.geheimBewaard")
+          : t("erpnext.geheimGeen");
 
   return (
     <div className="erpnext-tab">
@@ -84,14 +88,14 @@ export default function ErpnextTab({
               type="password"
               value={concept.geheim}
               aria-label={t("erpnext.geheim")}
-              disabled={!desktop}
+              disabled={!desktop || zonderAdres}
               spellCheck={false}
               autoComplete="new-password"
               onChange={(e) => onChange({ ...concept, geheim: e.target.value, wissen: false })}
             />
             <button
               className="settings-btn settings-btn-secondary erpnext-knop"
-              disabled={!desktop || !heeftGeheim || concept.wissen}
+              disabled={!desktop || zonderAdres || !heeftGeheim || concept.wissen}
               onClick={() => onChange({ ...concept, geheim: "", wissen: true })}
             >
               {t("erpnext.wissen")}
