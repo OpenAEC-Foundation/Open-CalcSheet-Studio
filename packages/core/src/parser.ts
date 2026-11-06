@@ -1,4 +1,6 @@
-import { Unit } from 'mathjs';
+import { math } from './eenheden.js';
+
+const { Unit } = math;
 import type { AstNode, ConditionalNode, OpdrachtNode, PlotNode, TextNode } from './types.js';
 import { DRIE_D_START_RE, leesDrieD } from './drieD.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';

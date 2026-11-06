@@ -1,4 +1,5 @@
-import { create, all, type MathJsInstance, type MathNode } from 'mathjs';
+import type { MathNode } from 'mathjs';
+import { math, isEenheidNaam } from './eenheden.js';
 import type { AstNode, ConditionalNode, EvaluatedNode, MatrixUitkomst, OpdrachtNode } from './types.js';
 import { losStelselOp, rangVan, eigenSymmetrisch } from './matrixrekening.js';
 import { bouwDrieDScene } from './drieD.js';
@@ -17,7 +18,6 @@ import {
   doorsnedeGrootheden, doorsnedeDeel, doorsnedePlastisch, doorsnedeStatisch, doorsnedeSvgPunten,
 } from './doorsnede.js';
 
-const math: MathJsInstance = create(all, {});
 
 /**
  * Trigonometric input mode. Default is `rad` (mathjs native). When set to
@@ -1370,10 +1370,8 @@ export function uitdrukkingBoom(expr: string): MathNode {
   return ontleedExpr(expr);
 }
 
-/** Is dit een eenheid zonder waarde, zoals mathjs de naam leest? */
-export function isEenheidNaam(naam: string): boolean {
-  return math.Unit.isValuelessUnit(naam);
-}
+/** Is dit een eenheid zonder waarde, zoals de rekenkern de naam leest? (eenheden.ts) */
+export { isEenheidNaam };
 
 /**
  * De stand van de afdrukopdrachten tijdens het doorrekenen. Een opdracht geldt

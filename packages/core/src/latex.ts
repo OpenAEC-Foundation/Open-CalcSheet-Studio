@@ -1,4 +1,7 @@
-import { parse, type MathNode } from 'mathjs';
+import type { MathNode } from 'mathjs';
+import { math } from './eenheden.js';
+
+const parse = (expr: string): MathNode => math.parse(expr);
 import type { MatrixUitkomst } from './types.js';
 
 // ─── Greek letters ──────────────────────────────────────────────────
