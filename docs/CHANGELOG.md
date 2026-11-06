@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Bij de locatie meet de knop "Afstand tot open water meten" de afstand tot het dichtstbijzijnde open water binnen 10 km (OpenStreetMap): de omgevingskaart krijgt een streeplijn erheen, ligt het water buiten de kaart dan eindigt de lijn in een pijl aan de rand, en op de pagina Situatie staat de afstand met de naam, of dat er geen open water binnen 10 km ligt
 - Het rapport krijgt na het voorblad een pagina Situatie met drie kaarten van OpenStreetMap (gebied, omgeving, locatie), het adres, de coördinaten en de terreincategorie; in het rapportpaneel (Document) zet je de pagina aan of uit
 - In de projectgegevens kies je de locatie van het project op een kaart: zoek een adres waar ook ter wereld, klik op de kaart of sleep de speld
 - Via de API en MCP kies je ook het eenhedenstelsel voor een nieuw project (`units.stelsel` in `settings_set`); het stelsel van het open project is het projectgegeven `eenheden`

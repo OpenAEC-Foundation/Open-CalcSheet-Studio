@@ -19,7 +19,7 @@ import {
 } from "../packages/desktop/src/kaart/tegels.ts";
 import { afstandM, dichtstePuntOpLijn, oppervlakteM2 } from "../packages/desktop/src/kaart/afstand.ts";
 import { waterVraag, dichtstbijzijndWater, meetWater } from "../packages/desktop/src/kaart/overpass.ts";
-import { KAARTEN, normaliseerSituatie, onderschrift, situatieBijPunt } from "../packages/desktop/src/rapport/situatie.ts";
+import { KAARTEN, normaliseerSituatie, onderschrift, situatieBijPunt, waterTekst } from "../packages/desktop/src/rapport/situatie.ts";
 import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 
 let fouten = 0;
@@ -229,6 +229,11 @@ console.log("\nDe situatie in het rapport");
   const metWater = { ...goed, water: { afstand: 120, naam: "Vecht", punt: { lat: 52.09, lon: 5.12 } } };
   meld(toon(normaliseerSituatie(metWater)) === toon(metWater), "het water blijft behouden", toon(normaliseerSituatie(metWater)));
   meld(!("water" in normaliseerSituatie({ ...goed, water: { afstand: "ver" } })), "een kapot water valt weg");
+  const gemeten = { ...goed, water: null };
+  const nulTerug = normaliseerSituatie(gemeten);
+  meld(nulTerug !== undefined && "water" in nulTerug && nulTerug.water === null && toon(nulTerug) === toon(gemeten), "water: null (gemeten, geen open water) blijft behouden", toon(nulTerug));
+  meld(toon(normaliseerSituatie(JSON.parse(JSON.stringify(gemeten)))) === toon(gemeten), "water: null overleeft een JSON-ronde");
+  meld(!("water" in normaliseerSituatie(goed)), "zonder water blijft water afwezig (niet gemeten)");
   const wereld = { ...goed, kaarten: [{ id: "wereld", zoom: 1, jpeg: "QUJD" }] };
   meld(normaliseerSituatie(wereld) === undefined, "alleen een kaart met id wereld geeft undefined");
   const mix = normaliseerSituatie({ ...goed, kaarten: [{ id: "wereld", zoom: 1, jpeg: "QUJD" }, goed.kaarten[0], { id: "locatie", zoom: 17 }] });

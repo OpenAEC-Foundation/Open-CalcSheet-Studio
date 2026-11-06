@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { useTranslation } from "react-i18next";
+import i18next from "i18next";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -8,8 +9,10 @@ import { leesCoordinaten, leesPunt, puntJson, puntTekst, type Punt } from "../..
 import { zoekAdres, type Uitkomst } from "../../kaart/nominatim.ts";
 import { maakKaartbeeld } from "../../kaart/beeld.ts";
 import { schaalTekst } from "../../kaart/tegels.ts";
-import { KAARTEN, situatieBijPunt, type Kaartbeeld } from "../../rapport/situatie.ts";
+import { meetWater } from "../../kaart/overpass.ts";
+import { KAARTEN, situatieBijPunt, waterTekst, type Kaartbeeld, type Water } from "../../rapport/situatie.ts";
 import { useBeeldEenheden } from "./useBeeldEenheden";
+import type { BeeldEenheden } from "./beeldEenheden";
 import "./LocatieKiezer.css";
 
 // Dezelfde speld als op de windkaart (de standaardafbeeldingen van Leaflet
@@ -32,6 +35,22 @@ function vandaag(): string {
   const d = new Date();
   const twee = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${twee(d.getMonth() + 1)}-${twee(d.getDate())}`;
+}
+
+/**
+ * Het beeld van kaart `k` voor de situatie, met schaalbalk in de taal van het rapport en, als
+ * er een gemeten water is, de lijn ernaartoe met afstand en naam in diezelfde taal.
+ */
+function beeldVan(p: Punt, k: (typeof KAARTEN)[number], eenheden: BeeldEenheden, water?: Water | null): Promise<Kaartbeeld> {
+  const taal = useProjectStore.getState().rapport.taal;
+  return maakKaartbeeld(p, k, {
+    bron: BRON,
+    // De teksten in het beeld volgen de taal van het rapport, zoals de rest van de afdruk.
+    schaalLabel: (m) => schaalTekst(m, eenheden, taal),
+    ...(water && k.id === "omgeving"
+      ? { water: { punt: water.punt, label: waterTekst(water, eenheden, taal, i18next.getFixedT(taal, "rapport")) } }
+      : {}),
+  });
 }
 
 /** Een klik op de kaart zet de speld daar. */
@@ -96,6 +115,10 @@ export default function LocatieKiezer() {
   const [kaartenMelding, setKaartenMelding] = useState<string | null>(null);
   // Alleen de laatste opdracht om kaarten te maken telt.
   const kaartNummer = useRef(0);
+  const [waterBezig, setWaterBezig] = useState(false);
+  const [waterMelding, setWaterMelding] = useState<string | null>(null);
+  // Alleen de laatste meting telt.
+  const waterNummer = useRef(0);
 
   /**
    * Maakt de drie kaarten achter elkaar en schrijft ze pas als alle drie klaar zijn, met één
@@ -106,33 +129,36 @@ export default function LocatieKiezer() {
       const nummer = ++kaartNummer.current;
       setKaartenMelding(null);
       setKaartenBezig(true);
+      // Een lopende meting is hiermee achterhaald: de kaarten worden opnieuw gemaakt.
+      waterNummer.current++;
+      setWaterBezig(false);
+      // Het water hoort bij het oude punt en blijft alleen staan als het punt hetzelfde is; dan
+      // krijgt de omgevingskaart ook weer zijn lijn.
+      const voor = useProjectStore.getState().rapport.situatie;
+      const behoud = voor && situatieBijPunt(voor, p) === "actueel" ? voor.water : undefined;
       try {
         const kaarten: Kaartbeeld[] = [];
         for (const k of KAARTEN) {
           // Is de opdracht intussen vervangen, dan haalt hij geen tegels meer.
           if (nummer !== kaartNummer.current) return;
-          kaarten.push(
-            await maakKaartbeeld(p, k, {
-              bron: BRON,
-              // Het label volgt de taal van het rapport, zoals de rest van de afdruk.
-              schaalLabel: (m) => schaalTekst(m, eenhedenRef.current, useProjectStore.getState().rapport.taal),
-            }),
-          );
+          kaarten.push(await beeldVan(p, k, eenhedenRef.current, behoud));
         }
         if (nummer !== kaartNummer.current) return;
         // Het punt kan intussen verplaatst of gewist zijn: dan horen deze kaarten er niet meer bij.
         const nu = leesPunt(useProjectStore.getState().gegevens.locatie_punt);
         if (!nu || situatieBijPunt({ tonen: true, punt: p, datum: "", kaarten }, nu) !== "actueel") return;
-        // Bij vernieuwen blijft het vinkje zoals het was; het water hoort bij het oude punt en
-        // blijft alleen staan als het punt hetzelfde is.
-        werkRapportBij((r) => {
-          const oud = r.situatie;
-          const water = oud?.water && situatieBijPunt(oud, p) === "actueel" ? oud.water : undefined;
-          return {
-            ...r,
-            situatie: { tonen: oud ? oud.tonen : true, punt: p, datum: vandaag(), kaarten, ...(water ? { water } : {}) },
-          };
-        });
+        // Bij vernieuwen blijft het vinkje zoals het was; het water (ook "geen water") blijft
+        // alleen staan als het punt hetzelfde is, en is het water waarmee de kaart getekend is.
+        werkRapportBij((r) => ({
+          ...r,
+          situatie: {
+            tonen: r.situatie ? r.situatie.tonen : true,
+            punt: p,
+            datum: vandaag(),
+            kaarten,
+            ...(behoud !== undefined ? { water: behoud } : {}),
+          },
+        }));
       } catch {
         if (nummer !== kaartNummer.current) return;
         setKaartenMelding(t("gegevens.situatie.kaartenMislukt"));
@@ -141,6 +167,45 @@ export default function LocatieKiezer() {
       }
     },
     [i18n.language, t, werkRapportBij],
+  );
+
+  /**
+   * Meet het open water bij het punt van de situatie, tekent de lijn in de omgevingskaart en
+   * schrijft water en kaart samen met één wijziging van het rapport. Bij een fout (netwerk,
+   * time-out, 429) blijft alles zoals het was.
+   */
+  const meetAfstand = useCallback(
+    async (p: Punt) => {
+      const nummer = ++waterNummer.current;
+      const kaartMoment = kaartNummer.current;
+      setWaterMelding(null);
+      setWaterBezig(true);
+      // Is er intussen iets veranderd (een andere meting, nieuwe kaarten, een ander punt)?
+      const verlopen = () => {
+        if (nummer !== waterNummer.current || kaartMoment !== kaartNummer.current) return true;
+        const state = useProjectStore.getState();
+        const nu = leesPunt(state.gegevens.locatie_punt);
+        return !nu || situatieBijPunt(state.rapport.situatie, nu) !== "actueel" || situatieBijPunt(state.rapport.situatie, p) !== "actueel";
+      };
+      try {
+        const water = await meetWater(p);
+        if (verlopen()) return;
+        const omgeving = KAARTEN.find((k) => k.id === "omgeving")!;
+        const beeld = await beeldVan(p, omgeving, eenhedenRef.current, water);
+        if (verlopen()) return;
+        werkRapportBij((r) =>
+          r.situatie
+            ? { ...r, situatie: { ...r.situatie, water, kaarten: r.situatie.kaarten.map((k) => (k.id === "omgeving" ? beeld : k)) } }
+            : r,
+        );
+      } catch {
+        if (nummer !== waterNummer.current) return;
+        setWaterMelding(t("gegevens.situatie.waterMislukt"));
+      } finally {
+        if (nummer === waterNummer.current) setWaterBezig(false);
+      }
+    },
+    [t, werkRapportBij],
   );
 
   const zetPunt = useCallback(
@@ -271,6 +336,14 @@ export default function LocatieKiezer() {
         </div>
       )}
       {kaartenMelding && <div className="lk-melding" role="status">{kaartenMelding}</div>}
+      {punt && situatie && stand === "actueel" && (
+        <div className="lk-kaarten">
+          <button type="button" className="lk-knop" onClick={() => void meetAfstand(punt)} disabled={waterBezig || kaartenBezig}>
+            {waterBezig ? t("gegevens.situatie.waterBezig") : t("gegevens.situatie.waterMeten")}
+          </button>
+        </div>
+      )}
+      {waterMelding && <div className="lk-melding" role="status">{waterMelding}</div>}
       <div className="lk-voet">
         <span className="lk-coord">
           {punt ? puntTekst(punt, i18n.language) : t("gegevens.situatie.geenPunt")}

@@ -389,6 +389,7 @@
       },
       "keuze": "(chosen by the structural engineer)",
       "water": "Distance to open water",
+      "geenWater": "no open water within 10 km",
       "kaart": "Map",
       "bron": "© OpenStreetMap contributors, {{datum}}"
     },

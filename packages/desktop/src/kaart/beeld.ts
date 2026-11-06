@@ -139,18 +139,45 @@ export async function maakKaartbeeld(
   if (opties.water) {
     const a = tegelPositie(p, zoom);
     const w = tegelPositie(opties.water.punt, zoom);
-    const wx = mx + (w.x - a.x) * TEGEL;
-    const wy = my + (w.y - a.y) * TEGEL;
+    let wx = mx + (w.x - a.x) * TEGEL;
+    let wy = my + (w.y - a.y) * TEGEL;
+    // Ligt het water buiten het beeld, dan loopt de lijn tot net binnen de rand en eindigt in een pijl.
+    const rand = fs * 1.2;
+    const buiten = wx < rand || wx > k.breedte - rand || wy < rand || wy > k.hoogte - rand;
+    const dx = wx - mx;
+    const dy = wy - my;
+    if (buiten) {
+      const tx = dx > 0 ? (k.breedte - rand - mx) / dx : dx < 0 ? (rand - mx) / dx : Infinity;
+      const ty = dy > 0 ? (k.hoogte - rand - my) / dy : dy < 0 ? (rand - my) / dy : Infinity;
+      const t = Math.min(tx, ty, 1);
+      wx = mx + dx * t;
+      wy = my + dy * t;
+    }
     c.save();
     c.strokeStyle = "#1565c0";
+    c.fillStyle = "#1565c0";
     c.lineWidth = Math.max(3, fs * 0.2);
     c.setLineDash([fs * 0.7, fs * 0.45]);
     c.beginPath();
     c.moveTo(mx, my);
     c.lineTo(wx, wy);
     c.stroke();
+    if (buiten) {
+      const hoek = Math.atan2(dy, dx);
+      const l = fs * 1.2;
+      c.setLineDash([]);
+      c.beginPath();
+      c.moveTo(wx, wy);
+      c.lineTo(wx - l * Math.cos(hoek - 0.45), wy - l * Math.sin(hoek - 0.45));
+      c.lineTo(wx - l * Math.cos(hoek + 0.45), wy - l * Math.sin(hoek + 0.45));
+      c.closePath();
+      c.fill();
+    }
     c.restore();
-    const lx = Math.min(Math.max(wx, mx / 2), k.breedte - mx / 2);
+    // Het label blijft altijd binnen het beeld, ook voor water aan de rand of daarbuiten.
+    c.font = `${fs}px sans-serif`;
+    const halve = c.measureText(opties.water.label).width / 2 + fs * 0.3;
+    const lx = Math.min(Math.max(wx, halve), k.breedte - halve);
     const ly = Math.min(Math.max(wy - fs * 0.8, fs * 1.5), k.hoogte - fs * 4);
     tekenLabel(c, opties.water.label, lx, ly, "center", fs);
   }

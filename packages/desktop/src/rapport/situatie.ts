@@ -41,7 +41,11 @@ export interface Situatie {
   /** "JJJJ-MM-DD": de dag waarop de kaarten zijn gemaakt. */
   datum: string;
   kaarten: Kaartbeeld[];
-  water?: Water;
+  /**
+   * Het gemeten open water. Afwezig: nog niet gemeten. `null`: gemeten, en er ligt geen
+   * open water binnen 10 km.
+   */
+  water?: Water | null;
 }
 
 type Los = Record<string, unknown>;
@@ -85,13 +89,14 @@ export function normaliseerSituatie(x: unknown): Situatie | undefined {
     kaarten.push({ id, zoom: k.zoom, jpeg: k.jpeg });
   }
   if (kaarten.length === 0) return undefined;
-  const water = leesWater(o.water);
+  // null is een meting ("geen open water"), een ongeldig object valt weg als niet gemeten.
+  const water = o.water === null ? null : leesWater(o.water);
   return {
     tonen: typeof o.tonen === "boolean" ? o.tonen : true,
     punt: JSON.parse(puntJson(punt)) as Punt,
     datum: o.datum,
     kaarten,
-    ...(water ? { water } : {}),
+    ...(water !== undefined ? { water } : {}),
   };
 }
 
@@ -141,4 +146,20 @@ export function onderschrift(
     kaart: t(`afdruk.situatie.kaarten.${id}`),
     afstand: schaalTekst(meters, eenheden, taal),
   });
+}
+
+/**
+ * De afstand tot open water in tekst, in het eenhedenstelsel van het project en in de taal
+ * van het rapport: "820 m (Noorderplas)", of voor `null` "geen open water binnen 10 km".
+ * Zonder naam alleen de afstand.
+ */
+export function waterTekst(
+  water: Water | null,
+  eenheden: BeeldEenheden,
+  taal: string,
+  t: (sleutel: string, opties?: Record<string, unknown>) => string,
+): string {
+  if (!water) return t("afdruk.situatie.geenWater");
+  const afstand = schaalTekst(water.afstand, eenheden, taal);
+  return water.naam ? `${afstand} (${water.naam})` : afstand;
 }
