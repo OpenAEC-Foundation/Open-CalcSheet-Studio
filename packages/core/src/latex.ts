@@ -1,5 +1,5 @@
 import type { MathNode } from 'mathjs';
-import { math } from './eenheden.js';
+import { math, isEenheidNaam } from './eenheden.js';
 
 const parse = (expr: string): MathNode => math.parse(expr);
 import type { MatrixUitkomst } from './types.js';
@@ -246,10 +246,15 @@ function operatorToLatex(nd: AnyNode): string {
       if (nd.implicit) {
         // Implicit multiplication (number · unit): 300 mm → 300\;mm
         const left = args[0] ? nodeToLatex(args[0]) : '';
-        const right = args[1] ? nodeToLatex(args[1]) : '';
-        // If left is a number and right is a unit, use thin space
         const rightNd = n(args[1]);
-        if (rightNd.type === 'SymbolNode' && isKnownUnit(rightNd.name!)) {
+        // Een naam direct achter een getal die de rekenkern als eenheid kent, is
+        // een eenheid, ook als hij als Griekse letter te lezen is: 50 psi is geen
+        // 50 ψ. Elders blijft `psi` de variabele ψ, zoals in de Eurocode.
+        const eenheidNaGetal = rightNd.type === 'SymbolNode' && n(args[0]).type === 'ConstantNode'
+          && isEenheidNaam(rightNd.name!);
+        const right = eenheidNaGetal ? unitToLatex(rightNd.name!) : args[1] ? nodeToLatex(args[1]) : '';
+        // If left is a number and right is a unit, use thin space
+        if (rightNd.type === 'SymbolNode' && (eenheidNaGetal || isKnownUnit(rightNd.name!))) {
           return `${left} \\; ${right}`;
         }
         // Otherwise (e.g., 2x), just juxtapose

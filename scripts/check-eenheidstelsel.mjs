@@ -14,7 +14,7 @@
  * Draaien:  node scripts/check-eenheidstelsel.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
-import { parse, evaluate } from "../packages/core/dist/index.js";
+import { parse, evaluate, exprToLatex } from "../packages/core/dist/index.js";
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -51,6 +51,20 @@ gelijk("q = 1 kN/m\nx = q to plf", "x", "68.52 plf");
 gelijk("g = 25 kN/m^3\nx = g to pcf", "x", "159.1 pcf");
 gelijk("p = 50 psf\nx = p to kN/m^2", "x", "2.394 kN / m^2", "een getal met een nieuwe eenheid wordt herkend: 50 psf → 2.394 kN/m²");
 gelijk("ksi = 2\ny = 3*ksi", "y", "6", "een variabele met de naam van een nieuwe eenheid blijft een variabele");
+
+console.log("\nOpmaak");
+const psi = exprToLatex("50 psi");
+meld(psi.includes("\\text{psi}") && !psi.includes("\\psi"), "50 psi staat als eenheid, niet als ψ", psi);
+const psi0 = exprToLatex("psi_0 * 2");
+meld(psi0.includes("\\psi"), "de variabele ψ₀ blijft Grieks", psi0);
+for (const e of ["kip", "lbf"]) {
+  const l = exprToLatex(`3 ${e}`);
+  meld(l.includes(`\\text{${e}}`), `3 ${e} staat als eenheid`, l);
+}
+const kipFt = uitkomst("F = 10 kip\na = 2 ft\nM = a*F", "M");
+meld(/kip ft$/.test(kipFt ?? ""), "een moment in kip en ft: de lengte achteraan (kip ft), ook als ft eerst staat", kipFt);
+const psiVar = exprToLatex("psi * 2");
+meld(psiVar.includes("\\psi"), "een variabele psi (ψ) blijft Grieks", psiVar);
 
 if (fouten > 0) {
   console.error(`\nEenheden: ${fouten} afwijking(en).`);

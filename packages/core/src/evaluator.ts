@@ -2077,9 +2077,9 @@ function unitGroups(value: MathUnit): { name: string; power: number }[] {
  */
 function simplifyUnitString(value: MathUnit): string {
   const entries = unitGroups(value);
-  // Lengte achteraan in een product: kN m, niet m kN. De volgorde volgt anders
-  // die van de delen in de berekening.
-  const isLengte = (naam: string) => /^[a-zµ]?m$/.test(naam);
+  // Lengte achteraan in een product: kN m, niet m kN, en kip ft, niet ft kip.
+  // De volgorde volgt anders die van de delen in de berekening.
+  const isLengte = (naam: string) => /^[a-zµ]?m$/.test(naam) || /^(in|inch|ft|yd|mi)$/.test(naam);
   const pos = entries
     .filter(g => g.power > 0)
     .sort((a, b) => Number(isLengte(a.name)) - Number(isLengte(b.name)));
