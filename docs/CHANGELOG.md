@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- In de projectgegevens kies je de locatie van het project op een kaart: zoek een adres waar ook ter wereld, klik op de kaart of sleep de speld
 - Via de API en MCP kies je ook het eenhedenstelsel voor een nieuw project (`units.stelsel` in `settings_set`); het stelsel van het open project is het projectgegeven `eenheden`
 - Het rapport volgt het eenhedenstelsel van het project: de belastingen en de laagopbouw op papier en in het rapportpaneel, met hun eenheden ([psf], [ft], [pcf]). Wat je in het paneel typt, wordt opgeslagen in de eenheid van het rapport; een getal met een andere eenheid erachter (12 m) geldt in die eenheid
 - De parametrische beelden volgen het eenhedenstelsel van het project: maten, lasten, momenten en spanningen in de tekeningen van de ligger, de balklaag, de tweepaalspoer en de doorsnede, en hun invoervelden. Een maat die je in een tekening typt, gaat terug in de eenheid van het blad

@@ -12,6 +12,7 @@
 import {
   leesPunt, puntJson, leesCoordinaten, puntTekst,
 } from "../packages/desktop/src/kaart/punt.ts";
+import { parseNominatim, zoekAdres } from "../packages/desktop/src/kaart/nominatim.ts";
 import {
   tegelPositie, metersPerPixel, zoomVoor, uitsnede, schaalbalk,
 } from "../packages/desktop/src/kaart/tegels.ts";
@@ -114,6 +115,48 @@ const sb3 = schaalbalk(52.09, 15, 300);
 meld(sb3.meters === 500, "300 px (880 m) geeft nog 500 m", toon(sb3));
 const sb4 = schaalbalk(52.09, 15, 400);
 meld(sb4.meters === 1000, "400 px (1174 m) geeft 1000 m", toon(sb4));
+
+console.log("\nHet zoekantwoord lezen");
+{
+  const antwoord = [
+    { lat: "-33.8567844", lon: "151.2152967", display_name: "Sydney Opera House, Sydney, Australia" },
+    { lat: "52.0907", lon: "5.1214", display_name: "Utrecht" },
+    { lon: "5.1", display_name: "zonder lat" },
+  ];
+  const r = parseNominatim(antwoord);
+  meld(r.length === 2, "twee goede regels en één zonder lat geven 2 uitkomsten", toon(r));
+  meld(r.length > 0 && gelijk(r[0].punt, -33.8567844, 151.2152967) && r[0].naam.startsWith("Sydney Opera House"), "lat en lon komen als getal uit de tekst, met de naam", toon(r[0]));
+  meld(parseNominatim({ fout: 1 }).length === 0 && parseNominatim(null).length === 0, "geen lijst geeft een lege lijst");
+  meld(parseNominatim([{ lat: "95", lon: "5", display_name: "x" }]).length === 0, "een punt buiten bereik valt weg");
+}
+
+console.log("\nZoeken bij de dienst");
+{
+  const starts = [];
+  const urls = [];
+  const kopteksten = [];
+  const nepFetch = async (url, init) => {
+    starts.push(Date.now());
+    urls.push(String(url));
+    kopteksten.push(init?.headers ?? {});
+    return { ok: true, status: 200, json: async () => [{ lat: "1", lon: "2", display_name: "plek" }] };
+  };
+  const eerste = await zoekAdres("Sydney Opera House", "en", nepFetch);
+  await zoekAdres("Utrecht", "nl", nepFetch);
+  meld(eerste.length === 1, "een antwoord geeft de uitkomsten", toon(eerste));
+  meld(starts.length === 2 && starts[1] - starts[0] >= 1000, "de tweede aanroep start minstens 1000 ms na de eerste", toon(starts.length === 2 ? starts[1] - starts[0] : starts));
+  meld(urls[0].startsWith("https://nominatim.openstreetmap.org/search?") && urls[0].includes("format=jsonv2") && urls[0].includes("limit=5") && urls[0].includes("q=Sydney%20Opera%20House"), "de URL heeft format=jsonv2, limit=5 en de zoekvraag", urls[0]);
+  meld(urls.every((u) => !u.includes("countrycodes")), "de URL bevat geen countrycodes");
+  meld(kopteksten[0]["Accept-Language"] === "en" && kopteksten[1]["Accept-Language"] === "nl", "Accept-Language is de taal", toon(kopteksten));
+  const fout429 = async () => ({ ok: false, status: 429, json: async () => ({}) });
+  let melding = "";
+  try { await zoekAdres("x", "en", fout429); } catch (e) { melding = e instanceof Error ? e.message : String(e); }
+  meld(melding.includes("429"), "een 429 geeft een Error met 429", melding);
+  const drie = [];
+  const tel = async () => { drie.push(Date.now()); return { ok: true, status: 200, json: async () => [] }; };
+  await Promise.all([zoekAdres("a", "en", tel), zoekAdres("b", "en", tel)]);
+  meld(drie.length === 2 && drie[1] - drie[0] >= 1000, "twee gelijktijdige aanroepen komen ook minstens 1000 ms uit elkaar", toon(drie.length === 2 ? drie[1] - drie[0] : drie));
+}
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles OK");
 process.exit(fouten ? 1 : 0);

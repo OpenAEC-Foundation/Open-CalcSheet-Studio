@@ -299,6 +299,18 @@
       },
       "naamVoorbeeld": "kipf",
       "uitdrukkingVoorbeeld": "1000 lbf"
+    },
+    "situatie": {
+      "titel": "Site location",
+      "hint": "Search for an address anywhere in the world, or click the map to place the pin. You can drag the pin.",
+      "adres": "Address or place",
+      "adresVoorbeeld": "Address, place or coordinates",
+      "zoeken": "Search",
+      "zoekt": "Searching…",
+      "nietGevonden": "Nothing found for this search.",
+      "zoekenMislukt": "Searching failed. Check your internet connection and try again; you can also click the map.",
+      "geenPunt": "No location chosen",
+      "wis": "Clear location"
     }
   },
   "windkaart": {
