@@ -1,0 +1,114 @@
+.lk {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+
+.lk-zoek {
+  display: flex;
+  gap: 6px;
+}
+
+.lk-zoek input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  font-family: inherit;
+  font-size: var(--oa-size-body);
+  color: var(--theme-text);
+  background: var(--oa-field);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-small);
+}
+
+.lk-zoek input:focus {
+  outline: none;
+  border-color: var(--theme-accent);
+}
+
+.lk-knop {
+  height: 30px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: var(--oa-size-body);
+  font-weight: 600;
+  color: var(--theme-accent-text, #fff);
+  background: var(--theme-accent);
+  border: none;
+  border-radius: var(--oa-radius-small);
+  cursor: pointer;
+}
+
+.lk-knop:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.lk-knop-rustig {
+  color: var(--theme-text);
+  background: transparent;
+  border: 1px solid var(--oa-border);
+  font-weight: 500;
+}
+
+.lk-melding {
+  font-size: var(--oa-size-body);
+  color: var(--theme-text-secondary);
+}
+
+.lk-uitkomsten {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-small);
+  overflow: hidden;
+}
+
+.lk-uitkomst {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  text-align: left;
+  font-family: inherit;
+  font-size: var(--oa-size-body);
+  color: var(--theme-text);
+  background: var(--oa-field);
+  border: none;
+  border-bottom: 1px solid var(--oa-border);
+  cursor: pointer;
+}
+
+.lk-uitkomsten li:last-child .lk-uitkomst {
+  border-bottom: none;
+}
+
+.lk-uitkomst:hover {
+  color: var(--theme-accent);
+}
+
+.lk-kaart {
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-small);
+  overflow: hidden;
+}
+
+.lk-leaflet {
+  height: 280px;
+  width: 100%;
+}
+
+.lk-voet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lk-coord {
+  font-family: var(--oa-font-numbers);
+  font-size: var(--oa-size-body);
+  color: var(--theme-text-secondary);
+}

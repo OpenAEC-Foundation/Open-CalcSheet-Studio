@@ -4,6 +4,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
 import { PROJECT_VELDEN, kFiVoor, keuzesVoor, vervallenKeuze, type Keuze, type VeldDef } from "../../store/projectGegevens";
 import WindAreaMap from "./WindAreaMap";
+import LocatieKiezer from "./LocatieKiezer";
 import EenhedenEditor from "./EenhedenEditor";
 import "./ProjectGegevensPanel.css";
 
@@ -146,6 +147,7 @@ export default function ProjectGegevensPanel() {
               )}
             </label>
             {veld.naam === "eenheden" && <EenhedenEditor />}
+            {veld.naam === "locatie" && <LocatieKiezer />}
             {veld.naam === "windgebied" && (
               <div className="pg-windkaart">
                 <button

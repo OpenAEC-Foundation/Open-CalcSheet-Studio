@@ -189,6 +189,14 @@ de instellingen, ook via `settings_set`. Het stelsel van het open project is het
 projectgegeven `eenheden`, ook via `project_data_set`. Zie
 [het ontwerp](superpowers/specs/2026-11-06-eenheden-design.md).
 
+## Locatie
+
+De plek van het project voor de situatiekaart staat in de projectgegevens onder de sleutel
+`locatie_punt`, als JSON `{"lat":52.0907,"lon":5.1214}` met 6 decimalen (`kaart/punt.ts`).
+De LocatieKiezer onder het veld Locatie schrijft hem (`components/calc/LocatieKiezer.tsx`).
+Ontbreekt de sleutel of is de waarde ongeldig (geen JSON, lat buiten ±90, lon buiten ±180),
+dan heeft het project geen locatie.
+
 ## Taal van het rapport
 
 Het rapport heeft een eigen taal, `Rapport.taal` in `ocss::rapport`, los van de taal
