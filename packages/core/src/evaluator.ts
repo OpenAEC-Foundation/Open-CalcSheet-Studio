@@ -1,6 +1,7 @@
 import type { MathNode } from 'mathjs';
 import { math, isEenheidNaam } from './eenheden.js';
-import type { AstNode, ConditionalNode, EvaluatedNode, MatrixUitkomst, OpdrachtNode } from './types.js';
+import { decimalenNa, doelInStelsel, type Stelsel } from './eenheidstelsel.js';
+import type { AstNode, ConditionalNode, EvaluatedNode, InStelsel, MatrixUitkomst, OpdrachtNode } from './types.js';
 import { losStelselOp, rangVan, eigenSymmetrisch } from './matrixrekening.js';
 import { bouwDrieDScene } from './drieD.js';
 import { bouwIframe } from './iframeBlok.js';
@@ -1326,18 +1327,34 @@ export function evaluate(
   nodes: AstNode[],
   selectValues?: SelectValues,
   initialScope?: Scope,
+  opties: EvalOpties = {},
 ): EvaluatedNode[] {
   const scope: Scope = { ...(initialScope ?? {}) };
   const appModus = currentAngleMode;
+  const vorigStelsel = huidigStelsel;
+  huidigStelsel = opties.stelsel;
   const stand = nieuweStand();
   try {
+    for (const e of opties.eigenEenheden ?? []) maakEenheid(e.naam, e.uitdrukking, scope, stand);
     return evaluateNodes(nodes, scope, selectValues || {}, stand);
   } finally {
     // `#deg`, `#rad`, `#gra` gelden alleen in dit blad, en de eigen eenheden ook.
     currentAngleMode = appModus;
+    huidigStelsel = vorigStelsel;
     ruimEenhedenOp(stand);
   }
 }
+
+/** Wat de app bij het doorrekenen meegeeft (docs/superpowers/specs/2026-11-06-eenheden-design.md). */
+export interface EvalOpties {
+  /** Het eenhedenstelsel voor de weergave; zonder: alles in de eenheden van het blad. */
+  stelsel?: Stelsel;
+  /** Eigen eenheden die in het hele blad gelden, zoals die van het project. */
+  eigenEenheden?: { naam: string; uitdrukking: string }[];
+}
+
+/** Het stelsel van het blad dat nu doorgerekend wordt (zie evaluate). */
+let huidigStelsel: Stelsel | undefined;
 
 /**
  * Rekent een document door en geeft ook de scope aan het eind terug: de waarden
@@ -2026,10 +2043,12 @@ function buildSubstitution(
     const invulbaar =
       typeof val === 'number' || typeof val === 'string' || typeof val === 'boolean' || isUnit(val);
     if (!invulbaar) continue;
-    const formatted = formatInline(val, decimalen);
+    // In het eenhedenstelsel, net als de uitkomst: geen regel met gemengde eenheden.
+    const toon = inHetStelsel(val) ?? val;
+    const formatted = formatInline(toon, decimalen);
     // Wrap in parentheses if value has a unit (contains space) to preserve
     // operator precedence: h^2 → (500 mm)^2, not 500 mm^2
-    const wrapped = isUnit(val) ? `(${formatted})` : formatted;
+    const wrapped = isUnit(toon) ? `(${formatted})` : formatted;
     // Grenzen op letters en cijfers in Unicode-zin. `\b` kent alleen ASCII,
     // waardoor een naam die met een Griekse letter begint (γ_M, σ_m,d, ψ_0)
     // nooit werd ingevuld: de ingevulde formule toonde dan nog het symbool.
@@ -2056,6 +2075,7 @@ interface UnitComponent {
 
 interface MathUnit {
   toNumber: (unit: string) => number;
+  to: (unit: string) => MathUnit;
   formatUnits: () => string;
   units: UnitComponent[];
   value: number;
@@ -2370,19 +2390,91 @@ function matrixUitkomst(value: unknown, opmaak?: Opmaak): { tekst: string; matri
  * houdt de standaardopmaak, zodat wie de uitkomst leest hetzelfde getal krijgt.
  */
 function uitkomstVelden(value: unknown, opmaak?: Opmaak): {
-  result: string; unit: string; waarde?: number; matrix?: MatrixUitkomst; getoond?: string;
+  result: string; unit: string; waarde?: number; matrix?: MatrixUitkomst; getoond?: string; inStelsel?: InStelsel;
 } {
   const mat = matrixUitkomst(value);
   if (mat) {
     const getoond = opmaak ? matrixUitkomst(value, opmaak) : null;
-    return { result: mat.tekst, unit: mat.matrix.eenheid, matrix: (getoond ?? mat).matrix };
+    const inStelsel = stelselVelden(value, opmaak);
+    return { result: mat.tekst, unit: mat.matrix.eenheid, matrix: (getoond ?? mat).matrix, ...(inStelsel ? { inStelsel } : {}) };
   }
   const result = formatResult(value);
   const getoond = opmaak ? toonUitkomst(value, opmaak) : undefined;
+  const inStelsel = stelselVelden(value, opmaak);
   return {
     result,
     waarde: numeriek(value),
     unit: isUnit(value) ? simplifyUnitString(value) : '',
+    ...(getoond !== undefined && getoond !== result ? { getoond } : {}),
+    ...(inStelsel ? { inStelsel } : {}),
+  };
+}
+
+/**
+ * Een waarde in de eenheid van het stelsel, of `null` als hij blijft zoals hij is.
+ * Een vector of matrix gaat per element om, als er iets om te rekenen valt.
+ */
+function inHetStelsel(value: unknown): unknown | null {
+  const stelsel = huidigStelsel;
+  if (!stelsel) return null;
+  const omrekenen = (el: MathUnit): MathUnit | null => {
+    const doel = doelInStelsel(simplifyUnitString(el), stelsel);
+    if (!doel) return null;
+    try {
+      return el.to(doel);
+    } catch {
+      return null;
+    }
+  };
+  if (isUnit(value)) return omrekenen(value);
+  const d = afmetingen(value);
+  if (!d || d.length < 1 || d.length > 2) return null;
+  let omgezet = false;
+  const perElement = (el: unknown): unknown => {
+    const u = isUnit(el) ? omrekenen(el) : null;
+    if (u) omgezet = true;
+    return u ?? el;
+  };
+  const nieuw: unknown = math.map(value as never, perElement as never);
+  return omgezet ? nieuw : null;
+}
+
+/** De eerste eenheid in een waarde: van de waarde zelf, of van het eerste element met eenheid. */
+function eersteEenheid(value: unknown): string | null {
+  if (isUnit(value)) return simplifyUnitString(value);
+  const d = afmetingen(value);
+  if (!d) return null;
+  const rijen: unknown[][] = d.length === 1 ? [toArrayLike(value) ?? []] : alsRijen(value);
+  const el = rijen.flat().find(isUnit);
+  return el ? simplifyUnitString(el) : null;
+}
+
+/** Een vaste notatie houdt in het stelsel dezelfde relatieve nauwkeurigheid (decimalenNa). */
+function opmaakInStelsel(opmaak: Opmaak, bron: unknown, doel: unknown): Opmaak {
+  const b = eersteEenheid(bron);
+  const d = eersteEenheid(doel);
+  if (!b || !d) return opmaak;
+  const f = opmaak.formaat?.match(/^([FN])(\d*)$/i);
+  if (f) return { ...opmaak, formaat: f[1] + decimalenNa(f[2] === '' ? 2 : parseInt(f[2], 10), b, d) };
+  if (opmaak.decimalen !== null) return { ...opmaak, decimalen: decimalenNa(opmaak.decimalen, b, d) };
+  return opmaak;
+}
+
+/** De velden van een uitkomst in het stelsel (InStelsel), of `null` als hij blijft zoals hij is. */
+function stelselVelden(value: unknown, opmaak?: Opmaak): InStelsel | null {
+  const omgezet = inHetStelsel(value);
+  if (omgezet === null) return null;
+  const opmaakNa = opmaak ? opmaakInStelsel(opmaak, value, omgezet) : undefined;
+  const mat = matrixUitkomst(omgezet);
+  if (mat) {
+    const getoond = opmaakNa ? matrixUitkomst(omgezet, opmaakNa) : null;
+    return { result: mat.tekst, unit: mat.matrix.eenheid, matrix: (getoond ?? mat).matrix };
+  }
+  const result = formatResult(omgezet);
+  const getoond = opmaakNa ? toonUitkomst(omgezet, opmaakNa) : undefined;
+  return {
+    result,
+    unit: isUnit(omgezet) ? simplifyUnitString(omgezet) : '',
     ...(getoond !== undefined && getoond !== result ? { getoond } : {}),
   };
 }

@@ -14,7 +14,8 @@
  * Draaien:  node scripts/check-eenheidstelsel.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
-import { parse, evaluate, exprToLatex, render } from "../packages/core/dist/index.js";
+import { parse, evaluate, exprToLatex, render, grootheidVan, decimalenNa, STELSELS } from "../packages/core/dist/index.js";
+import { laadTemplate, reken } from "./lib/refcheck.mjs";
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -87,6 +88,74 @@ for (const bron of [".5", ".Opmerking zonder is-teken"]) {
 const html = render(evaluate(parse(".kipf = 1000 lbf")));
 meld(html.includes("kipf") && html.includes("lbf") && !html.includes(".kipf") && !html.includes("Error"),
   "de definitieregel staat in beeld als eenheid, zonder de punt", html.slice(0, 200));
+
+console.log("\nIndeling bij een grootheid");
+const INDELING = {
+  mm: "maat", in: "maat", m: "lengte", ft: "lengte",
+  "mm^2": "doorsnedeOppervlakte", "m^2": "oppervlakte",
+  "mm^3": "weerstandsmoment", "mm^4": "traagheidsmoment",
+  kN: "kracht", "kN m": "moment", "kN / m": "lijnlast",
+  "kN / m^2": "vlakbelasting", psf: "vlakbelasting",
+  "N / mm^2": "spanning", MPa: "spanning", psi: "spanning",
+  "kN / m^3": "volumegewicht", kg: "massa", degC: "temperatuur",
+  K: null, "K^-1": null, "1 / s": null,
+};
+for (const [eenheid, verwacht] of Object.entries(INDELING)) {
+  const g = grootheidVan(eenheid);
+  meld(g === verwacht, `${eenheid} → ${verwacht}`, g);
+}
+
+console.log("\nWeergave in US customary");
+const US = { stelsel: STELSELS.us };
+const inStelsel = (bron, naam) => node(bron, naam, US)?.inStelsel;
+const toont = (bron, naam, verwacht, wat) => {
+  const w = inStelsel(bron, naam);
+  meld(w?.result === verwacht, wat ?? `${bron.split("\n").pop()} → ${verwacht}`, JSON.stringify(w));
+};
+toont("L = 4.5 m", "L", "14.76 ft");
+toont("b = 4500 mm", "b", "177.2 in");
+toont("M = 10 kN*m", "M", "7.376 kip ft");
+toont("f = 235 N/mm^2", "f", "34.08 ksi");
+toont("T = 20 degC", "T", "68 degF");
+meld(inStelsel("dT = 20 K", "dT") === undefined, "een temperatuurverschil in K blijft staan");
+const v = inStelsel("v = [1; 2] m", "v");
+meld(/3\.281/.test(v?.result ?? "") && /6\.562/.test(v?.result ?? "") && /ft/.test(v?.result ?? "") && !/\bm\b/.test(v?.result ?? ""),
+  "een vector in m: elk element in ft", JSON.stringify(v));
+toont("z = 0 mm", "z", "0 in");
+toont("n = -4.5 m", "n", "-14.76 ft");
+const L45 = node("L = 4.5 m", "L", US);
+meld(L45?.result === "4.5 m" && L45?.waarde === 4.5, "de rekenwaarde zelf blijft 4.5 m", JSON.stringify({ result: L45?.result, waarde: L45?.waarde }));
+
+console.log("\nNotatie");
+const f2 = inStelsel("x = 1234.567 mm:F2", "x");
+meld(f2?.getoond === "48.605 in", "1234.567 mm:F2 → 48.605 in (een decimaal meer, zelfde nauwkeurigheid)", JSON.stringify(f2));
+meld(decimalenNa(2, "mm", "in") === 3, "decimalenNa(2, mm, in) = 3", decimalenNa(2, "mm", "in"));
+meld(decimalenNa(2, "in", "mm") === 1, "decimalenNa(2, in, mm) = 1", decimalenNa(2, "in", "mm"));
+
+console.log("\nGeen gemengde regel");
+const M = node("q = 0.9 kN/m\nL = 4 m\nM = q*L^2/8", "M", US);
+const htmlM = render([M]);
+meld(/klf/.test(htmlM) && /ft/.test(htmlM) && !/kN/.test(htmlM), "de ingevulde formule van M staat helemaal in klf en ft", htmlM.slice(0, 300));
+
+console.log("\nEigen eenheden van buiten het blad (het project)");
+const proj = alleNodes(evaluate(parse("F = 2 kipf\nG = F to kN", { eenheden: ["kipf"] }), {}, {},
+  { eigenEenheden: [{ naam: "kipf", uitdrukking: "1000 lbf" }] })).find((n) => n.name === "G");
+meld(proj?.result === "8.896 kN", "een eenheid van het project geldt in het blad: 2 kipf = 8.896 kN", proj?.result);
+meld((uitkomst("F = 2 kipf", "F") ?? "").startsWith("Error:"), "en daarna niet meer");
+
+console.log("\nModules");
+const PROJECT = { CC: 2, K_FI: 1, rekenwijze: 1 };
+for (const bestand of ["balklaag.ts", "ligger.ts"]) {
+  const tpl = laadTemplate(bestand);
+  const zonder = render(evaluate(parse(tpl), {}, PROJECT));
+  const leeg = render(evaluate(parse(tpl), {}, PROJECT, {}));
+  meld(zonder === leeg, `${bestand}: zonder stelsel dezelfde uitvoer als met {}`);
+  const basis = JSON.stringify(reken(tpl, {}, PROJECT).values);
+  for (const [naam, stelsel] of Object.entries(STELSELS)) {
+    const met = JSON.stringify(reken(tpl, {}, PROJECT, { stelsel }).values);
+    meld(met === basis, `${bestand}: met ${naam} precies dezelfde rekenwaarden, ook elke UC`);
+  }
+}
 
 if (fouten > 0) {
   console.error(`\nEenheden: ${fouten} afwijking(en).`);

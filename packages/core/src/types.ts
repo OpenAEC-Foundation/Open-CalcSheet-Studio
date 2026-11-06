@@ -390,6 +390,19 @@ export interface MatrixUitkomst {
   n: number;
 }
 
+/**
+ * Een uitkomst in de eenheid van het eenhedenstelsel (eenheidstelsel.ts). Alleen
+ * voor de weergave: `result`, `unit`, `waarde` en `getoond` blijven in de eenheid
+ * van het blad, want daar rekenen de beelden en de controles mee. Ontbreekt als het
+ * stelsel de waarde laat zoals hij is.
+ */
+export interface InStelsel {
+  result: string;
+  unit: string;
+  getoond?: string;
+  matrix?: MatrixUitkomst;
+}
+
 export interface EvaluatedAssignment {
   type: 'assignment';
   name: string;
@@ -411,6 +424,8 @@ export interface EvaluatedAssignment {
    * uitkomst leest (de UC in de projectboom) leest het getal, niet de weergave.
    */
   getoond?: string;
+  /** Zie InStelsel. */
+  inStelsel?: InStelsel;
   /**
    * Wat de regel toont (`#val`, `#noc`, `#nosub`, `#novar`); zonder
    * dit veld: formule, invulling en uitkomst (`#equ` met `#varsub`).
@@ -455,6 +470,8 @@ export interface EvaluatedVarDisplay {
   matrix?: MatrixUitkomst;
   /** Zie EvaluatedAssignment.getoond. */
   getoond?: string;
+  /** Zie InStelsel. */
+  inStelsel?: InStelsel;
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
