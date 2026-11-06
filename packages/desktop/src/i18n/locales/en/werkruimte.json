@@ -181,12 +181,24 @@
     "vervallenKeuze": "{{label}} — discontinued option, calculated as {{vervanger}}",
     "onbekendeKeuze": "{{waarde}} — unknown option",
     "groepen": {
+      "eenheden": "Units",
       "rekenwijze": "Calculation method",
       "project": "Project",
       "grondslagen": "Basis of design (NEN-EN 1990 + NB)",
       "wind": "Wind (NEN-EN 1991-1-4 + NB)"
     },
     "velden": {
+      "eenheden": {
+        "label": "Unit system",
+        "hint": "Every value is shown in the unit of its quantity, also in the bundled modules and on paper. Only the display changes: results and unity checks stay the same.",
+        "opties": {
+          "blad": "As written in the sheet",
+          "si-mm": "SI (mm)",
+          "si-m": "SI (m)",
+          "us": "US customary",
+          "eigen": "Custom"
+        }
+      },
       "rekenwijze": {
         "label": "Calculation method where the reference program differs",
         "hint": "The reference calculation is the calculation program we use today and is therefore the default; every result can be checked against reference sheets. The standard mode follows the Eurocode itself at the marked points — that branch cannot be checked against a reference and is there for the moment this program stands on its own. The chosen answer is always shown on the printout.",
@@ -262,6 +274,31 @@
           "3": "III — Built-up area (z₀ = 0,5 · z_min = 7)"
         }
       }
+    },
+    "eenheden": {
+      "eigenEenheden": "Custom units",
+      "eigenEenhedenHint": "Available in every sheet of this project, for example kipf = 1000 lbf. A sheet can define its own with .name = expression.",
+      "naam": "Name",
+      "uitdrukking": "Definition",
+      "verwijder": "Remove",
+      "erbij": "Add a unit",
+      "grootheden": {
+        "lengte": "Length (spans, heights)",
+        "maat": "Dimension (sections, thickness, deflection)",
+        "oppervlakte": "Area",
+        "doorsnedeOppervlakte": "Section area",
+        "weerstandsmoment": "Section modulus",
+        "traagheidsmoment": "Moment of inertia",
+        "kracht": "Force",
+        "moment": "Moment",
+        "lijnlast": "Line load",
+        "vlakbelasting": "Area load",
+        "spanning": "Stress and modulus of elasticity",
+        "volumegewicht": "Unit weight",
+        "massa": "Mass"
+      },
+      "naamVoorbeeld": "kipf",
+      "uitdrukkingVoorbeeld": "1000 lbf"
     }
   },
   "windkaart": {

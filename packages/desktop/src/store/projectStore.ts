@@ -777,7 +777,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       verborgen: {},
       projectNaam: nieuweProjectNaam(),
       bestandspad: null,
-      gegevens: legeGegevens(),
+      // Het eenhedenstelsel uit Instellingen, tab Units; daarna hoort het bij het project.
+      gegevens: { ...legeGegevens(), eenheden: stelselVoorNieuw },
       exemplaren: [],
       rapport: nieuwRapport(),
       activeId: PROJECT_ID,
@@ -834,6 +835,20 @@ function schedulePersist(snapshot: Persisted) {
     void setSetting(STORE_KEY, snapshot);
     timer = null;
   }, 400);
+}
+
+/** Het eenhedenstelsel voor een nieuw project (Instellingen, tab Units). */
+let stelselVoorNieuw = "blad";
+void getSetting<{ stelsel?: string }>("units", {})
+  .then((u) => {
+    if (u?.stelsel) stelselVoorNieuw = u.stelsel;
+  })
+  .catch(() => {});
+if (typeof window !== "undefined") {
+  window.addEventListener("units-changed", (e) => {
+    const d = (e as CustomEvent<{ stelsel?: string }>).detail;
+    if (d?.stelsel) stelselVoorNieuw = d.stelsel;
+  });
 }
 
 void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {

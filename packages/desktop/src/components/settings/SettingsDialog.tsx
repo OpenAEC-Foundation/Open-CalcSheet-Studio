@@ -44,6 +44,12 @@ export interface UnitsSettings {
   defaultForce: "N" | "kN" | "MN";
   defaultStress: "Pa" | "kPa" | "MPa" | "GPa" | "N/mm^2";
   returnAngleUnits: boolean;
+  /**
+   * Het eenhedenstelsel voor een nieuw project (store/projectEenheden.ts). Het stelsel
+   * zelf hoort bij het project; dit is alleen de standaard. defaultLength, defaultForce en
+   * defaultStress blijven voor de API, maar het stelsel vervangt ze.
+   */
+  stelsel?: "blad" | "si-mm" | "si-m" | "us";
 }
 
 export const UNITS_DEFAULTS: UnitsSettings = {
@@ -52,6 +58,7 @@ export const UNITS_DEFAULTS: UnitsSettings = {
   defaultForce: "kN",
   defaultStress: "MPa",
   returnAngleUnits: false,
+  stelsel: "blad",
 };
 
 export function applyTheme(theme?: string) {
@@ -447,46 +454,20 @@ function UnitsTabContent({
 
       <h3 style={{ marginTop: 16 }}>{t("units.defaults")}</h3>
       <div className="settings-row">
-        <span className="settings-label">{t("units.length")}</span>
+        <span className="settings-label">{t("units.stelsel")}</span>
         <ThemedSelect
-          value={units.defaultLength}
+          value={units.stelsel ?? "blad"}
           options={[
-            { value: "mm", label: "mm" },
-            { value: "cm", label: "cm" },
-            { value: "m", label: "m" },
+            { value: "blad", label: t("units.stelsels.blad") },
+            { value: "si-mm", label: "SI (mm)" },
+            { value: "si-m", label: "SI (m)" },
+            { value: "us", label: "US customary" },
           ]}
-          onChange={(v) => patch({ defaultLength: v as UnitsSettings["defaultLength"] })}
-          style={{ width: 120 }}
+          onChange={(v) => patch({ stelsel: v as UnitsSettings["stelsel"] })}
+          style={{ width: 200 }}
         />
       </div>
-      <div className="settings-row">
-        <span className="settings-label">{t("units.force")}</span>
-        <ThemedSelect
-          value={units.defaultForce}
-          options={[
-            { value: "N", label: "N" },
-            { value: "kN", label: "kN" },
-            { value: "MN", label: "MN" },
-          ]}
-          onChange={(v) => patch({ defaultForce: v as UnitsSettings["defaultForce"] })}
-          style={{ width: 120 }}
-        />
-      </div>
-      <div className="settings-row">
-        <span className="settings-label">{t("units.stress")}</span>
-        <ThemedSelect
-          value={units.defaultStress}
-          options={[
-            { value: "Pa", label: "Pa" },
-            { value: "kPa", label: "kPa" },
-            { value: "MPa", label: "MPa" },
-            { value: "GPa", label: "GPa" },
-            { value: "N/mm^2", label: "N/mm²" },
-          ]}
-          onChange={(v) => patch({ defaultStress: v as UnitsSettings["defaultStress"] })}
-          style={{ width: 120 }}
-        />
-      </div>
+      <p className="settings-description">{t("units.stelselHint")}</p>
     </div>
   );
 }

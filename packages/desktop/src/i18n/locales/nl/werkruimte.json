@@ -181,12 +181,24 @@
     "vervallenKeuze": "{{label}} — vervallen keuze, gerekend als {{vervanger}}",
     "onbekendeKeuze": "{{waarde}} — onbekende keuze",
     "groepen": {
+      "eenheden": "Eenheden",
       "rekenwijze": "Rekenwijze",
       "project": "Project",
       "grondslagen": "Grondslagen (NEN-EN 1990 + NB)",
       "wind": "Wind (NEN-EN 1991-1-4 + NB)"
     },
     "velden": {
+      "eenheden": {
+        "label": "Eenhedenstelsel",
+        "hint": "Elke waarde staat in de eenheid van zijn grootheid, ook in de meegeleverde modules en op papier. Alleen de weergave verandert: uitkomsten en unity checks blijven gelijk.",
+        "opties": {
+          "blad": "Zoals in het blad",
+          "si-mm": "SI (mm)",
+          "si-m": "SI (m)",
+          "us": "US customary",
+          "eigen": "Eigen keuze"
+        }
+      },
       "rekenwijze": {
         "label": "Rekenwijze bij een verschil met het referentieprogramma",
         "hint": "de referentie-uitwerking is het rekenprogramma dat we vandaag hanteren en is daarom de standaard; elke uitkomst is tegen referentiebladen na te rekenen. De norm-stand rekent op de gemarkeerde punten volgens de Eurocode zelf — die tak is niet tegen een referentie te toetsen en staat er voor het moment dat dit programma op eigen benen staat. Het gekozen antwoord staat altijd op de afdruk.",
@@ -262,6 +274,31 @@
           "3": "III — Bebouwd gebied (z₀ = 0,5 · z_min = 7)"
         }
       }
+    },
+    "eenheden": {
+      "eigenEenheden": "Eigen eenheden",
+      "eigenEenhedenHint": "Te gebruiken in elk blad van dit project, bijvoorbeeld kipf = 1000 lbf. Een blad kan er zelf een maken met .naam = uitdrukking.",
+      "naam": "Naam",
+      "uitdrukking": "Definitie",
+      "verwijder": "Verwijder",
+      "erbij": "Eenheid erbij",
+      "grootheden": {
+        "lengte": "Lengte (overspanning, hoogte)",
+        "maat": "Maat (doorsnede, dikte, doorbuiging)",
+        "oppervlakte": "Oppervlakte",
+        "doorsnedeOppervlakte": "Doorsnede-oppervlakte",
+        "weerstandsmoment": "Weerstandsmoment",
+        "traagheidsmoment": "Traagheidsmoment",
+        "kracht": "Kracht",
+        "moment": "Moment",
+        "lijnlast": "Lijnlast",
+        "vlakbelasting": "Vlakbelasting",
+        "spanning": "Spanning en elasticiteitsmodulus",
+        "volumegewicht": "Volumegewicht",
+        "massa": "Massa"
+      },
+      "naamVoorbeeld": "kipf",
+      "uitdrukkingVoorbeeld": "1000 lbf"
     }
   },
   "windkaart": {

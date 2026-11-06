@@ -169,3 +169,73 @@
   background: var(--theme-hover);
   color: var(--theme-text);
 }
+
+/* ─── Eenheden (EenhedenEditor.tsx) ───────────────────────────── */
+
+.pg-eenheden {
+  margin: calc(-1 * var(--oa-space-sm)) 0 var(--oa-space-md);
+}
+
+/* Bij "Eigen keuze": per grootheid een keuze, twee naast elkaar waar het past. */
+.pg-eenheden-eigen {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0 var(--oa-space-md);
+}
+
+.pg-veld-smal .pg-label {
+  font-size: var(--oa-size-body);
+  font-weight: 400;
+  color: var(--theme-text-secondary);
+}
+
+.pg-eenheden-lijst {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pg-eenheid-rij {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 2fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.pg-eenheid-rij input {
+  height: 30px;
+  padding: 0 8px;
+  font-family: var(--oa-font-mono);
+  font-size: var(--oa-size-body);
+  color: var(--theme-text);
+  background: var(--oa-field);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-small);
+}
+
+.pg-eenheid-rij input:focus {
+  outline: none;
+  border-color: var(--oa-focus);
+}
+
+.pg-eenheid-rij button,
+.pg-eenheid-erbij {
+  height: 30px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: var(--oa-size-body);
+  color: var(--theme-text);
+  background: var(--theme-bg-lighter);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-small);
+  cursor: default;
+}
+
+.pg-eenheid-erbij {
+  align-self: flex-start;
+}
+
+.pg-eenheid-rij button:hover,
+.pg-eenheid-erbij:hover {
+  background: var(--theme-hover);
+}

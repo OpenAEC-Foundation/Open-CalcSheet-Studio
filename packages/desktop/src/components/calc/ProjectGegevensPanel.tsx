@@ -4,6 +4,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
 import { PROJECT_VELDEN, kFiVoor, keuzesVoor, vervallenKeuze, type Keuze, type VeldDef } from "../../store/projectGegevens";
 import WindAreaMap from "./WindAreaMap";
+import EenhedenEditor from "./EenhedenEditor";
 import "./ProjectGegevensPanel.css";
 
 /**
@@ -14,6 +15,7 @@ import "./ProjectGegevensPanel.css";
  * toont de tekst uit de store.
  */
 const GROEP_SLEUTELS: Record<string, string> = {
+  "Units": "eenheden",
   "Calculation method": "rekenwijze",
   "Project": "project",
   "Basis of design (NEN-EN 1990 + NB)": "grondslagen",
@@ -143,6 +145,7 @@ export default function ProjectGegevensPanel() {
                 </span>
               )}
             </label>
+            {veld.naam === "eenheden" && <EenhedenEditor />}
             {veld.naam === "windgebied" && (
               <div className="pg-windkaart">
                 <button
