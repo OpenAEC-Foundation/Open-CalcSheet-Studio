@@ -36,10 +36,10 @@ moment als kip·ft, en wat je in de tekening typt, gaat terug in de eenheid van 
 **Bestanden:** `packages/core/src/eenheidstelsel.ts`, `packages/core/src/index.ts`,
 `scripts/check-eenheidstelsel.mjs`, `packages/desktop/src/components/calc/EenhedenEditor.tsx`.
 
-- [ ] Test: `omrekenen(4500, "mm", "in")` ≈ 177,165; `eenheidUitBeeld("kN/m²")` is
+- [x] Test: `omrekenen(4500, "mm", "in")` ≈ 177,165; `eenheidUitBeeld("kN/m²")` is
   `kN/m^2`, `"kNm"` is `kN m`, `"kN/m¹"` en `"kN/m1"` zijn `kN/m`; `eenheidInBeeld` zoals
   in EenhedenEditor (`kN / m^2` → `kN/m²`, `kip ft` → `kip·ft`).
-- [ ] `omrekenen`, `eenheidUitBeeld` en `eenheidInBeeld` in `eenheidstelsel.ts`, met export;
+- [x] `omrekenen`, `eenheidUitBeeld` en `eenheidInBeeld` in `eenheidstelsel.ts`, met export;
   EenhedenEditor gebruikt die uit de kern.
 
 ## Taak 2: het hulpmiddel voor de beelden
@@ -47,32 +47,32 @@ moment als kip·ft, en wat je in de tekening typt, gaat terug in de eenheid van 
 **Bestanden:** `packages/desktop/src/components/calc/beeldEenheden.ts` (nieuw),
 `scripts/check-eenheden-beelden.mjs` (nieuw), `designerKit.tsx`.
 
-- [ ] Test (`check-eenheden-beelden.mjs`):
+- [x] Test (`check-eenheden-beelden.mjs`):
   - zonder stelsel: `eenheid("kNm")` is `kNm`, `waarde` en `decimalen` ongewijzigd;
   - US: 4500 mm → 177,165 in, 1 decimaal bij 0 in mm; 12 kNm → 8,851 kip·ft;
     `invoer(4500, "mm")` is `177.165`, `terug("12", "mm")` is 304,8;
   - een eenheid die het stelsel niet kent (`"mm/kN"`, `"°"`, `"min"`) blijft;
   - SI (m): 4500 mm → 4,5 m.
-- [ ] `beeldEenheden(stelsel)` met `doel`, `eenheid`, `waarde`, `decimalen`, `invoer`, `terug`.
-- [ ] `useBeeldEenheden()` in de kit, en `eenheden` op `DesignerCtx`.
-- [ ] `Dim` en `Force` krijgen `eenheid`: het getal in het stelsel, de eenheid erachter
+- [x] `beeldEenheden(stelsel)` met `doel`, `eenheid`, `waarde`, `decimalen`, `invoer`, `terug`.
+- [x] `useBeeldEenheden()` in de kit, en `eenheden` op `DesignerCtx`.
+- [x] `Dim` en `Force` krijgen `eenheid`: het getal in het stelsel, de eenheid erachter
   zodra hij omrekent, het bewerkveld in het stelsel en terug in de bron. `Force` neemt
   `unit` als bron.
 
 ## Taak 3: de beelden van de modules
 
-- [ ] **Ligger:** `Dim` in m, `Force` vanzelf, de `Ro`-teksten (m, kNm) via het hulpmiddel.
-- [ ] **Tweepaalspoer:** `Dim` in mm; in `poerTekening.ts` een `maat`-functie in de
+- [x] **Ligger:** `Dim` in m, `Force` vanzelf, de `Ro`-teksten (m, kNm) via het hulpmiddel.
+- [x] **Tweepaalspoer:** `Dim` in mm; in `poerTekening.ts` een `maat`-functie in de
   teksten voor de maatlijnen en z, d (de afdruk, zonder knoppen).
-- [ ] **Doorsnede:** `Dim` in mm, de invoervelden (`rij`) in het stelsel met hun eenheid
+- [x] **Doorsnede:** `Dim` in mm, de invoervelden (`rij`) in het stelsel met hun eenheid
   ernaast; in `doorsnedeTekening.ts` de maten en de spanningen in het stelsel.
-- [ ] **Balklaag:** de eigen `Dim` in mm, de invoervelden (mm, kN/m², kN) en alle vaste
+- [x] **Balklaag:** de eigen `Dim` in mm, de invoervelden (mm, kN/m², kN) en alle vaste
   teksten met kN, kN/m, kNm en mm via het hulpmiddel.
 
 ## Taak 4: nakijken
 
-- [ ] `npm run check` (het aantal controles in README.md en README.nl.md: 66).
-- [ ] In de app (headless): US customary, ligger en doorsnede: maten in in/ft, een maat
+- [x] `npm run check` (het aantal controles in README.md en README.nl.md: 66).
+- [x] In de app (headless): US customary, ligger en doorsnede: maten in in/ft, een maat
   typen komt in mm in het exemplaar, zonder stelsel alles als voorheen.
-- [ ] `docs/CHANGELOG.md`.
-- [ ] Nakijken door een tweede paar ogen, dan een PR.
+- [x] `docs/CHANGELOG.md`.
+- [x] Nakijken door een tweede paar ogen, dan een PR.
