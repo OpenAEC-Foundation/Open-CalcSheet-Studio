@@ -139,6 +139,7 @@ export async function maakKaartbeeld(
   // Vaste maten: de tegels hebben op elk beeld dezelfde pixelgrootte.
   const fs = 20;
 
+  let waterLabel: { x: number; y: number } | undefined;
   if (opties.water) {
     const a = tegelPositie(p, zoom);
     const w = tegelPositie(opties.water.punt, zoom);
@@ -178,14 +179,18 @@ export async function maakKaartbeeld(
     }
     c.restore();
     // Het label blijft altijd binnen het beeld, ook voor water aan de rand of daarbuiten.
+    // Het wordt na de speld getekend (zie onder), zodat de speld er niet overheen valt.
     c.font = lettertype(fs);
     const halve = c.measureText(opties.water.label).width / 2 + fs * 0.3;
     const lx = Math.min(Math.max(wx, halve), k.breedte - halve);
-    const ly = Math.min(Math.max(wy - fs * 0.8, fs * 1.5), k.hoogte - fs * 4);
-    tekenLabel(c, opties.water.label, lx, ly, "center", fs);
+    let ly = Math.min(Math.max(wy - fs * 0.8, fs * 1.5), k.hoogte - fs * 4);
+    // Ligt het water vlak bij de speld, dan staat het label boven de kop van de speld.
+    if (Math.hypot(wx - mx, wy - my) <= 40) ly = Math.max(my - 52 - fs * 0.6, fs * 1.5);
+    waterLabel = { x: lx, y: ly };
   }
 
   tekenSpeld(c, mx, my, 52);
+  if (opties.water && waterLabel) tekenLabel(c, opties.water.label, waterLabel.x, waterLabel.y, "center", fs);
 
   const marge = fs * 0.6;
   const balk = schaalbalk(p.lat, zoom, k.breedte * 0.3);

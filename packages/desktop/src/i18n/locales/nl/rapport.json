@@ -389,7 +389,8 @@
       },
       "keuze": "(keuze van de constructeur)",
       "water": "Afstand tot open water",
-      "geenWater": "geen open water binnen 10 km",
+      "geenWater": "geen open water binnen {{straal}}",
+      "kust": "kust",
       "kaart": "Kaart",
       "bron": "© OpenStreetMap contributors, {{datum}}"
     },

@@ -225,7 +225,13 @@ console.log("\nDe regel Afstand tot open water");
   meld(w(plas, us, "en") === "2,690 ft (Noorderplas)", "en, US: 2,690 ft (Noorderplas)", w(plas, us, "en"));
   meld(w(plas, us, "nl") === "2.690 ft (Noorderplas)", "nl, US: 2.690 ft (Noorderplas)", w(plas, us, "nl"));
   meld(w(null, si, "nl") === "geen open water binnen 10 km", "null in nl: geen open water binnen 10 km", w(null, si, "nl"));
-  meld(w(null, us, "en") === "no open water within 10 km", "null in en: no open water within 10 km", w(null, us, "en"));
+  meld(w(null, us, "en") === "no open water within 6.2 mi", "null in en, US: no open water within 6.2 mi", w(null, us, "en"));
+  meld(w(null, si, "en") === "no open water within 10 km", "null in en, SI: no open water within 10 km", w(null, si, "en"));
+  const kustW = { afstand: 3200, naam: "", punt: { lat: 52.09, lon: 5.12 }, soort: "kust" };
+  meld(w(kustW, si, "nl") === "3,2 km (kust)", "kust zonder naam in nl: 3,2 km (kust)", w(kustW, si, "nl"));
+  meld(w(kustW, si, "en") === "3.2 km (coast)", "kust zonder naam in en: 3.2 km (coast)", w(kustW, si, "en"));
+  meld(w({ ...kustW, naam: "Noordzee" }, si, "nl") === "3,2 km (Noordzee, kust)", "kust met naam in nl: 3,2 km (Noordzee, kust)", w({ ...kustW, naam: "Noordzee" }, si, "nl"));
+  meld(w({ ...kustW, naam: "North Sea" }, si, "en") === "3.2 km (North Sea, coast)", "kust met naam in en: 3.2 km (North Sea, coast)", w({ ...kustW, naam: "North Sea" }, si, "en"));
   meld(w({ ...plas, naam: "" }, si, "nl") === "820 m", "zonder naam alleen de afstand", w({ ...plas, naam: "" }, si, "nl"));
 }
 
@@ -248,6 +254,10 @@ console.log("\nDe situatie in het rapport");
   const metWater = { ...goed, water: { afstand: 120, naam: "Vecht", punt: { lat: 52.09, lon: 5.12 } } };
   meld(toon(normaliseerSituatie(metWater)) === toon(metWater), "het water blijft behouden", toon(normaliseerSituatie(metWater)));
   meld(!("water" in normaliseerSituatie({ ...goed, water: { afstand: "ver" } })), "een kapot water valt weg");
+  const kustSit = { ...goed, water: { afstand: 3200, naam: "", punt: { lat: 52.09, lon: 5.12 }, soort: "kust" } };
+  meld(toon(normaliseerSituatie(kustSit)) === toon(kustSit), "water.soort kust blijft behouden", toon(normaliseerSituatie(kustSit)));
+  const vreemd = normaliseerSituatie({ ...kustSit, water: { ...kustSit.water, soort: "zee" } });
+  meld(vreemd.water !== null && !("soort" in vreemd.water) && vreemd.water.afstand === 3200, "een onbekende water.soort valt weg, het water blijft");
   const gemeten = { ...goed, water: null };
   const nulTerug = normaliseerSituatie(gemeten);
   meld(nulTerug !== undefined && "water" in nulTerug && nulTerug.water === null && toon(nulTerug) === toon(gemeten), "water: null (gemeten, geen open water) blijft behouden", toon(nulTerug));
@@ -304,12 +314,15 @@ console.log("\nOpen water zoeken");
   const w = dichtstbijzijndWater(p, fixture);
   meld(w !== null && Math.abs(w.afstand - 800) <= 2 && w.naam === "Testmeer", "het meer op 800 m, met zijn naam (vijver, sloot en kust tellen niet)", toon(w));
   meld(dichtstbijzijndWater(p, { elements: [] }) === null, "een leeg antwoord geeft null");
-  meld(dichtstbijzijndWater(p, null) === null && dichtstbijzijndWater(p, "kapot") === null, "een kapot antwoord geeft null");
+  const geeftFout = (x) => { try { dichtstbijzijndWater(p, x); return false; } catch { return true; } };
+  meld(geeftFout({}) && geeftFout(null) && geeftFout("kapot") && geeftFout({ elements: "x" }), "een antwoord zonder elements-lijst geeft een fout (geen 'geen water')");
+  meld(dichtstbijzijndWater(p, { elements: [{ type: "node", id: 1 }] }) === null, "elements zonder geldige kandidaten geeft null");
   const midden = dichtstbijzijndWater({ lat: 52, lon: 5 + 1200 / (111195 * Math.cos(52 * Math.PI / 180)) }, fixture);
   meld(midden !== null && midden.afstand === 0 && midden.naam === "Testmeer", "midden in het meer is de afstand 0", toon(midden));
   const zonderMeer = { elements: fixture.elements.filter((e) => e.id !== 1003) };
   const kust = dichtstbijzijndWater(p, zonderMeer);
   meld(kust !== null && Math.abs(kust.afstand - 3000) <= 2 && kust.naam === "", "zonder meer: de kust op 3 km, zonder naam", toon(kust));
+  meld(kust !== null && kust.soort === "kust" && w.soort === undefined, "de kust krijgt soort kust, een meer niet", toon(kust));
   const stuw = dichtstbijzijndWater(p, { elements: fixture.elements.filter((e) => e.id === 2001 || e.id === 1001) });
   meld(stuw !== null && Math.abs(stuw.afstand - 5000) <= 2 && stuw.naam === "Teststuwmeer", "een relation met twee ringdelen: het stuwmeer op 5 km", toon(stuw));
   const q = waterVraag(p, 10000);
@@ -326,7 +339,7 @@ console.log("\nOpen water zoeken");
   try { await meetWater(p, async () => ({ ok: false, status: 429, json: async () => ({}) })); } catch (e) { fout = e.message; }
   meld(fout === "HTTP 429", "een HTTP-fout geeft een Error met de status", fout);
 
-  // Fixronde 1: de regel voor open water, gaten en fouten van de dienst
+  // De regel voor open water: oppervlakte, soort, eilanden in een meer en fouten van de dienst
   const RAD = Math.PI / 180;
   const pm = (oost, noord) => ({ lat: 52 + noord / 111195, lon: 5 + oost / (111195 * Math.cos(52 * RAD)) });
   const ring = (w, o, z, n) => [pm(w, z), pm(o, z), pm(o, n), pm(w, n), pm(w, z)];

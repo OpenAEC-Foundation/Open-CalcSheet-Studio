@@ -128,6 +128,7 @@ export default function LocatieKiezer() {
     async (p: Punt) => {
       const nummer = ++kaartNummer.current;
       setKaartenMelding(null);
+      setWaterMelding(null);
       setKaartenBezig(true);
       // Een lopende meting is hiermee achterhaald: de kaarten worden opnieuw gemaakt.
       waterNummer.current++;
@@ -190,14 +191,22 @@ export default function LocatieKiezer() {
       try {
         const water = await meetWater(p);
         if (verlopen()) return;
-        const omgeving = KAARTEN.find((k) => k.id === "omgeving")!;
-        const beeld = await beeldVan(p, omgeving, eenhedenRef.current, water);
-        if (verlopen()) return;
-        werkRapportBij((r) =>
-          r.situatie
-            ? { ...r, situatie: { ...r.situatie, water, kaarten: r.situatie.kaarten.map((k) => (k.id === "omgeving" ? beeld : k)) } }
-            : r,
-        );
+        // Zonder water en zonder lijn in de kaart verandert er aan de kaarten niets.
+        const hadLijn = !!useProjectStore.getState().rapport.situatie?.water;
+        if (!water && !hadLijn) {
+          werkRapportBij((r) => (r.situatie ? { ...r, situatie: { ...r.situatie, water: null } } : r));
+          setWaterMelding(null);
+          return;
+        }
+        // Een lijn erbij of eraf haalt alle drie de kaarten opnieuw (tegels van vandaag), dus
+        // ook de datum is van vandaag; alles komt in één wijziging van het rapport.
+        const kaarten: Kaartbeeld[] = [];
+        for (const k of KAARTEN) {
+          kaarten.push(await beeldVan(p, k, eenhedenRef.current, water));
+          if (verlopen()) return;
+        }
+        werkRapportBij((r) => (r.situatie ? { ...r, situatie: { ...r.situatie, water, kaarten, datum: vandaag() } } : r));
+        setWaterMelding(null);
       } catch {
         if (nummer !== waterNummer.current) return;
         setWaterMelding(t("gegevens.situatie.waterMislukt"));
@@ -207,6 +216,13 @@ export default function LocatieKiezer() {
     },
     [t, werkRapportBij],
   );
+
+  // Een melding over een meting hoort bij het punt waarvoor hij gemaakt is.
+  const puntLat = punt?.lat;
+  const puntLon = punt?.lon;
+  useEffect(() => {
+    setWaterMelding(null);
+  }, [puntLat, puntLon]);
 
   const zetPunt = useCallback(
     (p: Punt, naam?: string) => {
@@ -341,6 +357,11 @@ export default function LocatieKiezer() {
           <button type="button" className="lk-knop" onClick={() => void meetAfstand(punt)} disabled={waterBezig || kaartenBezig}>
             {waterBezig ? t("gegevens.situatie.waterBezig") : t("gegevens.situatie.waterMeten")}
           </button>
+        </div>
+      )}
+      {punt && situatie && stand === "actueel" && situatie.water !== undefined && (
+        <div className="lk-coord" role="status">
+          {waterTekst(situatie.water, eenheden, i18n.language, i18next.getFixedT(i18n.language, "rapport"))}
         </div>
       )}
       {waterMelding && <div className="lk-melding" role="status">{waterMelding}</div>}

@@ -5,6 +5,9 @@
  *
  * Wat telt als open water: de kustlijn (lijn); natuurlijk water van een soort die geen
  * vijver, sloot of bassin is, of zonder soort, van minstens 1 ha; baaien en zeeën (vlak).
+ *
+ * Beperking: de zoekopdracht meet met `around` naar de lijnen van het water. Een punt diep in
+ * een zeer groot water (meer dan de zoekstraal van de oever) geeft daarom geen treffer.
  */
 import { dichtstePuntOpLijn, oppervlakteM2, puntInRing } from "./afstand.ts";
 import type { Punt } from "./punt.ts";
@@ -13,6 +16,9 @@ import type { Water } from "../rapport/situatie.ts";
 const BASIS = "https://overpass-api.de/api/interpreter";
 const TIJDSLIMIET_MS = 40000;
 const MIN_OPPERVLAKTE_M2 = 10000;
+
+/** De straal in meters waarbinnen naar open water wordt gezocht. */
+export const ZOEKSTRAAL_M = 10000;
 
 /** Soorten natuurlijk water die open water zijn; zonder soort telt het ook (mits groot genoeg). Alles anders niet. */
 const OPEN_WATER = ["lake", "reservoir", "river", "lagoon", "oxbow", "canal"];
@@ -95,6 +101,8 @@ interface Kandidaat {
   /** De binnenringen (eilanden) van een vlak. */
   binnen: Punt[][];
   vlak: boolean;
+  /** Het is de kustlijn. */
+  kust?: boolean;
 }
 
 function tekst(x: unknown): string {
@@ -132,7 +140,7 @@ function kandidaat(el: Los): Kandidaat | undefined {
   buitenLijnen = buitenLijnen.filter((l) => l.length > 0);
   if (buitenLijnen.length === 0) return undefined;
 
-  if (kust) return { naam, buiten: buitenLijnen, binnen: [], vlak: false };
+  if (kust) return { naam, buiten: buitenLijnen, binnen: [], vlak: false, kust: true };
   const buitenRingen = buitenLijnen.filter(gesloten);
   if (buitenRingen.length === 0) {
     // een zee of baai die als open lijn is getekend telt als lijn; een meer zonder ring niet
@@ -148,7 +156,9 @@ function kandidaat(el: Los): Kandidaat | undefined {
 /**
  * Het dichtstbijzijnde open water uit een Overpass-antwoord (`out geom;`), of null.
  * Ligt het punt in een vlak (en niet in een eiland erin), dan is de afstand 0.
- * Een antwoord met een `remark` over een runtime error, time-out of geheugen geeft een Error.
+ * Een antwoord met een `remark` over een runtime error, time-out of geheugen geeft een Error,
+ * en een antwoord zonder `elements`-lijst ook (dat is geen antwoord van de dienst). Alleen een
+ * lege lijst of zonder geldige kandidaten betekent: geen open water.
  */
 export function dichtstbijzijndWater(p: Punt, antwoord: unknown): Water | null {
   // Overpass meldt een time-out of te weinig geheugen met HTTP 200, een remark en lege of halve elements
@@ -157,7 +167,7 @@ export function dichtstbijzijndWater(p: Punt, antwoord: unknown): Water | null {
     throw new Error(`Overpass: ${remark}`);
   }
   const elementen = object(antwoord)?.elements;
-  if (!Array.isArray(elementen)) return null;
+  if (!Array.isArray(elementen)) throw new Error("Overpass: onverwacht antwoord");
   let beste: Water | null = null;
   for (const el of elementen) {
     const o = object(el);
@@ -176,13 +186,13 @@ export function dichtstbijzijndWater(p: Punt, antwoord: unknown): Water | null {
         }
       }
     }
-    if (Number.isFinite(afstand) && (!beste || afstand < beste.afstand)) beste = { afstand, naam: k.naam, punt };
+    if (Number.isFinite(afstand) && (!beste || afstand < beste.afstand)) beste = { afstand, naam: k.naam, punt, ...(k.kust ? { soort: "kust" as const } : {}) };
   }
   return beste;
 }
 
 /**
- * Meet het dichtstbijzijnde open water binnen 10 km: één POST naar Overpass. Een HTTP-fout geeft
+ * Meet het dichtstbijzijnde open water binnen de zoekstraal (10 km): één POST naar Overpass. Een HTTP-fout geeft
  * een Error met de status; geen antwoord binnen de tijdslimiet (standaard 40 s) geeft ook een Error.
  */
 export async function meetWater(
@@ -193,7 +203,7 @@ export async function meetWater(
   const antwoord = await f(BASIS, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `data=${encodeURIComponent(waterVraag(p, 10000))}`,
+    body: `data=${encodeURIComponent(waterVraag(p, ZOEKSTRAAL_M))}`,
     signal: AbortSignal.timeout(tijdslimietMs),
   });
   if (!antwoord.ok) throw new Error(`HTTP ${antwoord.status}`);
