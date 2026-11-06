@@ -1,5 +1,7 @@
-import { create, all, type MathJsInstance, type MathNode } from 'mathjs';
-import type { AstNode, ConditionalNode, EvaluatedNode, MatrixUitkomst, OpdrachtNode } from './types.js';
+import type { MathNode } from 'mathjs';
+import { math, isEenheidNaam } from './eenheden.js';
+import { decimalenNa, doelInStelsel, type Stelsel } from './eenheidstelsel.js';
+import type { AstNode, ConditionalNode, EvaluatedNode, InStelsel, MatrixUitkomst, OpdrachtNode } from './types.js';
 import { losStelselOp, rangVan, eigenSymmetrisch } from './matrixrekening.js';
 import { bouwDrieDScene } from './drieD.js';
 import { bouwIframe } from './iframeBlok.js';
@@ -17,7 +19,6 @@ import {
   doorsnedeGrootheden, doorsnedeDeel, doorsnedePlastisch, doorsnedeStatisch, doorsnedeSvgPunten,
 } from './doorsnede.js';
 
-const math: MathJsInstance = create(all, {});
 
 /**
  * Trigonometric input mode. Default is `rad` (mathjs native). When set to
@@ -1291,14 +1292,32 @@ function ontleedExpr(expr: string): MathNode {
 
 /** Berekent een expressie met de betekenis in de rekentaal (zie vertaalRekentaal). */
 function reken(expr: string, scope: Scope): unknown {
-  let c = gecompileerd.get(expr);
+  // Bij het compileren legt mathjs vast of een naam een eenheid is. Met eigen
+  // eenheden hangt dat van het blad af; die horen dus in de sleutel.
+  const sleutel = eigenSleutel ? `${eigenSleutel} ${expr}` : expr;
+  let c = gecompileerd.get(sleutel);
   if (!c) {
     c = vertaalRekentaal(ontleedExpr(expr)).compile();
     if (gecompileerd.size >= CACHE_MAX) gecompileerd.clear();
-    gecompileerd.set(expr, c);
+    gecompileerd.set(sleutel, c);
   }
   return c.evaluate(scope);
 }
+
+/** De eigen eenheden die nu bestaan, als deel van de cachesleutel van `reken`. */
+let eigenSleutel = '';
+const actieveEigen = new Set<string>();
+function werkEigenSleutelBij(): void {
+  eigenSleutel = [...actieveEigen].sort().join(',');
+}
+
+/**
+ * Nieuwe basiseenheden (`.EUR = 1`), per proces één keer gemaakt. mathjs kan een
+ * basisdimensie niet weghalen; een tweede `createUnit('EUR')` zou falen. Na het blad
+ * gaat alleen de eenheid uit de tabel, en een volgend blad zet hem terug.
+ */
+const basisEenheden = new Map<string, unknown>();
+const eenhedenTabel = math.Unit as unknown as { UNITS: Record<string, unknown>; deleteUnit(naam: string): void };
 
 export interface Scope {
   [key: string]: unknown;
@@ -1326,16 +1345,34 @@ export function evaluate(
   nodes: AstNode[],
   selectValues?: SelectValues,
   initialScope?: Scope,
+  opties: EvalOpties = {},
 ): EvaluatedNode[] {
   const scope: Scope = { ...(initialScope ?? {}) };
   const appModus = currentAngleMode;
+  const vorigStelsel = huidigStelsel;
+  huidigStelsel = opties.stelsel;
+  const stand = nieuweStand();
   try {
-    return evaluateNodes(nodes, scope, selectValues || {}, nieuweStand());
+    for (const e of opties.eigenEenheden ?? []) maakEenheid(e.naam, e.uitdrukking, scope, stand);
+    return evaluateNodes(nodes, scope, selectValues || {}, stand);
   } finally {
-    // `#deg`, `#rad`, `#gra` gelden alleen in dit blad.
+    // `#deg`, `#rad`, `#gra` gelden alleen in dit blad, en de eigen eenheden ook.
     currentAngleMode = appModus;
+    huidigStelsel = vorigStelsel;
+    ruimEenhedenOp(stand);
   }
 }
+
+/** Wat de app bij het doorrekenen meegeeft (docs/superpowers/specs/2026-11-06-eenheden-design.md). */
+export interface EvalOpties {
+  /** Het eenhedenstelsel voor de weergave; zonder: alles in de eenheden van het blad. */
+  stelsel?: Stelsel;
+  /** Eigen eenheden die in het hele blad gelden, zoals die van het project. */
+  eigenEenheden?: { naam: string; uitdrukking: string }[];
+}
+
+/** Het stelsel van het blad dat nu doorgerekend wordt (zie evaluate). */
+let huidigStelsel: Stelsel | undefined;
 
 /**
  * Rekent een document door en geeft ook de scope aan het eind terug: de waarden
@@ -1348,10 +1385,12 @@ export function evaluateMetScope(
 ): { nodes: EvaluatedNode[]; scope: Scope } {
   const scope: Scope = { ...(initialScope ?? {}) };
   const appModus = currentAngleMode;
+  const stand = nieuweStand();
   try {
-    return { nodes: evaluateNodes(nodes, scope, selectValues || {}, nieuweStand()), scope };
+    return { nodes: evaluateNodes(nodes, scope, selectValues || {}, stand), scope };
   } finally {
     currentAngleMode = appModus;
+    ruimEenhedenOp(stand);
   }
 }
 
@@ -1370,10 +1409,8 @@ export function uitdrukkingBoom(expr: string): MathNode {
   return ontleedExpr(expr);
 }
 
-/** Is dit een eenheid zonder waarde, zoals mathjs de naam leest? */
-export function isEenheidNaam(naam: string): boolean {
-  return math.Unit.isValuelessUnit(naam);
-}
+/** Is dit een eenheid zonder waarde, zoals de rekenkern de naam leest? (eenheden.ts) */
+export { isEenheidNaam };
 
 /**
  * De stand van de afdrukopdrachten tijdens het doorrekenen. Een opdracht geldt
@@ -1396,10 +1433,61 @@ interface Stand {
   weergave: 'equ' | 'val' | 'noc';
   invullen: 'varsub' | 'nosub' | 'novar';
   decimalen: number | null;
+  /** De eigen eenheden die dit blad maakte (`.naam = …`); na het blad gaan ze weg. */
+  eenheden: string[];
 }
 
 function nieuweStand(): Stand {
-  return { weergave: 'equ', invullen: 'varsub', decimalen: null };
+  return { weergave: 'equ', invullen: 'varsub', decimalen: null, eenheden: [] };
+}
+
+/**
+ * Maakt een eigen eenheid, zoals in het `.cpd`-formaat: `.EUR = 1` is een nieuwe
+ * basiseenheid, `.kipf = 1000 lbf` volgt uit een andere. Geeft de foutmelding als
+ * het niet kan; dan verandert er niets.
+ */
+function maakEenheid(naam: string, uitdrukking: string, scope: Scope, stand: Stand): string | null {
+  if (naam in scope || isEenheidNaam(naam)) return `Error: ${naam} already exists as a unit or variable`;
+  let waarde: unknown;
+  try {
+    waarde = reken(uitdrukking, scope);
+  } catch (err) {
+    return `Error: ${(err as Error).message}`;
+  }
+  try {
+    if (isUnit(waarde)) {
+      math.createUnit(naam, waarde.toString());
+    } else if (waarde === 1) {
+      const basis = basisEenheden.get(naam);
+      if (basis) {
+        eenhedenTabel.UNITS[naam] = basis;
+        // Leegt het geheugen van mathjs voor het opzoeken van eenheden.
+        eenhedenTabel.deleteUnit(' ');
+      } else {
+        math.createUnit(naam);
+        basisEenheden.set(naam, eenhedenTabel.UNITS[naam]);
+      }
+    } else {
+      return 'Error: a custom unit is 1 (a new base unit) or follows from another unit, as in .kipf = 1000 lbf';
+    }
+  } catch (err) {
+    return `Error: ${(err as Error).message}`;
+  }
+  stand.eenheden.push(naam);
+  actieveEigen.add(naam);
+  werkEigenSleutelBij();
+  return null;
+}
+
+/** Haalt de eigen eenheden van een blad weer weg, de laatste eerst. */
+function ruimEenhedenOp(stand: Stand): void {
+  // `deleteUnit` bestaat in mathjs 13, maar staat niet in de typen.
+  for (const naam of stand.eenheden.reverse()) {
+    eenhedenTabel.deleteUnit(naam);
+    actieveEigen.delete(naam);
+  }
+  stand.eenheden = [];
+  werkEigenSleutelBij();
 }
 
 /** Voert een opdracht uit (zie OpdrachtNode en Stand). */
@@ -1435,12 +1523,14 @@ function voerOpdrachtUit(node: OpdrachtNode, stand: Stand): void {
 export function extractScope(nodes: AstNode[], selectValues?: SelectValues, initialScope?: Scope): Scope {
   const scope: Scope = { ...(initialScope ?? {}) };
   const appModus = currentAngleMode;
+  const stand = nieuweStand();
   try {
-    evaluateNodes(nodes, scope, selectValues || {}, nieuweStand());
+    evaluateNodes(nodes, scope, selectValues || {}, stand);
   } catch {
     /* swallow — best-effort scope extraction */
   } finally {
     currentAngleMode = appModus;
+    ruimEenhedenOp(stand);
   }
   // Strip internal flags.
   delete scope[BREAK_FLAG];
@@ -1752,6 +1842,12 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         result.push({ type: 'image', src: node.src });
         break;
 
+      case 'eenheid-def': {
+        const fout = maakEenheid(node.name, node.expression, scope, stand);
+        if (!node.hidden) result.push({ type: 'eenheid-def', name: node.name, expression: node.expression, result: fout ?? node.expression });
+        break;
+      }
+
       case 'gef-upload':
         if (node.hidden) break;
         result.push({ type: 'gef-upload', name: node.name, data: null });
@@ -1982,10 +2078,12 @@ function buildSubstitution(
     const invulbaar =
       typeof val === 'number' || typeof val === 'string' || typeof val === 'boolean' || isUnit(val);
     if (!invulbaar) continue;
-    const formatted = formatInline(val, decimalen);
+    // In het eenhedenstelsel, net als de uitkomst: geen regel met gemengde eenheden.
+    const toon = inHetStelsel(val) ?? val;
+    const formatted = formatInline(toon, decimalen);
     // Wrap in parentheses if value has a unit (contains space) to preserve
     // operator precedence: h^2 → (500 mm)^2, not 500 mm^2
-    const wrapped = isUnit(val) ? `(${formatted})` : formatted;
+    const wrapped = isUnit(toon) ? `(${formatted})` : formatted;
     // Grenzen op letters en cijfers in Unicode-zin. `\b` kent alleen ASCII,
     // waardoor een naam die met een Griekse letter begint (γ_M, σ_m,d, ψ_0)
     // nooit werd ingevuld: de ingevulde formule toonde dan nog het symbool.
@@ -2012,6 +2110,7 @@ interface UnitComponent {
 
 interface MathUnit {
   toNumber: (unit: string) => number;
+  to: (unit: string) => MathUnit;
   formatUnits: () => string;
   units: UnitComponent[];
   value: number;
@@ -2079,9 +2178,9 @@ function unitGroups(value: MathUnit): { name: string; power: number }[] {
  */
 function simplifyUnitString(value: MathUnit): string {
   const entries = unitGroups(value);
-  // Lengte achteraan in een product: kN m, niet m kN. De volgorde volgt anders
-  // die van de delen in de berekening.
-  const isLengte = (naam: string) => /^[a-zµ]?m$/.test(naam);
+  // Lengte achteraan in een product: kN m, niet m kN, en kip ft, niet ft kip.
+  // De volgorde volgt anders die van de delen in de berekening.
+  const isLengte = (naam: string) => /^[a-zµ]?m$/.test(naam) || /^(in|inch|ft|yd|mi)$/.test(naam);
   const pos = entries
     .filter(g => g.power > 0)
     .sort((a, b) => Number(isLengte(a.name)) - Number(isLengte(b.name)));
@@ -2326,19 +2425,101 @@ function matrixUitkomst(value: unknown, opmaak?: Opmaak): { tekst: string; matri
  * houdt de standaardopmaak, zodat wie de uitkomst leest hetzelfde getal krijgt.
  */
 function uitkomstVelden(value: unknown, opmaak?: Opmaak): {
-  result: string; unit: string; waarde?: number; matrix?: MatrixUitkomst; getoond?: string;
+  result: string; unit: string; waarde?: number; matrix?: MatrixUitkomst; getoond?: string; inStelsel?: InStelsel;
 } {
   const mat = matrixUitkomst(value);
   if (mat) {
     const getoond = opmaak ? matrixUitkomst(value, opmaak) : null;
-    return { result: mat.tekst, unit: mat.matrix.eenheid, matrix: (getoond ?? mat).matrix };
+    const inStelsel = stelselVelden(value, opmaak);
+    return { result: mat.tekst, unit: mat.matrix.eenheid, matrix: (getoond ?? mat).matrix, ...(inStelsel ? { inStelsel } : {}) };
   }
   const result = formatResult(value);
   const getoond = opmaak ? toonUitkomst(value, opmaak) : undefined;
+  const inStelsel = stelselVelden(value, opmaak);
   return {
     result,
     waarde: numeriek(value),
     unit: isUnit(value) ? simplifyUnitString(value) : '',
+    ...(getoond !== undefined && getoond !== result ? { getoond } : {}),
+    ...(inStelsel ? { inStelsel } : {}),
+  };
+}
+
+/**
+ * Een waarde in de eenheid van het stelsel, of `null` als hij blijft zoals hij is.
+ * Een vector of matrix gaat per element om, als er iets om te rekenen valt.
+ */
+function inHetStelsel(value: unknown): unknown | null {
+  const stelsel = huidigStelsel;
+  if (!stelsel) return null;
+  const omrekenen = (el: MathUnit): MathUnit | null => {
+    const doel = doelInStelsel(simplifyUnitString(el), stelsel);
+    if (!doel) return null;
+    try {
+      return el.to(doel);
+    } catch {
+      return null;
+    }
+  };
+  if (isUnit(value)) return omrekenen(value);
+  const d = afmetingen(value);
+  if (!d || d.length < 1 || d.length > 2) return null;
+  let omgezet = false;
+  const perElement = (el: unknown): unknown => {
+    const u = isUnit(el) ? omrekenen(el) : null;
+    if (u) omgezet = true;
+    return u ?? el;
+  };
+  const nieuw: unknown = math.map(value as never, perElement as never);
+  return omgezet ? nieuw : null;
+}
+
+/** De eerste eenheid in een waarde: van de waarde zelf, of van het eerste element met eenheid. */
+function eersteEenheid(value: unknown): string | null {
+  if (isUnit(value)) return simplifyUnitString(value);
+  const d = afmetingen(value);
+  if (!d) return null;
+  const rijen: unknown[][] = d.length === 1 ? [toArrayLike(value) ?? []] : alsRijen(value);
+  const el = rijen.flat().find(isUnit);
+  return el ? simplifyUnitString(el) : null;
+}
+
+/** Een vaste notatie houdt in het stelsel dezelfde relatieve nauwkeurigheid (decimalenNa). */
+function opmaakInStelsel(opmaak: Opmaak, bron: unknown, doel: unknown): Opmaak {
+  const b = eersteEenheid(bron);
+  const d = eersteEenheid(doel);
+  if (!b || !d) return opmaak;
+  const f = opmaak.formaat?.match(/^([FN])(\d*)$/i);
+  if (f) return { ...opmaak, formaat: f[1] + decimalenNa(f[2] === '' ? 2 : parseInt(f[2], 10), b, d) };
+  if (opmaak.decimalen !== null) return { ...opmaak, decimalen: decimalenNa(opmaak.decimalen, b, d) };
+  return opmaak;
+}
+
+/** De velden van een uitkomst in het stelsel (InStelsel), of `null` als hij blijft zoals hij is. */
+function stelselVelden(value: unknown, opmaak?: Opmaak): InStelsel | null {
+  // Een fout in de weergave mag nooit de rekenwaarde raken: dan blijft de waarde
+  // zoals het blad hem toont.
+  try {
+    return stelselVeldenOnveilig(value, opmaak);
+  } catch {
+    return null;
+  }
+}
+
+function stelselVeldenOnveilig(value: unknown, opmaak?: Opmaak): InStelsel | null {
+  const omgezet = inHetStelsel(value);
+  if (omgezet === null) return null;
+  const opmaakNa = opmaak ? opmaakInStelsel(opmaak, value, omgezet) : undefined;
+  const mat = matrixUitkomst(omgezet);
+  if (mat) {
+    const getoond = opmaakNa ? matrixUitkomst(omgezet, opmaakNa) : null;
+    return { result: mat.tekst, unit: mat.matrix.eenheid, matrix: (getoond ?? mat).matrix };
+  }
+  const result = formatResult(omgezet);
+  const getoond = opmaakNa ? toonUitkomst(omgezet, opmaakNa) : undefined;
+  return {
+    result,
+    unit: isUnit(omgezet) ? simplifyUnitString(omgezet) : '',
     ...(getoond !== undefined && getoond !== result ? { getoond } : {}),
   };
 }

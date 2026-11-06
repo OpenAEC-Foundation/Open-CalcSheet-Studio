@@ -1,5 +1,5 @@
 import katex from 'katex';
-import type { EvaluatedNode, MatrixUitkomst } from './types.js';
+import type { EvaluatedNode, InStelsel, MatrixUitkomst } from './types.js';
 import { exprToLatex, matrixResultToLatex, metWeergaveNamen, nameToLatex, resultToLatex, weergaveNaam } from './latex.js';
 import { renderDrieD } from './drieD.js';
 import { renderIframe } from './iframeBlok.js';
@@ -297,6 +297,9 @@ function renderNode(node: EvaluatedNode): string {
 
     case 'gef-upload':
       return renderGefUpload(node);
+
+    case 'eenheid-def':
+      return renderEenheidDef(node);
   }
 }
 
@@ -308,14 +311,25 @@ function renderUserFunction(node: { name: string; params: string[]; expression: 
   return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
 }
 
-function renderVarDisplay(node: { name: string; result: string; unit: string; matrix?: MatrixUitkomst; getoond?: string }): string {
+/** Een eigen eenheid: de naam rechtop, als eenheid, met zijn definitie. */
+function renderEenheidDef(node: { name: string; expression: string; result: string }): string {
+  const latex = `\\mathrm{${node.name.replace(/_/g, '\\_')}} = ${exprToLatex(node.expression)}`;
+  if (node.result.startsWith('Error:')) {
+    return `<div class="calc-line calc-error">${renderLatex(latex)} <span class="calc-error-msg">${escapeHtml(node.result)}</span></div>`;
+  }
+  return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
+}
+
+function renderVarDisplay(node: { name: string; result: string; unit: string; matrix?: MatrixUitkomst; getoond?: string; inStelsel?: InStelsel }): string {
   const nameLatex = nameToLatex(node.name);
+  // In het eenhedenstelsel als dat de waarde omrekent (InStelsel).
+  const toon = node.inStelsel ?? node;
   // node.result already includes the unit ("2.91 m"); pass num + unit to
   // resultToLatex separately so we don't double-print the unit suffix.
   // Met een opmaak (`x:F2`, `#round n`) de getoonde vorm.
-  const { numStr, unitStr } = splitResult(node.getoond ?? node.result);
-  const effectiveUnit = node.unit || unitStr;
-  const valueLatex = node.matrix ? matrixResultToLatex(node.matrix) : resultToLatex(numStr, effectiveUnit);
+  const { numStr, unitStr } = splitResult(toon.getoond ?? toon.result);
+  const effectiveUnit = toon.unit || unitStr;
+  const valueLatex = toon.matrix ? matrixResultToLatex(toon.matrix) : resultToLatex(numStr, effectiveUnit);
   const latex = `${nameLatex} = ${valueLatex}`;
   return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
 }
@@ -391,6 +405,7 @@ function renderAssignment(node: {
   unit: string;
   matrix?: MatrixUitkomst;
   getoond?: string;
+  inStelsel?: InStelsel;
   weergave?: 'val' | 'noc' | 'nosub' | 'novar';
 }): string {
   // Error case
@@ -404,10 +419,11 @@ function renderAssignment(node: {
   // Build the LaTeX chain: name = expr [= substitution] = result
   // Split numeric value and unit from result. Met een opmaak (`:F2`,
   // `#round n`) de getoonde vorm.
-  const { numStr, unitStr } = splitResult(node.getoond ?? node.result);
+  const toon = node.inStelsel ?? node;
+  const { numStr, unitStr } = splitResult(toon.getoond ?? toon.result);
   // Een vector of matrix krijgt de matrixopmaak, elk element afgerond als een
   // gewone uitkomst.
-  const resultLatex = node.matrix ? matrixResultToLatex(node.matrix) : resultToLatex(numStr, unitStr);
+  const resultLatex = toon.matrix ? matrixResultToLatex(toon.matrix) : resultToLatex(numStr, unitStr);
   const uitkomst = `\\textcolor{#059669}{\\boldsymbol{${resultLatex}}}`;
 
   // Name

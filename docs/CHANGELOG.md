@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Amerikaanse eenheden voor constructies: ksi, psf, ksf, plf, klf en pcf, naast in, ft, lbf, kip en psi. Een getal in psi staat in een formule niet meer als de Griekse letter ψ, en in een moment staat de lengte achteraan (kip ft)
+- Eigen eenheden in een blad met `.naam = uitdrukking`, zoals `.kipf = 1000 lbf` of `.EUR = 1`, ook in `.cpd`-bestanden (#22)
 - Inhoud met paginanummers: op het voorblad van de losse bladen staat bij elk blad de pagina waar het begint, en een lange inhoud loopt door op het volgende vel in plaats van eraf te vallen. In het afdrukvoorbeeld springt een klik op een regel naar dat blad, ook in de inhoudsopgave van het rapport; in de PDF is elk paginanummer een link
 - Afdrukvoorbeeld veel sneller bij een groot project: een PDF-pagina, werkmap of 3D-afbeelding die klaar is, komt los op zijn vel in plaats van dat het hele voorbeeld opnieuw wordt opgebouwd, en alleen de vellen in beeld worden opgemaakt. Bij een project van 33 bladen is alles klaar na 8 in plaats van 18 seconden, zonder het haperen daarna
 - Gewichtenbibliotheek: ruim 2300 eigen gewichten met bron, van materialen en grond tot kanaalplaten, metselwerk, dakpannen en gevelplaten per leverancier. Zoeken, filteren en met één klik invoegen in een opbouw; een eigen bibliotheek openen, aanvullen, samenvoegen en delen als `.weightlibrary`-bestand

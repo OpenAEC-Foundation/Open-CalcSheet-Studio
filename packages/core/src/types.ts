@@ -307,6 +307,19 @@ export interface OpdrachtNode {
   hidden?: boolean;
 }
 
+/**
+ * `.naam = uitdrukking`: een eigen eenheid, zoals in het `.cpd`-formaat. De
+ * uitdrukking is 1 (een nieuwe basiseenheid, `.EUR = 1`) of een waarde met
+ * eenheid (`.kipf = 1000 lbf`). De eenheid geldt vanaf deze regel tot het
+ * einde van het blad.
+ */
+export interface EenheidDefNode {
+  type: 'eenheid-def';
+  name: string;
+  expression: string;
+  hidden?: boolean;
+}
+
 /** `#break` — early exit from the enclosing #repeat / #for loop. */
 export interface BreakNode {
   type: 'break';
@@ -336,7 +349,8 @@ export type AstNode =
   | ImageNode
   | SelectNode
   | GefUploadNode
-  | OpdrachtNode;
+  | OpdrachtNode
+  | EenheidDefNode;
 
 export interface EvaluatedHeading {
   type: 'heading';
@@ -376,6 +390,19 @@ export interface MatrixUitkomst {
   n: number;
 }
 
+/**
+ * Een uitkomst in de eenheid van het eenhedenstelsel (eenheidstelsel.ts). Alleen
+ * voor de weergave: `result`, `unit`, `waarde` en `getoond` blijven in de eenheid
+ * van het blad, want daar rekenen de beelden en de controles mee. Ontbreekt als het
+ * stelsel de waarde laat zoals hij is.
+ */
+export interface InStelsel {
+  result: string;
+  unit: string;
+  getoond?: string;
+  matrix?: MatrixUitkomst;
+}
+
 export interface EvaluatedAssignment {
   type: 'assignment';
   name: string;
@@ -397,6 +424,8 @@ export interface EvaluatedAssignment {
    * uitkomst leest (de UC in de projectboom) leest het getal, niet de weergave.
    */
   getoond?: string;
+  /** Zie InStelsel. */
+  inStelsel?: InStelsel;
   /**
    * Wat de regel toont (`#val`, `#noc`, `#nosub`, `#novar`); zonder
    * dit veld: formule, invulling en uitkomst (`#equ` met `#varsub`).
@@ -441,6 +470,8 @@ export interface EvaluatedVarDisplay {
   matrix?: MatrixUitkomst;
   /** Zie EvaluatedAssignment.getoond. */
   getoond?: string;
+  /** Zie InStelsel. */
+  inStelsel?: InStelsel;
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
@@ -581,7 +612,16 @@ export interface EvaluatedGefUpload {
   scherm?: boolean;
 }
 
+/** Een eigen eenheid in beeld; `result` is de definitie ("1000 lbf") of een fout ("Error: …"). */
+export interface EvaluatedEenheidDef {
+  type: 'eenheid-def';
+  name: string;
+  expression: string;
+  result: string;
+}
+
 export type EvaluatedNode =
+  | EvaluatedEenheidDef
   | EvaluatedHeading
   | EvaluatedText
   | EvaluatedAssignment
