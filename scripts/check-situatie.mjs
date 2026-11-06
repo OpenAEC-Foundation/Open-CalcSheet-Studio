@@ -197,11 +197,15 @@ console.log("\nDe onderschriften op papier");
   };
   const si = { eenheid: () => "m", waarde: (v) => v };
   const us = { eenheid: () => "ft", waarde: (v) => v / 0.3048 };
-  const o = (id, eenh, taal) => onderschrift(id, eenh, taal, maakT(taal));
-  meld(o("omgeving", si, "nl") === "Omgeving · ca. 2 km", "nl, zonder stelsel: Omgeving · ca. 2 km", o("omgeving", si, "nl"));
-  meld(o("omgeving", us, "en") === "Surroundings · about 1.2 mi", "en, US: Surroundings · about 1.2 mi", o("omgeving", us, "en"));
-  meld(o("gebied", si, "en") === "Area · about 15 km", "en: Area · about 15 km", o("gebied", si, "en"));
-  meld(o("locatie", si, "nl") === "Locatie · ca. 300 m", "nl: Locatie · ca. 300 m", o("locatie", si, "nl"));
+  // Utrecht: de zoomniveaus die zoomVoor kiest, met de werkelijke breedte van het beeld.
+  const lat = 52.0907;
+  const o = (id, zoom, eenh, taal) => onderschrift(id, zoom, lat, eenh, taal, maakT(taal));
+  meld(zoomVoor({ lat, lon: 5.1214 }, 1180, 2000) === 15, "omgeving (1180 px, 2000 m) geeft zoom 15");
+  meld(o("omgeving", 15, si, "nl") === "Omgeving · ca. 3,5 km", "nl, zoom 15: Omgeving · ca. 3,5 km (3464 m)", o("omgeving", 15, si, "nl"));
+  meld(o("omgeving", 15, us, "en") === "Surroundings · about 2.2 mi", "en, US: Surroundings · about 2.2 mi", o("omgeving", 15, us, "en"));
+  meld(o("gebied", 11, si, "en") === "Area · about 26 km", "en, zoom 11: Area · about 26 km (26,3 km)", o("gebied", 11, si, "en"));
+  meld(o("locatie", 17, si, "nl") === "Locatie · ca. 410 m", "nl, zoom 17: Locatie · ca. 410 m (411 m)", o("locatie", 17, si, "nl"));
+  meld(o("locatie", 17, us, "en") === "Location · about 1,345 ft", "en, US: Location · about 1,345 ft", o("locatie", 17, us, "en"));
 }
 
 console.log("\nDe situatie in het rapport");

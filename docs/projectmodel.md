@@ -197,6 +197,13 @@ De LocatieKiezer onder het veld Locatie schrijft hem (`components/calc/LocatieKi
 Ontbreekt de sleutel of is de waarde ongeldig (geen JSON, lat buiten ±90, lon buiten ±180),
 dan heeft het project geen locatie.
 
+De kaarten van die plek staan in het rapport, als `rapport.situatie`: vaste kaartbeelden
+(`gebied`, `omgeving`, `locatie`) als JPEG met zoomniveau, het punt en de datum waarvoor ze zijn
+gemaakt, het vinkje `tonen` en eventueel het dichtstbijzijnde `water`. Ze worden bewaard in het
+project en veranderen niet meer tot de gebruiker ze vernieuwt. Op papier verschijnt de pagina
+alleen als het project een geldige locatie heeft. `report_get` en `report_set` geven per kaart
+alleen `{id, zoom, bytes}` terug, niet de JPEG.
+
 ## Taal van het rapport
 
 Het rapport heeft een eigen taal, `Rapport.taal` in `ocss::rapport`, los van de taal

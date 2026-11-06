@@ -109,10 +109,13 @@ export default function LocatieKiezer() {
       try {
         const kaarten: Kaartbeeld[] = [];
         for (const k of KAARTEN) {
+          // Is de opdracht intussen vervangen, dan haalt hij geen tegels meer.
+          if (nummer !== kaartNummer.current) return;
           kaarten.push(
             await maakKaartbeeld(p, k, {
               bron: BRON,
-              schaalLabel: (m) => schaalTekst(m, eenhedenRef.current, i18n.language),
+              // Het label volgt de taal van het rapport, zoals de rest van de afdruk.
+              schaalLabel: (m) => schaalTekst(m, eenhedenRef.current, useProjectStore.getState().rapport.taal),
             }),
           );
         }
@@ -120,7 +123,16 @@ export default function LocatieKiezer() {
         // Het punt kan intussen verplaatst of gewist zijn: dan horen deze kaarten er niet meer bij.
         const nu = leesPunt(useProjectStore.getState().gegevens.locatie_punt);
         if (!nu || situatieBijPunt({ tonen: true, punt: p, datum: "", kaarten }, nu) !== "actueel") return;
-        werkRapportBij((r) => ({ ...r, situatie: { tonen: true, punt: p, datum: vandaag(), kaarten } }));
+        // Bij vernieuwen blijft het vinkje zoals het was; het water hoort bij het oude punt en
+        // blijft alleen staan als het punt hetzelfde is.
+        werkRapportBij((r) => {
+          const oud = r.situatie;
+          const water = oud?.water && situatieBijPunt(oud, p) === "actueel" ? oud.water : undefined;
+          return {
+            ...r,
+            situatie: { tonen: oud ? oud.tonen : true, punt: p, datum: vandaag(), kaarten, ...(water ? { water } : {}) },
+          };
+        });
       } catch {
         if (nummer !== kaartNummer.current) return;
         setKaartenMelding(t("gegevens.situatie.kaartenMislukt"));

@@ -3,7 +3,7 @@
  * uitgangspunten en belastingen.
  *
  * Alleen gegevens en standaardwaarden: geen React, en imports met waarden alleen uit
- * deze map (met extensie .ts), zodat scripts/check-rapport.mjs dit bestand rechtstreeks
+ * deze map en uit kaart/ (met extensie .ts, zonder React), zodat scripts/check-rapport.mjs dit bestand rechtstreeks
  * kan laden. Invoer staat als tekst opgeslagen, net als de projectgegevens: wat de
  * gebruiker typte ("0,56") blijft staan, rekenen gebeurt pas bij het opmaken.
  *

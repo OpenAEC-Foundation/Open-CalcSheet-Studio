@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { klasse, windLabel } from "../../../rapport/normwaarden";
+import { klasse } from "../../../rapport/normwaarden";
 import { leesPunt, puntTekst } from "../../../kaart/punt";
 import { schaalTekst } from "../../../kaart/tegels";
 import { onderschrift, situatieBijPunt, type KaartId, type Situatie as SituatieModel } from "../../../rapport/situatie";
@@ -10,7 +10,7 @@ import { Cel, Leeg, Rij, Vlak } from "./raster";
  * De pagina Situatie: de plek van het project op drie kaarten van OpenStreetMap
  * (omgeving over de volle breedte, gebied en locatie ernaast) en daaronder de
  * gegevens van de plek. Staat direct na het voorblad op een eigen vel en niet in
- * de inhoudsopgave. Zonder situatie, of met het vinkje uit, komt er niets.
+ * de inhoudsopgave. Zonder situatie, zonder locatie of met het vinkje uit, komt er niets.
  */
 
 /** "2026-11-06" in de notatie van de taal van het rapport; iets anders blijft zoals het is. */
@@ -24,7 +24,7 @@ function datumTekst(datum: string, taal: string): string {
 function Kaart({ situatie, id, w }: { situatie: SituatieModel; id: KaartId; w: RapportWeergave }) {
   const beeld = situatie.kaarten.find((k) => k.id === id);
   if (!beeld) return null;
-  const tekst = onderschrift(id, w.eenheden, w.taal, w.t);
+  const tekst = onderschrift(id, beeld.zoom, situatie.punt.lat, w.eenheden, w.taal, w.t);
   return (
     <figure className={`rpa-sit-kaart rpa-sit-${id}`}>
       <img src={`data:image/jpeg;base64,${beeld.jpeg}`} alt={tekst} />
@@ -44,11 +44,12 @@ function Regel({ label, children }: { label: string; children: ReactNode }) {
 
 export default function Situatie({ w }: { w: RapportWeergave }) {
   const situatie = w.rapport.situatie;
-  if (!situatie || !situatie.tonen) return null;
   const { t, taal, gegevens } = w;
+  // Geen locatie, geen pagina: de opgeslagen situatie blijft bewaard maar komt niet op papier.
+  if (!situatie || !situatie.tonen || leesPunt(gegevens.locatie_punt) === null) return null;
   // Het adres hoort bij het punt van het project; horen de kaarten bij een ander punt, dan blijft het weg.
   const adresHoortErbij = situatieBijPunt(situatie, leesPunt(gegevens.locatie_punt)) === "actueel";
-  const terrein = windLabel(klasse(gegevens.windgebied, 2), klasse(gegevens.terreincategorie, 2), taal);
+  const terrein = t(`afdruk.situatie.terrein.${klasse(gegevens.terreincategorie, 2)}`);
   const water = situatie.water
     ? [schaalTekst(situatie.water.afstand, w.eenheden, taal), situatie.water.naam].filter(Boolean).join(", ")
     : "—";

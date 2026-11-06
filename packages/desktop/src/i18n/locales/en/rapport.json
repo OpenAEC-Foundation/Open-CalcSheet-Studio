@@ -43,6 +43,7 @@
     "situatieTonen": "Site location page",
     "situatieHint": "A page with maps of the project site, right after the cover.",
     "situatieVerouderd": "The maps belong to a different point than the project location. On paper they are shown with their own point.",
+    "situatieGeenLocatie": "The site location page only appears in the report when the project has a location. The maps are kept and return when you choose a point again.",
     "situatieBeeld": "Site map, {{naam}}"
   },
   "rijen": {
@@ -381,6 +382,11 @@
       "adres": "Address",
       "coordinaten": "Coordinates",
       "terreincategorie": "Terrain category",
+      "terrein": {
+        "1": "0 (sea or coastal area)",
+        "2": "II (undeveloped area)",
+        "3": "III (built-up area)"
+      },
       "keuze": "(chosen by the structural engineer)",
       "water": "Distance to open water",
       "kaart": "Map",

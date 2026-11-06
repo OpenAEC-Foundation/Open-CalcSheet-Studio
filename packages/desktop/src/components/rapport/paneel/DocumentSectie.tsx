@@ -19,7 +19,8 @@ export default function DocumentSectie() {
   const profiel = useBureauStore((s) => s.profiel);
   const werkBij = useProjectStore((s) => s.werkRapportBij);
   const situatie = rapport.situatie;
-  const verouderd = situatieBijPunt(situatie, leesPunt(gegevens.locatie_punt)) === "verouderd";
+  const projectPunt = leesPunt(gegevens.locatie_punt);
+  const verouderd = situatieBijPunt(situatie, projectPunt) === "verouderd";
 
   // Zelfde bureau als op papier: het vastgelegde, of zolang dat leeg is het profiel.
   const bureau = rapport.bureau.naam ? rapport.bureau : profiel;
@@ -112,6 +113,7 @@ export default function DocumentSectie() {
               />
             ))}
           </div>
+          {!projectPunt && <span className="rapport-hint">{t("velden.situatieGeenLocatie")}</span>}
           {verouderd && <span className="rapport-hint">{t("velden.situatieVerouderd")}</span>}
         </div>
       )}

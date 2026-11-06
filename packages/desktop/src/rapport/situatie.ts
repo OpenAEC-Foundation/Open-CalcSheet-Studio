@@ -6,7 +6,7 @@
  * direct in Node laden.
  */
 import { leesPunt, puntJson, type Punt } from "../kaart/punt.ts";
-import { schaalTekst } from "../kaart/tegels.ts";
+import { metersPerPixel, schaalTekst } from "../kaart/tegels.ts";
 import type { BeeldEenheden } from "../components/calc/beeldEenheden.ts";
 
 export type KaartId = "gebied" | "omgeving" | "locatie";
@@ -114,18 +114,29 @@ export function situatieBijPunt(s: Situatie | undefined, p: Punt | null): "geen"
   return afstandMeter(s.punt, p) > 1 ? "verouderd" : "actueel";
 }
 
+/** Afgerond op twee significante cijfers: 26308 wordt 26000, 3459 wordt 3500, 411 wordt 410. */
+function opTweeCijfers(x: number): number {
+  if (!(x > 0)) return 0;
+  const macht = 10 ** (Math.floor(Math.log10(x)) - 1);
+  return Math.round(x / macht) * macht;
+}
+
 /**
- * Het onderschrift onder een kaart op papier, bijvoorbeeld "Omgeving · ca. 2 km":
- * de naam van de kaart en de breedte van het beeld in het eenhedenstelsel van het
- * project, in de taal van het rapport (`t` is de vertaler van die taal).
+ * Het onderschrift onder een kaart op papier, bijvoorbeeld "Omgeving · ca. 3,5 km":
+ * de naam van de kaart en de werkelijke breedte van het beeld (pixels maal meters per
+ * pixel bij dit zoomniveau en deze breedtegraad, op twee cijfers), in het eenhedenstelsel
+ * van het project en in de taal van het rapport (`t` is de vertaler van die taal).
  */
 export function onderschrift(
   id: KaartId,
+  zoom: number,
+  lat: number,
   eenheden: BeeldEenheden,
   taal: string,
   t: (sleutel: string, opties?: Record<string, unknown>) => string,
 ): string {
-  const meters = KAARTEN.find((k) => k.id === id)?.meters ?? 0;
+  const breedte = KAARTEN.find((k) => k.id === id)?.breedte ?? 0;
+  const meters = opTweeCijfers(breedte * metersPerPixel(lat, zoom));
   return t("afdruk.situatie.onderschrift", {
     kaart: t(`afdruk.situatie.kaarten.${id}`),
     afstand: schaalTekst(meters, eenheden, taal),
