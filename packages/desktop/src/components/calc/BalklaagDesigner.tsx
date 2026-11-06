@@ -958,7 +958,7 @@ export default function BalklaagDesigner() {
                 <rect x={x0} y={yJoist} width={jW} height={jH} style={{ fill: "#E3C08A", stroke: "#8B6F47", strokeWidth: 1.5 }} />
               </svg>
               <div className="vd-dim-ro" style={{ left: x0 + jW / 2, top: yJoist + jH / 2 }}>{nl(b, 0)}×{nl(h, 0)}</div>
-              <div className="vd-dim-ro" style={{ left: W / 2, top: yJoist - 26 }}>{t("balklaag.belasteBreedteMaat", { b: nl(bOnd, 2) })}</div>
+              <div className="vd-dim-ro" style={{ left: W / 2, top: yJoist - 26 }}>{t("balklaag.belasteBreedteMaat", { b: te(bOnd, "m") })}</div>
             </div>
           </div>
           ) : (

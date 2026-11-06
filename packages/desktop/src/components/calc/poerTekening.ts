@@ -329,7 +329,7 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   }
   for (const y of p.boven.y) uit.push(`<circle data-staaf="boven-dwars" cx="${r(XD(y))}" cy="${r(Z(p.boven.z))}" r="${r(dB / 2)}" fill="${OVERIG}"/>`);
   uit.push(`</g>`);
-  uit.push(maatH(XD(-p.b / 2), XD(p.b / 2), maatOnder, null, `${r(p.b)}`));
+  uit.push(maatH(XD(-p.b / 2), XD(p.b / 2), maatOnder, null, m(p.b)));
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${r(W)}" height="${r(H)}" viewBox="0 0 ${r(W)} ${r(H)}">${uit.join("")}</svg>`;
   return { svg, breedte: W, hoogte: H, maten };

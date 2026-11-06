@@ -264,7 +264,7 @@ export default function LiggerDesigner() {
           {(() => {
             const s = SYSTEMEN.find((o) => o.v === systeem);
             return s ? t(`ligger.systemen.${s.sleutel}`) : "";
-          })()} · {t("ligger.lengte", { l: fmt(xEind, 2, i18n.language) })} · {t("ligger.lasten", { count: lasten.length })}
+          })()} · {t("ligger.lengte", { l: metEenheid(xEind, "m", 2) })} · {t("ligger.lasten", { count: lasten.length })}
           {scharnieren.length ? ` · ${t("ligger.scharnieren", { count: scharnieren.length })}` : ""}
         </span>
       </div>
