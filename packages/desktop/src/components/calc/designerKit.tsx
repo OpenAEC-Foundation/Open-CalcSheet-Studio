@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import i18next from "i18next";
 import { useTranslation } from "react-i18next";
 import { hoortBij } from "../../templates/vertalingen";
 import { useProjectStore } from "../../store/projectStore";
+import { evalOptiesVan } from "../../store/projectEenheden";
 import { useActiefExemplaar, useAlleenLezen, useProjectGetal } from "../../store/actiefBlad";
 import { ucTekst, type BladUitkomst } from "./bladResultaat";
+import { beeldEenheden, type BeeldEenheden } from "./beeldEenheden";
 
 /**
  * Gedeelde bouwstenen voor de parametrische beelden.
@@ -45,6 +47,21 @@ export interface DesignerCtx {
    * docs/afwijkingen-referentie.md.
    */
   ref: boolean;
+  /** Het eenhedenstelsel van het project: wat in beeld staat, rekent om (beeldEenheden.ts). */
+  eenheden: BeeldEenheden;
+}
+
+/**
+ * Het eenhedenstelsel van het project voor een beeld. Alleen de keuze en de eigen keuze
+ * per grootheid tellen; een wijziging in de rest van de projectgegevens maakt niets nieuw.
+ */
+export function useBeeldEenheden(): BeeldEenheden {
+  const keuze = useProjectStore((s) => s.gegevens.eenheden);
+  const eigen = useProjectStore((s) => s.gegevens.eenheden_eigen);
+  return useMemo(
+    () => beeldEenheden(evalOptiesVan({ eenheden: keuze, eenheden_eigen: eigen }).stelsel),
+    [keuze, eigen],
+  );
 }
 
 /**
@@ -70,6 +87,7 @@ export function useDesigner(marker: string, defaults: Record<string, number>): D
 
   const actief = !!exemplaar && hoortBij(exemplaar.source, marker);
   const ref = Math.round(useProjectGetal("rekenwijze", 1)) === 1;
+  const eenheden = useBeeldEenheden();
 
   useEffect(() => {
     if (!actief) return;
@@ -101,7 +119,7 @@ export function useDesigner(marker: string, defaults: Record<string, number>): D
   };
   const set = (naam: string, waarde: number) => zetWaarde(activeId, naam, String(waarde));
 
-  return { actief, d, set, box, wrapRef, editing, setEditing, ref };
+  return { actief, d, set, box, wrapRef, editing, setEditing, ref, eenheden };
 }
 
 /** Een getal in de notatie van de taal: 1234.5 → "1234,5" in het Nederlands, anders "1234.5". */
@@ -113,25 +131,53 @@ export const fmt = (v: number, dec = 0, taal: string | undefined = i18next.langu
 export const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /**
+ * Een maat of last in een beeld, in het eenhedenstelsel: wat het chipje toont, wat in
+ * het bewerkveld staat, en hoe een getypt getal terug gaat naar het blad. Zonder
+ * `eenheid` (of als het stelsel hem niet omrekent) precies zoals het getal in het blad.
+ */
+function useChip(ctx: DesignerCtx, name: string, value: number, eenheid: string | undefined, dec: number, step: number) {
+  const { i18n } = useTranslation("beelden");
+  const be = ctx.eenheden;
+  const bron = eenheid ?? "";
+  const omgerekend = be.doel(bron) !== null;
+  const invoer = be.invoer(value, bron);
+  const commit = (raw: string) => {
+    // Ongewijzigd verlaten: niets schrijven, anders wordt 4500 mm na 177,165 in 4499,99.
+    if (raw.trim() !== invoer) {
+      const n = be.terug(raw, bron);
+      if (n !== null) ctx.set(name, n);
+    }
+    ctx.setEditing(null);
+  };
+  return {
+    getal: fmt(be.waarde(value, bron), be.decimalen(dec, bron), i18n.language),
+    eenheid: be.eenheid(bron),
+    omgerekend,
+    invoer,
+    // De stap van de pijltjes is een stap in de eenheid van het blad; in een andere eenheid vrij.
+    stap: omgerekend ? "any" : step,
+    commit,
+  };
+}
+
+/**
  * Klikbare maat — blauw chipje dat bij klikken een invoerveld wordt en de
- * waarde terugschrijft naar de sheet.
+ * waarde terugschrijft naar de sheet. `eenheid` is de eenheid van de waarde in het
+ * blad ("mm", "m"); rekent het stelsel hem om, dan staat de eenheid achter het getal.
  */
 export function Dim(props: {
   ctx: DesignerCtx; name: string; value: number; x: number; y: number;
-  step?: number; label?: string; dec?: number; title?: string;
+  step?: number; label?: string; dec?: number; title?: string; eenheid?: string;
 }) {
-  const { ctx, name, value, x, y, step = 10, label, dec = 0, title } = props;
-  const { t, i18n } = useTranslation("beelden");
+  const { ctx, name, value, x, y, step = 10, label, dec = 0, title, eenheid } = props;
+  const { t } = useTranslation("beelden");
   const isEd = ctx.editing === name;
-  const commit = (raw: string) => {
-    const n = parseFloat(raw.replace(",", "."));
-    if (Number.isFinite(n)) ctx.set(name, n);
-    ctx.setEditing(null);
-  };
+  const chip = useChip(ctx, name, value, eenheid, dec, step);
+  const commit = chip.commit;
   return (
     <div className="vd-dim" style={{ left: x, top: y }}>
       {isEd ? (
-        <input className="vd-dim-input" type="number" step={step} defaultValue={value} autoFocus
+        <input className="vd-dim-input" type="number" step={chip.stap} defaultValue={chip.invoer} autoFocus
             onFocus={(e) => e.currentTarget.select()}
           onBlur={(e) => commit(e.target.value)}
           onKeyDown={(e) => {
@@ -142,30 +188,27 @@ export function Dim(props: {
         <button className="vd-dim-num" style={{ whiteSpace: "nowrap" }}
           title={title ?? t("kit.klikWijzig", { naam: label ?? name })}
           onClick={() => ctx.setEditing(name)}>
-          {label ? `${label}=` : ""}{fmt(value, dec, i18n.language)}
+          {label ? `${label}=` : ""}{chip.getal}{chip.omgerekend && <small>{chip.eenheid}</small>}
         </button>
       )}
     </div>
   );
 }
 
-/** Klikbare belasting — rood chipje met eenheid. */
+/** Klikbare belasting — rood chipje met eenheid. `unit` is de eenheid in het blad ("kN/m"); het stelsel rekent hem om. */
 export function Force(props: {
   ctx: DesignerCtx; name: string; value: number; x: number; y: number;
   unit: string; label: string; step?: number; dec?: number;
 }) {
   const { ctx, name, value, x, y, unit, label, step = 10, dec = 0 } = props;
-  const { t, i18n } = useTranslation("beelden");
+  const { t } = useTranslation("beelden");
   const isEd = ctx.editing === name;
-  const commit = (raw: string) => {
-    const n = parseFloat(raw.replace(",", "."));
-    if (Number.isFinite(n)) ctx.set(name, n);
-    ctx.setEditing(null);
-  };
+  const chip = useChip(ctx, name, value, unit, dec, step);
+  const commit = chip.commit;
   return (
     <div className="vd-force" style={{ left: x, top: y }}>
       {isEd ? (
-        <input className="vd-dim-input" type="number" step={step} defaultValue={value} autoFocus
+        <input className="vd-dim-input" type="number" step={chip.stap} defaultValue={chip.invoer} autoFocus
             onFocus={(e) => e.currentTarget.select()}
           onBlur={(e) => commit(e.target.value)}
           onKeyDown={(e) => {
@@ -175,7 +218,7 @@ export function Force(props: {
       ) : (
         <button className="vd-force-num" style={{ whiteSpace: "nowrap" }}
           title={t("kit.klikWijzig", { naam: name })} onClick={() => ctx.setEditing(name)}>
-          {label}={fmt(value, dec, i18n.language)}<small>{unit}</small>
+          {label}={chip.getal}<small>{chip.eenheid}</small>
         </button>
       )}
     </div>

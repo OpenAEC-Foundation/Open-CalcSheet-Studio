@@ -14,7 +14,7 @@
  * Draaien:  node scripts/check-eenheidstelsel.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
-import { parse, evaluate, exprToLatex, render, grootheidVan, decimalenNa, STELSELS, toonInvoer, invoerNaarBron, zetProjectEenheden } from "../packages/core/dist/index.js";
+import { parse, evaluate, exprToLatex, render, grootheidVan, decimalenNa, STELSELS, toonInvoer, invoerNaarBron, zetProjectEenheden, omrekenen, eenheidUitBeeld, eenheidInBeeld } from "../packages/core/dist/index.js";
 import { laadTemplate, reken } from "./lib/refcheck.mjs";
 
 let fouten = 0;
@@ -207,6 +207,17 @@ gelijk("F = 2 kipf2\nG = F to kN", "G", "17.79 kN", "een projecteenheid uit een 
 gelijk("d = 3\nz = 12 / 2 d", "z", "18", "een afgewezen projecteenheid (d) laat een variabele d met rust");
 zetProjectEenheden([]);
 meld((uitkomst("F = 2 kipf", "F") ?? "").startsWith("Error:"), "zonder projecteenheden is kipf weer onbekend");
+
+console.log("\nVoor de beelden: omrekenen en de schrijfwijze in beeld");
+meld(Math.abs(omrekenen(4500, "mm", "in") - 177.16535) < 1e-4, "4500 mm = 177,165 in", String(omrekenen(4500, "mm", "in")));
+meld(Math.abs(omrekenen(12, "kN m", "kip ft") - 8.8507) < 1e-3, "12 kNm = 8,851 kip·ft", String(omrekenen(12, "kN m", "kip ft")));
+for (const [in_, uit] of [["kN/m²", "kN/m^2"], ["kNm", "kN m"], ["kN/m¹", "kN/m"], ["kN/m1", "kN/m"], ["kN/m2", "kN/m^2"], ["kN/m3", "kN/m^3"], ["N/mm²", "N/mm^2"], ["kN·m", "kN m"], ["mm", "mm"], ["mm⁴", "mm^4"]]) {
+  meld(eenheidUitBeeld(in_) === uit, `uit beeld: ${in_} → ${uit}`, eenheidUitBeeld(in_));
+}
+for (const [in_, uit] of [["kN / m^2", "kN/m²"], ["kip ft", "kip·ft"], ["N / mm^2", "N/mm²"], ["in^4", "in⁴"], ["klf", "klf"]]) {
+  meld(eenheidInBeeld(in_) === uit, `in beeld: ${in_} → ${uit}`, eenheidInBeeld(in_));
+}
+meld(grootheidVan(eenheidUitBeeld("kNm")) === "moment" && grootheidVan(eenheidUitBeeld("kN/m¹")) === "lijnlast", "kNm is een moment en kN/m¹ een lijnlast");
 
 console.log("\nModules");
 const PROJECT = { CC: 2, K_FI: 1, rekenwijze: 1 };
