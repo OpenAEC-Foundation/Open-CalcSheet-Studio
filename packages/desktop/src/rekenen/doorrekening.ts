@@ -12,9 +12,11 @@
  * De afdruk rekent niet via dit pad: daar moet elk blad klaar zijn voordat er
  * papier uit komt (bladResultaat.ts, bladDoorrekenen.ts).
  */
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import i18next from "i18next";
-import { setAngleMode, type AngleMode } from "@ifc-calc/core";
+import { setAngleMode, type AngleMode, type EvalOpties } from "@ifc-calc/core";
+import { useProjectStore } from "../store/projectStore";
+import { evalOptiesVan } from "../store/projectEenheden";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
@@ -28,6 +30,8 @@ export interface RekenVerzoek {
   hoekmodus: string;
   /** De taal van de uitvoer: de taal van de app (templates/vertalingen.ts). */
   taal?: string;
+  /** Het eenhedenstelsel en de eigen eenheden van het project (store/projectEenheden.ts). */
+  evalOpties?: EvalOpties;
   includes: [string, string][];
   imageUrls: [string, string][];
 }
@@ -135,16 +139,20 @@ export function useDoorrekening(
   // taal: de uitvoer volgt de app, en wie deze hook gebruikt, tekent bij een
   // taalwissel opnieuw (useTranslation in de uitwerking en in het beeld).
   const taal = i18next.language ?? "";
-  const sleutel = [hoekmodus, taal, naam, JSON.stringify(scope), JSON.stringify(waarden), source].join("\u0000");
+  // Het eenhedenstelsel van het project: een wissel geeft een nieuwe sleutel.
+  const gegevens = useProjectStore((s) => s.gegevens);
+  const evalOpties = useMemo(() => evalOptiesVan(gegevens), [gegevens]);
+  const optiesSleutel = JSON.stringify(evalOpties);
+  const sleutel = [hoekmodus, taal, optiesSleutel, naam, JSON.stringify(scope), JSON.stringify(waarden), source].join("\u0000");
   const hier = useSyncExternalStore(abonneer, () => uitkomsten.get(sleutel) ?? null);
 
   useEffect(() => {
     if (!source.trim()) return;
     vraag({
-      sleutel, source, waarden, scope, naam, hoekmodus, taal,
+      sleutel, source, waarden, scope, naam, hoekmodus, taal, evalOpties,
       includes: [...rekentaalIncludes], imageUrls: [...rekentaalImageUrls],
     });
-  }, [sleutel, source, waarden, scope, naam, taal]);
+  }, [sleutel, source, waarden, scope, naam, taal, evalOpties]);
 
   const resultaat = hier?.uitkomst?.resultaat;
   useEffect(() => {

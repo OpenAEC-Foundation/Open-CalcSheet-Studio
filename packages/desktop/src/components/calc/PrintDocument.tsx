@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import i18next from "i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { projectScope, projectWaarde } from "../../store/projectGegevens";
+import { evalOptiesVan } from "../../store/projectEenheden";
 import { usePrintStore } from "../../store/printStore";
 import { ucTekst } from "./bladResultaat";
 import { rekenBladDoor, zorgVoorKernstijlen, type DoorgerekendBlad } from "./bladDoorrekenen";
@@ -49,7 +50,9 @@ export function useUitdraai(): Uitdraai {
     const scope = projectScope(gegevens);
     // Een selectie met alleen verdwenen bladen valt terug op het hele project.
     const gekozen = selectie ? exemplaren.filter((e) => selectie.includes(e.id)) : exemplaren;
-    return (gekozen.length ? gekozen : exemplaren).map((ex) => ({ ex, ...rekenBladDoor(ex, scope) }));
+    // In het eenhedenstelsel van het project, net als op het scherm.
+    const evalOpties = evalOptiesVan(gegevens);
+    return (gekozen.length ? gekozen : exemplaren).map((ex) => ({ ex, ...rekenBladDoor(ex, scope, i18next.language, evalOpties) }));
     // De taal hoort erbij: de uitvoer volgt de taal van de app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exemplaren, gegevens, selectie, soort, i18next.language]);

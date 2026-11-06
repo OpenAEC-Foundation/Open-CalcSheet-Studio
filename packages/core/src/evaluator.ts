@@ -1348,15 +1348,23 @@ export function evaluate(
   opties: EvalOpties = {},
 ): EvaluatedNode[] {
   const scope: Scope = { ...(initialScope ?? {}) };
+  return metOpties(scope, opties, (stand) => evaluateNodes(nodes, scope, selectValues || {}, stand));
+}
+
+/**
+ * Voert een doorrekening uit met de opties van de app en zet daarna alles terug:
+ * `#deg`, `#rad`, `#gra` gelden alleen in dit blad, net als het stelsel en de eigen
+ * eenheden (die van het blad en die van het project).
+ */
+function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T): T {
   const appModus = currentAngleMode;
   const vorigStelsel = huidigStelsel;
   huidigStelsel = opties.stelsel;
   const stand = nieuweStand();
   try {
     for (const e of opties.eigenEenheden ?? []) maakEenheid(e.naam, e.uitdrukking, scope, stand);
-    return evaluateNodes(nodes, scope, selectValues || {}, stand);
+    return doe(stand);
   } finally {
-    // `#deg`, `#rad`, `#gra` gelden alleen in dit blad, en de eigen eenheden ook.
     currentAngleMode = appModus;
     huidigStelsel = vorigStelsel;
     ruimEenhedenOp(stand);
@@ -1382,16 +1390,10 @@ export function evaluateMetScope(
   nodes: AstNode[],
   selectValues?: SelectValues,
   initialScope?: Scope,
+  opties: EvalOpties = {},
 ): { nodes: EvaluatedNode[]; scope: Scope } {
   const scope: Scope = { ...(initialScope ?? {}) };
-  const appModus = currentAngleMode;
-  const stand = nieuweStand();
-  try {
-    return { nodes: evaluateNodes(nodes, scope, selectValues || {}, stand), scope };
-  } finally {
-    currentAngleMode = appModus;
-    ruimEenhedenOp(stand);
-  }
+  return metOpties(scope, opties, (stand) => ({ nodes: evaluateNodes(nodes, scope, selectValues || {}, stand), scope }));
 }
 
 /** Rekent één uitdrukking uit met de betekenis van de rekentaal. Werpt bij een fout. */
@@ -1520,17 +1522,12 @@ function voerOpdrachtUit(node: OpdrachtNode, stand: Stand): void {
  * from a parent sheet without rendering its output. Errors are silently
  * ignored — partial scope is still returned.
  */
-export function extractScope(nodes: AstNode[], selectValues?: SelectValues, initialScope?: Scope): Scope {
+export function extractScope(nodes: AstNode[], selectValues?: SelectValues, initialScope?: Scope, opties: EvalOpties = {}): Scope {
   const scope: Scope = { ...(initialScope ?? {}) };
-  const appModus = currentAngleMode;
-  const stand = nieuweStand();
   try {
-    evaluateNodes(nodes, scope, selectValues || {}, stand);
+    metOpties(scope, opties, (stand) => evaluateNodes(nodes, scope, selectValues || {}, stand));
   } catch {
     /* swallow — best-effort scope extraction */
-  } finally {
-    currentAngleMode = appModus;
-    ruimEenhedenOp(stand);
   }
   // Strip internal flags.
   delete scope[BREAK_FLAG];

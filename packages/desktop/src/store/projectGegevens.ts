@@ -40,6 +40,24 @@ export interface VeldDef {
 }
 
 export const PROJECT_VELDEN: VeldDef[] = [
+  // ── Eenheden ─────────────────────────────────────────────────────────────
+  // Het eenhedenstelsel: alleen de weergave, de berekening blijft dezelfde
+  // (store/projectEenheden.ts). Geen getal, dus geen variabele in de bladen.
+  {
+    groep: "Units",
+    naam: "eenheden",
+    label: "Unit system",
+    type: "keuze",
+    standaard: "blad",
+    opties: [
+      { label: "As written in the sheet", waarde: "blad" },
+      { label: "SI (mm)", waarde: "si-mm" },
+      { label: "SI (m)", waarde: "si-m" },
+      { label: "US customary", waarde: "us" },
+      { label: "Custom", waarde: "eigen" },
+    ],
+    hint: "Every value is shown in the unit of its quantity, also in the bundled modules and on paper. Only the display changes: results and unity checks stay the same.",
+  },
   // ── Rekenwijze ───────────────────────────────────────────────────────────
   // Op de plaatsen waar de referentie-uitwerking aantoonbaar iets anders doet dan de norm
   // rekent elk blad béide uitkomsten uit. Dit veld bepaalt welke van de twee de
