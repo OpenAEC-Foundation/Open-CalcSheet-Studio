@@ -16,6 +16,8 @@ import { parseNominatim, zoekAdres } from "../packages/desktop/src/kaart/nominat
 import {
   tegelPositie, metersPerPixel, zoomVoor, uitsnede, schaalbalk,
 } from "../packages/desktop/src/kaart/tegels.ts";
+import { KAARTEN, normaliseerSituatie, situatieBijPunt } from "../packages/desktop/src/rapport/situatie.ts";
+import { normaliseerRapport, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -169,6 +171,52 @@ console.log("\nZoeken bij de dienst");
   let signaal = null;
   await zoekAdres("y", "en", async (_u, init) => { signaal = init.signal; return { ok: true, status: 200, json: async () => [] }; });
   meld(signaal instanceof AbortSignal, "zoekAdres geeft standaard een signaal mee");
+}
+
+console.log("\nDe situatie in het rapport");
+{
+  meld(toon(KAARTEN) === toon([
+    { id: "gebied", meters: 15000, breedte: 560, hoogte: 460 },
+    { id: "omgeving", meters: 2000, breedte: 1180, hoogte: 640 },
+    { id: "locatie", meters: 300, breedte: 560, hoogte: 460 },
+  ]), "KAARTEN: gebied, omgeving en locatie met hun maten", toon(KAARTEN));
+  const goed = {
+    tonen: true, punt: { lat: 52.0907, lon: 5.1214 }, datum: "2026-11-06",
+    kaarten: [
+      { id: "gebied", zoom: 11, jpeg: "QUJD" },
+      { id: "omgeving", zoom: 15, jpeg: "REVG" },
+      { id: "locatie", zoom: 17, jpeg: "R0hJ" },
+    ],
+  };
+  meld(toon(normaliseerSituatie(goed)) === toon(goed), "een goede situatie komt ongewijzigd terug", toon(normaliseerSituatie(goed)));
+  const metWater = { ...goed, water: { afstand: 120, naam: "Vecht", punt: { lat: 52.09, lon: 5.12 } } };
+  meld(toon(normaliseerSituatie(metWater)) === toon(metWater), "het water blijft behouden", toon(normaliseerSituatie(metWater)));
+  meld(!("water" in normaliseerSituatie({ ...goed, water: { afstand: "ver" } })), "een kapot water valt weg");
+  const wereld = { ...goed, kaarten: [{ id: "wereld", zoom: 1, jpeg: "QUJD" }] };
+  meld(normaliseerSituatie(wereld) === undefined, "alleen een kaart met id wereld geeft undefined");
+  const mix = normaliseerSituatie({ ...goed, kaarten: [{ id: "wereld", zoom: 1, jpeg: "QUJD" }, goed.kaarten[0], { id: "locatie", zoom: 17 }] });
+  meld(mix !== undefined && mix.kaarten.length === 1 && mix.kaarten[0].id === "gebied", "een kaart met onbekende id of zonder jpeg valt weg", toon(mix));
+  meld(normaliseerSituatie({ ...goed, kaarten: [] }) === undefined, "kaarten: [] geeft undefined");
+  meld(normaliseerSituatie({ ...goed, punt: { lat: 200, lon: 5 } }) === undefined, "punt met lat 200 geeft undefined");
+  meld(normaliseerSituatie("situatie") === undefined && normaliseerSituatie(null) === undefined && normaliseerSituatie([goed]) === undefined, "een tekst, null en een lijst geven undefined");
+  meld(normaliseerSituatie({ ...goed, tonen: "ja" })?.tonen === true, "tonen dat geen boolean is: standaard aan");
+  meld(normaliseerSituatie({ ...goed, tonen: false })?.tonen === false, "tonen: false blijft");
+
+  const p = { lat: 52.0907, lon: 5.1214 };
+  meld(situatieBijPunt(goed, { lat: 52.0907 + 0.5 / 111320, lon: 5.1214 }) === "actueel", "0,5 m ernaast is actueel");
+  meld(situatieBijPunt(goed, { lat: 52.0907 + 50 / 111320, lon: 5.1214 }) === "verouderd", "50 m ernaast is verouderd");
+  meld(situatieBijPunt(goed, p) === "actueel", "hetzelfde punt is actueel");
+  meld(situatieBijPunt(goed, null) === "geen", "zonder punt: geen");
+  meld(situatieBijPunt(undefined, p) === "geen", "zonder situatie: geen");
+
+  const teksten = { inleiding: "x" };
+  const oud = JSON.parse(JSON.stringify(standaardRapport("06-11-2026", teksten, "nl")));
+  meld(!("situatie" in normaliseerRapport(oud, "06-11-2026", teksten, "nl")), "een rapport zonder situatie krijgt er geen");
+  const mijn = normaliseerRapport({ ...oud, situatie: goed }, "06-11-2026", teksten, "nl");
+  meld(toon(mijn.situatie) === toon(goed), "een rapport met situatie houdt hem", toon(mijn.situatie));
+  const terug = normaliseerRapport(JSON.parse(JSON.stringify(mijn)), "06-11-2026", teksten, "nl");
+  meld(toon(terug.situatie) === toon(goed), "de situatie komt na een rondgang via JSON gelijk terug");
+  meld(!("situatie" in normaliseerRapport({ ...oud, situatie: wereld }, "06-11-2026", teksten, "nl")), "een kapotte situatie in het rapport valt weg");
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles OK");
