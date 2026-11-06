@@ -204,6 +204,12 @@
   gap: 6px;
 }
 
+/* Een waarde die niet bij de eenheid van het veld past (EenheidInvoer.tsx). */
+.rapport-panel input.rapport-invoer-fout {
+  border-color: #dc2626;
+  outline-color: #dc2626;
+}
+
 .rapport-eenheid {
   flex-shrink: 0;
   font-size: 11px;

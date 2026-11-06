@@ -217,7 +217,7 @@
     "qlast": "Roof q-load",
     "bijAlfa": "at α",
     "dakhellingInvullen": "— (enter the roof pitch)",
-    "qkDirect": "{{qk}} kN; directly below the roof decking {{direct}} kN"
+    "qkDirect": "{{qk}}; directly below the roof decking {{direct}}"
   },
   "opbouw": {
     "geen": "No build-ups in this group yet.",
@@ -231,8 +231,8 @@
     "naamLabel": "Build-up name",
     "naamVlak": "Name, e.g. Ground floor",
     "naamGevel": "Name, e.g. Front facade",
-    "soortVlak": "area build-up · kN/m²",
-    "soortGevel": "facade build-up · kN/m¹",
+    "soortVlak": "area build-up · {{eenheid}}",
+    "soortGevel": "facade build-up · {{eenheid}}",
     "verwijderen": "Remove build-up",
     "zonderNaam": "untitled",
     "verwijderVraag": "Remove build-up \"{{naam}}\" with all its layers?",

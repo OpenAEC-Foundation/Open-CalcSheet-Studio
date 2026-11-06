@@ -217,7 +217,7 @@
     "qlast": "q-last",
     "bijAlfa": "bij α",
     "dakhellingInvullen": "— (vul de dakhelling in)",
-    "qkDirect": "{{qk}} kN; direct onder het dakbeschot {{direct}} kN"
+    "qkDirect": "{{qk}}; direct onder het dakbeschot {{direct}}"
   },
   "opbouw": {
     "geen": "Nog geen opbouwen in deze groep.",
@@ -231,8 +231,8 @@
     "naamLabel": "Naam van de opbouw",
     "naamVlak": "Naam, bijv. Begane grondvloer",
     "naamGevel": "Naam, bijv. Voorgevel",
-    "soortVlak": "vlakopbouw · kN/m²",
-    "soortGevel": "gevelopbouw · kN/m¹",
+    "soortVlak": "vlakopbouw · {{eenheid}}",
+    "soortGevel": "gevelopbouw · {{eenheid}}",
     "verwijderen": "Opbouw verwijderen",
     "zonderNaam": "zonder naam",
     "verwijderVraag": "Opbouw \"{{naam}}\" met al zijn lagen verwijderen?",
