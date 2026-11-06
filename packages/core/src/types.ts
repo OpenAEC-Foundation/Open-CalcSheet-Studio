@@ -307,6 +307,19 @@ export interface OpdrachtNode {
   hidden?: boolean;
 }
 
+/**
+ * `.naam = uitdrukking`: een eigen eenheid, zoals in het `.cpd`-formaat. De
+ * uitdrukking is 1 (een nieuwe basiseenheid, `.EUR = 1`) of een waarde met
+ * eenheid (`.kipf = 1000 lbf`). De eenheid geldt vanaf deze regel tot het
+ * einde van het blad.
+ */
+export interface EenheidDefNode {
+  type: 'eenheid-def';
+  name: string;
+  expression: string;
+  hidden?: boolean;
+}
+
 /** `#break` — early exit from the enclosing #repeat / #for loop. */
 export interface BreakNode {
   type: 'break';
@@ -336,7 +349,8 @@ export type AstNode =
   | ImageNode
   | SelectNode
   | GefUploadNode
-  | OpdrachtNode;
+  | OpdrachtNode
+  | EenheidDefNode;
 
 export interface EvaluatedHeading {
   type: 'heading';
@@ -581,7 +595,16 @@ export interface EvaluatedGefUpload {
   scherm?: boolean;
 }
 
+/** Een eigen eenheid in beeld; `result` is de definitie ("1000 lbf") of een fout ("Error: …"). */
+export interface EvaluatedEenheidDef {
+  type: 'eenheid-def';
+  name: string;
+  expression: string;
+  result: string;
+}
+
 export type EvaluatedNode =
+  | EvaluatedEenheidDef
   | EvaluatedHeading
   | EvaluatedText
   | EvaluatedAssignment

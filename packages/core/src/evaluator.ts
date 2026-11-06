@@ -1329,11 +1329,13 @@ export function evaluate(
 ): EvaluatedNode[] {
   const scope: Scope = { ...(initialScope ?? {}) };
   const appModus = currentAngleMode;
+  const stand = nieuweStand();
   try {
-    return evaluateNodes(nodes, scope, selectValues || {}, nieuweStand());
+    return evaluateNodes(nodes, scope, selectValues || {}, stand);
   } finally {
-    // `#deg`, `#rad`, `#gra` gelden alleen in dit blad.
+    // `#deg`, `#rad`, `#gra` gelden alleen in dit blad, en de eigen eenheden ook.
     currentAngleMode = appModus;
+    ruimEenhedenOp(stand);
   }
 }
 
@@ -1348,10 +1350,12 @@ export function evaluateMetScope(
 ): { nodes: EvaluatedNode[]; scope: Scope } {
   const scope: Scope = { ...(initialScope ?? {}) };
   const appModus = currentAngleMode;
+  const stand = nieuweStand();
   try {
-    return { nodes: evaluateNodes(nodes, scope, selectValues || {}, nieuweStand()), scope };
+    return { nodes: evaluateNodes(nodes, scope, selectValues || {}, stand), scope };
   } finally {
     currentAngleMode = appModus;
+    ruimEenhedenOp(stand);
   }
 }
 
@@ -1394,10 +1398,44 @@ interface Stand {
   weergave: 'equ' | 'val' | 'noc';
   invullen: 'varsub' | 'nosub' | 'novar';
   decimalen: number | null;
+  /** De eigen eenheden die dit blad maakte (`.naam = …`); na het blad gaan ze weg. */
+  eenheden: string[];
 }
 
 function nieuweStand(): Stand {
-  return { weergave: 'equ', invullen: 'varsub', decimalen: null };
+  return { weergave: 'equ', invullen: 'varsub', decimalen: null, eenheden: [] };
+}
+
+/**
+ * Maakt een eigen eenheid, zoals in het `.cpd`-formaat: `.EUR = 1` is een nieuwe
+ * basiseenheid, `.kipf = 1000 lbf` volgt uit een andere. Geeft de foutmelding als
+ * het niet kan; dan verandert er niets.
+ */
+function maakEenheid(naam: string, uitdrukking: string, scope: Scope, stand: Stand): string | null {
+  if (naam in scope || isEenheidNaam(naam)) return `Error: ${naam} already exists as a unit or variable`;
+  let waarde: unknown;
+  try {
+    waarde = reken(uitdrukking, scope);
+  } catch (err) {
+    return `Error: ${(err as Error).message}`;
+  }
+  try {
+    if (isUnit(waarde)) math.createUnit(naam, waarde.toString());
+    else if (waarde === 1) math.createUnit(naam);
+    else return 'Error: a custom unit is 1 (a new base unit) or follows from another unit, as in .kipf = 1000 lbf';
+  } catch (err) {
+    return `Error: ${(err as Error).message}`;
+  }
+  stand.eenheden.push(naam);
+  return null;
+}
+
+/** Haalt de eigen eenheden van een blad weer weg, de laatste eerst. */
+function ruimEenhedenOp(stand: Stand): void {
+  // `deleteUnit` bestaat in mathjs 13, maar staat niet in de typen.
+  const unit = math.Unit as unknown as { deleteUnit(naam: string): void };
+  for (const naam of stand.eenheden.reverse()) unit.deleteUnit(naam);
+  stand.eenheden = [];
 }
 
 /** Voert een opdracht uit (zie OpdrachtNode en Stand). */
@@ -1433,12 +1471,14 @@ function voerOpdrachtUit(node: OpdrachtNode, stand: Stand): void {
 export function extractScope(nodes: AstNode[], selectValues?: SelectValues, initialScope?: Scope): Scope {
   const scope: Scope = { ...(initialScope ?? {}) };
   const appModus = currentAngleMode;
+  const stand = nieuweStand();
   try {
-    evaluateNodes(nodes, scope, selectValues || {}, nieuweStand());
+    evaluateNodes(nodes, scope, selectValues || {}, stand);
   } catch {
     /* swallow — best-effort scope extraction */
   } finally {
     currentAngleMode = appModus;
+    ruimEenhedenOp(stand);
   }
   // Strip internal flags.
   delete scope[BREAK_FLAG];
@@ -1749,6 +1789,12 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         if (node.hidden) break;
         result.push({ type: 'image', src: node.src });
         break;
+
+      case 'eenheid-def': {
+        const fout = maakEenheid(node.name, node.expression, scope, stand);
+        if (!node.hidden) result.push({ type: 'eenheid-def', name: node.name, expression: node.expression, result: fout ?? node.expression });
+        break;
+      }
 
       case 'gef-upload':
         if (node.hidden) break;

@@ -75,6 +75,8 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
 // The language's use of Greek and other non-ASCII letters (θ, α, β, …).
 const IDENT = '[\\p{L}_][\\p{L}\\p{N}_]*';
 const ASSIGNMENT_RE = new RegExp(`^(${IDENT})\\s*=\\s*(.+)$`, 'u');
+/** `.naam = uitdrukking`: een eigen eenheid (EenheidDefNode). */
+const EENHEID_DEF_RE = new RegExp(`^\\.(${IDENT})\\s*=\\s*(.+)$`, 'u');
 const INPUT_PROMPT_RE = new RegExp(`^(${IDENT})\\s*=\\s*\\?\\s*(.*)$`, 'u');
 // Parameters mogen met een komma of een puntkomma gescheiden worden: de rekentaal
 // schrijft puntkomma's, mathjs komma's, en beide horen hier te werken.
@@ -824,6 +826,12 @@ export interface ParseOptions {
    * `src="./Images/Picture0.png"` and we'll match the `"Picture0.png"` key.
    */
   imageUrls?: ReadonlyMap<string, string>;
+  /**
+   * Namen van eigen eenheden die buiten het blad gemaakt zijn (de eenheden van het
+   * project). Ze gelden bij het lezen als eenheid achter een getal, net als de
+   * namen die het blad zelf met `.naam = …` maakt.
+   */
+  eenheden?: readonly string[];
 }
 
 /**
@@ -862,6 +870,18 @@ function isOpdrachtRegel(code: string): boolean {
 
 // ── Entry point ────────────────────────────────────────────────────────
 export function parse(source: string, options: ParseOptions = {}): AstNode[] {
+  // De eigen eenheden van dit blad en van het project gelden tijdens het lezen.
+  const vorige = eigenEenheden;
+  const inBlad = [...source.matchAll(new RegExp(`^[ \\t]*\\.(${IDENT})[ \\t]*=`, 'gmu'))].map((m) => m[1]);
+  eigenEenheden = new Set([...(options.eenheden ?? []), ...inBlad]);
+  try {
+    return parseBron(source, options);
+  } finally {
+    eigenEenheden = vorige;
+  }
+}
+
+function parseBron(source: string, options: ParseOptions): AstNode[] {
   // De code van een `@js`-blok is geen rekentaal: vóór alle bewerkingen eruit,
   // en nog een keer na het invoegen, voor een blok uit een `#include`.
   const jsBlokken: JsCode[] = [];
@@ -1401,6 +1421,14 @@ function parseLines(
       continue;
     }
 
+    // Een eigen eenheid: `.kipf = 1000 lbf`.
+    const eenheidMatch = trimmed.match(EENHEID_DEF_RE);
+    if (eenheidMatch) {
+      nodes.push(markHidden({ type: 'eenheid-def', name: eenheidMatch[1], expression: normalizeExpression(eenheidMatch[2].trim()) }, state));
+      i++;
+      continue;
+    }
+
     // Generic assignment
     const assignMatch = trimmed.match(ASSIGNMENT_RE);
     if (assignMatch) {
@@ -1611,7 +1639,7 @@ function isDoeleenheid(doel: string): boolean {
   const namen = t.match(/[\p{L}_°][\p{L}\p{N}_°]*/gu) ?? [];
   if (namen.length === 0) return false;
   return namen.every((n) => {
-    if (n === 'in' || n === 'inch') return true;
+    if (n === 'in' || n === 'inch' || eigenEenheden.has(n)) return true;
     if (GEEN_EENHEID.has(n)) return false;
     try {
       return Unit.isValuelessUnit(n);
@@ -1631,7 +1659,16 @@ const EENHEID_EEN_LETTER = new Set(['m', 'N', 'J', 'W', 'V']);
 /** Woorden die mathjs als eenheid kent maar hier een bewerking zijn (`x to mm`, `x in mm`). */
 const GEEN_EENHEID = new Set(['to', 'in', 'and', 'or', 'xor', 'not', 'mod']);
 
+/**
+ * Eigen eenheden die bij het lezen van dit blad gelden: wat het blad zelf met
+ * `.naam = …` maakt en wat `ParseOptions.eenheden` meegeeft. De rekenkern maakt ze
+ * pas bij het rekenen aan; het lezen moet ze eerder kennen, anders hoort `0.92EUR`
+ * niet bij elkaar.
+ */
+let eigenEenheden: ReadonlySet<string> = new Set();
+
 function isEenheid(naam: string): boolean {
+  if (eigenEenheden.has(naam)) return true;
   if (GEEN_EENHEID.has(naam)) return false;
   if (naam.length === 1 && !EENHEID_EEN_LETTER.has(naam)) return false;
   try {

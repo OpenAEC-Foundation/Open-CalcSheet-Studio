@@ -14,7 +14,7 @@
  * Draaien:  node scripts/check-eenheidstelsel.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
-import { parse, evaluate, exprToLatex } from "../packages/core/dist/index.js";
+import { parse, evaluate, exprToLatex, render } from "../packages/core/dist/index.js";
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -65,6 +65,28 @@ const kipFt = uitkomst("F = 10 kip\na = 2 ft\nM = a*F", "M");
 meld(/kip ft$/.test(kipFt ?? ""), "een moment in kip en ft: de lengte achteraan (kip ft), ook als ft eerst staat", kipFt);
 const psiVar = exprToLatex("psi * 2");
 meld(psiVar.includes("\\psi"), "een variabele psi (ψ) blijft Grieks", psiVar);
+
+console.log("\nEigen eenheden");
+gelijk(".kipf = 1000 lbf\nF = 3 kipf\nG = F to kN", "G", "13.34 kN", "een eigen eenheid uit een andere: 3 kipf = 13.34 kN");
+gelijk(".EUR = 1\n.USD = 0.92 EUR\nP = 100 USD to EUR", "P", "92 EUR", "een nieuwe basiseenheid, met het getal vast aan de eenheid: 100 USD = 92 EUR");
+const lek = uitkomst("F = 3 kipf", "F") ?? "";
+meld(lek.startsWith("Error:"), "een eigen eenheid geldt niet in het volgende blad", lek);
+/** De node van de definitieregel `.naam = …`. */
+const definitie = (bron, naam) => alleNodes(evaluate(parse(bron))).find((n) => n.type === "eenheid-def" && n.name === naam);
+const kN = definitie(".kN = 2 N", "kN");
+meld(String(kN?.result ?? "").startsWith("Error:"), "een eigen eenheid met de naam van een bestaande geeft een fout", kN?.result);
+gelijk(".kN = 2 N\nF = 1 kN to N", "F", "1000 N", "en de bestaande eenheid blijft wat hij was: 1 kN = 1000 N");
+const dozijn = definitie(".dozijn = 12", "dozijn");
+meld(String(dozijn?.result ?? "").startsWith("Error:"), "een getal zonder eenheid anders dan 1 geeft een fout", dozijn?.result);
+const variabele = definitie("a = 2\n.a = 3 N", "a");
+meld(String(variabele?.result ?? "").startsWith("Error:"), "een eigen eenheid met de naam van een variabele geeft een fout", variabele?.result);
+for (const bron of [".5", ".Opmerking zonder is-teken"]) {
+  const nodes = parse(bron);
+  meld(!nodes.some((n) => n.type === "eenheid-def"), `"${bron}" is geen definitie van een eenheid`, JSON.stringify(nodes));
+}
+const html = render(evaluate(parse(".kipf = 1000 lbf")));
+meld(html.includes("kipf") && html.includes("lbf") && !html.includes(".kipf") && !html.includes("Error"),
+  "de definitieregel staat in beeld als eenheid, zonder de punt", html.slice(0, 200));
 
 if (fouten > 0) {
   console.error(`\nEenheden: ${fouten} afwijking(en).`);

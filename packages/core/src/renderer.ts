@@ -297,6 +297,9 @@ function renderNode(node: EvaluatedNode): string {
 
     case 'gef-upload':
       return renderGefUpload(node);
+
+    case 'eenheid-def':
+      return renderEenheidDef(node);
   }
 }
 
@@ -305,6 +308,15 @@ function renderUserFunction(node: { name: string; params: string[]; expression: 
   const paramsLatex = node.params.map(nameToLatex).join(", \\, ");
   const exprLatex = exprToLatex(node.expression);
   const latex = `${nameLatex}(${paramsLatex}) = ${exprLatex}`;
+  return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
+}
+
+/** Een eigen eenheid: de naam rechtop, als eenheid, met zijn definitie. */
+function renderEenheidDef(node: { name: string; expression: string; result: string }): string {
+  const latex = `\\mathrm{${node.name.replace(/_/g, '\\_')}} = ${exprToLatex(node.expression)}`;
+  if (node.result.startsWith('Error:')) {
+    return `<div class="calc-line calc-error">${renderLatex(latex)} <span class="calc-error-msg">${escapeHtml(node.result)}</span></div>`;
+  }
   return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
 }
 
