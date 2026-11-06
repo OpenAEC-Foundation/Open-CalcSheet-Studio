@@ -59,6 +59,9 @@ function isVolledig(
   );
 }
 
+/** Het lettertype van alle teksten in het beeld; meten en tekenen gebruiken dezelfde. */
+const lettertype = (fs: number) => `${fs}px sans-serif`;
+
 /** Een rode speld waarvan de punt op (x, y) staat. */
 function tekenSpeld(c: CanvasRenderingContext2D, x: number, y: number, h: number) {
   const r = h * 0.2;
@@ -94,7 +97,7 @@ function tekenLabel(
   uitlijning: "left" | "right" | "center",
   fs: number,
 ) {
-  c.font = `${fs}px sans-serif`;
+  c.font = lettertype(fs);
   const b = c.measureText(tekst).width;
   const pad = fs * 0.3;
   const x0 = uitlijning === "left" ? x : uitlijning === "right" ? x - b : x - b / 2;
@@ -136,33 +139,65 @@ export async function maakKaartbeeld(
   // Vaste maten: de tegels hebben op elk beeld dezelfde pixelgrootte.
   const fs = 20;
 
+  let waterLabel: { x: number; y: number } | undefined;
   if (opties.water) {
     const a = tegelPositie(p, zoom);
     const w = tegelPositie(opties.water.punt, zoom);
-    const wx = mx + (w.x - a.x) * TEGEL;
-    const wy = my + (w.y - a.y) * TEGEL;
+    let wx = mx + (w.x - a.x) * TEGEL;
+    let wy = my + (w.y - a.y) * TEGEL;
+    // Ligt het water buiten het beeld, dan loopt de lijn tot net binnen de rand en eindigt in een pijl.
+    const rand = fs * 1.2;
+    const buiten = wx < rand || wx > k.breedte - rand || wy < rand || wy > k.hoogte - rand;
+    const dx = wx - mx;
+    const dy = wy - my;
+    if (buiten) {
+      const tx = dx > 0 ? (k.breedte - rand - mx) / dx : dx < 0 ? (rand - mx) / dx : Infinity;
+      const ty = dy > 0 ? (k.hoogte - rand - my) / dy : dy < 0 ? (rand - my) / dy : Infinity;
+      const t = Math.min(tx, ty, 1);
+      wx = mx + dx * t;
+      wy = my + dy * t;
+    }
     c.save();
     c.strokeStyle = "#1565c0";
+    c.fillStyle = "#1565c0";
     c.lineWidth = Math.max(3, fs * 0.2);
     c.setLineDash([fs * 0.7, fs * 0.45]);
     c.beginPath();
     c.moveTo(mx, my);
     c.lineTo(wx, wy);
     c.stroke();
+    if (buiten) {
+      const hoek = Math.atan2(dy, dx);
+      const l = fs * 1.2;
+      c.setLineDash([]);
+      c.beginPath();
+      c.moveTo(wx, wy);
+      c.lineTo(wx - l * Math.cos(hoek - 0.45), wy - l * Math.sin(hoek - 0.45));
+      c.lineTo(wx - l * Math.cos(hoek + 0.45), wy - l * Math.sin(hoek + 0.45));
+      c.closePath();
+      c.fill();
+    }
     c.restore();
-    const lx = Math.min(Math.max(wx, mx / 2), k.breedte - mx / 2);
-    const ly = Math.min(Math.max(wy - fs * 0.8, fs * 1.5), k.hoogte - fs * 4);
-    tekenLabel(c, opties.water.label, lx, ly, "center", fs);
+    // Het label blijft altijd binnen het beeld, ook voor water aan de rand of daarbuiten.
+    // Het wordt na de speld getekend (zie onder), zodat de speld er niet overheen valt.
+    c.font = lettertype(fs);
+    const halve = c.measureText(opties.water.label).width / 2 + fs * 0.3;
+    const lx = Math.min(Math.max(wx, halve), k.breedte - halve);
+    let ly = Math.min(Math.max(wy - fs * 0.8, fs * 1.5), k.hoogte - fs * 4);
+    // Ligt het water vlak bij de speld, dan staat het label boven de kop van de speld.
+    if (Math.hypot(wx - mx, wy - my) <= 40) ly = Math.max(my - 52 - fs * 0.6, fs * 1.5);
+    waterLabel = { x: lx, y: ly };
   }
 
   tekenSpeld(c, mx, my, 52);
+  if (opties.water && waterLabel) tekenLabel(c, opties.water.label, waterLabel.x, waterLabel.y, "center", fs);
 
   const marge = fs * 0.6;
   const balk = schaalbalk(p.lat, zoom, k.breedte * 0.3);
   const by = k.hoogte - marge - fs * 1.9;
   c.fillStyle = "rgba(255,255,255,0.85)";
   const tekst = opties.schaalLabel(balk.meters);
-  c.font = `${fs}px sans-serif`;
+  c.font = lettertype(fs);
   const tb = Math.max(balk.px, c.measureText(tekst).width);
   c.fillRect(marge - fs * 0.3, by - fs * 0.3, tb + fs * 0.6, fs * 2.2);
   c.fillStyle = "#222222";

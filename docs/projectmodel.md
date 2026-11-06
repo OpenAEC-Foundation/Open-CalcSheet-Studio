@@ -199,9 +199,14 @@ dan heeft het project geen locatie.
 
 De kaarten van die plek staan in het rapport, als `rapport.situatie`: vaste kaartbeelden
 (`gebied`, `omgeving`, `locatie`) als JPEG met zoomniveau, het punt en de datum waarvoor ze zijn
-gemaakt, het vinkje `tonen` en eventueel het dichtstbijzijnde `water`. Ze worden bewaard in het
+gemaakt, het vinkje `tonen` en het gemeten `water`. Ze worden bewaard in het
 project en veranderen niet meer tot de gebruiker ze vernieuwt. Op papier verschijnt de pagina
-alleen als het project een geldige locatie heeft. `report_get` en `report_set` geven per kaart
+alleen als het project een geldige locatie heeft. `water` is `{afstand, naam, punt}` (afstand in meters, `punt` het dichtstbijzijnde punt van het
+water). Ontbreekt `water`, dan is er niet gemeten en staat er op papier "—". Is `water` `null`, dan
+is er gemeten en ligt er geen open water binnen 10 km. Is het dichtstbijzijnde water de kustlijn, dan staat `soort: "kust"` in `water` (de kust heeft zelden een naam) en volgt "(kust)" op papier. Beperking: een rivier die in OpenStreetMap alleen als lijn (`waterway=river`, zonder vlak) staat, telt niet mee. De omgevingskaart toont bij een meting de
+lijn naar het water. Een nieuwe meting is een handeling van de gebruiker (de knop bij de locatie);
+bij het vernieuwen van de kaarten blijft `water` alleen staan als het punt gelijk is gebleven.
+`report_get` en `report_set` geven per kaart
 alleen `{id, zoom, bytes}` terug, niet de JPEG.
 
 ## Taal van het rapport

@@ -315,7 +315,10 @@
       "kaartenVernieuwen": "Kaarten vernieuwen",
       "kaartenBezig": "Kaarten maken…",
       "kaartenMislukt": "De kaarten konden niet worden gemaakt. Controleer je internetverbinding en probeer het opnieuw; de bestaande kaarten blijven staan.",
-      "verouderd": "De kaarten in het rapport horen bij een ander punt. Vernieuw ze met de knop."
+      "verouderd": "De kaarten in het rapport horen bij een ander punt. Vernieuw ze met de knop.",
+      "waterMeten": "Afstand tot open water meten",
+      "waterBezig": "Afstand meten…",
+      "waterMislukt": "De afstand tot open water kon niet worden gemeten. Controleer je internetverbinding en probeer het later opnieuw; een eerdere meting blijft staan."
     }
   },
   "windkaart": {

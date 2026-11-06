@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { klasse } from "../../../rapport/normwaarden";
 import { leesPunt, puntTekst } from "../../../kaart/punt";
-import { schaalTekst } from "../../../kaart/tegels";
-import { onderschrift, situatieBijPunt, type KaartId, type Situatie as SituatieModel } from "../../../rapport/situatie";
+import { onderschrift, situatieBijPunt, waterTekst, type KaartId, type Situatie as SituatieModel } from "../../../rapport/situatie";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { Cel, Leeg, Rij, Vlak } from "./raster";
 
@@ -50,9 +49,8 @@ export default function Situatie({ w }: { w: RapportWeergave }) {
   // Het adres hoort bij het punt van het project; horen de kaarten bij een ander punt, dan blijft het weg.
   const adresHoortErbij = situatieBijPunt(situatie, leesPunt(gegevens.locatie_punt)) === "actueel";
   const terrein = t(`afdruk.situatie.terrein.${klasse(gegevens.terreincategorie, 2)}`);
-  const water = situatie.water
-    ? [schaalTekst(situatie.water.afstand, w.eenheden, taal), situatie.water.naam].filter(Boolean).join(", ")
-    : "—";
+  // Afwezig is niet gemeten ("—"); null is gemeten zonder open water binnen 10 km.
+  const water = situatie.water === undefined ? "—" : waterTekst(situatie.water, w.eenheden, taal, t);
 
   return (
     <section className="rpa-sectie rpa-situatie">
