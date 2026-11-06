@@ -1,13 +1,14 @@
 {
   "title": "Instellingen",
   "resetToDefaults": "Standaardwaarden herstellen",
-  "resetConfirm": "Weet je zeker dat je alle instellingen wilt terugzetten naar de standaardwaarden? Het bureauprofiel blijft staan.",
+  "resetConfirm": "Weet je zeker dat je alle instellingen wilt terugzetten naar de standaardwaarden? Het bureauprofiel en de ERPNext-koppeling blijven staan.",
   "tabs": {
     "general": "Algemeen",
     "appearance": "Uiterlijk",
     "units": "Eenheden",
     "bureau": "Bureau en huisstijl",
     "mcp": "API en AI-assistent",
+    "erpnext": "ERPNext",
     "editor": "Editor",
     "files": "Bestanden",
     "shortcuts": "Sneltoetsen",
@@ -177,6 +178,26 @@
     "openapi": "OpenAPI",
     "curl": "Voorbeeld (curl)",
     "curlUitleg": "Leest het open project. In Windows PowerShell: curl.exe in plaats van curl."
+  },
+  "erpnext": {
+    "intro": "Neem de locatie van een project over uit ERPNext. De app zoekt het project op zijn naam in ERPNext: dat is het projectnummer in de projectgegevens. Het verzoek gaat rechtstreeks van deze computer naar het adres hieronder.",
+    "alleenDesktop": "De koppeling met ERPNext bestaat alleen in de desktop-app; in de browser kan de app ERPNext niet bereiken.",
+    "verbinding": "Verbinding",
+    "adres": "Adres",
+    "adresVoorbeeld": "https://erp.voorbeeld.nl",
+    "adresUitleg": "Alleen https://; http://localhost is alleen om te testen.",
+    "sleutel": "API-sleutel",
+    "geheim": "API-geheim",
+    "wissen": "Wissen",
+    "geheimBewaard": "Er is een geheim bewaard.",
+    "geheimGeen": "Er is nog geen geheim bewaard.",
+    "geheimNieuw": "Het nieuwe geheim wordt bewaard bij Opslaan.",
+    "geheimWist": "Het geheim wordt gewist bij Opslaan.",
+    "geheimUitleg": "Het geheim staat in de sleutelbos van het besturingssysteem, niet in de instellingen, en is hier niet terug te lezen.",
+    "geheimMislukt": "Het API-geheim kon niet in de sleutelbos worden bewaard of gewist: {{fout}}",
+    "locatie": "Locatie",
+    "veld": "Veldnaam",
+    "veldUitleg": "Het veld bij het Project in ERPNext met een adres of coördinaten (zoals 52.09, 5.12). Het bestaat niet standaard: de beheerder van ERPNext maakt het aan, bijvoorbeeld als custom_location."
   },
   "about": {
     "appName": "Open CalcSheet Studio",

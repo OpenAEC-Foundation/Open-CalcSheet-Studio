@@ -13,7 +13,11 @@
 //!
 //! De MCP-brug (`mcp_bridge`) is het lokale doorgeefluik voor een
 //! AI-assistent; zie `docs/mcp.md`.
+//!
+//! De ERPNext-koppeling (`erpnext`) haalt de locatie van een project op; het
+//! API-geheim staat in de sleutelbos van het besturingssysteem.
 
+mod erpnext;
 mod jupyter_omgeving;
 mod mcp_bridge;
 mod rapport_pdf;
@@ -192,6 +196,9 @@ pub fn run() {
             mcp_bridge::mcp_bridge_start,
             mcp_bridge::mcp_bridge_stop,
             jupyter_omgeving::jupyter_omgeving_start,
+            erpnext::erpnext_zet_geheim,
+            erpnext::erpnext_heeft_geheim,
+            erpnext::erpnext_project_veld,
         ])
         .run(context)
         .expect("error while running tauri application");

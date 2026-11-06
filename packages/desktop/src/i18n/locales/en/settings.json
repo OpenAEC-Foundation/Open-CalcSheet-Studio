@@ -1,13 +1,14 @@
 {
   "title": "Settings",
   "resetToDefaults": "Reset to Defaults",
-  "resetConfirm": "Are you sure you want to reset all settings to their default values? The office profile is kept.",
+  "resetConfirm": "Are you sure you want to reset all settings to their default values? The office profile and the ERPNext connection are kept.",
   "tabs": {
     "general": "General",
     "appearance": "Appearance",
     "units": "Units",
     "bureau": "Office and house style",
     "mcp": "API and AI assistant",
+    "erpnext": "ERPNext",
     "editor": "Editor",
     "files": "Files",
     "shortcuts": "Shortcuts",
@@ -177,6 +178,26 @@
     "openapi": "OpenAPI",
     "curl": "Example (curl)",
     "curlUitleg": "Reads the open project. In Windows PowerShell: curl.exe instead of curl."
+  },
+  "erpnext": {
+    "intro": "Take the location of a project over from ERPNext. The app finds the project by its name in ERPNext: that is the project number in the project data. The request goes directly from this computer to the address below.",
+    "alleenDesktop": "The connection to ERPNext only exists in the desktop app; in the browser the app cannot reach ERPNext.",
+    "verbinding": "Connection",
+    "adres": "Address",
+    "adresVoorbeeld": "https://erp.example.com",
+    "adresUitleg": "Only https://; http://localhost is for testing only.",
+    "sleutel": "API key",
+    "geheim": "API secret",
+    "wissen": "Clear",
+    "geheimBewaard": "A secret is stored.",
+    "geheimGeen": "No secret stored yet.",
+    "geheimNieuw": "The new secret is stored when you click Save.",
+    "geheimWist": "The secret is cleared when you click Save.",
+    "geheimUitleg": "The secret is kept in the keychain of the operating system, not in the settings, and cannot be read back here.",
+    "geheimMislukt": "The API secret could not be stored or cleared in the keychain: {{fout}}",
+    "locatie": "Location",
+    "veld": "Field name",
+    "veldUitleg": "The field on the Project in ERPNext that holds an address or coordinates (such as 52.09, 5.12). It does not exist by default: the ERPNext administrator creates it, for example as custom_location."
   },
   "about": {
     "appName": "Open CalcSheet Studio",

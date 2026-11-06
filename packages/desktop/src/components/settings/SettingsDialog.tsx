@@ -6,8 +6,16 @@ import Modal from "../Modal";
 import ThemedSelect from "../ThemedSelect";
 import BureauTab from "../rapport/BureauTab";
 import McpTab from "./McpTab";
+import ErpnextTab, { type ErpnextConcept } from "./ErpnextTab";
 import { useBureauStore } from "../../store/bureauProfiel";
 import { leegBureau, type BureauProfiel } from "../../rapport/model";
+import {
+  ERPNEXT_STANDAARD,
+  bewaarErpnextInstellingen,
+  heeftErpnextGeheim,
+  leesErpnextInstellingen,
+  zetErpnextGeheim,
+} from "../../tauri/erpnext";
 import { version as pakketVersie } from "../../../package.json";
 import "../ThemedSelect.css";
 import "./SettingsDialog.css";
@@ -35,7 +43,14 @@ export function themeId(theme?: string): string {
      const TAB_IDS = ["general", "appearance", "calculation", "about"] as const;
    ─────────────────────────────────────────────────────────── */
 // "mcp": API en AI-assistent (McpTab.tsx). Die tab werkt direct, niet via Opslaan.
-const TAB_IDS = ["general", "appearance", "units", "bureau", "mcp", "about"] as const;
+// "erpnext": de koppeling met ERPNext (ErpnextTab.tsx), wel via Opslaan.
+const TAB_IDS = ["general", "appearance", "units", "bureau", "mcp", "erpnext", "about"] as const;
+
+const LEEG_ERPNEXT: ErpnextConcept = { instellingen: ERPNEXT_STANDAARD, geheim: "", wissen: false };
+
+function isTauri(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
 
 /** Persisted under the "units" settings key. Defaults match the calculation language. */
 export interface UnitsSettings {
@@ -100,6 +115,8 @@ export default function SettingsDialog({
   const [draftText, setDraftText] = useState("standard");
   const [draftUnits, setDraftUnits] = useState<UnitsSettings>(UNITS_DEFAULTS);
   const [draftBureau, setDraftBureau] = useState<BureauProfiel>(leegBureau);
+  const [draftErpnext, setDraftErpnext] = useState<ErpnextConcept>(LEEG_ERPNEXT);
+  const [heeftGeheim, setHeeftGeheim] = useState(false);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
 
   // Snapshot of original values when dialog opens, for reverting on Cancel
@@ -132,6 +149,10 @@ export default function SettingsDialog({
       const profiel = useBureauStore.getState().profiel;
       originalBureau.current = profiel;
       setDraftBureau(profiel);
+      // Het geheim zelf komt nooit terug uit de sleutelbos; alleen of het er is.
+      setDraftErpnext(LEEG_ERPNEXT);
+      leesErpnextInstellingen().then((w) => setDraftErpnext({ instellingen: w, geheim: "", wissen: false }));
+      heeftErpnextGeheim().then(setHeeftGeheim);
     }
   }, [open, theme, startTab]);
 
@@ -164,6 +185,8 @@ export default function SettingsDialog({
     applyTextSize(originalText.current);
     setDraftUnits(originalUnits.current);
     setDraftBureau(originalBureau.current);
+    // Een getypt geheim blijft niet in het geheugen staan.
+    setDraftErpnext(LEEG_ERPNEXT);
     onClose();
   };
 
@@ -191,6 +214,20 @@ export default function SettingsDialog({
       ),
     });
 
+    // Adres, sleutel en veld gaan naar de instellingen; het geheim alleen naar de
+    // sleutelbos, en alleen als er een nieuw is getypt of Wissen is gekozen.
+    void bewaarErpnextInstellingen(draftErpnext.instellingen);
+    const geheim = draftErpnext.geheim.trim();
+    if (isTauri() && (geheim !== "" || draftErpnext.wissen)) {
+      zetErpnextGeheim(geheim)
+        .catch(async (fout) => {
+          const { message } = await import("@tauri-apps/plugin-dialog");
+          await message(t("erpnext.geheimMislukt", { fout: String(fout) }), { kind: "warning" });
+        })
+        .catch((err) => console.warn("Melding niet getoond:", err));
+    }
+    setDraftErpnext(LEEG_ERPNEXT);
+
     onClose();
   };
 
@@ -209,6 +246,7 @@ export default function SettingsDialog({
     setDraftUnits(UNITS_DEFAULTS);
     // Het bureauprofiel blijft staan: dat zijn bureaugegevens, geen voorkeur.
     // Voor de huisstijl heeft de tab Bureau een eigen knop "Standaard huisstijl".
+    // De ERPNext-koppeling blijft om dezelfde reden staan.
     setConfirmResetOpen(false);
   };
 
@@ -263,6 +301,14 @@ export default function SettingsDialog({
             <BureauTab profiel={draftBureau} onChange={setDraftBureau} />
           )}
           {activeTab === "mcp" && <McpTab />}
+          {activeTab === "erpnext" && (
+            <ErpnextTab
+              concept={draftErpnext}
+              onChange={setDraftErpnext}
+              heeftGeheim={heeftGeheim}
+              desktop={isTauri()}
+            />
+          )}
           {activeTab === "about" && <AboutTabContent />}
         </div>
       </div>
