@@ -13,6 +13,8 @@ export interface Uitkomst {
 
 const BASIS = "https://nominatim.openstreetmap.org/search";
 const MIN_TUSSENTIJD_MS = 1000;
+/** Kleine marge bovenop de minimale tussentijd: klokresolutie; zo liggen de verzoeken zelf ook zeker een seconde uit elkaar. */
+const MARGE_MS = 10;
 const TIJDSLIMIET_MS = 10000;
 
 /** De geldige regels uit een antwoord (format=jsonv2); de rest valt weg. */
@@ -38,8 +40,8 @@ let wachtrij: Promise<void> = Promise.resolve();
 /** Wacht tot de vorige vraag minstens een seconde geleden begon; vragen komen in volgorde. */
 function wachtOpBeurt(): Promise<void> {
   const beurt = wachtrij.then(async () => {
-    while (Date.now() - laatsteStart < MIN_TUSSENTIJD_MS) {
-      await slaap(Math.max(1, MIN_TUSSENTIJD_MS - (Date.now() - laatsteStart)));
+    while (Date.now() - laatsteStart < MIN_TUSSENTIJD_MS + MARGE_MS) {
+      await slaap(Math.max(1, MIN_TUSSENTIJD_MS + MARGE_MS - (Date.now() - laatsteStart)));
     }
     laatsteStart = Date.now();
   });
