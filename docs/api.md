@@ -60,6 +60,14 @@ curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
 curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
   -d '{"format": "ifc", "path": "C:/projecten/hal/hal.ifc"}' $API/export/ifc
 
+# Een 2D-raamwerk: een portaal als standaard element, met profielen, eigen gewicht en lastgevallen
+curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
+  -d '{"portal": {"span": 20, "height": 6, "pitch": 10, "feet": "pinned",
+        "column": {"profile": "HEA 300"}, "rafter": {"profile": "IPE 400"},
+        "loads": [{"case": "S", "roof": 3.2}, {"case": "W", "wallLeft": 2.1, "wallRight": -1.3}]},
+       "selfWeight": "G",
+       "combinations": [{"name": "6.10b", "factors": {"G": 1.2, "S": 1.5}}]}' $API/frame
+
 # Ongedaan maken
 curl -X POST -H "Authorization: Bearer $T" $API/undo
 
@@ -113,6 +121,7 @@ de alleen-lezenstand.
 | `POST /sheets/{id}/evaluate` | `sheet_evaluate` | lezen | id, numbers, names |
 | `POST /sheets/{id}/formulas` | `sheet_insert_formula` | wijzigen | **id**, **formulaId**, position, language |
 | `POST /evaluate` | `calc_evaluate` | lezen | **source**, values, useProjectData, maxLines |
+| `POST /frame` | `frame_solve` | lezen | nodes, members, supports, loads, portal, selfWeight, combinations, points, buckling |
 | `GET /library` | `library_list` | lezen | refresh |
 | `POST /library/{id}/install` | `library_install` | wijzigen | **id** |
 | `DELETE /library/{id}` | `library_remove` | wijzigen | **id** |
@@ -135,6 +144,39 @@ eenheden van het blad; zie [projectmodel.md](projectmodel.md#eenheden).
 Vaste routes: `GET /api/v1` (overzicht met alle routes), `GET /api/v1/tools`
 (elke tool met JSON-schema en routes), `POST /api/v1/tools/{naam}` en
 `GET /api/v1/openapi.json`.
+
+## Raamwerken (`frame_solve`)
+
+`POST /frame` rekent een vlak raamwerk door met de raamwerkkern van de rekentaal
+(`packages/core/src/raamwerk.ts`): de verplaatsingsmethode, exact voor prismatische
+staven, met scharnieren, opleggingen en de kritieke belastingsfactor α_cr. Het project
+verandert niet. Eenheden: m, kN, kN/m en kNm; EI in kNm², EA in kN; verplaatsingen in mm.
+
+- **Vrij:** `nodes` (x, y), `members` (from, to, `profile` of EI en EA, hingeStart,
+  hingeEnd), `supports` (node, `pinned`, `fixed` of `roller`) en `loads` (case, kind
+  `distributed`, `point` of `node`, richting `x`, `y`, `y-projected`, `perpendicular`,
+  `axial` of `moment`).
+- **Portaal als standaard element:** `portal` met span, height, pitch, `feet`
+  (`pinned` of `fixed`), ridgeHinge, column en rafter (een profiel of EI en EA) en
+  per lastgeval `roof` (verticaal per m horizontale projectie), `roofLeft`,
+  `roofRight`, `roofWindLeft`, `roofWindRight` (loodrecht op het dak) en `wallLeft`,
+  `wallRight` (druk naar binnen positief, zuiging negatief). De staven lopen met de
+  klok mee, dus M is positief bij trek aan de binnenkant.
+- **Profiel** uit de profieltabel (`HEA 200`, `IPE 300`, …): EI en EA met
+  E = 210 000 N/mm², en het eigen gewicht met 78,5 kN/m³. `selfWeight: "G"` zet het eigen
+  gewicht in lastgeval G.
+- **Combinaties:** `combinations` met per lastgeval een factor. Zonder combinaties komt
+  er een uitkomst per lastgeval, met factor 1.
+
+Per combinatie geeft de tool:
+
+- de reacties en de knoopverplaatsingen;
+- per staaf N, V en M (de uitersten, en M aan begin, midden en eind) en de doorbuiging w;
+- `alphaCr`, met `secondOrder: true` als die onder 10 ligt (NEN-EN 1993-1-1, 5.2.1).
+
+Bij meer combinaties staat de omhullende per staaf erbij. Met `points: true` komen ook de
+punten langs de staven mee. Het opgeloste model komt altijd terug, zodat je kunt zien wat
+er van een portaal is gemaakt.
 
 ## Statussen
 

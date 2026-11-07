@@ -62,7 +62,7 @@ leesbare tekst: deel ze niet.
 
 ## Tools
 
-43 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
+44 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
 De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 [api.md](api.md#routes). In het kort:
 
@@ -74,7 +74,7 @@ De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 | Geschiedenis | `undo`, `redo` |
 | Modules | `modules_list`, `library_list`, `library_install`, `library_remove` |
 | Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_set_pdf`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_insert_formula` |
-| Rekenen | `calc_evaluate` |
+| Rekenen | `calc_evaluate`, `frame_solve` (2D-raamwerk of portaal) |
 | Formules | `formulas_list`, `formula_get` |
 | Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `print` |
 | Weergave en instellingen | `view_get`, `view_set`, `settings_get`, `settings_set` |

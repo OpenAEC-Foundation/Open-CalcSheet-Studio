@@ -17,6 +17,10 @@
  *                    sheet_get, sheet_set_input, sheet_set_source,
  *                    sheet_rename, sheet_select, sheet_evaluate, sheet_remove,
  *                    calc_evaluate; elke mutatie via een store-actie
+ *   frame_solve      de 2D-raamwerkkern: portalen tegen gesloten oplossingen
+ *                    (twee scharnieren, ingeklemd, driescharnier met helling),
+ *                    een vrij raamwerk, combinaties, profielen, evenwicht en
+ *                    de meldingen bij een fout
  *   sessies          initialize geeft een sessie; zonder sessie 400, met een
  *                    onbekende 404; een notificatie krijgt een leeg antwoord
  *
@@ -253,6 +257,95 @@ console.log("calc_evaluate:");
   const kort = await roep("calc_evaluate", { source: tekst, maxLines: 2 });
   meld(kort.data.lines.length === 2 && kort.data.truncated === true, "maxLines kapt af");
   meld(app.acties.length === voorAantal, "calc_evaluate wijzigt het project niet");
+}
+
+// ── 5b. frame_solve ──────────────────────────────────────────────────────────
+console.log("frame_solve:");
+{
+  const voorAantal = app.acties.length;
+  const dicht = (a, b, tol = 1e-4) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(b));
+  // De gesloten oplossingen verwaarlozen de rek: heel stijf in de lengte.
+  const L = 10, h = 5, EIk = 20000, EIr = 40000, q = 4, H = 10, STIJF = 1e11;
+  const k = (EIr / EIk) * (h / L);
+  const portaal = (voeten, lasten) => ({
+    portal: { span: L, height: h, feet: voeten, column: { EI: EIk, EA: STIJF }, rafter: { EI: EIr, EA: STIJF }, loads: lasten },
+  });
+
+  // Portaal met twee scharnieren, q op de regel: M_k = −qL²/(4(2k + 3)), H_A = −M_k/h, V_A = qL/2.
+  const twee = await roep("frame_solve", portaal("pinned", [{ case: "G", roof: q }, { case: "W", wallLeft: 2, wallRight: -1 }]));
+  meld(!twee.isError, "frame_solve: portaal met twee scharnieren rekent", JSON.stringify(twee.data).slice(0, 200));
+  const g = twee.data.results.find((r) => r.combination === "G");
+  const Mk2 = -(q * L * L) / (4 * (2 * k + 3));
+  meld(dicht(g.members[1].M_start, Mk2) && dicht(g.members[0].M_end, Mk2), "portaal 2 scharnieren: knoopmoment −qL²/(4(2k + 3))", `${g.members[1].M_start} tegen ${Mk2}`);
+  meld(dicht(g.reactions[0].Rx, -Mk2 / h) && dicht(g.reactions[0].Ry, (q * L) / 2), "en H_A = qL²/(4h(2k + 3)), V_A = qL/2", JSON.stringify(g.reactions[0]));
+  meld(dicht(g.members[0].M_start, 0, 1e-9) && dicht(g.members[1].M_mid, (q * L * L) / 8 + Mk2), "M aan de voet 0, in het veld qL²/8 + M_k");
+  meld(twee.data.model.loads.filter((l) => l.case === "G").length === 1, "een gelijke dakbelasting is één last over de hele regel");
+  meld(twee.data.results.length === 2 && Array.isArray(twee.data.envelope), "zonder combinaties: een uitkomst per lastgeval, met de omhullende");
+
+  // Ingeklemd portaal: M_k = −qL²/(6(k + 2)), M_voet = qL²/(12(k + 2)).
+  const klem = await roep("frame_solve", portaal("fixed", [{ case: "G", roof: q }]));
+  const kg = klem.data.results[0];
+  meld(dicht(kg.members[1].M_start, -(q * L * L) / (6 * (k + 2))) && dicht(kg.members[0].M_start, (q * L * L) / (12 * (k + 2))), "ingeklemd portaal: knoop −qL²/(6(k + 2)), voet qL²/(12(k + 2))", `${kg.members[1].M_start} ${kg.members[0].M_start}`);
+  meld(dicht(kg.reactions[0].M, (q * L * L) / (12 * (k + 2))), "het inklemmingsmoment als reactie");
+
+  // Combinaties zijn lineair: 1,2·G + 1,5·W.
+  const comb = await roep("frame_solve", {
+    ...portaal("pinned", [{ case: "G", roof: q }, { case: "W", wallLeft: 2, wallRight: -1 }]),
+    combinations: [{ name: "6.10b", factors: { G: 1.2, W: 1.5 } }],
+  });
+  const w = twee.data.results.find((r) => r.combination === "W");
+  meld(comb.data.results.length === 1 && dicht(comb.data.results[0].members[1].M_start, 1.2 * g.members[1].M_start + 1.5 * w.members[1].M_start), "een combinatie is de som van de lastgevallen maal hun factor");
+
+  // Vrije invoer: een horizontale knooplast H op de knie. M_k = H·h/2, δ = H·h²/12·(2h/EI_k + L/EI_r).
+  const vrij = await roep("frame_solve", {
+    nodes: [{ x: 0, y: 0 }, { x: 0, y: h }, { x: L, y: h }, { x: L, y: 0 }],
+    members: [{ from: 1, to: 2, EI: EIk, EA: STIJF }, { from: 2, to: 3, EI: EIr, EA: STIJF }, { from: 3, to: 4, EI: EIk, EA: STIJF }],
+    supports: [{ node: 1 }, { node: 4, type: "pinned" }],
+    loads: [{ kind: "node", node: 2, direction: "x", value: H }],
+  });
+  const vr = vrij.data.results[0];
+  const delta = ((H * h * h) / 12) * ((2 * h) / EIk + L / EIr) * 1000;
+  meld(dicht(vr.members[0].M_end, (H * h) / 2) && dicht(vr.reactions[0].Rx, -H / 2), "vrij raamwerk: knoopmoment H·h/2 en H_A = −H/2", JSON.stringify(vr.reactions[0]));
+  meld(dicht(vr.displacements[1].ux, delta), "en de zijdelingse verplaatsing in mm", `${vr.displacements[1].ux} tegen ${delta}`);
+  meld(vr.secondOrder === (vr.alphaCr !== null && vr.alphaCr < 10), "α_cr en de grens van 10 voor de tweede orde");
+
+  // Driescharnierportaal met helling: H = qL²/(8·f), f de hoogte van de nok boven de voeten.
+  const helling = 15, nok = h + (L / 2) * Math.tan((helling * Math.PI) / 180);
+  const drie = await roep("frame_solve", {
+    portal: { span: L, height: h, pitch: helling, ridgeHinge: true, column: { EI: EIk, EA: STIJF }, rafter: { EI: EIr, EA: STIJF }, loads: [{ case: "S", roof: q }] },
+  });
+  const dr = drie.data.results[0];
+  meld(drie.data.model.nodes.length === 5 && dicht(drie.data.model.nodes[2].y, nok), "het hellende portaal heeft een nok op h + L/2·tan α");
+  meld(dicht(dr.reactions[0].Rx, (q * L * L) / (8 * nok)) && dicht(dr.members[1].M_end, 0, 1e-9), "driescharnierportaal: H = qL²/(8·f), M in de nok 0", JSON.stringify(dr.reactions[0]));
+
+  // Profielen uit de tabel en het eigen gewicht: E·I_y, E·A en 78,5 kN/m³.
+  const prof = await roep("frame_solve", {
+    portal: { span: 20, height: 6, pitch: 10, feet: "fixed", column: { profile: "HEA 300" }, rafter: { profile: "ipe400" }, loads: [{ case: "S", roof: 3.2 }] },
+    selfWeight: "G",
+  });
+  const kol = prof.data.model.members[0];
+  meld(kol.profile === "HEA 300" && dicht(kol.EI, 210e6 * 18260e-8, 1e-3) && dicht(kol.weight, 78.5 * 112.5e-4, 1e-3), "profiel HEA 300: EI, EA en gewicht uit de tabel", JSON.stringify(kol));
+  meld(prof.data.model.members[1].profile === "IPE 400", "een profielnaam zonder spatie en in kleine letters wordt gevonden");
+  const S = prof.data.results.find((r) => r.combination === "S");
+  const G = prof.data.results.find((r) => r.combination === "G");
+  const gewicht = prof.data.model.members.reduce((s, m) => s + m.weight * m.L, 0);
+  meld(dicht(S.reactions.reduce((s, r) => s + r.Ry, 0), 3.2 * 20) && dicht(G.reactions.reduce((s, r) => s + r.Ry, 0), gewicht, 1e-3), "evenwicht: ΣR_y is de dakbelasting en het eigen gewicht");
+
+  // Fouten worden meldingen, geen uitkomsten: {code, error} in de tekst.
+  const foutVan = (x) => { try { return JSON.parse(x.tekst ?? "{}"); } catch { return {}; } };
+  const mechanisme = await roep("frame_solve", { portal: { span: L, height: h, ridgeHinge: true, feet: "pinned", column: { EI: EIk, EA: EIk }, loads: [] }, buckling: false });
+  meld(!mechanisme.isError, "driescharnierportaal zonder lasten is geen mechanisme");
+  const los = await roep("frame_solve", {
+    nodes: [{ x: 0, y: 0 }, { x: 0, y: h }], members: [{ from: 1, to: 2, EI: 1, EA: 1 }], supports: [{ node: 1, type: "roller" }],
+  });
+  meld(los.isError && foutVan(los).code === "VALIDATION" && /mechanism/.test(foutVan(los).error), "een mechanisme geeft een melding", los.tekst);
+  const onbekend = await roep("frame_solve", { portal: { span: L, height: h, column: { profile: "HEA 999" } } });
+  meld(onbekend.isError && /profile table/.test(foutVan(onbekend).error), "een onbekend profiel geeft een melding", onbekend.tekst);
+  const geval = await roep("frame_solve", { ...portaal("pinned", [{ case: "G", roof: q }]), combinations: [{ factors: { Q: 1.5 } }] });
+  meld(geval.isError && /no load case "Q"/.test(foutVan(geval).error), "een combinatie met een onbekend lastgeval geeft een melding", geval.tekst);
+  const knoop = await roep("frame_solve", { nodes: [{ x: 0, y: 0 }], members: [{ from: 1, to: 2, EI: 1, EA: 1 }], supports: [{ node: 1 }] });
+  meld(knoop.isError && /no such node/.test(foutVan(knoop).error), "een staaf naar een knoop die niet bestaat geeft een melding", knoop.tekst);
+  meld(app.acties.length === voorAantal, "frame_solve wijzigt het project niet");
 }
 
 // ── 6. Pauze en alleen-lezen ─────────────────────────────────────────────────
