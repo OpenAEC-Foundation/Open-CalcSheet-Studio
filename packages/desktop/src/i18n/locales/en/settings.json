@@ -208,6 +208,13 @@
     "version": "Version",
     "framework": "Framework",
     "license": "License",
-    "description": "Structural calculation sheets with live output, parametric views and a structural report. Part of the OpenAEC family."
+    "description": "Structural calculation sheets with live output, parametric views and a structural report. Part of the OpenAEC family.",
+    "femStudio": "FEM Studio (code checks)",
+    "femStudioBezig": "starting…",
+    "femStudioNiet": {
+      "geenDesktop": "desktop app only",
+      "nietMeegeleverd": "not included in this version",
+      "startMislukt": "does not start"
+    }
   }
 }

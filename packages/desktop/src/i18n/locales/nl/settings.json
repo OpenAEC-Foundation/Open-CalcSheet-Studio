@@ -208,6 +208,13 @@
     "version": "Versie",
     "framework": "Framework",
     "license": "Licentie",
-    "description": "Constructieve rekenbladen met directe uitwerking, parametrische beelden en een constructief rapport. Onderdeel van de OpenAEC-familie."
+    "description": "Constructieve rekenbladen met directe uitwerking, parametrische beelden en een constructief rapport. Onderdeel van de OpenAEC-familie.",
+    "femStudio": "FEM Studio (toetsing)",
+    "femStudioBezig": "wordt gestart…",
+    "femStudioNiet": {
+      "geenDesktop": "alleen in de desktop-app",
+      "nietMeegeleverd": "niet meegeleverd in deze versie",
+      "startMislukt": "start niet"
+    }
   }
 }
