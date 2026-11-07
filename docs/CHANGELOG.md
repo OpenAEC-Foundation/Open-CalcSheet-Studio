@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Plaat op palen in de rekentaal: een vloer op verende palen in een raster rekent met plaatelementen (DKT), met per veld een eigen belasting voor volle belasting en schaakbord. plaat_palen geeft de veld- en steunmomenten, ook gemiddeld over de kolomstrook, de doorbuiging en de paalreacties; plaat_svg tekent de momenten in kleur en plaat_w de doorbuiging, ook in een 3D-beeld
 - Waarden uit een ander blad: elk blad heeft een kenmerk (#2 in de projectboom), en #2.R_paal in een formule of invoerveld neemt R_paal uit dat blad over, met zijn eenheid. Verandert blad 2, dan rekent het blad dat ernaar verwijst vanzelf opnieuw, ook in het afdrukvoorbeeld en het rapport
 - Bij de locatie neemt de knop "Overnemen uit ERPNext" het adres of de coördinaten over uit een veld van het ERPNext-project met het projectnummer (standaard `custom_location`; de veldnaam staat in de instellingen). Het API-geheim staat per ERPNext-adres in de sleutelbos van het besturingssysteem, en HTTPS gebruikt de certificaten van het besturingssysteem (op Linux moet het pakket ca-certificates aanwezig zijn)
 - Bij de locatie meet de knop "Afstand tot open water meten" de afstand tot het dichtstbijzijnde open water binnen 10 km (OpenStreetMap): de omgevingskaart krijgt een streeplijn erheen, ligt het water buiten de kaart dan eindigt de lijn in een pijl aan de rand, en op de pagina Situatie staat de afstand met de naam, of dat er geen open water binnen 10 km ligt

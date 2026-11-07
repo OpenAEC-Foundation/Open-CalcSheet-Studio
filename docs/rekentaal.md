@@ -58,6 +58,24 @@ zijn in deze taal geschreven.
   (`packages/desktop/src/rekenen/verwijzingen.ts`). Een losse module verwijst nooit naar
   een ander blad: dat doet de constructeur in zijn eigen project.
 
+## Plaat op palen
+
+- **Model:** een vlakke plaat op verende palen in een regelmatig raster, `n_x × n_y` velden van
+  `L_x × L_y`, met een paal op elk snijpunt; de rand van het model is vrij. De plaat rekent met
+  driehoekige DKT-elementen (Batoz, Bathe & Ho, 1980), de veer van een paal is verdeeld over
+  de knopen binnen de paalkop. Elk veld heeft een eigen belasting, dus volle belasting en
+  schaakbord zijn dezelfde som (`packages/core/src/plaat.ts`).
+- **Invoer:** `geo = [L_x; L_y; n_x; n_y; t; E; ν; k; d_kop; n_el]` (een maat met eenheid wordt
+  omgerekend; kaal in m, kN/m² en kN/m) en `last`, een matrix met per veld de belasting in
+  kN/m², een rij per veld in y (de onderste eerst).
+- **Functies:** `plaat_palen(geo; last)` geeft [m<sub>x,veld</sub>; m<sub>y,veld</sub>; m<sub>x,steun</sub>; m<sub>y,steun</sub>;
+  m<sub>x,ks</sub>; m<sub>y,ks</sub>; w<sub>max</sub>; R<sub>max</sub>; R<sub>midden</sub>] in kNm/m, mm en kN, met de
+  momenten uit de binnenste velden en m<sub>ks</sub> gemiddeld over de kolomstrook;
+  `plaat_R` de reactie per paal, `plaat_w(geo; last; x; y)` de doorbuiging op een punt en
+  `plaat_svg(geo; last; grootheid; x0; y0; schaal)` een kleurenbeeld (1 = w, 2 = m<sub>x</sub>,
+  3 = m<sub>y</sub>) om in een `<svg>` te zetten.
+- **Controle:** `scripts/check-plaat.mjs` (Navier, evenwicht, symmetrie en een binnenveld).
+
 ## Syntax
 
 - `"Title`, `'tekst`, `// commentaar`
