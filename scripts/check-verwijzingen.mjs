@@ -30,6 +30,8 @@ meld(JSON.stringify(verwijzingenIn("a = #1.R_paal + #vloer.V_b,0\nb = #1.R_paal"
 meld(vervangVerwijzingen('k = "#b91c1c"') === 'k = "#b91c1c"', "een kleur tussen aanhalingstekens blijft staan");
 meld(vervangVerwijzingen("a = #1.V_b,0*2") === "a = ref__1__V_b_0*2", "#1.V_b,0 wordt ref__1__V_b_0");
 meld(leesVerwijzing(" #3.M_Ed ")?.ref === "3" && leesVerwijzing("12 kN") === null, "leesVerwijzing: alleen een hele verwijzing");
+meld(verwijzingenIn("'Typ #1.R_paal in het veld V_Ed.\n# Kop met #2.x\nR = 5 kN', zie #3.y'").length === 0,
+  "een verwijzing in uitleg, een kop of commentaar telt niet");
 
 console.log("\nKenmerken van bladen");
 const refs = metBladRefs([{ ref: "1" }, {}, { ref: "7" }, {}]).map((e) => e.ref);

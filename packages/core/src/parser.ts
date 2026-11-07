@@ -222,6 +222,19 @@ function foldSubscriptCommas(source: string): string {
  * commentaar. Koppen (`# …`) zijn geheel tekst, net als de keuzes binnen een
  * `@select`-blok; van de `@select`-regel zelf telt alleen de naam als code.
  */
+/**
+ * De rekendelen van een blad, zonder tekst, commentaar en koppen, onder elkaar.
+ * Zo telt een `#1.R_paal` in een uitlegregel niet als verwijzing (verwijzing.ts).
+ */
+export function rekendelen(source: string): string {
+  const delen: string[] = [];
+  alleenInCode(source, (code) => {
+    delen.push(code);
+    return code;
+  });
+  return delen.join('\n');
+}
+
 function alleenInCode(source: string, fn: (code: string) => string): string {
   let inSelect = false;
   let in3d = false;

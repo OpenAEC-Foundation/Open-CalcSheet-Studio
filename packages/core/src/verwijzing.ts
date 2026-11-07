@@ -12,6 +12,8 @@
  * de verwijzing weer als `#1.R_paal` (latex.ts).
  */
 
+import { rekendelen } from './parser.js';
+
 /** `#ref.naam`: ref is letters, cijfers en `_`; naam als een variabelenaam, met komma-index. */
 export const VERWIJZING_RE = /#([A-Za-z0-9_]+)\.([\p{L}_][\p{L}\p{N}_]*(?:,[\p{L}\p{N}_]+)*)/gu;
 
@@ -43,8 +45,9 @@ export function leesVerwijzing(tekst: string): { ref: string; naam: string } | n
 }
 
 /**
- * Alle verwijzingen in een blad: in de rekentekst en in de invoerwaarden. Elke
- * combinatie van blad en naam één keer, in de volgorde waarin ze voorkomen.
+ * Alle verwijzingen in een blad: in de rekendelen van de tekst (niet in uitleg of
+ * koppen) en in de invoerwaarden. Elke combinatie van blad en naam één keer, in de
+ * volgorde waarin ze voorkomen.
  */
 export function verwijzingenIn(bron: string, waarden: Readonly<Record<string, string>> = {}): { ref: string; naam: string }[] {
   const uit: { ref: string; naam: string }[] = [];
@@ -58,7 +61,7 @@ export function verwijzingenIn(bron: string, waarden: Readonly<Record<string, st
       uit.push({ ref: m[1], naam: m[2] });
     }
   };
-  neem(bron);
+  neem(bron.includes('#') ? rekendelen(bron) : bron);
   for (const w of Object.values(waarden)) neem(String(w));
   return uit;
 }
