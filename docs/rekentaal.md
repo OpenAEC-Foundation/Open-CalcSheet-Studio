@@ -109,12 +109,33 @@ UC_max = kolom.uc_max
   De afleiding (formule, waarden, toelichting) staat alleen op het scherm.
 - **Rekenen in rondes.** De werkruimte stuurt het verzoek naar FEM Studio en rekent het
   blad opnieuw zodra het antwoord er is. Wat van het blok afhangt, is tot dan onbekend.
-- **Niet getoetst.** De afdruk, het rapport en de API vragen zelf niets aan FEM Studio. Een
-  blok zonder antwoord staat daar als NIET GETOETST, nooit als "voldoet". Zo staat het ook
-  als FEM Studio een fout gaf, bijvoorbeeld een profiel dat het niet kent.
+- **Niet getoetst.** Het rapportpaneel, de API en de export vragen zelf niets aan FEM
+  Studio. Een blok zonder antwoord staat daar als NIET GETOETST, nooit als "voldoet". Zo
+  staat het ook als FEM Studio een fout gaf, bijvoorbeeld een profiel dat het niet kent.
+- **Vóór het afdrukken** toetst de app eerst de blokken die nog geen antwoord hebben, en
+  wacht daarop (hoogstens twee minuten). Een blok dat dan nog geen antwoord heeft, staat
+  als NIET GETOETST op papier.
 - **Hetzelfde antwoord.** Het antwoord hoort bij de invoer op het blad, niet bij de eenheid
-  waarin die getypt is: `h = 6 m` en `h = 6000 mm` vinden hetzelfde antwoord. In deze
-  versie gelden de antwoorden tot de app sluit; vastleggen in het projectbestand volgt.
+  waarin die getypt is: `h = 6 m` en `h = 6000 mm` vinden hetzelfde antwoord.
+- **Vastgelegd bij het blad.** Elk antwoord gaat mee in het projectbestand, bij het blad
+  (`ocss::blad::toetsing`): het verzoek, het antwoord, de datum en waarmee getoetst is (de
+  versie en de sha256 van de server, en een hash van het schema van de tool). Bij het
+  openen rekent het blad met die antwoorden, en gaat er niets naar FEM Studio zolang de
+  invoer gelijk blijft. Een opgeleverd blad toont zo zijn uitkomst ook op een computer
+  zonder FEM Studio.
+  - Verandert de invoer, dan gaat er een nieuw verzoek uit. Een antwoord dat het blad
+    niet meer gebruikt, valt bij het opslaan weg.
+  - Een fout wordt niet vastgelegd: na opnieuw openen mag het weer.
+  - Twee bladen met dezelfde invoer delen hun antwoord.
+- **Opnieuw toetsen.** Is een antwoord gemaakt met een andere versie van FEM Studio, of
+  met een ander schema van de tool, dan blijft het gelden. Op het scherm staat dan wel
+  "Getoetst met versie 2026.44.2; deze CalcSheet heeft FEM Studio 2026.46.1." en de knop
+  **Opnieuw toetsen**. Die knop staat ook bij een blok met een fout. Opnieuw toetsen
+  gebeurt nooit vanzelf. Lukt het niet, dan blijft het oude antwoord staan, met de fout
+  erbij.
+- **Op papier** staat de versie van FEM Studio één keer bij het eerste blok, als alle
+  blokken van het blad dezelfde versie hebben, en anders bij elk blok. De datum staat
+  alleen op het scherm.
 
 ## Voorbeeld
 
