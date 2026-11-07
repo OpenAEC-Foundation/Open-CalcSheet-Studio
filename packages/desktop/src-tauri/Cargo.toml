@@ -45,6 +45,9 @@ url = "2"
 keyring = { version = "3", features = ["windows-native", "apple-native", "linux-native-sync-persistent", "crypto-rust"] }
 # Het geheim en de header met het geheim worden na gebruik gewist.
 zeroize = "1"
+# Open FEM Studio headless (src/fem_studio.rs): het proces en het protocol, in een eigen
+# crate zonder Tauri, zodat de tests ook op Windows draaien (fem-brug/src/lib.rs).
+ocss-fem-brug = { path = "fem-brug" }
 
 # OpenAEC-rapportengine — optioneel, standaard uit.
 #

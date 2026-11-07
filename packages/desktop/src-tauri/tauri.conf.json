@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:3021",
-    "beforeBuildCommand": "node ../../scripts/bouw-jupyter-omgeving.mjs --als-nodig && npm run build",
+    "beforeBuildCommand": "node ../../scripts/haal-fem-server.mjs --als-nodig && node ../../scripts/bouw-jupyter-omgeving.mjs --als-nodig && npm run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -50,7 +50,8 @@
     ],
     "resources": [
       "WebView2Loader.dll",
-      "jupyter-omgeving/*"
+      "jupyter-omgeving/*",
+      "fem-studio/*"
     ],
     "icon": [
       "icons/32x32.png",
