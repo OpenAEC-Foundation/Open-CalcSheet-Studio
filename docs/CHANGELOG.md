@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Elk rekenblad kan op het canvas: de tab Canvas zet de tekst in blokken per kop onder elkaar, met dezelfde uitkomsten. Verschuif je een blok of typ je erin, dan bewaart het blad de plekken en komt het zo ook op papier
 - Bij de locatie neemt de knop "Overnemen uit ERPNext" het adres of de coördinaten over uit een veld van het ERPNext-project met het projectnummer (standaard `custom_location`; de veldnaam staat in de instellingen). Het API-geheim staat per ERPNext-adres in de sleutelbos van het besturingssysteem, en HTTPS gebruikt de certificaten van het besturingssysteem (op Linux moet het pakket ca-certificates aanwezig zijn)
 - Bij de locatie meet de knop "Afstand tot open water meten" de afstand tot het dichtstbijzijnde open water binnen 10 km (OpenStreetMap): de omgevingskaart krijgt een streeplijn erheen, ligt het water buiten de kaart dan eindigt de lijn in een pijl aan de rand, en op de pagina Situatie staat de afstand met de naam, of dat er geen open water binnen 10 km ligt
 - Het rapport krijgt na het voorblad een pagina Situatie met drie kaarten van OpenStreetMap (gebied, omgeving, locatie), het adres, de coördinaten en de terreincategorie; in het rapportpaneel (Document) zet je de pagina aan of uit

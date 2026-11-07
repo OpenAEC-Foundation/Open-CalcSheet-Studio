@@ -5,7 +5,7 @@ import { samenvatting } from "../../calc/bladResultaat";
 import { MATEN } from "../../calc/paginering";
 import { bladSoortVan } from "../../calc/bladSoorten";
 import { UitwerkingHtml } from "../../calc/UitwerkingHtml";
-import { isCanvasBlad } from "../../../store/canvasBlad";
+import { heeftEenheden, isCanvasBlad } from "../../../store/canvasBlad";
 import { CanvasVellen } from "../../calc/PrintBlad";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { Cel, Leeg, PaginaCel, Rij, Tekst, Vlak } from "./raster";
@@ -130,7 +130,7 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
         // `print-blad` geeft de uitwerking dezelfde compacte opmaak als een
         // los blad; `rpa-inline` haalt de paginasprong van een los blad weg.
         <Vlak klasse="print-blad rpa-inline">
-          {isCanvasBlad(b.ex) && b.eenheden
+          {(isCanvasBlad(b.ex) || heeftEenheden(b.ex.source)) && b.eenheden
             ? <CanvasVellen eenheden={b.eenheden} bladId={b.ex.id} />
             : <UitwerkingHtml html={b.html} bladId={b.ex.id} />}
         </Vlak>

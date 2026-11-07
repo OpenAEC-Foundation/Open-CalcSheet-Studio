@@ -166,6 +166,14 @@ wat in het voorbeeld staat, komt op papier.
   `source`, met per eenheid een regel `//@eenheid id=e1 x=10 y=15`. De kern rekent van
   boven naar beneden, en `CanvasVellen` zet de eenheden op papier. Ctrl en scrollen zoomt
   het vel rond het punt onder de muis; dat verandert alleen de weergave, niet de maten.
+- **Elk rekenblad op het canvas:** de tab Canvas staat bij elk rekenblad. Zolang de tekst geen
+  merktekens heeft, deelt `splitsOpKoppen` hem op bij de koppen (`# …`) en zet
+  `stapelOnderElkaar` de stukken op hun gemeten hoogte onder elkaar. Een kop binnen een `#if`,
+  een lus, een macro, een `@svg`/`@select`/`@3d`/`@js`-blok of tussen `#hide` en `#show` splitst
+  niet; een stuk met een `#def` of een eigen eenheid (`.naam = …`) blijft bij elkaar tot het
+  laatste gebruik van die naam, en na een `#include` splitst niets meer: die gelden bij het
+  inlezen, alleen binnen hun eenheid. Tot je iets verschuift of typt, blijft de bron zoals hij
+  was; daarna staan de merktekens erin en drukt het blad af zoals op het canvas.
 - **Graaf** staat in `graaf` op het blad (`ocss::blad::graaf`) en is aangemeld met
   `GraafVellen`. `graaf/grafBestand.ts` leest een grafbestand (`.dyn`, JSON) in: elke node waarvan
   hier een gelijke bestaat wordt een gewone node, de rest blijft staan als `ingelezen` met zijn

@@ -115,6 +115,8 @@ export default function App() {
   const [splitMode, setSplitMode] = useState<"cv" | "cu" | "vu">("vu");
   // Een canvas-blad opent op het canvas; zijn rekentekst is de tab ernaast.
   const [canvasCode, setCanvasCode] = useState(false);
+  // Een gewoon rekenblad (ook een module) kan ook op het canvas: de tab Canvas.
+  const [canvasGekozen, setCanvasGekozen] = useState(false);
 
   useEffect(() => {
     getSetting<string>("theme", "light").then((saved) => {
@@ -242,8 +244,11 @@ export default function App() {
   const markdownBlad = actief !== null && isMarkdownBlad(actief);
   // Een canvas-blad heeft gewone rekentekst: de weergaven van een blad, met het canvas ervoor.
   const canvasBlad = actief !== null && isCanvasBlad(actief);
-  const toontCanvas = canvasBlad && !canvasCode;
-  useEffect(() => setCanvasCode(false), [activeId]);
+  const toontCanvas = canvasBlad ? !canvasCode : canvasGekozen;
+  useEffect(() => {
+    setCanvasCode(false);
+    setCanvasGekozen(false);
+  }, [activeId]);
   // Idem een grafblad: alleen zijn vlak.
   const graafBlad = actief !== null && isGraafBlad(actief);
   // En een tekenblad: alleen zijn vel.
@@ -276,6 +281,7 @@ export default function App() {
     sluitVoorbeeld();
     setSplitMode(m);
     setCanvasCode(true);
+    setCanvasGekozen(false);
   };
 
   // Het lint (tab Rekentaal) vraagt om de code: weg uit de IFC-weergave en het
@@ -287,6 +293,7 @@ export default function App() {
     sluitVoorbeeld();
     setSplitMode((m) => (m === "vu" ? "cv" : m));
     setCanvasCode(true);
+    setCanvasGekozen(false);
   }, [codeVerzoek, sluitVoorbeeld]);
   const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad || jupyterBlad || marimoBlad) ? (
     <div className="split-tabs">
@@ -296,6 +303,7 @@ export default function App() {
   ) : actief && !toontProjectGegevens ? (
     <>
       <div className="split-tabs">
+        {/* Canvas: bij een canvas-blad de eerste tab, bij elk ander rekenblad ook te kiezen. */}
         {canvasBlad && (
           <button
             className={`split-tab${!printVoorbeeld && toontCanvas ? " active" : ""}`}
@@ -313,6 +321,18 @@ export default function App() {
         <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
         {hasDesigner && (
           <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
+        )}
+        {!canvasBlad && (
+          <button
+            className={`split-tab${!printVoorbeeld && toontCanvas ? " active" : ""}`}
+            title={t("canvas.rekenbladUitleg")}
+            onClick={() => {
+              sluitVoorbeeld();
+              setCanvasGekozen(true);
+            }}
+          >
+            {t("canvas.tab")}
+          </button>
         )}
         <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
         <BladVersieKop ex={actief} />
