@@ -155,6 +155,109 @@ export function verwijderEenheid(bron: string, id: string): string {
   return schrijfEenheden(leesEenheden(bron).filter((e) => e.id !== id));
 }
 
+// ── Een gewoon rekenblad op het canvas ──────────────────────────────────
+
+/** Een kop in de rekentaal: `# 1. Invoer`; een opdracht als `#if` heeft geen spatie na de #. */
+const KOP_RE = /^#+\s/;
+/** Blokken van meer regels die met `@end` sluiten. */
+const BLOK_START_RE = /^@(svg|select|3d|js)\b/i;
+const BLOK_EIND_RE = /^@end\s*$/i;
+/** Wat een nesting opent en sluit: voorwaarden, lussen en macro's. */
+const OPEN_RE = /^#(if|for|repeat|while)\b/i;
+const DEF_OPEN_RE = /^#def\s+[^=]*\([^)]*\)\s*$/i;
+const SLUIT_RE = /^#(end\s+if|loop|end\s+repeat|end\s+def)\b/i;
+
+/**
+ * Een rekentekst zonder merktekens in eenheden voor het canvas: een nieuwe eenheid
+ * bij elke kop, maar alleen waar dat de tekst niet breekt. Binnen een `#if`, een
+ * lus, een macro, een `@svg`/`@select`/`@3d`/`@js`-blok of een stuk tussen `#hide`
+ * en `#show` blijft de kop bij de eenheid erboven: elke eenheid wordt apart
+ * ingelezen (components/calc/canvasRekenen.ts). Om dezelfde reden blijft een stuk
+ * met een macro, een `#def`-constante of een eigen eenheid (`.naam = …`) één eenheid
+ * met alles tot waar die naam het laatst wordt gebruikt: die gelden bij het inlezen,
+ * alleen binnen hun eigen eenheid. Na een `#include` splitst niets meer. De eenheden
+ * staan op volgorde, y = 0, 1, 2 …: de plek op het vel geeft stapelOnderElkaar.
+ */
+export function splitsOpKoppen(bron: string): Eenheid[] {
+  const delen: string[][] = [[]];
+  let diepte = 0;
+  let verborgen = false;
+  let inBlok = false;
+  for (const regel of bron.split(/\r?\n/)) {
+    const t = regel.trim();
+    const huidig = delen[delen.length - 1];
+    if (!inBlok && diepte === 0 && !verborgen && KOP_RE.test(t) && huidig.some((r) => r.trim() !== "")) delen.push([]);
+    delen[delen.length - 1].push(regel);
+    if (inBlok) {
+      if (BLOK_EIND_RE.test(t)) inBlok = false;
+      continue;
+    }
+    if (BLOK_START_RE.test(t)) inBlok = true;
+    else if (OPEN_RE.test(t) || DEF_OPEN_RE.test(t)) diepte++;
+    else if (SLUIT_RE.test(t)) diepte = Math.max(0, diepte - 1);
+    else if (/^#hide\b/i.test(t)) verborgen = true;
+    else if (/^#show\b/i.test(t)) verborgen = false;
+  }
+  return houdBijElkaar(delen.map((regels) => regels.join("\n").trim()).filter((tekst) => tekst !== ""))
+    .map((tekst, i) => ({ id: `e${i + 1}`, x: 0, y: i, tekst }));
+}
+
+/** Wat bij het inlezen geldt: een macro of constante (`#def naam…`) en een eigen eenheid (`.naam = …`). */
+const LEESNAAM_RES = [/^#def\s+([\p{L}_][\p{L}\p{N}_]*)/u, /^\.([\p{L}_][\p{L}\p{N}_]*)\s*=/u];
+const INCLUDE_RE = /^#include\b/i;
+
+/**
+ * Voegt stukken samen tot elke naam die bij het inlezen geldt, in hetzelfde stuk
+ * staat als waar hij wordt gebruikt; na een `#include` gaat alles samen.
+ */
+function houdBijElkaar(stukken: string[]): string[] {
+  const tot = stukken.map((stuk, i) => {
+    let eind = i;
+    for (const regel of stuk.split("\n")) {
+      const t = regel.trim();
+      if (INCLUDE_RE.test(t)) return stukken.length - 1;
+      for (const re of LEESNAAM_RES) {
+        const naam = t.match(re)?.[1];
+        if (!naam) continue;
+        const gebruik = new RegExp(`(?<![\\p{L}\\p{N}_])${naam}(?![\\p{L}\\p{N}_])`, "u");
+        for (let j = stukken.length - 1; j > eind; j--) {
+          if (gebruik.test(stukken[j])) {
+            eind = j;
+            break;
+          }
+        }
+      }
+    }
+    return eind;
+  });
+  const uit: string[] = [];
+  for (let i = 0; i < stukken.length; ) {
+    let eind = tot[i];
+    for (let k = i; k <= eind; k++) eind = Math.max(eind, tot[k]);
+    uit.push(stukken.slice(i, eind + 1).join("\n\n"));
+    i = eind + 1;
+  }
+  return uit;
+}
+
+/** De ruimte tussen twee eenheden onder elkaar, in millimeter. */
+export const STAPEL_RUIMTE = 4;
+
+/**
+ * Eenheden onder elkaar op het vel, in hun volgorde, met hun gemeten hoogte (of
+ * een schatting zolang ze niet gemeten zijn): niets over de vouw, alles op het raster.
+ */
+export function stapelOnderElkaar(eenheden: Eenheid[], hoogte: (e: Eenheid) => number | undefined): Eenheid[] {
+  let y = 0;
+  return eenheden.map((e) => {
+    const h = hoogte(e) ?? Math.max(10, 5 * e.tekst.split("\n").length);
+    // Naar boven op het raster, zodat niets op de eenheid erboven komt.
+    const plek = naastDeVouw(Math.ceil(y / RASTER_MM) * RASTER_MM, h);
+    y = plek + h + STAPEL_RUIMTE;
+    return { ...e, x: 0, y: plek };
+  });
+}
+
 /**
  * De breedte die een eenheid op deze plek mag gebruiken, in millimeter: tot de
  * rechterrand, maar nooit minder dan INVOER_BREEDTE. Staat hij verder naar rechts,

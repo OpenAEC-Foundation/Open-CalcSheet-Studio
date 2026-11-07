@@ -473,6 +473,7 @@
     "toevoegenUitleg": "Een leeg canvas als blad aan het project toevoegen: formules als losse eenheden vrij op een vel. Doorgerekend wordt van boven naar beneden, en bij gelijke hoogte van links naar rechts.",
     "nieuweNaam": "Canvas",
     "tab": "Canvas",
+    "rekenbladUitleg": "Dit blad op het canvas: de delen tussen de koppen als blokken onder elkaar. Verplaats of bewerk je een blok, dan komen de plekken in de rekentekst; de uitkomsten blijven gelijk zolang de volgorde gelijk blijft.",
     "paneel": "Canvas",
     "rij": "Canvas-blad: formules vrij op een vel",
     "uitleg": "Klik op een lege plek om een formule neer te zetten.",

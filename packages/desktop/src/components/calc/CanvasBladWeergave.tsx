@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
 import {
-  INVOER_BREEDTE, klemOpVel, leesEenheden, maxBreedte, naastDeVouw, nieuwId, opRaster, schrijfEenheden, velBegin, velVan,
-  verwijderEenheid, VEL_BREEDTE, zetEenheid, zoomNaWiel, type Eenheid,
+  heeftEenheden, INVOER_BREEDTE, klemOpVel, leesEenheden, maxBreedte, naastDeVouw, nieuwId, opRaster, schrijfEenheden,
+  splitsOpKoppen, stapelOnderElkaar, velBegin, velVan, verwijderEenheid, VEL_BREEDTE, zetEenheid, zoomNaWiel, type Eenheid,
 } from "../../store/canvasBlad";
 import { registreerBewaarder } from "../../store/spreadsheetBlad";
 import { huisstijlVariabelen } from "../../rapport/model";
@@ -65,10 +65,14 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
 
   useEffect(() => zorgVoorKernstijlen(), []);
 
-  // Een tekst zonder merktekens (uit de API of de code) wordt hier één eenheid; de
-  // doorrekening krijgt daarom steeds de tekst met merktekens.
-  const bron = useMemo(() => schrijfEenheden(leesEenheden(ex.source)), [ex.source]);
-  const eenheden = useMemo(() => leesEenheden(bron), [bron]);
+  // Een gewoon rekenblad (een module, of tekst uit de API of de code) heeft geen
+  // merktekens: dan staan zijn delen tussen de koppen als eenheden onder elkaar
+  // (splitsOpKoppen). De tekst blijft ongemoeid tot je een eenheid verplaatst of
+  // bewerkt; dan komen de merktekens met deze plekken erin. De doorrekening krijgt
+  // steeds de tekst met merktekens, in de volgorde van de tekst.
+  const gemerkt = heeftEenheden(ex.source);
+  const delen = useMemo(() => (gemerkt ? leesEenheden(ex.source) : splitsOpKoppen(ex.source)), [ex.source, gemerkt]);
+  const bron = useMemo(() => schrijfEenheden(delen), [delen]);
   const { doorrekening, bezig } = useDoorrekening(ex.id, bron, ex.waarden, scope, ex.naam);
   const htmlVan = useMemo(
     () => new Map((doorrekening?.eenheden ?? []).map((u) => [u.id, u.html])),
@@ -77,6 +81,12 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
 
   const vlak = useRef<HTMLDivElement>(null);
   const maten = useEenheidMaten(vlak);
+  const eenheden = useMemo(
+    () => (gemerkt ? delen : stapelOnderElkaar(delen, (e) => maten[e.id]?.h)),
+    [gemerkt, delen, maten],
+  );
+  const eenhedenRef = useRef(eenheden);
+  eenhedenRef.current = eenheden;
   const [open, zetOpen] = useState<OpenEenheid | null>(null);
   const openRef = useRef<OpenEenheid | null>(null);
   openRef.current = open;
@@ -123,11 +133,15 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
     el.scrollTop += r.top + a.y * zoom - a.cy;
   }, [zoom]);
 
-  /** De huidige tekst uit de store: tussen twee renders kan er al iets zijn veranderd. */
-  const huidigeBron = useCallback(
-    () => useProjectStore.getState().exemplaren.find((e) => e.id === ex.id)?.source ?? "",
-    [ex.id],
-  );
+  /**
+   * De huidige tekst uit de store: tussen twee renders kan er al iets zijn veranderd.
+   * Zonder merktekens de eenheden zoals ze nu op het vel staan, zodat een wijziging
+   * die plekken vastlegt.
+   */
+  const huidigeBron = useCallback(() => {
+    const nu = useProjectStore.getState().exemplaren.find((e) => e.id === ex.id)?.source ?? "";
+    return heeftEenheden(nu) ? nu : schrijfEenheden(eenhedenRef.current);
+  }, [ex.id]);
 
   /** Zet wat in het open invoerveld staat in het blad; een leeg veld haalt de eenheid weg. */
   const bewaarOpen = useCallback(() => {

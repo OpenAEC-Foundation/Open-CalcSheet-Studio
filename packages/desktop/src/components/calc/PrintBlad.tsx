@@ -6,7 +6,7 @@ import { designerVoor } from "./designerKeuze";
 import { ucTekst, type Resultaat } from "./bladResultaat";
 import { rekenversie } from "./bladVersie";
 import { bladSoortVan, LosBladAfdruk } from "./bladSoorten";
-import { isCanvasBlad, legOpVellen, maxBreedte } from "../../store/canvasBlad";
+import { heeftEenheden, isCanvasBlad, legOpVellen, maxBreedte } from "../../store/canvasBlad";
 import { useEenheidMaten } from "./canvasMaten";
 import type { CanvasUitwerking } from "./canvasRekenen";
 import "./CanvasBladWeergave.css";
@@ -155,7 +155,8 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
           </ExemplaarContext.Provider>
         </div>
       )}
-      {isCanvasBlad(ex) && eenheden ? <CanvasVellen eenheden={eenheden} bladId={ex.id} /> : <UitwerkingHtml html={html} bladId={ex.id} />}
+      {/* Ook een gewoon rekenblad dat op het canvas is geschikt (merktekens), komt zo op papier. */}
+      {(isCanvasBlad(ex) || heeftEenheden(ex.source)) && eenheden ? <CanvasVellen eenheden={eenheden} bladId={ex.id} /> : <UitwerkingHtml html={html} bladId={ex.id} />}
     </section>
   );
 }

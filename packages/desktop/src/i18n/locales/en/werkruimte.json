@@ -473,6 +473,7 @@
     "toevoegenUitleg": "Add an empty canvas to the project as a sheet: formulas as separate units, placed freely on a page. It calculates from top to bottom, and at equal height from left to right.",
     "nieuweNaam": "Canvas",
     "tab": "Canvas",
+    "rekenbladUitleg": "This sheet on the canvas: the parts between the headings as blocks one below the other. Move or edit a block and the positions go into the calculation text; the results stay the same as long as the order does.",
     "paneel": "Canvas",
     "rij": "Canvas sheet: formulas placed freely on a page",
     "uitleg": "Click an empty spot to place a formula.",
