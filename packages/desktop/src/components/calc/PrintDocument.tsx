@@ -52,7 +52,7 @@ export function useUitdraai(): Uitdraai {
     const gekozen = selectie ? exemplaren.filter((e) => selectie.includes(e.id)) : exemplaren;
     // In het eenhedenstelsel van het project, net als op het scherm.
     const evalOpties = evalOptiesVan(gegevens);
-    return (gekozen.length ? gekozen : exemplaren).map((ex) => ({ ex, ...rekenBladDoor(ex, scope, i18next.language, evalOpties) }));
+    return (gekozen.length ? gekozen : exemplaren).map((ex) => ({ ex, ...rekenBladDoor(ex, scope, i18next.language, evalOpties, exemplaren) }));
     // De taal hoort erbij: de uitvoer volgt de taal van de app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exemplaren, gegevens, selectie, soort, i18next.language]);

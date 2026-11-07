@@ -3,6 +3,7 @@ import { math } from './eenheden.js';
 const { Unit } = math;
 import type { AstNode, ConditionalNode, OpdrachtNode, PlotNode, TextNode } from './types.js';
 import { DRIE_D_START_RE, leesDrieD } from './drieD.js';
+import { vervangVerwijzingen } from './verwijzing.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';
 import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
 import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.js';
@@ -319,7 +320,7 @@ function stripDollarSuffix(source: string): string {
  */
 function normaliseer3d(expr: string): string {
   return normalizeExpression(
-    rewriteMatrixLiterals(stripDollarSuffix(foldIdentifierDots(foldSubscriptCommas(expr)))).trim(),
+    rewriteMatrixLiterals(stripDollarSuffix(foldIdentifierDots(foldSubscriptCommas(vervangVerwijzingen(expr))))).trim(),
   );
 }
 
@@ -898,6 +899,10 @@ function parseBron(source: string, options: ParseOptions): AstNode[] {
   // `x1\$` and substitute them across the body. After expansion we strip \$
   // from any remaining identifiers.
   source = expandMacros(source);
+  // Een verwijzing naar een ander blad (`#1.R_paal`) wordt een gewone naam, vóór de
+  // andere herschrijvingen van namen (verwijzing.ts). Alleen in rekendelen: een kop
+  // of tekst met een # blijft staan.
+  source = alleenInCode(source, vervangVerwijzingen);
   source = rewriteMatrixLiterals(
     stripDollarSuffix(
       foldIdentifierDots(stripFormatSpecs(foldSubscriptCommas(source))),
