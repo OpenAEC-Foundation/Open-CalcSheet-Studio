@@ -11,7 +11,7 @@
  * herkenning (`ifcx/herkenning.ts`) levert alleen een element in de ruimtelijke
  * boom op.
  */
-import type { EvaluatedNode } from './types.js';
+import type { EvaluatedNode, VastgelegdeToets } from './types.js';
 import { bouwProjectIfcx } from './ifcx/document.js';
 import { bouwProjectStep } from './ifcx/step.js';
 import type { IfcxBestand, IfcxKnoop } from './ifcx/typen.js';
@@ -86,6 +86,8 @@ export interface IfcCalcSheet {
   jupyter?: { bestandsnaam: string; data: string; metCode: boolean; automatisch?: boolean };
   /** Bij een Marimo-blad: het notebook als tekst, en de laatste uitvoer per cel. */
   marimo?: { bestandsnaam: string; code: string; metCode: boolean; uitvoer: string[] };
+  /** De antwoorden van Open FEM Studio op de @toets-blokken, per hash van de invoer. */
+  toetsingen?: Record<string, VastgelegdeToets>;
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */

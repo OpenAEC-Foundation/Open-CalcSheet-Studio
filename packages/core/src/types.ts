@@ -643,10 +643,41 @@ export interface EvaluatedEenheidDef {
   result: string;
 }
 
-/** Het antwoord van FEM Studio op een verzoek, of waarom het er niet is. */
+/**
+ * Het antwoord van FEM Studio op een verzoek, of waarom het er niet is.
+ *
+ * Bij een antwoord: `versie` en `schema` zijn de herkomst (de versie van de server en
+ * de hash van het schema van de tool), `datum` is wanneer het antwoord kwam.
+ * `waarschuwing`: opnieuw toetsen lukte niet; dit is het vorige antwoord.
+ */
 export type ToetsAntwoord =
-  | { ok: true; uitkomst: unknown; versie?: string }
+  | { ok: true; uitkomst: unknown; versie?: string; schema?: string; datum?: string; waarschuwing?: string }
   | { ok: false; melding: string };
+
+/** Waarmee een antwoord is gemaakt. */
+export interface ToetsHerkomst {
+  /** De versie van de server (`serverInfo.version`). */
+  versie?: string;
+  /** De sha256 van het programma van de server. */
+  sha256?: string;
+  /** De hash van het schema van de tool uit `tools/list` (toetsBlok.ts, schemaHash). */
+  schema?: string;
+}
+
+/**
+ * Een antwoord zoals het bij een blad in het projectbestand staat, op de hash van de
+ * invoer: wat er naar FEM Studio ging, wat er terugkwam, wanneer en waarmee.
+ */
+export interface VastgelegdeToets {
+  tool: string;
+  /** De argumenten zoals ze verzonden zijn, na de omrekening naar het schema. */
+  verzoek: Record<string, unknown>;
+  /** Het antwoord van de tool, zoals het kwam. */
+  uitkomst: unknown;
+  /** ISO 8601. */
+  datum: string;
+  herkomst: ToetsHerkomst;
+}
 
 /** Wat de app naar FEM Studio stuurt (`tools/call`), met de hash van de invoer op het blad. */
 export interface ToetsVerzoek {
@@ -696,6 +727,17 @@ export interface EvaluatedToets {
   uitkomst?: ToetsUitkomst;
   /** De versie van FEM Studio waarmee getoetst is. */
   versie?: string;
+  /** Wanneer getoetst is (ISO 8601). */
+  datum?: string;
+  /**
+   * Alleen in de modus `vragen`: het antwoord is gemaakt met een andere versie van
+   * FEM Studio (`versie`: die van nu) of met een ander schema van de tool.
+   */
+  verouderd?: { versie?: string; schema?: boolean };
+  /** Opnieuw toetsen lukte niet; het blok toont het vorige antwoord. */
+  waarschuwing?: string;
+  /** Alleen in de modus `vragen`: de knop "opnieuw toetsen" staat erbij. */
+  opnieuw?: boolean;
   /** Alleen in de modus `vragen`, zolang er geen antwoord is. */
   verzoek?: ToetsVerzoek;
   /** `nl` of `en`: de vaste woorden. */

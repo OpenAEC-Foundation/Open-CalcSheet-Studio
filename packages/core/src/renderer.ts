@@ -193,8 +193,30 @@ export interface RenderOpties {
   namen?: Readonly<Record<string, string>>;
 }
 
+/**
+ * De versie van FEM Studio bij de `@toets`-blokken: hebben alle blokken van het blad
+ * dezelfde, dan staat hij alleen bij het eerste. Een blok dat alleen op het scherm
+ * staat, telt niet mee: op papier zou de versie dan ontbreken.
+ */
+let toetsKop: { eenVersie: boolean; getoond: boolean } | null = null;
+
+function toetsVersies(nodes: readonly EvaluatedNode[], uit = new Set<string>()): Set<string> {
+  for (const n of nodes) {
+    if (n.type === 'toets' && n.versie && !n.verborgen && !n.scherm) uit.add(n.versie);
+    const kinderen = (n as { children?: EvaluatedNode[] }).children;
+    if (Array.isArray(kinderen)) toetsVersies(kinderen, uit);
+  }
+  return uit;
+}
+
 export function render(nodes: EvaluatedNode[], opties: RenderOpties = {}): string {
-  return metWeergaveNamen(opties.namen, () => maakHtml(nodes));
+  const vorige = toetsKop;
+  toetsKop = { eenVersie: toetsVersies(nodes).size <= 1, getoond: false };
+  try {
+    return metWeergaveNamen(opties.namen, () => maakHtml(nodes));
+  } finally {
+    toetsKop = vorige;
+  }
 }
 
 function maakHtml(nodes: EvaluatedNode[]): string {
@@ -278,8 +300,11 @@ function renderNode(node: EvaluatedNode): string {
     case 'ifcx':
       return renderIfcxBlok(node);
 
-    case 'toets':
-      return renderToets(node);
+    case 'toets': {
+      const metVersie = !toetsKop?.eenVersie || !toetsKop.getoond;
+      if (toetsKop && node.versie && !node.verborgen && !node.scherm) toetsKop.getoond = true;
+      return renderToets(node, metVersie);
+    }
 
     case 'js':
       return renderJsBlok(node);

@@ -45,6 +45,7 @@ export const ATTR = {
   tekenvel: 'ocss::blad::tekenvel',
   jupyter: 'ocss::blad::jupyter',
   marimo: 'ocss::blad::marimo',
+  toetsing: 'ocss::blad::toetsing',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -259,6 +260,20 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       // De laatste uitvoer per cel als html, in JSON: een notebook bewaart die zelf niet.
       uitvoer: TEKST,
     }),
+  },
+  // De antwoorden van Open FEM Studio op de @toets-blokken, per hash van de invoer op het
+  // blad. Het verzoek en het antwoord staan als JSON-tekst: hun vorm is die van de tool.
+  [ATTR.toetsing]: {
+    value: lijst(object({
+      hash: TEKST,
+      tool: TEKST,
+      datum: TEKST,
+      versie: opt(TEKST),
+      sha256: opt(TEKST),
+      schema: opt(TEKST),
+      verzoek: TEKST,
+      uitkomst: TEKST,
+    })),
   },
   [ATTR.markdown]: {
     value: object({
