@@ -64,6 +64,42 @@ npm run tauri build --workspace=@openaec/calcsheet-studio -- --features rapporte
 Zonder die vlag bestaan de engine-commando's wel, maar geven ze een melding dat de build ze
 niet bevat. Zie [backlog.md](backlog.md) voor waarom die weg nu niet de standaard is.
 
+## FEM Studio in CalcSheet
+
+De normtoetsingen komen uit één bron: Open FEM Studio. CalcSheet levert de server
+(`openaec-mcp-server`) mee en start hem headless bij de eerste aanroep. Ze praten MCP
+over stdin/stdout. Het ontwerp staat in
+[2026-11-07-toetsing-via-fem-studio-design.md](superpowers/specs/2026-11-07-toetsing-via-fem-studio-design.md).
+
+- **Het proces en het protocol** staan in de crate `packages/desktop/src-tauri/fem-brug`.
+  Die heeft geen Tauri, zodat de tests ook op Windows draaien. De commando's voor de
+  webview staan in `src-tauri/src/fem_studio.rs`, en de webview roept ze aan via
+  `src/rekenen/femStudio.ts`.
+- **Waar de server staat**, in deze volgorde:
+  1. `OCSS_FEM_SERVER`, om een eigen gebouwde server te proberen;
+  2. de resource `src-tauri/fem-studio/`, die een release meelevert;
+  3. alleen in een debug-build een geïnstalleerde FEM Studio, op Windows
+     `%LOCALAPPDATA%\Open FEM Studio\openaec-mcp-server.exe`.
+
+  Is er geen server, dan toont Instellingen › Over "niet meegeleverd".
+- **Meeleveren.** `src-tauri/fem-studio/versie.json` pint de versie, en per platform het
+  bestand uit de release van FEM Studio met zijn sha256.
+  - `node scripts/haal-fem-server.mjs` haalt het op met `gh` en `GH_TOKEN`; in de
+    workflow is dat het secret `FEM_STUDIO_TOKEN`.
+  - Zonder bestand of token bouwt de app zonder server. Tot FEM Studio de server per
+    platform als release-bestand heeft (FEM Studio #298), is dat altijd zo.
+- **Toetsen:**
+
+  ```bash
+  cargo test --manifest-path packages/desktop/src-tauri/fem-brug/Cargo.toml
+  cargo test --manifest-path packages/desktop/src-tauri/fem-brug/Cargo.toml -- --ignored
+  node scripts/check-fem-server.mjs
+  ```
+
+  De tweede regel gebruikt de echte server, uit `OCSS_FEM_SERVER` of de geïnstalleerde
+  FEM Studio. Hij toetst `tools/list`, een opzoeking, een staaltoets, een geweigerde tool en
+  een herstart na een gestopt proces.
+
 ## Opbouw
 
 ```
