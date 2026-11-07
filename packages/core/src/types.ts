@@ -330,6 +330,23 @@ export interface BreakNode {
   scherm?: boolean;
 }
 
+/**
+ * Een `@toets naam = tool … @end`-blok: een normtoets door Open FEM Studio (zie
+ * toetsBlok.ts). Elke regel is `veld = uitdrukking`.
+ */
+export interface ToetsNode {
+  type: 'toets';
+  /** De naam van de uitkomst: `kolom` geeft `kolom_uc_max`, `kolom_voldoet`, … */
+  naam: string;
+  /** De tool van FEM Studio, zoals `check_steel_beam`. */
+  tool: string;
+  velden: { veld: string; expr: string; regel: number }[];
+  fouten: string[];
+  hidden?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type AstNode =
   | HeadingNode
   | TextNode
@@ -350,7 +367,8 @@ export type AstNode =
   | SelectNode
   | GefUploadNode
   | OpdrachtNode
-  | EenheidDefNode;
+  | EenheidDefNode
+  | ToetsNode;
 
 export interface EvaluatedHeading {
   type: 'heading';
@@ -625,6 +643,69 @@ export interface EvaluatedEenheidDef {
   result: string;
 }
 
+/** Het antwoord van FEM Studio op een verzoek, of waarom het er niet is. */
+export type ToetsAntwoord =
+  | { ok: true; uitkomst: unknown; versie?: string }
+  | { ok: false; melding: string };
+
+/** Wat de app naar FEM Studio stuurt (`tools/call`), met de hash van de invoer op het blad. */
+export interface ToetsVerzoek {
+  hash: string;
+  tool: string;
+  argumenten: Record<string, unknown>;
+}
+
+/** Eén toets uit het antwoord. */
+export interface ToetsRij {
+  id: string;
+  artikel: string;
+  titel: string;
+  /** null: niet van toepassing of geen getal. */
+  uc: number | null;
+  /** `Ok`, `NotOk` of `NotApplicable` (niet van toepassing). */
+  status: string;
+  formule?: string;
+  variabelen?: { symbol?: string; value?: unknown; unit?: string }[];
+  notities?: string[];
+}
+
+/** Een gelezen antwoord (toetsBlok.ts, leesAntwoord). */
+export interface ToetsUitkomst {
+  uc_max: number | null;
+  /** Van het geheel: `NotApplicable` is hier "niet volledig getoetst". */
+  status: string;
+  voldoet: boolean;
+  /** Het id van de maatgevende toets, bij één staaf. */
+  maatgevend?: string;
+  toetsen: ToetsRij[];
+  /** Bij een lijst of een model: per staaf of plaat. */
+  staven?: { id: string; uc_max: number | null; status: string; maatgevend?: string }[];
+  /** FEM Studio gaf geen toetsresultaat, of een fout in het resultaat zelf. */
+  fout?: string;
+}
+
+/** Een doorgerekend `@toets`-blok. */
+export interface EvaluatedToets {
+  type: 'toets';
+  naam: string;
+  tool: string;
+  /** `wacht`: het verzoek is nog onderweg; `niet-getoetst`: er is geen antwoord en hier wordt niet gevraagd. */
+  status: 'wacht' | 'klaar' | 'fout' | 'niet-getoetst';
+  hash?: string;
+  melding?: string;
+  uitkomst?: ToetsUitkomst;
+  /** De versie van FEM Studio waarmee getoetst is. */
+  versie?: string;
+  /** Alleen in de modus `vragen`, zolang er geen antwoord is. */
+  verzoek?: ToetsVerzoek;
+  /** `nl` of `en`: de vaste woorden. */
+  taal: string;
+  /** Achter `#hide`: rekent mee, staat niet op het blad. */
+  verborgen?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type EvaluatedNode =
   | EvaluatedEenheidDef
   | EvaluatedHeading
@@ -642,4 +723,5 @@ export type EvaluatedNode =
   | EvaluatedJsBlok
   | EvaluatedImage
   | EvaluatedSelect
-  | EvaluatedGefUpload;
+  | EvaluatedGefUpload
+  | EvaluatedToets;
