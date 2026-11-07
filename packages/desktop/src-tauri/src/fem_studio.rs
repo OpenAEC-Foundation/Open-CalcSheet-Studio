@@ -44,6 +44,8 @@ pub struct FemStatus {
     beschikbaar: bool,
     versie: Option<String>,
     pad: Option<String>,
+    /// De sha256 van het programma, voor de herkomst van een antwoord.
+    sha256: Option<String>,
     code: Option<&'static str>,
     reden: Option<String>,
 }
@@ -62,10 +64,11 @@ pub async fn fem_studio_status(app: AppHandle) -> Result<FemStatus, String> {
                 beschikbaar: true,
                 versie: Some(p.versie().to_owned()),
                 pad: Some(p.pad().display().to_string()),
+                sha256: p.sha256(),
                 code: None,
                 reden: None,
             },
-            Err((code, reden)) => FemStatus { beschikbaar: false, versie: None, pad: None, code: Some(code), reden: Some(reden) },
+            Err((code, reden)) => FemStatus { beschikbaar: false, versie: None, pad: None, sha256: None, code: Some(code), reden: Some(reden) },
         }
     })
     .await

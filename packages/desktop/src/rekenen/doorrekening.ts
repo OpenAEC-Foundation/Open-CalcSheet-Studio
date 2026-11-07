@@ -21,10 +21,12 @@ import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
 import { metToetsingen } from "./toetsCache";
-import { useToetsVersie, vraagToetsingen } from "./femToetsing";
+import { kenFemStudio, legToetsingenVast, useToetsVersie, vraagToetsingen } from "./femToetsing";
 
 export interface RekenVerzoek {
   sleutel: string;
+  /** Het id van het blad: daar worden de antwoorden van FEM Studio vastgelegd. */
+  blad?: string;
   source: string;
   waarden: Record<string, string>;
   scope: Record<string, unknown>;
@@ -45,6 +47,8 @@ export interface RekenAntwoord {
   eenheden?: CanvasUitwerking[];
   /** De @toets-blokken zonder antwoord (toetsBlok.ts); gaan naar FEM Studio. */
   verzoeken?: ToetsVerzoek[];
+  /** De hashes van alle @toets-blokken, met of zonder antwoord. */
+  toetsen?: string[];
   uitkomst: BladUitkomst | null;
 }
 
@@ -74,8 +78,9 @@ function deWorker(): Worker {
   if (!worker) {
     worker = new Worker(new URL("./rekenWorker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (e: MessageEvent<RekenAntwoord>) => {
-      const { sleutel, html, eenheden, uitkomst, verzoeken } = e.data;
-      if (verzoeken?.length) vraagToetsingen(verzoeken);
+      const { sleutel, html, eenheden, uitkomst, verzoeken, toetsen } = e.data;
+      const blad = bezig?.blad;
+      if (verzoeken?.length) void vraagToetsingen(verzoeken);
       uitkomsten.set(sleutel, { html, eenheden, uitkomst });
       while (uitkomsten.size > BEWAARD) uitkomsten.delete(uitkomsten.keys().next().value!);
       bezig = null;
@@ -83,6 +88,11 @@ function deWorker(): Worker {
       wachtend = null;
       if (volgende && !uitkomsten.has(volgende.sleutel)) stuur(volgende);
       meld();
+      // Na het tonen: de antwoorden bij het blad vastleggen geeft een nieuwe ronde.
+      if (toetsen?.length) {
+        kenFemStudio();
+        if (blad) legToetsingenVast(blad, toetsen);
+      }
     };
   }
   return worker;
@@ -158,10 +168,10 @@ export function useDoorrekening(
   useEffect(() => {
     if (!source.trim()) return;
     vraag({
-      sleutel, source, waarden, scope, naam, hoekmodus, taal, evalOpties,
+      sleutel, blad, source, waarden, scope, naam, hoekmodus, taal, evalOpties,
       includes: [...rekentaalIncludes], imageUrls: [...rekentaalImageUrls],
     });
-  }, [sleutel, source, waarden, scope, naam, taal, evalOpties]);
+  }, [sleutel, blad, source, waarden, scope, naam, taal, evalOpties]);
 
   const resultaat = hier?.uitkomst?.resultaat;
   useEffect(() => {
