@@ -56,11 +56,12 @@ staal en hout zelf.
 
 ## 1. Waar FEM Studio draait
 
-**De editie.** De toetsen zitten alleen in de editie van FEM Studio met de
-feature `toetsing`; die repository is privé. De openbare editie, "Open FEM
-Studio Mechanics", heeft geen `check_*`-tools. CalcSheet is openbaar. Welke
-editie een gebruiker nodig heeft en waar hij die haalt, is open punt 1. Dat
-punt bepaalt ook of lokaal of de cloud de standaard wordt.
+**De editie.** `toetsing` is de standaardfeature van de server en van de app.
+De exe die de installer van FEM Studio neerzet, is dus de volledige editie, met
+toetsen. De repository daarvan is privé. De openbare editie, "Open FEM Studio
+Mechanics", is een aparte export zonder `check_*`-tools. CalcSheet is openbaar.
+Hoe de volledige editie bij gebruikers komt, is open punt 1. Dat punt bepaalt
+ook of lokaal of de cloud de standaard wordt.
 
 **Mijn keuze:** CalcSheet kent twee bronnen, in te stellen onder Instellingen ›
 Toetsing.
@@ -72,8 +73,11 @@ Toetsing.
   - Linux: `/usr/bin/openaec-mcp-server`;
   - of een pad dat je zelf opgeeft.
 
-  CalcSheet start hem als kindproces met `--http 127.0.0.1:<vrije poort>` en
-  `OPENAEC_API_TOEGANG=open`, en stopt hem bij het afsluiten. Een server zonder
+  CalcSheet start hem als kindproces met `--http 127.0.0.1:0` en
+  `OPENAEC_API_TOEGANG=open`, en stopt hem bij het afsluiten. Na het binden
+  meldt de server de gekozen poort als één JSON-regel op stdout, bijvoorbeeld
+  `{"openaecMcpHttp":{"address":"127.0.0.1:53124"}}` (FEM Studio #292). Tot dat
+  er is, kiest CalcSheet zelf een vrije poort. Een server zonder
   `check_*`-tools in `GET /v1/tools` is de verkeerde editie; dat meldt
   CalcSheet zo.
 - **Cloud.** Een adres en een sleutel. De sleutel staat in de sleutelbos van het
@@ -163,6 +167,20 @@ UC_max = kolom.uc_max
   titels en de afleiding staan er zoals FEM Studio ze geeft, tot FEM Studio een
   taalargument heeft (§6).
 
+**De afleiding heeft al één vorm.** Elke toets van FEM Studio geeft
+`NamedCheck { id, kind }`. Dat geldt voor staal, hout, CLT, aluminium,
+koudgevormd, beton, metselwerk, natuursteen en platen. `kind` is
+`{type: "Resistance", data: ResistanceCalc}` of
+`{type: "Stability", data: StabilityCalc}`, met:
+- `id`, `title` en `article`;
+- `force_state`, `formula_latex`, `variables` en `deelstappen`;
+- `value` en `unit`;
+- `uc`, `status` en `notes`.
+
+Het rapport van FEM Studio leest diezelfde vorm. De typen staan in
+`design-mockup/src/lib/types/steel/` van FEM Studio. CalcSheet heeft dus één
+weergave nodig.
+
 **Op het scherm** staat per toets een regel met:
 - het artikel, de titel en de UC;
 - voldoet / voldoet niet / niet getoetst;
@@ -240,6 +258,12 @@ verschillende versies zijn getoetst.
   verzoek uit. Een antwoord dat niet meer gebruikt wordt, valt weg bij het
   opslaan. Verandert alleen het schema of de omrekening, dan blijft het oude
   antwoord gelden. Het blad biedt dan "opnieuw toetsen" aan.
+- **Gelijk is binnen een tolerantie.** Dezelfde invoer met dezelfde build op
+  hetzelfde platform geeft bit voor bit hetzelfde antwoord. Tussen Windows en
+  Linux verschillen iteratieve en goniometrische uitkomsten in de laatste bits
+  (gemeten: 2·10⁻¹⁵ relatief). Een opnieuw getoetst antwoord vergelijkt CalcSheet
+  dus met een relatieve tolerantie (10⁻⁹), niet byte voor byte. Een verschil
+  daaronder telt niet als een veranderde uitkomst.
 - **Is FEM Studio nieuwer** dan de versie van een vastgelegd antwoord, dan meldt
   het blad dat op het scherm: "getoetst met FEM Studio 2026.44.0; 2026.46.1 is
   beschikbaar — opnieuw toetsen". Opnieuw toetsen is een knop, nooit vanzelf.
@@ -253,14 +277,18 @@ van CalcSheet: `frame_solve` met `portal`. Dat maakt een model voor de eigen
 raamwerkkern van CalcSheet en is niet bereikbaar vanuit de rekentaal. Voor de
 toetsing:
 
-- het portaal wordt ook een **model van FEM Studio**: knopen in mm, staven met
-  materiaal en profiel, opleggingen, belastinggevallen met hun type, en lasten;
+- het portaal wordt een **model van FEM Studio**, gemaakt door FEM Studio zelf:
+  de tool `portaal_maken` (FEM Studio #297). Die neemt de maten, profielen en
+  lasten en geeft een model in de `.ifcfem2d`-vorm terug, dat `check_fem_model`
+  direct slikt. CalcSheet bouwt er geen eigen generator voor; de `portal`-optie
+  van `frame_solve` (PR #48) wordt daarmee een tweede bron;
 - `check_fem_model` rekent dat model door en toetst het in één aanroep: tweede
   orde met scheefstand, de combinaties volgens de NB uit de gevolgklasse, en per
   staaf de staaltoets;
-- het rekenblad Portaal (een nieuw sjabloon) vraagt de maten, profielen en lasten,
-  zet het model op met een `@toets portaal = check_fem_model`-blok, en toont de
-  momentenlijn en de UC per staaf.
+- het rekenblad Portaal (een nieuw sjabloon) vraagt de maten, profielen en
+  lasten. Het laat het model maken met `@toets model = portaal_maken`, toetst
+  het met `@toets portaal = check_fem_model`, en toont de momentenlijn en de UC
+  per staaf.
 
 Daarmee rekent CalcSheet de krachtsverdeling van het portaal niet meer zelf voor
 de toetsing. De eigen raamwerkkern blijft voor wat snel en eerste orde mag:
@@ -271,26 +299,22 @@ Zie het open punt hierover.
 
 ## 6. Wat FEM Studio nodig heeft
 
-Voor staal, beton en hout werkt de HTTP-dienst nu al. Voor de rest moet er in
-FEM Studio iets veranderen. Deze punten liggen bij de sessie van FEM Studio:
+Voor staal, beton en hout werkt de HTTP-dienst nu al, en de afleiding heeft al
+één vorm (§2). De rest staat als issue in de repository van FEM Studio. Die
+issues zijn niet opgepakt; de volgorde bepaalt de gebruiker.
 
-- **De lijst van de HTTP-dienst.** `CLOUD_TOOLS` in `cloudbeleid.rs` mist
-  `check_aluminium_beams`, `check_masonry_walls`, `check_koudgevormd_beams`,
-  `check_natural_stone_elements` en `list_aluminium_alloys`. De HTTP-modus past
-  die lijst ook lokaal toe, dus die tools geven nu een 404.
-- **Node.js lokaal.** `check_fem_model` heeft Node nodig, en de installer levert
-  dat niet mee. Daar is Node meeleveren of `OPENAEC_NODE` vullen nodig, anders
-  werkt het portaal lokaal niet.
-- **Een vrije poort.** `--http 127.0.0.1:0`, met de gekozen poort als één
-  machineleesbare regel op stdout.
-- **Herkomst bij elk antwoord.** De serverversie, de editie, de versie van de
-  rekenkern en een schemaversie.
-- **Eén vorm voor de afleiding** over alle toetsen: titel, artikel, formules,
-  variabelen en notities.
-- **Eenheid per veld** in `GET /v1/tools`, als eigen sleutel.
-- **Een taalargument** voor titels en notities.
-- **Een generator voor een 2D-portaal**, als FEM Studio die wil hebben. Dan
-  bouwt CalcSheet er geen eigen (§5).
+| issue | wat | nodig voor |
+|---|---|---|
+| #292 | aluminium, metselwerk, koudgevormd, natuursteen en hun `list_*`-tools in de lijst van de HTTP-dienst; de gekozen poort op stdout | die toetsen in CalcSheet; netjes starten (§1) |
+| #293 | herkomst in `/v1/health` en bij elk antwoord (als headers): editie, schemahash, bundelhash | vastleggen (§4) |
+| #294 | `x-unit` per numeriek veld in de schema's; de API blijft SI | de omrekening (§2), zonder af te gaan op de naam |
+| #295 | Node.js lokaal: meeleveren, de sidecar als losse executable, of het rekenpad naar Rust | `check_fem_model` lokaal, dus het portaal (§5) |
+| #296 | een argument `taal` voor de toetsteksten; vertalen bij de bron, in alle toetscrates | anderstalige bladen (§2) |
+| #297 | `portaal_maken`: een 2D-portaal als model voor `check_fem_model` | het portaal (§5) |
+
+Tot #294 er is, leest CalcSheet de eenheid uit het achtervoegsel van de
+veldnaam en, voor de krachtvelden, uit de beschrijving. Tot #293 er is, legt
+CalcSheet `versie` uit `/v1/health` vast plus een eigen hash van het schema.
 
 ## 7. Volgorde van bouwen
 
@@ -306,9 +330,18 @@ Elke stap is een eigen PR.
    - de weergave op scherm en papier.
 3. **Vastleggen.** `toetsingen` per exemplaar, in het bestand en het IFCX, de
    versiemelding en "opnieuw toetsen".
-4. **Het portaal.** Het model voor FEM Studio uit de maten, het sjabloon Portaal
-   en `check_fem_model`.
-5. **Bestaande toetsen** naar FEM Studio, als dat de keuze is (open punt 1).
+4. **Het portaal**, zodra FEM Studio #297 en #295 er zijn: het sjabloon Portaal
+   met `portaal_maken` en `check_fem_model`.
+5. **Bestaande toetsen** naar FEM Studio, als dat de keuze is (open punt 2).
+   Voor de ligger:
+   - `check_steel_beam` kent de omhullende per station, kipsteunen per flens,
+     gaffels, kip over een overstek (conservatief, C1 = 1,0) en de
+     doorbuigingsklasse `Cantilever` met l_rep = 2L;
+   - een doorgaande ligger gaat per veld, met één aanroep per staaf;
+   - **valkuil bij hout:** `check_timber_beams` neemt k_mod per UGT-combinatie
+     alleen als de duurklasse per combinatie wordt meegegeven. Zonder die lijst
+     valt hij terug op "blijvend". De ligger moet die lijst dus altijd uit zijn
+     lasten opbouwen, zoals `check_fem_model` dat zelf doet.
 
 ## Controleren
 
@@ -344,7 +377,11 @@ Deze beslissingen veranderen wat er gebouwd wordt:
 3. **`frame_solve` (PR #48).** Houden als snelle krachtsverdeling in eerste orde,
    naast `check_fem_model` voor de toetsing? Of laten doorsturen naar
    `solve_fem_model` van FEM Studio, zodat er ook voor de krachtsverdeling één bron
-   is?
-4. **Waar het sjabloon Portaal komt.** In de openbare app, net als de ligger,
+   is? In beide gevallen gaat de `portal`-optie eruit, want `portaal_maken` (#297)
+   wordt de bron voor het portaal.
+4. **Node.js voor FEM Studio (#295).** Node meeleveren, de sidecar als losse
+   executable, of het rekenpad naar Rust? Dit is een keuze in FEM Studio, maar
+   het portaal in CalcSheet wacht erop.
+5. **Waar het sjabloon Portaal komt.** In de openbare app, net als de ligger,
    in de modules-repo, of in de privé-app? Het werkt alleen met de editie van
    FEM Studio met toetsen.
