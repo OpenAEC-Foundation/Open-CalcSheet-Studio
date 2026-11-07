@@ -12,6 +12,7 @@ import { leesGetallen, leesResultaat, metRefNamen } from "../components/calc/bla
 import { rekenUitwerking } from "../components/calc/canvasRekenen";
 import { bronVoorUitvoer } from "../templates/vertalingen";
 import type { RekenVerzoek, RekenAntwoord } from "./doorrekening";
+import { scopeMetVerwijzingen } from "./verwijzingen";
 
 self.onmessage = (e: MessageEvent<RekenVerzoek>) => {
   const v = e.data;
@@ -27,7 +28,9 @@ self.onmessage = (e: MessageEvent<RekenVerzoek>) => {
       imageUrls: new Map(v.imageUrls),
       eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam),
     };
-    const { nodes, html, eenheden } = rekenUitwerking(uitvoer.bron, v.waarden, v.scope, opties, uitvoer.namen, evalOpties);
+    // Waarden uit andere bladen (#1.R_paal): die bladen eerst doorrekenen (verwijzingen.ts).
+    const scope = scopeMetVerwijzingen(v.source, v.waarden, v.scope, v.verwijzingen ?? [], opties, evalOpties);
+    const { nodes, html, eenheden } = rekenUitwerking(uitvoer.bron, v.waarden, scope, opties, uitvoer.namen, evalOpties);
     antwoord = {
       sleutel: v.sleutel,
       html,

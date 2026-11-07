@@ -109,7 +109,7 @@ export function useRapportWeergave(): RapportWeergave {
     const scope = projectScope(gegevens);
     // In het eenhedenstelsel van het project, net als op het scherm.
     const evalOpties = evalOptiesVan(gegevens);
-    return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope, taal, evalOpties) }));
+    return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope, taal, evalOpties, exemplaren) }));
   }, [exemplaren, gegevens, taal]);
 
   const opzet = useMemo(() => {
