@@ -5,6 +5,7 @@ import { rekentaalImageUrls, rekentaalIncludes } from "../../../templates/rekent
 import { bronVoorUitvoer } from "../../../templates/vertalingen";
 import { projectScope } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
+import { metToetsingen } from "../../../rekenen/toetsCache";
 import { staatInHoofdstuk } from "../../../rapport/opzet";
 import { leesResultaat, samenvatting, type Resultaat } from "../../calc/bladResultaat";
 import { bladSoortVan, bladVoorOpzet } from "../../calc/bladSoorten";
@@ -30,7 +31,7 @@ function useUitkomsten(taal: string): Map<string, Uitkomst> {
     const uit = new Map<string, Uitkomst>();
     for (const ex of exemplaren) {
       try {
-        const nodes = evaluate(parse(bronVoorUitvoer(ex.source, taal).bron, opties), ex.waarden, scope);
+        const nodes = evaluate(parse(bronVoorUitvoer(ex.source, taal).bron, opties), ex.waarden, scope, metToetsingen({}, "lezen"));
         uit.set(ex.id, { resultaat: leesResultaat(nodes, ex.naam), fout: null });
       } catch (err) {
         uit.set(ex.id, {

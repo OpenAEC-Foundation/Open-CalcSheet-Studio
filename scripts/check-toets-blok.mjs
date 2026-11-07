@@ -16,7 +16,11 @@
  *   • rekenen: de variabelen na het blok, de modus vragen (een verzoek) en
  *     lezen (niet getoetst), een veld met een fout (geen verzoek), #hide, een
  *     #if-tak die niet geldt;
- *   • de weergave: de tabel, de maatgevende rij, niet getoetst, Engels.
+ *   • de weergave: de tabel, de maatgevende rij, niet getoetst, Engels;
+ *   • herkomst en opnieuw toetsen: een vastgelegd antwoord met datum en versie,
+ *     de melding bij een andere versie of een ander schema (alleen in de modus
+ *     vragen), de knop na een fout, een mislukte nieuwe toets, de versie één keer
+ *     per blad, de hash van een schema, en het teruglezen van vastgelegde antwoorden.
  *
  * Draaien:  node scripts/check-toets-blok.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -24,7 +28,10 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parse, evaluate, render, naarSchema, toetsHash, leesAntwoord, rekenUitdrukking } from "../packages/core/dist/index.js";
+import {
+  parse, evaluate, render, naarSchema, toetsHash, leesAntwoord, rekenUitdrukking,
+  alsAntwoord, schemaHash, leesVastgelegdeToetsingen,
+} from "../packages/core/dist/index.js";
 
 let fouten = 0;
 function meld(ok, tekst, detail = "") {
@@ -170,6 +177,73 @@ console.log("\nDe weergave");
   meld(nietGetoetst.includes("NIET GETOETST"), "zonder antwoord: NIET GETOETST");
   const en = render(evaluate(parse(blad()), {}, {}, { toetsingen, taal: "en" }));
   meld(en.includes("Code check") && en.includes("satisfies") && en.includes("0.58"), "in het Engels, met een punt als decimaalteken");
+}
+
+console.log("\nHerkomst en opnieuw toetsen");
+{
+  const hash = toetsVan(evaluate(parse(blad()), {}, {}, { toetsModus: "vragen" })).hash;
+  const vast = {
+    tool: "check_steel_beam",
+    verzoek: { length_m: 4 },
+    uitkomst: antwoord,
+    datum: "2026-11-07T10:15:00.000Z",
+    herkomst: { versie: "2026.44.2", sha256: "a".repeat(64), schema: "s0123456789abcdef" },
+  };
+  const toetsingen = { [hash]: alsAntwoord(vast) };
+  const k = toetsVan(evaluate(parse(blad()), {}, {}, { toetsingen }));
+  meld(k.status === "klaar" && k.versie === "2026.44.2" && k.datum === vast.datum, "een vastgelegd antwoord: klaar, met versie en datum");
+  const html = render(evaluate(parse(blad()), {}, {}, { toetsingen }));
+  meld(html.includes('<span class="alleen-scherm">, 7-11-2026</span>'), "de datum alleen op het scherm", html.match(/calc-toets-kop[^]*?<\/p>/)?.[0]);
+  meld(!html.includes("data-toets-opnieuw"), "modus lezen: geen knop opnieuw toetsen");
+
+  const nieuwer = { versie: "2026.46.1", schemas: { check_steel_beam: "s0123456789abcdef" } };
+  const lezenNieuwer = toetsVan(evaluate(parse(blad()), {}, {}, { toetsingen, fem: nieuwer }));
+  meld(!lezenNieuwer.verouderd && !lezenNieuwer.opnieuw, "modus lezen: ook bij een nieuwere FEM Studio geen melding (de afdruk)");
+  const vNieuwer = evaluate(parse(blad()), {}, {}, { toetsingen, toetsModus: "vragen", fem: nieuwer });
+  const vn = toetsVan(vNieuwer);
+  meld(vn.status === "klaar" && vn.verouderd?.versie === "2026.46.1" && vn.opnieuw && !vn.verzoek, "andere versie: het oude antwoord geldt, met de melding en de knop; geen verzoek");
+  const vnHtml = render(vNieuwer);
+  meld(vnHtml.includes("Getoetst met versie 2026.44.2; deze CalcSheet heeft FEM Studio 2026.46.1.") && vnHtml.includes(`data-toets-opnieuw="${hash}"`) && /calc-toets-verouderd alleen-scherm/.test(vnHtml), "de melding en de knop, alleen op het scherm");
+  meld(dichtbij(Number(vNieuwer.find((n) => n.name === "UC_max")?.waarde), antwoord.uc_max), "de variabelen gelden met het oude antwoord");
+  const schema = toetsVan(evaluate(parse(blad()), {}, {}, { toetsingen, toetsModus: "vragen", fem: { versie: "2026.44.2", schemas: { check_steel_beam: "sffffffffffffffff" } } }));
+  meld(schema.verouderd?.schema === true && schema.opnieuw, "ander schema bij dezelfde versie: melding en knop");
+  const gelijk = toetsVan(evaluate(parse(blad()), {}, {}, { toetsingen, toetsModus: "vragen", fem: { versie: "2026.44.2", schemas: { check_steel_beam: "s0123456789abcdef" } } }));
+  meld(!gelijk.verouderd && !gelijk.opnieuw, "dezelfde versie en hetzelfde schema: geen melding");
+  const zonderFem = toetsVan(evaluate(parse(blad()), {}, {}, { toetsingen, toetsModus: "vragen" }));
+  meld(!zonderFem.verouderd, "zonder FEM Studio op deze computer: het oude antwoord, zonder melding");
+
+  const mislukt = { [hash]: { ...alsAntwoord(vast), waarschuwing: "time-out" } };
+  const m = evaluate(parse(blad()), {}, {}, { toetsingen: mislukt, toetsModus: "vragen" });
+  meld(toetsVan(m).status === "klaar" && render(m).includes("Opnieuw toetsen lukte niet: time-out") && render(m).includes("data-toets-opnieuw"), "opnieuw toetsen mislukt: het oude antwoord blijft, met de fout en de knop");
+
+  const fout = evaluate(parse(blad()), {}, {}, { toetsingen: { [hash]: { ok: false, melding: "geen verbinding" } }, toetsModus: "vragen" });
+  meld(toetsVan(fout).opnieuw && render(fout).includes("data-toets-opnieuw"), "na een fout: de knop opnieuw toetsen");
+  const foutLezen = render(evaluate(parse(blad()), {}, {}, { toetsingen: { [hash]: { ok: false, melding: "geen verbinding" } } }));
+  meld(!foutLezen.includes("data-toets-opnieuw"), "na een fout in de modus lezen: geen knop");
+
+  // Twee blokken: dezelfde versie staat alleen bij het eerste, verschillende bij elk.
+  const tweede = blad("5 m").split("\n").slice(5).join("\n").replace("@toets kolom", "@toets kolom2").replace("length_m = h", "length_m = 5 m").replace("UC_max = kolom.uc_max", "UC_2 = kolom2.uc_max");
+  const twee = blad() + "\n" + tweede;
+  const hash2 = evaluate(parse(twee), {}, {}, { toetsModus: "vragen" }).filter((n) => n.type === "toets")[1]?.hash;
+  const versieKoppen = (v2) => {
+    const t2 = { ...toetsingen, [hash2]: alsAntwoord({ ...vast, herkomst: { ...vast.herkomst, versie: v2 } }) };
+    return (render(evaluate(parse(twee), {}, {}, { toetsingen: t2 })).match(/Open FEM Studio versie [0-9.]+/g) ?? []).length;
+  };
+  meld(!!hash2 && hash2 !== hash && versieKoppen("2026.44.2") === 1, "twee blokken met dezelfde versie: de versie één keer", `${hash2} ${versieKoppen("2026.44.2")}`);
+  meld(versieKoppen("2026.45.0") === 2, "met verschillende versies: bij elk blok");
+
+  meld(schemaHash({ a: 1, b: [1, 2] }) === schemaHash({ b: [1, 2], a: 1 }) && schemaHash({ a: 1 }) !== schemaHash({ a: 2 }) && /^s[0-9a-f]{16}$/.test(schemaHash({})), "de hash van een schema: volgorde van sleutels telt niet, inhoud wel");
+
+  const gelezen = leesVastgelegdeToetsingen({
+    [hash]: vast,
+    geenHash: vast,
+    t0000000000000001: { ...vast, tool: "" },
+    t0000000000000002: { tool: "x", verzoek: {}, uitkomst: null },
+    t0000000000000003: { ...vast, herkomst: { versie: 5, schema: "s1" } },
+  });
+  meld(Object.keys(gelezen ?? {}).sort().join() === [hash, "t0000000000000003"].sort().join(), "teruglezen: een ongeldige hash, geen tool of geen datum valt weg", JSON.stringify(Object.keys(gelezen ?? {})));
+  meld(gelezen?.t0000000000000003?.herkomst.versie === undefined && gelezen?.t0000000000000003?.herkomst.schema === "s1", "een herkomst met een verkeerd type valt per veld weg");
+  meld(leesVastgelegdeToetsingen({}) === undefined && leesVastgelegdeToetsingen([vast]) === undefined, "niets bruikbaars: undefined");
 }
 
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);

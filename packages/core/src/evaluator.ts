@@ -1390,6 +1390,12 @@ export interface EvalOpties {
   toetsingen?: Record<string, ToetsAntwoord>;
   /** `vragen`: een blok zonder antwoord geeft een verzoek mee (de werkruimte); anders "niet getoetst". */
   toetsModus?: 'vragen' | 'lezen';
+  /**
+   * De FEM Studio van nu: zijn versie en per tool de hash van het schema. Alleen in de
+   * modus `vragen`: een antwoord van een andere versie of een ander schema krijgt dan
+   * de melding en de knop "opnieuw toetsen".
+   */
+  fem?: { versie?: string; schemas?: Record<string, string> };
   /** De taal van de vaste woorden in de uitvoer, zoals `nl` of `en`. */
   taal?: string;
 }

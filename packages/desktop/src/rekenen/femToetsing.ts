@@ -1,41 +1,115 @@
 /**
- * De verzoeken van `@toets`-blokken naar Open FEM Studio sturen.
+ * De verzoeken van `@toets`-blokken naar Open FEM Studio sturen, en de antwoorden bij
+ * het blad vastleggen.
  *
  * De werkruimte rekent een blad in de rekenworker door met `toetsModus: "vragen"`.
  * Een blok zonder antwoord geeft dan een verzoek mee (doorrekening.ts). Hier gaat
  * elk verzoek één keer naar FEM Studio (femStudio.ts). Het antwoord komt in de
- * sessiecache (toetsCache.ts), en daarna rekent het blad een ronde opnieuw, omdat
- * de versie van de cache in de sleutel van de doorrekening zit.
+ * sessiecache (toetsCache.ts), met zijn herkomst: de versie van de server, de sha256
+ * van het programma en de hash van het schema van de tool. Daarna rekent het blad een
+ * ronde opnieuw, omdat de versie van de cache in de sleutel van de doorrekening zit,
+ * en die ronde legt het antwoord bij het blad vast (legToetsingenVast). Zo gaat het
+ * mee in het projectbestand.
  *
  * Een fout wordt ook een antwoord (`ok: false`): het blok toont hem als niet
- * getoetst en vraagt niet steeds opnieuw.
+ * getoetst en vraagt niet steeds opnieuw. Een fout wordt niet vastgelegd: op een
+ * andere computer, of na opnieuw openen, mag het gewoon weer.
  */
 import { useSyncExternalStore } from "react";
 import i18next from "i18next";
-import type { ToetsVerzoek } from "@ifc-calc/core";
-import { femStudioAanroep, femStudioStatus, FemFout } from "./femStudio";
-import { abonneerToetsingen, heeftToetsAntwoord, toetsVersie, zetToetsAntwoord } from "./toetsCache";
+import { alsAntwoord, schemaHash, type ToetsHerkomst, type ToetsVerzoek, type VastgelegdeToets } from "@ifc-calc/core";
+import { femStudioAanroep, femStudioStatus, femStudioTools, FemFout } from "./femStudio";
+import {
+  abonneerToetsingen,
+  heeftToetsAntwoord,
+  nieuwVastTeLeggen,
+  toetsHashes,
+  toetsVersie,
+  verzamelVerzoeken,
+  zetFem,
+  zetOpnieuw,
+  zetToetsAntwoord,
+} from "./toetsCache";
+import { useProjectStore } from "../store/projectStore";
+import { projectScope } from "../store/projectGegevens";
+import { rekenDoor } from "../mcp/rekenen";
 
-const onderweg = new Set<string>();
-let versie: Promise<string | undefined> | null = null;
-
-/** De versie van FEM Studio, één keer gevraagd. */
-function femVersie(): Promise<string | undefined> {
-  versie ??= femStudioStatus()
-    .then((s) => s.versie ?? undefined)
-    .catch(() => undefined);
-  return versie;
+interface FemNu {
+  versie?: string;
+  sha256?: string;
+  /** Per tool de hash van zijn schema. */
+  schemas: Record<string, string>;
 }
 
-/** Stuurt elk nieuw verzoek één keer; wat al onderweg of beantwoord is, slaat hij over. */
-export function vraagToetsingen(verzoeken: readonly ToetsVerzoek[]): void {
+const onderweg = new Map<string, Promise<void>>();
+let nu: Promise<FemNu> | null = null;
+/** Wat `nu` gaf, zodra het er is. */
+let nuBekend: FemNu | null = null;
+
+/**
+ * De FEM Studio van nu, één keer gevraagd. Is hij er niet, dan opnieuw bij "opnieuw
+ * toetsen": niet bij elke ronde, want een start die mislukt kost tijd.
+ */
+function femNu(): Promise<FemNu> {
+  nu ??= (async (): Promise<FemNu> => {
+    const status = await femStudioStatus();
+    if (!status.beschikbaar) return (nuBekend = { schemas: {} });
+    let schemas: Record<string, string> = {};
+    try {
+      const lijst = (await femStudioTools()) as { tools?: { name?: unknown; inputSchema?: unknown }[] } | null;
+      schemas = Object.fromEntries(
+        (lijst?.tools ?? [])
+          .filter((t): t is { name: string; inputSchema?: unknown } => typeof t?.name === "string")
+          .map((t) => [t.name, schemaHash(t.inputSchema)]),
+      );
+    } catch {
+      // Zonder schema's: dan alleen de versie vergelijken.
+    }
+    const uit = { versie: status.versie ?? undefined, sha256: status.sha256 ?? undefined, schemas };
+    nuBekend = uit;
+    zetFem({ versie: uit.versie, schemas });
+    return uit;
+  })().catch(() => (nuBekend = { schemas: {} }));
+  return nu;
+}
+
+/** Vraagt alvast naar de FEM Studio van nu: een blad met een vastgelegd antwoord kan zo melden dat het ouder is. */
+export function kenFemStudio(): void {
+  void femNu();
+}
+
+function herkomstVoor(n: FemNu, tool: string): ToetsHerkomst {
+  return {
+    ...(n.versie ? { versie: n.versie } : {}),
+    ...(n.sha256 ? { sha256: n.sha256 } : {}),
+    ...(n.schemas[tool] ? { schema: n.schemas[tool] } : {}),
+  };
+}
+
+/**
+ * Stuurt elk nieuw verzoek één keer; wat al beantwoord is, slaat hij over. Klaar als
+ * alle antwoorden er zijn, ook die al onderweg waren.
+ */
+export function vraagToetsingen(verzoeken: readonly ToetsVerzoek[]): Promise<void> {
+  const wacht: Promise<void>[] = [];
   for (const v of verzoeken) {
-    if (onderweg.has(v.hash) || heeftToetsAntwoord(v.hash)) continue;
-    onderweg.add(v.hash);
-    void (async () => {
+    const al = onderweg.get(v.hash);
+    if (al) {
+      wacht.push(al);
+      continue;
+    }
+    if (heeftToetsAntwoord(v.hash)) continue;
+    const p = (async () => {
       try {
         const uitkomst = await femStudioAanroep(v.tool, v.argumenten);
-        zetToetsAntwoord(v.hash, { ok: true, uitkomst, versie: await femVersie() });
+        const vast: VastgelegdeToets = {
+          tool: v.tool,
+          verzoek: v.argumenten,
+          uitkomst,
+          datum: new Date().toISOString(),
+          herkomst: herkomstVoor(await femNu(), v.tool),
+        };
+        zetToetsAntwoord(v.hash, alsAntwoord(vast), vast);
       } catch (e) {
         const melding =
           e instanceof FemFout && e.code === "geenDesktop"
@@ -48,10 +122,84 @@ export function vraagToetsingen(verzoeken: readonly ToetsVerzoek[]): void {
         onderweg.delete(v.hash);
       }
     })();
+    onderweg.set(v.hash, p);
+    wacht.push(p);
+  }
+  return Promise.all(wacht).then(() => undefined);
+}
+
+/**
+ * Legt bij een blad de antwoorden vast van de blokken die het nu heeft (hun hashes):
+ * wat deze sessie antwoordde, of wat een ander blad met dezelfde invoer al had.
+ */
+export function legToetsingenVast(blad: string, hashes: readonly string[]): void {
+  if (!hashes.length) return;
+  const store = useProjectStore.getState();
+  const ex = store.exemplaren.find((e) => e.id === blad);
+  if (!ex) return;
+  const bij = nieuwVastTeLeggen(ex.toetsingen, hashes);
+  if (bij) store.zetToetsingen(blad, bij);
+}
+
+/** De knop "opnieuw toetsen": het blok vraagt zijn antwoord opnieuw aan FEM Studio. */
+export function toetsOpnieuw(hash: string): void {
+  // Was FEM Studio er eerder niet, dan nu opnieuw kijken.
+  if (nuBekend && !nuBekend.versie) {
+    nu = null;
+    nuBekend = null;
+  }
+  zetOpnieuw(hash);
+}
+
+/** Een klik in de uitwerking: op de knop "opnieuw toetsen" van een blok? Dan gebeurt dat. */
+export function klikOpToetsKnop(doel: EventTarget | null): boolean {
+  const knop = doel instanceof Element ? doel.closest<HTMLElement>("[data-toets-opnieuw]") : null;
+  const hash = knop?.dataset.toetsOpnieuw;
+  if (!hash) return false;
+  toetsOpnieuw(hash);
+  return true;
+}
+
+const MAX_RONDES = 10;
+
+/**
+ * Vóór het afdrukken (App.tsx): rekent de bladen met een `@toets`-blok door alsof ze
+ * in de werkruimte staan, stuurt wat nog geen antwoord heeft naar FEM Studio en wacht
+ * erop. Een blok dat de uitkomst van een ander gebruikt, komt een ronde later. Na
+ * `maxMs` gaat de afdruk toch door: een blok zonder antwoord staat dan als niet
+ * getoetst op papier. `ids`: alleen deze bladen; null is het hele project.
+ */
+export async function werkToetsingenBij(ids: readonly string[] | null, maxMs = 120_000): Promise<void> {
+  const tot = Date.now() + maxMs;
+  for (let ronde = 0; ronde < MAX_RONDES; ronde++) {
+    const { exemplaren, gegevens } = useProjectStore.getState();
+    const scope = projectScope(gegevens);
+    const verzoeken: ToetsVerzoek[] = [];
+    for (const ex of exemplaren) {
+      if ((ids && !ids.includes(ex.id)) || !/^\s*@toets\b/m.test(ex.source)) continue;
+      try {
+        const { nodes } = rekenDoor(ex.source, ex.waarden, scope, ex.naam, "vragen");
+        legToetsingenVast(ex.id, toetsHashes(nodes));
+        verzoeken.push(...verzamelVerzoeken(nodes));
+      } catch {
+        // Een blad dat niet doorrekent, heeft geen verzoeken; de afdruk toont de fout.
+      }
+    }
+    const rest = tot - Date.now();
+    if (!verzoeken.length || rest <= 0) return;
+    let klok: ReturnType<typeof setTimeout> | undefined;
+    const opTijd = await Promise.race([
+      vraagToetsingen(verzoeken).then(() => true),
+      new Promise<boolean>((klaar) => {
+        klok = setTimeout(() => klaar(false), rest);
+      }),
+    ]);
+    clearTimeout(klok);
+    if (!opTijd) return;
   }
 }
 
-/** De versie van de sessiecache: verandert bij elk nieuw antwoord. */
+/** De versie van de antwoorden: verandert bij elk nieuw antwoord en elke wijziging in de vastgelegde. */
 export function useToetsVersie(): number {
   return useSyncExternalStore(abonneerToetsingen, toetsVersie);
 }

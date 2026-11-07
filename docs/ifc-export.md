@@ -87,7 +87,11 @@ constructeur een element heeft aangewezen.
 
 Bij het openen telt: de projectnaam, de gegevens, de verborgen onderdelen, het
 rapport, en per blad zijn naam, id, `templateId`, `bronVersie`, rekentekst,
-invoer, elementen, PDF, werkmap en Markdown-tekst.
+invoer, elementen, PDF, werkmap en Markdown-tekst, en de antwoorden van Open FEM
+Studio op de `@toets`-blokken (`ocss::blad::toetsing`). Die antwoorden zijn geen
+afleiding: de app kan ze niet zelf opnieuw maken. Per hash van de invoer op het
+blad staan er de tool, de datum, de herkomst (`versie`, `sha256`, `schema`) en het
+verzoek en het antwoord als JSON-tekst.
 
 Afgeleid, en alleen voor andere lezers: `ocss::blad::uitkomst`, `ocss::figuur`,
 de elementen in de ruimtelijke boom en de geometrie. De app rekent die bij het

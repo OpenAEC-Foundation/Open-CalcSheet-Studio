@@ -1,5 +1,5 @@
 import { math } from './eenheden.js';
-import type { EvaluatedToets, ToetsAntwoord, ToetsNode, ToetsRij, ToetsUitkomst } from './types.js';
+import type { EvaluatedToets, ToetsAntwoord, ToetsNode, ToetsRij, ToetsUitkomst, VastgelegdeToets } from './types.js';
 
 /**
  * Een normtoets door Open FEM Studio: het blok `@toets`.
@@ -193,6 +193,52 @@ export function toetsHash(tool: string, invoer: Record<string, unknown>): string
   return 't' + cyrb53(JSON.stringify({ tool, invoer: canoniek(invoer) }));
 }
 
+/**
+ * De hash van het schema van een tool (`inputSchema` uit `tools/list`). Gaat mee in de
+ * herkomst van een antwoord: verandert het schema, dan biedt het blad "opnieuw toetsen"
+ * aan. Het antwoord blijft gelden, want de hash van de invoer verandert niet.
+ */
+export function schemaHash(schema: unknown): string {
+  return 's' + cyrb53(JSON.stringify(canoniek(schema ?? null)));
+}
+
+// ── Vastleggen ───────────────────────────────────────────────────────────────
+
+/** Een vastgelegd antwoord zoals het blok het opzoekt (`EvalOpties.toetsingen`). */
+export function alsAntwoord(v: VastgelegdeToets): ToetsAntwoord {
+  return {
+    ok: true,
+    uitkomst: v.uitkomst,
+    datum: v.datum,
+    ...(v.herkomst.versie ? { versie: v.herkomst.versie } : {}),
+    ...(v.herkomst.schema ? { schema: v.herkomst.schema } : {}),
+  };
+}
+
+const isObject = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+const tekstOf = (x: unknown) => (typeof x === 'string' && x ? x : undefined);
+
+/**
+ * De vastgelegde antwoorden van een blad, uit een bestand of de opgeslagen staat: per
+ * hash van de invoer. Wat niet klopt, valt weg; zonder bruikbaar antwoord: undefined.
+ */
+export function leesVastgelegdeToetsingen(x: unknown): Record<string, VastgelegdeToets> | undefined {
+  if (!isObject(x)) return undefined;
+  const uit: Record<string, VastgelegdeToets> = {};
+  for (const [hash, w] of Object.entries(x)) {
+    if (!/^t[0-9a-f]{16}$/.test(hash) || !isObject(w)) continue;
+    if (typeof w.tool !== 'string' || !w.tool || !isObject(w.verzoek) || !('uitkomst' in w) || typeof w.datum !== 'string') continue;
+    const h = isObject(w.herkomst) ? w.herkomst : {};
+    const herkomst = {
+      ...(tekstOf(h.versie) ? { versie: tekstOf(h.versie) } : {}),
+      ...(tekstOf(h.sha256) ? { sha256: tekstOf(h.sha256) } : {}),
+      ...(tekstOf(h.schema) ? { schema: tekstOf(h.schema) } : {}),
+    };
+    uit[hash] = { tool: w.tool, verzoek: w.verzoek, uitkomst: w.uitkomst, datum: w.datum, herkomst };
+  }
+  return Object.keys(uit).length ? uit : undefined;
+}
+
 // ── Het antwoord lezen ───────────────────────────────────────────────────────
 
 interface RuwResultaat {
@@ -297,7 +343,21 @@ export interface ToetsRekenaar {
     /** `vragen`: zonder antwoord een verzoek meegeven (de werkruimte); anders niet getoetst. */
     toetsModus?: 'vragen' | 'lezen';
     taal?: string;
+    fem?: { versie?: string; schemas?: Record<string, string> };
   };
+}
+
+/** Is het antwoord gemaakt met een andere FEM Studio of een ander schema dan die van nu? */
+function verouderdVan(
+  a: { versie?: string; schema?: string },
+  tool: string,
+  fem: ToetsRekenaar['opties']['fem'],
+): EvaluatedToets['verouderd'] {
+  if (!fem) return undefined;
+  if (fem.versie && a.versie && fem.versie !== a.versie) return { versie: fem.versie };
+  const nu = fem.schemas?.[tool];
+  if (nu && a.schema && nu !== a.schema) return { schema: true };
+  return undefined;
 }
 
 const melding = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error:\s*/, '');
@@ -330,17 +390,26 @@ export function bouwToets(node: ToetsNode, r: ToetsRekenaar): EvaluatedToets {
   if (fouten.length) return { ...basis, status: 'fout', melding: fouten.join('; ') };
 
   const hash = toetsHash(node.tool, invoer);
+  const vragen = r.opties.toetsModus === 'vragen';
   const antwoord = r.opties.toetsingen?.[hash];
   if (!antwoord) {
-    return r.opties.toetsModus === 'vragen'
+    return vragen
       ? { ...basis, hash, status: 'wacht', verzoek: { hash, tool: node.tool, argumenten } }
       : { ...basis, hash, status: 'niet-getoetst', melding: WOORDEN[taal].geenAntwoord };
   }
-  if (!antwoord.ok) return { ...basis, hash, status: 'fout', melding: antwoord.melding };
+  // Na een fout mag het opnieuw: FEM Studio kan er intussen wel zijn.
+  if (!antwoord.ok) return { ...basis, hash, status: 'fout', melding: antwoord.melding, ...(vragen ? { opnieuw: true } : {}) };
+  const herkomst = {
+    ...(antwoord.versie ? { versie: antwoord.versie } : {}),
+    ...(antwoord.datum ? { datum: antwoord.datum } : {}),
+    ...(antwoord.waarschuwing ? { waarschuwing: antwoord.waarschuwing } : {}),
+  };
   const uitkomst = leesAntwoord(antwoord.uitkomst);
-  if (uitkomst.fout) return { ...basis, hash, status: 'fout', melding: uitkomst.fout, versie: antwoord.versie };
+  if (uitkomst.fout) return { ...basis, hash, status: 'fout', melding: uitkomst.fout, ...herkomst, ...(vragen ? { opnieuw: true } : {}) };
   zetVariabelen(node.naam, uitkomst, r.scope);
-  return { ...basis, hash, status: 'klaar', uitkomst, ...(antwoord.versie ? { versie: antwoord.versie } : {}) };
+  const verouderd = vragen ? verouderdVan(antwoord, node.tool, r.opties.fem) : undefined;
+  const opnieuw = vragen && (!!verouderd || !!antwoord.waarschuwing);
+  return { ...basis, hash, status: 'klaar', uitkomst, ...herkomst, ...(verouderd ? { verouderd } : {}), ...(opnieuw ? { opnieuw } : {}) };
 }
 
 // ── Tonen ────────────────────────────────────────────────────────────────────
@@ -351,14 +420,20 @@ const WOORDEN = {
     voldoet: 'voldoet', voldoetNiet: 'voldoet niet', nvt: 'n.v.t.', nietVolledig: 'niet volledig getoetst',
     wacht: 'Wordt getoetst door Open FEM Studio…', nietGetoetst: 'NIET GETOETST',
     geenAntwoord: 'er is geen antwoord van Open FEM Studio', maatgevend: 'Maatgevend', afleiding: 'Afleiding',
-    staaf: 'Staaf', versie: 'versie',
+    staaf: 'Staaf', versie: 'versie', opnieuw: 'Opnieuw toetsen',
+    verouderdVersie: (oud: string, nu: string) => `Getoetst met versie ${oud}; deze CalcSheet heeft FEM Studio ${nu}.`,
+    verouderdSchema: (tool: string) => `Het schema van ${tool} is veranderd sinds deze toets.`,
+    mislukt: 'Opnieuw toetsen lukte niet',
   },
   en: {
     toetsing: 'Code check', door: 'Open FEM Studio', artikel: 'Clause', toets: 'Check', oordeel: 'Verdict',
     voldoet: 'satisfies', voldoetNiet: 'does not satisfy', nvt: 'n/a', nietVolledig: 'not fully checked',
     wacht: 'Being checked by Open FEM Studio…', nietGetoetst: 'NOT CHECKED',
     geenAntwoord: 'there is no answer from Open FEM Studio', maatgevend: 'Governing', afleiding: 'Derivation',
-    staaf: 'Member', versie: 'version',
+    staaf: 'Member', versie: 'version', opnieuw: 'Check again',
+    verouderdVersie: (oud: string, nu: string) => `Checked with version ${oud}; this CalcSheet has FEM Studio ${nu}.`,
+    verouderdSchema: (tool: string) => `The schema of ${tool} has changed since this check.`,
+    mislukt: 'Checking again failed',
   },
 } as const;
 
@@ -379,18 +454,41 @@ function waardeTekst(v: { value?: unknown; unit?: string }): string {
   return v.unit ? `${w} ${v.unit}` : w;
 }
 
-export function renderToets(node: EvaluatedToets): string {
+/** De datum van een toets: 7-11-2026 of 2026-11-07. */
+function datumTekst(iso: string, taal: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return '';
+  return taal === 'nl' ? `${Number(m[3])}-${Number(m[2])}-${m[1]}` : `${m[1]}-${m[2]}-${m[3]}`;
+}
+
+/**
+ * Eén blok. `metVersie`: de versie van FEM Studio in de kop. De renderer laat hem weg
+ * als alle blokken van het blad dezelfde versie hebben, behalve bij het eerste.
+ */
+export function renderToets(node: EvaluatedToets, metVersie = true): string {
   if (node.verborgen) return '';
   const w = WOORDEN[node.taal === 'en' ? 'en' : 'nl'];
-  const kop = `<p class="calc-toets-kop"><strong>${esc(w.toetsing)} ${esc(node.naam)}</strong> — <code>${esc(node.tool)}</code>, ${esc(w.door)}${node.versie ? ` ${esc(w.versie)} ${esc(node.versie)}` : ''}</p>`;
+  const datum = node.datum ? datumTekst(node.datum, node.taal) : '';
+  const kop = `<p class="calc-toets-kop"><strong>${esc(w.toetsing)} ${esc(node.naam)}</strong> — <code>${esc(node.tool)}</code>, ${esc(w.door)}${node.versie && metVersie ? ` ${esc(w.versie)} ${esc(node.versie)}` : ''}${datum ? `<span class="alleen-scherm">, ${esc(datum)}</span>` : ''}</p>`;
   const scherm = node.scherm ? ' alleen-scherm' : '';
+  const knop = node.opnieuw && node.hash ? ` <button type="button" class="calc-toets-opnieuw" data-toets-opnieuw="${esc(node.hash)}">${esc(w.opnieuw)}</button>` : '';
   if (node.status === 'wacht') {
     return `<div class="calc-toets calc-toets-wacht${scherm}" data-toets="${esc(node.hash ?? '')}">${kop}<p>${esc(w.wacht)}</p></div>`;
   }
   if (node.status !== 'klaar' || !node.uitkomst) {
     const tekst = `${w.nietGetoetst}${node.melding ? `: ${node.melding}` : ''}`;
-    return `<div class="calc-toets calc-toets-fout${scherm}" data-toets="${esc(node.hash ?? '')}">${kop}<p class="calc-toets-melding">${esc(tekst)}</p></div>`;
+    const opnieuw = knop ? `<p class="alleen-scherm">${knop.trim()}</p>` : '';
+    return `<div class="calc-toets calc-toets-fout${scherm}" data-toets="${esc(node.hash ?? '')}">${kop}<p class="calc-toets-melding">${esc(tekst)}</p>${opnieuw}</div>`;
   }
+  // Alleen op het scherm: een ouder antwoord blijft gelden, opnieuw toetsen is een knop.
+  const meldingen = [
+    node.verouderd?.versie && node.versie ? w.verouderdVersie(node.versie, node.verouderd.versie) : '',
+    node.verouderd?.schema ? w.verouderdSchema(node.tool) : '',
+    node.waarschuwing ? `${w.mislukt}: ${node.waarschuwing}` : '',
+  ].filter(Boolean);
+  const verouderd = meldingen.length || knop
+    ? `<p class="calc-toets-verouderd alleen-scherm">${meldingen.map(esc).join(' ')}${knop}</p>`
+    : '';
   const u = node.uitkomst;
   const rijen = u.staven
     ? u.staven.map((s) => `<tr class="${s.uc_max === u.uc_max ? 'maatgevend' : ''}"><td>${esc(w.staaf)} ${esc(s.id)}</td><td>${esc(s.maatgevend ?? '')}</td><td class="uc">${ucTekst(s.uc_max, node.taal)}</td><td>${esc(oordeel(s.status, w, true))}</td></tr>`)
@@ -402,7 +500,7 @@ export function renderToets(node: EvaluatedToets): string {
       .map((t) => `<div class="calc-toets-stap"><p><strong>${esc(t.titel)}</strong> (${esc(t.artikel)})${t.formule ? ` <code>${esc(t.formule)}</code>` : ''}</p>${t.variabelen?.length ? `<p>${t.variabelen.map((v) => `${esc(String(v.symbol ?? ''))} = ${esc(waardeTekst(v))}`).join('; ')}</p>` : ''}${(t.notities ?? []).map((n) => `<p class="calc-toets-notitie">${esc(n)}</p>`).join('')}</div>`)
       .join('')}</details>`
     : '';
-  return `<div class="calc-toets${scherm}" data-toets="${esc(node.hash ?? '')}">${kop}<table class="calc-toets-tabel"><thead><tr><th>${esc(u.staven ? w.staaf : w.artikel)}</th><th>${esc(u.staven ? w.maatgevend : w.toets)}</th><th>UC</th><th>${esc(w.oordeel)}</th></tr></thead><tbody>${rijen.join('')}</tbody></table>${slot}${afleiding}</div>`;
+  return `<div class="calc-toets${scherm}" data-toets="${esc(node.hash ?? '')}">${kop}${verouderd}<table class="calc-toets-tabel"><thead><tr><th>${esc(u.staven ? w.staaf : w.artikel)}</th><th>${esc(u.staven ? w.maatgevend : w.toets)}</th><th>UC</th><th>${esc(w.oordeel)}</th></tr></thead><tbody>${rijen.join('')}</tbody></table>${slot}${afleiding}</div>`;
 }
 
 /** De opmaak, bij de andere blokken in renderer.ts. */
@@ -420,4 +518,6 @@ export const TOETS_CSS = `
 .calc-toets-afleiding { margin-top: 4px; font-size: 0.92em; }
 .calc-toets-stap { margin: 4px 0; }
 .calc-toets-notitie { color: #4b5563; }
+.calc-toets-verouderd { margin: 0 0 4px; color: #92400e; }
+.calc-toets-opnieuw { font: inherit; font-size: 0.9em; padding: 0 8px; margin-left: 4px; cursor: pointer; }
 `;

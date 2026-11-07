@@ -11,7 +11,8 @@
  *   │        └─ geometrie van een blad
  *   ├─ Rekenbladen
  *   │  └─ blad (IfcGroup)                 ocss::blad, ::rekentekst, ::invoer,
- *   │     │                               ::elementen, ::pdf, ::xlsx, ::markdown, ::uitkomst
+ *   │     │                               ::elementen, ::pdf, ::xlsx, ::markdown,
+ *   │     │                               ::toetsing, ::uitkomst
  *   │     └─ figuur                       ocss::figuur
  *   └─ Constructierapport                 ocss::rapport
  *
@@ -21,10 +22,14 @@
  *
  * Teruglezen gebruikt alleen wat hieronder als bron telt: projectnaam, gegevens,
  * verborgen onderdelen, rapport en per blad naam, id, templateId, bronVersie,
- * rekentekst, invoer, elementen, PDF, werkmap en Markdown. Uitkomsten, figuren en elementen zijn
- * afgeleid: de app rekent ze opnieuw uit bij het openen en opslaan.
+ * rekentekst, invoer, elementen, PDF, werkmap, Markdown en de antwoorden van FEM Studio
+ * (`ocss::blad::toetsing`). Die antwoorden zijn geen afleiding: de app kan ze niet zelf
+ * opnieuw maken. Uitkomsten, figuren en elementen zijn wel afgeleid: de app rekent ze
+ * opnieuw uit bij het openen en opslaan.
  */
 import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions } from '../ifc-generator.js';
+import type { VastgelegdeToets } from '../types.js';
+import { leesVastgelegdeToetsingen } from '../toetsBlok.js';
 import type { IfcxBestand, IfcxKnoop, IfcxSchema } from './typen.js';
 import { padVanElement, uuidVan } from './identiteit.js';
 import { ATTR, IFCX_VERSIE, OCSS_SCHEMAS, beschrijfWaarde, ifcKlasse, importsVoor, isGeimporteerd } from './namespace.js';
@@ -71,6 +76,7 @@ export interface IfcxGelezenBlad {
   tekenvel?: Record<string, unknown>;
   jupyter?: { bestandsnaam: string; data: string; metCode: boolean; automatisch?: boolean };
   marimo?: { bestandsnaam: string; code: string; metCode: boolean; uitvoer: string[] };
+  toetsingen?: Record<string, VastgelegdeToets>;
 }
 
 export interface IfcxGelezenProject {
@@ -128,6 +134,44 @@ function graafUitAttribuut(x: unknown): GraafGegevens | undefined {
     }),
     verbindingen: Array.isArray(g.verbindingen) ? (g.verbindingen as GraafGegevens['verbindingen']) : [],
   };
+}
+
+/** De antwoorden van FEM Studio als attribuut: op volgorde van de hash, zodat twee keer opslaan gelijk is. */
+function toetsingAttribuut(t: Record<string, VastgelegdeToets>) {
+  return Object.keys(t).sort().map((hash) => {
+    const v = t[hash];
+    return {
+      hash,
+      tool: v.tool,
+      datum: v.datum,
+      ...(v.herkomst.versie ? { versie: v.herkomst.versie } : {}),
+      ...(v.herkomst.sha256 ? { sha256: v.herkomst.sha256 } : {}),
+      ...(v.herkomst.schema ? { schema: v.herkomst.schema } : {}),
+      verzoek: JSON.stringify(v.verzoek),
+      uitkomst: JSON.stringify(v.uitkomst),
+    };
+  });
+}
+
+/** Terug uit het attribuut; een regel met onleesbare JSON valt weg. */
+function toetsingUitAttribuut(x: unknown): Record<string, VastgelegdeToets> | undefined {
+  if (!Array.isArray(x)) return undefined;
+  const ruw: Record<string, unknown> = {};
+  for (const r of x) {
+    if (!r || typeof r !== 'object' || typeof r.hash !== 'string') continue;
+    try {
+      ruw[r.hash] = {
+        tool: r.tool,
+        datum: r.datum,
+        herkomst: { versie: r.versie, sha256: r.sha256, schema: r.schema },
+        verzoek: JSON.parse(String(r.verzoek)),
+        uitkomst: JSON.parse(String(r.uitkomst)),
+      };
+    } catch {
+      // Onleesbaar: dat blok wordt opnieuw getoetst.
+    }
+  }
+  return leesVastgelegdeToetsingen(ruw);
 }
 
 /** Maten van een herkend element, in meter: de eenheid van de voorbeelden van buildingSMART. */
@@ -267,6 +311,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         uitvoer: JSON.stringify(blad.marimo.uitvoer),
       };
     }
+    if (blad.toetsingen && Object.keys(blad.toetsingen).length > 0) attributes[ATTR.toetsing] = toetsingAttribuut(blad.toetsingen);
     attributes[ATTR.uitkomst] = uitkomst;
 
     // Figuren: de tekeningen en 3D-beelden staan ook in de rekentekst; hier zijn ze als zodanig te vinden.
@@ -609,6 +654,8 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
       }
       blad.marimo = { bestandsnaam: tekstVan(marimo.bestandsnaam), code: marimo.code, metCode: marimo.metCode !== false, uitvoer };
     }
+    const toetsingen = toetsingUitAttribuut(a[ATTR.toetsing]);
+    if (toetsingen) blad.toetsingen = toetsingen;
     return blad;
   });
 

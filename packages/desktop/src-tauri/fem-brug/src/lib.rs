@@ -25,7 +25,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use serde_json::{json, Value};
@@ -127,6 +127,23 @@ fn lees_lus(lezer: impl BufRead, wachtend: &Wachtend) {
 
 // ── Het proces ───────────────────────────────────────────────────────────────
 
+/// De sha256 van een bestand, in hex.
+pub fn sha256_van(pad: &Path) -> std::io::Result<String> {
+    use sha2::{Digest, Sha256};
+    use std::io::Read;
+    let mut bestand = std::fs::File::open(pad)?;
+    let mut hasher = Sha256::new();
+    let mut buf = vec![0u8; 1 << 16];
+    loop {
+        let n = bestand.read(&mut buf)?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Ok(hasher.finalize().iter().map(|b| format!("{b:02x}")).collect())
+}
+
 /// Eén draaiende server.
 pub struct Proces {
     kind: Mutex<Child>,
@@ -136,6 +153,7 @@ pub struct Proces {
     levend: Arc<AtomicBool>,
     versie: String,
     pad: PathBuf,
+    sha256: OnceLock<Option<String>>,
 }
 
 impl Proces {
@@ -176,6 +194,7 @@ impl Proces {
             levend,
             versie: String::new(),
             pad: pad.to_path_buf(),
+            sha256: OnceLock::new(),
         };
         let start = proces.roep(
             "initialize",
@@ -199,6 +218,12 @@ impl Proces {
     /// Waar de server staat.
     pub fn pad(&self) -> &Path {
         &self.pad
+    }
+
+    /// De sha256 van het programma, in hex: de herkomst van een antwoord. Eén keer
+    /// uitgerekend, bij de eerste vraag; `None` als het bestand niet te lezen is.
+    pub fn sha256(&self) -> Option<String> {
+        self.sha256.get_or_init(|| sha256_van(&self.pad).ok()).clone()
     }
 
     /// Of het proces nog loopt; na het einde van zijn uitvoer niet meer.
@@ -342,6 +367,16 @@ mod tests {
     use std::io::Cursor;
 
     #[test]
+    fn sha256_van_een_bestand() {
+        let pad = std::env::temp_dir().join(format!("ocss-fem-brug-sha-{}", std::process::id()));
+        std::fs::write(&pad, b"abc").unwrap();
+        let hex = sha256_van(&pad).unwrap();
+        std::fs::remove_file(&pad).ok();
+        assert_eq!(hex, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+        assert!(sha256_van(Path::new("bestaat-niet")).is_err());
+    }
+
+    #[test]
     fn verzoek_regel_is_een_regel() {
         let regel = verzoek_regel(7, "tools/call", json!({ "name": "x" }));
         assert!(regel.ends_with('\n'));
@@ -438,6 +473,7 @@ mod tests {
     fn echte_server() {
         let proces = Proces::start(&echte()).unwrap();
         assert!(!proces.versie().is_empty());
+        assert_eq!(proces.sha256().map(|h| h.len()), Some(64));
         let lijst = proces.roep("tools/list", json!({}), TIJD_START).unwrap();
         let namen: Vec<&str> = lijst["tools"].as_array().unwrap().iter().filter_map(|t| t["name"].as_str()).collect();
         assert!(namen.contains(&"check_steel_beam"), "geen check_steel_beam: verkeerde editie?");

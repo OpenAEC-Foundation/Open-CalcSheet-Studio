@@ -8,7 +8,7 @@ export type { SelectValues, AngleMode, Scope } from './evaluator.js';
 export { render, defaultStyles, type RenderOpties } from './renderer.js';
 export {
   TOETS_START_RE, leesToetsBlok, naarSchema, canoniek, toetsHash, leesAntwoord, bouwToets, renderToets,
-  eenheidVanVeld, toetsToolToegestaan, type ToetsRekenaar,
+  eenheidVanVeld, toetsToolToegestaan, schemaHash, alsAntwoord, leesVastgelegdeToetsingen, type ToetsRekenaar,
 } from './toetsBlok.js';
 export { exprToLatex, nameToLatex } from './latex.js';
 export {

@@ -18,6 +18,8 @@ export interface FemStatus {
   versie?: string | null;
   /** Waar de server staat. */
   pad?: string | null;
+  /** De sha256 van het programma van de server, voor de herkomst van een antwoord. */
+  sha256?: string | null;
   /** Welke vertaalde melding past als hij er niet is. */
   code?: FemStatusCode | null;
   /** De technische toelichting, zoals de Rust-kant hem geeft. */
