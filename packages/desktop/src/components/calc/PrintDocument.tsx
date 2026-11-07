@@ -9,6 +9,8 @@ import { rekenBladDoor, zorgVoorKernstijlen, type DoorgerekendBlad } from "./bla
 import { rekenversie } from "./bladVersie";
 import { Oordeel, PrintBlad } from "./PrintBlad";
 import "./PrintDocument.css";
+import { metToetsingen } from "../../rekenen/toetsCache";
+import { useToetsVersie } from "../../rekenen/femToetsing";
 
 /** Een tekst op papier: de uitdraai volgt de taal van de app (beelden.json, onder `afdruk`). */
 const op = (sleutel: string, opties?: Record<string, unknown>) => i18next.t(`beelden:afdruk.${sleutel}`, opties ?? {});
@@ -39,6 +41,7 @@ export function useUitdraai(): Uitdraai {
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const selectie = usePrintStore((s) => s.selectie);
   const soort = usePrintStore((s) => s.soort);
+  const toetsV = useToetsVersie();
 
   zorgVoorKernstijlen();
 
@@ -51,11 +54,12 @@ export function useUitdraai(): Uitdraai {
     // Een selectie met alleen verdwenen bladen valt terug op het hele project.
     const gekozen = selectie ? exemplaren.filter((e) => selectie.includes(e.id)) : exemplaren;
     // In het eenhedenstelsel van het project, net als op het scherm.
-    const evalOpties = evalOptiesVan(gegevens);
+    // Lezen: een @toets-blok zonder antwoord staat op papier als niet getoetst.
+    const evalOpties = metToetsingen(evalOptiesVan(gegevens), "lezen", i18next.language);
     return (gekozen.length ? gekozen : exemplaren).map((ex) => ({ ex, ...rekenBladDoor(ex, scope, i18next.language, evalOpties) }));
     // De taal hoort erbij: de uitvoer volgt de taal van de app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exemplaren, gegevens, selectie, soort, i18next.language]);
+  }, [exemplaren, gegevens, selectie, soort, i18next.language, toetsV]);
 
   const kop: Array<[string, string | undefined]> = [
     [op("projectnummer"), gegevens.project_nummer],

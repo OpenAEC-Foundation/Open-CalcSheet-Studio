@@ -940,5 +940,8 @@
   "fouten": {
     "bestandLezen": "Bestand lezen mislukt",
     "geenVellen": "Het afdrukvoorbeeld bouwde geen vellen."
+  },
+  "toets": {
+    "geenDesktop": "Open FEM Studio werkt alleen in de desktop-app"
   }
 }

@@ -16,6 +16,7 @@
  * (scripts/check-mcp.mjs) dit bestand in Node gebruikt.
  */
 import { parse, evaluate } from "@ifc-calc/core";
+import { toetsingenNu } from "../rekenen/toetsCache.ts";
 import type { AstNode, EvaluatedNode } from "@ifc-calc/core";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
 import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../components/calc/bladLezen.ts";
@@ -44,7 +45,7 @@ export function rekenDoor(
   // Een canvas-blad langs dezelfde route als op het scherm: een fout blijft bij zijn eenheid.
   const nodes = heeftEenheden(source)
     ? rekenEenhedenDoor(source, waarden, scope, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }).flatMap((u) => u.nodes)
-    : evaluate(leesBron(source), waarden, scope);
+    : evaluate(leesBron(source), waarden, scope, { toetsingen: toetsingenNu(), toetsModus: "lezen" });
   return {
     nodes,
     resultaat: leesResultaat(nodes, naam),
