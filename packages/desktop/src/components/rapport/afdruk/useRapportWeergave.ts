@@ -22,6 +22,8 @@ import { rekenBladDoor, zorgVoorKernstijlen } from "../../calc/bladDoorrekenen";
 import { bladVoorOpzet } from "../../calc/bladSoorten";
 import type { CanvasUitwerking } from "../../calc/canvasRekenen";
 import type { Resultaat } from "../../calc/bladResultaat";
+import { metToetsingen } from "../../../rekenen/toetsCache";
+import { useToetsVersie } from "../../../rekenen/femToetsing";
 
 /*
  * Alles wat de afdruk van het rapport nodig heeft, op één plek verzameld.
@@ -100,6 +102,7 @@ export function useRapportWeergave(): RapportWeergave {
   const bureau = useRapportBureau();
   const eenheden = useBeeldEenheden();
   const { taal } = rapport;
+  const toetsV = useToetsVersie();
 
   zorgVoorKernstijlen();
 
@@ -108,9 +111,12 @@ export function useRapportWeergave(): RapportWeergave {
   const bladen = useMemo(() => {
     const scope = projectScope(gegevens);
     // In het eenhedenstelsel van het project, net als op het scherm.
-    const evalOpties = evalOptiesVan(gegevens);
+    // Lezen: een @toets-blok zonder antwoord staat in het rapport als niet getoetst.
+    const evalOpties = metToetsingen(evalOptiesVan(gegevens), "lezen", taal);
     return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope, taal, evalOpties) }));
-  }, [exemplaren, gegevens, taal]);
+    // De versie van de antwoorden van FEM Studio hoort erbij.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exemplaren, gegevens, taal, toetsV]);
 
   const opzet = useMemo(() => {
     const lijst = exemplaren.map(bladVoorOpzet);

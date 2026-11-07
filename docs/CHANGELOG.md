@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Rekentaal: met `@toets naam = tool … @end` laat een blad een normtoets doen door Open FEM Studio, bijvoorbeeld `check_steel_beam`. Het blok staat als tabel met per toets het artikel, de UC en het oordeel, en daarna rekent het blad verder met `naam.uc_max` en `naam.voldoet`. Eenheden worden omgerekend naar wat FEM Studio vraagt. Een blok zonder antwoord staat op papier als niet getoetst, nooit als voldoet
 - CalcSheet kan de server van Open FEM Studio meeleveren en headless starten, als begin van de normtoetsing uit één bron. Instellingen › Over toont de versie van FEM Studio, of dat hij niet is meegeleverd; de toetsing in de rekenbladen volgt in een volgende versie
 - Bij de locatie neemt de knop "Overnemen uit ERPNext" het adres of de coördinaten over uit een veld van het ERPNext-project met het projectnummer (standaard `custom_location`; de veldnaam staat in de instellingen). Het API-geheim staat per ERPNext-adres in de sleutelbos van het besturingssysteem, en HTTPS gebruikt de certificaten van het besturingssysteem (op Linux moet het pakket ca-certificates aanwezig zijn)
 - Bij de locatie meet de knop "Afstand tot open water meten" de afstand tot het dichtstbijzijnde open water binnen 10 km (OpenStreetMap): de omgevingskaart krijgt een streeplijn erheen, ligt het water buiten de kaart dan eindigt de lijn in een pijl aan de rand, en op de pagina Situatie staat de afstand met de naam, of dat er geen open water binnen 10 km ligt

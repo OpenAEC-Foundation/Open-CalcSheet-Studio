@@ -4,6 +4,7 @@ import { exprToLatex, matrixResultToLatex, metWeergaveNamen, nameToLatex, result
 import { renderDrieD } from './drieD.js';
 import { renderIframe } from './iframeBlok.js';
 import { renderIfcxBlok } from './ifcxBlok.js';
+import { renderToets, TOETS_CSS } from './toetsBlok.js';
 import { renderJsBlok } from './jsBlok.js';
 
 // ─── KaTeX rendering ────────────────────────────────────────────────
@@ -276,6 +277,9 @@ function renderNode(node: EvaluatedNode): string {
 
     case 'ifcx':
       return renderIfcxBlok(node);
+
+    case 'toets':
+      return renderToets(node);
 
     case 'js':
       return renderJsBlok(node);
@@ -661,6 +665,7 @@ export const defaultStyles = `
   font-size: 0.85em;
 }
 
+/* @toets: een normtoets door Open FEM Studio (toetsBlok.ts). */${TOETS_CSS}
 /* @iframe: een kader met het adres. De app zet er een iframe in als de gebruiker
    het heeft bevestigd; de maat staat vast, geladen of niet. */
 .calc-iframe {

@@ -940,5 +940,8 @@
   "fouten": {
     "bestandLezen": "Reading the file failed",
     "geenVellen": "The print preview did not build any pages."
+  },
+  "toets": {
+    "geenDesktop": "Open FEM Studio only works in the desktop app"
   }
 }
