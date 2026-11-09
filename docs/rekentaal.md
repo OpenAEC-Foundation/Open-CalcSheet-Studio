@@ -38,6 +38,26 @@ zijn in deze taal geschreven.
   eenheid van het blad, de omgerekende vorm staat in `inStelsel`. Zie
   [het ontwerp](superpowers/specs/2026-11-06-eenheden-design.md).
 
+## Waarden uit een ander blad
+
+- **Het kenmerk:** elk blad in een project heeft een kort, vast kenmerk, een nummer dat
+  de app geeft bij het toevoegen. Het staat in de projectboom naast de naam (`#2`) en
+  verandert niet als je bladen verplaatst of verwijdert.
+- **Verwijzen:** `#2.R_paal` in een formule neemt de waarde `R_paal` uit blad 2 over, met
+  zijn eenheid: `V_Ed = 1.1*#2.R_paal`. Een naam met een komma-index mag ook
+  (`#2.V_b,0`). In beeld en op papier staat de verwijzing als `#2.R_paal`.
+- **In een invoerveld:** typ `#2.R_paal` in plaats van een getal. Het veld rekent de
+  waarde om naar zijn eigen eenheid; past die niet, of bestaat blad 2 of de naam daarin
+  niet, dan rekent het veld met zijn standaardwaarde en staat er een melding onder.
+- **Doorrekenen:** de app rekent het blad waarnaar verwezen wordt eerst door, met zijn
+  eigen invoer, ook via via (blad 3 vraagt iets van 2, en 2 van 1). Verandert de invoer
+  van blad 2, dan rekent het blad dat ernaar verwijst vanzelf opnieuw. Een kring (1 vraagt
+  iets van 2, en 2 van 1) rekent niet rond en geeft een foutmelding.
+- **Waar:** de kern zet `#2.R_paal` bij het inlezen om in de naam `ref__2__R_paal`
+  (`packages/core/src/verwijzing.ts`); de app zet de waarde onder die naam in de scope
+  (`packages/desktop/src/rekenen/verwijzingen.ts`). Een losse module verwijst nooit naar
+  een ander blad: dat doet de constructeur in zijn eigen project.
+
 ## Syntax
 
 - `"Title`, `'tekst`, `// commentaar`
