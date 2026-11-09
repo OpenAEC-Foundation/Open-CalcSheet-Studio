@@ -1,11 +1,12 @@
 import type { MathNode } from 'mathjs';
 import { math, isEenheidNaam, geldigeEenheidNaam } from './eenheden.js';
 import { decimalenNa, doelInStelsel, toonInvoer, type Stelsel } from './eenheidstelsel.js';
-import type { AstNode, ConditionalNode, EvaluatedNode, InStelsel, MatrixUitkomst, OpdrachtNode } from './types.js';
+import type { AstNode, ConditionalNode, EvaluatedNode, InStelsel, MatrixUitkomst, OpdrachtNode, ToetsAntwoord } from './types.js';
 import { losStelselOp, rangVan, eigenSymmetrisch } from './matrixrekening.js';
 import { bouwDrieDScene } from './drieD.js';
 import { bouwIframe } from './iframeBlok.js';
 import { bouwIfcxBlok } from './ifcxBlok.js';
+import { bouwToets } from './toetsBlok.js';
 import { bouwJsBlok } from './jsBlok.js';
 import { leesVerwijzing, verwijzingNaam, verwijzingenInMelding } from './verwijzing.js';
 import {
@@ -1362,6 +1363,7 @@ function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T
   const vorigStelsel = huidigStelsel;
   huidigStelsel = opties.stelsel;
   const stand = nieuweStand();
+  stand.opties = opties;
   try {
     // Een ongeldige of al bestaande naam slaat over; zo'n melding toont het projectpaneel
     // (zetProjectEenheden).
@@ -1382,6 +1384,21 @@ export interface EvalOpties {
   stelsel?: Stelsel;
   /** Eigen eenheden die in het hele blad gelden, zoals die van het project. */
   eigenEenheden?: { naam: string; uitdrukking: string }[];
+  /**
+   * De antwoorden van Open FEM Studio op `@toets`-blokken, op de hash van hun invoer
+   * (toetsBlok.ts). Gegevens, geen functie: de opties gaan ook naar de rekenworker.
+   */
+  toetsingen?: Record<string, ToetsAntwoord>;
+  /** `vragen`: een blok zonder antwoord geeft een verzoek mee (de werkruimte); anders "niet getoetst". */
+  toetsModus?: 'vragen' | 'lezen';
+  /**
+   * De FEM Studio van nu: zijn versie en per tool de hash van het schema. Alleen in de
+   * modus `vragen`: een antwoord van een andere versie of een ander schema krijgt dan
+   * de melding en de knop "opnieuw toetsen".
+   */
+  fem?: { versie?: string; schemas?: Record<string, string> };
+  /** De taal van de vaste woorden in de uitvoer, zoals `nl` of `en`. */
+  taal?: string;
 }
 
 /** Het stelsel van het blad dat nu doorgerekend wordt (zie evaluate). */
@@ -1442,10 +1459,12 @@ interface Stand {
   decimalen: number | null;
   /** De eigen eenheden die dit blad maakte (`.naam = …`); na het blad gaan ze weg. */
   eenheden: string[];
+  /** De opties van deze doorrekening, voor de blokken die ze nodig hebben (`@toets`). */
+  opties: EvalOpties;
 }
 
 function nieuweStand(): Stand {
-  return { weergave: 'equ', invullen: 'varsub', decimalen: null, eenheden: [] };
+  return { weergave: 'equ', invullen: 'varsub', decimalen: null, eenheden: [], opties: {} };
 }
 
 /**
@@ -1909,6 +1928,13 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
           scope,
         }));
         break;
+
+      case 'toets': {
+        // Ook verborgen rekent het blok: zijn variabelen gelden voor wat eronder staat,
+        // en een verzoek moet naar FEM Studio, ook als het blok niet op het blad staat.
+        result.push(bouwToets(node, { reken: (expr) => reken(expr, scope), scope, opties: stand.opties }));
+        break;
+      }
 
       case 'ifcx':
         if (node.hidden) break;

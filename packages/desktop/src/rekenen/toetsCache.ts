@@ -1,0 +1,200 @@
+/**
+ * De antwoorden van Open FEM Studio op `@toets`-blokken, op de hash van hun invoer
+ * (packages/core/src/toetsBlok.ts).
+ *
+ * Twee bronnen:
+ *   - **vastgelegd**: de antwoorden in de bladen van het project (`Exemplaar.toetsingen`).
+ *     De store zet ze hier bij elke wijziging (store/projectStore.ts, zetVastgelegd).
+ *   - **deze sessie**: wat FEM Studio antwoordde sinds het project open is, ook een fout.
+ *     Een ander project openen wist ze (wisSessie): een antwoord uit een ander project
+ *     mag een vastgelegd antwoord niet vanzelf vervangen.
+ *
+ * Een hash hoort bij de invoer, niet bij een blad: twee bladen met dezelfde invoer delen
+ * hun antwoord. Een antwoord uit deze sessie gaat voor, want dat komt er alleen als er geen
+ * vastgelegd antwoord was, of na "opnieuw toetsen". Een fout gaat niet voor een
+ * vastgelegd antwoord: dat blijft staan, met de fout als waarschuwing.
+ *
+ * Zuiver, zonder React of Tauri: de rekenworker en de API (mcp/rekenen.ts) laden dit
+ * ook. Het vragen zelf, en het vastleggen bij een blad, staan in femToetsing.ts.
+ */
+import {
+  alsAntwoord,
+  type EvalOpties,
+  type EvaluatedNode,
+  type ToetsAntwoord,
+  type ToetsVerzoek,
+  type VastgelegdeToets,
+} from "@ifc-calc/core";
+
+type Toetsingen = Record<string, VastgelegdeToets>;
+
+const sessie = new Map<string, ToetsAntwoord>();
+/** De antwoorden van deze sessie zoals ze bij een blad vastgelegd worden; alleen wat lukte. */
+const sessieVast = new Map<string, VastgelegdeToets>();
+let vastgelegd = new Map<string, VastgelegdeToets>();
+let vastgelegdUit: readonly Toetsingen[] = [];
+/** Blokken die opnieuw getoetst worden: tot het nieuwe antwoord er is, wachten ze. */
+const opnieuw = new Set<string>();
+let fem: EvalOpties["fem"];
+let versie = 0;
+const luisteraars = new Set<() => void>();
+
+function meld() {
+  versie++;
+  for (const l of luisteraars) l();
+}
+
+/** Alle antwoorden, voor `EvalOpties.toetsingen`. */
+export function toetsingenNu(): Record<string, ToetsAntwoord> {
+  const uit: Record<string, ToetsAntwoord> = {};
+  for (const [hash, v] of vastgelegd) uit[hash] = alsAntwoord(v);
+  for (const [hash, a] of sessie) {
+    const vorig = uit[hash];
+    uit[hash] = a.ok || !vorig?.ok ? a : { ...vorig, waarschuwing: a.melding };
+  }
+  for (const hash of opnieuw) delete uit[hash];
+  return uit;
+}
+
+/** Telt op bij elke wijziging: een doorrekening met een oudere versie is verouderd. */
+export function toetsVersie(): number {
+  return versie;
+}
+
+/** Of deze sessie al een antwoord heeft; dan gaat het verzoek niet nog eens. */
+export function heeftToetsAntwoord(hash: string): boolean {
+  return sessie.has(hash) && !opnieuw.has(hash);
+}
+
+/** Een antwoord van FEM Studio. `vast`: wat bij het blad vastgelegd wordt, alleen als het lukte. */
+export function zetToetsAntwoord(hash: string, antwoord: ToetsAntwoord, vast?: VastgelegdeToets): void {
+  sessie.set(hash, antwoord);
+  if (vast) sessieVast.set(hash, vast);
+  opnieuw.delete(hash);
+  meld();
+}
+
+/** "Opnieuw toetsen": het blok vergeet zijn antwoord en vraagt het opnieuw. */
+export function zetOpnieuw(hash: string): void {
+  opnieuw.add(hash);
+  meld();
+}
+
+/**
+ * De vastgelegde antwoorden van alle bladen. Verandert er niets (dezelfde objecten),
+ * dan blijft de versie gelijk: typen in een blad rekent zo niets extra.
+ */
+export function zetVastgelegd(lijsten: readonly (Toetsingen | undefined)[]): void {
+  const nieuw = lijsten.filter((t): t is Toetsingen => !!t);
+  if (nieuw.length === vastgelegdUit.length && nieuw.every((t, i) => t === vastgelegdUit[i])) return;
+  vastgelegdUit = nieuw;
+  const kaart = new Map<string, VastgelegdeToets>();
+  for (const t of nieuw) {
+    for (const [hash, v] of Object.entries(t)) {
+      const al = kaart.get(hash);
+      if (!al || v.datum > al.datum) kaart.set(hash, v);
+    }
+  }
+  vastgelegd = kaart;
+  meld();
+}
+
+/** Een ander project: de antwoorden van deze sessie gelden daar niet vanzelf. */
+export function wisSessie(): void {
+  if (!sessie.size && !opnieuw.size) return;
+  sessie.clear();
+  sessieVast.clear();
+  opnieuw.clear();
+  meld();
+}
+
+/** De FEM Studio van nu, voor de melding "opnieuw toetsen" (EvalOpties.fem). */
+export function zetFem(nu: EvalOpties["fem"]): void {
+  fem = nu;
+  meld();
+}
+
+/**
+ * Wat er bij een blad vastgelegd moet worden, voor de blokken met deze hashes: een
+ * antwoord uit deze sessie dat het blad nog niet heeft, of het antwoord van een ander
+ * blad met dezelfde invoer. Niets nieuws: null.
+ */
+export function nieuwVastTeLeggen(huidig: Toetsingen | undefined, hashes: readonly string[]): Toetsingen | null {
+  let bij: Toetsingen | null = null;
+  for (const hash of hashes) {
+    if (opnieuw.has(hash)) continue;
+    const eigen = huidig?.[hash];
+    const kandidaat = sessieVast.get(hash) ?? (eigen ? undefined : vastgelegd.get(hash));
+    if (kandidaat && kandidaat !== eigen) (bij ??= {})[hash] = kandidaat;
+  }
+  return bij;
+}
+
+export function abonneerToetsingen(l: () => void): () => void {
+  luisteraars.add(l);
+  return () => {
+    luisteraars.delete(l);
+  };
+}
+
+/**
+ * De opties met de antwoorden erbij. `vragen` alleen in de werkruimte en vóór het
+ * afdrukken: daar gaat een verzoek naar FEM Studio en staat de knop "opnieuw toetsen".
+ * Elders (afdruk, rapport, API) staat een blok zonder antwoord als niet getoetst.
+ */
+export function metToetsingen(opties: EvalOpties, modus: "vragen" | "lezen", taal?: string): EvalOpties {
+  return {
+    ...opties,
+    toetsingen: toetsingenNu(),
+    toetsModus: modus,
+    ...(modus === "vragen" && fem ? { fem } : {}),
+    ...(taal ? { taal } : {}),
+  };
+}
+
+function elkeToets(nodes: readonly EvaluatedNode[], doe: (n: Extract<EvaluatedNode, { type: "toets" }>) => void) {
+  for (const n of nodes) {
+    if (n.type === "toets") doe(n);
+    const kinderen = (n as { children?: EvaluatedNode[] }).children;
+    if (Array.isArray(kinderen)) elkeToets(kinderen, doe);
+  }
+}
+
+/** De verzoeken in een doorgerekend blad, ook in de takken van een `#if`. */
+export function verzamelVerzoeken(nodes: readonly EvaluatedNode[]): ToetsVerzoek[] {
+  const uit: ToetsVerzoek[] = [];
+  elkeToets(nodes, (n) => {
+    if (n.verzoek) uit.push(n.verzoek);
+  });
+  return uit;
+}
+
+/** De hashes van alle blokken in een doorgerekend blad, met of zonder antwoord. */
+export function toetsHashes(nodes: readonly EvaluatedNode[]): string[] {
+  const uit: string[] = [];
+  elkeToets(nodes, (n) => {
+    if (n.hash) uit.push(n.hash);
+  });
+  return uit;
+}
+
+/**
+ * Alleen de vastgelegde antwoorden die het doorgerekende blad nog gebruikt: bij het
+ * opslaan valt de rest weg. Een blok zonder hash (een fout in een veld) kan bij elk
+ * antwoord horen; dan blijven ze allemaal staan, net als zonder doorgerekend blad.
+ */
+export function gebruikteToetsingen(
+  toetsingen: Toetsingen | undefined,
+  blad: { nodes: readonly EvaluatedNode[]; fout?: string } | undefined,
+): Toetsingen | undefined {
+  if (!toetsingen || !blad || blad.fout) return toetsingen;
+  const gebruikt = new Set<string>();
+  let zonderHash = false;
+  elkeToets(blad.nodes, (n) => {
+    if (n.hash) gebruikt.add(n.hash);
+    else zonderHash = true;
+  });
+  if (zonderHash) return toetsingen;
+  const uit = Object.fromEntries(Object.entries(toetsingen).filter(([hash]) => gebruikt.has(hash)));
+  return Object.keys(uit).length ? uit : undefined;
+}

@@ -73,6 +73,15 @@ jobs:
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
 
+      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json).
+      # Zonder bestand voor dit platform of zonder FEM_STUDIO_TOKEN bouwt de app zonder;
+      # Instellingen > Over meldt dan "niet meegeleverd". Op macOS moet de server nog
+      # mee in de ondertekening voor de notarisatie: dat volgt met FEM Studio #298.
+      - name: FEM Studio ophalen
+        env:
+          GH_TOKEN: ${{ secrets.FEM_STUDIO_TOKEN }}
+        run: node scripts/haal-fem-server.mjs
+
       # De signeerclient van Azure heeft .NET 8 nodig.
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
@@ -163,6 +172,15 @@ jobs:
 
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
+
+      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json).
+      # Zonder bestand voor dit platform of zonder FEM_STUDIO_TOKEN bouwt de app zonder;
+      # Instellingen > Over meldt dan "niet meegeleverd". Op macOS moet de server nog
+      # mee in de ondertekening voor de notarisatie: dat volgt met FEM Studio #298.
+      - name: FEM Studio ophalen
+        env:
+          GH_TOKEN: ${{ secrets.FEM_STUDIO_TOKEN }}
+        run: node scripts/haal-fem-server.mjs
 
       - name: Controleer de geheimen en schrijf de notarisatiesleutel
         env:
@@ -260,6 +278,15 @@ jobs:
 
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
+
+      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json).
+      # Zonder bestand voor dit platform of zonder FEM_STUDIO_TOKEN bouwt de app zonder;
+      # Instellingen > Over meldt dan "niet meegeleverd". Op macOS moet de server nog
+      # mee in de ondertekening voor de notarisatie: dat volgt met FEM Studio #298.
+      - name: FEM Studio ophalen
+        env:
+          GH_TOKEN: ${{ secrets.FEM_STUDIO_TOKEN }}
+        run: node scripts/haal-fem-server.mjs
 
       - name: Build Tauri app
         working-directory: packages/desktop

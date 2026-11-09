@@ -1,0 +1,16 @@
+[package]
+name = "ocss-fem-brug"
+version = "0.1.0"
+description = "Open CalcSheet Studio: de server van Open FEM Studio headless starten en via stdio aanspreken"
+authors = ["OpenAEC Contributors"]
+edition = "2021"
+license = "LGPL-3.0-or-later"
+publish = false
+
+# Een eigen crate zonder Tauri, zodat de tests ook op Windows draaien: een
+# testprogramma van de app-crate start daar niet zonder app-manifest
+# (STATUS_ENTRYPOINT_NOT_FOUND). Zie src/lib.rs.
+
+[dependencies]
+serde_json = "1"
+sha2 = "0.10"

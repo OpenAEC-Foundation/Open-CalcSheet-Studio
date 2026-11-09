@@ -83,6 +83,80 @@ zijn in deze taal geschreven.
   blad als `calc`, pas na bevestiging, afgeschermd en zonder netwerk. Een draaibaar model kan
   met `calc.wereld3d()`, een knop met `addEventListener` (geen `onclick=`)
 
+## Normtoetsen: `@toets`
+
+Een normtoets komt uit één bron: Open FEM Studio, dat headless in CalcSheet zit. Een
+blad schrijft de toets niet zelf, maar laat hem doen:
+
+```text
+@toets kolom = check_steel_beam
+  beam_id = 1
+  profile_name = "HEA200"
+  steel_grade = "S235"
+  length_m = h
+  forces_envelope = [1; 0; N_Ed; 0; V_Ed; 0; M_Ed; 0 | 1; h; N_Ed; 0; V_Ed; 0; M_Ed; 0]
+  lateral_bracing = {top_flange_positions: [0; 1], bottom_flange_positions: [0; 1]}
+  deflection_limit_class = "Roof"
+  deflection_limit_numerator = 250
+  deflection_actual_max_mm = w_max
+  is_cantilever = false
+  consequence_class = "CC2"
+@end
+UC_max = kolom.uc_max
+```
+
+- **De velden.** Na `@toets` komen de naam van de uitkomst en een tool van FEM Studio:
+  `check_*`, `list_*`, `compute_*`, `concrete_*`, of `check_fem_model`. Elke regel is
+  `veld = uitdrukking`, met de veldnamen uit het schema van die tool. Een uitdrukking
+  rekent met het blad: invoer, projectgegevens en `#id`-verwijzingen. Tekst staat tussen
+  dubbele aanhalingstekens, ja en nee zijn `true` en `false`, en een object schrijf je als
+  `{naam: waarde, …}`.
+- **Eenheden.** Die volgen het einde van de veldnaam: `_m`, `_mm`, `_mm2`, `_mm4`, `_mm6`,
+  `_kn`, `_knm`, `_mpa`, `_n_per_mm`, `_kn_per_m`. `length_m = 6000 mm` gaat als 6.
+  - Een getal zonder eenheid gaat zoals het is.
+  - Een grootheid in een veld zonder eenheid in de naam is een fout op die regel.
+  - `forces_envelope` mag een matrix zijn, met per rij één station: combinatie, x (mm),
+    N, V_y, V_z (kN), M_t, M_y, M_z (kNm).
+- **De uitkomst.** Na het blok gelden de volgende variabelen. Een punt in een naam is in
+  de rekentaal een liggend streepje, dus `kolom.uc_max` is `kolom_uc_max`.
+  - `kolom.uc_max`: de hoogste UC.
+  - `kolom.voldoet`: 1 of 0.
+  - `kolom.status`: `Ok`, `NotOk` of `NotApplicable` (niet volledig getoetst).
+  - Per toets `kolom.uc_6_3_2_ltb`: de punten in het id worden liggende streepjes.
+  - Bij een model `kolom.uc_staaf`: een vector met een UC per staaf.
+- **Op het blad.** Het blok staat als tabel: per toets het artikel, de titel, de UC en het
+  oordeel, met de maatgevende rij vet. Een toets die niet van toepassing is, staat grijs.
+  De afleiding (formule, waarden, toelichting) staat alleen op het scherm.
+- **Rekenen in rondes.** De werkruimte stuurt het verzoek naar FEM Studio en rekent het
+  blad opnieuw zodra het antwoord er is. Wat van het blok afhangt, is tot dan onbekend.
+- **Niet getoetst.** Het rapportpaneel, de API en de export vragen zelf niets aan FEM
+  Studio. Een blok zonder antwoord staat daar als NIET GETOETST, nooit als "voldoet". Zo
+  staat het ook als FEM Studio een fout gaf, bijvoorbeeld een profiel dat het niet kent.
+- **Vóór het afdrukken** toetst de app eerst de blokken die nog geen antwoord hebben, en
+  wacht daarop (hoogstens twee minuten). Een blok dat dan nog geen antwoord heeft, staat
+  als NIET GETOETST op papier.
+- **Hetzelfde antwoord.** Het antwoord hoort bij de invoer op het blad, niet bij de eenheid
+  waarin die getypt is: `h = 6 m` en `h = 6000 mm` vinden hetzelfde antwoord.
+- **Vastgelegd bij het blad.** Elk antwoord gaat mee in het projectbestand, bij het blad
+  (`ocss::blad::toetsing`): het verzoek, het antwoord, de datum en waarmee getoetst is (de
+  versie en de sha256 van de server, en een hash van het schema van de tool). Bij het
+  openen rekent het blad met die antwoorden, en gaat er niets naar FEM Studio zolang de
+  invoer gelijk blijft. Een opgeleverd blad toont zo zijn uitkomst ook op een computer
+  zonder FEM Studio.
+  - Verandert de invoer, dan gaat er een nieuw verzoek uit. Een antwoord dat het blad
+    niet meer gebruikt, valt bij het opslaan weg.
+  - Een fout wordt niet vastgelegd: na opnieuw openen mag het weer.
+  - Twee bladen met dezelfde invoer delen hun antwoord.
+- **Opnieuw toetsen.** Is een antwoord gemaakt met een andere versie van FEM Studio, of
+  met een ander schema van de tool, dan blijft het gelden. Op het scherm staat dan wel
+  "Getoetst met versie 2026.44.2; deze CalcSheet heeft FEM Studio 2026.46.1." en de knop
+  **Opnieuw toetsen**. Die knop staat ook bij een blok met een fout. Opnieuw toetsen
+  gebeurt nooit vanzelf. Lukt het niet, dan blijft het oude antwoord staan, met de fout
+  erbij.
+- **Op papier** staat de versie van FEM Studio één keer bij het eerste blok, als alle
+  blokken van het blad dezelfde versie hebben, en anders bij elk blok. De datum staat
+  alleen op het scherm.
+
 ## Voorbeeld
 
 ```text

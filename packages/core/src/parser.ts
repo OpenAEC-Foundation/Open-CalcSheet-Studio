@@ -6,6 +6,7 @@ import { DRIE_D_START_RE, leesDrieD } from './drieD.js';
 import { vervangVerwijzingen } from './verwijzing.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';
 import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
+import { TOETS_START_RE, leesToetsBlok } from './toetsBlok.js';
 import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.js';
 
 /**
@@ -60,6 +61,7 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
  *                       `{{formule}}`); zie drieD.ts
  *                       `@iframe url hoogte=120mm` — externe pagina; zie iframeBlok.ts
  *                       `@ifcx balklaag` — 3D-beeld uit een IFCX-document; zie ifcxBlok.ts
+ *                       `@toets naam = tool … @end` — normtoets door Open FEM Studio; zie toetsBlok.ts
  *                       `@js … @end` — JavaScript, letterlijk en afgeschermd; zie jsBlok.ts
  *
  *   Statement separator: `,'` (single comma + single-quote) splits one line into
@@ -1253,6 +1255,22 @@ function parseLines(
         i++;
       }
       nodes.push(markHidden({ type: 'svg', content: svgLines.join('\n') }, state));
+      if (i < end) i++;
+      continue;
+    }
+
+    // Toetsblok (`@toets naam = tool … @end`): een normtoets door FEM Studio (toetsBlok.ts).
+    const toetsMatch = trimmed.match(TOETS_START_RE);
+    if (toetsMatch) {
+      const blokRegels: string[] = [];
+      i++;
+      while (i < end && !BLOCK_END_RE.test(lines[i].trim())) {
+        blokRegels.push(lines[i]);
+        i++;
+      }
+      const blok = leesToetsBlok(toetsMatch[1], toetsMatch[2], blokRegels, normaliseer3d);
+      if (i >= end) blok.fouten.push('toetsblok zonder @end');
+      nodes.push(markHidden({ type: 'toets', ...blok }, state));
       if (i < end) i++;
       continue;
     }

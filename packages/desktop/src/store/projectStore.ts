@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { zetProjectEenheden, type ElementRef } from "@ifc-calc/core";
+import { zetProjectEenheden, type ElementRef, type VastgelegdeToets } from "@ifc-calc/core";
+import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
@@ -123,6 +124,13 @@ export interface Exemplaar {
   jupyter?: JupyterWerkmap;
   /** Alleen bij een Marimo-blad (`templateId` MARIMO_BLAD, zie store/marimoBlad.ts): het notebook. */
   marimo?: MarimoNotebook;
+  /**
+   * De antwoorden van Open FEM Studio op de `@toets`-blokken van dit blad, op de hash
+   * van hun invoer (rekenen/toetsCache.ts). Zo toont een opgeleverd blad zijn
+   * uitkomst ook zonder FEM Studio, en gaat er niets opnieuw naar FEM Studio zolang
+   * de invoer gelijk blijft. Ontbreekt bij een blad zonder toetsblok.
+   */
+  toetsingen?: Record<string, VastgelegdeToets>;
 }
 
 /**
@@ -227,6 +235,12 @@ interface ProjectState {
 
   /** Legt vast welke elementen uit een bronmodel dit blad toetst. */
   zetElementen: (id: string, elementen: ElementRef[]) => void;
+  /**
+   * Antwoorden van FEM Studio bij een blad, naast of in plaats van wat er al was
+   * (rekenen/femToetsing.ts). Geen stap in de geschiedenis: het is geen bewerking,
+   * en na ongedaan maken legt de werkruimte ze opnieuw vast.
+   */
+  zetToetsingen: (id: string, bij: Record<string, VastgelegdeToets>) => void;
 
   zetGegeven: (naam: string, waarde: string) => void;
   /** Meerdere projectgegevens in één wijziging (één stap ongedaan maken). */
@@ -720,6 +734,12 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       dirty: true,
     })),
 
+  zetToetsingen: (id, bij) =>
+    set((s) => ({
+      exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, toetsingen: { ...e.toetsingen, ...bij } } : e)),
+      dirty: true,
+    })),
+
   zetGegeven: (naam, waarde) =>
     set((s) => ({
       ...metGeschiedenis(s, `gegeven:${naam}`),
@@ -800,7 +820,8 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       };
     }),
 
-  nieuwProject: () =>
+  nieuwProject: () => {
+    wisSessie();
     set({
       verborgen: {},
       projectNaam: nieuweProjectNaam(),
@@ -813,9 +834,12 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       dirty: false,
       verleden: [],
       toekomst: [],
-    }),
+    });
+  },
 
-  laadProject: (p) =>
+  laadProject: (p) => {
+    // Een antwoord uit een ander project mag een vastgelegd antwoord niet vanzelf vervangen.
+    wisSessie();
     set({
       verborgen: p.verborgen ?? {},
       projectNaam: p.projectNaam ?? nieuweProjectNaam(),
@@ -827,7 +851,8 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       dirty: false,
       verleden: [],
       toekomst: [],
-    }),
+    });
+  },
 
   markeerOpgeslagen: (bestandspad) => set({ bestandspad, dirty: false }),
   };
@@ -880,6 +905,12 @@ function volgProjectEenheden(g: ProjectGegevens) {
 }
 volgProjectEenheden(useProjectStore.getState().gegevens);
 useProjectStore.subscribe((s) => volgProjectEenheden(s.gegevens));
+
+// De vastgelegde antwoorden van FEM Studio, voor elk blad en elk rekenpad (rekenen/toetsCache.ts).
+zetVastgelegd(useProjectStore.getState().exemplaren.map((e) => e.toetsingen));
+useProjectStore.subscribe((s, vorige) => {
+  if (s.exemplaren !== vorige.exemplaren) zetVastgelegd(s.exemplaren.map((e) => e.toetsingen));
+});
 
 /** Het eenhedenstelsel voor een nieuw project (Instellingen, tab Units). */
 let stelselVoorNieuw = "blad";
