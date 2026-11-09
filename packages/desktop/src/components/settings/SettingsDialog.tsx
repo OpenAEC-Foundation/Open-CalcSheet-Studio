@@ -20,6 +20,7 @@ import { geheimActies } from "../../tauri/erpnextGeheim";
 import { version as pakketVersie } from "../../../package.json";
 import "../ThemedSelect.css";
 import "./SettingsDialog.css";
+import { femStudioStatus, type FemStatus } from "../../rekenen/femStudio";
 
 const THEME_OPTIONS = [
   { value: "light",               labelKey: "appearance.light",             swatches: ["#F1EEEA", "#FFFFFF", "#D97706", "#2A2A32"] },
@@ -582,17 +583,32 @@ function UnitsTabContent({
 function AboutTabContent() {
   const { t } = useTranslation("settings");
   const [versie, setVersie] = useState(pakketVersie);
+  // FEM Studio pas vragen als deze tab opent: de vraag start de server.
+  const [fem, setFem] = useState<FemStatus | null>(null);
   useEffect(() => {
     import("@tauri-apps/api/app")
       .then(({ getVersion }) => getVersion())
       .then(setVersie)
       .catch(() => {});
+    let weg = false;
+    femStudioStatus().then((s) => {
+      if (!weg) setFem(s);
+    });
+    return () => {
+      weg = true;
+    };
   }, []);
+  const femTekst = !fem
+    ? t("about.femStudioBezig")
+    : fem.beschikbaar
+      ? fem.versie || "?"
+      : t(`about.femStudioNiet.${fem.code ?? "startMislukt"}`);
   return (
     <div className="settings-section">
       <h3>{t("about.appName")}</h3>
       <div style={{ fontSize: "var(--oa-size-body)", lineHeight: 1.8 }}>
         <p><strong>{t("about.version")}:</strong> {versie}</p>
+        <p title={fem?.reden ?? fem?.pad ?? undefined}><strong>{t("about.femStudio")}:</strong> {femTekst}</p>
         <p><strong>{t("about.framework")}:</strong> Tauri + React + TypeScript</p>
         <p><strong>{t("about.license")}:</strong> LGPL-3.0</p>
         <p style={{ marginTop: 8, color: "var(--theme-dialog-content-secondary)" }}>

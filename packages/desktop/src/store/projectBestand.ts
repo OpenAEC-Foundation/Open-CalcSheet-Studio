@@ -1,4 +1,5 @@
-import { bouwProjectIfcx, isIfcxBestand, isProjectIfcx, leesProjectIfcx, type IfcCalcSheet } from "@ifc-calc/core";
+import { bouwProjectIfcx, isIfcxBestand, isProjectIfcx, leesProjectIfcx, leesVastgelegdeToetsingen, type IfcCalcSheet } from "@ifc-calc/core";
+import { gebruikteToetsingen } from "../rekenen/toetsCache.ts";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens.ts";
 import type { Exemplaar, Verborgen } from "./projectStore";
 import { normaliseerRapport, type Rapport } from "../rapport/model.ts";
@@ -26,8 +27,9 @@ import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
  * packages/core/src/ifcx/namespace.ts.
  *
  * Wat telt bij het openen: projectnaam, gegevens, verborgen onderdelen, rapport
- * en per blad naam, id, templateId, bronVersie, rekentekst, invoer, elementen
- * en het bestand van een PDF-, spreadsheet- of Markdown-blad. De uitkomsten, figuren en elementen in het bestand zijn afgeleid, voor
+ * en per blad naam, id, templateId, bronVersie, rekentekst, invoer, elementen,
+ * de antwoorden van FEM Studio (`toetsingen`, rekenen/toetsCache.ts) en het
+ * bestand van een PDF-, spreadsheet- of Markdown-blad. De uitkomsten, figuren en elementen in het bestand zijn afgeleid, voor
  * andere lezers: de app rekent ze opnieuw uit de tekst en de invoer.
  *
  * Eerdere vormen blijven openen; bij opnieuw opslaan worden ze versie 2:
@@ -38,7 +40,10 @@ import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
  *   3. kale rekentekst — een `.cpd`.
  *
  * Een bestand zonder `project` (vorm 2 en 3) wordt geopend als een project met
- * één exemplaar, zodat er nooit werk verloren gaat. Het eerste opslaan over een
+ * één exemplaar, zodat er nooit werk verloren gaat.
+ *
+ * `toetsingen` gaat mee zoals het blad het nog gebruikt: een antwoord voor een
+ * invoer die niet meer op het blad staat, valt bij het opslaan weg. Het eerste opslaan over een
  * oud bestand heen laat een kopie achter: zie `bewaarOudeVersie` in
  * tauri/fileOps.ts.
  *
@@ -119,6 +124,7 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       md: ex.md,
       graaf: ex.graaf,
       ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
+      toetsingen: gebruikteToetsingen(ex.toetsingen, uitkomsten.get(ex.id)),
     })),
   });
   return JSON.stringify(doc, null, 2);
@@ -233,6 +239,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (jupyter) ex.jupyter = jupyter;
   const marimo = isMarimoBlad(ex) ? leesMarimoNotebook(e.marimo) : undefined;
   if (marimo) ex.marimo = marimo;
+  const toetsingen = leesVastgelegdeToetsingen(e.toetsingen);
+  if (toetsingen) ex.toetsingen = toetsingen;
   return ex;
 }
 

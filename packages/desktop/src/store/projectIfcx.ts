@@ -24,6 +24,7 @@ import {
   type IfcCalcSheet,
   type IfcxBestand,
   type ElementRef,
+  type VastgelegdeToets,
 } from "@ifc-calc/core";
 import { projectScope } from "./projectGegevens.ts";
 import type { PdfBijlage } from "./pdfBijlage.ts";
@@ -34,6 +35,7 @@ import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
 import type { JupyterWerkmap } from "./jupyterBlad.ts";
 import type { MarimoNotebook } from "./marimoBlad.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
+import { gebruikteToetsingen, toetsVersie } from "../rekenen/toetsCache.ts";
 import { maakPoer } from "../components/calc/poerDefinitie.ts";
 import { poerIfcxKnopen } from "../components/calc/poerIfcx.ts";
 
@@ -53,6 +55,7 @@ export interface BladVoorIfc {
   tekenvel?: TekenVel;
   jupyter?: JupyterWerkmap;
   marimo?: MarimoNotebook;
+  toetsingen?: Record<string, VastgelegdeToets>;
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -65,12 +68,14 @@ export interface ProjectVoorIfc {
   verborgen?: { gegevens?: boolean; rapport?: boolean };
 }
 
-const bewaard = new WeakMap<object, { gegevens: object; blad: IfcCalcSheet }>();
+/** Ook de antwoorden van FEM Studio tellen: een nieuw antwoord geeft een andere uitkomst. */
+const bewaard = new WeakMap<object, { gegevens: object; toetsV: number; blad: IfcCalcSheet }>();
 
 /** Eén blad, doorgerekend, zoals de kern het wil. Zonder doorrekenen: alleen de velden van het blad. */
 function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalcSheet {
   const hier = bewaard.get(ex);
-  if (hier && hier.gegevens === gegevens) return hier.blad;
+  const toetsV = toetsVersie();
+  if (hier && hier.gegevens === gegevens && hier.toetsV === toetsV) return hier.blad;
 
   const blad: IfcCalcSheet = {
     id: ex.id,
@@ -112,7 +117,8 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
       console.error(`Blad "${ex.naam}" kon niet worden doorgerekend:`, err);
     }
   }
-  bewaard.set(ex, { gegevens, blad });
+  blad.toetsingen = gebruikteToetsingen(ex.toetsingen, blad);
+  bewaard.set(ex, { gegevens, toetsV, blad });
   return blad;
 }
 

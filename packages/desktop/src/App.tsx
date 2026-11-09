@@ -52,6 +52,7 @@ import { GeenProjectFout, leesProjectBestand } from "./store/projectBestand";
 import { startbestand } from "./tauri/fileOps";
 import type { AngleMode } from "@ifc-calc/core";
 import { zetHoekmodus, useBladResultaat } from "./rekenen/doorrekening";
+import { werkToetsingenBij } from "./rekenen/femToetsing";
 import { UNITS_DEFAULTS, type UnitsSettings } from "./components/settings/SettingsDialog";
 
 /**
@@ -178,7 +179,11 @@ export default function App() {
     if (rapport) project.selecteer(RAPPORT_ID);
     else if (project.activeId === RAPPORT_ID) project.selecteer(selectie?.[0] ?? project.exemplaren[0]?.id ?? "");
     toonVoorbeeld(rapport ? null : undefined, printSoort);
-    wachtOpVellen()
+    // Eerst de @toets-blokken zonder antwoord laten toetsen: anders staan ze als niet
+    // getoetst op papier. Een ouder antwoord blijft staan; opnieuw toetsen is een knop.
+    // Het rapport heeft alle bladen.
+    werkToetsingenBij(rapport ? null : usePrintStore.getState().selectie)
+      .then(() => wachtOpVellen())
       .then(async (vellen) => {
         if (afgebroken) return;
         const opruimen = zetDrukvellenKlaar(vellen);

@@ -18,6 +18,8 @@
  *                  plek, met zijn uitkomst; een herkend of gekoppeld element
  *                  krijgt een klasse en verwijst naar zijn toetsing
  *   geometrie      `geometrie` op een blad komt onder de bouwlaag en in de STEP
+ *   toetsingen     de antwoorden van FEM Studio bij een blad (`ocss::blad::toetsing`)
+ *                  voldoen aan hun schema en komen terug zoals ze waren
  *   STEP           de ruimtelijke boom, de relaties, GlobalId's, maattypen en
  *                  eenheden, tekens; en dezelfde bladen en waarden als het IFCX
  *
@@ -723,6 +725,34 @@ const ents = leesStep(stepTekst);
   meld(bevatGeo.rest.includes(vs("IFCELEMENTASSEMBLY")[0].id) && !bevatGeo.rest.includes(`${vs("IFCBEAM")[0].id},`), "alleen de samenstelling zit rechtstreeks in de bouwlaag");
   meld(vs("IFCMATERIAL").length === 1 && vs("IFCRELASSOCIATESMATERIAL").length === 1, "het materiaal gaat mee, ook via inherits");
   meld(vs("IFCSHAPEREPRESENTATION").length === 2 && vs("IFCGEOMETRICREPRESENTATIONSUBCONTEXT").length === 1, "vorm in de deelcontext Body");
+}
+
+// ── 8. Antwoorden van FEM Studio ─────────────────────────────────────────────
+console.log("Antwoorden van FEM Studio:");
+{
+  const bron = ["# Kolom", "h = ?{4}m", "@toets kolom = check_steel_beam", '  profile_name = "HEA200"', "  length_m = h", "@end", "UC_max = kolom.uc_max"].join("\n");
+  const hash = evaluate(parse(bron), {}, {}, { toetsModus: "vragen" }).find((n) => n.type === "toets")?.hash;
+  const vast = {
+    tool: "check_steel_beam",
+    verzoek: { profile_name: "HEA200", length_m: 4, lijst: [1, 2.5, { a: "é" }] },
+    uitkomst: { beam_id: 1, uc_max: 0.42, status: "Ok", checks: [], tekst: 'met "aanhalingstekens" en\nregels' },
+    datum: "2026-11-07T10:15:00.000Z",
+    herkomst: { versie: "2026.44.2", sha256: "0".repeat(64), schema: "s0123456789abcdef" },
+  };
+  const project = {
+    versie: PROJECT_FORMAAT_VERSIE,
+    naam: "Toets",
+    gegevens: legeGegevens(),
+    exemplaren: [{ id: "ex-toets", naam: "Kolom", templateId: "", source: bron, waarden: {}, elementen: [], toetsingen: { [hash]: vast } }],
+  };
+  const doc = JSON.parse(stil(() => opslaan(project)));
+  specOk(doc, "een blad met antwoorden is geldig IFCX");
+  const attr = doc.data.find((k) => k.attributes?.["ocss::blad"]?.id === "ex-toets")?.attributes["ocss::blad::toetsing"];
+  meld(Array.isArray(attr) && attr.length === 1 && attr[0].hash === hash && attr[0].versie === "2026.44.2" && typeof attr[0].uitkomst === "string", "per hash: tool, datum, herkomst, en verzoek en antwoord als JSON-tekst");
+  const terug = leesProjectBestand(JSON.stringify(doc), "x").exemplaren[0];
+  meld(isDeepStrictEqual(terug.toetsingen, { [hash]: vast }), "ze komen terug zoals ze waren", verschillen(terug.toetsingen, { [hash]: vast }).slice(0, 3).join(" | "));
+  const zonder = JSON.parse(stil(() => opslaan({ ...project, exemplaren: [{ ...project.exemplaren[0], toetsingen: undefined }] })));
+  meld(!zonder.data.some((k) => k.attributes?.["ocss::blad::toetsing"]), "een blad zonder antwoorden krijgt geen leeg attribuut");
 }
 
 console.log(`\n${aantal - fouten} van de ${aantal} controles in orde.`);

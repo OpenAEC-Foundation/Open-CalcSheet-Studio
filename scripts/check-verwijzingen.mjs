@@ -8,6 +8,7 @@
  *           veld G in m met #1.R_paal → fout (eenheid past niet)
  *   blad 3: #2.V / 2 = 266,77 kN (via blad 2 naar blad 1)
  *   blad 4 en 5 verwijzen naar elkaar: geen waarde, een melding
+ *   een @toets-veld met #1.h_k (4 m): hetzelfde verzoek en dezelfde hash als 4000 mm
  *
  * Draaien:  node scripts/check-verwijzingen.mjs   (vereist een gebouwde core)
  */
@@ -66,6 +67,21 @@ const fout4 = b4.nodes.find((n) => n.name === "a")?.result ?? "";
 meld(String(fout4).startsWith("Error"), "een kring rekent niet rond: blad 4 geeft een fout", String(fout4));
 const los = evaluate(parse("H = ?{5}*(kN)"), { H: "#9.x" }, {});
 meld(los.some((n) => n.type === "text" && /#9\.x niet gevonden/.test(n.text)), "onbekend blad: melding onder het veld");
+
+console.log("\nEen verwijzing in een @toets-blok");
+{
+  const toets = (veld) => ["@toets kolom = check_steel_beam", '  profile_name = "HEA200"', `  length_m = ${veld}`, "@end", "UC = kolom.uc_max"].join("\n");
+  const tb = [{ ref: "1", source: "h_k = 4 m", waarden: {} }, { ref: "2", source: toets("#1.h_k"), waarden: {} }];
+  const sc = scopeMetVerwijzingen(tb[1].source, {}, {}, verwezenBladen(tb[1].source, {}, tb), {}, {});
+  const metRef = evaluate(parse(tb[1].source), {}, sc, { toetsModus: "vragen" }).find((n) => n.type === "toets");
+  const direct = evaluate(parse(toets("4000 mm")), {}, {}, { toetsModus: "vragen" }).find((n) => n.type === "toets");
+  meld(metRef?.verzoek?.argumenten.length_m === 4 && metRef.hash === direct?.hash, "length_m = #1.h_k: het verzoek met 4, en dezelfde hash als 4000 mm", JSON.stringify(metRef?.verzoek));
+  const antwoord = { ok: true, uitkomst: { beam_id: 1, uc_max: 0.42, status: "Ok", checks: [], governing_check_id: "x" } };
+  const klaar = evaluate(parse(tb[1].source), {}, sc, { toetsingen: { [metRef?.hash]: antwoord } });
+  meld(klaar.find((n) => n.type === "toets")?.status === "klaar" && dichtbij(Number(klaar.find((n) => n.name === "UC")?.waarde), 0.42, 1e-9), "met het antwoord rekent het blad verder met kolom.uc_max");
+  const zonder = evaluate(parse(tb[1].source), {}, {}, { toetsModus: "vragen" }).find((n) => n.type === "toets");
+  meld(zonder?.status === "fout" && !zonder.verzoek, "zonder de verwijzing op te lossen: een fout en geen verzoek (vóór het afdrukken lost femToetsing.ts hem dus op)");
+}
 
 console.log(fouten === 0 ? "\nAlle verwijzingen kloppen." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

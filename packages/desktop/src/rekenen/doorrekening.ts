@@ -14,16 +14,20 @@
  */
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import i18next from "i18next";
-import { setAngleMode, type AngleMode, type EvalOpties } from "@ifc-calc/core";
+import { setAngleMode, type AngleMode, type EvalOpties, type ToetsVerzoek } from "@ifc-calc/core";
 import { useProjectStore } from "../store/projectStore";
 import { evalOptiesVan } from "../store/projectEenheden";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
 import { verwezenBladen, type VerwijsBlad } from "./verwijzingen";
+import { metToetsingen } from "./toetsCache";
+import { kenFemStudio, legToetsingenVast, useToetsVersie, vraagToetsingen } from "./femToetsing";
 
 export interface RekenVerzoek {
   sleutel: string;
+  /** Het id van het blad: daar worden de antwoorden van FEM Studio vastgelegd. */
+  blad?: string;
   source: string;
   waarden: Record<string, string>;
   scope: Record<string, unknown>;
@@ -44,6 +48,10 @@ export interface RekenAntwoord {
   html: string;
   /** Bij een canvas-blad: de uitwerking per eenheid (components/calc/canvasRekenen.ts). */
   eenheden?: CanvasUitwerking[];
+  /** De @toets-blokken zonder antwoord (toetsBlok.ts); gaan naar FEM Studio. */
+  verzoeken?: ToetsVerzoek[];
+  /** De hashes van alle @toets-blokken, met of zonder antwoord. */
+  toetsen?: string[];
   uitkomst: BladUitkomst | null;
 }
 
@@ -73,7 +81,9 @@ function deWorker(): Worker {
   if (!worker) {
     worker = new Worker(new URL("./rekenWorker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (e: MessageEvent<RekenAntwoord>) => {
-      const { sleutel, html, eenheden, uitkomst } = e.data;
+      const { sleutel, html, eenheden, uitkomst, verzoeken, toetsen } = e.data;
+      const blad = bezig?.blad;
+      if (verzoeken?.length) void vraagToetsingen(verzoeken);
       uitkomsten.set(sleutel, { html, eenheden, uitkomst });
       while (uitkomsten.size > BEWAARD) uitkomsten.delete(uitkomsten.keys().next().value!);
       bezig = null;
@@ -81,6 +91,11 @@ function deWorker(): Worker {
       wachtend = null;
       if (volgende && !uitkomsten.has(volgende.sleutel)) stuur(volgende);
       meld();
+      // Na het tonen: de antwoorden bij het blad vastleggen geeft een nieuwe ronde.
+      if (toetsen?.length) {
+        kenFemStudio();
+        if (blad) legToetsingenVast(blad, toetsen);
+      }
     };
   }
   return worker;
@@ -144,8 +159,12 @@ export function useDoorrekening(
   const taal = i18next.language ?? "";
   // Het eenhedenstelsel van het project: een wissel geeft een nieuwe sleutel.
   const gegevens = useProjectStore((s) => s.gegevens);
-  const evalOpties = useMemo(() => evalOptiesVan(gegevens), [gegevens]);
-  const optiesSleutel = JSON.stringify(evalOpties);
+  const basisOpties = useMemo(() => evalOptiesVan(gegevens), [gegevens]);
+  // Een nieuw antwoord van FEM Studio maakt elke doorrekening verouderd; de antwoorden
+  // zelf staan niet in de sleutel (ze zijn groot), hun versie wel.
+  const toetsV = useToetsVersie();
+  const evalOpties = useMemo(() => metToetsingen(basisOpties, "vragen", taal), [basisOpties, toetsV, taal]);
+  const optiesSleutel = JSON.stringify(basisOpties) + "|t" + toetsV;
   // De bladen waarnaar dit blad verwijst gaan mee, en horen in de sleutel: verandert
   // de invoer van blad 1, dan rekent een blad met #1.R_paal opnieuw.
   const exemplaren = useProjectStore((s) => s.exemplaren);
@@ -157,13 +176,13 @@ export function useDoorrekening(
   useEffect(() => {
     if (!source.trim()) return;
     vraag({
-      sleutel, source, waarden, scope, naam, hoekmodus, taal, evalOpties,
+      sleutel, blad, source, waarden, scope, naam, hoekmodus, taal, evalOpties,
       includes: [...rekentaalIncludes], imageUrls: [...rekentaalImageUrls],
       ...(verwijzingen.length ? { verwijzingen } : {}),
     });
     // verwijzingen zit in de sleutel
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sleutel, source, waarden, scope, naam, taal, evalOpties]);
+  }, [sleutel, blad, source, waarden, scope, naam, taal, evalOpties]);
 
   const resultaat = hier?.uitkomst?.resultaat;
   useEffect(() => {

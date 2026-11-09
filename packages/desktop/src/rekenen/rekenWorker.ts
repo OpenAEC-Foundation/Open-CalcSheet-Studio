@@ -11,6 +11,7 @@ import { setAngleMode, type AngleMode } from "@ifc-calc/core";
 import { leesGetallen, leesResultaat, metRefNamen } from "../components/calc/bladLezen";
 import { rekenUitwerking } from "../components/calc/canvasRekenen";
 import { bronVoorUitvoer } from "../templates/vertalingen";
+import { toetsHashes, verzamelVerzoeken } from "./toetsCache";
 import type { RekenVerzoek, RekenAntwoord } from "./doorrekening";
 import { scopeMetVerwijzingen } from "./verwijzingen";
 
@@ -35,6 +36,10 @@ self.onmessage = (e: MessageEvent<RekenVerzoek>) => {
       sleutel: v.sleutel,
       html,
       eenheden,
+      // De @toets-blokken zonder antwoord: de app stuurt ze naar FEM Studio (femToetsing.ts).
+      verzoeken: verzamelVerzoeken(nodes),
+      // Alle blokken, ook met antwoord: hun antwoorden worden bij het blad vastgelegd.
+      toetsen: toetsHashes(nodes),
       uitkomst: {
         resultaat: leesResultaat(nodes, v.naam),
         getallen: metRefNamen(leesGetallen(nodes), v.source),

@@ -3154,6 +3154,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ocss-fem-brug"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3175,6 +3183,7 @@ name = "open-calcsheet-studio"
 version = "2026.45.2"
 dependencies = [
  "keyring",
+ "ocss-fem-brug",
  "openaec-core",
  "serde",
  "serde_json",

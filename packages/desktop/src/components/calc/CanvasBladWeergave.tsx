@@ -10,6 +10,7 @@ import { registreerBewaarder } from "../../store/spreadsheetBlad";
 import { huisstijlVariabelen } from "../../rapport/model";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import { useDoorrekening } from "../../rekenen/doorrekening";
+import { klikOpToetsKnop } from "../../rekenen/femToetsing";
 import Icoon from "../Icoon";
 import { zorgVoorKernstijlen } from "./bladDoorrekenen";
 import { useEenheidMaten } from "./canvasMaten";
@@ -36,7 +37,16 @@ const SLEEP_DREMPEL = 4;
 /** De uitkomst van één eenheid. Hetzelfde object zolang de html gelijk blijft, zie Preview.tsx. */
 const Uitkomst = memo(function Uitkomst({ html }: { html: string }) {
   const inhoud = useMemo(() => ({ __html: schoonUitwerking(html) }), [html]);
-  return <div className="ifc-calc" dangerouslySetInnerHTML={inhoud} />;
+  // De knop "opnieuw toetsen" van een @toets-blok; de klik selecteert de eenheid dan niet.
+  return (
+    <div
+      className="ifc-calc"
+      dangerouslySetInnerHTML={inhoud}
+      onClick={(e) => {
+        if (klikOpToetsKnop(e.target)) e.stopPropagation();
+      }}
+    />
+  );
 });
 
 /** Levert de html iets op dat op het vel te zien is? Een eenheid met alleen `#hide` niet. */
