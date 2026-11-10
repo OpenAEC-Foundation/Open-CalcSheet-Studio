@@ -1042,5 +1042,43 @@ console.log("\nCatalogus");
   });
 }
 
+// ── De waarde op een verbinding en uitschakelen ─────────────────────────────
+console.log("\nDe waarde op een verbinding en uitschakelen");
+{
+  const N = await import("../packages/desktop/src/graaf/nodes.ts");
+  const M = await import("../packages/desktop/src/graaf/model.ts");
+  const t = { naamVan: (n) => n.naam ?? n.soort, poort: (_n, p) => p, melding: (x) => x.code, meer: (n) => `+${n}` };
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const proef = (naam, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      meld(false, `${naam}: ${e.message}`);
+    }
+  };
+  proef("midden_recht", () => {
+    const m = N.verbindingMidden({ x: 0, y: 0 }, { x: 100, y: 0 });
+    meld(dichtbij(m.x, 50) && dichtbij(m.y, 0), "midden_recht: het midden van een rechte lijn", JSON.stringify(m));
+  });
+  proef("midden_s", () => {
+    const m = N.verbindingMidden({ x: 0, y: 0 }, { x: 100, y: 40 });
+    meld(dichtbij(m.x, 50) && dichtbij(m.y, 20), "midden_s: het midden van een S-curve (t = 0,5)", JSON.stringify(m));
+  });
+  proef("papier_label", () => {
+    const { g: g0, ids } = bouw([["q", "getal", { waarde: "5", eenheid: "kN/m" }], ["c", "codeblok", { code: "y = x * 2" }]], ["q.waarde -> c.x"]);
+    const tekst = esc(waardeTekst(rekenGraaf(g0).nodes[ids.q].waarden.waarde));
+    const telZonder = graafSvg(g0, rekenGraaf(g0), t).svg.split(tekst).length - 1;
+    const g = M.wisselLabel(g0, ids.c, "x");
+    const telMet = graafSvg(g, rekenGraaf(g), t).svg.split(tekst).length - 1;
+    meld(telMet === telZonder + 1, `papier_label: met label staat "${tekst}" één keer extra op papier, op de lijn`, `${telZonder} → ${telMet}`);
+  });
+  proef("papier_uit", () => {
+    const { g: g0, ids } = bouw([["q", "getal", { waarde: "5" }], ["c", "codeblok", { code: "y = x * 2" }]], ["q.waarde -> c.x"]);
+    const g = M.zetUit(g0, [ids.c], true);
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes("uitgeschakeld") && svg.includes('opacity="0.5"'), "papier_uit: een uitgeschakelde node staat grijs op papier, met de melding");
+  });
+}
+
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

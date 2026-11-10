@@ -670,6 +670,106 @@
   color: var(--oa-error);
 }
 
+/* ─── Het rechtsklikmenu ──────────────────────────────────────── */
+
+.graaf-menu {
+  position: absolute;
+  z-index: 6;
+  min-width: 210px;
+  padding: 4px;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-medium, 6px);
+  box-shadow: var(--oa-shadow-popup, var(--theme-panel-shadow));
+  font-size: var(--oa-size-label);
+}
+
+.graaf-menu-titel {
+  padding: 4px 8px 6px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+}
+
+.graaf-menu-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--oa-radius-small, 4px);
+  background: none;
+  color: var(--theme-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.graaf-menu-item:hover:not(:disabled) {
+  background: var(--theme-accent-soft, var(--theme-hover));
+}
+
+.graaf-menu-item:disabled {
+  color: var(--theme-text-muted);
+  cursor: default;
+}
+
+.graaf-menu-item.gevaar {
+  color: var(--oa-error);
+}
+
+.graaf-menu-item kbd {
+  font-family: var(--oa-font-mono);
+  font-size: 10px;
+  color: var(--theme-text-muted);
+}
+
+.graaf-menu-streep {
+  margin: 4px 2px;
+  border: 0;
+  border-top: 1px solid var(--theme-border-subtle, var(--theme-border));
+}
+
+/* ─── De waarde op een verbinding ─────────────────────────────── */
+
+.graaf-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 2px 8px;
+  border: 1px solid var(--lijn, var(--theme-text-muted));
+  border-radius: 999px;
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  font-family: var(--oa-font-numbers);
+  font-size: var(--oa-size-label);
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ─── Een uitgeschakelde node ─────────────────────────────────── */
+
+.graaf-node.uit {
+  opacity: 0.5;
+}
+
+.graaf-node.uit .graaf-node-icoon {
+  position: relative;
+}
+
+.graaf-node.uit .graaf-node-icoon::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 50%;
+  height: 2px;
+  background: var(--theme-text);
+  transform: rotate(-35deg);
+}
+
 /* ─── Het zoekmenu ────────────────────────────────────────────── */
 
 .graaf-zoekmenu {
