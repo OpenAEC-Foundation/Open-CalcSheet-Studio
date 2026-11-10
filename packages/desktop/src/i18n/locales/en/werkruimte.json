@@ -519,6 +519,20 @@
       "stap": "step",
       "schuif": "Show or hide the slider and limits"
     },
+    "catalogus": {
+      "titel": "Node catalogue",
+      "wissel": "Show or hide the catalogue (Ctrl+F searches)",
+      "recent": "Recent",
+      "alle": "All nodes",
+      "groep": {
+        "invoer": "Input",
+        "reken": "Calculate",
+        "logica": "Logic",
+        "lijst": "Lists",
+        "tekst": "Text",
+        "geometrie": "Geometry"
+      }
+    },
     "uitkomstTonen": "Show result (H)",
     "uitkomstVerbergen": "Hide result (H)",
     "soort": {

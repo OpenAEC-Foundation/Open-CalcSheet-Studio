@@ -982,5 +982,65 @@ console.log("\nIconen en het beeld van een node");
   });
 }
 
+// ── De catalogus: zoeken en recent gebruikt ─────────────────────────────────
+console.log("\nCatalogus");
+{
+  const Z = await import("../packages/desktop/src/graaf/zoeken.ts").catch(() => ({}));
+  const R = await import("../packages/desktop/src/graaf/recent.ts").catch(() => ({}));
+  const hier = dirname(fileURLToPath(import.meta.url));
+  /** Een vertaler zoals i18next voor de namespace werkruimte, uit het JSON-bestand. */
+  const vertaler = (taal) => {
+    const data = JSON.parse(readFileSync(join(hier, `../packages/desktop/src/i18n/locales/${taal}/werkruimte.json`), "utf8"));
+    return (sleutel) => sleutel.split(".").reduce((o, k) => (o && typeof o === "object" ? o[k] : undefined), data) ?? sleutel;
+  };
+  const tNl = vertaler("nl");
+  const tEn = vertaler("en");
+  const proef = (naam, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      meld(false, `${naam}: ${e.message}`);
+    }
+  };
+  proef("zoek_som", () => meld(Z.zoekNodes("som", tNl, tEn).includes("som"), "zoek_som: zoeken op de naam"));
+  proef("zoek_twee_woorden", () => {
+    const r = Z.zoekNodes("tekst lengte", tNl, tEn);
+    meld(r.includes("tekstLengte") && !r.includes("som"), "zoek_twee_woorden: alle woorden moeten passen", JSON.stringify(r));
+  });
+  proef("zoek_andere_taal", () => meld(Z.zoekNodes("sum", tNl, tEn).includes("som"), "zoek_andere_taal: de Engelse naam vindt de node ook in het Nederlands"));
+  proef("zoek_leeg_alles", () => {
+    const r = Z.zoekNodes("", tNl, tEn);
+    meld(r.length === NODE_SOORTEN.length && new Set(r).size === r.length, "zoek_leeg_alles: zonder zoekwoord alle soorten, in groepsvolgorde");
+  });
+  proef("recent", () => {
+    const opslag = new Map();
+    const oud = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: { getItem: (k) => opslag.get(k) ?? null, setItem: (k, v) => opslag.set(k, String(v)), removeItem: (k) => opslag.delete(k) },
+    });
+    try {
+      R.voegRecentToe("a");
+      R.voegRecentToe("b");
+      R.voegRecentToe("a");
+      for (const s of ["c", "d", "e", "f"]) R.voegRecentToe(s);
+      const lijst = R.leesRecent();
+      meld(lijst[0] === "f" && lijst.length === 5 && new Set(lijst).size === 5 && !lijst.includes("b"), "recent: nieuwste eerst, hooguit 5, zonder dubbele", JSON.stringify(lijst));
+      Object.defineProperty(globalThis, "localStorage", { configurable: true, get: () => { throw new Error("geen opslag"); } });
+      let goed = true;
+      try {
+        R.voegRecentToe("x");
+        goed = Array.isArray(R.leesRecent()) && R.leesRecent().length === 0;
+      } catch {
+        goed = false;
+      }
+      meld(goed, "recent: zonder localStorage geen fout, een lege lijst");
+    } finally {
+      if (oud) Object.defineProperty(globalThis, "localStorage", oud);
+      else delete globalThis.localStorage;
+    }
+  });
+}
+
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

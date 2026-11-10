@@ -11,7 +11,9 @@ import {
   type Graaf, type GraafVerbinding, type NodeSoort,
 } from "../../graaf/model";
 import { leesStuk, stukAlsTekst } from "../../graaf/klembord";
+import { voegRecentToe } from "../../graaf/recent";
 import { waardeKleur } from "./graafKleur";
+import { GraafCatalogus, SLEEP_TYPE } from "./GraafCatalogus";
 import { poortPlek, poortenVan, verbindingPad } from "../../graaf/nodes";
 import { actieveVerbindingen, rekenGraaf } from "../../graaf/rekenen";
 import { graafScene } from "../../graaf/scene";
@@ -43,6 +45,9 @@ import "./GraafBlad.css";
  *   Ctrl+A / Escape                     alles kiezen / niets meer kiezen
  *   Ctrl+C, Ctrl+X, Ctrl+V              kopiëren, knippen, plakken (ook naar een ander grafblad)
  *   Ctrl+D                              de keuze dupliceren
+ *   H                                   het oogje van de keuze: uitkomst tonen of verbergen
+ *   Ctrl+F                              zoeken in de catalogus (GraafCatalogus.tsx)
+ *   slepen uit de catalogus             de node komt waar je loslaat
  *
  * Het beeld (schuif en zoom) hoort niet bij het project: het blijft staan zolang
  * de app openstaat en maakt het project niet gewijzigd. Rekenen gaat vanzelf bij
@@ -84,6 +89,23 @@ interface Kader {
 const DREMPEL = 3;
 
 const ctrl = (e: { ctrlKey: boolean; metaKey: boolean }) => e.ctrlKey || e.metaKey;
+
+/** Of de catalogus open staat: de app onthoudt het, het project niet. */
+const CATALOGUS = "ocss.graaf.catalogus";
+function leesCatalogusOpen(): boolean {
+  try {
+    return localStorage.getItem(CATALOGUS) !== "dicht";
+  } catch {
+    return true;
+  }
+}
+function bewaarCatalogusOpen(open: boolean) {
+  try {
+    localStorage.setItem(CATALOGUS, open ? "open" : "dicht");
+  } catch {
+    // Geen opslag: dan alleen voor nu.
+  }
+}
 
 /** Een verbinding die nu getrokken wordt, vanaf een poort naar de muis. */
 interface Trek {
@@ -139,6 +161,13 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
   draaienRef.current = draaien;
   /** De laatste plek van de muis op het vlak: daar komt geplakt werk. */
   const muis = useRef<{ x: number; y: number } | null>(null);
+  const [catalogus, setCatalogus] = useState(leesCatalogusOpen);
+  const [aangewezen, setAangewezen] = useState<NodeSoort | null>(null);
+  const zoekRef = useRef<HTMLInputElement>(null);
+  const wisselCatalogus = (open: boolean) => {
+    setCatalogus(open);
+    bewaarCatalogusOpen(open);
+  };
   const [menu, setMenu] = useState<Menu | null>(null);
   const sceneRef = useRef(scene);
   sceneRef.current = scene;
@@ -454,8 +483,21 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     zet(g);
     setMenu(null);
     zetKeuze(new Set([r.id]));
+    voegRecentToe(soort);
     vlak.current?.focus({ preventScroll: true });
   }, [huidig, zet, zetKeuze]);
+
+  /** Uit de catalogus (Enter, dubbelklik): rechts naast de enige gekozen node, anders midden in beeld. */
+  const voegToeUitCatalogus = (soort: NodeSoort) => {
+    const v = vlak.current!;
+    const k = [...keuzeRef.current];
+    const naast = k.length === 1 ? huidig().nodes.find((n) => n.id === k[0]) : undefined;
+    const kaart = naast && v.querySelector<HTMLElement>(`[data-graaf-node="${naast.id}"]`);
+    const r = v.getBoundingClientRect();
+    const midden = opVlak(r.left + v.clientWidth / 2 - 100, r.top + v.clientHeight / 3);
+    const plek = naast && kaart ? { x: naast.x + kaart.offsetWidth + 40, y: naast.y } : midden;
+    voegToe(soort, { x: 0, y: 0, vlakX: plek.x, vlakY: plek.y });
+  };
 
   /** Het zoekmenu midden in beeld, voor de knop in de balk. */
   const menuInHetMidden = () => {
@@ -499,6 +541,11 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     } else if (ctrl(e) && e.key.toLowerCase() === "a") {
       e.preventDefault();
       zetKeuze(new Set(huidig().nodes.map((n) => n.id)));
+    } else if (ctrl(e) && e.key.toLowerCase() === "f") {
+      // Zoeken in de catalogus.
+      e.preventDefault();
+      wisselCatalogus(true);
+      requestAnimationFrame(() => zoekRef.current?.focus());
     } else if (ctrl(e) && e.key.toLowerCase() === "d") {
       e.preventDefault();
       if (k.size === 0) return;
@@ -581,9 +628,25 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
   })();
 
   return (
+    <div className="graaf-blad">
+    {catalogus && (
+      <GraafCatalogus onKies={voegToeUitCatalogus} aangewezen={aangewezen} zetAangewezen={setAangewezen} zoekRef={zoekRef} />
+    )}
     <div
       ref={vlak}
       className={`graaf-vlak${trek ? " trekt" : ""}${kader ? " kadert" : ""}`}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes(SLEEP_TYPE)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+      }}
+      onDrop={(e) => {
+        const soort = e.dataTransfer.getData(SLEEP_TYPE) as NodeSoort;
+        if (!soort) return;
+        e.preventDefault();
+        const p = opVlak(e.clientX, e.clientY);
+        voegToe(soort, { x: 0, y: 0, vlakX: Math.round(p.x), vlakY: Math.round(p.y) });
+      }}
       tabIndex={0}
       style={{
         backgroundSize: `${24 * beeld.z}px ${24 * beeld.z}px`,
@@ -664,6 +727,16 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       )}
 
       <div className="graaf-balk" onDoubleClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className={`pdf-vervang graaf-icoonknop${catalogus ? " aan" : ""}`}
+          aria-pressed={catalogus}
+          onClick={() => wisselCatalogus(!catalogus)}
+          title={t("graaf.catalogus.wissel")}
+          aria-label={t("graaf.catalogus.wissel")}
+        >
+          <Icoon id="panel.left" />
+        </button>
         <button type="button" className="pdf-vervang" onClick={menuInHetMidden}>{t("graaf.nodeToevoegen")}</button>
         <button type="button" className="pdf-vervang graaf-icoonknop" onClick={passend} title={t("graaf.passend")} aria-label={t("graaf.passend")}>
           <Icoon id="view.fit" />
@@ -701,6 +774,7 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
           }}
         />
       )}
+    </div>
     </div>
   );
 }
