@@ -516,8 +516,11 @@
       "eenheid": "unit",
       "min": "min",
       "max": "max",
-      "stap": "step"
+      "stap": "step",
+      "schuif": "Show or hide the slider and limits"
     },
+    "uitkomstTonen": "Show result (H)",
+    "uitkomstVerbergen": "Hide result (H)",
     "soort": {
       "getal": "Number",
       "tekst": "Text",
