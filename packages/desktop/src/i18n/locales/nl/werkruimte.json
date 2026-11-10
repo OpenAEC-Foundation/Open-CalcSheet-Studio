@@ -519,6 +519,20 @@
       "stap": "stap",
       "schuif": "Schuif en grenzen tonen of verbergen"
     },
+    "catalogus": {
+      "titel": "Catalogus van nodes",
+      "wissel": "Catalogus tonen of verbergen (Ctrl+F zoekt)",
+      "recent": "Recent",
+      "alle": "Alle nodes",
+      "groep": {
+        "invoer": "Invoer",
+        "reken": "Rekenen",
+        "logica": "Logica",
+        "lijst": "Lijsten",
+        "tekst": "Tekst",
+        "geometrie": "Geometrie"
+      }
+    },
     "uitkomstTonen": "Uitkomst tonen (H)",
     "uitkomstVerbergen": "Uitkomst verbergen (H)",
     "soort": {
