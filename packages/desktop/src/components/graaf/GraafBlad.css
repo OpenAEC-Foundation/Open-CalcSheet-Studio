@@ -670,6 +670,134 @@
   color: var(--oa-error);
 }
 
+/* ─── Groepen ─────────────────────────────────────────────────── */
+
+/* Een zacht kader in de accentkleur; alleen de titel vangt de muis. */
+.graaf-groep {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
+  border-radius: var(--oa-radius-large, 10px);
+  background: color-mix(in srgb, var(--theme-accent) 7%, transparent);
+  pointer-events: none;
+}
+
+.graaf-groep.gekozen {
+  border-color: var(--theme-accent);
+  background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+}
+
+.graaf-groep-titel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px 0 4px;
+  pointer-events: auto;
+  cursor: move;
+  font-family: var(--oa-font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--theme-accent-text, var(--theme-accent));
+}
+
+.graaf-groep-naam {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.graaf-groep-naamveld {
+  width: 180px;
+}
+
+.graaf-groep-pijl {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--oa-radius-small, 4px);
+  background: none;
+  color: var(--theme-text-muted);
+  cursor: pointer;
+}
+
+.graaf-groep-pijl:hover {
+  background: var(--theme-hover);
+}
+
+/* Een ingeklapte groep: een kaart met de naam en het aantal leden. */
+.graaf-groep-kaart {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: auto;
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 60%, transparent);
+  border-radius: var(--oa-radius-large, 10px);
+  background: var(--theme-surface);
+  box-shadow: var(--oa-shadow-panel, var(--theme-panel-shadow));
+  cursor: move;
+}
+
+.graaf-groep-kaart.gekozen {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 2px var(--theme-accent), var(--oa-shadow-panel, var(--theme-panel-shadow));
+}
+
+.graaf-groep-aantal {
+  padding: 0 12px;
+  font-size: var(--oa-size-label);
+  color: var(--theme-text-muted);
+}
+
+/* ─── Losse tekst ─────────────────────────────────────────────── */
+
+.graaf-tekstblok {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: auto;
+  padding: 8px 10px;
+  border-left: 3px solid var(--theme-text-muted);
+  border-radius: var(--oa-radius-medium, 6px);
+  background: color-mix(in srgb, var(--theme-surface) 85%, transparent);
+  cursor: move;
+}
+
+.graaf-tekstblok.gekozen {
+  outline: 2px solid var(--theme-accent);
+}
+
+.graaf-tekst-titel,
+.graaf-tekst-inhoud {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--theme-text);
+  font-family: var(--oa-font-body);
+  font-size: 12px;
+  line-height: 1.45;
+  resize: none;
+  overflow: hidden;
+}
+
+.graaf-tekst-titel {
+  font-family: var(--oa-font-heading);
+  font-weight: 600;
+}
+
+.graaf-tekst-rand {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
 /* ─── Het rechtsklikmenu ──────────────────────────────────────── */
 
 .graaf-menu {

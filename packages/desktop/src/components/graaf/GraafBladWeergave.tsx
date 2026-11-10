@@ -7,16 +7,20 @@ import { drieDSvg } from "@ifc-calc/core";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import {
   dupliceer, kopieerKeuze, legeGraaf, ontkoppel, plak, uitkomstVerborgen, verbind, verplaatsKeuze, verwijderKeuze, voegNodeToe, wisselGeheel,
-  wisselLabel, zetInvoer, zetNodeNaam, zetSchuif, zetUit, zetVerborgen,
+  groepeer, hefGroepOp, voegTekstToe, wisselIngeklapt, wisselLabel, zetGroepNaam, zetInvoer, zetNodeNaam, zetSchuif, zetTekst, zetUit,
+  zetVerborgen,
   type Graaf, type GraafStuk, type GraafVerbinding, type NodeSoort,
 } from "../../graaf/model";
+import { groepKader, ingeklaptKaart, ingeklaptVan, zichtbarePoortPlek, type Maat } from "../../graaf/groepen";
+import { GraafGroepKader, type GroepActies } from "./GraafGroepKader";
+import { GraafTekstBlok, MIN_BREEDTE, type TekstActies } from "./GraafTekstBlok";
 import { waardeTekst } from "../../graaf/waarde";
 import { GraafMenu, type MenuItem } from "./GraafMenu";
 import { leesStuk, stukAlsTekst } from "../../graaf/klembord";
 import { voegRecentToe } from "../../graaf/recent";
 import { waardeKleur } from "./graafKleur";
 import { GraafCatalogus, SLEEP_TYPE } from "./GraafCatalogus";
-import { nodeDef, poortPlek, poortenVan, verbindingMidden, verbindingPad } from "../../graaf/nodes";
+import { nodeBreedte, nodeDef, poortPlek, poortenVan, verbindingMidden, verbindingPad } from "../../graaf/nodes";
 import { actieveVerbindingen, rekenGraaf } from "../../graaf/rekenen";
 import { graafScene } from "../../graaf/scene";
 import { voorbeeldGraaf } from "../../graaf/voorbeeldGraaf";
@@ -47,6 +51,11 @@ import "./GraafBlad.css";
  *   Ctrl+A / Escape                     alles kiezen / niets meer kiezen
  *   Ctrl+C, Ctrl+X, Ctrl+V              kopiëren, knippen, plakken (ook naar een ander grafblad)
  *   Ctrl+D                              de keuze dupliceren
+ *   Ctrl+G / Ctrl+Shift+G               de keuze groeperen / de groep opheffen
+ *   klik of slepen op de titel van een groep   zijn leden kiezen en verschuiven (GraafGroepKader.tsx)
+ *   T                                   een losse tekst op de plek van de muis (GraafTekstBlok.tsx)
+ *   rechtsklik                          menu voor een node, verbinding, groep, tekst of lege plek
+ *   F2                                  de gekozen node hernoemen
  *   H                                   het oogje van de keuze: uitkomst tonen of verbergen
  *   Ctrl+F                              zoeken in de catalogus (GraafCatalogus.tsx)
  *   slepen uit de catalogus             de node komt waar je loslaat
@@ -86,6 +95,12 @@ interface Kader {
   x1: number;
   y1: number;
 }
+
+/**
+ * Wat zijn eigen klik en dubbelklik regelt: daar begint geen kader en opent geen
+ * zoekmenu (nodes, losse teksten, groepstitels en -kaarten, lijnen, balk, menu's).
+ */
+const ZELF_KLIK = "[data-graaf-node], [data-graaf-tekst], [data-graaf-groep], .graaf-lijn-raak, .graaf-balk, .graaf-zoekmenu, .graaf-menu, .graaf-leeg";
 
 /** Zo ver moet de muis bewegen voordat een klik een sleep wordt, in px op het scherm. */
 const DREMPEL = 3;
@@ -182,6 +197,13 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
   const [aangewezen, setAangewezen] = useState<NodeSoort | null>(null);
   /** De node waarvan de naam in bewerking staat (dubbelklik, F2, het menu). */
   const [hernoemId, setHernoemId] = useState<string | null>(null);
+  const [hernoemGroep, setHernoemGroep] = useState<string | null>(null);
+  /** De breedte van een tekstblok tijdens het slepen aan zijn rand. */
+  const [tekstBreedte, setTekstBreedte] = useState<{ id: string; breedte: number } | null>(null);
+  /** Een net gemaakt tekstblok: de cursor in zijn titel. */
+  const [focusTekst, setFocusTekst] = useState<string | null>(null);
+  /** De maat van kaarten en tekstblokken uit de DOM, voor de kaders van groepen. */
+  const [gemeten, setGemeten] = useState<ReadonlyMap<string, { b: number; h: number }>>(() => new Map());
   const [contextmenu, setContextmenu] = useState<Contextmenu | null>(null);
   const zoekRef = useRef<HTMLInputElement>(null);
   const wisselCatalogus = (open: boolean) => {
@@ -328,6 +350,9 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     for (const k of vlak.current?.querySelectorAll<HTMLElement>("[data-graaf-node]") ?? []) {
       if (k.dataset.graafNode) maten.set(k.dataset.graafNode, { b: k.offsetWidth, h: k.offsetHeight });
     }
+    for (const k of vlak.current?.querySelectorAll<HTMLElement>("[data-graaf-tekst]") ?? []) {
+      if (k.dataset.graafTekst) maten.set(k.dataset.graafTekst, { b: k.offsetWidth, h: k.offsetHeight });
+    }
     return maten;
   }, []);
 
@@ -356,10 +381,19 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       const [x0, x1] = [Math.min(begin.x, p.x), Math.max(begin.x, p.x)];
       const [y0, y1] = [Math.min(begin.y, p.y), Math.max(begin.y, p.y)];
       const maten = kaartMaten();
-      const binnen = huidig().nodes.filter((n) => {
+      const g = huidig();
+      const binnen = [...g.nodes, ...(g.teksten ?? [])].filter((n) => {
         const m2 = maten.get(n.id);
         return !!m2 && n.x >= x0 && n.y >= y0 && n.x + m2.b <= x1 && n.y + m2.h <= y1;
       }).map((n) => n.id);
+      // Een ingeklapte groep telt als zijn kaart: ligt die erin, dan komen al zijn leden mee.
+      for (const k of vlak.current?.querySelectorAll<HTMLElement>(".graaf-groep-kaart[data-graaf-groep]") ?? []) {
+        const kx = parseFloat(k.style.left);
+        const ky = parseFloat(k.style.top);
+        if (kx >= x0 && ky >= y0 && kx + k.offsetWidth <= x1 && ky + k.offsetHeight <= y1) {
+          binnen.push(...(g.groepen?.find((gr) => gr.id === k.dataset.graafGroep)?.leden ?? []));
+        }
+      }
       zetKeuze(new Set(erbij ? [...keuzeRef.current, ...binnen] : binnen));
     };
     window.addEventListener("pointermove", beweeg);
@@ -393,7 +427,8 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       return;
     }
     vlak.current?.focus({ preventScroll: true });
-    if (e.button !== 0 || doel.closest("[data-graaf-node], .graaf-lijn-raak, .graaf-balk, .graaf-zoekmenu, .graaf-leeg")) return;
+    // Nodes, teksten, groepen en lijnen regelen hun eigen klik; alleen een lege plek trekt een kader.
+    if (e.button !== 0 || doel.closest(ZELF_KLIK)) return;
     setLijn(null);
     // Met Alt of de draaiknop draait het 3D-doek; anders een kader.
     if (!e.altKey && !draaienRef.current) beginKader(e);
@@ -401,21 +436,29 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
 
   // ── De nodes ────────────────────────────────────────────────────────────────
 
-  const acties = useMemo<NodeActies>(() => ({
-    beginSlepen: (e, node) => {
-      vlak.current?.focus({ preventScroll: true });
-      // Ctrl+klik: bij de keuze of eraf, zonder te slepen.
-      if (ctrl(e)) {
-        const k = new Set(keuzeRef.current);
-        if (k.has(node.id)) k.delete(node.id);
-        else k.add(node.id);
-        zetKeuze(k);
-        return;
+  /**
+   * Klik of sleep op een node of tekst (`id`), of op de titel van een groep (`leden`):
+   * Ctrl+klik zet hem bij de keuze of haalt hem eraf; anders schuift de keuze mee.
+   */
+  const beginSleep = useCallback((e: ReactPointerEvent, id: string | null, leden?: readonly string[]) => {
+    vlak.current?.focus({ preventScroll: true });
+    if (ctrl(e)) {
+      // Ctrl+klik: erbij of eraf; bij een groep al zijn leden tegelijk.
+      const ids = leden ?? (id ? [id] : []);
+      const k = new Set(keuzeRef.current);
+      const allemaal = ids.length > 0 && ids.every((x) => k.has(x));
+      for (const x of ids) {
+        if (allemaal) k.delete(x);
+        else k.add(x);
       }
-      // Een node buiten de keuze: alleen die. Een node in de keuze: de hele keuze schuift.
-      const keuzeNu = keuzeRef.current.has(node.id) ? keuzeRef.current : new Set([node.id]);
-      if (keuzeNu !== keuzeRef.current) zetKeuze(keuzeNu);
-      setLijn(null);
+      zetKeuze(k);
+      return;
+    }
+    // Een groep: zijn leden. Een node of tekst buiten de keuze: alleen die. Erin: de hele keuze.
+    const keuzeNu = leden ? new Set(leden) : keuzeRef.current.has(id!) ? keuzeRef.current : new Set([id!]);
+    if (keuzeNu !== keuzeRef.current) zetKeuze(keuzeNu);
+    setLijn(null);
+    {
       const begin = { x: e.clientX, y: e.clientY };
       let d = { dx: 0, dy: 0 };
       let bewogen = false;
@@ -436,7 +479,11 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       window.addEventListener("pointermove", beweeg);
       window.addEventListener("pointerup", klaar);
       window.addEventListener("pointercancel", klaar);
-    },
+    }
+  }, [huidig, zet, zetKeuze]);
+
+  const acties = useMemo<NodeActies>(() => ({
+    beginSlepen: (e, node) => beginSleep(e, node.id),
     beginTrekken: (e, node, kant, naam) => {
       if (e.button !== 0) return;
       e.stopPropagation();
@@ -492,13 +539,55 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       k.delete(nodeId);
       zetKeuze(k);
     },
-    zetVerborgen: (ids, verborgen) => zet(zetVerborgen(huidig(), ids, verborgen)),
+    zetVerborgen: (ids, verborgen) => {
+      // Het oogje van een gekozen node geldt voor de hele keuze.
+      const k = keuzeRef.current;
+      const voor = ids.length === 1 && k.has(ids[0]) && k.size > 1
+        ? huidig().nodes.filter((n) => k.has(n.id) && n.soort !== "bekijken").map((n) => n.id)
+        : ids;
+      zet(zetVerborgen(huidig(), voor, verborgen));
+    },
     zetSchuif: (nodeId, open) => zet(zetSchuif(huidig(), nodeId, open)),
     hernoem: (nodeId) => {
       setHernoemId(nodeId);
       if (nodeId === null) vlak.current?.focus({ preventScroll: true });
     },
-  }), [huidig, opVlak, zet, zetKeuze]);
+  }), [beginSleep, huidig, opVlak, zet, zetKeuze]);
+
+  const groepActies = useMemo<GroepActies>(() => ({
+    beginSlepen: (e, groep) => beginSleep(e, null, groep.leden),
+    wisselIngeklapt: (groepId) => zet(wisselIngeklapt(huidig(), groepId)),
+    zetNaam: (groepId, naam) => zet(zetGroepNaam(huidig(), groepId, naam)),
+    hernoem: (groepId) => {
+      setHernoemGroep(groepId);
+      if (groepId === null) vlak.current?.focus({ preventScroll: true });
+    },
+  }), [beginSleep, huidig, zet]);
+
+  const tekstActies = useMemo<TekstActies>(() => ({
+    beginSlepen: (e, tekstId) => beginSleep(e, tekstId),
+    zet: (tekstId, wat, sleutel) => zet(zetTekst(huidig(), tekstId, wat), sleutel ? `tekst:${tekstId}:${sleutel}` : undefined),
+    beginBreedte: (e, tekst) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const begin = e.clientX;
+      let breedte = tekst.breedte;
+      const beweeg = (m: PointerEvent) => {
+        breedte = Math.max(MIN_BREEDTE, Math.round(tekst.breedte + (m.clientX - begin) / beeldRef.current.z));
+        setTekstBreedte({ id: tekst.id, breedte });
+      };
+      const klaar = () => {
+        window.removeEventListener("pointermove", beweeg);
+        window.removeEventListener("pointerup", klaar);
+        window.removeEventListener("pointercancel", klaar);
+        if (breedte !== tekst.breedte) zet(zetTekst(huidig(), tekst.id, { breedte }));
+        setTekstBreedte(null);
+      };
+      window.addEventListener("pointermove", beweeg);
+      window.addEventListener("pointerup", klaar);
+      window.addEventListener("pointercancel", klaar);
+    },
+  }), [beginSleep, huidig, zet]);
 
   const voegToe = useCallback((soort: NodeSoort, m: Menu) => {
     const r = voegNodeToe(huidig(), soort, Math.round(m.vlakX), Math.round(m.vlakY));
@@ -538,6 +627,38 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     voegToe(soort, { x: 0, y: 0, vlakX: plek.x, vlakY: plek.y });
   };
 
+  // ── Groepen en losse teksten ───────────────────────────────────────────────
+
+  /** Ctrl+G: een groep om de keuze (twee of meer), met de naam meteen in bewerking. */
+  const groepeerKeuze = () => {
+    const k = [...keuzeRef.current];
+    if (k.length < 2) return;
+    const r = groepeer(huidig(), k, t("graaf.groep.nieuw"));
+    zet(r.graaf);
+    setHernoemGroep(r.id);
+  };
+
+  /** Ctrl+Shift+G: de groepen waar iets uit de keuze in zit, opheffen. */
+  const hefGroepenOp = () => {
+    const k = keuzeRef.current;
+    let g = huidig();
+    for (const gr of g.groepen ?? []) if (gr.leden.some((l) => k.has(l))) g = hefGroepOp(g, gr.id);
+    if (g !== huidig()) zet(g);
+  };
+
+  /** T of het menu: een tekstblok op deze plek, met de cursor in de titel. */
+  const tekstHier = (p: { x: number; y: number }) => {
+    const r = voegTekstToe(huidig(), Math.round(p.x), Math.round(p.y));
+    zet(r.graaf);
+    zetKeuze(new Set([r.id]));
+    setFocusTekst(r.id);
+  };
+
+  const bewerkTekst = (id: string) => {
+    setFocusTekst(null);
+    requestAnimationFrame(() => setFocusTekst(id));
+  };
+
   // ── Het rechtsklikmenu ──────────────────────────────────────────────────────
 
   /** Opent het menu voor wat er onder de muis ligt: een node (of de keuze), een verbinding of een lege plek. */
@@ -551,6 +672,56 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     const kaart = doel.closest<HTMLElement>("[data-graaf-node]");
     const lijnEl = doel.closest<SVGElement>(".graaf-lijn-raak");
     if (doel.closest(".graaf-balk, .graaf-zoekmenu, .graaf-leeg")) return;
+
+    const groepEl = doel.closest<HTMLElement>("[data-graaf-groep]");
+    const groep = groepEl?.dataset.graafGroep ? g.groepen?.find((x) => x.id === groepEl.dataset.graafGroep) : undefined;
+    if (groep) {
+      zetKeuze(new Set(groep.leden));
+      setContextmenu({
+        x,
+        y,
+        titel: groep.naam,
+        items: [
+          { tekst: t("graaf.menu.hernoemen"), actie: () => setHernoemGroep(groep.id) },
+          { tekst: t(groep.ingeklapt ? "graaf.groep.uitklappen" : "graaf.groep.inklappen"), actie: () => zet(wisselIngeklapt(huidig(), groep.id)) },
+          { tekst: t("graaf.menu.opheffen"), toets: "Ctrl+Shift+G", actie: () => zet(hefGroepOp(huidig(), groep.id)) },
+          "streep",
+          {
+            tekst: t("graaf.menu.metInhoudWeg"),
+            gevaar: true,
+            actie: () => {
+              zet(verwijderKeuze(huidig(), groep.leden));
+              zetKeuze(new Set());
+            },
+          },
+        ],
+      });
+      return;
+    }
+
+    const tekstEl = doel.closest<HTMLElement>("[data-graaf-tekst]");
+    const tekstId = tekstEl?.dataset.graafTekst;
+    if (tekstId) {
+      if (!keuzeRef.current.has(tekstId)) zetKeuze(new Set([tekstId]));
+      setContextmenu({
+        x,
+        y,
+        items: [
+          { tekst: t("graaf.menu.tekstBewerken"), actie: () => bewerkTekst(tekstId) },
+          "streep",
+          {
+            tekst: t("graaf.menu.verwijderen"),
+            toets: "Del",
+            gevaar: true,
+            actie: () => {
+              zet(verwijderKeuze(huidig(), [...(keuzeRef.current.has(tekstId) ? keuzeRef.current : [tekstId])]));
+              zetKeuze(new Set());
+            },
+          },
+        ],
+      });
+      return;
+    }
 
     if (kaart?.dataset.graafNode) {
       // Een node buiten de keuze: eerst alleen die kiezen.
@@ -585,6 +756,7 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
               zetKeuze(new Set(d.ids));
             },
           },
+          { tekst: t("graaf.menu.groeperen"), toets: "Ctrl+G", uit: ids.length < 2, actie: groepeerKeuze },
           "streep",
           {
             tekst: t("graaf.menu.uitleg"),
@@ -642,6 +814,7 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       y,
       items: [
         { tekst: t("graaf.menu.nodeToevoegen"), actie: () => setMenu({ x, y, vlakX: p.x, vlakY: p.y }) },
+        { tekst: t("graaf.menu.tekstHier"), toets: "T", actie: () => tekstHier(p) },
         {
           tekst: t("graaf.menu.plakken"),
           toets: "Ctrl+V",
@@ -653,7 +826,7 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
             zetKeuze(new Set(u.ids));
           },
         },
-        { tekst: t("graaf.menu.allesKiezen"), toets: "Ctrl+A", actie: () => zetKeuze(new Set(huidig().nodes.map((n) => n.id))) },
+        { tekst: t("graaf.menu.allesKiezen"), toets: "Ctrl+A", actie: () => zetKeuze(new Set([...huidig().nodes.map((n) => n.id), ...(huidig().teksten ?? []).map((x) => x.id)])) },
         { tekst: t("graaf.menu.passend"), actie: passend },
       ],
     });
@@ -700,7 +873,16 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       setLijn(null);
     } else if (ctrl(e) && e.key.toLowerCase() === "a") {
       e.preventDefault();
-      zetKeuze(new Set(huidig().nodes.map((n) => n.id)));
+      zetKeuze(new Set([...huidig().nodes.map((n) => n.id), ...(huidig().teksten ?? []).map((x) => x.id)]));
+    } else if (ctrl(e) && e.key.toLowerCase() === "g") {
+      e.preventDefault();
+      if (e.shiftKey) hefGroepenOp();
+      else groepeerKeuze();
+    } else if (!ctrl(e) && !e.altKey && e.key.toLowerCase() === "t") {
+      e.preventDefault();
+      const v = vlak.current!;
+      const r = v.getBoundingClientRect();
+      tekstHier(muis.current ?? opVlak(r.left + v.clientWidth / 2, r.top + v.clientHeight / 2));
     } else if (e.key === "F2" && k.size === 1) {
       e.preventDefault();
       setHernoemId([...k][0]);
@@ -757,13 +939,20 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       zet(uit.graaf);
       zetKeuze(new Set(uit.ids));
     };
+    // WebKit (macOS) zet Kopiëren en Plakken in het menu uit zonder tekstselectie, tenzij
+    // een before-event wordt afgevangen; dan komt Cmd+C/V hier toch aan.
+    const toestaan = (e: Event) => {
+      if (opHetVlak()) e.preventDefault();
+    };
     document.addEventListener("copy", opCopy);
     document.addEventListener("cut", opCut);
     document.addEventListener("paste", opPaste);
+    for (const t of ["beforecopy", "beforecut", "beforepaste"]) document.addEventListener(t, toestaan);
     return () => {
       document.removeEventListener("copy", opCopy);
       document.removeEventListener("cut", opCut);
       document.removeEventListener("paste", opPaste);
+      for (const t of ["beforecopy", "beforecut", "beforepaste"]) document.removeEventListener(t, toestaan);
     };
   }, [huidig, opVlak, zet, zetKeuze]);
 
@@ -773,10 +962,35 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     ? graaf.nodes.map((n) => (keuze.has(n.id) ? { ...n, x: n.x + verschuiving.dx, y: n.y + verschuiving.dy } : n))
     : graaf.nodes;
   const opId = new Map(nodes.map((n) => [n.id, n]));
+  const poorten = new Map(nodes.map((n) => [n.id, uitkomst.nodes[n.id]?.poorten ?? poortenVan(n)]));
+  /** De teksten zoals getoond: verschoven tijdens het slepen, met de breedte tijdens het slepen aan de rand. */
+  const teksten = (graaf.teksten ?? []).map((tk) => ({
+    tk,
+    x: tk.x + (verschuiving && keuze.has(tk.id) ? verschuiving.dx : 0),
+    y: tk.y + (verschuiving && keuze.has(tk.id) ? verschuiving.dy : 0),
+    breedte: tekstBreedte?.id === tk.id ? tekstBreedte.breedte : tk.breedte,
+  }));
+  /** Plek en maat van elke node en tekst, voor de kaders van groepen; zonder meting een schatting. */
+  const plekMaten = new Map<string, Maat>([
+    ...nodes.map((n): [string, Maat] => [n.id, { x: n.x, y: n.y, b: gemeten.get(n.id)?.b ?? nodeBreedte(n), h: gemeten.get(n.id)?.h ?? 60 }]),
+    ...teksten.map((t2): [string, Maat] => [t2.tk.id, { x: t2.x, y: t2.y, b: t2.breedte, h: gemeten.get(t2.tk.id)?.h ?? 40 }]),
+  ]);
+  /** Wat in een ingeklapte groep zit, staat niet op het vlak. */
+  const weg = new Set((graaf.groepen ?? []).filter((g) => g.ingeklapt).flatMap((g) => g.leden));
+  const groepen = (graaf.groepen ?? []).flatMap((g) => {
+    const maat = g.ingeklapt ? ingeklaptKaart(g, plekMaten) : groepKader(g, plekMaten);
+    return maat ? [{ g, maat, gekozen: g.leden.every((l) => keuze.has(l)) }] : [];
+  });
+  /** Waar een verbinding aan een poort hangt; een node in een ingeklapte groep: aan de rand van de kaart. */
+  const poortOpVlak = (id: string, kant: "in" | "uit", poort: string) =>
+    zichtbarePoortPlek(graaf, opId.get(id)!, poorten.get(id)!, kant, poort, plekMaten);
   /** De node zoals in het project: de kaart krijgt hem ongewijzigd, voor memo. */
   const origineel = new Map(graaf.nodes.map((n) => [n.id, n]));
-  const poorten = new Map(nodes.map((n) => [n.id, uitkomst.nodes[n.id]?.poorten ?? poortenVan(n)]));
-  const actief = actieveVerbindingen(graaf, poorten);
+  /** De verbindingen die meedoen, zonder die binnen één ingeklapte groep. */
+  const actief = actieveVerbindingen(graaf, poorten).filter((v) => {
+    const g = ingeklaptVan(graaf, v.vanNode);
+    return !g || !g.leden.includes(v.naarNode);
+  });
   /** De kleur van een verbinding: die van de waarde aan zijn begin. */
   const lijnKleur = (v: GraafVerbinding) => waardeKleur(uitkomst.nodes[v.vanNode]?.waarden[v.vanPoort]);
   const verbondenMet = (nodeId: string) =>
@@ -788,12 +1002,19 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     const hier = menuLijn?.naarNode === v.naarNode && menuLijn.naarPoort === v.naarPoort;
     if (!v.label && !hier) return [];
     const w = uitkomst.nodes[v.vanNode]?.waarden[v.vanPoort];
-    const a = poortPlek(opId.get(v.vanNode)!, poorten.get(v.vanNode)!, "uit", v.vanPoort);
-    const b = poortPlek(opId.get(v.naarNode)!, poorten.get(v.naarNode)!, "in", v.naarPoort);
+    const a = poortOpVlak(v.vanNode, "uit", v.vanPoort);
+    const b = poortOpVlak(v.naarNode, "in", v.naarPoort);
     if (!a || !b) return [];
     const m = verbindingMidden(a, b);
     const tekst = w === undefined ? "—" : waardeTekst(w);
-    return [{ sleutel: `${v.naarNode} ${v.naarPoort}`, x: m.x, y: m.y, kleur: lijnKleur(v), tekst: tekst.length > 40 ? `${tekst.slice(0, 39)}…` : tekst }];
+    return [{ sleutel: `${v.naarNode}\u0000${v.naarPoort}`, x: m.x, y: m.y, kleur: lijnKleur(v), tekst: tekst.length > 40 ? `${tekst.slice(0, 39)}…` : tekst }];
+  });
+
+  // De maat van kaarten en tekstblokken na elke weergave: de kaders van groepen hangen ervan af.
+  useLayoutEffect(() => {
+    const nu = kaartMaten();
+    const zelfde = nu.size === gemeten.size && [...nu].every(([id, m]) => gemeten.get(id)?.b === m.b && gemeten.get(id)?.h === m.h);
+    if (!zelfde) setGemeten(nu);
   });
 
   const trekPad = (() => {
@@ -831,6 +1052,15 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
         backgroundPosition: `${beeld.x}px ${beeld.y}px`,
       }}
       onPointerDownCapture={opPointerDownCapture}
+      onScroll={(e) => {
+        // Een veld dat focus krijgt, scrolt het vlak mee; dan klopt geen muisplek meer
+        // (opVlak rekent vanaf de rand). Het vlak schuift alleen via het beeld.
+        const el = e.currentTarget;
+        if (el.scrollTop || el.scrollLeft) {
+          el.scrollTop = 0;
+          el.scrollLeft = 0;
+        }
+      }}
       onPointerDown={opPointerDown}
       onPointerMove={(e) => {
         muis.current = opVlak(e.clientX, e.clientY);
@@ -842,7 +1072,7 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       onContextMenu={(e) => e.preventDefault()}
       onKeyDown={opToets}
       onDoubleClick={(e) => {
-        if ((e.target as HTMLElement).closest("[data-graaf-node], .graaf-balk, .graaf-leeg")) return;
+        if ((e.target as HTMLElement).closest(ZELF_KLIK)) return;
         const r = vlak.current!.getBoundingClientRect();
         const p = opVlak(e.clientX, e.clientY);
         setMenu({ x: e.clientX - r.left, y: e.clientY - r.top, vlakX: p.x, vlakY: p.y });
@@ -852,10 +1082,13 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       {geen3d && uitkomst.geometrie.length > 0 && <div className="graaf-3d-projectie" dangerouslySetInnerHTML={{ __html: drieDSvg(scene) }} />}
 
       <div className="graaf-laag" style={{ transform: `translate(${beeld.x}px, ${beeld.y}px) scale(${beeld.z})` }}>
+        {groepen.filter(({ g }) => !g.ingeklapt).map(({ g, maat, gekozen }) => (
+          <GraafGroepKader key={g.id} groep={g} maat={maat} gekozen={gekozen} hernoemt={hernoemGroep === g.id} acties={groepActies} />
+        ))}
         <svg className="graaf-lijnen" width="1" height="1" aria-hidden="true">
           {actief.map((v) => {
-            const a = poortPlek(opId.get(v.vanNode)!, poorten.get(v.vanNode)!, "uit", v.vanPoort);
-            const b = poortPlek(opId.get(v.naarNode)!, poorten.get(v.naarNode)!, "in", v.naarPoort);
+            const a = poortOpVlak(v.vanNode, "uit", v.vanPoort);
+            const b = poortOpVlak(v.naarNode, "in", v.naarPoort);
             if (!a || !b) return null;
             const d = verbindingPad(a, b);
             const dezeGekozen = lijn?.naarNode === v.naarNode && lijn.naarPoort === v.naarPoort;
@@ -879,7 +1112,7 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
           })}
           {trekPad && <path d={trekPad} className="graaf-lijn trek" />}
         </svg>
-        {nodes.map((n) => (
+        {nodes.filter((n) => !weg.has(n.id)).map((n) => (
           <GraafNodeKaart
             key={n.id}
             node={origineel.get(n.id)!}
@@ -892,6 +1125,12 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
             hernoemt={hernoemId === n.id}
             acties={acties}
           />
+        ))}
+        {teksten.filter(({ tk }) => !weg.has(tk.id)).map(({ tk, x, y, breedte }) => (
+          <GraafTekstBlok key={tk.id} tekst={tk} x={x} y={y} breedte={breedte} gekozen={keuze.has(tk.id)} focus={focusTekst === tk.id} acties={tekstActies} />
+        ))}
+        {groepen.filter(({ g }) => g.ingeklapt).map(({ g, maat, gekozen }) => (
+          <GraafGroepKader key={g.id} groep={g} maat={maat} gekozen={gekozen} hernoemt={hernoemGroep === g.id} acties={groepActies} />
         ))}
         {labels.map((l) => (
           <div key={l.sleutel} className="graaf-label" style={{ left: l.x, top: l.y, "--lijn": l.kleur } as CSSProperties}>{l.tekst}</div>
