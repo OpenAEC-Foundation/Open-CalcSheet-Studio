@@ -713,6 +713,7 @@
       "cirkel": "This node is part of a cycle: its result depends on itself.",
       "ingangOntbreekt": "Input {{naam}} is missing.",
       "ingangZonderWaarde": "Input {{naam}} has no value: the node before it does not calculate.",
+      "uitgeschakeld": "Switched off: this node does not calculate.",
       "uitgangZonderWaarde": "Output {{naam}} has no value.",
       "veld": "{{naam}}: {{tekst}}",
       "reken": "{{tekst}}",

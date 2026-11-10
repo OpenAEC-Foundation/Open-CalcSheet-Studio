@@ -121,12 +121,14 @@ function graafAttribuut(g: GraafGegevens) {
     versie: g.versie,
     nodes: g.nodes.map(({ invoer, ...n }) => ({ ...n, ...(invoer ? { invoer: paren(invoer) } : {}) })),
     verbindingen: g.verbindingen,
+    ...(g.groepen?.length ? { groepen: g.groepen } : {}),
+    ...(g.teksten?.length ? { teksten: g.teksten } : {}),
   };
 }
 
 /** De graaf uit een attribuut; het model leest hem daarna nog na (leesGraaf). */
 function graafUitAttribuut(x: unknown): GraafGegevens | undefined {
-  const g = x as { versie?: unknown; nodes?: unknown; verbindingen?: unknown } | undefined;
+  const g = x as { versie?: unknown; nodes?: unknown; verbindingen?: unknown; groepen?: unknown; teksten?: unknown } | undefined;
   if (!g || !Array.isArray(g.nodes)) return undefined;
   return {
     versie: typeof g.versie === 'number' ? g.versie : 1,
@@ -135,6 +137,8 @@ function graafUitAttribuut(x: unknown): GraafGegevens | undefined {
       return { ...rest, ...(invoer ? { invoer: uitParen(invoer) } : {}) };
     }),
     verbindingen: Array.isArray(g.verbindingen) ? (g.verbindingen as GraafGegevens['verbindingen']) : [],
+    ...(Array.isArray(g.groepen) ? { groepen: g.groepen as NonNullable<GraafGegevens['groepen']> } : {}),
+    ...(Array.isArray(g.teksten) ? { teksten: g.teksten as NonNullable<GraafGegevens['teksten']> } : {}),
   };
 }
 
