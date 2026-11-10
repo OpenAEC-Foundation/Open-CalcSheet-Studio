@@ -5,9 +5,10 @@
  * geen thema.
  */
 import { uitkomstVerborgen, type Graaf, type GraafNode } from "./model.ts";
-import { KOP_HOOGTE, RIJ_HOOGTE, nodeBreedte, poortPlek, poortenVan, veldSleutel, verbindingPad, type Poorten } from "./nodes.ts";
+import { KOP_HOOGTE, RIJ_HOOGTE, nodeBreedte, poortPlek, poortenVan, veldSleutel, verbindingMidden, verbindingPad, type Poorten } from "./nodes.ts";
 import { actieveVerbindingen, type GraafMelding, type GraafUitkomst } from "./rekenen.ts";
 import { voorbeeldVan } from "./voorbeeld.ts";
+import { waardeTekst } from "./waarde.ts";
 
 export interface PapierTeksten {
   naamVan: (node: GraafNode) => string;
@@ -95,6 +96,10 @@ function tekenNode(node: GraafNode, poorten: Poorten, uitkomst: GraafUitkomst, v
   const onder: string[] = [];
   y += 4;
   const beginOnder = y;
+  for (const m of u?.meldingen.filter((x) => x.code === "uitgeschakeld") ?? []) {
+    y += REGEL;
+    onder.push(tekst(8, y - 4, kort(t.melding(m, node), b - 16), { kleur: KLEUR.zacht }));
+  }
   for (const f of u?.fouten ?? []) {
     y += REGEL;
     onder.push(tekst(8, y - 4, kort(t.melding(f, node), b - 16), { kleur: KLEUR.fout }));
@@ -120,7 +125,9 @@ function tekenNode(node: GraafNode, poorten: Poorten, uitkomst: GraafUitkomst, v
   const kader =
     `<rect x="0" y="0" width="${b}" height="${hoogte}" rx="4" fill="#fff" stroke="${KLEUR.rand}"/>` +
     `<path d="M 0 ${KOP_HOOGTE} V 4 Q 0 0 4 0 H ${b - 4} Q ${b} 0 ${b} 4 V ${KOP_HOOGTE} Z" fill="${KLEUR.kop}" stroke="${KLEUR.rand}"/>`;
-  return { svg: `<g transform="translate(${node.x} ${node.y})">${kader}${delen.join("")}</g>`, hoogte };
+  // Uitgeschakeld: de hele node half doorzichtig, zoals op het scherm.
+  const uit = node.uit ? ' opacity="0.5"' : "";
+  return { svg: `<g transform="translate(${node.x} ${node.y})"${uit}>${kader}${delen.join("")}</g>`, hoogte };
 }
 
 export function graafSvg(graaf: Graaf, uitkomst: GraafUitkomst, t: PapierTeksten): GraafSvg {
@@ -133,7 +140,19 @@ export function graafSvg(graaf: Graaf, uitkomst: GraafUitkomst, t: PapierTeksten
   const lijnen = actief.flatMap((v) => {
     const a = poortPlek(opId.get(v.vanNode)!, poorten.get(v.vanNode)!, "uit", v.vanPoort);
     const b = poortPlek(opId.get(v.naarNode)!, poorten.get(v.naarNode)!, "in", v.naarPoort);
-    return a && b ? [`<path d="${verbindingPad(a, b)}" fill="none" stroke="${KLEUR.lijn}" stroke-width="1.2"/>`] : [];
+    if (!a || !b) return [];
+    const pad = `<path d="${verbindingPad(a, b)}" fill="none" stroke="${KLEUR.lijn}" stroke-width="1.2"/>`;
+    // Een blijvend label: de waarde op het midden van de lijn, op een wit vlakje.
+    const w = v.label ? uitkomst.nodes[v.vanNode]?.waarden[v.vanPoort] : undefined;
+    if (w === undefined) return [pad];
+    const m = verbindingMidden(a, b);
+    const label = kort(waardeTekst(w), 160);
+    const breed = label.length * TEKEN_BREEDTE + 10;
+    return [
+      pad,
+      `<rect x="${m.x - breed / 2}" y="${m.y - 9}" width="${breed}" height="16" rx="8" fill="#fff" stroke="${KLEUR.lijn}" stroke-width="0.8"/>`,
+      `<text x="${m.x}" y="${m.y + 3}" text-anchor="middle" fill="${KLEUR.tekst}">${esc(label)}</text>`,
+    ];
   });
 
   let x0 = Infinity;

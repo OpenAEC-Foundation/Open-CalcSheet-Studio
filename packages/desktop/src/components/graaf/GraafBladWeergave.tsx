@@ -7,14 +7,16 @@ import { drieDSvg } from "@ifc-calc/core";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import {
   dupliceer, kopieerKeuze, legeGraaf, ontkoppel, plak, uitkomstVerborgen, verbind, verplaatsKeuze, verwijderKeuze, voegNodeToe, wisselGeheel,
-  zetInvoer, zetNodeNaam, zetSchuif, zetVerborgen,
-  type Graaf, type GraafVerbinding, type NodeSoort,
+  wisselLabel, zetInvoer, zetNodeNaam, zetSchuif, zetUit, zetVerborgen,
+  type Graaf, type GraafStuk, type GraafVerbinding, type NodeSoort,
 } from "../../graaf/model";
+import { waardeTekst } from "../../graaf/waarde";
+import { GraafMenu, type MenuItem } from "./GraafMenu";
 import { leesStuk, stukAlsTekst } from "../../graaf/klembord";
 import { voegRecentToe } from "../../graaf/recent";
 import { waardeKleur } from "./graafKleur";
 import { GraafCatalogus, SLEEP_TYPE } from "./GraafCatalogus";
-import { poortPlek, poortenVan, verbindingPad } from "../../graaf/nodes";
+import { nodeDef, poortPlek, poortenVan, verbindingMidden, verbindingPad } from "../../graaf/nodes";
 import { actieveVerbindingen, rekenGraaf } from "../../graaf/rekenen";
 import { graafScene } from "../../graaf/scene";
 import { voorbeeldGraaf } from "../../graaf/voorbeeldGraaf";
@@ -125,7 +127,22 @@ interface Menu {
   vlakY: number;
   /** De poort waarvan de verbinding kwam: de nieuwe node wordt erop aangesloten. */
   koppel?: { kant: "in" | "uit"; node: string; poort: string };
+  /** "Node ertussen": de nieuwe node komt in deze verbinding. */
+  tussen?: GraafVerbinding;
 }
+
+/** Het rechtsklikmenu dat openstaat, met de plek in het vlak. */
+interface Contextmenu {
+  x: number;
+  y: number;
+  titel?: string;
+  items: MenuItem[];
+  /** Bij een verbinding: zijn waarde staat op de lijn zolang het menu open is. */
+  lijn?: Lijn;
+}
+
+/** Het laatst gekopieerde stuk, voor "Plakken" in het menu (het klembord lezen mag niet zomaar). */
+let laatsteStuk: GraafStuk | null = null;
 
 /** Kop van het paneel: hoeveel er op het vlak staat. */
 export function GraafBladInfo({ ex }: { ex: Exemplaar }) {
@@ -163,6 +180,9 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
   const muis = useRef<{ x: number; y: number } | null>(null);
   const [catalogus, setCatalogus] = useState(leesCatalogusOpen);
   const [aangewezen, setAangewezen] = useState<NodeSoort | null>(null);
+  /** De node waarvan de naam in bewerking staat (dubbelklik, F2, het menu). */
+  const [hernoemId, setHernoemId] = useState<string | null>(null);
+  const [contextmenu, setContextmenu] = useState<Contextmenu | null>(null);
   const zoekRef = useRef<HTMLInputElement>(null);
   const wisselCatalogus = (open: boolean) => {
     setCatalogus(open);
@@ -352,12 +372,20 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     if (menu) setMenu(null);
     if (e.button === 1 || e.button === 2) {
       e.preventDefault();
+      // Slepen schuift het vlak; rechts klikken zonder te bewegen opent het menu.
       const begin = { x: e.clientX, y: e.clientY, b: beeldRef.current };
-      const beweeg = (m: PointerEvent) => zetBeeld({ ...begin.b, x: begin.b.x + m.clientX - begin.x, y: begin.b.y + m.clientY - begin.y });
-      const klaar = () => {
+      const rechts = e.button === 2;
+      let schuift = false;
+      const beweeg = (m: PointerEvent) => {
+        if (!schuift && Math.hypot(m.clientX - begin.x, m.clientY - begin.y) < 4) return;
+        schuift = true;
+        zetBeeld({ ...begin.b, x: begin.b.x + m.clientX - begin.x, y: begin.b.y + m.clientY - begin.y });
+      };
+      const klaar = (m: PointerEvent) => {
         window.removeEventListener("pointermove", beweeg);
         window.removeEventListener("pointerup", klaar);
         window.removeEventListener("pointercancel", klaar);
+        if (rechts && !schuift && m.type === "pointerup") openMenu(doel, m.clientX, m.clientY);
       };
       window.addEventListener("pointermove", beweeg);
       window.addEventListener("pointerup", klaar);
@@ -466,12 +494,23 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     },
     zetVerborgen: (ids, verborgen) => zet(zetVerborgen(huidig(), ids, verborgen)),
     zetSchuif: (nodeId, open) => zet(zetSchuif(huidig(), nodeId, open)),
+    hernoem: (nodeId) => {
+      setHernoemId(nodeId);
+      if (nodeId === null) vlak.current?.focus({ preventScroll: true });
+    },
   }), [huidig, opVlak, zet, zetKeuze]);
 
   const voegToe = useCallback((soort: NodeSoort, m: Menu) => {
     const r = voegNodeToe(huidig(), soort, Math.round(m.vlakX), Math.round(m.vlakY));
     let g = r.graaf;
-    if (m.koppel) {
+    if (m.tussen) {
+      // Node ertussen: de oude verbinding gaat via de nieuwe node.
+      const nieuw = g.nodes.find((n) => n.id === r.id)!;
+      const p = poortenVan(nieuw);
+      g = ontkoppel(g, m.tussen.naarNode, m.tussen.naarPoort);
+      if (p.ingangen[0]) g = verbind(g, { vanNode: m.tussen.vanNode, vanPoort: m.tussen.vanPoort, naarNode: r.id, naarPoort: p.ingangen[0].naam });
+      if (p.uitgangen[0]) g = verbind(g, { vanNode: r.id, vanPoort: p.uitgangen[0], naarNode: m.tussen.naarNode, naarPoort: m.tussen.naarPoort });
+    } else if (m.koppel) {
       const nieuw = g.nodes.find((n) => n.id === r.id)!;
       const p = poortenVan(nieuw);
       if (m.koppel.kant === "uit" && p.ingangen[0]) {
@@ -497,6 +536,127 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     const midden = opVlak(r.left + v.clientWidth / 2 - 100, r.top + v.clientHeight / 3);
     const plek = naast && kaart ? { x: naast.x + kaart.offsetWidth + 40, y: naast.y } : midden;
     voegToe(soort, { x: 0, y: 0, vlakX: plek.x, vlakY: plek.y });
+  };
+
+  // ── Het rechtsklikmenu ──────────────────────────────────────────────────────
+
+  /** Opent het menu voor wat er onder de muis ligt: een node (of de keuze), een verbinding of een lege plek. */
+  const openMenu = (doel: HTMLElement, clientX: number, clientY: number) => {
+    const v = vlak.current!;
+    const r = v.getBoundingClientRect();
+    const x = clientX - r.left;
+    const y = clientY - r.top;
+    const p = opVlak(clientX, clientY);
+    const g = huidig();
+    const kaart = doel.closest<HTMLElement>("[data-graaf-node]");
+    const lijnEl = doel.closest<SVGElement>(".graaf-lijn-raak");
+    if (doel.closest(".graaf-balk, .graaf-zoekmenu, .graaf-leeg")) return;
+
+    if (kaart?.dataset.graafNode) {
+      // Een node buiten de keuze: eerst alleen die kiezen.
+      const id = kaart.dataset.graafNode;
+      const keuzeNu = keuzeRef.current.has(id) ? keuzeRef.current : new Set([id]);
+      if (keuzeNu !== keuzeRef.current) zetKeuze(keuzeNu);
+      const ids = [...keuzeNu];
+      const nodes = g.nodes.filter((n) => keuzeNu.has(n.id));
+      const node = g.nodes.find((n) => n.id === id)!;
+      const metOog = nodes.filter((n) => n.soort !== "bekijken");
+      const ietsTeZien = metOog.some((n) => !uitkomstVerborgen(n));
+      const allesUit = nodes.every((n) => n.uit);
+      setContextmenu({
+        x,
+        y,
+        titel: ids.length > 1 ? t("graaf.menu.keuze", { count: ids.length }) : nodeNaam(t, node),
+        items: [
+          { tekst: t("graaf.menu.hernoemen"), toets: "F2", uit: ids.length > 1, actie: () => setHernoemId(id) },
+          {
+            tekst: t(ietsTeZien ? "graaf.menu.uitkomstVerbergen" : "graaf.menu.uitkomstTonen"),
+            toets: "H",
+            uit: metOog.length === 0,
+            actie: () => zet(zetVerborgen(huidig(), metOog.map((n) => n.id), ietsTeZien)),
+          },
+          { tekst: t(allesUit ? "graaf.menu.inschakelen" : "graaf.menu.uitschakelen"), actie: () => zet(zetUit(huidig(), ids, !allesUit)) },
+          {
+            tekst: t("graaf.menu.dupliceren"),
+            toets: "Ctrl+D",
+            actie: () => {
+              const d = dupliceer(huidig(), ids);
+              zet(d.graaf);
+              zetKeuze(new Set(d.ids));
+            },
+          },
+          "streep",
+          {
+            tekst: t("graaf.menu.uitleg"),
+            uit: !nodeDef(node.soort),
+            actie: () => {
+              wisselCatalogus(true);
+              setAangewezen(node.soort as NodeSoort);
+            },
+          },
+          "streep",
+          {
+            tekst: t("graaf.menu.verwijderen"),
+            toets: "Del",
+            gevaar: true,
+            actie: () => {
+              zet(verwijderKeuze(huidig(), ids));
+              zetKeuze(new Set());
+            },
+          },
+        ],
+      });
+      return;
+    }
+
+    if (lijnEl?.dataset.naarNode && lijnEl.dataset.naarPoort) {
+      const verbinding = g.verbindingen.find((a) => a.naarNode === lijnEl.dataset.naarNode && a.naarPoort === lijnEl.dataset.naarPoort);
+      if (!verbinding) return;
+      const l = { naarNode: verbinding.naarNode, naarPoort: verbinding.naarPoort };
+      zetKeuze(new Set());
+      setLijn(l);
+      setContextmenu({
+        x,
+        y,
+        lijn: l,
+        items: [
+          { tekst: t(verbinding.label ? "graaf.menu.labelVerbergen" : "graaf.menu.labelTonen"), actie: () => zet(wisselLabel(huidig(), l.naarNode, l.naarPoort)) },
+          { tekst: t("graaf.menu.ertussen"), actie: () => setMenu({ x, y, vlakX: p.x, vlakY: p.y, tussen: verbinding }) },
+          "streep",
+          {
+            tekst: t("graaf.menu.lijnWeg"),
+            toets: "Del",
+            gevaar: true,
+            actie: () => {
+              zet(ontkoppel(huidig(), l.naarNode, l.naarPoort));
+              setLijn(null);
+            },
+          },
+        ],
+      });
+      return;
+    }
+
+    setContextmenu({
+      x,
+      y,
+      items: [
+        { tekst: t("graaf.menu.nodeToevoegen"), actie: () => setMenu({ x, y, vlakX: p.x, vlakY: p.y }) },
+        {
+          tekst: t("graaf.menu.plakken"),
+          toets: "Ctrl+V",
+          uit: !laatsteStuk,
+          actie: () => {
+            if (!laatsteStuk) return;
+            const u = plak(huidig(), laatsteStuk, Math.round(p.x), Math.round(p.y));
+            zet(u.graaf);
+            zetKeuze(new Set(u.ids));
+          },
+        },
+        { tekst: t("graaf.menu.allesKiezen"), toets: "Ctrl+A", actie: () => zetKeuze(new Set(huidig().nodes.map((n) => n.id))) },
+        { tekst: t("graaf.menu.passend"), actie: passend },
+      ],
+    });
   };
 
   /** Het zoekmenu midden in beeld, voor de knop in de balk. */
@@ -541,6 +701,9 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
     } else if (ctrl(e) && e.key.toLowerCase() === "a") {
       e.preventDefault();
       zetKeuze(new Set(huidig().nodes.map((n) => n.id)));
+    } else if (e.key === "F2" && k.size === 1) {
+      e.preventDefault();
+      setHernoemId([...k][0]);
     } else if (ctrl(e) && e.key.toLowerCase() === "f") {
       // Zoeken in de catalogus.
       e.preventDefault();
@@ -573,7 +736,8 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       const k = keuzeRef.current;
       if (!opHetVlak() || k.size === 0 || !e.clipboardData) return;
       e.preventDefault();
-      e.clipboardData.setData("text/plain", stukAlsTekst(kopieerKeuze(huidig(), [...k])));
+      laatsteStuk = kopieerKeuze(huidig(), [...k]);
+      e.clipboardData.setData("text/plain", stukAlsTekst(laatsteStuk));
       if (knip) {
         zet(verwijderKeuze(huidig(), [...k]));
         zetKeuze(new Set());
@@ -617,6 +781,20 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
   const lijnKleur = (v: GraafVerbinding) => waardeKleur(uitkomst.nodes[v.vanNode]?.waarden[v.vanPoort]);
   const verbondenMet = (nodeId: string) =>
     actief.filter((v) => v.naarNode === nodeId).map((v) => `${v.naarPoort}\t${lijnKleur(v) ?? ""}`).sort().join("\n");
+
+  /** De labels met de waarde op een lijn: blijvend (`label`), of zolang het menu van die lijn open is. */
+  const labels = actief.flatMap((v) => {
+    const menuLijn = contextmenu?.lijn;
+    const hier = menuLijn?.naarNode === v.naarNode && menuLijn.naarPoort === v.naarPoort;
+    if (!v.label && !hier) return [];
+    const w = uitkomst.nodes[v.vanNode]?.waarden[v.vanPoort];
+    const a = poortPlek(opId.get(v.vanNode)!, poorten.get(v.vanNode)!, "uit", v.vanPoort);
+    const b = poortPlek(opId.get(v.naarNode)!, poorten.get(v.naarNode)!, "in", v.naarPoort);
+    if (!a || !b) return [];
+    const m = verbindingMidden(a, b);
+    const tekst = w === undefined ? "—" : waardeTekst(w);
+    return [{ sleutel: `${v.naarNode} ${v.naarPoort}`, x: m.x, y: m.y, kleur: lijnKleur(v), tekst: tekst.length > 40 ? `${tekst.slice(0, 39)}…` : tekst }];
+  });
 
   const trekPad = (() => {
     if (!trek) return null;
@@ -687,6 +865,8 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
                 <path
                   d={d}
                   className="graaf-lijn-raak"
+                  data-naar-node={v.naarNode}
+                  data-naar-poort={v.naarPoort}
                   onPointerDown={(e) => {
                     if (e.button !== 0) return;
                     zetKeuze(new Set());
@@ -709,8 +889,12 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
             uitkomst={uitkomst.nodes[n.id]}
             verbonden={verbondenMet(n.id)}
             gekozen={keuze.has(n.id)}
+            hernoemt={hernoemId === n.id}
             acties={acties}
           />
+        ))}
+        {labels.map((l) => (
+          <div key={l.sleutel} className="graaf-label" style={{ left: l.x, top: l.y, "--lijn": l.kleur } as CSSProperties}>{l.tekst}</div>
         ))}
       </div>
 
@@ -761,6 +945,19 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
           <button type="button" className="pdf-vervang" onClick={laadVoorbeeld}>{t("graaf.voorbeeldLaden")}</button>
           <button type="button" className="pdf-vervang" onClick={() => void leesGrafBestandIn(id)} title={t("graaf.importerenUitleg")}>{t("graaf.importeren")}</button>
         </div>
+      )}
+
+      {contextmenu && (
+        <GraafMenu
+          x={contextmenu.x}
+          y={contextmenu.y}
+          titel={contextmenu.titel}
+          items={contextmenu.items}
+          onSluit={() => {
+            setContextmenu(null);
+            vlak.current?.focus({ preventScroll: true });
+          }}
+        />
       )}
 
       {menu && (
