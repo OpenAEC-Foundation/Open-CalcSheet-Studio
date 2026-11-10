@@ -339,7 +339,7 @@ interface GraafVerbinding {
 interface GraafGroep {
   id: string;            // "g1", "g2", …
   naam: string;
-  nodes: string[];       // node-ids; ook ids van losse teksten
+  leden: string[];       // ids van nodes en losse teksten
   ingeklapt?: true;
 }
 
@@ -400,8 +400,8 @@ Engels, zoals de rest van het grafblad. De app volgt zijn eigen taal.
 
 - lezen en schrijven met groepen, teksten, `verborgen`, `uit`, `label`, `schuif`; een
   graaf van versie 1 leest onveranderd;
-- opslaan en weer openen via het projectbestand (`check-ifcx.mjs`): groepen, teksten
-  en de nieuwe velden komen terug;
+- opslaan en weer openen via het projectbestand (sectie "Opslaan en heropenen" in
+  `check-graaf.mjs`): groepen, teksten en de nieuwe velden komen terug;
 - opruimen in `leesGraaf` (onbekende ids, lege groep, node in twee groepen);
 - kader, verwijderen, kopiëren met alleen de interne verbindingen, plakken met nieuwe
   ids, dupliceren, groeperen en opheffen, verplaatsen van een keuze;
