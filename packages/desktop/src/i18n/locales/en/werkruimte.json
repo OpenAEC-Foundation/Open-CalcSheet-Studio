@@ -491,7 +491,7 @@
     "paneel": "Graph sheet",
     "rij": "Graph sheet — recalculates by itself",
     "info": "{{nodes}} nodes · {{verbindingen}} connections",
-    "hint": "Double-click: add node · Right-click: menu · Drag on an empty spot: select (Shift: add) · Ctrl+click: add node · Alt+drag: rotate 3D · Right or middle drag: pan · Scroll: zoom · Ctrl+C/V/D: copy, paste, duplicate · Delete: remove",
+    "hint": "Double-click: add node · Right-click: menu · Drag on an empty spot: select (Shift: add) · Ctrl+click: add node · Alt+drag: rotate 3D · Right or middle drag: pan · Scroll: zoom · Ctrl+C/V/D: copy, paste, duplicate · Ctrl+G: group · T: text · Delete: remove",
     "draaien": "Rotate 3D",
     "draaienUitleg": "On: dragging on an empty spot rotates the 3D preview. Off: dragging draws a box to select nodes; rotate with Alt+drag instead.",
     "leeg": "Double-click the canvas to add a node, and drag from an output to an input to connect.",
@@ -537,7 +537,24 @@
       "nodeToevoegen": "Add node",
       "plakken": "Paste",
       "allesKiezen": "Select all",
-      "passend": "Fit to view"
+      "passend": "Fit to view",
+      "groeperen": "Group",
+      "tekstHier": "Text here",
+      "opheffen": "Ungroup",
+      "metInhoudWeg": "Delete with contents",
+      "tekstBewerken": "Edit"
+    },
+    "groep": {
+      "nieuw": "Group",
+      "inklappen": "Collapse",
+      "uitklappen": "Expand",
+      "leden_one": "{{count}} item",
+      "leden_other": "{{count}} items"
+    },
+    "tekstblok": {
+      "titel": "Title",
+      "tekst": "Text, for example an assumption",
+      "breedte": "Drag to change the width"
     },
     "catalogus": {
       "titel": "Node catalogue",

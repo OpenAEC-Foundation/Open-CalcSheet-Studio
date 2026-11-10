@@ -491,7 +491,7 @@
     "paneel": "Grafblad",
     "rij": "Grafblad — rekent vanzelf door",
     "info": "{{nodes}} nodes · {{verbindingen}} verbindingen",
-    "hint": "Dubbelklik: node toevoegen · Rechtsklik: menu · Slepen op een lege plek: kiezen (Shift: erbij) · Ctrl+klik: node erbij · Alt+slepen: 3D draaien · Rechts of midden slepen: vlak schuiven · Scrollen: zoomen · Ctrl+C/V/D: kopiëren, plakken, dupliceren · Delete: weghalen",
+    "hint": "Dubbelklik: node toevoegen · Rechtsklik: menu · Slepen op een lege plek: kiezen (Shift: erbij) · Ctrl+klik: node erbij · Alt+slepen: 3D draaien · Rechts of midden slepen: vlak schuiven · Scrollen: zoomen · Ctrl+C/V/D: kopiëren, plakken, dupliceren · Ctrl+G: groeperen · T: tekst · Delete: weghalen",
     "draaien": "3D draaien",
     "draaienUitleg": "Aan: slepen op een lege plek draait het 3D-voorbeeld. Uit: slepen trekt een kader om nodes te kiezen; draaien gaat dan met Alt+slepen.",
     "leeg": "Dubbelklik op het vlak om een node toe te voegen, en sleep van een uitgang naar een ingang om te verbinden.",
@@ -537,7 +537,24 @@
       "nodeToevoegen": "Node toevoegen",
       "plakken": "Plakken",
       "allesKiezen": "Alles kiezen",
-      "passend": "Passend in beeld"
+      "passend": "Passend in beeld",
+      "groeperen": "Groeperen",
+      "tekstHier": "Tekst hier",
+      "opheffen": "Groep opheffen",
+      "metInhoudWeg": "Verwijderen met inhoud",
+      "tekstBewerken": "Bewerken"
+    },
+    "groep": {
+      "nieuw": "Groep",
+      "inklappen": "Inklappen",
+      "uitklappen": "Uitklappen",
+      "leden_one": "{{count}} onderdeel",
+      "leden_other": "{{count}} onderdelen"
+    },
+    "tekstblok": {
+      "titel": "Titel",
+      "tekst": "Tekst, bijvoorbeeld een aanname",
+      "breedte": "Sleep om de breedte te wijzigen"
     },
     "catalogus": {
       "titel": "Catalogus van nodes",

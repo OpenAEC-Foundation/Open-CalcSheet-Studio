@@ -1080,5 +1080,52 @@ console.log("\nDe waarde op een verbinding en uitschakelen");
   });
 }
 
+// ── Groepen en losse tekst ──────────────────────────────────────────────────
+console.log("\nGroepen en losse tekst");
+{
+  const G = await import("../packages/desktop/src/graaf/groepen.ts").catch(() => ({}));
+  const M = await import("../packages/desktop/src/graaf/model.ts");
+  const t = { naamVan: (n) => n.naam ?? n.soort, poort: (_n, p) => p, melding: (x) => x.code, meer: (n) => `+${n}` };
+  const proef = (naam, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      meld(false, `${naam}: ${e.message}`);
+    }
+  };
+  proef("kader_om_leden", () => {
+    const maten = new Map([["a", { x: 0, y: 0, b: 100, h: 50 }], ["b", { x: 200, y: 100, b: 100, h: 50 }]]);
+    const k = G.groepKader({ id: "g1", naam: "G", leden: ["a", "b"] }, maten);
+    meld(JSON.stringify(k) === JSON.stringify({ x: -16, y: -46, b: 332, h: 212 }), "kader_om_leden: om de leden, 16 px marge, 30 px voor de titel", JSON.stringify(k));
+  });
+  proef("kader_leeg", () => {
+    meld(G.groepKader({ id: "g1", naam: "G", leden: ["x"] }, new Map()) === null, "kader_leeg: zonder maten van de leden geen kader");
+  });
+  proef("ingeklapt_lijnen_naar_kaart", () => {
+    const { g: g0, ids } = bouw([["a", "getal", { waarde: "2" }], ["b", "codeblok", { code: "y = x * 2" }]], ["a.waarde -> b.x"]);
+    let g = M.verplaatsNode(M.verplaatsNode(g0, ids.a, 0, 0), ids.b, 400, 100);
+    const gr = M.groepeer(g, [ids.b], "Moment");
+    g = M.wisselIngeklapt(gr.graaf, gr.id);
+    const b = g.nodes.find((n) => n.id === ids.b);
+    const maten = new Map([[ids.a, { x: 0, y: 0, b: 220, h: 60 }], [ids.b, { x: 400, y: 100, b: 280, h: 120 }]]);
+    const kaart = G.ingeklaptKaart(g.groepen[0], maten);
+    const p = G.zichtbarePoortPlek(g, b, poortenVan(b), "in", "x", maten);
+    meld(kaart.x === 384 && kaart.y === 54 && p.x === kaart.x && p.y === kaart.y + kaart.h / 2, "ingeklapt_lijnen_naar_kaart: de ingang ligt op de linkerrand van de kaart", JSON.stringify({ kaart, p }));
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes("Moment") && !svg.includes(">codeblok<") && svg.includes(`${kaart.x} ${kaart.y + kaart.h / 2}"`),
+      "ingeklapt_lijnen_naar_kaart: op papier de kaart met de naam, niet de node, en de lijn naar de rand");
+  });
+  proef("papier_groep_tekst", () => {
+    const { g: g0, ids } = bouw([["a", "getal", { waarde: "2" }], ["b", "codeblok", { code: "y = x * 2" }]], ["a.waarde -> b.x"]);
+    let g = M.verplaatsNode(g0, ids.b, 300, 0);
+    g = M.groepeer(g, [ids.a, ids.b], "Belasting").graaf;
+    const tk = M.voegTekstToe(g, 0, 200);
+    g = M.zetTekst(tk.graaf, tk.id, { titel: "Aanname", tekst: "Twee steunpunten" });
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes(">Belasting<") && svg.includes('stroke-dasharray') && svg.includes('font-weight="600">Aanname<') && svg.includes(">Twee steunpunten<") && svg.includes(">codeblok<"),
+      "papier_groep_tekst: het kader met de naam, de titel van de tekst vet, de tekst en de nodes");
+  });
+}
+
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);
