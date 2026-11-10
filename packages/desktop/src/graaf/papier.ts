@@ -4,7 +4,7 @@
  * eruit), dus los te toetsen; de opmaak staat in de SVG zelf, want de afdruk heeft
  * geen thema.
  */
-import type { Graaf, GraafNode } from "./model.ts";
+import { uitkomstVerborgen, type Graaf, type GraafNode } from "./model.ts";
 import { KOP_HOOGTE, RIJ_HOOGTE, nodeBreedte, poortPlek, poortenVan, veldSleutel, verbindingPad, type Poorten } from "./nodes.ts";
 import { actieveVerbindingen, type GraafMelding, type GraafUitkomst } from "./rekenen.ts";
 import { voorbeeldVan } from "./voorbeeld.ts";
@@ -65,7 +65,7 @@ function tekenNode(node: GraafNode, poorten: Poorten, uitkomst: GraafUitkomst, v
   const rijen = Math.max(poorten.ingangen.length, poorten.uitgangen.length);
   let y = KOP_HOOGTE + rijen * RIJ_HOOGTE;
 
-  delen.push(tekst(8, 18, kort(t.naamVan(node), b - 16), { dik: true }));
+  delen.push(tekst(8, KOP_HOOGTE / 2 + 4, kort(t.naamVan(node), b - 16), { dik: true }));
   poorten.ingangen.forEach((p, i) => {
     const py = KOP_HOOGTE + RIJ_HOOGTE * (i + 0.5);
     delen.push(`<circle cx="0" cy="${py}" r="3.5" fill="#fff" stroke="${KLEUR.lijn}"/>`);
@@ -99,7 +99,8 @@ function tekenNode(node: GraafNode, poorten: Poorten, uitkomst: GraafUitkomst, v
     y += REGEL;
     onder.push(tekst(8, y - 4, kort(t.melding(f, node), b - 16), { kleur: KLEUR.fout }));
   }
-  if (u && u.fouten.length === 0) {
+  // Het oogje op het scherm geldt ook op papier; een fout staat er altijd.
+  if (u && u.fouten.length === 0 && !uitkomstVerborgen(node)) {
     const v = voorbeeldVan(u, 6);
     for (const r of v.regels) {
       y += REGEL;

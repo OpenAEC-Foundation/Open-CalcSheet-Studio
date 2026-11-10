@@ -10,7 +10,7 @@
  * Ribbon.css). Een nieuw icoon: kies het id uit de Blueprint, niet zelf tekenen.
  */
 
-export type Sprite = "standard" | "calculations" | "spreadsheet" | "pdf";
+export type Sprite = "standard" | "calculations" | "spreadsheet" | "pdf" | "graaf";
 
 export const sprite = (naam: Sprite) => `${import.meta.env.BASE_URL}icons/${naam}.svg`;
 

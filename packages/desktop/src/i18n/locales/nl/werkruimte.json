@@ -516,8 +516,11 @@
       "eenheid": "eenheid",
       "min": "min",
       "max": "max",
-      "stap": "stap"
+      "stap": "stap",
+      "schuif": "Schuif en grenzen tonen of verbergen"
     },
+    "uitkomstTonen": "Uitkomst tonen (H)",
+    "uitkomstVerbergen": "Uitkomst verbergen (H)",
     "soort": {
       "getal": "Getal",
       "tekst": "Tekst",
