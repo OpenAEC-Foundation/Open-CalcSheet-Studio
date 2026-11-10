@@ -44,6 +44,25 @@ function kort(t: string, breedte: number): string {
   return t.length > max ? `${t.slice(0, max - 1)}…` : t;
 }
 
+/** Breekt tekst af op woorden zodat elke regel in `breedte` past; een te lang woord wordt ingekort. */
+function ombreek(t: string, breedte: number): string[] {
+  const max = Math.max(4, Math.floor(breedte / TEKEN_BREEDTE));
+  const uit: string[] = [];
+  for (const alinea of t.split("\n")) {
+    let regel = "";
+    for (const woord of alinea.split(/\s+/).filter(Boolean)) {
+      if (!regel) regel = woord;
+      else if (regel.length + 1 + woord.length <= max) regel += ` ${woord}`;
+      else {
+        uit.push(kort(regel, breedte));
+        regel = woord;
+      }
+    }
+    uit.push(kort(regel, breedte));
+  }
+  return uit;
+}
+
 function tekst(x: number, y: number, t: string, opties: { kleur?: string; dik?: boolean; rechts?: boolean; mono?: boolean } = {}): string {
   const delen = [`x="${x}"`, `y="${y}"`, `fill="${opties.kleur ?? KLEUR.tekst}"`];
   if (opties.dik) delen.push('font-weight="600"');
@@ -140,9 +159,12 @@ export function graafSvg(graaf: Graaf, uitkomst: GraafUitkomst, t: PapierTeksten
   const alle = graaf.nodes.map((n) => ({ n, ...tekenNode(n, poorten.get(n.id)!, uitkomst, verbonden, t) }));
   const maten = new Map<string, Maat>(alle.map(({ n, hoogte }) => [n.id, { x: n.x, y: n.y, b: nodeBreedte(n), h: hoogte }]));
 
-  // Losse teksten: titel vet, de tekst eronder, in een dun kader.
-  const teksten = (graaf.teksten ?? []).map((tk) => {
-    const regels = tk.tekst ? tk.tekst.split("\n") : [];
+  // Wat in een ingeklapte groep zit, staat niet op papier (wel zijn maat, voor de kaart).
+  const weg = new Set((graaf.groepen ?? []).filter((g) => g.ingeklapt).flatMap((g) => g.leden));
+
+  // Losse teksten: titel vet, de tekst eronder, in een dun kader; lange regels lopen door.
+  const teksten = (graaf.teksten ?? []).flatMap((tk) => {
+    const regels = tk.tekst ? ombreek(tk.tekst, tk.breedte - 16) : [];
     const h = 8 + (tk.titel ? REGEL : 0) + regels.length * REGEL + 6;
     maten.set(tk.id, { x: tk.x, y: tk.y, b: tk.breedte, h });
     let y = 8;
@@ -155,11 +177,11 @@ export function graafSvg(graaf: Graaf, uitkomst: GraafUitkomst, t: PapierTeksten
       y += REGEL;
       delen.push(tekst(8, y - 4, kort(r, tk.breedte - 16)));
     }
-    return `<g transform="translate(${tk.x} ${tk.y})"><rect x="0" y="0" width="${tk.breedte}" height="${h}" rx="4" fill="#fff" stroke="${KLEUR.rand}" stroke-width="0.8"/>${delen.join("")}</g>`;
+    if (weg.has(tk.id)) return [];
+    return [`<g transform="translate(${tk.x} ${tk.y})"><rect x="0" y="0" width="${tk.breedte}" height="${h}" rx="4" fill="#fff" stroke="${KLEUR.rand}" stroke-width="0.8"/>${delen.join("")}</g>`];
   });
 
   // Groepen: een gestippeld kader met de naam; ingeklapt een kaart, zonder de leden.
-  const weg = new Set((graaf.groepen ?? []).filter((g) => g.ingeklapt).flatMap((g) => g.leden));
   const kaders: string[] = [];
   const kaarten: string[] = [];
   const groepMaten: Maat[] = [];
@@ -207,7 +229,7 @@ export function graafSvg(graaf: Graaf, uitkomst: GraafUitkomst, t: PapierTeksten
   let y1 = -Infinity;
   const vlakken: Maat[] = [
     ...nodes.map(({ n, hoogte }) => ({ x: n.x, y: n.y, b: nodeBreedte(n), h: hoogte })),
-    ...(graaf.teksten ?? []).map((tk) => maten.get(tk.id)!),
+    ...(graaf.teksten ?? []).filter((tk) => !weg.has(tk.id)).map((tk) => maten.get(tk.id)!),
     ...groepMaten,
   ];
   for (const m of vlakken) {

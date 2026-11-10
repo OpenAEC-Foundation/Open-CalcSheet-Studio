@@ -1125,6 +1125,25 @@ console.log("\nGroepen en losse tekst");
     meld(svg.includes(">Belasting<") && svg.includes('stroke-dasharray') && svg.includes('font-weight="600">Aanname<') && svg.includes(">Twee steunpunten<") && svg.includes(">codeblok<"),
       "papier_groep_tekst: het kader met de naam, de titel van de tekst vet, de tekst en de nodes");
   });
+  proef("ingeklapt_tekst_niet_op_papier", () => {
+    const { g: g0, ids } = bouw([["a", "getal", { waarde: "2" }]]);
+    const tk = M.voegTekstToe(g0, 0, 200);
+    let g = M.zetTekst(tk.graaf, tk.id, { titel: "Verborgen titel", tekst: "verborgen tekst" });
+    const gr = M.groepeer(g, [ids.a, tk.id], "Dicht");
+    g = M.wisselIngeklapt(gr.graaf, gr.id);
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes(">Dicht<") && !svg.includes("Verborgen titel") && !svg.includes("verborgen tekst"),
+      "ingeklapt_tekst_niet_op_papier: een tekst in een ingeklapte groep staat niet op papier, de kaart wel");
+  });
+  proef("papier_lange_tekst", () => {
+    const zin = "Ligger op twee steunpunten met een overspanning van zes meter en een gelijkmatig verdeelde belasting slotwoord";
+    const tk = M.voegTekstToe(legeGraaf(), 0, 0);
+    const g = M.zetTekst(tk.graaf, tk.id, { tekst: zin });
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    const regels = [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
+    meld(regels.length >= 3 && !svg.includes("…") && regels.join(" ").replace(/\s+/g, " ").trim() === zin,
+      "papier_lange_tekst: een lange zin loopt op papier over meer regels door, zonder afkapping", JSON.stringify(regels));
+  });
 }
 
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);

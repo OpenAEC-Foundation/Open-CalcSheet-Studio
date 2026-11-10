@@ -96,6 +96,12 @@ interface Kader {
   y1: number;
 }
 
+/**
+ * Wat zijn eigen klik en dubbelklik regelt: daar begint geen kader en opent geen
+ * zoekmenu (nodes, losse teksten, groepstitels en -kaarten, lijnen, balk, menu's).
+ */
+const ZELF_KLIK = "[data-graaf-node], [data-graaf-tekst], [data-graaf-groep], .graaf-lijn-raak, .graaf-balk, .graaf-zoekmenu, .graaf-menu, .graaf-leeg";
+
 /** Zo ver moet de muis bewegen voordat een klik een sleep wordt, in px op het scherm. */
 const DREMPEL = 3;
 
@@ -380,6 +386,14 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
         const m2 = maten.get(n.id);
         return !!m2 && n.x >= x0 && n.y >= y0 && n.x + m2.b <= x1 && n.y + m2.h <= y1;
       }).map((n) => n.id);
+      // Een ingeklapte groep telt als zijn kaart: ligt die erin, dan komen al zijn leden mee.
+      for (const k of vlak.current?.querySelectorAll<HTMLElement>(".graaf-groep-kaart[data-graaf-groep]") ?? []) {
+        const kx = parseFloat(k.style.left);
+        const ky = parseFloat(k.style.top);
+        if (kx >= x0 && ky >= y0 && kx + k.offsetWidth <= x1 && ky + k.offsetHeight <= y1) {
+          binnen.push(...(g.groepen?.find((gr) => gr.id === k.dataset.graafGroep)?.leden ?? []));
+        }
+      }
       zetKeuze(new Set(erbij ? [...keuzeRef.current, ...binnen] : binnen));
     };
     window.addEventListener("pointermove", beweeg);
@@ -413,7 +427,8 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       return;
     }
     vlak.current?.focus({ preventScroll: true });
-    if (e.button !== 0 || doel.closest("[data-graaf-node], .graaf-lijn-raak, .graaf-balk, .graaf-zoekmenu, .graaf-leeg")) return;
+    // Nodes, teksten, groepen en lijnen regelen hun eigen klik; alleen een lege plek trekt een kader.
+    if (e.button !== 0 || doel.closest(ZELF_KLIK)) return;
     setLijn(null);
     // Met Alt of de draaiknop draait het 3D-doek; anders een kader.
     if (!e.altKey && !draaienRef.current) beginKader(e);
@@ -427,10 +442,15 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
    */
   const beginSleep = useCallback((e: ReactPointerEvent, id: string | null, leden?: readonly string[]) => {
     vlak.current?.focus({ preventScroll: true });
-    if (id && ctrl(e)) {
+    if (ctrl(e)) {
+      // Ctrl+klik: erbij of eraf; bij een groep al zijn leden tegelijk.
+      const ids = leden ?? (id ? [id] : []);
       const k = new Set(keuzeRef.current);
-      if (k.has(id)) k.delete(id);
-      else k.add(id);
+      const allemaal = ids.length > 0 && ids.every((x) => k.has(x));
+      for (const x of ids) {
+        if (allemaal) k.delete(x);
+        else k.add(x);
+      }
       zetKeuze(k);
       return;
     }
@@ -519,7 +539,14 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       k.delete(nodeId);
       zetKeuze(k);
     },
-    zetVerborgen: (ids, verborgen) => zet(zetVerborgen(huidig(), ids, verborgen)),
+    zetVerborgen: (ids, verborgen) => {
+      // Het oogje van een gekozen node geldt voor de hele keuze.
+      const k = keuzeRef.current;
+      const voor = ids.length === 1 && k.has(ids[0]) && k.size > 1
+        ? huidig().nodes.filter((n) => k.has(n.id) && n.soort !== "bekijken").map((n) => n.id)
+        : ids;
+      zet(zetVerborgen(huidig(), voor, verborgen));
+    },
     zetSchuif: (nodeId, open) => zet(zetSchuif(huidig(), nodeId, open)),
     hernoem: (nodeId) => {
       setHernoemId(nodeId);
@@ -912,13 +939,20 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       zet(uit.graaf);
       zetKeuze(new Set(uit.ids));
     };
+    // WebKit (macOS) zet Kopiëren en Plakken in het menu uit zonder tekstselectie, tenzij
+    // een before-event wordt afgevangen; dan komt Cmd+C/V hier toch aan.
+    const toestaan = (e: Event) => {
+      if (opHetVlak()) e.preventDefault();
+    };
     document.addEventListener("copy", opCopy);
     document.addEventListener("cut", opCut);
     document.addEventListener("paste", opPaste);
+    for (const t of ["beforecopy", "beforecut", "beforepaste"]) document.addEventListener(t, toestaan);
     return () => {
       document.removeEventListener("copy", opCopy);
       document.removeEventListener("cut", opCut);
       document.removeEventListener("paste", opPaste);
+      for (const t of ["beforecopy", "beforecut", "beforepaste"]) document.removeEventListener(t, toestaan);
     };
   }, [huidig, opVlak, zet, zetKeuze]);
 
@@ -1018,6 +1052,15 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
         backgroundPosition: `${beeld.x}px ${beeld.y}px`,
       }}
       onPointerDownCapture={opPointerDownCapture}
+      onScroll={(e) => {
+        // Een veld dat focus krijgt, scrolt het vlak mee; dan klopt geen muisplek meer
+        // (opVlak rekent vanaf de rand). Het vlak schuift alleen via het beeld.
+        const el = e.currentTarget;
+        if (el.scrollTop || el.scrollLeft) {
+          el.scrollTop = 0;
+          el.scrollLeft = 0;
+        }
+      }}
       onPointerDown={opPointerDown}
       onPointerMove={(e) => {
         muis.current = opVlak(e.clientX, e.clientY);
@@ -1029,7 +1072,7 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       onContextMenu={(e) => e.preventDefault()}
       onKeyDown={opToets}
       onDoubleClick={(e) => {
-        if ((e.target as HTMLElement).closest("[data-graaf-node], .graaf-balk, .graaf-leeg")) return;
+        if ((e.target as HTMLElement).closest(ZELF_KLIK)) return;
         const r = vlak.current!.getBoundingClientRect();
         const p = opVlak(e.clientX, e.clientY);
         setMenu({ x: e.clientX - r.left, y: e.clientY - r.top, vlakX: p.x, vlakY: p.y });
