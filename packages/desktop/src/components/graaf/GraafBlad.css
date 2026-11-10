@@ -101,6 +101,26 @@
   padding-inline: 4px;
 }
 
+/* De knop "3D draaien" staat aan: slepen op een lege plek draait het voorbeeld. */
+.graaf-icoonknop.aan {
+  border-color: var(--theme-accent);
+  color: var(--theme-accent);
+}
+
+/* ─── Het kader om een keuze ──────────────────────────────────── */
+
+.graaf-kader {
+  position: absolute;
+  pointer-events: none;
+  border: 1.5px dashed var(--theme-accent);
+  background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+  border-radius: 2px;
+}
+
+.graaf-vlak.kadert {
+  cursor: crosshair;
+}
+
 .graaf-hint {
   position: absolute;
   left: 10px;

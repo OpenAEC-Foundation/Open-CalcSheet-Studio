@@ -8,8 +8,10 @@
  *
  * Het doek ligt onder de nodes en is doorzichtig: het vlak erachter bepaalt de
  * kleur. De laag met nodes laat de muis door, dus slepen op een lege plek komt
- * hier aan en draait het beeld; op een node of verbinding komt het hier niet.
- * Schuiven en zoomen van het vlak regelt GraafBladWeergave.
+ * hier aan; op een node of verbinding komt het hier niet. Of dat slepen het beeld
+ * draait of een kader trekt, beslist GraafBladWeergave vóór elke klik met
+ * `zetDraaien` (Alt, of de knop "3D draaien"). Schuiven en zoomen van het vlak
+ * regelt GraafBladWeergave ook.
  */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -71,6 +73,11 @@ export class GraafAchtergrond {
     this.model = bouwModel(scene);
     this.wereld.add(this.model.groep);
     this.maat(!this.aangeraakt);
+  }
+
+  /** Mag slepen op het doek het beeld draaien? Uit: de klik gaat naar het kader op het vlak. */
+  zetDraaien(aan: boolean) {
+    this.controls.enabled = aan;
   }
 
   /** Maakt het beeld weer passend, uit het eerste standpunt. */
