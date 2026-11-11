@@ -182,13 +182,15 @@ export function toetsHashes(nodes: readonly EvaluatedNode[]): string[] {
  * Alleen de vastgelegde antwoorden die het doorgerekende blad nog gebruikt: bij het
  * opslaan valt de rest weg. Een blok zonder hash (een fout in een veld) kan bij elk
  * antwoord horen; dan blijven ze allemaal staan, net als zonder doorgerekend blad.
+ * `ook`: de hashes die de varianten van het blad gebruiken (rekenen/varianten.ts).
  */
 export function gebruikteToetsingen(
   toetsingen: Toetsingen | undefined,
   blad: { nodes: readonly EvaluatedNode[]; fout?: string } | undefined,
+  ook: readonly string[] = [],
 ): Toetsingen | undefined {
   if (!toetsingen || !blad || blad.fout) return toetsingen;
-  const gebruikt = new Set<string>();
+  const gebruikt = new Set<string>(ook);
   let zonderHash = false;
   elkeToets(blad.nodes, (n) => {
     if (n.hash) gebruikt.add(n.hash);

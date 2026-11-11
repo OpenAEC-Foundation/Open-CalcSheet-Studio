@@ -37,6 +37,7 @@ import type { MarimoNotebook } from "./marimoBlad.ts";
 import type { Varianten } from "./varianten.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 import { gebruikteToetsingen, toetsVersie } from "../rekenen/toetsCache.ts";
+import { variantToetsHashes } from "../rekenen/varianten.ts";
 import { maakPoer } from "../components/calc/poerDefinitie.ts";
 import { poerIfcxKnopen } from "../components/calc/poerIfcx.ts";
 
@@ -120,7 +121,8 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
       console.error(`Blad "${ex.naam}" kon niet worden doorgerekend:`, err);
     }
   }
-  blad.toetsingen = gebruikteToetsingen(ex.toetsingen, blad);
+  // Ook de antwoorden die de varianten gebruiken: zonder vallen ze bij het opslaan weg.
+  blad.toetsingen = gebruikteToetsingen(ex.toetsingen, blad, isLosBlad(ex) ? [] : variantToetsHashes(ex, projectScope(gegevens)));
   bewaard.set(ex, { gegevens, toetsV, blad });
   return blad;
 }

@@ -7,7 +7,21 @@
  *   • het model: de invoer van een variant (het blad plus de eigen waarden van de
  *     gekozen velden), een nieuwe naam, een cel zetten en wissen, velden weghalen,
  *     plakken uit een werkmap, een reeks, en het lezen van wat van buiten komt;
- *   • het bestand: opslaan en openen geeft dezelfde varianten, met een schema.
+ *   • het bestand: opslaan en openen geeft dezelfde varianten, met een schema;
+ *   • rekenen: een variant rekent als het blad met zijn eigen invoer, met de UC, het
+ *     oordeel, de getallen en welke velden meedoen;
+ *   • optimaliseren: per variant de kleinste waarde die voldoet, en nooit een waarde
+ *     die niet voldoet;
+ *   • toetsen: de vastgelegde antwoorden van FEM Studio voor de varianten blijven bij
+ *     het opslaan in het bestand.
+ *
+ * Handberekening van het toetsblad (M = 10 kNm, b = 75 mm, f = 24 N/mm²):
+ *   W = b·h²/6, σ = M/W, UC = σ/f
+ *   h = 225: W = 632 812,5 mm³, σ = 15,80 N/mm², UC = 0,658
+ *   h = 200: W = 500 000 mm³,   σ = 20,00 N/mm², UC = 0,833
+ *   h = 175: W = 382 812,5 mm³, σ = 26,12 N/mm², UC = 1,088
+ *   h = 150: W = 281 250 mm³,   σ = 35,56 N/mm², UC = 1,481
+ *   staal (b = 100 mm), h = 225: W = 843 750 mm³, σ = 11,85 N/mm², UC = 0,494
  *
  * Draaien:  node scripts/check-varianten.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -23,6 +37,11 @@ import {
 } from "../packages/desktop/src/store/varianten.ts";
 import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../packages/desktop/src/store/projectBestand.ts";
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
+import { readFileSync } from "node:fs";
+import { evaluate, parse } from "../packages/core/dist/index.js";
+import { kandidaten, rekenVariant, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
+import { gebruikteToetsingen } from "../packages/desktop/src/rekenen/toetsCache.ts";
+import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
 
 let fouten = 0;
 function meld(ok, tekst, detail = "") {
@@ -131,6 +150,116 @@ console.log("\nBestand");
   meld(!zonder.includes("ocss::blad::varianten\":") || !JSON.stringify(JSON.parse(zonder).data).includes("ocss::blad::varianten"),
     "een blad zonder varianten schrijft het attribuut niet");
   meld(leesProjectBestand(zonder, "x").exemplaren[0].varianten === undefined, "en opent zonder varianten");
+}
+
+const TOETSBLAD = [
+  '"Toets',
+  '@select materiaal "Materiaal"',
+  "  Hout = 1",
+  "  Staal = 2",
+  "@end",
+  "#if materiaal ≡ 1",
+  "    b = ?{75}*(mm)', breedte'",
+  "#else",
+  "    b = 100 mm",
+  "#end if",
+  "h = ?{225}*(mm)', hoogte'",
+  "M = 10 kN*m",
+  "W = b*h^2/6 to mm^3",
+  "sigma = M/W to N/mm^2",
+  "UC_max = sigma/(24 N/mm^2)",
+  "#if UC_max ≤ 1.0",
+  "    'Maatgevende UC = 'UC_max' → voldoet",
+  "#else",
+  "    'Maatgevende UC = 'UC_max' → voldoet niet",
+  "#end if",
+].join("\n");
+const dichtbij = (a, b, tol = 0.001) => typeof a === "number" && Math.abs(a - b) <= tol;
+const reken = (waarden) => rekenVariant(TOETSBLAD, waarden, {}, "Toets");
+
+console.log("\nRekenen");
+{
+  const blad = reken({});
+  meld(dichtbij(blad.resultaat.uc, 0.658) && blad.resultaat.voldoet === true, "het blad: UC 0,658, voldoet", json(blad.resultaat));
+  const laag = reken({ h: "150" });
+  meld(dichtbij(laag.resultaat.uc, 1.481) && laag.resultaat.voldoet === false, "h = 150: UC 1,481, voldoet niet", json(laag.resultaat));
+  meld(dichtbij(laag.getallen.W, 281250, 0.5), "de getallen van de variant: W = 281 250 mm³", String(laag.getallen.W));
+  meld(/^35\.56? N/.test(laag.teksten.sigma ?? ""), "de getoonde tekst met eenheid: σ = 35,56 N/mm²", laag.teksten.sigma);
+  const staal = reken({ materiaal: "2" });
+  meld(dichtbij(staal.resultaat.uc, 0.494), "staal (b = 100 mm uit het blad): UC 0,494", String(staal.resultaat.uc));
+  meld(!staal.actief.includes("b") && staal.actief.includes("h") && staal.actief.includes("materiaal"),
+    "bij staal doet b niet mee, h en het materiaal wel", json(staal.actief));
+  meld(reken({}).actief.includes("b"), "bij hout doet b mee");
+  const kapot = rekenVariant('"Kapot\nx = (\ny = onbekend*2', {}, {}, "Kapot");
+  meld(/^Error: Unexpected end/.test(kapot.fout ?? ""), "een regel met een fout: de eerste fout van het blad, voor in de tabel", kapot.fout);
+  meld(reken({}).fout === undefined, "zonder fout geen fout");
+}
+
+console.log("\nOptimaliseren");
+{
+  const veldH = { naam: "h", soort: "invoer", beginwaarde: "225", eenheid: "mm", keuzes: [] };
+  const zoek = { veld: "h", van: "150", tot: "300", stap: "25", grens: 1 };
+  const reeks = ["150", "175", "200", "225", "250", "275", "300"];
+  meld(json(kandidaten(veldH, zoek)) === json(reeks), "de kandidaten: van–tot–stap, oplopend", json(kandidaten(veldH, zoek)));
+  meld(json(kandidaten(veldH, { ...zoek, van: "300", tot: "150" })) === json(reeks), "ook als van groter is dan tot: van klein naar groot");
+  meld(json(kandidaten(veldH, { ...zoek, van: "1,5e2" })) === json(reeks), "een komma als decimaalteken");
+  meld(kandidaten(veldH, { ...zoek, stap: "0" }).length === 0 && kandidaten(veldH, { ...zoek, van: "x" }).length === 0, "geen bruikbaar bereik: geen kandidaten");
+  const keuze = { naam: "k", soort: "keuze", beginwaarde: "2", eenheid: "", keuzes: [
+    { text: "C24", value: "2" }, { text: "C18", value: "1" }, { text: "C30", value: "3" }, { text: "GL24h", value: "4" },
+  ] };
+  meld(json(kandidaten(keuze, { veld: "k", van: "1", tot: "4", grens: 1 })) === json(["1", "3", "4"]),
+    "een keuzelijst: van keuze tot keuze, in de volgorde van het blad");
+  meld(json(kandidaten(keuze, { veld: "k", van: "4", tot: "1", grens: 1 })) === json(["1", "3", "4"]), "ook omgekeerd gekozen");
+
+  const beoordeel = async (w) => reken({ h: w }).resultaat;
+  const gevonden = await zoekKleinste(kandidaten(veldH, zoek), beoordeel, 1);
+  meld(gevonden.waarde === "200", "de kleinste die voldoet: h = 200 (UC 0,833; 175 geeft 1,088)", json(gevonden));
+  meld((await zoekKleinste(kandidaten(veldH, zoek), beoordeel, 0.8)).waarde === "225", "met een grens van 0,80: h = 225 (UC 0,658)");
+  meld((await zoekKleinste(["150", "175"], beoordeel, 1)).geen === true, "niets voldoet: geen waarde");
+  const zonderOordeel = async () => ({ titel: "", norm: "", uc: null, voldoet: null });
+  meld((await zoekKleinste(["150", "175"], zonderOordeel, 1)).geen === true, "een blad zonder oordeel: geen waarde");
+  meld((await zoekKleinste(["150", "175"], async () => null, 1)).geen === true, "een blad dat niet doorrekent: geen waarde");
+  let gevraagd = 0;
+  const afgebroken = await zoekKleinste(["150", "175", "200"], async (w) => (gevraagd++, beoordeel(w)), 1, () => gevraagd >= 1);
+  meld(afgebroken.afgebroken === true && gevraagd === 1, "afbreken stopt het zoeken", json(afgebroken));
+
+  meld(voldoetAan({ uc: 0.9, voldoet: true }, 1) && !voldoetAan({ uc: 0.9, voldoet: true }, 0.8), "voldoet: oordeel van het blad en UC binnen de grens");
+  meld(!voldoetAan({ uc: 0.5, voldoet: false }, 1), "een blad dat afkeurt, voldoet nooit, ook niet met een lage UC");
+  meld(!voldoetAan({ uc: 0.5, voldoet: null, nietGetoetst: true }, 1), "niet getoetst voldoet niet");
+  meld(voldoetAan({ uc: null, voldoet: true }, 1) && !voldoetAan({ uc: null, voldoet: true }, 0.9), "zonder UC alleen bij een grens van 1 of hoger");
+}
+
+console.log("\nToetsen");
+{
+  const fixture = JSON.parse(readFileSync(new URL("./fixtures/toets-staal.json", import.meta.url), "utf8"));
+  const bron = ["h = ?{3}*(m)", "@toets kolom = check_steel_beam", '  profile_name = "HEA200"', "  length_m = h", "@end", "UC_max = kolom.uc_max"].join("\n");
+  const hashVan = (h) => evaluate(parse(bron), { h }, {}, { toetsModus: "vragen" }).find((n) => n.type === "toets").hash;
+  const vast = (h) => ({
+    tool: "check_steel_beam",
+    verzoek: { profile_name: "HEA200", length_m: Number(h) },
+    uitkomst: fixture.staal.structuredContent,
+    datum: "2026-11-01T08:00:00.000Z",
+    herkomst: { versie: "2026.44.2" },
+  });
+  const [h3, h4, h5, h6] = ["3", "4", "5", "6"].map(hashVan);
+  meld(new Set([h3, h4, h5, h6]).size === 4, "elke invoer een eigen hash");
+  const varianten = { velden: ["h"], uitkomsten: [], lijst: [
+    { id: "a", naam: "V1", waarden: { h: "4" } },
+    { id: "b", naam: "V2", waarden: { h: "5" } },
+  ] };
+  const ex = { id: "ex-1", naam: "Kolom", templateId: "", source: bron, waarden: { h: "3" }, elementen: [],
+    toetsingen: { [h3]: vast("3"), [h4]: vast("4"), [h5]: vast("5"), [h6]: vast("6") } };
+  meld(json(variantToetsHashes({ ...ex, varianten }, {}).sort()) === json([h4, h5].sort()), "de hashes van de varianten");
+  meld(variantToetsHashes({ ...ex, source: "h = ?*(m)", varianten }, {}).length === 0 && variantToetsHashes(ex, {}).length === 0,
+    "zonder @toets of zonder varianten: niets");
+  const nodes = evaluate(parse(bron), ex.waarden, {}, { toetsModus: "lezen" });
+  meld(Object.keys(gebruikteToetsingen(ex.toetsingen, { nodes }, [h4]) ?? {}).sort().join() === [h3, h4].sort().join(),
+    "gebruikteToetsingen: wat de varianten gebruiken telt mee");
+  const project = (e) => ({ versie: PROJECT_FORMAAT_VERSIE, naam: "Toets", gegevens: legeGegevens(), exemplaren: [e] });
+  const opslaan = (p) => bouwProjectBestand(p, bladenVoorIfc(p));
+  const terug = (tekst) => Object.keys(leesProjectBestand(tekst, "x").exemplaren[0].toetsingen ?? {}).sort().join();
+  meld(terug(opslaan(project({ ...ex, varianten }))) === [h3, h4, h5].sort().join(), "opslaan met varianten: de antwoorden van blad en varianten blijven, de rest valt weg");
+  meld(terug(opslaan(project(ex))) === h3, "zonder varianten: alleen die van het blad");
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles in orde");

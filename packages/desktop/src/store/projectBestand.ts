@@ -125,7 +125,8 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       md: ex.md,
       graaf: ex.graaf,
       ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
-      toetsingen: gebruikteToetsingen(ex.toetsingen, uitkomsten.get(ex.id)),
+      // Doorgerekend: zoals het blad ze nog gebruikt, met die van zijn varianten (projectIfcx.ts).
+      toetsingen: uitkomsten.has(ex.id) ? uitkomsten.get(ex.id)!.toetsingen : gebruikteToetsingen(ex.toetsingen, undefined),
       ...(ex.varianten ? { varianten: ex.varianten } : {}),
     })),
   });
