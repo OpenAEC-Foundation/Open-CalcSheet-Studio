@@ -126,6 +126,8 @@ jobs:
 
         ${{ needs.voorbereiden.outputs.wijzigingen }}
 
+        ${{ needs.bouwen.outputs.fem-studio-tekst }}
+
         ### Downloads
         - **Windows (System)**: Download the `*_x64-setup.exe` installer for system-wide installation (requires admin)
         - **Windows (User)**: Download the `*_x64_user-setup.exe` installer for current user only (no admin required)
@@ -137,13 +139,14 @@ jobs:
     secrets: inherit
 
   controleren:
-    needs: [voorbereiden, concept]
+    needs: [voorbereiden, bouwen, concept]
     permissions:
       contents: write
     uses: ./.github/workflows/release-controleren.yml
     with:
       tag: ${{ needs.voorbereiden.outputs.tag }}
       sha: ${{ needs.voorbereiden.outputs.sha }}
+      fem-studio: ${{ needs.bouwen.outputs.fem-studio-platformen }}
     secrets: inherit
 
   publiceren:
@@ -165,11 +168,12 @@ jobs:
   # De werkelijk aangeboden downloads nog een keer. Dit kan niets meer tegenhouden,
   # maar een rode run hier betekent dat er iets mis is met wat openbaar staat.
   na-publicatie:
-    needs: [voorbereiden, publiceren]
+    needs: [voorbereiden, bouwen, publiceren]
     permissions:
       contents: write
     uses: ./.github/workflows/release-controleren.yml
     with:
       tag: ${{ needs.voorbereiden.outputs.tag }}
       sha: ${{ needs.voorbereiden.outputs.sha }}
+      fem-studio: ${{ needs.bouwen.outputs.fem-studio-platformen }}
     secrets: inherit

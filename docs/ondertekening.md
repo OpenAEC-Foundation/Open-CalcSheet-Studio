@@ -57,6 +57,25 @@ Een `.asc` is geen ingebedde handtekening in het `.deb`-pakket en geen controle 
 Snap-winkelassertions; er worden geen Snap-pakketten uitgebracht. De app heeft geen
 ingebouwde updater, dus er zijn geen minisign-handtekeningen en geen `latest.json`.
 
+### De server van Open FEM Studio
+
+De installers kunnen de headless server van Open FEM Studio meeleveren
+(`fem-studio/openaec-mcp-server`, op Windows met `.exe`). Hij is een resource: Tauri
+tekent een resource niet, en de server gaat ongewijzigd mee, met de handtekening uit
+de release van FEM Studio. Zo blijft zijn sha256 die uit `fem-studio/versie.json`.
+
+| Platform | Handtekening van FEM Studio | Controle |
+|---|---|---|
+| Windows | Authenticode met tijdstempel, dezelfde uitgever | `windows-controleren.ps1 -Bestand` vóór het bouwen, en na de stille installatie `fem-studio\openaec-mcp-server.exe` |
+| macOS | Developer ID van hetzelfde team, hardened runtime, tijdstempel; de notarisatie van de app eist dat van elk programma erin, ook in `Contents/Resources` | `macos-controleren.sh --fem-server` vóór het bouwen, en de server in de app uit de dmg |
+| Linux | Losse `.asc` in de release van FEM Studio; in de pakketten dekt de handtekening van het pakket hem | `linux-controleren.sh`: de server in de `.deb` en de `.AppImage`, uitvoerbaar; in de `.deb` met de sha256 uit `versie.json` |
+
+Zonder het secret `FEM_STUDIO_TOKEN`, of zonder bestand voor het platform in
+`versie.json`, bouwt de app zonder server. De log geeft dan een waarschuwing en de
+release-tekst zegt het. Is hij wel opgehaald, dan zakt de controle als hij in de
+installer ontbreekt. Hoe een nieuwe versie erin komt: zie
+[ontwikkelen.md](ontwikkelen.md#fem-studio-in-calcsheet).
+
 Er zijn geen eigen entitlements: de app gebruikt de hardened runtime zonder
 uitzonderingen. Heeft een nieuwe functie er een nodig, dan hoort die in
 `bundle.macOS.entitlements`; de controle toont welke rechten de app krijgt.
@@ -102,9 +121,12 @@ gh api repos/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/organization-secre
 | Windows | `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_ENDPOINT`, `AZURE_TRUSTED_SIGNING_ACCOUNT_NAME`, `AZURE_CERTIFICATE_PROFILE_NAME` |
 | macOS | `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_TEAM_ID`, `APPLE_API_ISSUER`, `APPLE_API_KEY`, `APPLE_API_KEY_CONTENT` |
 | Linux en checksums | `OPENAEC_GPG_PRIVATE_KEY`, `OPENAEC_GPG_PASSPHRASE`, en de variabele `OPENAEC_GPG_FINGERPRINT` |
+| De server van FEM Studio | `FEM_STUDIO_TOKEN`: alleen-lezen op de releases van de privérepo van FEM Studio. Een repositorygeheim van deze repo; alleen de stap *FEM Studio ophalen* krijgt het. Ontbreekt het, dan bouwt de app zonder server |
 
 Ontbreekt er een, of is hij verlopen, dan faalt de bouw met de naam van het geheim
-in de melding en blijft de vorige release of nightly staan. Waarden komen nooit in een
+in de melding en blijft de vorige release of nightly staan. Uitzondering is
+`FEM_STUDIO_TOKEN`: zonder dat bouwt de app zonder server, maar een token dat er wel is
+en geen toegang heeft, laat de bouw falen. Waarden komen nooit in een
 log. De releasesleutel verloopt op 25-10-2028; daarna zakt de controle. Wordt hij
 vervangen, pas dan ook `openaec-vingerafdruk.txt` en de teksten in `release.yml` en
 `nightly.yml` aan; `check-uitlevering.mjs` bewaakt dat ze gelijk zijn.

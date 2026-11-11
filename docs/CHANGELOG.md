@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- De installers kunnen de server van Open FEM Studio meeleveren, met de handtekening van FEM Studio, en de controles van de release zoeken hem erin. De release-tekst zegt per platform of hij is meegeleverd
 - Varianten op papier: met het vinkje *In de afdruk en het rapport* komt onder de uitwerking van het blad een beknopte tabel, met de velden die verschillen, de gekozen uitkomsten, de maatgevende UC en het oordeel per variant. Meer dan acht varianten: een tweede tabel eronder. Vóór het afdrukken worden ook de `@toets`-blokken van die varianten getoetst
 - Varianten: elk rekenblad en elke module heeft de tab Varianten. Kies de paar velden die je wilt variëren; de rest blijft gelijk aan het blad. Typ de waarden per variant, plak een blok uit een werkmap of maak een reeks (van–tot–stap). Elke variant rekent vanzelf door, en de tabel toont naast het blad de maatgevende UC, het oordeel, elke UC en zelfgekozen uitkomsten. Optimaliseren zoekt per variant de kleinste waarde van een veld waarmee het blad voldoet. Een variant kun je bekijken met zijn volledige uitwerking, overnemen in het blad of toevoegen als eigen blad
 - Het projectbestand bewaart varianten van een blad: dezelfde rekentekst met andere invoer, met per variant alleen de eigen waarden van de gekozen velden. Ook de antwoorden van FEM Studio die de varianten gebruiken, blijven bij het opslaan bewaard. De tab Varianten om ze te maken en naast elkaar te zien, volgt
