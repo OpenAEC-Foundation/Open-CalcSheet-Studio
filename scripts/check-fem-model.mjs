@@ -244,9 +244,14 @@ if (model) {
   meld(Math.abs(somLast(G) - 785) < 1e-6, `geval G: eigen gewicht per dikte plus 1 kN/m² = 785 kN (${somLast(G).toFixed(6)})`);
   // Q: 5 kN/m² op 5 × 10 m plus 20 kN = 270 kN.
   meld(Math.abs(somLast(Q) - 270) < 1e-6, `geval Q: 5 kN/m² op de helft plus 20 kN = 270 kN (${somLast(Q).toFixed(6)})`);
-  const pl = Q.nodalLoads?.[0];
-  const pk = pl && Q.nodes[pl.nodeId - 1];
-  meld(Q.nodalLoads?.length === 1 && pk?.x === 7.5 && pk?.y === 7.5 && pl.fz === -20, "de puntlast op een knoop, omlaag is −Z");
+  const opKnoop = (args, x, y) => (args.nodalLoads ?? []).filter((l) => args.nodes[l.nodeId - 1].x === x && args.nodes[l.nodeId - 1].y === y);
+  const pl = opKnoop(Q, 7.5, 7.5);
+  meld(pl.length === 1 && pl[0].fz === -20, "de puntlast op een knoop, omlaag is −Z");
+  // De vlaklast op 0..5 × 0..10 gaat als knooplasten, q·A/4 op elke hoek: een knoop met
+  // vier elementen van 0,5 × 0,5 eromheen krijgt 4 · 5 · 0,25 / 4 = 1,25 kN.
+  meld(Math.abs(opKnoop(Q, 2.5, 2.5)[0]?.fz + 1.25) < 1e-9 && opKnoop(Q, 6, 2.5).length === 0 && G.nodalLoads === undefined,
+    "een vlaklast op een rechthoek: q·A/4 op elke hoek van de elementen eronder, en niets ernaast");
+  meld(G.plates.length === new Set(model.pl).size && G.surfaceLoads.length === G.plates.length, "één plaat in de JSON per plaat uit het blok, elk met zijn eigen gewicht als vlaklast");
   meld(G.surfaceLoads.every((l) => l.qzKnPerM2 < 0 && l.qxKnPerM2 === 0 && l.qyKnPerM2 === 0), "vlaklasten omlaag zijn −Z");
   meld(new Set(G.nodes.map((n) => n.z)).size === 1, "alle knopen in één vlak");
 }
@@ -337,8 +342,16 @@ if (vloerFix && model) {
   for (let j = 0; j < 400; j++) sl += femWaarde(fm, "G", "mx", 5, 3.75 + ((j + 0.5) * 2.5) / 400);
   meld(rel(lijn, sl / 400) < 2e-3, `fem_strook over een lijn (kolomstrook boven de middelste paal) = ${lijn.toFixed(3)} kNm/m`);
   meld(Math.abs(femStrook(fm, "G", "w", 2.5, 2.5, 2.5, 2.5) - femWaarde(fm, "G", "w", 2.5, 2.5)) < 1e-12, "een strook van één punt is de waarde op dat punt");
-  const buiten = rek('fem_waarde(vloer; "G"; "w"; 11 m; 2 m)');
-  meld(buiten === undefined, "een punt naast de vloer geeft een fout, geen waarde");
+  const buiten = evaluate(parse(`${VLOER}\nuit = fem_waarde(vloer; "G"; "w"; 11 m; 2 m)`), {}, {}, { toetsingen: Object.fromEntries(Object.entries(records).map(([h, r]) => [h, alsAntwoord(r)])) })
+    .find((x) => x.name === "uit");
+  meld(/Error/.test(String(buiten?.result)) && /geen plaat/.test(String(buiten?.result)), "een punt naast de vloer geeft een fout, geen waarde", String(buiten?.result));
+  let geenSet = "";
+  try {
+    femWaarde(fm, "SLS", "w", 1, 1);
+  } catch (e) {
+    geenSet = e.message;
+  }
+  meld(/SLS/.test(geenSet) && /UGT/.test(geenSet), "een geval of combinatie die er niet is: een fout met de namen die er wel zijn", geenSet);
 
   // Op het blad en in beeld.
   const html = render(nodes);
@@ -459,21 +472,27 @@ if (palenFix) {
   const records = leesVastgelegdeToetsingen(palenFix.toetsingen) ?? {};
   const { nodes, scope } = metAntwoorden(PALEN, records);
   meld(femVan(nodes)?.status === "klaar", "het blok is klaar");
-  const dkt = plaatOplossing({ lx: 4, ly: 4, nbx: 3, nby: 3, t: 0.25, E: 30e6, nu: 0.2, k: 150000, dKop: 1, nEl: 8, q: [[10, 10, 10], [10, 10, 10], [10, 10, 10]] });
-  const knoop = (x, y) => dkt.knopen[Math.round(y / 0.5) * (dkt.nx + 1) + Math.round(x / 0.5)];
+  const dkt = plaatOplossing({ lx: 4, ly: 4, nbx: 3, nby: 3, t: 0.25, E: 30e6, nu: 0.2, k: 150000, dKop: 1, nEl: 16, q: [[10, 10, 10], [10, 10, 10], [10, 10, 10]] });
+  const knoop = (x, y) => dkt.knopen[Math.round(y / 0.25) * (dkt.nx + 1) + Math.round(x / 0.25)];
   const pm = scope.palen;
   const R = scope.palen_Q_R.toArray().flat().map((w) => inEenheid(w, "kN"));
   const Rdkt = dkt.palen.map((p) => p.R);
   const paal = (i, j) => j * 4 + i;
+  // Twee verschillende plaatmodellen: Kirchhoff met driehoeken (DKT, plaat.ts) en Mindlin
+  // met vierhoeken (MITC4, FEM Studio), elk met een eigen middeling naar de knopen. Met
+  // een maas van 0,25 m liggen de reacties binnen 0,4 %, de doorbuiging binnen 0,7 % en de
+  // momenten binnen 3 %. Met 0,5 m (8 elementen per veld) kwam m_x in het midden van het
+  // veld 11 % lager uit dan DKT: MITC4 benadert dat veldmoment op een grof raster van
+  // onderen, en schuift bij een fijner raster naar DKT toe.
   const punten = [
-    ["R hoekpaal", R[paal(0, 0)], Rdkt[paal(0, 0)], 0.03],
-    ["R randpaal", R[paal(1, 0)], Rdkt[paal(1, 0)], 0.03],
-    ["R binnenpaal", R[paal(1, 1)], Rdkt[paal(1, 1)], 0.03],
-    ["w midden middenveld (mm)", femWaarde(pm, "Q", "w", 6, 6), knoop(6, 6).w * 1000, 0.05],
-    ["w binnenpaal (mm)", femWaarde(pm, "Q", "w", 4, 4), knoop(4, 4).w * 1000, 0.05],
-    ["m_x midden middenveld", femWaarde(pm, "Q", "mx", 6, 6), knoop(6, 6).mx, 0.08],
-    ["m_x kolomstrook veldmidden", femWaarde(pm, "Q", "mx", 6, 4), knoop(6, 4).mx, 0.08],
-    ["m_x boven binnenpaal", femWaarde(pm, "Q", "mx", 4, 4), knoop(4, 4).mx, 0.25],
+    ["R hoekpaal", R[paal(0, 0)], Rdkt[paal(0, 0)], 0.01],
+    ["R randpaal", R[paal(1, 0)], Rdkt[paal(1, 0)], 0.01],
+    ["R binnenpaal", R[paal(1, 1)], Rdkt[paal(1, 1)], 0.01],
+    ["w midden middenveld (mm)", femWaarde(pm, "Q", "w", 6, 6), knoop(6, 6).w * 1000, 0.02],
+    ["w binnenpaal (mm)", femWaarde(pm, "Q", "w", 4, 4), knoop(4, 4).w * 1000, 0.02],
+    ["m_x midden middenveld", femWaarde(pm, "Q", "mx", 6, 6), knoop(6, 6).mx, 0.05],
+    ["m_x kolomstrook veldmidden", femWaarde(pm, "Q", "mx", 6, 4), knoop(6, 4).mx, 0.05],
+    ["m_x boven binnenpaal", femWaarde(pm, "Q", "mx", 4, 4), knoop(4, 4).mx, 0.05],
   ];
   for (const [wat, fem, ref, tol] of punten) meld(rel(fem, ref) < tol, `${wat}: FEM Studio ${fem.toFixed(3)}, plaat_palen ${ref.toFixed(3)} (${pct(fem, ref)})`);
   meld(Math.abs(R.reduce((s, r) => s + r, 0) - 1440) < 1e-6, `ΣR = ${R.reduce((s, r) => s + r, 0).toFixed(4)} kN = 10 · 12 · 12`);

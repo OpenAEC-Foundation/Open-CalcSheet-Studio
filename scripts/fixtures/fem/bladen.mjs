@@ -34,7 +34,7 @@ export const NAVIER = [
 /**
  * Dezelfde vlakke plaat op palen als `plaat_palen` (packages/core/src/plaat.ts):
  * 3 × 3 velden van 4 m, een paal op elk snijpunt, de rand vrij. De paalkop van 1 m
- * en de maas van 0,5 m geven in beide modellen dezelfde vijf knopen per paal.
+ * en de maas van 0,25 m geven in beide modellen dezelfde dertien knopen per paal.
  */
 export const PALEN = [
   "L = 4 m",
@@ -44,7 +44,7 @@ export const PALEN = [
   "q = 10 kN/m^2",
   "@fem palen",
   "  materiaal 30000 N/mm^2; 0.2",
-  "  maas 0.5 m",
+  "  maas 0.25 m",
   "  plaat 0; 0; 3*L; 3*L; t",
   "  veren 0; 0; 4; 4; L; L; k; d",
   "  geval Q",
@@ -76,7 +76,7 @@ export const VLOER = [
   "  plaat L - b_s/2; 0; b_s; 2*L; t_s",
   "  #for i = 0 : 2",
   "  #for j = 0 : 2",
-  "  plaat max(i*L - b_k/2; 0); max(j*L - b_k/2; 0); min(i*L + b_k/2; 2*L) - max(i*L - b_k/2; 0); min(j*L + b_k/2; 2*L) - max(j*L - b_k/2; 0); t_k",
+  "  plaat max(i*L - b_k/2; 0 m); max(j*L - b_k/2; 0 m); min(i*L + b_k/2; 2*L) - max(i*L - b_k/2; 0 m); min(j*L + b_k/2; 2*L) - max(j*L - b_k/2; 0 m); t_k",
   "  #loop",
   "  #loop",
   "  veren 0; 0; 3; 3; L; L; k; d",
