@@ -969,6 +969,7 @@
       "geen": "—"
     },
     "fout": "fout",
+    "dubbelzinnig": "Dubbelzinnig: duizendtal of decimaal? Typ 5000 of 5,0.",
     "menu": {
       "bekijk": "Uitwerking bekijken",
       "overnemen": "Overnemen in het blad",

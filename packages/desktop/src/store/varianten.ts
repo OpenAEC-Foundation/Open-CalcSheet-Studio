@@ -124,7 +124,9 @@ export function zetVelden(vs: Varianten, velden: string[]): Varianten {
 
 /**
  * Een blok uit een werkmap (tekst met tabs en regeleinden) in de tabel, vanaf de
- * cel in rij `rij` (een index in `velden`) en kolom `kolom` (0 is de eerste variant).
+ * cel in rij `rij` (een index in `rijen`) en kolom `kolom` (0 is de eerste variant).
+ * `rijen` zijn de velden zoals de tabel ze toont: zonder een veld dat het blad niet
+ * meer heeft, anders schuift alles een rij op.
  * Rijen zijn velden, kolommen varianten. Loopt het blok verder dan de laatste
  * variant, dan komen er varianten bij; rijen voorbij het laatste veld vallen weg.
  * Een lege cel volgt weer het blad. `zetOm` zet een getypte waarde om naar de eenheid
@@ -136,6 +138,7 @@ export function plakBlok(
   rij: number,
   kolom: number,
   zetOm: (veld: string, waarde: string) => string | null = (_veld, w) => w,
+  rijen: readonly string[] = vs.velden,
 ): Varianten {
   const regels = tekst.replace(/\r\n?/g, "\n").split("\n");
   if (regels.length > 1 && regels[regels.length - 1] === "") regels.pop();
@@ -144,7 +147,7 @@ export function plakBlok(
   const breedte = Math.max(0, ...cellen.map((r) => r.length));
   while (lijst.length < kolom + breedte) lijst = [...lijst, nieuweVariant(lijst)];
   cellen.forEach((r, i) => {
-    const veld = vs.velden[rij + i];
+    const veld = rijen[rij + i];
     if (veld === undefined) return;
     r.forEach((ruw, j) => {
       const w = ruw.trim();

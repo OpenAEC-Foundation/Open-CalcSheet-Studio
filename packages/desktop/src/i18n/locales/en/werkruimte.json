@@ -969,6 +969,7 @@
       "geen": "—"
     },
     "fout": "error",
+    "dubbelzinnig": "Ambiguous: a thousands separator or a decimal? Type 5000 or 5,0.",
     "menu": {
       "bekijk": "View worked output",
       "overnemen": "Apply to the sheet",

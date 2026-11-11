@@ -13,7 +13,7 @@
  *
  * Zuiver, zonder React of stores: scripts/check-varianten.mjs laadt dit in Node.
  */
-import { evaluate, parse, type EvalOpties, type EvaluatedNode, type ParseOptions, type ToetsVerzoek } from "@ifc-calc/core";
+import { evaluate, parse, type EvalOpties, type EvaluatedNode, type ParseOptions, type ToetsAntwoord, type ToetsVerzoek } from "@ifc-calc/core";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
 import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../components/calc/bladLezen.ts";
 import type { Invoerveld } from "../components/calc/bladVersie.ts";
@@ -107,6 +107,19 @@ export function rekenVariant(
 }
 
 /**
+ * Het oordeel van een kolom, voor het scherm en papier. Een regel met een fout is nooit
+ * "voldoet": de uitkomst is dan niet te vertrouwen, en de veilige kant is niet getoetst.
+ */
+export function oordeelVan(u: Pick<VariantUitkomst, "resultaat" | "fout"> | null | undefined): "voldoet" | "voldoetNiet" | "nietGetoetst" | "geen" {
+  const r = u?.resultaat;
+  if (!r) return "geen";
+  if (r.nietGetoetst) return "nietGetoetst";
+  if (r.voldoet === true) return u.fout ? "nietGetoetst" : "voldoet";
+  if (r.voldoet === false) return "voldoetNiet";
+  return "geen";
+}
+
+/**
  * Voldoet een uitkomst bij deze grens? Alleen als het blad zelf "voldoet" zegt en
  * niet "niet getoetst", en de maatgevende UC hoogstens de grens is. Geeft het blad
  * geen UC, dan alleen bij een grens van 1 of hoger: een strengere grens is dan niet
@@ -197,6 +210,21 @@ export function papierTabellen(
     uit.push({ kolommen: [null, ...vs.lijst.slice(i, i + Math.max(1, perTabel))], rijen });
   }
   return uit;
+}
+
+/**
+ * Het deel van de sleutel van een kolom dat van de antwoorden van FEM Studio afhangt:
+ * alleen de antwoorden voor de blokken die de vorige uitkomst van die kolom had
+ * (`hashes`). Zo rekent bij een nieuw antwoord alleen de kolom opnieuw die het gebruikt,
+ * niet de hele tabel. Zonder `@toets` in de tekst leeg; nog niet doorgerekend: "?".
+ */
+export function toetsDeel(source: string, hashes: readonly string[] | undefined, antwoorden: Record<string, ToetsAntwoord>): string {
+  if (!/^\s*@toets\b/m.test(source)) return "";
+  if (!hashes) return "?";
+  return JSON.stringify(hashes.map((h) => {
+    const a = antwoorden[h];
+    return [h, !a ? "-" : a.ok ? `${a.datum ?? "ok"}${a.waarschuwing ? "!" : ""}` : `x${a.melding}`];
+  }));
 }
 
 /**
