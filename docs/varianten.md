@@ -7,6 +7,43 @@ gebruiken wat elk blad heeft: invoervelden (`?` en `@select`), de uitkomst en de
 getallen. Een module hoeft er niets voor te doen. Het ontwerp staat in
 [superpowers/specs/2026-11-11-varianten-design.md](superpowers/specs/2026-11-11-varianten-design.md).
 
+## De tab
+
+Een rekenblad, een module of een canvas heeft naast de weergaven en het afdrukvoorbeeld de
+tab **Varianten** (`components/calc/varianten/`).
+
+- **Velden kiezen.** De eerste keer vraagt de tab welke invoer varieert. Alle invoervelden
+  van het blad staan onder hun koppen, met hun label en waarde (`velden.ts`). Een veld dat
+  in meer takken staat met een ander label, toont die labels allemaal.
+- **De tabel.** De kolommen zijn het blad en de varianten, de rijen de gekozen velden en de
+  uitkomsten. Een lege cel volgt het blad en toont diens waarde grijs.
+  - Typen gaat zoals in een invoerveld van het blad: met een eenheid, een komma of een
+    verwijzing `#2.R_paal`. Een eenheid die niet past, krijgt een rode rand en wordt niet
+    opgeslagen.
+  - Een blok uit een werkmap plakken vult vanaf de gekozen cel; er komen varianten bij als
+    het blok verder loopt.
+  - Enter en de pijltjes gaan naar de volgende rij.
+- **Knoppen.**
+  - *＋ Variant* en *Kopie*;
+  - *Plakken uit werkmap*;
+  - *Reeks…*: van–tot–stap, hoogstens 50; zijn de varianten nog leeg, dan komt de reeks in
+    hun plaats;
+  - *Optimaliseren…*;
+  - *＋ Invoerveld* en *＋ Uitkomst*;
+  - *Alle varianten weghalen*.
+- **Het menu van een variant:**
+  - *Uitwerking bekijken*, alleen lezen, met het parametrische beeld;
+  - *Overnemen in het blad*: één stap ongedaan maken;
+  - *Als nieuw blad toevoegen*: een kopie direct na het blad, met een eigen kenmerk en zonder
+    varianten;
+  - *Kopiëren*, *Hernoemen* en *Verwijderen*.
+
+De tab rekent in een eigen worker (`rekenen/variantWorker.ts`). De wachtrij en de bewaarde
+uitkomsten staan in `rekenen/variantRekenen.ts`: alleen een kolom die veranderde, rekent
+opnieuw. Wat de tabel niet meer vraagt, vervalt. Tot een nieuwe uitkomst er is, blijft de
+vorige staan. De worker heeft geen eigen cache voor de antwoorden van FEM Studio: die komen
+mee in de opties.
+
 ## Het model
 
 `Exemplaar.varianten` (`packages/desktop/src/store/varianten.ts`):

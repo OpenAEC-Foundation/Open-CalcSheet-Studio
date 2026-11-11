@@ -13,7 +13,9 @@
  *   • optimaliseren: per variant de kleinste waarde die voldoet, en nooit een waarde
  *     die niet voldoet;
  *   • toetsen: de vastgelegde antwoorden van FEM Studio voor de varianten blijven bij
- *     het opslaan in het bestand.
+ *     het opslaan in het bestand;
+ *   • de tab: de velden met hun label en kop, en elke schermtekst van de tab in het
+ *     Engels en het Nederlands.
  *
  * Handberekening van het toetsblad (M = 10 kNm, b = 75 mm, f = 24 N/mm²):
  *   W = b·h²/6, σ = M/W, UC = σ/f
@@ -39,10 +41,12 @@ import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { readFileSync } from "node:fs";
 import { alsAntwoord, evaluate, parse } from "../packages/core/dist/index.js";
-import { kandidaten, rekenVariant, toetsDeel, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
+import { kandidaten, oordeelVan, rekenVariant, toetsDeel, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
 import * as cache from "../packages/desktop/src/rekenen/toetsCache.ts";
 const { gebruikteToetsingen } = cache;
 import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
+import { readdirSync } from "node:fs";
+import { DUBBELZINNIG, leesCel, variantVelden } from "../packages/desktop/src/components/calc/varianten/velden.ts";
 
 let fouten = 0;
 function meld(ok, tekst, detail = "") {
@@ -268,6 +272,15 @@ console.log("\nToetsen");
   meld(terug(opslaan(project({ ...ex, varianten }))) === [h3, h4, h5].sort().join(), "opslaan met varianten: de antwoorden van blad en varianten blijven, de rest valt weg");
   meld(terug(opslaan(project(ex))) === h3, "zonder varianten: alleen die van het blad");
 
+  // De worker heeft geen eigen cache: de antwoorden komen mee in de opties (variantRekenen.ts).
+  const eigen = { toetsingen: { [h4]: alsAntwoord(vast("4")) }, toetsModus: "lezen" };
+  const metAntwoord = rekenVariant(bron, { h: "4" }, {}, "Kolom", { evalOpties: eigen });
+  meld(typeof metAntwoord.resultaat.uc === "number" && Math.abs(metAntwoord.getallen.UC_max - metAntwoord.resultaat.uc) < 1e-4,
+    "meegegeven antwoorden gelden, ook zonder cache", json(metAntwoord.resultaat));
+  const zonder = rekenVariant(bron, { h: "4" }, {}, "Kolom");
+  meld(zonder.resultaat.uc === null || Number.isNaN(zonder.resultaat.uc) || zonder.getallen.kolom_uc_max === undefined,
+    "zonder antwoord geen UC uit FEM Studio", json(zonder.getallen));
+
   // Een antwoord van deze sessie bij het blad vastleggen verandert niets aan de antwoorden:
   // dan geen nieuwe versie, anders rekent elke tabel met @toets bij elke vastlegging opnieuw.
   cache.wisSessie();
@@ -287,6 +300,78 @@ console.log("\nToetsen");
   meld(toetsDeel(bron, undefined, {}) !== toetsDeel(bron, [h4], {}), "nog niet doorgerekend: een eigen deel");
   meld(toetsDeel(bron, [h4], { [h4]: alsAntwoord(vast("4")), [h5]: alsAntwoord(vast("5")) }) === voor, "een antwoord voor een andere invoer verandert de sleutel niet");
   meld(toetsDeel(bron, [h4], {}) !== voor && toetsDeel(bron, [h4], { [h4]: { ok: false, melding: "x" } }) !== voor, "een nieuw of mislukt antwoord voor deze invoer wel");
+}
+
+console.log("\nDe tab");
+{
+  const velden = variantVelden(parse([
+    "# 1. Materiaal",
+    '@select materiaal "Materiaal"',
+    "  Hout = 1",
+    "  Staal = 2",
+    "@end",
+    "#if materiaal ≡ 1",
+    "    b = ?*(mm)', breedte<span class=\"kolom-3\"></span>'",
+    "#end if",
+    "#if materiaal ≡ 1",
+    "    L_1 = ?*(m)', lengte van de uitkraging'",
+    "#else",
+    "    L_1 = ?*(m)', veld 1'",
+    "    L_1 = ?*(m)', veld 1'",
+    "#end if",
+    "# 2. Belasting",
+    "q_1,e = ?*(kN/m)', in b (0 in een van beide: driehoek)<span class=\"alleen-scherm\"></span>'",
+    "N = ?*(kN)",
+    "'Normale kracht",
+  ].join("\n")));
+  meld(json(velden.map((v) => v.naam)) === json(["materiaal", "b", "L_1", "q_1_e", "N"]), "alle velden, ook in een #if-tak", json(velden.map((v) => v.naam)));
+  const per = Object.fromEntries(velden.map((v) => [v.naam, v]));
+  meld(per.b.label === "breedte" && per.b.kop === "1. Materiaal" && per.b.eenheid === "mm", "het label naast het veld, de kop erboven en de eenheid", json(per.b));
+  meld(per.materiaal.label === "Materiaal" && per.materiaal.soort === "keuze", "een keuzelijst met zijn label");
+  meld(per.q_1_e.label === "in b (0 in een van beide: driehoek)" && per.q_1_e.kop === "2. Belasting", "uitleg zonder html en zonder komma vooraan", per.q_1_e.label);
+  meld(per.N.label === "", "een tekstregel op een eigen regel is geen label", per.N.label);
+  meld(per.L_1.label === "lengte van de uitkraging / veld 1", "een veld in meer takken: elk ander label één keer", per.L_1.label);
+
+  // Elke vaste sleutel t("varianten.…") in de tab bestaat in beide talen.
+  const map = new URL("../packages/desktop/src/components/calc/varianten/", import.meta.url);
+  const bronnen = readdirSync(map).filter((f) => f.endsWith(".tsx")).map((f) => readFileSync(new URL(f, map), "utf8"));
+  bronnen.push(readFileSync(new URL("../packages/desktop/src/App.tsx", import.meta.url), "utf8"));
+  const sleutels = new Set(bronnen.flatMap((b) => [...b.matchAll(/\bt\(\s*["'`](varianten\.[\w.]+)["'`]/g)].map((m) => m[1])));
+  const taal = (code) => JSON.parse(readFileSync(new URL(`../packages/desktop/src/i18n/locales/${code}/werkruimte.json`, import.meta.url), "utf8"));
+  const heeft = (obj, pad) => {
+    const delen = pad.split(".");
+    const laatste = delen.pop();
+    let o = obj;
+    for (const d of delen) o = o?.[d];
+    return o !== undefined && (laatste in o || `${laatste}_one` in o);
+  };
+  for (const code of ["en", "nl"]) {
+    const ontbreekt = [...sleutels].filter((s) => !heeft(taal(code), s));
+    meld(sleutels.size > 20 && ontbreekt.length === 0, `elke tekst van de tab in ${code} (${sleutels.size} sleutels)`, ontbreekt.join(", "));
+  }
+  const menu = ["bekijk", "overnemen", "alsBlad", "kopie", "hernoem", "verwijder"];
+  meld(["en", "nl"].every((c) => menu.every((a) => taal(c).varianten?.menu?.[a])), "het menu van een variant, ook met een berekende sleutel");
+
+  // Een cel leest wat je typt zoals een invoerveld, maar weigert een getal dat twee kanten op kan.
+  const mm = { naam: "h", soort: "invoer", beginwaarde: "0", eenheid: "mm", keuzes: [] };
+  const m = { naam: "L", soort: "invoer", beginwaarde: "0", eenheid: "m", keuzes: [] };
+  meld(json(leesCel(m, "4500 mm")) === json({ waarde: "4.5" }) && json(leesCel(m, "4,5")) === json({ waarde: "4,5" }), "een eenheid erachter en een komma");
+  meld(json(leesCel(m, "#2.L_1")) === json({ waarde: "#2.L_1" }), "een verwijzing naar een ander blad");
+  for (const t of ["5.000", "12.500", "1.234,5", "1,234.5", "5,000"]) {
+    meld(leesCel(mm, t).fout === DUBBELZINNIG, `"${t}" is dubbelzinnig (duizendtal of decimaal) en wordt niet opgeslagen`, json(leesCel(mm, t)));
+  }
+  meld(json(leesCel(mm, "0.125")) === json({ waarde: "0.125" }) && json(leesCel(mm, "5000")) === json({ waarde: "5000" }) && json(leesCel(mm, "12,5")) === json({ waarde: "12,5" }),
+    "0.125, 5000 en 12,5 zijn gewoon getallen");
+  meld("fout" in leesCel(mm, "3 kN"), "een eenheid die niet past");
+  const keuzeVeld = { naam: "k", soort: "keuze", beginwaarde: "2", eenheid: "", keuzes: [{ text: "C24", value: "2" }, { text: "C30", value: "3" }] };
+  meld(json(leesCel(keuzeVeld, "c30")) === json({ waarde: "3" }) && json(leesCel(keuzeVeld, "2")) === json({ waarde: "2" }) && "fout" in leesCel(keuzeVeld, "C99"),
+    "een keuzelijst neemt de tekst of de waarde van een keuze");
+
+  // Het oordeel van een kolom: een regel met een fout is nooit "voldoet".
+  const r = (voldoet, extra = {}) => ({ resultaat: { titel: "", norm: "", uc: 0.5, voldoet }, ...extra });
+  meld(oordeelVan(r(true)) === "voldoet" && oordeelVan(r(false)) === "voldoetNiet" && oordeelVan(r(null)) === "geen", "voldoet, voldoet niet, geen oordeel");
+  meld(oordeelVan(r(true, { fout: "Error: x" })) === "nietGetoetst", "voldoet met een fout in het blad: niet getoetst");
+  meld(oordeelVan({ resultaat: { titel: "", norm: "", uc: null, voldoet: null, nietGetoetst: true } }) === "nietGetoetst" && oordeelVan(null) === "geen", "niet getoetst, en geen uitkomst");
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles in orde");

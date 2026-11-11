@@ -85,7 +85,11 @@ export function rekenVariant(
   opties: VariantOpties = {},
 ): VariantUitkomst {
   const parseOpties = opties.parseOpties ?? { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls };
-  const evalOpties = metToetsingen(opties.evalOpties ?? {}, opties.toetsModus ?? "lezen", opties.taal);
+  // Opties met een toetsmodus hebben hun antwoorden al bij zich: zo rekent de worker, die
+  // geen eigen cache heeft (variantRekenen.ts). Anders de antwoorden van deze cache.
+  const evalOpties = opties.evalOpties?.toetsModus
+    ? opties.evalOpties
+    : metToetsingen(opties.evalOpties ?? {}, opties.toetsModus ?? "lezen", opties.taal);
   const metRefs = opties.verwijzingen?.length
     ? scopeMetVerwijzingen(source, waarden, scope, opties.verwijzingen, parseOpties, evalOpties)
     : scope;
@@ -100,6 +104,19 @@ export function rekenVariant(
     verzoeken: verzamelVerzoeken(nodes),
     toetsen: toetsHashes(nodes),
   };
+}
+
+/**
+ * Het oordeel van een kolom, voor het scherm en papier. Een regel met een fout is nooit
+ * "voldoet": de uitkomst is dan niet te vertrouwen, en de veilige kant is niet getoetst.
+ */
+export function oordeelVan(u: Pick<VariantUitkomst, "resultaat" | "fout"> | null | undefined): "voldoet" | "voldoetNiet" | "nietGetoetst" | "geen" {
+  const r = u?.resultaat;
+  if (!r) return "geen";
+  if (r.nietGetoetst) return "nietGetoetst";
+  if (r.voldoet === true) return u.fout ? "nietGetoetst" : "voldoet";
+  if (r.voldoet === false) return "voldoetNiet";
+  return "geen";
 }
 
 /**
