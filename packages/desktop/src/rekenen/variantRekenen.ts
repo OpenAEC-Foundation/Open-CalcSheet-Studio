@@ -90,6 +90,14 @@ function deWorker(): Worker {
   if (!worker) {
     worker = new Worker(new URL("./variantWorker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (e: MessageEvent<VariantAntwoord>) => klaar(e.data);
+    // Valt de worker zelf om, dan krijgt het verzoek van nu een fout in plaats van geen
+    // antwoord: anders wacht optimaliseren eeuwig. Een nieuwe worker neemt het daarna over.
+    worker.onerror = (e: ErrorEvent) => {
+      e.preventDefault();
+      worker?.terminate();
+      worker = null;
+      if (bezig) klaar({ sleutel: bezig.v.sleutel, uitkomst: null, fout: e.message || "worker" });
+    };
   }
   return worker;
 }
