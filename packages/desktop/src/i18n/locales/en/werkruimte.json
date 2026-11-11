@@ -924,7 +924,10 @@
     "openen": "Open file",
     "opslaanAls": "Save file as",
     "geenBestand": "No open file to overwrite",
-    "geenProject": "This IFCX file does not contain a project of this app."
+    "geenProject": "This IFCX file does not contain a project of this app.",
+    "geenDocs": "There are no files of this app in this Docs folder yet.",
+    "kiesDocs": "Which file do you want to open? Type its number.",
+    "naamInDocs": "Name in Docs"
   },
   "ifcxBewaren": {
     "titel": "Save IFCX",

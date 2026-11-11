@@ -55,6 +55,75 @@ type BestandsKiezer = Window & {
   showSaveFilePicker?: (options?: object) => Promise<FileSystemFileHandle>;
 };
 
+// ── De OpenAEC SuperCloud ──────────────────────────────────────────────────
+// In de werkplek van de SuperCloud zet de omgeving `window.openaecHost` neer
+// (contract: OpenAEC-Blueprint, docs/supercloud-koppeling.md). Openen, Opslaan
+// en Opslaan als gaan dan naar Docs in plaats van naar schijf of een download.
+// Een bestand uit Docs heeft hier het pad `docs:<id>`.
+
+interface DocsRef { id: string; name: string; version: string | number }
+interface SiteHost {
+  initialFileId?: string;
+  open(id: string, version?: string | number): Promise<DocsRef & { readOnly: boolean; bytes: ArrayBuffer | Uint8Array }>;
+  save(bytes: Uint8Array, options: { id?: string; name?: string; expectedVersion?: string | number }): Promise<DocsRef>;
+  list(): Promise<{ id: string; name: string; modified: string }[]>;
+}
+
+const DOCS = "docs:";
+const docsBestanden = new Map<string, DocsRef & { readOnly: boolean }>();
+
+/** De SuperCloud-host, of null buiten de werkplek. */
+export function siteHost(): SiteHost | null {
+  const host = typeof window !== "undefined" ? (window as { openaecHost?: SiteHost }).openaecHost : undefined;
+  return host && typeof host.open === "function" && typeof host.save === "function" ? host : null;
+}
+
+export function isDocsPad(path: string | null): boolean {
+  return !!path && path.startsWith(DOCS);
+}
+
+/** Een bestand uit Docs openen (op id, of op een pad `docs:<id>`). */
+export async function openUitDocs(idOfPad: string): Promise<OpenedFile> {
+  const host = siteHost();
+  if (!host) throw new Error(i18next.t("werkruimte:bestandDialoog.geenBestand"));
+  const id = idOfPad.startsWith(DOCS) ? idOfPad.slice(DOCS.length) : idOfPad;
+  const f = await host.open(id);
+  const bytes = f.bytes instanceof Uint8Array ? f.bytes : new Uint8Array(f.bytes);
+  const path = DOCS + f.id;
+  docsBestanden.set(path, { id: f.id, name: f.name, version: f.version, readOnly: f.readOnly });
+  return { path, name: stripExt(f.name), raw: new TextDecoder().decode(bytes) };
+}
+
+/** Kiezen uit de bestanden van deze tool in dezelfde map in Docs (null: geannuleerd). */
+async function kiesUitDocs(host: SiteHost): Promise<OpenedFile | null> {
+  const lijst = (await host.list()).filter((f) => /\.(ifccalculation|ifcx|ifc-calculation|cpd|cpdz)$/i.test(f.name));
+  if (!lijst.length) {
+    alert(i18next.t("werkruimte:bestandDialoog.geenDocs"));
+    return null;
+  }
+  const keuze = prompt(
+    `${i18next.t("werkruimte:bestandDialoog.kiesDocs")}\n\n` +
+      lijst.map((f, i) => `${i + 1}. ${f.name}`).join("\n"),
+    "1",
+  );
+  const nummer = keuze ? Number.parseInt(keuze, 10) : NaN;
+  if (!Number.isInteger(nummer) || nummer < 1 || nummer > lijst.length) return null;
+  return openUitDocs(lijst[nummer - 1].id);
+}
+
+/** Opslaan in Docs: met `id` een nieuwe versie, met `name` een nieuw bestand. Geeft het pad terug. */
+async function bewaarInDocs(host: SiteHost, payload: string, doel: { path?: string; name?: string }): Promise<string> {
+  const bytes = new TextEncoder().encode(payload);
+  const bekend = doel.path ? docsBestanden.get(doel.path) : undefined;
+  const ref = bekend && !bekend.readOnly
+    ? await host.save(bytes, { id: bekend.id, expectedVersion: bekend.version })
+    : await host.save(bytes, { name: doel.name ?? bekend?.name ?? "Berekening.ifccalculation" });
+  // Een conflict geeft een kopie met een eigen id: die is daarna het geopende bestand.
+  const path = DOCS + ref.id;
+  docsBestanden.set(path, { ...ref, readOnly: false });
+  return path;
+}
+
 function geannuleerd(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
@@ -120,6 +189,8 @@ export async function bewaarOudeVersie(path: string, fs?: FsVoorKopie): Promise<
  * Resolves with the loaded content, or `null` if the user cancelled.
  */
 export async function openCalculationFile(): Promise<OpenedFile | null> {
+  const host = siteHost();
+  if (host) return kiesUitDocs(host);
   if (isTauri()) {
     const { open } = await import("@tauri-apps/plugin-dialog");
     const { readTextFile } = await import("@tauri-apps/plugin-fs");
@@ -182,6 +253,9 @@ let startbestandVraag: Promise<string | null> | null = null;
  * twee keer draait.
  */
 export function startbestand(): Promise<string | null> {
+  // In de werkplek: het bestand waarmee de gebruiker de tool uit Docs opende.
+  const host = siteHost();
+  if (host) return Promise.resolve(host.initialFileId ? DOCS + host.initialFileId : null);
   if (!isTauri()) return Promise.resolve(null);
   startbestandVraag ??= import("@tauri-apps/api/core").then(({ invoke }) => invoke<string | null>("startbestand"));
   return startbestandVraag;
@@ -207,23 +281,34 @@ function sanitizeFileName(name: string): string {
  * niet ongemerkt, daarvoor komt eerst de dialoog.
  */
 export function kanDirectOpslaan(path: string | null): path is string {
+  if (path && isDocsPad(path)) {
+    const docs = docsBestanden.get(path);
+    return !!docs && !docs.readOnly && /\.ifccalculation$/i.test(docs.name);
+  }
   return !!path && /\.ifccalculation$/i.test(path) &&
     (isTauri() || (browserHandle !== null && browserBestandsnaam === path));
 }
 
-/** Schrijf een payload over een bestaand bestand heen, zonder dialoog. */
-export async function schrijfCalculationFile(path: string, payload: string): Promise<void> {
+/**
+ * Schrijf een payload over een bestaand bestand heen, zonder dialoog. Geeft het
+ * pad terug waar het staat: in Docs kan een conflict een kopie met een ander
+ * pad opleveren.
+ */
+export async function schrijfCalculationFile(path: string, payload: string): Promise<string> {
+  const host = siteHost();
+  if (host && isDocsPad(path)) return bewaarInDocs(host, payload, { path });
   if (!isTauri()) {
     if (!browserHandle || browserBestandsnaam !== path) throw new Error(i18next.t("werkruimte:bestandDialoog.geenBestand"));
     const writable = await browserHandle.createWritable();
     await writable.write(payload);
     await writable.close();
-    return;
+    return path;
   }
   const { writeTextFile } = await import("@tauri-apps/plugin-fs");
   await bewaarOudeVersie(path);
   await writeTextFile(path, payload);
   alNieuw.add(path);
+  return path;
 }
 
 /**
@@ -239,6 +324,14 @@ export async function saveCalculationFile(
   huidigPad?: string | null,
 ): Promise<string | null> {
   const defaultFile = `${sanitizeFileName(defaultName)}.ifccalculation`;
+
+  const host = siteHost();
+  if (host) {
+    const naam = prompt(i18next.t("werkruimte:bestandDialoog.naamInDocs"), defaultFile);
+    if (!naam) return null;
+    const metExtensie = /\.ifccalculation$/i.test(naam) ? naam : `${naam}.ifccalculation`;
+    return bewaarInDocs(host, payload, { name: sanitizeFileName(metExtensie) });
+  }
 
   if (isTauri()) {
     const { save } = await import("@tauri-apps/plugin-dialog");

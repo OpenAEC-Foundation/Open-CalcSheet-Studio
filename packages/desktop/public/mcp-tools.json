@@ -1,0 +1,937 @@
+[
+  {
+    "name": "calcsheet_app_info",
+    "description": "Name and version of the app, the MCP and REST addresses, the OpenAPI document, and whether the API is read-only or paused.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_project_get",
+    "description": "Read the open project: its name, file path, whether it has unsaved changes, the project data (fields that apply to every sheet, such as consequence class CC and wind region, with their options), the sheets (id, name, module, UC and verdict when known), which parts are hidden from the project tree, and the undo/redo steps. UC is the governing unity check (UC_max); a sheet passes when UC <= 1.0 and the sheet's own verdict agrees. By default UC is only reported for sheets evaluated through this API with their current input; pass evaluate=true to compute every sheet now.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "evaluate": {
+          "type": "boolean",
+          "description": "Compute every sheet now (a large sheet can take a second or more). Default false."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_project_new",
+    "description": "Start a new, empty project. Refused with CONFLICT when the open project has unsaved changes, unless force=true (then those changes are lost).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "force": {
+          "type": "boolean",
+          "description": "Discard unsaved changes."
+        }
+      },
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_project_open",
+    "description": "Open a project file (.ifccalculation, or an older .ifc-calculation/.cpd) from a path on this computer, as File > Open does; it is added to the recent files. Refused with CONFLICT when the open project has unsaved changes, unless force=true. Desktop app only.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Absolute path of the project file."
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Discard unsaved changes of the open project."
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_recent_files",
+    "description": "The recently opened and saved project files (File > Recent).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_project_set_name",
+    "description": "Set the project name (the name of the project file and the heading of the printout). The project data field project_naam is separate (project_set_data).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "New project name."
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_project_set_data",
+    "description": "Set project data fields (see projectData in project_get). Project data applies to every sheet, e.g. CC (consequence class), windgebied (wind region), terreincategorie (terrain category), DesignLife, project_nummer. Pass name and value, or values {name: value} for several. For a choice field pass one of its option values (a label or the part of the label before ' — ' is also accepted). Only existing fields can be set; nothing is written if one value is invalid.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "eenheden",
+            "rekenwijze",
+            "project_nummer",
+            "project_naam",
+            "opdrachtgever",
+            "constructeur",
+            "locatie",
+            "onderdeel",
+            "CC",
+            "RC",
+            "DesignLife",
+            "windgebied",
+            "terreincategorie"
+          ],
+          "description": "Field name."
+        },
+        "value": {
+          "type": [
+            "string",
+            "number"
+          ],
+          "description": "New value."
+        },
+        "values": {
+          "type": "object",
+          "description": "Several fields at once: {name: value}.",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_project_set_visibility",
+    "description": "Hide or show the project data form or the report in the project tree (as removing/adding them in the app does). Hiding keeps their content; showing brings it back.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "part": {
+          "type": "string",
+          "enum": [
+            "projectData",
+            "report"
+          ],
+          "description": "Which part."
+        },
+        "visible": {
+          "type": "boolean",
+          "description": "true = show in the project tree, false = hide."
+        }
+      },
+      "required": [
+        "part",
+        "visible"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_report_get",
+    "description": "Read the structural report (cover, language, revisions, chapters, assumptions, loads, layout) or one part of it by path, e.g. 'taal', 'belastingen.wind', 'revisies' or 'revisies.0.omschrijving' (numbers are list indexes).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Dot path into the report. Default: the whole report."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_report_set",
+    "description": "Set report fields by dot path (see report_get), e.g. {path: 'belastingen.wind.gebouwhoogte', value: '12'}. Text and checkbox fields take a string or boolean. Setting 'taal' ('en', 'nl') switches the report language: built-in texts switch along, text typed by the user stays. A list or object value replaces that part (e.g. append a revision with path 'revisies.2'); the app then completes it to a valid report. Pass values {path: value} for several. The parent of each path must exist.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Dot path into the report."
+        },
+        "value": {
+          "description": "New value: string, boolean, number, list or object."
+        },
+        "values": {
+          "type": "object",
+          "description": "Several fields at once: {path: value}."
+        }
+      },
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_undo",
+    "description": "Undo the last change to the project (as Ctrl+Z in the app), whoever made it.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_redo",
+    "description": "Redo the last undone change (as Ctrl+Y in the app).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_modules_list",
+    "description": "List the calculation modules and library sheets that can be added with sheet_add (templateId and name), including modules installed from the online module library. status: 'gereed' = checked against reference sheets, 'controleren' = verification present but not yet checked, 'raming' = quantity estimate only, 'concept' = input and drawing only. To start an empty sheet with your own calculation text, call sheet_add without templateId.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_sheets_list",
+    "description": "List the sheets of the project in order (id, name, kind calculation/pdf/spreadsheet/markdown/graph/drawing/jupyter/marimo, module, active, UC and verdict when known). UC is reported for sheets evaluated through this API with their current input; pass evaluate=true to compute every sheet now.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "evaluate": {
+          "type": "boolean",
+          "description": "Compute every calculation sheet now (a large sheet can take a second or more). Default false."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_sheet_add",
+    "description": "Add a calculation sheet to the project and open it. Either pass templateId (from modules_list) to insert that module, or omit it to add an empty sheet, optionally with your own calculation text in source. name sets the sheet name (default: the module name with a number). Returns the new sheet id and its input fields.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Module to insert (see modules_list). Omit for an empty sheet."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the new sheet."
+        },
+        "source": {
+          "type": "string",
+          "description": "Calculation text of an empty sheet. Not allowed together with templateId."
+        }
+      },
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_sheet_add_pdf",
+    "description": "Add a PDF sheet: a PDF file (e.g. a supplier calculation or a FEM report) that sits between the calculation sheets and goes into the structural report. Pass path (a PDF on this computer) or base64. name defaults to the file name without .pdf.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path of a PDF file on this computer (desktop app only)."
+        },
+        "base64": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The PDF file as base64 (a data: prefix is allowed)."
+        },
+        "fileName": {
+          "type": "string",
+          "description": "File name to store with the PDF. Default: the name in path, or document.pdf."
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Allow a PDF above 20 MB."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the new sheet."
+        }
+      },
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_sheet_get",
+    "description": "Read one sheet: its calculation text (source), its input fields (input fields and choice lists, with current value, unit and options) and, unless evaluate=false, the outcome: title, norm, governing UC (UC_max), verdict (passes) and every UC value. For a PDF sheet: the file name and size.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Sheet id. Default: the sheet that is open in the app."
+        },
+        "evaluate": {
+          "type": "boolean",
+          "description": "Compute the sheet to report the outcome (a large sheet can take a second). Default true."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_sheet_set_source",
+    "description": "Replace the calculation text of a sheet. Input values already entered stay as they are. Undoable (undo). Returns the input fields of the new text.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id (from project_get or sheets_list)."
+        },
+        "source": {
+          "type": "string",
+          "description": "The new calculation text."
+        }
+      },
+      "required": [
+        "id",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_sheet_set_input",
+    "description": "Set input values of a sheet: an input field or a choice list (see inputs in sheet_get). Pass name and value for one value, or values as an object {name: value} for several. For a choice list pass the option value (the option text is also accepted). Numbers may be given as number or text ('4.2' or '4,2'), in the unit of the field. Nothing is written if one value is invalid.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id (from project_get or sheets_list)."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Input name."
+        },
+        "value": {
+          "type": [
+            "string",
+            "number"
+          ],
+          "description": "New value."
+        },
+        "values": {
+          "type": "object",
+          "description": "Several values at once: {name: value}.",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_sheet_set_pdf",
+    "description": "Replace the PDF file of a PDF sheet (path or base64); name and position stay.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id (from project_get or sheets_list)."
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path of a PDF file on this computer (desktop app only)."
+        },
+        "base64": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The PDF file as base64 (a data: prefix is allowed)."
+        },
+        "fileName": {
+          "type": "string",
+          "description": "File name to store with the PDF. Default: the name in path, or document.pdf."
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Allow a PDF above 20 MB."
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_sheet_rename",
+    "description": "Rename a sheet. The name shows in the project tree, the report and on the printout.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id (from project_get or sheets_list)."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "New name."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_sheet_duplicate",
+    "description": "Duplicate a sheet with its own copy of text and inputs, directly after the original, and open the copy. name sets the name of the copy.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id (from project_get or sheets_list)."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the copy."
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_sheet_move",
+    "description": "Move a sheet up or down in the project (and thus in the report and the printout). steps defaults to 1; the sheet stops at the top or bottom.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id (from project_get or sheets_list)."
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "up",
+            "down"
+          ],
+          "description": "up = towards the start of the project."
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Number of places. Default 1."
+        }
+      },
+      "required": [
+        "id",
+        "direction"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_sheet_remove",
+    "description": "Remove a sheet from the project. Undoable (undo).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id (from project_get or sheets_list)."
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_sheet_select",
+    "description": "Open a sheet in the app so the user sees it. id is a sheet id, or 'project' for the project data form, or 'report' for the structural report. Does not change the project.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id, 'project' or 'report'."
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_sheet_evaluate",
+    "description": "Compute a sheet with its own inputs and the project data, and return the outcome: title, norm, governing UC (UC_max), verdict (passes), every UC value and the numbers the sheet shows (name → value in the sheet's unit). Pass names to return only those numbers, or numbers=false to leave them out.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Sheet id. Default: the sheet that is open in the app."
+        },
+        "numbers": {
+          "type": "boolean",
+          "description": "Include the numbers of the sheet. Default true."
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Only these numbers (variable names)."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_sheet_insert_formula",
+    "description": "Insert a formula from the formula library (formulas_list) into a sheet's calculation text: its inputs with example values and the formula lines. position: 'end' (default), 'start', or a line number to insert after (0 = before the first line). Returns the lines that were inserted.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id (from project_get or sheets_list)."
+        },
+        "formulaId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Formula id (from formulas_list)."
+        },
+        "position": {
+          "type": [
+            "string",
+            "integer"
+          ],
+          "description": "'end', 'start' or a line number after which to insert."
+        },
+        "language": {
+          "type": "string",
+          "enum": [
+            "en",
+            "nl"
+          ],
+          "description": "Language of the text lines of a worked example. Default: the language of the app."
+        }
+      },
+      "required": [
+        "id",
+        "formulaId"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_calc_evaluate",
+    "description": "Compute a piece of calculation text without changing the project, and return the result line by line (headings, text, assignments with expression, result and unit, inputs, choices) plus the governing UC and verdict if the text has them. The project data (CC, K_FI, windgebied, …) are available as variables unless useProjectData=false. values sets input fields and choice lists by name.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Calculation text."
+        },
+        "values": {
+          "type": "object",
+          "description": "Input values {name: value}.",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "useProjectData": {
+          "type": "boolean",
+          "description": "Make the project data available as variables. Default true."
+        },
+        "maxLines": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5000,
+          "description": "At most this many lines. Default 400."
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_library_list",
+    "description": "The online module library (the public module repository of the OpenAEC Foundation): every module with id, version, name, category, status and norms, and whether it is installed (and an update is available). refresh=true fetches the catalog again. Needs internet.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "refresh": {
+          "type": "boolean",
+          "description": "Fetch the catalog again. Default: only the first time."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_library_install",
+    "description": "Install (or update) a module from the online module library by id (see library_list). It then appears in modules_list and can be added with sheet_add; existing sheets keep their own copy of the text. Needs internet.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Module id from library_list."
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_library_remove",
+    "description": "Remove a module installed from the online module library. A built-in module with the same id comes back; sheets already in the project keep their text.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Module id."
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  },
+  {
+    "name": "calcsheet_formulas_list",
+    "description": "Search the formula library: standard formulas from mechanics and the Eurocodes (EN 1990, 1991, 1992, 1993, 1995) as ready-to-run calculation text. query searches names, explanations, sources and code; group limits to one group. includeCode=true adds the calculation text. Insert one with sheet_insert_formula. Formulas with library are the worked examples of the app's Library panel; these and the beams and sections, whose drawing follows the input, have their text lines in Dutch in code and in English in codeEn.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search text."
+        },
+        "group": {
+          "type": "string",
+          "enum": [
+            "mechanica-ligger",
+            "mechanica-doorsnede",
+            "mechanica-spanning",
+            "mechanica-stabiliteit",
+            "vandepitte",
+            "en1990",
+            "en1991",
+            "en1992",
+            "en1993",
+            "en1995"
+          ],
+          "description": "Group id."
+        },
+        "includeCode": {
+          "type": "boolean",
+          "description": "Include the calculation text. Default false."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_formula_get",
+    "description": "One formula from the formula library, with its calculation text.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Formula id."
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_ifc_get",
+    "description": "The IFC of the whole project or one sheet, as text: format 'ifcx' (IFCX JSON, the same document as the project file: every sheet with its text, input and results, and the report) or 'ifc' (IFC4X3 STEP with the same content: every sheet as a document and property sets). Without id the whole project. To write it to a file, use export_ifc.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "ifc",
+            "ifcx"
+          ],
+          "description": "ifc = STEP, ifcx = JSON."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sheet id. Default: the whole project."
+        }
+      },
+      "required": [
+        "format"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_print",
+    "description": "Print from the app, as the Print buttons do: what='report' for the structural report (cover, chapters, sheets in appendix A), what='sheets' for calculation sheets (ids, default all). The system print dialog opens in the app; the user picks the printer there, or a PDF printer to save a PDF. The app waits until the dialog is closed.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "what": {
+          "type": "string",
+          "enum": [
+            "report",
+            "sheets"
+          ],
+          "description": "The structural report or calculation sheets."
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Only for sheets: these sheet ids. Default: all."
+        }
+      },
+      "required": [
+        "what"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_view_get",
+    "description": "The view of the open sheet in the app: code-visual, code-output, visual-output, print-preview or ifc.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_view_set",
+    "description": "Choose the view of the open sheet in the app: 'code-visual' (code and drawing), 'code-output' (code and worked-out calculation), 'visual-output' (drawing and calculation), 'print-preview' (the printout of the open sheet, or of the report when the report is open), or 'ifc' (the IFC of the whole project). A sheet without a drawing shows code and calculation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "view": {
+          "type": "string",
+          "enum": [
+            "code-visual",
+            "code-output",
+            "visual-output",
+            "print-preview",
+            "ifc"
+          ],
+          "description": "The view."
+        }
+      },
+      "required": [
+        "view"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_settings_get",
+    "description": "The app settings: theme, language, text size and units (angle mode, default display units).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "calcsheet_settings_set",
+    "description": "Change app settings, as Settings does: theme, language ('auto' follows the system), textSize, and units (any subset of angleMode, defaultLength, defaultForce, defaultStress, returnAngleUnits, stelsel). Takes effect immediately and is saved.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "enum": [
+            "light",
+            "dark",
+            "blueprint",
+            "high-contrast-dark",
+            "high-contrast-light"
+          ]
+        },
+        "language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "en",
+            "nl"
+          ]
+        },
+        "textSize": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "standard",
+            "large"
+          ]
+        },
+        "units": {
+          "type": "object",
+          "properties": {
+            "angleMode": {
+              "type": "string",
+              "enum": [
+                "deg",
+                "rad",
+                "gra"
+              ]
+            },
+            "defaultLength": {
+              "type": "string",
+              "enum": [
+                "mm",
+                "cm",
+                "m"
+              ]
+            },
+            "defaultForce": {
+              "type": "string",
+              "enum": [
+                "N",
+                "kN",
+                "MN"
+              ]
+            },
+            "defaultStress": {
+              "type": "string",
+              "enum": [
+                "Pa",
+                "kPa",
+                "MPa",
+                "GPa",
+                "N/mm^2"
+              ]
+            },
+            "returnAngleUnits": {
+              "type": "boolean"
+            },
+            "stelsel": {
+              "type": "string",
+              "enum": [
+                "blad",
+                "si-mm",
+                "si-m",
+                "us",
+                "eigen"
+              ],
+              "description": "Unit system for new projects: 'blad' (as written in the sheet), 'si-mm', 'si-m', 'us' (US customary) or 'eigen' (per quantity). The open project's own system is the project data field 'eenheden'."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "bevestigen": true
+  }
+]

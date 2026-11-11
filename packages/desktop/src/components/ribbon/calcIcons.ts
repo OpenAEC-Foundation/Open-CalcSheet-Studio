@@ -12,7 +12,12 @@
 
 export type Sprite = "standard" | "calculations" | "spreadsheet" | "pdf";
 
-export const sprite = (naam: Sprite) => `${import.meta.env.BASE_URL}icons/${naam}.svg`;
+// In de werkplek van de OpenAEC SuperCloud (`vite build --mode platform`) draait
+// de app in een frame met een opaque origin; een <use> naar een los SVG-bestand
+// wordt daar geweigerd. De platformbouw zet de sprites daarom in index.html
+// (vite.config.ts) en de iconen verwijzen naar de pagina zelf.
+export const sprite = (naam: Sprite) =>
+  import.meta.env.MODE === "platform" ? "" : `${import.meta.env.BASE_URL}icons/${naam}.svg`;
 
 /** Een B2-icoon als markup voor RibbonButton: beide maten, CSS toont de juiste. */
 export function b2(id: string, uit: Sprite = "calculations"): string {
