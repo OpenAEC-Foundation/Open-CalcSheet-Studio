@@ -362,13 +362,14 @@ function rapportUit(x: unknown): Rapport {
 
 export const useProjectStore = create<ProjectState>((zet, get) => {
   // Elke wijziging van de bladen loopt hierlangs: zo krijgt een nieuw blad zijn
-  // kenmerk, waar het ook wordt toegevoegd (metBladRefs).
+  // kenmerk, waar het ook wordt toegevoegd, en een tweede blad met hetzelfde
+  // kenmerk een eigen (metBladRefs). Verandert er niets, dan dezelfde lijst.
   const set = ((deel: Parameters<typeof zet>[0]) =>
     zet((s) => {
       const uit = typeof deel === "function" ? deel(s) : deel;
-      return uit && "exemplaren" in uit && uit.exemplaren && uit.exemplaren.some((e) => !e.ref)
-        ? { ...uit, exemplaren: metBladRefs(uit.exemplaren) }
-        : uit;
+      if (!uit || !("exemplaren" in uit) || !uit.exemplaren) return uit;
+      const metRefs = metBladRefs(uit.exemplaren);
+      return metRefs === uit.exemplaren ? uit : { ...uit, exemplaren: metRefs };
     })) as typeof zet;
   return {
   projectNaam: nieuweProjectNaam(),
@@ -626,8 +627,10 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     }),
 
   dupliceer: (id) => {
-    const bron = get().exemplaren.find((e) => e.id === id);
-    if (!bron) return null;
+    const gevonden = get().exemplaren.find((e) => e.id === id);
+    if (!gevonden) return null;
+    // Zonder het kenmerk van het origineel: de kopie krijgt een eigen (metBladRefs).
+    const { ref: _ref, ...bron } = gevonden;
     const nieuw: Exemplaar = {
       ...bron,
       id: nieuweId(),
