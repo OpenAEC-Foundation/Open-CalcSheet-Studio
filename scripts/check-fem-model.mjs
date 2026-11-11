@@ -17,7 +17,8 @@
  *     en dan geen enkele uitkomst in de scope;
  *   • met de vastgelegde antwoorden van de echte server: evenwicht per geval, de
  *     combinaties als lineaire som, de omhullende, de functies voor een punt en een
- *     strook, de symmetrie, het beeld op papier en in 3D;
+ *     strook, de symmetrie, het beeld op papier en in 3D, en een verwijzing uit een
+ *     ander blad;
  *   • vastleggen: het verzoek zoals het bewaard wordt geeft precies dezelfde JSON als
  *     wat verzonden is, het antwoord wordt compact bewaard en teruggelezen, een raster
  *     dat tussen de gevallen verschilt wordt gemeld;
@@ -49,6 +50,7 @@ import {
 } from "../packages/core/dist/index.js";
 import { plaatOplossing } from "../packages/core/dist/plaat.js";
 import * as cache from "../packages/desktop/src/rekenen/toetsCache.ts";
+import { scopeMetVerwijzingen } from "../packages/desktop/src/rekenen/verwijzingen.ts";
 import { NAVIER, PALEN, VLOER } from "./fixtures/fem/bladen.mjs";
 
 let fouten = 0;
@@ -360,8 +362,13 @@ if (vloerFix && model) {
   const html = render(nodes);
   meld(/UGT/.test(html) && /BGT/.test(html) && /2026\.\d+\.\d+/.test(html), "op het blad: een tabel per combinatie en de versie van FEM Studio");
   const svg = String(rek('fem_svg(vloer; "UGT"; "mx")'));
-  const vlakken = (svg.match(/<polygon|<rect class="fem-el"/g) ?? []).length;
-  meld(svg.startsWith("<svg") && vlakken >= recG.verzoek.el.length / 4 && /kNm\/m/.test(svg), `fem_svg: een plattegrond met ${vlakken} vlakken en een legenda in kNm/m`);
+  // De vlakken: elementen van dezelfde kleur naast elkaar zijn samengevoegd, en samen
+  // bedekken ze de hele vloer (hier een vierkant), zonder gat of overlap.
+  const rechthoeken = [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" class="fem-el"/g)].map((r) => r.slice(1).map(Number));
+  const [rx0, rx1, ry0, ry1] = [Math.min(...rechthoeken.map((r) => r[0])), Math.max(...rechthoeken.map((r) => r[0] + r[2])), Math.min(...rechthoeken.map((r) => r[1])), Math.max(...rechthoeken.map((r) => r[1] + r[3]))];
+  const somOpp = rechthoeken.reduce((s, r) => s + r[2] * r[3], 0);
+  meld(svg.startsWith("<svg") && rechthoeken.length > 0 && rechthoeken.length < recG.verzoek.el.length / 4 && rel(somOpp, (rx1 - rx0) * (ry1 - ry0)) < 0.01 && /kNm\/m/.test(svg),
+    `fem_svg: een plattegrond in ${rechthoeken.length} vlakken voor ${recG.verzoek.el.length / 4} elementen, samen de hele vloer, met een legenda in kNm/m`);
   const metBeeld = (regel) => femVan(metAntwoorden(VLOER.replace("@end", `  ${regel}\n@end`), records).nodes);
   const kaart = metBeeld("beeld UGT mx");
   meld(kaart?.status === "klaar" && kaart.beelden?.length === 1 && kaart.beelden[0] === svg && /calc-fem-kaart/.test(render([kaart])),
@@ -373,6 +380,14 @@ if (vloerFix && model) {
   meld(net && net.punten.length === recG.verzoek.x.length && net.vlakken.length === recG.verzoek.el.length / 4, "@3d: fem vloer BGT w geeft een gekleurd vlak over het hele raster");
   const drieDHtml = render(drieD);
   meld(/calc-3d-terugval/.test(drieDHtml) && !/calc-3d-melding/.test(drieDHtml), "het 3D-beeld tekent ook als stilstaande projectie, zonder meldingen");
+
+  // Uit een ander blad: de uitkomst met liggende streepjes, en het model zelf.
+  const ander = ['m_Ed = #1.vloer_UGT_mx_max', 'w_p = fem_waarde(#1.vloer; "BGT"; "w"; 2.5 m; 2.5 m)'].join("\n");
+  const opties = { toetsingen: Object.fromEntries(Object.entries(records).map(([h, r]) => [h, alsAntwoord(r)])), toetsModus: "lezen" };
+  const refScope = scopeMetVerwijzingen(ander, {}, {}, [{ ref: "1", source: VLOER, waarden: {} }], {}, opties);
+  const uitAnder = evaluateMetScope(parse(ander), {}, refScope, opties).scope;
+  meld(Math.abs(inEenheid(uitAnder.m_Ed, "kN") - v("vloer_UGT_mx_max", "kN")) < 1e-9 && Math.abs(inEenheid(uitAnder.w_p, "mm") - femWaarde(fm, "BGT", "w", 2.5, 2.5)) < 1e-9,
+    "uit een ander blad: #1.vloer_UGT_mx_max en fem_waarde(#1.vloer; …)");
 
   // Vastleggen: het bewaarde verzoek geeft dezelfde JSON, en past in het schema.
   meld(alsAntwoord(recG).verzoek === recG.verzoek, "alsAntwoord geeft het bewaarde verzoek mee (het raster)");

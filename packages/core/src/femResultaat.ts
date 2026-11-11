@@ -341,6 +341,35 @@ function kader(m: FemRekenmodel, breedte: number, boven: number, onder: number):
   return { breedte, hoogte, px: (x) => dx + (x - x0) * schaal, py: (y) => boven + (y1 - y) * schaal };
 }
 
+/**
+ * De elementen als rechthoeken, met naast elkaar liggende elementen van dezelfde kleur op
+ * één rij samengevoegd: een raster van duizenden elementen blijft zo een klein beeld.
+ */
+function stroken(m: FemRekenmodel, k: Kader, kleurVan: (e: number) => string, opmaak: (kleur: string) => string): string {
+  const uit: string[] = [];
+  let open = null as { x0: number; x1: number; y0: number; y1: number; kleur: string } | null;
+  const sluit = () => {
+    if (!open) return;
+    const x = k.px(open.x0), y = k.py(open.y1);
+    uit.push(`<rect x="${f1(x)}" y="${f1(y)}" width="${f1(k.px(open.x1) - x)}" height="${f1(k.py(open.y0) - y)}" ${opmaak(open.kleur)}/>`);
+    open = null;
+  };
+  for (let e = 0; e < m.pl.length; e++) {
+    const a = m.el[4 * e];
+    const c = m.el[4 * e + 2];
+    const kleur = kleurVan(e);
+    const [x0, x1, y0, y1] = [m.x[a], m.x[c], m.y[a], m.y[c]];
+    if (open && open.kleur === kleur && open.y0 === y0 && open.y1 === y1 && open.x1 === x0) {
+      open.x1 = x1;
+      continue;
+    }
+    sluit();
+    open = { x0, x1, y0, y1, kleur };
+  }
+  sluit();
+  return uit.join('');
+}
+
 /** De randen tussen platen van verschillende dikte en de buitenranden, als lijnen. */
 function plaatRanden(m: FemRekenmodel, k: Kader): string {
   const zijden = new Map<string, number[]>();
@@ -402,13 +431,7 @@ export function femSvg(model: FemModel, set: string, grootheid: string, breedte 
     }
   }
   const schaal = femKleurschaal(g, min, max);
-  const vlakken = m.pl.map((_, e) => {
-    const a = m.el[4 * e];
-    const c = m.el[4 * e + 2];
-    const kl = schaal.kleur(waarden[e]);
-    const x = k.px(m.x[a]), y = k.py(m.y[c]);
-    return `<rect class="fem-el" x="${f1(x)}" y="${f1(y)}" width="${f1(k.px(m.x[c]) - x)}" height="${f1(k.py(m.y[a]) - y)}" fill="${kl}" stroke="${kl}" stroke-width="0.3"/>`;
-  });
+  const vlakken = stroken(m, k, (e) => schaal.kleur(waarden[e]), (kl) => `class="fem-el" fill="${kl}" stroke="${kl}" stroke-width="0.3"`);
   const eenheid = FEM_EENHEID[g];
   const label = (n: number, v: number, kleur: string) => {
     const x = k.px(m.x[n]), y = k.py(m.y[n]);
@@ -426,7 +449,7 @@ export function femSvg(model: FemModel, set: string, grootheid: string, breedte 
     + `<text x="${f1(lx + lb + 6)}" y="${f1(ly + 9)}" font-size="10" fill="#334155">${esc(eenheid)}</text>`;
   const titel = `<text x="${f1(k.breedte / 2)}" y="16" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1e293b">${esc(model.naam)} · ${esc(s.naam)} · ${TITEL[g]} [${esc(eenheid)}]</text>`;
   return `<svg class="calc-fem-beeld" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${k.breedte} ${f1(k.hoogte)}" width="100%" style="max-width:${k.breedte}px" font-family="sans-serif" role="img" aria-label="${esc(model.naam)} ${esc(s.naam)} ${g}">`
-    + titel + vlakken.join('') + plaatRanden(m, k) + steunen(m, k)
+    + titel + vlakken + plaatRanden(m, k) + steunen(m, k)
     + label(kMax, max, '#1e3a8a') + (kMin !== kMax ? label(kMin, min, g === 'w' ? '#475569' : '#991b1b') : '')
     + legenda + '</svg>';
 }
@@ -443,12 +466,15 @@ export function femModelSvg(m: FemRekenmodel, taal = 'nl', breedte = 520): strin
     const f = dikten.length > 1 ? dikten.indexOf(t) / (dikten.length - 1) : 0;
     return mix([241, 245, 249], [148, 163, 184], f);
   };
-  const vlakken = m.pl.map((p, e) => {
-    const a = m.el[4 * e];
-    const c = m.el[4 * e + 2];
-    const x = k.px(m.x[a]), y = k.py(m.y[c]);
-    return `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(k.px(m.x[c]) - x)}" height="${f1(k.py(m.y[a]) - y)}" fill="${grijs(m.t[p])}" stroke="#cbd5e1" stroke-width="0.4"/>`;
-  });
+  const vlakken = stroken(m, k, (e) => grijs(m.t[m.pl[e]]), (kl) => `fill="${kl}"`);
+  // Het raster dun erover, als één pad; bij een heel fijn raster niet, dan wordt het grijs.
+  const raster = m.pl.length <= 3000
+    ? `<path d="${m.pl.map((_, e) => {
+      const a = m.el[4 * e];
+      const c = m.el[4 * e + 2];
+      return `M${f1(k.px(m.x[a]))} ${f1(k.py(m.y[a]))}H${f1(k.px(m.x[c]))}V${f1(k.py(m.y[c]))}H${f1(k.px(m.x[a]))}Z`;
+    }).join('')}" fill="none" stroke="#cbd5e1" stroke-width="0.4"/>`
+    : '';
   const vak = 14;
   const legenda = dikten.map((t, i) => {
     const x = 14 + i * 96;
@@ -456,7 +482,7 @@ export function femModelSvg(m: FemRekenmodel, taal = 'nl', breedte = 520): strin
       + `<text x="${x + vak + 5}" y="${f1(k.hoogte - 11)}" font-size="10" fill="#334155">t = ${getalTekst(t * 1000, taal).replace(/[.,]0+$/, '')} mm</text>`;
   }).join('');
   return `<svg class="calc-fem-model" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${k.breedte} ${f1(k.hoogte)}" width="100%" style="max-width:${k.breedte}px" font-family="sans-serif" role="img" aria-label="model">`
-    + vlakken.join('') + plaatRanden(m, k) + steunen(m, k) + legenda + '</svg>';
+    + vlakken + raster + plaatRanden(m, k) + steunen(m, k) + legenda + '</svg>';
 }
 
 /**

@@ -95,7 +95,8 @@ verwacht 3 of 4 waarden …`); dan gaat er niets naar FEM Studio.
 ## Na het blok in de scope
 
 Een punt in een naam is in de rekentaal een liggend streepje: `vloer.UGT.mx_max` is
-`vloer_UGT_mx_max`. Zo werkt ook `#2.vloer.UGT.mx_max` uit een ander blad.
+`vloer_UGT_mx_max`. Uit een ander blad schrijf je de liggende streepjes: `#2.vloer_UGT_mx_max`,
+en `fem_waarde(#2.vloer; "UGT"; "mx"; x; y)` leest het model van blad 2.
 
 | Naam | Wat | Eenheid |
 |---|---|---|
