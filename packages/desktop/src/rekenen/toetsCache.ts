@@ -82,7 +82,9 @@ export function zetOpnieuw(hash: string): void {
 
 /**
  * De vastgelegde antwoorden van alle bladen. Verandert er niets (dezelfde objecten),
- * dan blijft de versie gelijk: typen in een blad rekent zo niets extra.
+ * dan blijft de versie gelijk: typen in een blad rekent zo niets extra. Ook niet als
+ * alleen een antwoord van deze sessie bij een blad is vastgelegd: dat gold al, en een
+ * nieuwe versie zou elke tabel met varianten opnieuw laten rekenen.
  */
 export function zetVastgelegd(lijsten: readonly (Toetsingen | undefined)[]): void {
   const nieuw = lijsten.filter((t): t is Toetsingen => !!t);
@@ -95,8 +97,12 @@ export function zetVastgelegd(lijsten: readonly (Toetsingen | undefined)[]): voi
       if (!al || v.datum > al.datum) kaart.set(hash, v);
     }
   }
+  // Telt het verschil? Niet voor een blok waarvoor de sessie een geldig antwoord heeft:
+  // dat antwoord gaat voor (toetsingenNu).
+  const telt = (hash: string) => kaart.get(hash) !== vastgelegd.get(hash) && !sessie.get(hash)?.ok;
+  const veranderd = [...kaart.keys(), ...vastgelegd.keys()].some(telt);
   vastgelegd = kaart;
-  meld();
+  if (veranderd) meld();
 }
 
 /** Een ander project: de antwoorden van deze sessie gelden daar niet vanzelf. */
@@ -187,13 +193,15 @@ export function toetsHashes(nodes: readonly EvaluatedNode[]): string[] {
  * Alleen de vastgelegde antwoorden die het doorgerekende blad nog gebruikt: bij het
  * opslaan valt de rest weg. Een blok zonder hash (een fout in een veld) kan bij elk
  * antwoord horen; dan blijven ze allemaal staan, net als zonder doorgerekend blad.
+ * `ook`: de hashes die de varianten van het blad gebruiken (rekenen/varianten.ts).
  */
 export function gebruikteToetsingen(
   toetsingen: Toetsingen | undefined,
   blad: { nodes: readonly EvaluatedNode[]; fout?: string } | undefined,
+  ook: readonly string[] = [],
 ): Toetsingen | undefined {
   if (!toetsingen || !blad || blad.fout) return toetsingen;
-  const gebruikt = new Set<string>();
+  const gebruikt = new Set<string>(ook);
   let zonderHash = false;
   elkeToets(blad.nodes, (_, hashes) => {
     for (const h of hashes) gebruikt.add(h);

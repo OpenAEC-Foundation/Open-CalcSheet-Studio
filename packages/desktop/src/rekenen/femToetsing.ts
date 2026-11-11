@@ -46,6 +46,7 @@ import { useProjectStore } from "../store/projectStore";
 import { projectScope } from "../store/projectGegevens";
 import { rekenDoor } from "../mcp/rekenen";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
+import { variantInvoer } from "../store/varianten";
 
 interface FemNu {
   versie?: string;
@@ -195,18 +196,23 @@ export async function werkToetsingenBij(ids: readonly string[] | null, maxMs = 1
     const verzoeken: ToetsVerzoek[] = [];
     for (const ex of exemplaren) {
       if ((ids && !ids.includes(ex.id)) || !/^\s*@(toets|fem)\b/m.test(ex.source)) continue;
-      try {
-        // Met de waarden uit andere bladen (#1.R_paal), net als in de werkruimte en op papier:
-        // anders geeft een veld dat er een gebruikt een fout, en gaat er geen verzoek uit.
-        const metRefs = scopeMetVerwijzingen(
-          ex.source, ex.waarden, scope, verwezenBladen(ex.source, ex.waarden, exemplaren),
-          { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }, metToetsingen({}, "lezen"),
-        );
-        const { nodes } = rekenDoor(ex.source, ex.waarden, metRefs, ex.naam, "vragen");
-        legToetsingenVast(ex.id, toetsHashes(nodes));
-        verzoeken.push(...verzamelVerzoeken(nodes));
-      } catch {
-        // Een blad dat niet doorrekent, heeft geen verzoeken; de afdruk toont de fout.
+      // Het blad zelf, en zijn varianten als die op papier komen (docs/varianten.md).
+      const vs = ex.varianten;
+      const invoeren = [ex.waarden, ...(vs?.opPapier ? vs.lijst.map((v) => variantInvoer(ex.waarden, v, vs.velden)) : [])];
+      for (const waarden of invoeren) {
+        try {
+          // Met de waarden uit andere bladen (#1.R_paal), net als in de werkruimte en op papier:
+          // anders geeft een veld dat er een gebruikt een fout, en gaat er geen verzoek uit.
+          const metRefs = scopeMetVerwijzingen(
+            ex.source, waarden, scope, verwezenBladen(ex.source, waarden, exemplaren),
+            { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }, metToetsingen({}, "lezen"),
+          );
+          const { nodes } = rekenDoor(ex.source, waarden, metRefs, ex.naam, "vragen");
+          legToetsingenVast(ex.id, toetsHashes(nodes));
+          verzoeken.push(...verzamelVerzoeken(nodes));
+        } catch {
+          // Een blad dat niet doorrekent, heeft geen verzoeken; de afdruk toont de fout.
+        }
       }
     }
     const rest = tot - Date.now();
