@@ -34,6 +34,7 @@ import type { Graaf } from "../graaf/model.ts";
 import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
 import type { JupyterWerkmap } from "./jupyterBlad.ts";
 import type { MarimoNotebook } from "./marimoBlad.ts";
+import type { Varianten } from "./varianten.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 import { gebruikteToetsingen, toetsVersie } from "../rekenen/toetsCache.ts";
 import { maakPoer } from "../components/calc/poerDefinitie.ts";
@@ -56,6 +57,7 @@ export interface BladVoorIfc {
   jupyter?: JupyterWerkmap;
   marimo?: MarimoNotebook;
   toetsingen?: Record<string, VastgelegdeToets>;
+  varianten?: Varianten;
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -92,6 +94,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
     ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
     jupyter: ex.jupyter,
     marimo: ex.marimo,
+    ...(ex.varianten ? { varianten: ex.varianten } : {}),
     nodes: [],
   };
   if (!isLosBlad(ex)) {

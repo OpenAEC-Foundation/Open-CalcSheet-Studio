@@ -23,6 +23,7 @@ import { TEKEN_BLAD, type TekenVel } from "./tekenBlad";
 import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
 import { MARIMO_BLAD, type MarimoNotebook } from "./marimoBlad";
 import { metBladRefs } from "./bladRefs";
+import { variantInvoer, type Varianten } from "./varianten";
 
 const STORE_KEY = "projectState";
 
@@ -131,6 +132,11 @@ export interface Exemplaar {
    * de invoer gelijk blijft. Ontbreekt bij een blad zonder toetsblok.
    */
   toetsingen?: Record<string, VastgelegdeToets>;
+  /**
+   * Varianten van dit blad: dezelfde tekst met andere invoer, naast elkaar doorgerekend
+   * (store/varianten.ts). Ontbreekt bij een blad zonder varianten.
+   */
+  varianten?: Varianten;
 }
 
 /**
@@ -241,6 +247,19 @@ interface ProjectState {
    * en na ongedaan maken legt de werkruimte ze opnieuw vast.
    */
   zetToetsingen: (id: string, bij: Record<string, VastgelegdeToets>) => void;
+
+  /**
+   * De varianten van een blad (store/varianten.ts); `undefined` haalt ze weg. Eén stap
+   * ongedaan maken; met `sleutel` (een cel) is doortypen in dezelfde cel één stap.
+   */
+  zetVarianten: (id: string, varianten: Varianten | undefined, sleutel?: string) => void;
+  /** De invoer van een variant wordt de invoer van het blad. Eén stap ongedaan maken. */
+  neemVariantOver: (id: string, variantId: string) => void;
+  /**
+   * Een kopie van het blad, direct erachter, met de invoer van een variant en zonder
+   * varianten. Geeft het id van het nieuwe blad, of null.
+   */
+  variantAlsBlad: (id: string, variantId: string) => string | null;
 
   zetGegeven: (naam: string, waarde: string) => void;
   /** Meerdere projectgegevens in één wijziging (één stap ongedaan maken). */
@@ -739,6 +758,55 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, toetsingen: { ...e.toetsingen, ...bij } } : e)),
       dirty: true,
     })),
+
+  zetVarianten: (id, varianten, sleutel) =>
+    set((s) => {
+      const ex = s.exemplaren.find((e) => e.id === id);
+      if (!ex || ex.varianten === varianten) return s;
+      return {
+        ...metGeschiedenis(s, sleutel ? `varianten:${id}:${sleutel}` : null),
+        exemplaren: s.exemplaren.map((e) => {
+          if (e.id !== id) return e;
+          const { varianten: _weg, ...rest } = e;
+          return varianten ? { ...rest, varianten } : rest;
+        }),
+        dirty: true,
+      };
+    }),
+
+  neemVariantOver: (id, variantId) =>
+    set((s) => {
+      const ex = s.exemplaren.find((e) => e.id === id);
+      const v = ex?.varianten?.lijst.find((x) => x.id === variantId);
+      if (!ex || !v) return s;
+      const waarden = variantInvoer(ex.waarden, v, ex.varianten!.velden);
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, waarden } : e)),
+        dirty: true,
+      };
+    }),
+
+  variantAlsBlad: (id, variantId) => {
+    const bron = get().exemplaren.find((e) => e.id === id);
+    const v = bron?.varianten?.lijst.find((x) => x.id === variantId);
+    if (!bron || !v) return null;
+    // Een eigen blad: een eigen kenmerk (metBladRefs), en zonder de varianten van het blad.
+    const { varianten, ref: _ref, ...rest } = bron;
+    const nieuw: Exemplaar = {
+      ...rest,
+      id: nieuweId(),
+      naam: vrijeNaam(get().exemplaren, `${bron.naam} – ${v.naam}`, false),
+      waarden: variantInvoer(bron.waarden, v, varianten!.velden),
+    };
+    set((s) => {
+      const i = s.exemplaren.findIndex((e) => e.id === id);
+      const lijst = [...s.exemplaren];
+      lijst.splice(i + 1, 0, nieuw);
+      return { ...metGeschiedenis(s, null), exemplaren: lijst, dirty: true };
+    });
+    return nieuw.id;
+  },
 
   zetGegeven: (naam, waarde) =>
     set((s) => ({
