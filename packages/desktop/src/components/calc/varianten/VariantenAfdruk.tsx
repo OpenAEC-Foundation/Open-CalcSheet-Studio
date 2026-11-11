@@ -4,7 +4,7 @@ import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
 import { projectScope } from "../../../store/projectGegevens";
 import { evalOptiesVan } from "../../../store/projectEenheden";
 import { variantInvoer } from "../../../store/varianten";
-import { papierTabellen, rekenVariant, type VariantUitkomst } from "../../../rekenen/varianten";
+import { oordeelVan, papierTabellen, rekenVariant, type VariantUitkomst } from "../../../rekenen/varianten";
 import { metToetsingen } from "../../../rekenen/toetsCache";
 import { verwezenBladen } from "../../../rekenen/verwijzingen";
 import { useToetsVersie } from "../../../rekenen/femToetsing";
@@ -75,12 +75,12 @@ export default function VariantenAfdruk({ ex }: { ex: Exemplaar }) {
     const v = vs.lijst.find((x) => x.id === id);
     return bladTekst(veld, v ? variantInvoer(ex.waarden, v, vs.velden) : ex.waarden);
   };
+  // Een regel met een fout is nooit "voldoet" (oordeelVan): dan niet getoetst.
   const oordeel = (u: VariantUitkomst | null | undefined) => {
-    const r = u?.resultaat;
-    if (!r) return "—";
-    if (r.nietGetoetst) return t("kit.nietGetoetst");
-    if (r.voldoet === null) return "—";
-    return t(r.voldoet ? "afdruk.voldoet" : "afdruk.voldoetNiet");
+    const o = oordeelVan(u);
+    if (o === "nietGetoetst") return t("kit.nietGetoetst");
+    if (o === "geen") return "—";
+    return t(o === "voldoet" ? "afdruk.voldoet" : "afdruk.voldoetNiet");
   };
 
   return (
