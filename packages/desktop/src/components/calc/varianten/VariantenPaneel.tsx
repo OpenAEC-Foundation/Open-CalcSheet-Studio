@@ -1,32 +1,17 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { invoerNaarBron, leesVerwijzing } from "@ifc-calc/core";
 import Modal from "../../Modal";
 import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
 import { nieuweVariant, plakBlok, zetVelden, type Variant, type Varianten } from "../../../store/varianten";
 import { useVariantUitkomsten } from "../../../rekenen/variantRekenen";
 import { leesBlad } from "../bladResultaat";
-import { variantVelden, type VariantVeld } from "./velden";
+import { leesCel, variantVelden, type VariantVeld } from "./velden";
 import VeldKeuze from "./VeldKeuze";
-import VariantenTabel, { type LeesCel, type VariantActie } from "./VariantenTabel";
+import VariantenTabel, { type VariantActie } from "./VariantenTabel";
 import ReeksDialoog from "./ReeksDialoog";
 import OptimaliseerDialoog from "./OptimaliseerDialoog";
 import VariantUitwerking from "./VariantUitwerking";
 import "./Varianten.css";
-
-/**
- * Wat iemand in een cel typt, in de eenheid van het blad: zoals een invoerveld van het
- * blad (Preview.tsx). Een keuzelijst neemt de waarde of de tekst van een keuze.
- */
-export const leesCel: LeesCel = (veld, tekst) => {
-  const t = tekst.trim();
-  if (veld.soort === "keuze") {
-    const k = veld.keuzes.find((x) => x.value === t) ?? veld.keuzes.find((x) => x.text.toLowerCase() === t.toLowerCase());
-    return k ? { waarde: k.value } : { fout: t };
-  }
-  if (leesVerwijzing(t)) return { waarde: t };
-  return veld.eenheid ? invoerNaarBron(tekst, veld.eenheid, veld.eenheid) : { waarde: tekst };
-};
 
 type Dialoog = null | "velden" | "reeks" | "optimaliseren" | "uitkomst";
 
@@ -89,7 +74,7 @@ export default function VariantenPaneel({ ex }: { ex: Exemplaar }) {
         const veld = velden.find((x) => x.naam === naam);
         const r = veld ? leesCel(veld, w) : { fout: w };
         return "fout" in r ? null : r.waarde;
-      }));
+      }, velden.map((v) => v.naam)));
     } catch {
       setMeldingen([t("varianten.plakkenMislukt")]);
     }

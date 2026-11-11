@@ -3,7 +3,7 @@
  * blad en de kop waaronder ze staan. Zuiver, zonder React: scripts/check-varianten.mjs
  * laadt dit in Node.
  */
-import type { AstNode } from "@ifc-calc/core";
+import { invoerNaarBron, leesVerwijzing, type AstNode } from "@ifc-calc/core";
 import { invoervelden, type Invoerveld } from "../bladVersie.ts";
 
 export interface VariantVeld extends Invoerveld {
@@ -53,4 +53,35 @@ export function variantVelden(ast: AstNode[]): VariantVeld[] {
     const e = extra.get(v.naam);
     return { ...v, label: e?.labels.join(" / ") ?? "", kop: e?.kop ?? "" };
   });
+}
+
+/** De fout van een getal dat twee kanten op kan; de tabel toont er een eigen tekst bij. */
+export const DUBBELZINNIG = "dubbelzinnig";
+
+/**
+ * Een getal dat een duizendtal of een decimaal kan zijn: 5.000 is in het Nederlands 5000
+ * en in het Engels 5; 1.234,5 en 1,234.5 hebben beide tekens. Een invoerveld leest het
+ * als decimaal, en dan staat er stil een factor 1000 naast. Daarom weigert een cel het.
+ */
+function isDubbelzinnig(tekst: string): boolean {
+  const getal = tekst.trim().match(/^[-+]?[\d.,]+/)?.[0] ?? "";
+  if (getal.includes(".") && getal.includes(",")) return true;
+  return /^[-+]?[1-9]\d{0,2}([.,]\d{3})+$/.test(getal);
+}
+
+/**
+ * Wat iemand in een cel typt of plakt, in de eenheid van het blad: zoals een invoerveld
+ * van het blad (Preview.tsx, `invoerNaarBron`), met een eenheid, een komma of een
+ * verwijzing naar een ander blad. Een keuzelijst neemt de waarde of de tekst van een
+ * keuze. Een dubbelzinnig getal wordt niet opgeslagen.
+ */
+export function leesCel(veld: Invoerveld, tekst: string): { waarde: string } | { fout: string } {
+  const t = tekst.trim();
+  if (veld.soort === "keuze") {
+    const k = veld.keuzes.find((x) => x.value === t) ?? veld.keuzes.find((x) => x.text.toLowerCase() === t.toLowerCase());
+    return k ? { waarde: k.value } : { fout: t };
+  }
+  if (leesVerwijzing(t)) return { waarde: t };
+  if (isDubbelzinnig(t)) return { fout: DUBBELZINNIG };
+  return veld.eenheid ? invoerNaarBron(tekst, veld.eenheid, veld.eenheid) : { waarde: tekst };
 }

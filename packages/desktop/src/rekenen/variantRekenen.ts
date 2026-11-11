@@ -22,10 +22,10 @@ import { variantInvoer } from "../store/varianten";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { verwezenBladen, type VerwijsBlad } from "./verwijzingen";
-import { metToetsingen, toetsVersie } from "./toetsCache";
+import { metToetsingen, toetsingenNu, toetsVersie } from "./toetsCache";
 import { kenFemStudio, legToetsingenVast, useToetsVersie, vraagToetsingen } from "./femToetsing";
 import { hoekmodusNu } from "./doorrekening";
-import type { VariantUitkomst } from "./varianten";
+import { toetsDeel, type VariantUitkomst } from "./varianten";
 
 export interface VariantVerzoek {
   sleutel: string;
@@ -155,17 +155,20 @@ interface Omgeving {
   gegevens: ProjectGegevens;
   exemplaren: readonly Exemplaar[];
   taal: string;
-  toetsV: number;
 }
 
-/** Het verzoek voor één kolom: het blad met deze invoer. */
-function verzoekVoor(ex: Exemplaar, waarden: Record<string, string>, omg: Omgeving): VariantVerzoek {
+/**
+ * Het verzoek voor één kolom: het blad met deze invoer. `toets` is het deel van de
+ * sleutel dat van de antwoorden van FEM Studio afhangt (`toetsDeel`): zo rekent bij een
+ * nieuw antwoord alleen de kolom opnieuw die het gebruikt.
+ */
+function verzoekVoor(ex: Exemplaar, waarden: Record<string, string>, omg: Omgeving, toets: string): VariantVerzoek {
   const basis = evalOptiesVan(omg.gegevens);
   const scope = projectScope(omg.gegevens);
   const verwijzingen = verwezenBladen(ex.source, waarden, omg.exemplaren);
   const hoek = hoekmodusNu();
   const sleutel = [
-    hoek, omg.taal, JSON.stringify(basis), `t${omg.toetsV}`, ex.naam, JSON.stringify(scope),
+    hoek, omg.taal, JSON.stringify(basis), toets, ex.naam, JSON.stringify(scope),
     JSON.stringify(waarden), ex.source, verwijzingen.length ? JSON.stringify(verwijzingen) : "",
   ].join("\u0000");
   return {
@@ -200,20 +203,25 @@ export function useVariantUitkomsten(ex: Exemplaar): VariantenUitkomst {
   const toetsV = useToetsVersie();
   const taal = i18next.language ?? "";
   const stil = useDebouncedValue(ex, 250);
+  const vorige = useRef(new Map<string, VariantAntwoord>());
   const verzoeken = useMemo(() => {
-    const omg = { gegevens, exemplaren, taal, toetsV };
+    const omg = { gegevens, exemplaren, taal };
     const vs = stil.varianten;
+    // Alleen bij een blad met @toets: per kolom de antwoorden die zijn vorige uitkomst gebruikte.
+    const antwoorden = /^\s*@toets\b/m.test(stil.source) ? toetsingenNu() : {};
+    const toets = (id: string) => toetsDeel(stil.source, vorige.current.get(id)?.uitkomst?.toetsen, antwoorden);
     return [
-      { id: BLAD, v: verzoekVoor(stil, stil.waarden, omg) },
-      ...(vs?.lijst ?? []).map((v) => ({ id: v.id, v: verzoekVoor(stil, variantInvoer(stil.waarden, v, vs!.velden), omg) })),
+      { id: BLAD, v: verzoekVoor(stil, stil.waarden, omg, toets(BLAD)) },
+      ...(vs?.lijst ?? []).map((v) => ({ id: v.id, v: verzoekVoor(stil, variantInvoer(stil.waarden, v, vs!.velden), omg, toets(v.id)) })),
     ];
+    // toetsV: een nieuw antwoord van FEM Studio; welke kolom opnieuw rekent, beslist toetsDeel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stil, gegevens, exemplaren, taal, toetsV]);
   useEffect(() => {
     if (stil.source.trim()) vraagVoorTabel(stil.id, verzoeken.map((x) => x.v));
   }, [verzoeken, stil]);
   useSyncExternalStore(abonneer, () => versie);
 
-  const vorige = useRef(new Map<string, VariantAntwoord>());
   const perVariant = new Map<string, Kolom>();
   let klaar = 0;
   // De kolommen van nu: ook een variant die net is toegevoegd en nog in de wachttijd zit.
@@ -244,8 +252,9 @@ export async function rekenEenmalig(exId: string, waarden: Record<string, string
     const { exemplaren, gegevens } = useProjectStore.getState();
     const ex = exemplaren.find((e) => e.id === exId);
     if (!ex) return null;
-    const omg = { gegevens, exemplaren, taal: i18next.language ?? "", toetsV: toetsVersie() };
-    const a = await vraagEen(verzoekVoor(ex, waarden, omg), ex.id);
+    const omg = { gegevens, exemplaren, taal: i18next.language ?? "" };
+    // Eén verzoek per ronde: na een antwoord van FEM Studio een nieuwe ronde.
+    const a = await vraagEen(verzoekVoor(ex, waarden, omg, `t${toetsVersie()}`), ex.id);
     if (!a.uitkomst?.verzoeken.length) return a.uitkomst;
     await vraagToetsingen(a.uitkomst.verzoeken);
   }

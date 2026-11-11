@@ -41,12 +41,12 @@ import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { readFileSync } from "node:fs";
 import { alsAntwoord, evaluate, parse } from "../packages/core/dist/index.js";
-import { kandidaten, rekenVariant, toetsDeel, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
+import { kandidaten, oordeelVan, rekenVariant, toetsDeel, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
 import * as cache from "../packages/desktop/src/rekenen/toetsCache.ts";
 const { gebruikteToetsingen } = cache;
 import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
 import { readdirSync } from "node:fs";
-import { variantVelden } from "../packages/desktop/src/components/calc/varianten/velden.ts";
+import { DUBBELZINNIG, leesCel, variantVelden } from "../packages/desktop/src/components/calc/varianten/velden.ts";
 
 let fouten = 0;
 function meld(ok, tekst, detail = "") {
@@ -351,6 +351,27 @@ console.log("\nDe tab");
   }
   const menu = ["bekijk", "overnemen", "alsBlad", "kopie", "hernoem", "verwijder"];
   meld(["en", "nl"].every((c) => menu.every((a) => taal(c).varianten?.menu?.[a])), "het menu van een variant, ook met een berekende sleutel");
+
+  // Een cel leest wat je typt zoals een invoerveld, maar weigert een getal dat twee kanten op kan.
+  const mm = { naam: "h", soort: "invoer", beginwaarde: "0", eenheid: "mm", keuzes: [] };
+  const m = { naam: "L", soort: "invoer", beginwaarde: "0", eenheid: "m", keuzes: [] };
+  meld(json(leesCel(m, "4500 mm")) === json({ waarde: "4.5" }) && json(leesCel(m, "4,5")) === json({ waarde: "4,5" }), "een eenheid erachter en een komma");
+  meld(json(leesCel(m, "#2.L_1")) === json({ waarde: "#2.L_1" }), "een verwijzing naar een ander blad");
+  for (const t of ["5.000", "12.500", "1.234,5", "1,234.5", "5,000"]) {
+    meld(leesCel(mm, t).fout === DUBBELZINNIG, `"${t}" is dubbelzinnig (duizendtal of decimaal) en wordt niet opgeslagen`, json(leesCel(mm, t)));
+  }
+  meld(json(leesCel(mm, "0.125")) === json({ waarde: "0.125" }) && json(leesCel(mm, "5000")) === json({ waarde: "5000" }) && json(leesCel(mm, "12,5")) === json({ waarde: "12,5" }),
+    "0.125, 5000 en 12,5 zijn gewoon getallen");
+  meld("fout" in leesCel(mm, "3 kN"), "een eenheid die niet past");
+  const keuzeVeld = { naam: "k", soort: "keuze", beginwaarde: "2", eenheid: "", keuzes: [{ text: "C24", value: "2" }, { text: "C30", value: "3" }] };
+  meld(json(leesCel(keuzeVeld, "c30")) === json({ waarde: "3" }) && json(leesCel(keuzeVeld, "2")) === json({ waarde: "2" }) && "fout" in leesCel(keuzeVeld, "C99"),
+    "een keuzelijst neemt de tekst of de waarde van een keuze");
+
+  // Het oordeel van een kolom: een regel met een fout is nooit "voldoet".
+  const r = (voldoet, extra = {}) => ({ resultaat: { titel: "", norm: "", uc: 0.5, voldoet }, ...extra });
+  meld(oordeelVan(r(true)) === "voldoet" && oordeelVan(r(false)) === "voldoetNiet" && oordeelVan(r(null)) === "geen", "voldoet, voldoet niet, geen oordeel");
+  meld(oordeelVan(r(true, { fout: "Error: x" })) === "nietGetoetst", "voldoet met een fout in het blad: niet getoetst");
+  meld(oordeelVan({ resultaat: { titel: "", norm: "", uc: null, voldoet: null, nietGetoetst: true } }) === "nietGetoetst" && oordeelVan(null) === "geen", "niet getoetst, en geen uitkomst");
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles in orde");

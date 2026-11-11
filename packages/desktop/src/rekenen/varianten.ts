@@ -107,6 +107,19 @@ export function rekenVariant(
 }
 
 /**
+ * Het oordeel van een kolom, voor het scherm en papier. Een regel met een fout is nooit
+ * "voldoet": de uitkomst is dan niet te vertrouwen, en de veilige kant is niet getoetst.
+ */
+export function oordeelVan(u: Pick<VariantUitkomst, "resultaat" | "fout"> | null | undefined): "voldoet" | "voldoetNiet" | "nietGetoetst" | "geen" {
+  const r = u?.resultaat;
+  if (!r) return "geen";
+  if (r.nietGetoetst) return "nietGetoetst";
+  if (r.voldoet === true) return u.fout ? "nietGetoetst" : "voldoet";
+  if (r.voldoet === false) return "voldoetNiet";
+  return "geen";
+}
+
+/**
  * Voldoet een uitkomst bij deze grens? Alleen als het blad zelf "voldoet" zegt en
  * niet "niet getoetst", en de maatgevende UC hoogstens de grens is. Geeft het blad
  * geen UC, dan alleen bij een grens van 1 of hoger: een strengere grens is dan niet

@@ -5,7 +5,8 @@ import { plakBlok, zetCel, zetVelden, type Variant, type Varianten } from "../..
 import type { Kolom, VariantenUitkomst } from "../../../rekenen/variantRekenen";
 import { isUcNaam } from "../bladVersie";
 import { ucTekst } from "../bladLezen";
-import type { VariantVeld } from "./velden";
+import { DUBBELZINNIG, type VariantVeld } from "./velden";
+import { oordeelVan } from "../../../rekenen/varianten";
 
 /** Wat een getypte waarde wordt in de eenheid van het blad, of waarom niet. */
 export type LeesCel = (veld: VariantVeld, tekst: string) => { waarde: string } | { fout: string };
@@ -73,7 +74,7 @@ export default function VariantenTabel({ ex, vs, velden, uitkomsten, gekozen, ki
     const cel = `${v.id}:${veld.naam}`;
     const r = tekst.trim() === "" ? { waarde: "" } : lees(veld, tekst);
     if ("fout" in r) {
-      setConcept({ cel, tekst, fout: r.fout });
+      setConcept({ cel, tekst, fout: r.fout === DUBBELZINNIG ? t("varianten.dubbelzinnig") : r.fout });
       return;
     }
     setConcept({ cel, tekst });
@@ -85,7 +86,7 @@ export default function VariantenTabel({ ex, vs, velden, uitkomsten, gekozen, ki
       if (!veld) return null;
       const r = lees(veld, w);
       return "fout" in r ? null : r.waarde;
-    }));
+    }, velden.map((v) => v.naam)));
 
   const ucCel = (k: Kolom) => {
     if (k.uitkomst === undefined) return <td className="var-uit bezig">…</td>;
@@ -101,16 +102,16 @@ export default function VariantenTabel({ ex, vs, velden, uitkomsten, gekozen, ki
     );
   };
   const oordeelCel = (k: Kolom) => {
-    const r = k.uitkomst?.resultaat;
-    if (!r) return <td className="var-uit">{k.uitkomst === undefined ? "…" : "—"}</td>;
-    const [klasse, sleutel] = r.nietGetoetst
-      ? ["", "varianten.oordeel.nietGetoetst"]
-      : r.voldoet === true
-        ? ["groen", "varianten.oordeel.voldoet"]
-        : r.voldoet === false
-          ? ["rood", "varianten.oordeel.voldoetNiet"]
-          : ["", "varianten.oordeel.geen"];
-    return <td className={`var-uit sterk ${klasse}${k.bezig ? " verouderd" : ""}`}>{t(sleutel)}</td>;
+    if (!k.uitkomst) return <td className="var-uit">{k.uitkomst === undefined ? "…" : "—"}</td>;
+    // Een regel met een fout is nooit "voldoet" (oordeelVan): dan niet getoetst, met de fout erbij.
+    const oordeel = oordeelVan(k.uitkomst);
+    const klasse = oordeel === "voldoet" ? "groen" : oordeel === "voldoetNiet" ? "rood" : "";
+    return (
+      <td className={`var-uit sterk ${klasse}${k.bezig ? " verouderd" : ""}`} title={k.uitkomst.fout}>
+        {k.uitkomst.fout && <span className="var-let">⚠ </span>}
+        {t(`varianten.oordeel.${oordeel}`)}
+      </td>
+    );
   };
   const getalCel = (k: Kolom, naam: string, uc: boolean) => {
     const u = k.uitkomst;
