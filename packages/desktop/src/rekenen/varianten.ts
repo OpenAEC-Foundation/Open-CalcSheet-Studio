@@ -13,7 +13,7 @@
  *
  * Zuiver, zonder React of stores: scripts/check-varianten.mjs laadt dit in Node.
  */
-import { evaluate, parse, type EvalOpties, type EvaluatedNode, type ParseOptions, type ToetsVerzoek } from "@ifc-calc/core";
+import { evaluate, parse, type EvalOpties, type EvaluatedNode, type ParseOptions, type ToetsAntwoord, type ToetsVerzoek } from "@ifc-calc/core";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
 import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../components/calc/bladLezen.ts";
 import type { Invoerveld } from "../components/calc/bladVersie.ts";
@@ -151,6 +151,21 @@ export async function zoekKleinste(
     if (r && voldoetAan(r, grens)) return { waarde };
   }
   return { geen: true };
+}
+
+/**
+ * Het deel van de sleutel van een kolom dat van de antwoorden van FEM Studio afhangt:
+ * alleen de antwoorden voor de blokken die de vorige uitkomst van die kolom had
+ * (`hashes`). Zo rekent bij een nieuw antwoord alleen de kolom opnieuw die het gebruikt,
+ * niet de hele tabel. Zonder `@toets` in de tekst leeg; nog niet doorgerekend: "?".
+ */
+export function toetsDeel(source: string, hashes: readonly string[] | undefined, antwoorden: Record<string, ToetsAntwoord>): string {
+  if (!/^\s*@toets\b/m.test(source)) return "";
+  if (!hashes) return "?";
+  return JSON.stringify(hashes.map((h) => {
+    const a = antwoorden[h];
+    return [h, !a ? "-" : a.ok ? `${a.datum ?? "ok"}${a.waarschuwing ? "!" : ""}` : `x${a.melding}`];
+  }));
 }
 
 /**

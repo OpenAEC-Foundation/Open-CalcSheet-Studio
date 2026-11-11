@@ -1,7 +1,7 @@
 # Varianten — ontwerp
 
 Datum: 11-11-2026
-Status: goedgekeurd op 11-11-2026 (schermschets en optimaliseren besproken).
+Status: goedgekeurd op 11-11-2026.
 
 ## Waarom
 
