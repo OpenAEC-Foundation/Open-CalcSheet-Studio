@@ -15,7 +15,8 @@
  *   • toetsen: de vastgelegde antwoorden van FEM Studio voor de varianten blijven bij
  *     het opslaan in het bestand;
  *   • de tab: de velden met hun label en kop, en elke schermtekst van de tab in het
- *     Engels en het Nederlands.
+ *     Engels en het Nederlands;
+ *   • papier: de tabellen onder het blad, met alleen de velden die verschillen.
  *
  * Handberekening van het toetsblad (M = 10 kNm, b = 75 mm, f = 24 N/mm²):
  *   W = b·h²/6, σ = M/W, UC = σ/f
@@ -41,7 +42,7 @@ import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { readFileSync } from "node:fs";
 import { alsAntwoord, evaluate, parse } from "../packages/core/dist/index.js";
-import { kandidaten, rekenVariant, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
+import { kandidaten, papierTabellen, rekenVariant, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
 import { gebruikteToetsingen } from "../packages/desktop/src/rekenen/toetsCache.ts";
 import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
 import { readdirSync } from "node:fs";
@@ -324,6 +325,24 @@ console.log("\nDe tab");
   }
   const menu = ["bekijk", "overnemen", "alsBlad", "kopie", "hernoem", "verwijder"];
   meld(["en", "nl"].every((c) => menu.every((a) => taal(c).varianten?.menu?.[a])), "het menu van een variant, ook met een berekende sleutel");
+}
+
+console.log("\nPapier");
+{
+  const velden = [
+    { naam: "h", soort: "invoer", beginwaarde: "225", eenheid: "mm", keuzes: [] },
+    { naam: "L_1", soort: "invoer", beginwaarde: "0", eenheid: "m", keuzes: [] },
+    { naam: "q_1", soort: "invoer", beginwaarde: "0", eenheid: "kN/m", keuzes: [] },
+  ];
+  const lijst = Array.from({ length: 11 }, (_, i) => ({ id: `v${i}`, naam: `V${i + 1}`, waarden: i === 0 ? { q_1: "3,0", weg: "1" } : { h: String(200 + 25 * i) } }));
+  const vs = { velden: ["h", "L_1", "q_1", "weg"], uitkomsten: [], lijst };
+  const tabellen = papierTabellen(velden, vs, { h: "225", L_1: "4", q_1: "3" }, 8);
+  meld(tabellen.length === 2 && tabellen[0].kolommen.length === 9 && tabellen[1].kolommen.length === 4,
+    "11 varianten, 8 per tabel: twee tabellen met 9 en 4 kolommen", json(tabellen.map((t) => t.kolommen.length)));
+  meld(tabellen.every((t) => t.kolommen[0] === null) && tabellen[1].kolommen[1]?.naam === "V9", "elke tabel begint met de kolom Blad, daarna de varianten op volgorde");
+  meld(json(tabellen[0].rijen) === json(["h"]) && json(tabellen[1].rijen) === json(["h"]),
+    "alleen de velden waarin een variant verschilt: q_1 = 3,0 is 3, L_1 heeft niemand, een veld dat het blad niet heeft valt weg", json(tabellen[0].rijen));
+  meld(papierTabellen(velden, { ...vs, lijst: [] }, {}, 8).length === 0, "zonder varianten geen tabel");
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles in orde");

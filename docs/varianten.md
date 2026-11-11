@@ -30,6 +30,7 @@ tab **Varianten** (`components/calc/varianten/`).
     hun plaats;
   - *Optimaliseren…*;
   - *＋ Invoerveld* en *＋ Uitkomst*;
+  - het vinkje *In de afdruk en het rapport*;
   - *Alle varianten weghalen*.
 - **Het menu van een variant:**
   - *Uitwerking bekijken*, alleen lezen, met het parametrische beeld;
@@ -43,6 +44,28 @@ uitkomsten staan in `rekenen/variantRekenen.ts`: alleen een kolom die veranderde
 opnieuw. Wat de tabel niet meer vraagt, vervalt. Tot een nieuwe uitkomst er is, blijft de
 vorige staan. De worker heeft geen eigen cache voor de antwoorden van FEM Studio: die komen
 mee in de opties.
+
+## Op papier
+
+Met het vinkje komt onder de uitwerking van het blad de tabel **Varianten**
+(`VariantenAfdruk.tsx`), in de losse afdruk en in het rapport. De tabel is beknopt
+(`papierTabellen`):
+
+- de velden waarin minstens één variant verschilt van het blad, waarbij 3,0 hetzelfde is
+  als 3;
+- de gekozen uitkomsten;
+- de maatgevende UC en het oordeel.
+
+De losse UC's staan alleen op het scherm. Elke tabel begint met de kolom Blad en heeft
+hoogstens acht varianten; meer varianten krijgen een tweede tabel eronder. Elke tabel is
+een eigen blok voor de verdeling over vellen: `print-varianten` is een wikkel in
+`paginering.ts`.
+
+De afdruk rekent de varianten direct uit, met de vastgelegde antwoorden van FEM Studio.
+Op papier wordt niets gevraagd. Vóór het afdrukken toetst `werkToetsingenBij` ook de
+`@toets`-blokken van de varianten van een blad waarbij het vinkje aan staat.
+`scripts/check-rapport-pdf.mjs` zoekt in een echte PDF de naam van een variant op de pagina
+van zijn blad.
 
 ## Het model
 

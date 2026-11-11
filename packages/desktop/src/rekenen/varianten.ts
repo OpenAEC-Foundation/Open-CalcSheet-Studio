@@ -19,7 +19,7 @@ import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../com
 import type { Invoerveld } from "../components/calc/bladVersie.ts";
 import { rekenEenhedenDoor } from "../components/calc/canvasRekenen.ts";
 import { heeftEenheden } from "../store/canvasBlad.ts";
-import { reeksWaarden, variantInvoer, type Varianten, type Zoekopdracht } from "../store/varianten.ts";
+import { reeksWaarden, variantInvoer, type Variant, type Varianten, type Zoekopdracht } from "../store/varianten.ts";
 import { metToetsingen, toetsHashes, verzamelVerzoeken } from "./toetsCache.ts";
 import { scopeMetVerwijzingen, type VerwijsBlad } from "./verwijzingen.ts";
 
@@ -155,6 +155,48 @@ export async function zoekKleinste(
     if (r && voldoetAan(r, grens)) return { waarde };
   }
   return { geen: true };
+}
+
+/** Twee invoerwaarden zijn gelijk als de tekst gelijk is, of als het hetzelfde getal is (3,0 en 3). */
+function zelfdeInvoer(a: string, b: string): boolean {
+  if (a.trim() === b.trim()) return true;
+  const [x, y] = [getal(a), getal(b)];
+  return Number.isFinite(x) && Number.isFinite(y) && x === y;
+}
+
+/** Een tabel op papier: `null` is de kolom met het blad, `rijen` zijn veldnamen. */
+export interface PapierTabel {
+  kolommen: (Variant | null)[];
+  rijen: string[];
+}
+
+/**
+ * De tabellen voor op papier: beknopt, met alleen de velden waarin minstens één variant
+ * van het blad verschilt, in de volgorde van de tabel op het scherm. Elke tabel begint
+ * met de kolom Blad, gevolgd door hoogstens `perTabel` varianten. Een veld dat het blad
+ * niet (meer) heeft, valt weg.
+ */
+export function papierTabellen(
+  velden: readonly Invoerveld[],
+  vs: Varianten,
+  blad: Record<string, string>,
+  perTabel: number,
+): PapierTabel[] {
+  if (vs.lijst.length === 0) return [];
+  const rijen = vs.velden.filter((naam) => {
+    const veld = velden.find((v) => v.naam === naam);
+    if (!veld) return false;
+    const vanBlad = blad[naam] !== undefined && blad[naam].trim() !== "" ? blad[naam] : veld.beginwaarde;
+    return vs.lijst.some((v) => {
+      const eigen = v.waarden[naam];
+      return eigen !== undefined && eigen.trim() !== "" && !zelfdeInvoer(eigen, vanBlad);
+    });
+  });
+  const uit: PapierTabel[] = [];
+  for (let i = 0; i < vs.lijst.length; i += Math.max(1, perTabel)) {
+    uit.push({ kolommen: [null, ...vs.lijst.slice(i, i + Math.max(1, perTabel))], rijen });
+  }
+  return uit;
 }
 
 /**

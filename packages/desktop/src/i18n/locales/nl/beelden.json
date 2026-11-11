@@ -463,6 +463,13 @@
     "project": "Project {{nummer}}",
     "opgesteldDoor": "Opgesteld door {{naam}}",
     "paginaWoord": "Pagina",
-    "vanWoord": "van"
+    "vanWoord": "van",
+    "varianten": {
+      "kop": "Varianten",
+      "uitleg": "{{naam}} met andere invoer; niet genoemde invoer is gelijk aan het blad hierboven.",
+      "blad": "Blad",
+      "uc": "Maatgevende UC",
+      "oordeel": "Oordeel"
+    }
   }
 }

@@ -987,6 +987,7 @@
     "optimaliseren": "Optimaliseren…",
     "invoerveld": "+ Invoerveld",
     "uitkomstKnop": "+ Uitkomst",
+    "opPapier": "In de afdruk en het rapport",
     "stand": {
       "klaar": "Alles doorgerekend",
       "bezig": "{{klaar}} van {{totaal}} doorgerekend"
