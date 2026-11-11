@@ -49,6 +49,7 @@ export {
   type IfcGenerationResult,
   type IfcxDocument,
   type GraafGegevens,
+  type VariantenGegevens,
 } from './ifc-generator.js';
 export type {
   IfcxBestand,
