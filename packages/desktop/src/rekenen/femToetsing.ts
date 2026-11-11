@@ -1,6 +1,8 @@
 /**
- * De verzoeken van `@toets`-blokken naar Open FEM Studio sturen, en de antwoorden bij
- * het blad vastleggen.
+ * De verzoeken van `@toets`- en `@fem`-blokken naar Open FEM Studio sturen, en de
+ * antwoorden bij het blad vastleggen. Een `@fem`-blok stuurt een verzoek per
+ * belastinggeval, met zijn rekenmodel (`bewaar`): daaruit volgen de argumenten, en het
+ * antwoord wordt compact bewaard met het raster erbij (femNet.ts in de kern).
  *
  * De werkruimte rekent een blad in de rekenworker door met `toetsModus: "vragen"`.
  * Een blok zonder antwoord geeft dan een verzoek mee (doorrekening.ts). Hier gaat
@@ -17,7 +19,15 @@
  */
 import { useSyncExternalStore } from "react";
 import i18next from "i18next";
-import { alsAntwoord, schemaHash, type ToetsHerkomst, type ToetsVerzoek, type VastgelegdeToets } from "@ifc-calc/core";
+import {
+  alsAntwoord,
+  femBewaar,
+  femVerzoekArgumenten,
+  schemaHash,
+  type ToetsHerkomst,
+  type ToetsVerzoek,
+  type VastgelegdeToets,
+} from "@ifc-calc/core";
 import { femStudioAanroep, femStudioStatus, femStudioTools, FemFout } from "./femStudio";
 import {
   abonneerToetsingen,
@@ -104,11 +114,13 @@ export function vraagToetsingen(verzoeken: readonly ToetsVerzoek[]): Promise<voi
     if (heeftToetsAntwoord(v.hash)) continue;
     const p = (async () => {
       try {
-        const uitkomst = await femStudioAanroep(v.tool, v.argumenten);
+        // Een @fem-blok geeft zijn rekenmodel mee (femBlok.ts): daaruit volgen de
+        // argumenten, en het wordt met het antwoord compact bewaard, raster en al.
+        const ruw = await femStudioAanroep(v.tool, femVerzoekArgumenten(v));
         const vast: VastgelegdeToets = {
           tool: v.tool,
-          verzoek: v.argumenten,
-          uitkomst,
+          verzoek: (v.bewaar as unknown as Record<string, unknown> | undefined) ?? v.argumenten,
+          uitkomst: v.bewaar ? femBewaar(v.bewaar, ruw) : ruw,
           datum: new Date().toISOString(),
           herkomst: herkomstVoor(await femNu(), v.tool),
         };
@@ -154,12 +166,15 @@ export function toetsOpnieuw(hash: string): void {
   zetOpnieuw(hash);
 }
 
-/** Een klik in de uitwerking: op de knop "opnieuw toetsen" van een blok? Dan gebeurt dat. */
+/**
+ * Een klik in de uitwerking: op de knop "opnieuw toetsen" van een blok? Dan gebeurt dat.
+ * Een `@fem`-blok heeft een hash per belastinggeval, met spaties ertussen: die gaan samen.
+ */
 export function klikOpToetsKnop(doel: EventTarget | null): boolean {
   const knop = doel instanceof Element ? doel.closest<HTMLElement>("[data-toets-opnieuw]") : null;
-  const hash = knop?.dataset.toetsOpnieuw;
-  if (!hash) return false;
-  toetsOpnieuw(hash);
+  const hashes = (knop?.dataset.toetsOpnieuw ?? "").split(/\s+/).filter(Boolean);
+  if (!hashes.length) return false;
+  for (const hash of hashes) toetsOpnieuw(hash);
   return true;
 }
 
@@ -179,7 +194,7 @@ export async function werkToetsingenBij(ids: readonly string[] | null, maxMs = 1
     const scope = projectScope(gegevens);
     const verzoeken: ToetsVerzoek[] = [];
     for (const ex of exemplaren) {
-      if ((ids && !ids.includes(ex.id)) || !/^\s*@toets\b/m.test(ex.source)) continue;
+      if ((ids && !ids.includes(ex.id)) || !/^\s*@(toets|fem)\b/m.test(ex.source)) continue;
       try {
         // Met de waarden uit andere bladen (#1.R_paal), net als in de werkruimte en op papier:
         // anders geeft een veld dat er een gebruikt een fout, en gaat er geen verzoek uit.

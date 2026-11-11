@@ -1,6 +1,6 @@
 import { math } from './eenheden.js';
 import { femArgumenten, femRekenmodel, femSomLast, maakFemNet, type FemGeval, type FemInvoer, type FemLast } from './femNet.js';
-import { FemModel, femModelSvg } from './femResultaat.js';
+import { FemModel, femGrootheid, femModelSvg, femSvg } from './femResultaat.js';
 import { schemaHash, toetsHash } from './toetsBlok.js';
 import type { EvaluatedFem, FemNode, FemRegel, FemRekenmodel, FemUitersten, FemUitkomstCompact, ToetsAntwoord, ToetsVerzoek } from './types.js';
 
@@ -66,6 +66,7 @@ const OPDRACHTEN: Readonly<Record<string, { aantallen: number[]; vorm: string; l
   eigengewicht: { aantallen: [1], vorm: 'eigengewicht γ', last: true },
   puntlast: { aantallen: [3], vorm: 'puntlast F; x; y', last: true },
   combinatie: { aantallen: [1], vorm: 'combinatie naam = 1.2*G + 1.5*Q' },
+  beeld: { aantallen: [0], vorm: 'beeld UGT mx (een geval of combinatie, en w, mx, my, mxy, vx of vy)' },
 };
 
 /** Splitst op `;` buiten haakjes en aanhalingstekens. */
@@ -164,6 +165,12 @@ export function leesFemBlok(naam: string, bron: string[], normaliseer: (expr: st
           inGeval = true;
         }
         uit.push({ soort: 'opdracht', regel: nr, woord, naam: n, args: omschrijving.length ? [omschrijving.join(' ').replace(/^"(.*)"$/, '$1')] : [] });
+        continue;
+      }
+      if (woord === 'beeld') {
+        const delen = rest.split(/\s+/);
+        if (delen.length !== 2 || !IDENT.test(delen[0]) || !/^[a-z]+$/i.test(delen[1])) { meld(nr, `schrijf ${soort.vorm}`); continue; }
+        uit.push({ soort: 'opdracht', regel: nr, woord, naam: delen[0], args: [delen[1]] });
         continue;
       }
       if (woord === 'combinatie') {
@@ -308,8 +315,10 @@ const melding = (e: unknown) => (e instanceof Error ? e.message : String(e)).rep
 
 interface Gelezen {
   invoer: FemInvoer;
-  /** Per plaat uit het blok de naam, als die er is. */
+  /** Per combinatie de factor van elk geval. */
   combinaties: { naam: string; factoren: number[] }[];
+  /** De beelden onder het blok: een geval of combinatie en een grootheid. */
+  beelden: { set: string; grootheid: string }[];
   fouten: string[];
 }
 
@@ -321,6 +330,7 @@ function leesInvoer(node: FemNode, r: FemRekenaar): Gelezen {
   const plaatNamen = new Map<string, number>();
   const opPlaat: { last: Extract<FemLast, { soort: 'vlak' }>; naam: string; regel: number }[] = [];
   const combinaties: { naam: string; expr: string; regel: number }[] = [];
+  const beelden: { set: string; grootheid: string; regel: number }[] = [];
   let materiaal = false;
   let geval: FemGeval | null = null;
 
@@ -420,6 +430,10 @@ function leesInvoer(node: FemNode, r: FemRekenaar): Gelezen {
         if (combinaties.some((c) => c.naam === o.naam)) throw new Error(`de combinatie ${o.naam} staat er al`);
         combinaties.push({ naam: o.naam!, expr: a[0], regel: o.regel });
         break;
+      case 'beeld':
+        femGrootheid(a[0]);
+        beelden.push({ set: o.naam!, grootheid: a[0], regel: o.regel });
+        break;
     }
   }
 
@@ -507,7 +521,10 @@ function leesInvoer(node: FemNode, r: FemRekenaar): Gelezen {
       for (const h of herstel.reverse()) h();
     }
   }
-  return { invoer: inv, combinaties: uitCombinaties, fouten };
+  for (const b of beelden) {
+    if (!namen.includes(b.set) && !combinaties.some((c) => c.naam === b.set)) meld(b.regel, `beeld: er is geen geval of combinatie ${b.set}`);
+  }
+  return { invoer: inv, combinaties: uitCombinaties, beelden, fouten };
 }
 
 /** Is het antwoord gemaakt met een andere FEM Studio of een ander schema dan die van nu? */
@@ -538,7 +555,7 @@ export function bouwFem(node: FemNode, r: FemRekenaar): EvaluatedFem {
   wisVariabelen(node, r.scope);
   if (node.fouten.length) return { ...basis, status: 'fout', melding: node.fouten.join('; ') };
 
-  const { invoer, combinaties, fouten } = leesInvoer(node, r);
+  const { invoer, combinaties, beelden, fouten } = leesInvoer(node, r);
   if (fouten.length) return { ...basis, status: 'fout', melding: fouten.join('; ') };
   let modellen: FemRekenmodel[];
   try {
@@ -611,6 +628,7 @@ export function bouwFem(node: FemNode, r: FemRekenaar): EvaluatedFem {
     model: { ...model, knopen: bewaard[0].x.length, elementen: bewaard[0].pl.length },
     status: 'klaar',
     uitersten,
+    ...(beelden.length ? { beelden: beelden.map((b) => femSvg(femModel, b.set, b.grootheid, 640, taal)) } : {}),
     ...herkomst,
     ...(verouderd ? { verouderd } : {}),
     ...(opnieuw ? { opnieuw } : {}),
@@ -706,7 +724,8 @@ export function renderFem(node: EvaluatedFem): string {
     + `<tr class="eenheid"><th></th><th colspan="6">[kNm/m]</th><th>[mm]</th>${veren ? '<th colspan="2">[kN]</th>' : ''}</tr></thead><tbody>${node.uitersten
       .map((u) => `<tr class="${u.soort}"><td>${esc(u.naam)}</td>${[u.mxMax, u.mxMin, u.myMax, u.myMin, u.mxyMax, u.mxyMin].map((v) => `<td class="getal">${getalTekst(v, t)}</td>`).join('')}<td class="getal">${getalTekst(u.wMax, t)}</td>${veren ? `<td class="getal">${getalTekst(u.RMax, t, 1)}</td><td class="getal">${getalTekst(u.RMin, t, 1)}</td>` : ''}</tr>`)
       .join('')}</tbody></table>`;
-  return `<div class="calc-fem${scherm}" data-fem="${esc(hashes)}">${kop}${verouderd}${samenvatting}${beeld}${gevallen}${uitersten}</div>`;
+  const beelden = (node.beelden ?? []).map((b) => `<div class="calc-fem-kaart">${b}</div>`).join("");
+  return `<div class="calc-fem${scherm}" data-fem="${esc(hashes)}">${kop}${verouderd}${samenvatting}${beeld}${gevallen}${uitersten}${beelden}</div>`;
 }
 
 /** De opmaak, bij de andere blokken in renderer.ts. */
@@ -714,7 +733,8 @@ export const FEM_CSS = `
 .calc-fem { margin: 6px 0 10px; }
 .calc-fem-kop { margin: 0 0 4px; }
 .calc-fem-samenvatting { margin: 0 0 4px; }
-.calc-fem-modelbeeld { margin: 4px 0; }
+.calc-fem-modelbeeld, .calc-fem-kaart { margin: 4px 0; }
+.calc-fem-kaart { break-inside: avoid; page-break-inside: avoid; }
 .calc-fem-modelbeeld svg, .calc-fem-beeld { display: block; height: auto; }
 .calc-fem-tabel { border-collapse: collapse; font-size: 0.95em; margin: 4px 0; }
 .calc-fem-tabel th, .calc-fem-tabel td { border-bottom: 1px solid #e5e7eb; padding: 1px 10px 1px 0; text-align: left; white-space: nowrap; }

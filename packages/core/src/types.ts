@@ -891,6 +891,8 @@ export interface EvaluatedFem {
   gevallen: { naam: string; hash?: string; somLast?: number; somR?: number }[];
   /** Per geval en combinatie de uitersten, als alles gerekend is. */
   uitersten?: FemUitersten[];
+  /** De plattegronden in kleur van de regels `beeld UGT mx` (SVG). */
+  beelden?: string[];
   /** De hashes van alle gevallen. */
   hashes?: string[];
   /** Alleen in de modus `vragen`: de gevallen die nog geen antwoord hebben. */

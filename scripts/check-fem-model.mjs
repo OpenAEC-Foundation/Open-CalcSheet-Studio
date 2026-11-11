@@ -39,6 +39,7 @@ import {
   femArgumenten,
   femBewaar,
   femStrook,
+  femVerzoekArgumenten,
   femWaarde,
   leesVastgelegdeToetsingen,
   parse,
@@ -227,6 +228,8 @@ if (model) {
     return vlak + punt;
   };
   const [G, Q] = vloerVragen.verzoeken.map((v) => femArgumenten(v.bewaar));
+  meld(JSON.stringify(femVerzoekArgumenten(vloerVragen.verzoeken[0])) === JSON.stringify(G) && Object.keys(vloerVragen.verzoeken[0].argumenten).length === 0,
+    "de app maakt de JSON uit het rekenmodel (femVerzoekArgumenten); het verzoek draagt hem niet dubbel");
   if (schema) {
     const fG = valideer(schema, G);
     const fQ = valideer(schema, Q);
@@ -359,6 +362,11 @@ if (vloerFix && model) {
   const svg = String(rek('fem_svg(vloer; "UGT"; "mx")'));
   const vlakken = (svg.match(/<polygon|<rect class="fem-el"/g) ?? []).length;
   meld(svg.startsWith("<svg") && vlakken >= recG.verzoek.el.length / 4 && /kNm\/m/.test(svg), `fem_svg: een plattegrond met ${vlakken} vlakken en een legenda in kNm/m`);
+  const metBeeld = (regel) => femVan(metAntwoorden(VLOER.replace("@end", `  ${regel}\n@end`), records).nodes);
+  const kaart = metBeeld("beeld UGT mx");
+  meld(kaart?.status === "klaar" && kaart.beelden?.length === 1 && kaart.beelden[0] === svg && /calc-fem-kaart/.test(render([kaart])),
+    "beeld UGT mx in het blok: dezelfde plattegrond onder het blok, zonder iets nieuws aan FEM Studio te vragen");
+  meld(/SLS/.test(metBeeld("beeld SLS mx")?.melding ?? "") && /grootheid/.test(metBeeld("beeld UGT zz")?.melding ?? ""), "een beeld van een onbekende combinatie of grootheid is een fout op die regel");
   const drieD = evaluate(parse(`${VLOER}\n@3d\neenheid m\nfem vloer BGT w\n@end`), {}, {}, { toetsingen: Object.fromEntries(Object.entries(records).map(([h, r]) => [h, alsAntwoord(r)])) });
   const scene = drieD.find((x) => x.type === "3d")?.scene;
   const net = scene?.elementen.find((e) => e.soort === "net");
