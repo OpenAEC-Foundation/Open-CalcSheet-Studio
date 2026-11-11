@@ -41,8 +41,9 @@ import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { readFileSync } from "node:fs";
 import { alsAntwoord, evaluate, parse } from "../packages/core/dist/index.js";
-import { kandidaten, rekenVariant, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
-import { gebruikteToetsingen } from "../packages/desktop/src/rekenen/toetsCache.ts";
+import { kandidaten, rekenVariant, toetsDeel, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
+import * as cache from "../packages/desktop/src/rekenen/toetsCache.ts";
+const { gebruikteToetsingen } = cache;
 import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
 import { readdirSync } from "node:fs";
 import { variantVelden } from "../packages/desktop/src/components/calc/varianten/velden.ts";
@@ -104,6 +105,12 @@ console.log("Model");
   meld(json(reeksWaarden(5, 3, 1)) === json([5, 4, 3]), "ook aflopend");
   meld(json(reeksWaarden(0, 1, 0)) === "[]" && json(reeksWaarden(0, 1, NaN)) === "[]", "een stap van nul of geen getal: niets");
   meld(reeksWaarden(0, 100, 1).length === 50, "hoogstens 50 waarden");
+
+  // De tabel toont alleen velden die het blad nog heeft: de rijen van het plakblok zijn die rijen.
+  const metWeg = { velden: ["X_weg", "h", "L_1"], uitkomsten: [], lijst: [{ id: "a", naam: "V1", waarden: {} }] };
+  const geplakt = plakBlok(metWeg, "250\t275\r\n4,5\t5", 0, 0, undefined, ["h", "L_1"]);
+  meld(json(geplakt.lijst.map((v) => v.waarden)) === json([{ h: "250", L_1: "4,5" }, { h: "275", L_1: "5" }]),
+    "plakken met een verdwenen veld: de rijen zijn de getoonde velden", json(geplakt.lijst.map((v) => v.waarden)));
 
   meld(leesVarianten(null) === undefined && leesVarianten({}) === undefined, "niets bruikbaars: geen varianten");
   const gelezen = leesVarianten({
@@ -273,6 +280,26 @@ console.log("\nToetsen");
   const zonder = rekenVariant(bron, { h: "4" }, {}, "Kolom");
   meld(zonder.resultaat.uc === null || Number.isNaN(zonder.resultaat.uc) || zonder.getallen.kolom_uc_max === undefined,
     "zonder antwoord geen UC uit FEM Studio", json(zonder.getallen));
+
+  // Een antwoord van deze sessie bij het blad vastleggen verandert niets aan de antwoorden:
+  // dan geen nieuwe versie, anders rekent elke tabel met @toets bij elke vastlegging opnieuw.
+  cache.wisSessie();
+  cache.zetVastgelegd([]);
+  cache.zetToetsAntwoord(h4, alsAntwoord(vast("4")), vast("4"));
+  const v0 = cache.toetsVersie();
+  cache.zetVastgelegd([{ [h4]: vast("4") }]);
+  meld(cache.toetsVersie() === v0, "een sessieantwoord vastleggen: geen nieuwe versie");
+  cache.zetVastgelegd([{ [h4]: vast("4"), [h5]: vast("5") }]);
+  meld(cache.toetsVersie() > v0, "een vastgelegd antwoord dat de sessie niet had: wel een nieuwe versie");
+  cache.wisSessie();
+  cache.zetVastgelegd([]);
+
+  // De sleutel van een kolom hangt alleen af van de antwoorden die hij gebruikt.
+  const voor = toetsDeel(bron, [h4], { [h4]: alsAntwoord(vast("4")) });
+  meld(toetsDeel("h = ?*(m)", [h4], {}) === "", "zonder @toets: geen toetsdeel in de sleutel");
+  meld(toetsDeel(bron, undefined, {}) !== toetsDeel(bron, [h4], {}), "nog niet doorgerekend: een eigen deel");
+  meld(toetsDeel(bron, [h4], { [h4]: alsAntwoord(vast("4")), [h5]: alsAntwoord(vast("5")) }) === voor, "een antwoord voor een andere invoer verandert de sleutel niet");
+  meld(toetsDeel(bron, [h4], {}) !== voor && toetsDeel(bron, [h4], { [h4]: { ok: false, melding: "x" } }) !== voor, "een nieuw of mislukt antwoord voor deze invoer wel");
 }
 
 console.log("\nDe tab");
