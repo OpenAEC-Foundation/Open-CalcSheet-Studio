@@ -38,7 +38,7 @@ import {
 import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../packages/desktop/src/store/projectBestand.ts";
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { readFileSync } from "node:fs";
-import { evaluate, parse } from "../packages/core/dist/index.js";
+import { alsAntwoord, evaluate, parse } from "../packages/core/dist/index.js";
 import { kandidaten, rekenVariant, variantToetsHashes, voldoetAan, zoekKleinste } from "../packages/desktop/src/rekenen/varianten.ts";
 import { gebruikteToetsingen } from "../packages/desktop/src/rekenen/toetsCache.ts";
 import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
@@ -260,6 +260,15 @@ console.log("\nToetsen");
   const terug = (tekst) => Object.keys(leesProjectBestand(tekst, "x").exemplaren[0].toetsingen ?? {}).sort().join();
   meld(terug(opslaan(project({ ...ex, varianten }))) === [h3, h4, h5].sort().join(), "opslaan met varianten: de antwoorden van blad en varianten blijven, de rest valt weg");
   meld(terug(opslaan(project(ex))) === h3, "zonder varianten: alleen die van het blad");
+
+  // De worker heeft geen eigen cache: de antwoorden komen mee in de opties (variantRekenen.ts).
+  const eigen = { toetsingen: { [h4]: alsAntwoord(vast("4")) }, toetsModus: "lezen" };
+  const metAntwoord = rekenVariant(bron, { h: "4" }, {}, "Kolom", { evalOpties: eigen });
+  meld(typeof metAntwoord.resultaat.uc === "number" && Math.abs(metAntwoord.getallen.UC_max - metAntwoord.resultaat.uc) < 1e-4,
+    "meegegeven antwoorden gelden, ook zonder cache", json(metAntwoord.resultaat));
+  const zonder = rekenVariant(bron, { h: "4" }, {}, "Kolom");
+  meld(zonder.resultaat.uc === null || Number.isNaN(zonder.resultaat.uc) || zonder.getallen.kolom_uc_max === undefined,
+    "zonder antwoord geen UC uit FEM Studio", json(zonder.getallen));
 }
 
 console.log(fouten ? `\n${fouten} fout(en)` : "\nAlles in orde");

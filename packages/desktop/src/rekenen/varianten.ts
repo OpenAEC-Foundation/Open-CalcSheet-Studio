@@ -85,7 +85,11 @@ export function rekenVariant(
   opties: VariantOpties = {},
 ): VariantUitkomst {
   const parseOpties = opties.parseOpties ?? { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls };
-  const evalOpties = metToetsingen(opties.evalOpties ?? {}, opties.toetsModus ?? "lezen", opties.taal);
+  // Opties met een toetsmodus hebben hun antwoorden al bij zich: zo rekent de worker, die
+  // geen eigen cache heeft (variantRekenen.ts). Anders de antwoorden van deze cache.
+  const evalOpties = opties.evalOpties?.toetsModus
+    ? opties.evalOpties
+    : metToetsingen(opties.evalOpties ?? {}, opties.toetsModus ?? "lezen", opties.taal);
   const metRefs = opties.verwijzingen?.length
     ? scopeMetVerwijzingen(source, waarden, scope, opties.verwijzingen, parseOpties, evalOpties)
     : scope;
