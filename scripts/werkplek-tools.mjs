@@ -35,7 +35,8 @@ try {
 if (process.argv.includes("--check")) {
   let nu = "";
   try { nu = readFileSync(doel, "utf8"); } catch { /* ontbreekt */ }
-  if (nu !== tekst) {
+  // Op Windows checkt git met CRLF uit: vergelijk zonder regeleindeverschil.
+  if (nu.replace(/\r\n/g, "\n") !== tekst) {
     console.error("packages/desktop/public/mcp-tools.json loopt achter: draai node scripts/werkplek-tools.mjs");
     process.exit(1);
   }
