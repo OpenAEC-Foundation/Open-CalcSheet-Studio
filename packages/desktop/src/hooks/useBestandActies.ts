@@ -98,8 +98,8 @@ export function useBestandActies() {
     if (!kanDirectOpslaan(pad)) return opslaanAls();
     try {
       await bewaarOpenWerkmappen();
-      await schrijfCalculationFile(pad, projectInhoud());
-      useProjectStore.getState().markeerOpgeslagen(pad);
+      const opgeslagen = await schrijfCalculationFile(pad, projectInhoud());
+      useProjectStore.getState().markeerOpgeslagen(opgeslagen);
     } catch (err) {
       console.error("Save file failed:", err);
       alert(melding("opslaanMislukt", err));

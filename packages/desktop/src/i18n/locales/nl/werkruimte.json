@@ -924,7 +924,10 @@
     "openen": "Bestand openen",
     "opslaanAls": "Bestand opslaan als",
     "geenBestand": "Geen geopend bestand om te overschrijven",
-    "geenProject": "Dit IFCX-bestand bevat geen project van deze app."
+    "geenProject": "Dit IFCX-bestand bevat geen project van deze app.",
+    "geenDocs": "Er staan nog geen bestanden van deze app in deze map in Docs.",
+    "kiesDocs": "Welk bestand openen? Typ het nummer.",
+    "naamInDocs": "Naam in Docs"
   },
   "ifcxBewaren": {
     "titel": "IFCX opslaan",

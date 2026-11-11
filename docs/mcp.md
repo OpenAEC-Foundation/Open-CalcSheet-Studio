@@ -151,3 +151,27 @@ Herkomst: de Rust-brug en de opzet van de TS-laag komen uit Open Planner Studio
   Op Windows start een Tauri-testbinary zonder common-controls-manifest niet
   (`STATUS_ENTRYPOINT_NOT_FOUND`); zet dan een extern manifest met
   `Microsoft.Windows.Common-Controls` 6.0 naast een kopie van de testbinary.
+
+## In de werkplek van de OpenAEC SuperCloud
+
+In de werkplek van een SuperCloud-omgeving draait de webbouw van de app
+(`npm run build:platform --workspace=@openaec/calcsheet-studio`, uitvoer in
+`packages/desktop/dist-platform/`) in een afgeschermd frame. De assistent van
+de SuperCloud krijgt daar dezelfde tools als deze MCP-server, via
+`window.__OPDS_APP__` (`src/mcp/werkplek.ts`): `tools()`, `definitions()` en
+`run(naam, argumenten)`, door dezelfde `voerToolUit`.
+
+- De tools die bestanden schrijven (soort `file`) staan er niet bij: openen en
+  opslaan doet de gebruiker zelf, via Docs.
+- Een tool die het project wijzigt (soort `mutate`) heeft `bevestigen: true`:
+  de SuperCloud vraagt de gebruiker eerst om toestemming.
+- De definities staan ook als bestand naast de bundel, `mcp-tools.json`
+  (`packages/desktop/public/`). `node scripts/werkplek-tools.mjs` schrijft het;
+  `check-werkplek-tools.mjs` in `check-alles` controleert dat het bijgewerkt is.
+
+Openen, Opslaan en Opslaan als gaan in de werkplek naar Docs, via het
+hostcontract `window.openaecHost` (`src/tauri/fileOps.ts`, paden `docs:<id>`).
+De taal komt van de SuperCloud. De platformbouw zet de icoonsprites in
+`index.html`, want een frame met een opaque origin weigert een `<use>` naar een
+los SVG-bestand. Het contract staat in de OpenAEC Blueprint,
+`docs/supercloud-koppeling.md`.

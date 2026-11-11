@@ -82,8 +82,10 @@ i18next.on("languageChanged", (lng) => {
 });
 
 // Load saved language from Tauri store on startup
+// In de werkplek van de SuperCloud gaat de taal van de gebruiker daar voor.
 getSetting("language", STANDAARD_TAAL).then((lang) => {
-  changeLanguage(lang);
+  const host = (window as { openaecHost?: { taal?: string } }).openaecHost;
+  changeLanguage(host?.taal ?? lang);
 });
 
 export function changeLanguage(lang: string) {

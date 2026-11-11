@@ -1,12 +1,30 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { readFileSync } from "node:fs";
+
+/**
+ * De platformbouw voor de werkplek van de OpenAEC SuperCloud (`npm run
+ * build:platform`): de icoonsprites in index.html, want een <use> naar een los
+ * SVG-bestand wordt in een frame met opaque origin geweigerd (calcIcons.ts).
+ */
+function spritesInline() {
+  return {
+    name: "openaec-sprites-inline",
+    transformIndexHtml(html: string) {
+      const sprites = ["standard", "calculations", "spreadsheet", "pdf"]
+        .map((naam) => readFileSync(new URL(`./public/icons/${naam}.svg`, import.meta.url), "utf8").replace(/<\?xml[^>]*>\s*/, ""))
+        .join("");
+      return html.replace("<body>", `<body>${sprites}`);
+    },
+  };
+}
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
-export default defineConfig(async ({ command }) => ({
-  plugins: [react()],
+export default defineConfig(async ({ command, mode }) => ({
+  plugins: mode === "platform" ? [react(), spritesInline()] : [react()],
 
   // De Library zit niet in de app; in de dev-server komt hij uit de map library/.
   define: {
