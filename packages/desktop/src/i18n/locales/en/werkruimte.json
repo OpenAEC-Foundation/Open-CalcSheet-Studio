@@ -988,6 +988,7 @@
     "optimaliseren": "Optimise…",
     "invoerveld": "+ Input field",
     "uitkomstKnop": "+ Result",
+    "opPapier": "In the printout and the report",
     "stand": {
       "klaar": "All calculated",
       "bezig": "{{klaar}} of {{totaal}} calculated"

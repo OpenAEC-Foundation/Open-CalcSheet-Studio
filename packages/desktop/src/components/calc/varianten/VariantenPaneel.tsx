@@ -95,6 +95,10 @@ export default function VariantenPaneel({ ex }: { ex: Exemplaar }) {
         <button className="var-knop" disabled={vs.lijst.length === 0} onClick={() => setDialoog("optimaliseren")}>{t("varianten.optimaliseren")}</button>
         <button className="var-knop" onClick={() => setDialoog("velden")}>{t("varianten.invoerveld")}</button>
         <button className="var-knop" disabled={beschikbaar.length === 0} onClick={() => setDialoog("uitkomst")}>{t("varianten.uitkomstKnop")}</button>
+        <label className="var-vink">
+          <input type="checkbox" checked={!!vs.opPapier} onChange={(e) => zet({ ...vs, opPapier: e.target.checked || undefined })} />
+          {t("varianten.opPapier")}
+        </label>
         <span className="var-stand">{stand}</span>
       </div>
       <VariantenTabel
