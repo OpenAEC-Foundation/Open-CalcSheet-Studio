@@ -111,8 +111,8 @@ await deel("Lezen", () => {
   const dubbel = parse("@kern a = solve_native_fem\n  per k = 1 : 2\n  per j = 1 : 2\n  #for i = 1 : 2\n  x = 1\n@end").find((n) => n.type === "kern");
   meld(dubbel.fouten.some((f) => f.includes("per staat er al")) && dubbel.fouten.some((f) => f.includes("#for zonder #loop")), "twee keer per, en een #for zonder #loop", JSON.stringify(dubbel.fouten));
   // De regels van het blok blijven zoals ze zijn: een pad met punten wordt geen naam met liggende streepjes.
-  const naam = parse("a.b = 2\n@kern k = solve_native_fem\n  inputs.kind = a.b\n@end").find((n) => n.type === "kern");
-  meld(naam.regels[0].pad.length === 2 && naam.regels[0].expr === "a_b", "het pad houdt zijn punten, de uitdrukking volgt de rekentaal (a.b is a_b)", JSON.stringify(naam.regels[0]));
+  const naam = parse("Cs.Cd = 2\n@kern k = solve_native_fem\n  inputs.kind = Cs.Cd\n@end").find((n) => n.type === "kern");
+  meld(naam.regels[0].pad.length === 2 && naam.regels[0].expr === "Cs_Cd", "het pad houdt zijn punten, de uitdrukking volgt de rekentaal (Cs.Cd is Cs_Cd)", JSON.stringify(naam.regels[0]));
 });
 
 await deel("Omrekenen naar het schema", () => {
@@ -321,6 +321,11 @@ await deel("Vastleggen bij het blad en aanroepen", () => {
       await kern.kernAanroepen(verzoek, async (_t, a) => { if (a.inputs.input.forces.mx === 30) throw new Error("geweigerd"); return {}; });
     } catch (e) { fout = e.message; }
     meld(fout === "aanroep 2 van 4: geweigerd", "een fout in één aanroep is een fout van de reeks, met het nummer", fout);
+    let omgeving = null;
+    try {
+      await kern.kernAanroepen(verzoek, async () => { throw Object.assign(new Error("no desktop app"), { code: "geenDesktop" }); });
+    } catch (e) { omgeving = e; }
+    meld(omgeving?.code === "geenDesktop" && omgeving.message === "no desktop app", "een fout van de omgeving (geen server) gaat door zoals hij is", omgeving?.message);
     const enkel = await kern.kernAanroepen(kernVan(drie).verzoek, async (_t, a) => a.inputs.kind);
     meld(enkel === "threeLayer", "zonder reeks: één aanroep met de argumenten");
   });
@@ -335,7 +340,7 @@ await deel("De editor", () => {
     meld(JSON.stringify(j).includes('"kernBlok"'), `de omschrijving van het blok in ${t}/rekentaal.json`);
   }
   const voorPapier = readFileSync(join(hier, "..", "packages/desktop/src/rekenen/femToetsing.ts"), "utf8");
-  meld(/HEEFT_BLOK|toets\|fem\|kern/.test(voorPapier), "vóór het afdrukken rekent ook een blad met @kern eerst");
+  meld(cache.HEEFT_FEM_BLOK.test("x = 1\n  @kern a = solve_native_fem\n@end") && !cache.HEEFT_FEM_BLOK.test("'tekst over @kern") && voorPapier.includes("HEEFT_FEM_BLOK.test(ex.source)"), "vóór het afdrukken rekent ook een blad met @kern eerst");
 });
 
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
