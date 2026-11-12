@@ -160,12 +160,14 @@ export default function App() {
   const { addRecentFile } = useRecentFiles();
   const { openen } = useBestandActies();
   useSneltoetsen();
-  // Een blad dat zonder invoerscherm openging (een leeg rekenblad) houdt de code in beeld
-  // als het tijdens het typen zijn eerste invoerveld krijgt: het invoerscherm komt erbij
-  // als tab, niet in de plaats van de editor waarin je typt. Tot je zelf een weergave kiest.
-  const [codeBlijft, setCodeBlijft] = useState<string | null>(null);
+  // Een blad waar je de rekentekst schrijft of leest (een eigen rekenblad, de demo van de
+  // rekentaal) opent met de code; het invoerscherm is daar een tab erbij. Ook als zo'n blad
+  // tijdens het typen zijn eerste invoerveld krijgt, blijft de editor staan waarin je typt.
+  // Tot je zelf een weergave kiest. Een module opent met haar invoerscherm. De keuze valt
+  // bij het openen van een blad (`blad` is het blad waarvoor ze geldt).
+  const [opening, setOpening] = useState<{ blad: string; code: boolean }>({ blad: "", code: false });
   const kiesSplitMode = useCallback((m: "cv" | "cu" | "vu") => {
-    setCodeBlijft(null);
+    setOpening((o) => ({ ...o, code: false }));
     setSplitMode(m);
   }, []);
   useMcpBrug({ splitMode, setSplitMode: kiesSplitMode, activeView, setActiveView, setTheme });
@@ -246,6 +248,7 @@ export default function App() {
   const eigenBeeld = designerVoor(source);
   const invoerScherm = eigenBeeld || !actief ? null : invoerSchermVoor(actief);
   const designerPane = eigenBeeld ?? invoerScherm?.scherm ?? null;
+  const opentMetScherm = eigenBeeld !== null || !!invoerScherm?.opent;
   // Het projectgegevens-formulier is geen rekenblad: geen editor, geen
   // uitwerking, geen splitsing — alleen het formulier.
   const toontProjectGegevens = activeId === PROJECT_ID;
@@ -275,12 +278,14 @@ export default function App() {
   const jupyterBlad = actief !== null && isJupyterBlad(actief);
   // En een Marimo-blad: ook alleen zijn omgeving.
   const marimoBlad = actief !== null && isMarimoBlad(actief);
-  useEffect(() => {
-    setCodeBlijft(hasDesigner ? null : activeId);
-    // Alleen bij het openen van een blad: wat het daarna krijgt, komt erbij als tab.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId]);
-  const mode = hasDesigner && codeBlijft !== activeId ? splitMode : "cu";
+  // Alleen bij het openen van een blad: wat het daarna krijgt, komt erbij als tab. Tijdens
+  // het tekenen beslist, niet in een effect: anders staat het invoerscherm er één beeld lang.
+  let codeBlijft = opening.code;
+  if (opening.blad !== activeId) {
+    codeBlijft = !(hasDesigner && opentMetScherm);
+    setOpening({ blad: activeId, code: codeBlijft });
+  }
+  const mode = hasDesigner && !codeBlijft ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
     <WerkPaneel titel={t("paneel.code")} info={t("paneel.regels", { count: regels })}>

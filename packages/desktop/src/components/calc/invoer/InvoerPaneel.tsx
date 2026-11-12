@@ -129,7 +129,9 @@ const GetalVeld = memo(function GetalVeld({ veld, opgeslagen, rij }: { veld: Pan
           setFout(null);
         }}
         onKeyDown={(e) => {
-          if (e.key === "Enter") rij.verlaat(veld.naam);
+          // Enter stuurt meteen. Ctrl+S ook: opslaan hoort te bewaren wat er staat, niet wat
+          // er stond vóór de pauze om was (de sneltoets zelf handelt useSneltoetsen af).
+          if (e.key === "Enter" || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s")) rij.verlaat(veld.naam);
           if (e.key === "Escape") {
             rij.vergeet(veld.naam);
             setTekst(rust);

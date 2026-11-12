@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import InvoerPaneel from "./InvoerPaneel";
 import VloerOpPalenBeeld from "./VloerOpPalenBeeld";
-import { schermSoort } from "./velden";
+import { opentMetInvoer, schermSoort } from "./velden";
 
 /**
  * Het invoerscherm van een rekenblad zonder eigen parametrisch beeld.
@@ -15,12 +15,16 @@ import { schermSoort } from "./velden";
  * een computer waar de module niet is geïnstalleerd. Welk blad wat krijgt, staat in
  * `schermSoort` (velden.ts), zodat scripts/check-invoerpaneel.mjs het kan nalopen.
  *
+ * `opent` zegt of het blad met dit scherm opent: een module wel, een eigen rekenblad en de
+ * demo van de rekentaal openen met de code en hebben het scherm als tab erbij
+ * (`opentMetInvoer`). Een blad met een beeld opent er altijd mee.
+ *
  * Alleen in de werkruimte: op papier en in de uitwerking van een variant staat het
  * formulier niet (PrintBlad.tsx vraagt designerKeuze, niet dit).
  */
-export function invoerSchermVoor(ex: { templateId?: string; source: string }): { scherm: ReactElement; metBeeld: boolean } | null {
+export function invoerSchermVoor(ex: { templateId?: string; source: string }): { scherm: ReactElement; metBeeld: boolean; opent: boolean } | null {
   const soort = schermSoort(ex, false);
-  if (soort === "vloer-op-palen") return { scherm: <InvoerPaneel Beeld={VloerOpPalenBeeld} />, metBeeld: true };
-  if (soort === "paneel") return { scherm: <InvoerPaneel />, metBeeld: false };
+  if (soort === "vloer-op-palen") return { scherm: <InvoerPaneel Beeld={VloerOpPalenBeeld} />, metBeeld: true, opent: true };
+  if (soort === "paneel") return { scherm: <InvoerPaneel />, metBeeld: false, opent: opentMetInvoer(ex) };
   return null;
 }

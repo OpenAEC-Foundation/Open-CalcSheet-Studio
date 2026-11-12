@@ -292,3 +292,18 @@ export function schermSoort(ex: { templateId?: string; source: string }, eigenBe
   }
   return "paneel";
 }
+
+/**
+ * De bladen waar je de rekentekst schrijft of leest: een rekenblad dat leeg begon (ook een
+ * voorbeeld uit de bibliotheek; store/moduleKiezer.ts, LEEG_BLAD), een los geopend bestand
+ * zonder module, en de demo van de rekentaal.
+ */
+const OPENT_MET_CODE: ReadonlySet<string> = new Set(["", "leeg", "rekentaal-demo"]);
+
+/**
+ * Opent dit blad met zijn invoerscherm? Een module wel: daar vul je in. Een blad uit
+ * OPENT_MET_CODE opent met de code, zoals altijd, en heeft het invoerscherm als tab erbij.
+ */
+export function opentMetInvoer(ex: { templateId?: string }): boolean {
+  return !OPENT_MET_CODE.has(ex.templateId ?? "");
+}

@@ -40,6 +40,7 @@ import {
   leesGetypt,
   leesInvoer,
   naamDelen,
+  opentMetInvoer,
   pauzeVoor,
   platTekst,
   schermSoort,
@@ -338,6 +339,15 @@ console.log("\nWelk blad welk scherm krijgt");
   meld(schermSoort({ templateId: "ligger", source: ligger }, true) === null, "een blad met een eigen beeld houdt dat beeld");
   meld(schermSoort({ templateId: "", source: "x = 5" }, false) === null, "een blad zonder invoer heeft geen invoerscherm");
   meld(schermSoort({ templateId: CANVAS_BLAD, source: PROEF }, false) === null, "een canvas heeft zijn eigen scherm");
+
+  // Waarmee een blad opent: een module met haar invoerscherm, een blad waar je de rekentekst
+  // schrijft of leest met de code. Daar is het invoerscherm een tab erbij.
+  meld(opentMetInvoer({ templateId: "vloer-op-palen" }) && opentMetInvoer({ templateId: "een-module-uit-de-bibliotheek" }), "een module opent met haar invoerscherm");
+  meld(!opentMetInvoer({ templateId: "leeg" }) && !opentMetInvoer({ templateId: "" }) && !opentMetInvoer({}) && !opentMetInvoer({ templateId: "rekentaal-demo" }),
+    "een eigen rekenblad, een los geopend bestand en de demo van de rekentaal openen met de code");
+  const kiezer = readFileSync(join(SRC, "store/moduleKiezer.ts"), "utf8");
+  const sjablonen = readFileSync(join(SRC, "templates/index.ts"), "utf8");
+  meld(/const LEEG_BLAD = "leeg";/.test(kiezer) && sjablonen.includes('"rekentaal-demo": rekentaalDemo'), "en dat zijn de templateId's die de app aan die bladen geeft");
 }
 
 console.log("\nDe vloer op palen: het model");
