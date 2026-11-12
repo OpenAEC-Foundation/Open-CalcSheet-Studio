@@ -866,30 +866,31 @@ export function femStaaf3D(model: FemStaafModel, set: string, grootheid: string,
   const soort = grootheid.trim().toLowerCase();
 
   if (soort === 'u' || soort === 'vervorming') {
-    let grootste = 0;
-    const lijnen = m.staven.map((st, i) => {
+    // De grootste verplaatsing op de fijne plaatsen, zoals in het beeld op papier: het
+    // getal hangt niet af van het aantal stukken waarmee de staaf getekend is.
+    let top: { p: Vec3; u: Vec3; l: number } | null = null;
+    m.staven.forEach((st, i) => {
       const a = femStaafPunt(m, st.knopen[0]);
-      // Per deel twee stukken: genoeg voor een vloeiende lijn, weinig elementen.
-      const plaatsen = model.staven[i].s.flatMap((x, d, alle) => (d + 1 < alle.length ? [x, (x + alle[d + 1]) / 2] : [x]));
-      return plaatsen.map((x) => {
+      for (const x of model.plaatsen(i)) {
         const u = model.verplaatsing(s, i, x);
-        grootste = Math.max(grootste, vLengte(u));
-        return { p: vPlus(a, vMaal(model.staven[i].ex, x)), u };
-      });
+        const l = vLengte(u);
+        if (!top || l > top.l) top = { p: vPlus(a, vMaal(model.staven[i].ex, x)), u, l };
+      }
     });
+    const t = top as { p: Vec3; u: Vec3; l: number } | null;
+    const grootste = t?.l ?? 0;
     const h = hoogte ?? 0.08 * maat;
     const schaal = grootste > 0 ? h / (grootste * factor) : 0;
-    let top: { p: Vec3; u: number } | null = null;
-    lijnen.forEach((punten, i) => {
-      const st = m.staven[i];
-      staaf(i, femStaafPunt(m, st.knopen[0]), femStaafPunt(m, st.knopen[st.knopen.length - 1]), KLEUR_GRIJS, false);
-      for (let j = 0; j + 1 < punten.length; j++) {
-        staaf(i, vPlus(punten[j].p, vMaal(punten[j].u, schaal)), vPlus(punten[j + 1].p, vMaal(punten[j + 1].u, schaal)), KLEUR_HOUT, true);
-      }
-      for (const q of punten) if (!top || vLengte(q.u) > top.u) top = { p: vPlus(q.p, vMaal(q.u, schaal)), u: vLengte(q.u) };
+    m.staven.forEach((st, i) => {
+      const a = femStaafPunt(m, st.knopen[0]);
+      staaf(i, a, femStaafPunt(m, st.knopen[st.knopen.length - 1]), KLEUR_GRIJS, false);
+      // Per deel twee stukken: genoeg voor een vloeiende lijn, weinig elementen.
+      const punten = model.staven[i].s
+        .flatMap((x, d, alle) => (d + 1 < alle.length ? [x, (x + alle[d + 1]) / 2] : [x]))
+        .map((x) => vPlus(vPlus(a, vMaal(model.staven[i].ex, x)), vMaal(model.verplaatsing(s, i, x), schaal)));
+      for (let j = 0; j + 1 < punten.length; j++) staaf(i, punten[j], punten[j + 1], KLEUR_HOUT, true);
     });
-    const t = top as { p: Vec3; u: number } | null;
-    if (t && t.u > 0) uit.push({ soort: 'tekst', plek: punt(t.p), tekst: getal(t.u * 1000, 'mm'), kleur: '#1e3a8a' });
+    if (t && t.l > 0) uit.push({ soort: 'tekst', plek: punt(vPlus(t.p, vMaal(t.u, schaal))), tekst: getal(t.l * 1000, 'mm'), kleur: '#1e3a8a' });
     return uit;
   }
 

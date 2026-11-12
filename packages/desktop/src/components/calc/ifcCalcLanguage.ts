@@ -347,6 +347,10 @@ const STATIC_COMPLETIONS: Aanvulling[] = [
     apply: "@fem vloer\n  materiaal 33 GPa; 0.2\n  maas 0.5 m\n  plaat 0; 0; 10 m; 10 m; 250 mm\n  veren 0; 0; 3; 3; 5 m; 5 m; 200 MN/m; 400 mm\n  geval G\n    eigengewicht 25 kN/m^3\n  geval Q\n    vlaklast 5 kN/m^2\n  combinatie UGT = 1.2*G + 1.5*Q\n@end",
   },
   {
+    label: "@fem staaf", type: "namespace", sleutel: "femStaven",
+    apply: "@fem kap\n  materiaal 11000 N/mm^2; 690 N/mm^2\n  rechthoek spoor: 59 mm; 156 mm\n  knoop A: 0; 0\n  knoop B: 7.2 m; 0\n  knoop nok: 3.6 m; 3.2 m\n  staaf spoor_l: A; nok; spoor; scharnier eind\n  staaf spoor_r: nok; B; spoor\n  steun A; scharnier\n  steun B; scharnier\n  geval G\n    eigengewicht 4.2 kN/m^3\n    lijnlast spoor_l; 0.33 kN/m\n    lijnlast spoor_r; 0.33 kN/m\n  geval S\n    lijnlast spoor_l; 0.34 kN/m; projectie\n    lijnlast spoor_r; 0.34 kN/m; projectie\n  combinatie UGT = 1.2*G + 1.5*S\n  beeld UGT M\n@end",
+  },
+  {
     label: "@kern", type: "namespace", sleutel: "kernBlok",
     apply: "@kern drie = solve_native_fem\n  inputs.kind = \"threeLayer\"\n  inputs.input.forces = {nx: 0, ny: 0, nxy: 0, mx: 50, my: 0, mxy: 0, vx: 0, vy: 0}\n  inputs.input.thicknessMm = 250 mm\n  inputs.input.topSkinMm = 80 mm\n  inputs.input.bottomSkinMm = 84 mm\n  inputs.input.topReinforcement = {asX: 524, asY: 524}\n  inputs.input.bottomReinforcement = {asX: 754, asY: 754}\n  inputs.input.fcdMpa = 20 N/mm^2\n  inputs.input.fydMpa = 435 N/mm^2\n  inputs.input.nuPrime = 0.88\n  inputs.input.compressionModel = \"ec2AnnexF\"\n@end",
   },

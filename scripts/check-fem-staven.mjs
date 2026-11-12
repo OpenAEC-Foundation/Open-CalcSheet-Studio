@@ -622,5 +622,31 @@ console.log("\nDe tool");
   meld(!/"requests"/.test(rust.match(/const PADEN[^;]*;/)?.[0] ?? '"requests"'), "en de Rust-kant laat het argument requests door");
 }
 
+// ── De documentatie en de editor ────────────────────────────────────────────
+console.log("\nDe documentatie en de editor");
+{
+  const doc = readFileSync(new URL("../docs/fem-model.md", import.meta.url), "utf8").replace(/\r\n/g, "\n");
+  const blokken = [...doc.matchAll(/```text\n([\s\S]*?)```/g)].map((m) => m[1]).join("\n");
+  const ontbreekt = KAP.split("\n").filter((r) => r.trim() && !blokken.includes(r));
+  meld(ontbreekt.length === 0, "het voorbeeld van de sporenkap en de houttoets in docs/fem-model.md is het blad van de controle", ontbreekt.slice(0, 3).join(" | "));
+  // De getallen bij het voorbeeld zijn die van het vastgelegde antwoord.
+  const { scope } = gerekend("kap");
+  const nl = (v, n) => v.toFixed(n).replace(".", ",").replace("-", "−");
+  const plat = doc.replace(/\s+/g, " ");
+  for (const tekst of [`M_Ed = ${nl(kNm(scope.M_Ed), 2)} kNm`, `N_haan = ${nl(kN(scope.N_haan), 2)} kN`, `H_A = ${nl(kN(scope.H_A), 2)} kN`, `w_BGT = ${nl(mm(scope.w_BGT), 2)} mm`, `UC = ${nl(scope.UC, 2)}`]) {
+    meld(plat.includes(tekst), `de documentatie noemt ${tekst}`);
+  }
+  // De aanvullijst van de editor heeft een staafwerk dat rekent, met zijn tekst in elke taal.
+  const taal = readFileSync(new URL("../packages/desktop/src/components/calc/ifcCalcLanguage.ts", import.meta.url), "utf8");
+  const fragment = /label: "@fem staaf"[^}]*?sleutel: "femStaven"[^}]*?apply: "((?:[^"\\]|\\.)*)"/.exec(taal)?.[1];
+  const voorbeeld = fragment ? JSON.parse(`"${fragment}"`) : "";
+  const blok = voorbeeld ? vragen(voorbeeld) : null;
+  meld(blok?.status === "wacht" && blok.staven?.staven >= 2, "de aanvullijst van de editor heeft een staafwerk dat zo naar FEM Studio kan", `${blok?.status ?? "geen voorbeeld"} ${blok?.melding ?? ""}`);
+  for (const t of ["en", "nl"]) {
+    const j = JSON.parse(readFileSync(new URL(`../packages/desktop/src/i18n/locales/${t}/rekentaal.json`, import.meta.url), "utf8"));
+    meld(typeof j.editor?.femStaven === "string" && j.editor.femStaven.length > 0, `de omschrijving ervan in ${t}/rekentaal.json`);
+  }
+}
+
 console.log(fouten ? `\n${fouten} fout(en).` : "\nDe staven in het FEM-model kloppen.");
 process.exit(fouten ? 1 : 0);

@@ -64,7 +64,7 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
  *                       `@iframe url hoogte=120mm` — externe pagina; zie iframeBlok.ts
  *                       `@ifcx balklaag` — 3D-beeld uit een IFCX-document; zie ifcxBlok.ts
  *                       `@toets naam = tool … @end` — normtoets door Open FEM Studio; zie toetsBlok.ts
- *                       `@fem naam … @end` — plaatmodel, gerekend door Open FEM Studio; zie femBlok.ts
+ *                       `@fem naam … @end` — plaatmodel of staafwerk, gerekend door Open FEM Studio; zie femBlok.ts en femStaafBlok.ts
  *                       `@kern naam = tool … @end` — rekentool van Open FEM Studio met geneste invoer; zie kernBlok.ts
  *                       `@js … @end` — JavaScript, letterlijk en afgeschermd; zie jsBlok.ts
  *
@@ -1280,7 +1280,7 @@ function parseLines(
       continue;
     }
 
-    // FEM-blok (`@fem naam … @end`): een plaatmodel dat FEM Studio doorrekent (femBlok.ts).
+    // FEM-blok (`@fem naam … @end`): een plaatmodel of staafwerk dat FEM Studio doorrekent (femBlok.ts).
     const femMatch = trimmed.match(FEM_START_RE);
     if (femMatch) {
       const blokRegels: string[] = [];
