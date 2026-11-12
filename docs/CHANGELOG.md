@@ -7,6 +7,9 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Rekentaal: het blok `@fem` rekent nu ook staafwerken, vlak of ruimtelijk, door Open FEM Studio: een ligger, een portaal, een sporenkap met hanenbalk, een spant met gordingen. Een blad schrijft de doorsneden (`rechthoek`, `doorsnede`), de knopen en staven met hun scharnieren, de opleggingen (scharnier, rol, inklemming, veer) en per belastinggeval lijnlasten (omlaag, langs x, loodrecht op de staaf, of per meter grondvlak voor sneeuw), puntlasten en eigen gewicht. Een staaf loopt door over een knoop op zijn as, zodat een hanenbalk zo aan een spoor hangt. Daarna rekent het blad verder met de grootste en kleinste N, V en M per staaf, de doorbuiging, de reacties en de knikfactor per combinatie (`kap.UGT.spoor.M_max`, `kap.UGT.A.Rz`, `kap.UGT.alpha_cr`), met de omhullende over de combinaties, en met de waarde op een plaats (`fem_staaf`, `fem_knoop`). Met `analyse tweede-orde` is elke combinatie een eigen berekening. `beeld UGT M` zet de momentenlijn onder het blok, en in een 3D-beeld tekent `fem kap UGT M` het staafwerk met zijn doorsneden en de lijn of de vervormde stand. Zonder antwoord staat het blok als niet gerekend
+- De houttoets van Open FEM Studio rekent met de snedekrachten uit een staafwerk: `fem_krachten` geeft ze per station en combinatie aan een `@toets`-blok met `check_timber_beams`. In een `@toets`-blok mag een veld over meer regels lopen zolang er een haak openstaat
+
 ## v2026.46.1 — 2026-11-12
 
 - De server van Open FEM Studio in een installer heeft zijn licentie (GNU AGPL-3.0), de vermeldingen van derden en een verwijzing naar zijn broncode naast zich, en Instellingen › Over toont ze. De broncode van precies die versie staat bij de release, naast de installers

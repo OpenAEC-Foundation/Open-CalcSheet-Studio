@@ -134,6 +134,48 @@ m_ks = -fem_strook(vloer; "UGT"; "mx"; 5 m; 3.75 m; 5 m; 6.25 m)
 Het antwoord wordt opgezocht en vastgelegd zoals bij `@toets` hieronder; zonder antwoord
 staat het blok als NIET GEREKEND, nooit met een uitkomst.
 
+## Een staafwerk: `@fem` met staven
+
+Hetzelfde blok rekent een staafwerk, vlak (x en z) of ruimtelijk: een ligger, een
+portaal, een kap. Het blad schrijft de doorsneden, de knopen en staven met hun
+scharnieren, de opleggingen en de lasten; Open FEM Studio rekent alle gevallen in één
+aanroep (`solve_open_fem_3d_batch`) en het blad rekent verder met N, V, M, de doorbuiging,
+de reacties en de knikfactor. Alles staat in
+[fem-model.md](fem-model.md#een-staafwerk-staven-in-fem); in het kort:
+
+```text
+@fem kap
+  materiaal 11000 N/mm^2; 690 N/mm^2
+  rechthoek spoor: 59 mm; 156 mm
+  knoop A: 0; 0
+  knoop B: L; 0
+  knoop nok: L/2; h_nok
+  staaf spoor_l: A; nok; spoor; scharnier eind
+  staaf spoor_r: nok; B; spoor
+  steun A; scharnier
+  steun B; scharnier
+  geval G
+    eigengewicht 4.2 kN/m^3
+  geval S
+    lijnlast spoor_l; q_s; projectie
+    lijnlast spoor_r; q_s; projectie
+  combinatie UGT = 1.2*G + 1.5*S
+  beeld UGT M
+@end
+M_Ed = kap.UGT.spoor_l.M_max
+H = kap.UGT.A.Rx
+V_2 = fem_staaf(kap; "UGT"; "spoor_l"; "V"; 2 m)
+```
+
+- Een staaf loopt door over een knoop op zijn as: een hanenbalk hangt zo aan een spoor.
+- Een lijnlast gaat omlaag (`z`), langs `x`, loodrecht op de staaf (`lokaal`) of per meter
+  grondvlak (`projectie`, voor sneeuw); een puntlast staat op een knoop of op een staaf.
+- `analyse tweede-orde` rekent elke combinatie apart; `knikvormen n` geeft
+  `kap.UGT.alpha_cr`.
+- `fem_krachten(kap; "spoor_l"; "UGT")` geeft de snedekrachten van een staaf als
+  `forces_envelope` voor een `@toets`-blok, bijvoorbeeld de houttoets
+  `check_timber_beams`.
+
 ## Een rekentool met geneste invoer: `@kern`
 
 Een rekentool van Open FEM Studio waarvan de uitkomst uit getallen bestaat, zoals de
@@ -206,7 +248,13 @@ UC_max = kolom.uc_max
   - Een getal zonder eenheid gaat zoals het is.
   - Een grootheid in een veld zonder eenheid in de naam is een fout op die regel.
   - `forces_envelope` mag een matrix zijn, met per rij één station: combinatie, x (mm),
-    N, V_y, V_z (kN), M_t, M_y, M_z (kNm).
+    N, V_y, V_z (kN), M_t, M_y, M_z (kNm). Ook in een staaf van een lijst
+    (`inputs = [{…, forces_envelope: …}]`, zoals `check_timber_beams` die neemt), en
+    `fem_krachten` geeft die matrix uit een staafwerk.
+- **Een veld over meer regels.** Een veld loopt door op de volgende regels zolang er een
+  haak openstaat, met commentaar (`//`) ertussen. Zo staat een staaf van `inputs` met één
+  veld per regel in het blok; zie het voorbeeld van de houttoets in
+  [fem-model.md](fem-model.md#de-houttoets-check_timber_beams).
 - **De uitkomst.** Na het blok gelden de volgende variabelen. Een punt in een naam is in
   de rekentaal een liggend streepje, dus `kolom.uc_max` is `kolom_uc_max`.
   - `kolom.uc_max`: de hoogste UC.
