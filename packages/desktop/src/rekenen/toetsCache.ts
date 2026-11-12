@@ -158,9 +158,14 @@ export function metToetsingen(opties: EvalOpties, modus: "vragen" | "lezen", taa
   };
 }
 
-function elkeToets(nodes: readonly EvaluatedNode[], doe: (n: Extract<EvaluatedNode, { type: "toets" }>) => void) {
+/**
+ * Elk blok dat FEM Studio iets vraagt: een `@toets`-blok (één verzoek, één hash) of een
+ * `@fem`-blok (een verzoek en een hash per belastinggeval). Zonder hash: een fout in het blok.
+ */
+function elkeToets(nodes: readonly EvaluatedNode[], doe: (verzoeken: ToetsVerzoek[], hashes: string[]) => void) {
   for (const n of nodes) {
-    if (n.type === "toets") doe(n);
+    if (n.type === "toets") doe(n.verzoek ? [n.verzoek] : [], n.hash ? [n.hash] : []);
+    else if (n.type === "fem") doe(n.verzoeken ?? [], n.hashes ?? []);
     const kinderen = (n as { children?: EvaluatedNode[] }).children;
     if (Array.isArray(kinderen)) elkeToets(kinderen, doe);
   }
@@ -169,8 +174,8 @@ function elkeToets(nodes: readonly EvaluatedNode[], doe: (n: Extract<EvaluatedNo
 /** De verzoeken in een doorgerekend blad, ook in de takken van een `#if`. */
 export function verzamelVerzoeken(nodes: readonly EvaluatedNode[]): ToetsVerzoek[] {
   const uit: ToetsVerzoek[] = [];
-  elkeToets(nodes, (n) => {
-    if (n.verzoek) uit.push(n.verzoek);
+  elkeToets(nodes, (verzoeken) => {
+    uit.push(...verzoeken);
   });
   return uit;
 }
@@ -178,8 +183,8 @@ export function verzamelVerzoeken(nodes: readonly EvaluatedNode[]): ToetsVerzoek
 /** De hashes van alle blokken in een doorgerekend blad, met of zonder antwoord. */
 export function toetsHashes(nodes: readonly EvaluatedNode[]): string[] {
   const uit: string[] = [];
-  elkeToets(nodes, (n) => {
-    if (n.hash) uit.push(n.hash);
+  elkeToets(nodes, (_, hashes) => {
+    uit.push(...hashes);
   });
   return uit;
 }
@@ -198,9 +203,9 @@ export function gebruikteToetsingen(
   if (!toetsingen || !blad || blad.fout) return toetsingen;
   const gebruikt = new Set<string>(ook);
   let zonderHash = false;
-  elkeToets(blad.nodes, (n) => {
-    if (n.hash) gebruikt.add(n.hash);
-    else zonderHash = true;
+  elkeToets(blad.nodes, (_, hashes) => {
+    for (const h of hashes) gebruikt.add(h);
+    if (!hashes.length) zonderHash = true;
   });
   if (zonderHash) return toetsingen;
   const uit = Object.fromEntries(Object.entries(toetsingen).filter(([hash]) => gebruikt.has(hash)));
