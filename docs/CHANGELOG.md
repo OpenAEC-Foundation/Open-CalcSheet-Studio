@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+## v2026.46.0 — 2026-11-12
+
 - Rekentaal: met `@fem naam … @end` bouwt een blad een plaatmodel op dat Open FEM Studio doorrekent: platen als rechthoeken met elk hun dikte (een ponskop of strook over de vloer wint), veren en een raster van veren met een paalkop, lijnsteunen, belastinggevallen met vlaklasten, eigen gewicht en puntlasten, en combinaties. Daarna rekent het blad verder met de grootste en kleinste momenten, de doorbuiging en de veerreacties per combinatie (`vloer.UGT.mx_max`, `vloer.R_max`), de waarde op een punt (`fem_waarde`) en het gemiddelde over een strook (`fem_strook`). `beeld UGT mx` zet een plattegrond in kleur onder het blok, en in een 3D-beeld tekent `fem vloer UGT w` de doorbuiging of het momentvlak. Het antwoord gaat mee in het projectbestand; zonder antwoord staat het blok als niet gerekend
 - Een `@toets`-blok mag elke rekentool van Open FEM Studio gebruiken, ook een die er later bij komt; alleen de tools die de app van FEM Studio sturen of bestanden lezen of schrijven, blijven uitgesloten
 - Een gedupliceerd blad krijgt een eigen kenmerk (#n). Het nam het kenmerk van het origineel mee, en dan wees `#1.R_paal` in een ander blad stil naar een van de twee. Een project waarin twee bladen al hetzelfde kenmerk hebben, krijgt bij het openen een eigen nummer voor het tweede blad; het eerste houdt het zijne, en een verwijzing wijst daarna naar dat eerste
