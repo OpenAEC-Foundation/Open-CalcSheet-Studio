@@ -373,6 +373,7 @@
   "paneel": {
     "code": "Code",
     "visueel": "Visual",
+    "invoer": "Input",
     "uitwerking": "Output",
     "regels_one": "{{count}} line",
     "regels_other": "{{count}} lines"
