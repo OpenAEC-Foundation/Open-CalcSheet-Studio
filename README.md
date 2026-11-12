@@ -82,7 +82,7 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 
 ## Modules and library
 
-Modules are ready-made sheets with an input screen: a **timber joist floor** and a **beam in timber or steel** to EN 1995-1-1 and EN 1993-1-1, and a **two-pile cap** to EN 1992-1-1, with the Dutch national annex. The [online module library](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) can add modules without a new release; so far it holds the floor. See [how the floor check works](docs/balklaag-toetsing.md) and [the pile cap check](docs/tweepaalspoer-toetsing.md).
+Modules are ready-made sheets with an input screen: a **timber joist floor** and a **beam in timber or steel** to EN 1995-1-1 and EN 1993-1-1, and a **two-pile cap** to EN 1992-1-1, with the Dutch national annex. The [online module library](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) can add modules without a new release; so far it holds the floor. Every other sheet with input, a module from that library included, gets an input form built from its own fields next to the worked-out sheet. See [how the floor check works](docs/balklaag-toetsing.md) and [the pile cap check](docs/tweepaalspoer-toetsing.md).
 
 The two-pile cap has a 3D study model next to its drawing. It shows the cap, the piles, the column and every bar, and follows each field and blue dimension at once. **Add module** shows a picture for every choice, from a blank drawing to a Marimo notebook.
 
