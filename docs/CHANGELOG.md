@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+## v2026.46.1 — 2026-11-12
+
 - De server van Open FEM Studio in een installer heeft zijn licentie (GNU AGPL-3.0), de vermeldingen van derden en een verwijzing naar zijn broncode naast zich, en Instellingen › Over toont ze. De broncode van precies die versie staat bij de release, naast de installers
 - De installers kunnen de server van Open FEM Studio meeleveren, met de handtekening van FEM Studio, en de controles van de release zoeken hem erin. De release-tekst zegt per platform of hij is meegeleverd
 - Rekentaal: met `@kern naam = tool … @end` roept een blad een rekentool van Open FEM Studio aan waarvan de invoer genest is en de uitkomst uit getallen bestaat, zoals het drielagenmodel voor de wapening van een plaat en de scheurwijdte volgens NEN-EN 1992-1-1 7.3.4 (`solve_native_fem`). Een pad met punten bouwt de invoer op (`inputs.input.thicknessMm = h`), eenheden worden omgerekend naar wat de tool vraagt, en daarna rekent het blad verder met de getallen uit het antwoord (`drie.result.bottom.requiredAsXmm2PerM`). Met `per k = 1 : n` doet het blok een reeks aanroepen in één keer. Het antwoord gaat mee in het projectbestand; zonder antwoord staat het blok als niet gerekend en bestaat er geen uitkomst
