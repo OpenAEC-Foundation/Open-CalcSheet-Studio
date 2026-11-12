@@ -115,6 +115,7 @@ jobs:
       contents: write
     uses: ./.github/workflows/release-concept.yml
     with:
+      fem-studio: ${{ needs.bouwen.outputs.fem-studio-platformen }}
       tag: ${{ needs.voorbereiden.outputs.tag }}
       sha: ${{ needs.voorbereiden.outputs.sha }}
       versie: ${{ needs.voorbereiden.outputs.versie }}

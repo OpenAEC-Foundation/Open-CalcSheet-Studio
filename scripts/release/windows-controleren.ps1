@@ -7,7 +7,9 @@
 # Tauri tekent hem niet, FEM Studio heeft hem al getekend, met dezelfde uitgever. Staat
 # hij in de installatie, dan moet die handtekening kloppen. Ontbreekt hij, dan is dat
 # een fout als FEM_STUDIO_VEREIST=true (de bouw had hem opgehaald), anders een
-# waarschuwing: zonder FEM_STUDIO_TOKEN bouwt de app bewust zonder.
+# waarschuwing: zonder server in fem-studio/versie.json bouwt de app bewust zonder.
+# De server valt onder de AGPL-3.0 en gaat nooit alleen mee: naast hem moeten de
+# licentie, de vermeldingen van derden en de verwijzing naar de bron staan.
 #
 # Gebruik: pwsh scripts/release/windows-controleren.ps1 -Map <map> -Aantal <installers>
 #          pwsh scripts/release/windows-controleren.ps1 -Bestand <bestand>
@@ -108,6 +110,22 @@ foreach ($installer in $installers) {
     $server = Join-Path (Join-Path $doel 'fem-studio') $FemServer
     if (Test-Path -LiteralPath $server) {
       Test-Handtekening "$kort/fem-studio/$FemServer" $server @($Uitgever)
+      foreach ($naam in 'LICENSE-AGPL-3.0.txt', 'THIRD-PARTY-NOTICES.txt', 'SOURCE.txt') {
+        $bijlage = Join-Path (Join-Path $doel 'fem-studio') $naam
+        $aanwezig = (Test-Path -LiteralPath $bijlage) -and ((Get-Item -LiteralPath $bijlage).Length -gt 0)
+        if ($aanwezig -and $naam -eq 'LICENSE-AGPL-3.0.txt') {
+          $aanwezig = [bool](Select-String -LiteralPath $bijlage -SimpleMatch 'GNU AFFERO GENERAL PUBLIC LICENSE' -Quiet)
+        }
+        if ($aanwezig -and $naam -eq 'SOURCE.txt') {
+          $aanwezig = [bool](Select-String -LiteralPath $bijlage -SimpleMatch '_source.tar.gz' -Quiet)
+        }
+        if ($aanwezig) {
+          $script:regels.Add("| $kort/fem-studio/$naam | OK | naast de FEM-server | | |")
+        } else {
+          $script:fouten++
+          $script:regels.Add("| $kort/fem-studio/$naam | FOUT | ontbreekt of klopt niet naast de FEM-server | | |")
+        }
+      }
     } elseif ($env:FEM_STUDIO_VEREIST -eq 'true') {
       $script:fouten++
       $script:regels.Add("| $kort/fem-studio/$FemServer | FOUT | ontbreekt, maar de bouw had hem opgehaald | | |")

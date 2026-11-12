@@ -5,7 +5,8 @@ name: Release controleren
 # groen is. Signingcontroles zijn geen functionele test van de app.
 # De server van Open FEM Studio moet in de installers van de platformen in de invoer
 # fem-studio zitten (de uitvoer fem-studio-platformen van desktop-ondertekend.yml);
-# op de andere platformen geeft zijn ontbreken alleen een waarschuwing.
+# op de andere platformen geeft zijn ontbreken alleen een waarschuwing. Zit hij in
+# een installer, dan moet het bronarchief van die server bij de release staan.
 
 on:
   workflow_call:
@@ -99,6 +100,7 @@ jobs:
       - name: Controleer handtekeningen en checksums
         env:
           FEM_STUDIO_VEREIST: ${{ contains(inputs.fem-studio, 'linux-x64') }}
+          FEM_BRON_VEREIST: ${{ inputs.fem-studio != '' }}
         run: |
           set -euo pipefail
           test -f downloads/SHA256SUMS.txt || { echo "::error::SHA256SUMS.txt ontbreekt"; exit 1; }

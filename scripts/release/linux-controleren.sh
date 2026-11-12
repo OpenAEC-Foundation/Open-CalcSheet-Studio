@@ -15,8 +15,15 @@
 # De .AppImage wordt daarvoor uitgepakt met --appimage-extract. Daarin geeft een
 # andere sha256 alleen een waarschuwing: het AppImage-gereedschap kan het rpath van
 # ELF-bestanden aanpassen, en de .deb uit dezelfde bouw is al streng gecontroleerd.
+#
+# De server valt onder de AGPL-3.0 en gaat nooit alleen mee. Naast hem moeten de
+# licentie, de vermeldingen van derden en de verwijzing naar de bron staan
+# (LICENSE-AGPL-3.0.txt, THIRD-PARTY-NOTICES.txt, SOURCE.txt), en SOURCE.txt moet het
+# bronarchief uit versie.json noemen. Met FEM_BRON_VEREIST=true (een release met de
+# server in een installer) moet dat bronarchief ook in de map staan, met de sha256
+# uit versie.json.
 # Gebruik: scripts/release/linux-controleren.sh <map>
-# Omgeving: FEM_STUDIO_VEREIST.
+# Omgeving: FEM_STUDIO_VEREIST, FEM_BRON_VEREIST.
 set -euo pipefail
 MAP="${1:?map met de pakketten ontbreekt}"
 VERTROUWD="$(tr -d '[:space:]' <"$(dirname "$0")/openaec-vingerafdruk.txt")"
@@ -63,6 +70,30 @@ if [ -f "$MAP/SHA256SUMS.txt" ]; then
 fi
 
 FEM_SHA="$(node -p 'require(process.argv[1]).bestanden?.["linux-x64"]?.sha256?.toLowerCase() ?? ""' "$VERSIE_JSON")"
+BRON_NAAM="$(node -p 'require(process.argv[1]).bron?.naam ?? ""' "$VERSIE_JSON")"
+BRON_SHA="$(node -p 'require(process.argv[1]).bron?.sha256?.toLowerCase() ?? ""' "$VERSIE_JSON")"
+VERMELDINGEN_SHA="$(node -p 'require(process.argv[1]).vermeldingen?.sha256?.toLowerCase() ?? ""' "$VERSIE_JSON")"
+
+if [ "${FEM_BRON_VEREIST:-false}" = true ]; then
+  test -n "$BRON_NAAM" || { echo "::error::de FEM-server gaat mee, maar versie.json heeft geen bronarchief" >&2; exit 1; }
+  test -f "$MAP/$BRON_NAAM" || { echo "::error::het bronarchief van de FEM-server ontbreekt: $BRON_NAAM" >&2; exit 1; }
+  test "$(sha256sum "$MAP/$BRON_NAAM" | cut -d' ' -f1)" = "$BRON_SHA" || { echo "::error::$BRON_NAAM heeft niet de sha256 uit versie.json" >&2; exit 1; }
+  echo "in orde: $BRON_NAAM"
+  UITVOER+="- \`$BRON_NAAM\`: het bronarchief van de FEM-server, sha256 gelijk aan versie.json"$'\n'
+fi
+
+# De licentie, de vermeldingen van derden en de verwijzing naar de bron naast de server.
+controleer_fem_licentie() {
+  local label="$1" map="$2" naam
+  for naam in LICENSE-AGPL-3.0.txt THIRD-PARTY-NOTICES.txt SOURCE.txt; do
+    test -s "$map/$naam" || { echo "::error::$naam ontbreekt naast de FEM-server in $label" >&2; exit 1; }
+  done
+  grep -q 'GNU AFFERO GENERAL PUBLIC LICENSE' "$map/LICENSE-AGPL-3.0.txt" || { echo "::error::LICENSE-AGPL-3.0.txt in $label is niet de AGPL" >&2; exit 1; }
+  test -n "$BRON_NAAM" && grep -qF "$BRON_NAAM" "$map/SOURCE.txt" || { echo "::error::SOURCE.txt in $label noemt het bronarchief uit versie.json niet" >&2; exit 1; }
+  grep -qF "$BRON_SHA" "$map/SOURCE.txt" || { echo "::error::SOURCE.txt in $label noemt de sha256 van het bronarchief niet" >&2; exit 1; }
+  test "$(sha256sum "$map/THIRD-PARTY-NOTICES.txt" | cut -d' ' -f1)" = "$VERMELDINGEN_SHA" \
+    || { echo "::error::THIRD-PARTY-NOTICES.txt in $label is niet dat van versie.json" >&2; exit 1; }
+}
 # Zoekt de server onder een uitgepakt pakket en controleert hem. Met streng=nee is
 # een andere sha256 alleen een waarschuwing.
 controleer_fem_server() {
@@ -87,12 +118,14 @@ controleer_fem_server() {
       echo "::error::de FEM-server in $label heeft niet de sha256 uit versie.json" >&2
       exit 1
     fi
+    controleer_fem_licentie "$label" "$(dirname "$server")"
     echo "::warning::de FEM-server in $label heeft een andere sha256 dan versie.json ($sha)"
     UITVOER+="- \`$label\`: FEM-server \`${server#"$wortel"/}\`, uitvoerbaar, sha256 wijkt af van versie.json"$'\n'
     return
   fi
+  controleer_fem_licentie "$label" "$(dirname "$server")"
   echo "in orde: FEM-server in $label"
-  UITVOER+="- \`$label\`: FEM-server \`${server#"$wortel"/}\`, sha256 gelijk aan versie.json"$'\n'
+  UITVOER+="- \`$label\`: FEM-server \`${server#"$wortel"/}\`, sha256 gelijk aan versie.json; licentie, vermeldingen en verwijzing naar de bron ernaast"$'\n'
 }
 
 for deb in "${DEB[@]}"; do

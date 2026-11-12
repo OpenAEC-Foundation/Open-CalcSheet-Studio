@@ -12,11 +12,17 @@ name: Desktop ondertekend
 # De server van Open FEM Studio (fem-studio/versie.json) gaat mee als resource, met
 # de handtekening van FEM Studio: Tauri tekent een resource niet, en de notarisatie
 # op macOS eist dat elk programma in de app een Developer ID-handtekening heeft. De
-# stap "FEM Studio ophalen" krijgt als enige het secret FEM_STUDIO_TOKEN. Zonder dat
-# secret, of zonder bestand voor het platform in versie.json, bouwt de app zonder
-# server: een waarschuwing in de log, en de uitvoer fem-studio-tekst zegt het in de
-# release-tekst. Is hij opgehaald, dan controleert de job zijn handtekening vóór het
-# bouwen en zoekt de controle hem daarna in de installer.
+# stap "FEM Studio ophalen" haalt hem uit de openbare release fem-server-<versie> van
+# deze repository; een geheim is daar niet voor nodig. Zonder bestand voor het
+# platform in versie.json bouwt de app zonder server: een waarschuwing in de log, en
+# de uitvoer fem-studio-tekst zegt het in de release-tekst. Is hij opgehaald, dan
+# controleert de job zijn handtekening vóór het bouwen en zoekt de controle hem
+# daarna in de installer, met de licentie, de vermeldingen van derden en de
+# verwijzing naar de bron ernaast.
+#
+# De server valt onder de AGPL-3.0. Gaat hij op een platform mee, dan zet de job
+# fem-studio het bronarchief van precies die versie bij de artifacts; een release
+# zet het zo naast de installers (scripts/release/assets-klaarzetten.sh eist het).
 
 on:
   workflow_call:
@@ -92,13 +98,12 @@ jobs:
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
 
-      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json).
-      # Zonder bestand voor dit platform of zonder FEM_STUDIO_TOKEN bouwt de app zonder;
-      # Instellingen > Over meldt dan "niet meegeleverd".
+      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json),
+      # uit de openbare release fem-server-<versie>, met de vermeldingen van derden.
+      # Zonder bestand voor dit platform bouwt de app zonder; Instellingen > Over meldt
+      # dan "niet meegeleverd".
       - name: FEM Studio ophalen
         id: fem
-        env:
-          GH_TOKEN: ${{ secrets.FEM_STUDIO_TOKEN }}
         run: node scripts/haal-fem-server.mjs
 
       # Authenticode van FEM Studio, met de eigen uitgever en een tijdstempel. Tauri
@@ -204,13 +209,12 @@ jobs:
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
 
-      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json).
-      # Zonder bestand voor dit platform of zonder FEM_STUDIO_TOKEN bouwt de app zonder;
-      # Instellingen > Over meldt dan "niet meegeleverd".
+      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json),
+      # uit de openbare release fem-server-<versie>, met de vermeldingen van derden.
+      # Zonder bestand voor dit platform bouwt de app zonder; Instellingen > Over meldt
+      # dan "niet meegeleverd".
       - name: FEM Studio ophalen
         id: fem
-        env:
-          GH_TOKEN: ${{ secrets.FEM_STUDIO_TOKEN }}
         run: node scripts/haal-fem-server.mjs
 
       # Tauri tekent een resource niet, maar de notarisatie eist een Developer
@@ -323,13 +327,12 @@ jobs:
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
 
-      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json).
-      # Zonder bestand voor dit platform of zonder FEM_STUDIO_TOKEN bouwt de app zonder;
-      # Instellingen > Over meldt dan "niet meegeleverd".
+      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json),
+      # uit de openbare release fem-server-<versie>, met de vermeldingen van derden.
+      # Zonder bestand voor dit platform bouwt de app zonder; Instellingen > Over meldt
+      # dan "niet meegeleverd".
       - name: FEM Studio ophalen
         id: fem
-        env:
-          GH_TOKEN: ${{ secrets.FEM_STUDIO_TOKEN }}
         run: node scripts/haal-fem-server.mjs
 
       - name: Build Tauri app
@@ -375,6 +378,36 @@ jobs:
       platformen: ${{ steps.samenvatten.outputs.platformen }}
       tekst: ${{ steps.samenvatten.outputs.tekst }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      # Zonder bron geen binary: gaat de server op een platform mee, dan hoort het
+      # bronarchief van precies die versie bij de installers.
+      - name: Bronarchief van de FEM-server ophalen
+        id: bron
+        if: >-
+          needs.windows.outputs.fem-studio == 'meegeleverd' ||
+          needs.macos.outputs.fem-studio == 'meegeleverd' ||
+          needs.linux.outputs.fem-studio == 'meegeleverd'
+        run: |
+          set -euo pipefail
+          node scripts/haal-fem-server.mjs --bron "$RUNNER_TEMP/fem-bron"
+          echo "naam=$(basename "$RUNNER_TEMP"/fem-bron/*_source.tar.gz)" >>"$GITHUB_OUTPUT"
+
+      - name: Upload het bronarchief
+        if: steps.bron.outputs.naam != ''
+        uses: actions/upload-artifact@v5
+        with:
+          name: open-calcsheet-studio-fem-bron
+          path: ${{ runner.temp }}/fem-bron/*_source.tar.gz
+          if-no-files-found: error
+
       - name: Samenvatten
         id: samenvatten
         env:
@@ -382,6 +415,7 @@ jobs:
           MACOS: ${{ needs.macos.outputs.fem-studio }}
           LINUX: ${{ needs.linux.outputs.fem-studio }}
           VERSIE: ${{ needs.linux.outputs.fem-studio-versie }}
+          BRON: ${{ steps.bron.outputs.naam }}
         run: |
           set -euo pipefail
           MET=()
@@ -409,6 +443,7 @@ jobs:
           OVER='Settings › About shows "not included in this version".'
           if [ "${#MET[@]}" -gt 0 ]; then
             TEKST="$KOP"$'\n\n'"The headless server of Open FEM Studio ${VERSIE:-} (\`openaec-mcp-server\`) is included on $(lijst "${MET_NAMEN[@]}"), for the code checks in \`@toets\` blocks. It carries the signature of the Open FEM Studio release."
+            TEKST+=$'\n\n'"The server is a separate program with its own license, the GNU AGPL-3.0 (Open CalcSheet Studio itself is LGPL-3.0). Its license, the third-party notices and a pointer to the source are installed next to it (see Settings › About). The complete source of exactly this server version is attached to this release: \`${BRON}\`."
             if [ "${#ZONDER_NAMEN[@]}" -gt 0 ]; then
               TEKST+=$'\n\n'"> **Not included on $(lijst "${ZONDER_NAMEN[@]}").** There the code checks in \`@toets\` blocks are not available. $OVER"
             fi

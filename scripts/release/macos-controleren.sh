@@ -10,6 +10,8 @@
 # FEM Studio levert hem zo aan; dit script controleert dat, ook vóór het bouwen
 # (--fem-server). Ontbreekt hij in de app, dan is dat een fout als
 # FEM_STUDIO_VEREIST=true (de bouw had hem opgehaald), anders een waarschuwing.
+# De server valt onder de AGPL-3.0 en gaat nooit alleen mee: naast hem moeten de
+# licentie, de vermeldingen van derden en de verwijzing naar de bron staan.
 #
 # Gebruik: scripts/release/macos-controleren.sh <map-met-dmg>
 #          scripts/release/macos-controleren.sh --fem-server <bestand>
@@ -100,7 +102,14 @@ codesign -d --entitlements - "$APP" 2>/dev/null || true
 FEM_SERVER="$APP/Contents/Resources/fem-studio/openaec-mcp-server"
 if [ -f "$FEM_SERVER" ]; then
   controleer_fem_server "$FEM_SERVER"
-  FEM_REGEL="- \`fem-studio/openaec-mcp-server\`: Developer ID, hardened runtime, tijdstempel ($FEM_ARCHS)"
+  for naam in LICENSE-AGPL-3.0.txt THIRD-PARTY-NOTICES.txt SOURCE.txt; do
+    test -s "$(dirname "$FEM_SERVER")/$naam" || { echo "::error::$naam ontbreekt naast de FEM-server in de app" >&2; exit 1; }
+  done
+  grep -q 'GNU AFFERO GENERAL PUBLIC LICENSE' "$(dirname "$FEM_SERVER")/LICENSE-AGPL-3.0.txt" \
+    || { echo "::error::LICENSE-AGPL-3.0.txt in de app is niet de AGPL" >&2; exit 1; }
+  grep -q '_source\.tar\.gz' "$(dirname "$FEM_SERVER")/SOURCE.txt" \
+    || { echo "::error::SOURCE.txt in de app noemt het bronarchief niet" >&2; exit 1; }
+  FEM_REGEL="- \`fem-studio/openaec-mcp-server\`: Developer ID, hardened runtime, tijdstempel ($FEM_ARCHS); licentie, vermeldingen en verwijzing naar de bron ernaast"
 elif [ "${FEM_STUDIO_VEREIST:-false}" = true ]; then
   echo "::error::FEM Studio ontbreekt in de app, maar de bouw had hem opgehaald" >&2
   exit 1

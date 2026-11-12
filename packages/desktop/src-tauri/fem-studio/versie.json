@@ -1,6 +1,12 @@
 {
   "versie": "2026.45.0",
-  "repo": "OpenAEC-Foundation/open-fem-studio",
-  "tag": "v2026.45.0",
-  "bestanden": {}
+  "repo": "OpenAEC-Foundation/Open-CalcSheet-Studio",
+  "tag": "fem-server-2026.45.0",
+  "herkomst": {
+    "repo": "OpenAEC-Foundation/open-fem-studio",
+    "tag": "v2026.45.0"
+  },
+  "bestanden": {},
+  "bron": null,
+  "vermeldingen": null
 }
