@@ -58,6 +58,17 @@ export class InvoerWachtrij {
     this.meld();
   }
 
+  /** Een keuze uit een lijst of een maat in een tekening: meteen naar het blad, zonder pauze. */
+  zetNu(naam: string, waarde: string): void {
+    const w = this.wachtend.get(naam);
+    if (w) {
+      this.klok.wis(w.wekker);
+      this.wachtend.delete(naam);
+    }
+    this.stuur(naam, waarde);
+    this.meld();
+  }
+
   /** Wat er nu staat is geen waarde (een eenheid die niet past): er gaat niets naar het blad. */
   houdTegen(naam: string): void {
     this.vergeet(naam);

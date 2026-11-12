@@ -234,8 +234,9 @@ export interface Plattegrond {
  * aantal velden als klikbare maat.
  */
 export function tekenPlattegrond(m: VloerModel, invoer: VloerInvoer, breedte: number, hoogte: number): Plattegrond {
-  // Links de maat L_y met zijn getal, onder L_x, boven de rand en het aantal velden.
-  const links = 58, rechts = 10, boven = 26, onder = 30;
+  // Links de maat L_y met zijn getal, onder L_x, boven de rand en het aantal velden. Een
+  // paalveld is op deze schaal smaller dan zijn getal: dat staat daarom naast de maatlijn.
+  const links = 72, rechts = 10, boven = 26, onder = 32;
   const ruimteB = Math.max(40, breedte - links - rechts);
   const ruimteH = Math.max(40, hoogte - boven - onder);
   const schaal = Math.min(ruimteB / m.Bx, ruimteH / m.By);
@@ -248,13 +249,13 @@ export function tekenPlattegrond(m: VloerModel, invoer: VloerInvoer, breedte: nu
   const vak = (r: Vak): Vak => ({ x: X(r.x), y: Y(r.y + r.h), b: r.b * schaal, h: r.h * schaal });
 
   const lijnen: Maatlijn[] = [
-    { ligt: true, van: X(m.ar), tot: X(m.ar + m.Lx), op: y0 + vh + 14, ext: y0 + vh },
-    { ligt: false, van: Y(m.ar + m.Ly), tot: Y(m.ar), op: x0 - 26, ext: x0 },
+    { ligt: true, van: X(m.ar), tot: X(m.ar + m.Lx), op: y0 + vh + 9, ext: y0 + vh },
+    { ligt: false, van: Y(m.ar + m.Ly), tot: Y(m.ar), op: x0 - 10, ext: x0 },
   ];
   if (m.ar > 0) lijnen.push({ ligt: true, van: X(0), tot: X(m.ar), op: y0 - 10, ext: y0 });
   const maten = aanwezig([
-    maatVan(invoer, "L_x", (X(m.ar) + X(m.ar + m.Lx)) / 2, y0 + vh + 14),
-    maatVan(invoer, "L_y", x0 - 26, (Y(m.ar) + Y(m.ar + m.Ly)) / 2),
+    maatVan(invoer, "L_x", (X(m.ar) + X(m.ar + m.Lx)) / 2, y0 + vh + 22),
+    maatVan(invoer, "L_y", x0 - 44, (Y(m.ar) + Y(m.ar + m.Ly)) / 2),
     // De rand is op deze schaal een paar pixels: het getal staat ernaast.
     maatVan(invoer, "a_r", Math.min(X(m.ar) + 30, x0 + vb / 2 - 4), y0 - 10),
     maatVan(invoer, "n_v", x0 + vb - 18, y0 - 10),
@@ -304,13 +305,14 @@ export function tekenDoorsnede(m: VloerModel, invoer: VloerInvoer, breedte: numb
   const ws = dwars ? m.bs : 0;
   // Het venster: iets breder dan de breedste verdikking.
   const half = Math.max(wk, ws, 1.5 * m.dKop, 600) * 0.68;
-  const dikte = (x: number) => Math.max(m.h, langs ? m.ts : 0, Math.abs(x) <= ws / 2 ? m.ts : 0, Math.abs(x) <= wk / 2 ? m.tk : 0);
+  const dikte = (x: number) => Math.max(m.h, langs ? m.ts : 0, ws > 0 && Math.abs(x) <= ws / 2 ? m.ts : 0, wk > 0 && Math.abs(x) <= wk / 2 ? m.tk : 0);
   const T = Math.max(m.h, dwars ? m.ts : 0, m.kop ? m.tk : 0);
   const paalLengte = Math.max(0.8 * T, 250);
 
-  // Links de vloerdikte, rechts de diktes van strook en kop, boven hun breedtes, onder de paalkop.
+  // Links de vloerdikte, rechts de diktes van strook en kop, boven hun breedtes, onder de
+  // paalkop. De getallen van de diktes staan naast hun maatlijn: de vloer is daar te dun voor.
   const nRechts = (dwars ? 1 : 0) + (m.kop ? 1 : 0);
-  const links = 48, rechts = 12 + 44 * nRechts, boven = 12 + 20 * nRechts, onder = 26;
+  const links = 56, rechts = [12, 70, 80][nRechts], boven = 12 + 20 * nRechts, onder = 32;
   const ruimteB = Math.max(40, breedte - links - rechts);
   const ruimteH = Math.max(40, hoogte - boven - onder);
   const schaal = Math.min(ruimteB / (2 * half), ruimteH / (T + paalLengte), 0.3);
@@ -332,22 +334,30 @@ export function tekenDoorsnede(m: VloerModel, invoer: VloerInvoer, breedte: numb
   const onderVloer = (b: number, t: number): Vak => ({ x: X(-b / 2), y: Y(m.h), b: b * schaal, h: (t - m.h) * schaal });
   const paal: Vak = { x: X(-m.dKop / 2), y: Y(dikte(0)), b: m.dKop * schaal, h: (T - dikte(0) + paalLengte) * schaal };
 
-  const lijnen: Maatlijn[] = [{ ligt: false, van: top, tot: Y(m.h), op: xL - 20, ext: xL }];
-  const maten: (Maat | null)[] = [maatVan(invoer, "h", xL - 20, Y(m.h / 2))];
+  const lijnen: Maatlijn[] = [{ ligt: false, van: top, tot: Y(m.h), op: xL - 10, ext: xL }];
+  const maten: (Maat | null)[] = [maatVan(invoer, "h", xL - 35, Y(m.h / 2))];
+  // Een maatlijn meet wat er is ingevuld. De tekening toont de dikte waarmee het blad rekent:
+  // een kop of strook die dunner is ingevuld dan de vloer of de strook eronder, telt als die.
+  const tsMaat = Math.min(positief(inMm(invoer.t_s)) || m.ts, m.ts);
+  const tkMaat = Math.min(positief(inMm(invoer.t_k)) || m.tk, m.tk);
+  // Twee diktes rechts: de maatlijnen naast elkaar, de getallen boven elkaar.
+  const xGetal = xR + (nRechts === 2 ? 50 : 40);
+  const verschuif = nRechts === 2 ? 9 : 0;
   let k = 0;
   if (dwars) {
-    lijnen.push({ ligt: false, van: top, tot: Y(m.ts), op: xR + 22, ext: X(ws / 2) });
+    lijnen.push({ ligt: false, van: top, tot: Y(tsMaat), op: xR + 10, ext: X(ws / 2) });
     lijnen.push({ ligt: true, van: X(-ws / 2), tot: X(ws / 2), op: top - 14, ext: top });
-    maten.push(maatVan(invoer, "t_s", xR + 22, Y(m.ts / 2)), maatVan(invoer, "b_s", cx, top - 14));
+    maten.push(maatVan(invoer, "t_s", xGetal, Y(tsMaat / 2) - verschuif), maatVan(invoer, "b_s", cx, top - 14));
     k = 1;
   }
   if (m.kop) {
-    lijnen.push({ ligt: false, van: top, tot: Y(m.tk), op: xR + 22 + 44 * k, ext: X(wk / 2) });
+    lijnen.push({ ligt: false, van: top, tot: Y(tkMaat), op: xR + 10 + 10 * k, ext: X(wk / 2) });
     lijnen.push({ ligt: true, van: X(-wk / 2), tot: X(wk / 2), op: top - 14 - 20 * k, ext: top });
-    maten.push(maatVan(invoer, "t_k", xR + 22 + 44 * k, Y(m.tk / 2)), maatVan(invoer, "b_k", cx, top - 14 - 20 * k));
+    maten.push(maatVan(invoer, "t_k", xGetal, Y(tkMaat / 2) + verschuif), maatVan(invoer, "b_k", cx, top - 14 - 20 * k));
   }
-  if (m.dKop > 0) lijnen.push({ ligt: true, van: paal.x, tot: paal.x + paal.b, op: paal.y + paal.h + 12, ext: paal.y + paal.h });
-  maten.push(maatVan(invoer, "d_kop", cx, paal.y + paal.h + 12));
+  const paalOnder = paal.y + paal.h;
+  if (m.dKop > 0) lijnen.push({ ligt: true, van: paal.x, tot: paal.x + paal.b, op: paalOnder + 9, ext: paalOnder });
+  maten.push(maatVan(invoer, "d_kop", cx, paalOnder + 22));
 
   return {
     breedte,
