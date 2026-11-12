@@ -1,11 +1,17 @@
 import { math } from './eenheden.js';
-import { femArgumenten, femRekenmodel, femSomLast, maakFemNet, type FemGeval, type FemInvoer, type FemLast } from './femNet.js';
+import { femArgumenten, femBewaar as femPlaatBewaar, femRekenmodel, femSomLast, maakFemNet, type FemGeval, type FemInvoer, type FemLast } from './femNet.js';
 import { FemModel, femGrootheid, femModelSvg, femSvg } from './femResultaat.js';
+import { FEM_STAAF_GERESERVEERD, bouwFemStaven, isFemStaafwerk, renderFemStaven, wisFemStaven } from './femStaafBlok.js';
+import { FEM_STAVEN_TOOL, femStaafArgumenten, femStaafBewaar } from './femStaven.js';
 import { schemaHash, toetsHash } from './toetsBlok.js';
-import type { EvaluatedFem, FemNode, FemRegel, FemRekenmodel, FemUitersten, FemUitkomstCompact, ToetsAntwoord, ToetsVerzoek } from './types.js';
+import type {
+  EvaluatedFem, FemNode, FemRegel, FemRekenmodel, FemStaafRekenmodel, FemStaafUitkomstCompact, FemUitersten, FemUitkomstCompact, ToetsAntwoord, ToetsVerzoek,
+} from './types.js';
 
 /**
- * Een plaatmodel door Open FEM Studio: het blok `@fem`.
+ * Een plaatmodel door Open FEM Studio: het blok `@fem`. Een blok met staven (`staaf`,
+ * `knoop`, `steun`, …) is een staafwerk en gaat naar femStaafBlok.ts; het lezen van de
+ * regels en het opzoeken van het antwoord zijn voor beide gelijk.
  *
  *   @fem vloer
  *     materiaal 33 GPa; 0.2
@@ -53,20 +59,37 @@ const ELSE_RE = /^#else\b/i;
 const ENDIF_RE = /^#end\s+if\b/i;
 
 /** Per opdracht: hoeveel argumenten, en welke aantallen mogen. */
-const OPDRACHTEN: Readonly<Record<string, { aantallen: number[]; vorm: string; last?: boolean }>> = {
-  materiaal: { aantallen: [2], vorm: 'materiaal E; ν' },
+interface Opdrachtsoort {
+  aantallen: number[];
+  vorm: string;
+  /** Hoort bij een belastinggeval. */
+  last?: boolean;
+  /** Mag een naam krijgen (`plaat kop: …`), of moet er een hebben. */
+  naam?: 'mag' | 'moet';
+}
+const OPDRACHTEN: Readonly<Record<string, Opdrachtsoort>> = {
+  materiaal: { aantallen: [2, 3], vorm: 'materiaal [naam:] E; ν of materiaal [naam:] E; G', naam: 'mag' },
   maas: { aantallen: [1], vorm: 'maas a' },
   analyse: { aantallen: [0], vorm: 'analyse lineair' },
-  plaat: { aantallen: [5], vorm: 'plaat [naam:] x; y; l_x; l_y; t' },
+  plaat: { aantallen: [5], vorm: 'plaat [naam:] x; y; l_x; l_y; t', naam: 'mag' },
   veer: { aantallen: [3, 4], vorm: 'veer x; y; k [; d_kop]' },
   veren: { aantallen: [7, 8], vorm: 'veren x_0; y_0; n_x; n_y; a_x; a_y; k [; d_kop]' },
   lijnsteun: { aantallen: [4, 5], vorm: 'lijnsteun x_1; y_1; x_2; y_2 [; k per m]' },
   geval: { aantallen: [0], vorm: 'geval naam' },
   vlaklast: { aantallen: [1, 2, 5], vorm: 'vlaklast q [; plaat] of vlaklast q; x; y; l_x; l_y', last: true },
-  eigengewicht: { aantallen: [1], vorm: 'eigengewicht γ', last: true },
-  puntlast: { aantallen: [3], vorm: 'puntlast F; x; y', last: true },
+  eigengewicht: { aantallen: [1, 2], vorm: 'eigengewicht γ [; staaf]', last: true },
+  puntlast: { aantallen: [2, 3, 4], vorm: 'puntlast F; x; y (plaat), puntlast knoop; F [; richting] of puntlast staaf; F; a [; richting]', last: true },
   combinatie: { aantallen: [1], vorm: 'combinatie naam = 1.2*G + 1.5*Q' },
-  beeld: { aantallen: [0], vorm: 'beeld UGT mx (een geval of combinatie, en w, mx, my, mxy, vx of vy)' },
+  beeld: { aantallen: [0], vorm: 'beeld UGT mx (een geval of combinatie, en w, mx, my, mxy, vx of vy; bij een staafwerk M, V, N, u of lasten)' },
+  // Een staafwerk (femStaafBlok.ts).
+  rechthoek: { aantallen: [2, 3], vorm: 'rechthoek naam: b; h [; materiaal]', naam: 'moet' },
+  doorsnede: { aantallen: [2, 3, 4, 5], vorm: 'doorsnede naam: A; I_y [; I_z; I_t] [; materiaal]', naam: 'moet' },
+  knoop: { aantallen: [2, 3], vorm: 'knoop naam: x; z of knoop naam: x; y; z', naam: 'moet' },
+  staaf: { aantallen: [2, 3, 4, 5, 6, 7, 8, 9], vorm: 'staaf [naam:] knoop; knoop [; doorsnede] [; scharnier [begin|eind]] [; trek] of staaf [naam:] x_1; z_1; x_2; z_2 …', naam: 'mag' },
+  steun: { aantallen: [2, 3, 4, 5, 7, 9], vorm: 'steun knoop; soort of steun x; z; soort, met soort scharnier, rol, rol z of inklemming; of per richting vast, vrij of een veer' },
+  lijnlast: { aantallen: [2, 3, 4, 5, 6], vorm: 'lijnlast staaf; q [; q_eind] [; richting] [; van; tot]', last: true },
+  delen: { aantallen: [1], vorm: 'delen n' },
+  knikvormen: { aantallen: [1], vorm: 'knikvormen n' },
 };
 
 /** Splitst op `;` buiten haakjes en aanhalingstekens. */
@@ -98,6 +121,8 @@ export function leesFemBlok(naam: string, bron: string[], normaliseer: (expr: st
   const meld = (nr: number, tekst: string) => fouten.push(`regel ${nr}: ${tekst}`);
   const gevallen = new Set<string>();
   const combinaties = new Set<string>();
+  /** De namen van knopen en staven: samen met de gevallen en combinaties één reeks namen. */
+  const delen = new Set<string>();
   let inGeval = false;
   let i = 0;
 
@@ -161,6 +186,7 @@ export function leesFemBlok(naam: string, bron: string[], normaliseer: (expr: st
         if (!n || !(woord === 'geval' ? IDENT : /^[\p{L}\p{N}_-]+$/u).test(n)) { meld(nr, `schrijf ${soort.vorm}`); continue; }
         if (woord === 'geval') {
           if (gevallen.has(n) || combinaties.has(n)) { meld(nr, `het geval ${n} staat er al`); continue; }
+          if (delen.has(n)) { meld(nr, `de naam ${n} is al een knoop of staaf`); continue; }
           gevallen.add(n);
           inGeval = true;
         }
@@ -177,15 +203,27 @@ export function leesFemBlok(naam: string, bron: string[], normaliseer: (expr: st
         const c = rest.match(/^([\p{L}_][\p{L}\p{N}_]*)\s*=\s*(.+)$/u);
         if (!c) { meld(nr, `schrijf ${soort.vorm}`); continue; }
         if (gevallen.has(c[1]) || combinaties.has(c[1])) { meld(nr, `de naam ${c[1]} is al een geval of combinatie`); continue; }
+        if (delen.has(c[1])) { meld(nr, `de naam ${c[1]} is al een knoop of staaf`); continue; }
         combinaties.add(c[1]);
         uit.push({ soort: 'opdracht', regel: nr, woord, naam: c[1], args: [normaliseer(c[2].trim())] });
         continue;
       }
-      let plaatNaam: string | undefined;
+      let eigenNaam: string | undefined;
       let tekst = rest;
-      if (woord === 'plaat') {
+      if (soort.naam) {
         const n = rest.match(/^([\p{L}_][\p{L}\p{N}_]*)\s*:(?!=)\s*(.*)$/u);
-        if (n) [plaatNaam, tekst] = [n[1], n[2]];
+        if (n) [eigenNaam, tekst] = [n[1], n[2]];
+        else if (soort.naam === 'moet') {
+          meld(nr, `${woord} heeft een naam nodig: ${soort.vorm}`);
+          continue;
+        }
+      }
+      // Een knoop of staaf heet niet zoals een andere knoop of staaf, een geval of een
+      // uitkomst: `kap.UGT.spoor.M_max` moet één ding zijn.
+      if (eigenNaam && (woord === 'knoop' || woord === 'staaf')) {
+        if (delen.has(eigenNaam) || gevallen.has(eigenNaam) || combinaties.has(eigenNaam)) { meld(nr, `de naam ${eigenNaam} staat er al`); continue; }
+        if (FEM_STAAF_GERESERVEERD.includes(eigenNaam)) { meld(nr, `de naam ${eigenNaam} is die van een uitkomst: kies een andere naam`); continue; }
+        delen.add(eigenNaam);
       }
       const args = splitsArgumenten(tekst);
       if (!soort.aantallen.includes(args.length)) {
@@ -199,7 +237,8 @@ export function leesFemBlok(naam: string, bron: string[], normaliseer: (expr: st
       uit.push({
         soort: 'opdracht', regel: nr, woord,
         args: args.map((a, k) => (woord === 'vlaklast' && args.length === 2 && k === 1 ? a : normaliseer(a))),
-        ...(plaatNaam ? { naam: plaatNaam } : {}),
+        ruw: args,
+        ...(eigenNaam ? { naam: eigenNaam } : {}),
       });
     }
     return { regels: uit, eind: null };
@@ -346,6 +385,7 @@ function leesInvoer(node: FemNode, r: FemRekenaar): Gelezen {
     const lengte = (k: number, wat: string) => getal(a[k], 'm', wat);
     switch (o.woord) {
       case 'materiaal': {
+        if (a.length !== 2) throw new Error('een plaatmodel heeft materiaal E; ν');
         inv.E = getal(a[0], 'MPa', 'E');
         inv.nu = getal(a[1], '', 'ν');
         if (!(inv.E > 0)) throw new Error('E moet groter dan 0 zijn');
@@ -421,9 +461,11 @@ function leesInvoer(node: FemNode, r: FemRekenaar): Gelezen {
         break;
       }
       case 'eigengewicht':
+        if (a.length !== 1) throw new Error('in een plaatmodel: eigengewicht γ');
         inGeval().lasten.push({ soort: 'eigengewicht', gamma: getal(a[0], 'kN/m^3', 'γ') });
         break;
       case 'puntlast':
+        if (a.length !== 3) throw new Error('in een plaatmodel: puntlast F; x; y');
         inGeval().lasten.push({ soort: 'punt', F: getal(a[0], 'kN', 'F'), x: lengte(1, 'x'), y: lengte(2, 'y') });
         break;
       case 'combinatie':
@@ -553,7 +595,11 @@ export function bouwFem(node: FemNode, r: FemRekenaar): EvaluatedFem {
     ...(node.scherm ? { scherm: true } : {}),
   };
   wisVariabelen(node, r.scope);
-  if (node.fouten.length) return { ...basis, status: 'fout', melding: node.fouten.join('; ') };
+  wisFemStaven(node.naam, r.scope);
+  const staafwerk = isFemStaafwerk(node.regels);
+  if (node.fouten.length) return { ...basis, ...(staafwerk ? { tool: FEM_STAVEN_TOOL } : {}), status: 'fout', melding: node.fouten.join('; ') };
+  // Een blok met staven is een staafwerk: een eigen rekenmodel, dezelfde weg naar het antwoord.
+  if (staafwerk) return bouwFemStaven(node, r, basis);
 
   const { invoer, combinaties, beelden, fouten } = leesInvoer(node, r);
   if (fouten.length) return { ...basis, status: 'fout', melding: fouten.join('; ') };
@@ -599,7 +645,7 @@ export function bouwFem(node: FemNode, r: FemRekenaar): EvaluatedFem {
     return { ...metModel, status: 'fout', melding: 'het vastgelegde antwoord is niet te lezen', ...herkomst, ...(vragen ? { opnieuw: true } : {}) };
   }
   // Het raster van het bewaarde verzoek: daar horen de getallen bij.
-  const bewaard = goed.map((a, i) => a.verzoek ?? modellen[i]);
+  const bewaard = goed.map((a, i) => (a.verzoek?.vorm === 'fem-plaat/1' ? a.verzoek : modellen[i]));
   const raster = rasterHash(bewaard[0]);
   if (bewaard.some((m) => rasterHash(m) !== raster)) {
     return { ...metModel, status: 'fout', melding: WOORDEN[taal].ander, ...herkomst, ...(vragen ? { opnieuw: true } : {}) };
@@ -635,9 +681,22 @@ export function bouwFem(node: FemNode, r: FemRekenaar): EvaluatedFem {
   };
 }
 
-/** De JSON die FEM Studio krijgt voor een verzoek van een `@fem`-blok. */
+/** De JSON die FEM Studio krijgt voor een verzoek van een `@fem`-blok: een plaatmodel of een staafwerk. */
 export function femVerzoekArgumenten(v: ToetsVerzoek): Record<string, unknown> {
-  return v.bewaar ? femArgumenten(v.bewaar) : v.argumenten;
+  if (!v.bewaar) return v.argumenten;
+  return v.bewaar.vorm === 'fem-staven/1' ? femStaafArgumenten(v.bewaar) : femArgumenten(v.bewaar);
+}
+
+/**
+ * Het antwoord van FEM Studio compact, zoals het bij het blad wordt vastgelegd: van één
+ * belastinggeval van een plaatmodel (femNet.ts) of van alle rekengevallen van een
+ * staafwerk (femStaven.ts). Werpt als er iets ontbreekt: dan wordt er niets bewaard.
+ */
+export function femBewaar(m: FemRekenmodel, ruw: unknown): FemUitkomstCompact;
+export function femBewaar(m: FemStaafRekenmodel, ruw: unknown): FemStaafUitkomstCompact;
+export function femBewaar(m: FemRekenmodel | FemStaafRekenmodel, ruw: unknown): FemUitkomstCompact | FemStaafUitkomstCompact;
+export function femBewaar(m: FemRekenmodel | FemStaafRekenmodel, ruw: unknown): FemUitkomstCompact | FemStaafUitkomstCompact {
+  return m.vorm === 'fem-staven/1' ? femStaafBewaar(m, ruw) : femPlaatBewaar(m, ruw);
 }
 
 // ── Tonen ────────────────────────────────────────────────────────────────────
@@ -689,6 +748,7 @@ function datumTekst(iso: string, taal: string): string {
 /** Het blok op het blad: de kop, het model, de gevallen en per geval en combinatie de uitersten. */
 export function renderFem(node: EvaluatedFem): string {
   if (node.verborgen) return '';
+  if (node.staven || node.tool === FEM_STAVEN_TOOL) return renderFemStaven(node);
   const w = WOORDEN[node.taal === 'en' ? 'en' : 'nl'];
   const t = node.taal;
   const datum = node.datum ? datumTekst(node.datum, t) : '';

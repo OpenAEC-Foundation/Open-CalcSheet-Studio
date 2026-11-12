@@ -10,6 +10,7 @@ import { bouwToets } from './toetsBlok.js';
 import { bouwFem } from './femBlok.js';
 import { bouwKern } from './kernBlok.js';
 import { FemModel, femWaarde, femStrook, femSvg, femGrootheid, FEM_EENHEID } from './femResultaat.js';
+import { FemStaafModel, femStaafEenheid, femStaafGrootheid, femStaafKnoop, femStaafKrachten, femStaafSvg, femStaafWaarde } from './femStaafResultaat.js';
 import { bouwJsBlok } from './jsBlok.js';
 import { leesVerwijzing, verwijzingNaam, verwijzingenInMelding } from './verwijzing.js';
 import { plaatOplossing, plaatSamenvatting, plaatDoorbuiging, plaatSvg, type PlaatInvoer } from './plaat.js';
@@ -821,8 +822,22 @@ math.import(
 
 function femModelUit(model: unknown, functie: string): FemModel {
   if (model instanceof FemModel) return model;
+  if (model instanceof FemStaafModel) throw new Error(`${functie}: ${model.naam} is een staafwerk; gebruik fem_staaf, fem_knoop of fem_krachten`);
   throw new Error(`${functie}: het eerste argument is een @fem-model, zoals vloer (de naam van het blok)`);
 }
+/** Een staafwerk uit een @fem-blok (femStaafBlok.ts). */
+function femStavenUit(model: unknown, functie: string): FemStaafModel {
+  if (model instanceof FemStaafModel) return model;
+  if (model instanceof FemModel) throw new Error(`${functie}: ${model.naam} is een plaatmodel; gebruik fem_waarde of fem_strook`);
+  throw new Error(`${functie}: het eerste argument is een @fem-model met staven, zoals kap (de naam van het blok)`);
+}
+/** Een staaf bij naam ("spoor") of nummer. */
+function femStaafRef(v: unknown, functie: string): string | number {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' && Number.isInteger(v)) return v;
+  throw new Error(`${functie}: de staaf is een naam tussen aanhalingstekens, zoals "spoor", of een nummer`);
+}
+const FEM_STAAF_EENHEID = { kN: 'kN', kNm: 'kN m', mm: 'mm', rad: 'rad' } as const;
 function femTekst(v: unknown, functie: string, wat: string): string {
   if (typeof v === 'string') return v;
   throw new Error(`${functie}: ${wat} staat tussen aanhalingstekens, zoals "UGT"`);
@@ -849,13 +864,63 @@ math.import(
         g,
       );
     },
-    /** fem_svg(model; "UGT"; "mx" [; breedte]) → een plattegrond in kleur met legenda, als <svg> voor een @svg-blok. */
+    /**
+     * fem_svg(model; "UGT"; "mx" [; breedte]) → een plattegrond in kleur met legenda, als <svg> voor een @svg-blok.
+     * Bij een staafwerk: "M", "V", "N" (de lijn), "u" (de vervormde stand) of "lasten"; "omhullende" als geval tekent
+     * de grootste en kleinste lijn over de combinaties.
+     */
     fem_svg: function (model: unknown, set: unknown, grootheid: unknown, breedte?: unknown) {
-      const b = breedte === undefined ? 640 : Math.round(liggerGetal(breedte));
-      return femSvg(femModelUit(model, 'fem_svg'), femTekst(set, 'fem_svg', 'het geval'), femTekst(grootheid, 'fem_svg', 'de grootheid'), Math.min(1600, Math.max(240, b)), huidigeTaal);
+      const b = Math.min(1600, Math.max(240, breedte === undefined ? 640 : Math.round(liggerGetal(breedte))));
+      if (model instanceof FemStaafModel) return femStaafSvg(model, femTekst(set, 'fem_svg', 'het geval'), femTekst(grootheid, 'fem_svg', 'de grootheid'), b, huidigeTaal);
+      return femSvg(femModelUit(model, 'fem_svg'), femTekst(set, 'fem_svg', 'het geval'), femTekst(grootheid, 'fem_svg', 'de grootheid'), b, huidigeTaal);
     },
-    /** fem_reacties(model; "UGT") → per veer [x; y; R] (m, m, kN), in de volgorde van het blok. */
+    /**
+     * fem_staaf(model; "UGT"; "spoor"; "M"; x) → de waarde op de afstand x van het begin van een staaf: N en V in kN,
+     * M in kNm, de doorbuiging "w" en de verplaatsing "ux", "uz" in mm. "max" of "min" als geval: de omhullende.
+     */
+    fem_staaf: function (model: unknown, set: unknown, staaf: unknown, grootheid: unknown, x: unknown) {
+      const m = femStavenUit(model, 'fem_staaf');
+      const g = femTekst(grootheid, 'fem_staaf', 'de grootheid');
+      const v = femStaafWaarde(m, femTekst(set, 'fem_staaf', 'het geval'), femStaafRef(staaf, 'fem_staaf'), g, femMeter(x));
+      return math.unit(v, FEM_STAAF_EENHEID[femStaafEenheid(femStaafGrootheid(m, g))]);
+    },
+    /**
+     * fem_knoop(model; "UGT"; "nok"; "uz") → een grootheid van een benoemde knoop: de verplaatsing "ux", "uy", "uz"
+     * (mm), de verdraaiing "ry" (rad), of van zijn oplegging de reactie "Rx", "Rz" (kN) en "My" (kNm).
+     */
+    fem_knoop: function (model: unknown, set: unknown, knoop: unknown, grootheid: unknown) {
+      const u = femStaafKnoop(femStavenUit(model, 'fem_knoop'), femTekst(set, 'fem_knoop', 'het geval'), femTekst(knoop, 'fem_knoop', 'de knoop'), femTekst(grootheid, 'fem_knoop', 'de grootheid'));
+      return math.unit(u.waarde, FEM_STAAF_EENHEID[u.eenheid]);
+    },
+    /**
+     * fem_krachten(model; "spoor"; "UGT_1"; "UGT_2"; …) → de snedekrachten van een staaf als matrix voor een toets
+     * (`forces_envelope`): per combinatie en station [nummer; x; N; V_y; V_z; M_t; M_y; M_z], de combinaties
+     * genummerd in de volgorde waarin ze staan.
+     */
+    fem_krachten: function (model: unknown, staaf: unknown, ...sets: unknown[]) {
+      const m = femStavenUit(model, 'fem_krachten');
+      const namen = sets.map((s) => femTekst(s, 'fem_krachten', 'een geval of combinatie'));
+      const rijen = femStaafKrachten(m, femStaafRef(staaf, 'fem_krachten'), namen).map((r) => [
+        r[0], math.unit(r[1], 'm'), math.unit(r[2], 'kN'), math.unit(r[3], 'kN'), math.unit(r[4], 'kN'),
+        math.unit(r[5], 'kN m'), math.unit(r[6], 'kN m'), math.unit(r[7], 'kN m'),
+      ]);
+      return math.matrix(rijen as unknown as number[][]);
+    },
+    /**
+     * fem_reacties(model; "UGT") → per veer [x; y; R] (m, m, kN), in de volgorde van het blok. Bij een staafwerk per
+     * oplegging [x; z; R_x; R_z; M_y], ruimtelijk [x; y; z; R_x; R_y; R_z; M_x; M_y; M_z].
+     */
     fem_reacties: function (model: unknown, set: unknown) {
+      if (model instanceof FemStaafModel) {
+        const s = model.set(femTekst(set, 'fem_reacties', 'het geval'));
+        const sm = model.m;
+        const rijen = sm.steunen.map((st, i) => {
+          const R = model.reactie(s, i);
+          const plek = (sm.vlak ? [sm.x[st.knoop], sm.z[st.knoop]] : [sm.x[st.knoop], sm.y[st.knoop], sm.z[st.knoop]]).map((v) => math.unit(v, 'm'));
+          return [...plek, ...R.map((v, k) => math.unit(v, k < R.length / 2 || (sm.vlak && k < 2) ? 'kN' : 'kN m'))];
+        });
+        return math.matrix(rijen as unknown as number[][]);
+      }
       const m = femModelUit(model, 'fem_reacties');
       const R = m.verenReactie(m.set(femTekst(set, 'fem_reacties', 'het geval')));
       const rijen = m.m.veren.map((v, i) => [math.unit(m.m.x[v[0][0]], 'm'), math.unit(m.m.y[v[0][0]], 'm'), math.unit(R[i], 'kN')]);

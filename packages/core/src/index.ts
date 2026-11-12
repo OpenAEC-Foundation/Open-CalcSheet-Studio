@@ -11,16 +11,25 @@ export {
   TOETS_START_RE, leesToetsBlok, naarSchema, canoniek, toetsHash, leesAntwoord, bouwToets, renderToets,
   eenheidVanVeld, toetsToolToegestaan, TOETS_UITGESLOTEN, schemaHash, alsAntwoord, leesVastgelegdeToetsingen, type ToetsRekenaar,
 } from './toetsBlok.js';
-export { FEM_START_RE, FEM_TOOL, leesFemBlok, bouwFem, renderFem, femVerzoekArgumenten, type FemRekenaar } from './femBlok.js';
+export { FEM_START_RE, FEM_TOOL, leesFemBlok, bouwFem, renderFem, femVerzoekArgumenten, femBewaar, type FemRekenaar } from './femBlok.js';
 export { KERN_START_RE, leesKernBlok, bouwKern, renderKern, naarKernSchema, kernAanroepen, kernVerzoekBewaard, type KernRekenaar } from './kernBlok.js';
 export {
-  maakFemNet, femRekenmodel, femArgumenten, femBewaar, femParen, femSteunknopen, femSomLast, FEM_MAX_KNOPEN,
+  maakFemNet, femRekenmodel, femArgumenten, femBewaar as femPlaatBewaar, femParen, femSteunknopen, femSomLast, FEM_MAX_KNOPEN,
   type FemInvoer, type FemNet, type FemPlaat, type FemVeer, type FemLijn, type FemLast, type FemGeval,
 } from './femNet.js';
 export {
   FemModel, femWaarde, femStrook, femSvg, femModelSvg, femVlak3D, femKleurschaal, femGrootheid, FEM_GROOTHEDEN, FEM_EENHEID,
   type FemGrootheid, type FemSet,
 } from './femResultaat.js';
+export {
+  FEM_STAVEN_TOOL, FEM_STAVEN_MAX_KNOPEN, FEM_UIT_HET_VLAK, maakFemStaafModel, femStaafArgumenten, femStaafBewaar, femStaafSomLast, femStaafAssen,
+  staafAssen, type FemStaafInvoer, type FemStaafInvoerLast,
+} from './femStaven.js';
+export {
+  FemStaafModel, femStaafWaarde, femStaafKnoop, femStaafKrachten, femStaafSvg, femStaafModelSvg, femStaaf3D, femStaafGrootheid, femStaafEenheid,
+  type FemStaafGrootheid, type FemStaafSet, type FemSnedekracht,
+} from './femStaafResultaat.js';
+export { FEM_STAAF_WOORDEN, isFemStaafwerk, renderFemStaven } from './femStaafBlok.js';
 export { exprToLatex, nameToLatex } from './latex.js';
 export {
   drieDVlakken, drieDBeeldvlak, drieDGrenzen, drieDGrootte, drieDSvg, DRIE_D_KLEUREN, type DrieDVlak,
