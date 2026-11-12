@@ -216,12 +216,12 @@ console.log("\nDe taal van het paneel");
 
 console.log("\nTypen in een veld");
 {
-  const mm = { eenheid: "mm", toonEenheid: "mm", waarde: "250" };
+  const mm = { eenheid: "mm", toonEenheid: "mm", standaard: "250" };
   meld(json(leesGetypt(mm, "300")) === json({ waarde: "300" }) && json(leesGetypt(mm, "0,3 m")) === json({ waarde: "300" }),
     "een getal blijft zoals getypt; 0,3 m in een veld in mm wordt 300", json(leesGetypt(mm, "0,3 m")));
   meld("fout" in leesGetypt(mm, "3 kN") && "fout" in leesGetypt(mm, "3 k"), "een eenheid die niet past of niet af is, wordt niet opgeslagen");
   meld(json(leesGetypt(mm, "#2.R_paal")) === json({ waarde: "#2.R_paal" }), "een verwijzing naar een ander blad gaat mee zoals getypt");
-  meld(json(leesGetypt({ eenheid: "", toonEenheid: "", waarde: "4" }, "3,5")) === json({ waarde: "3,5" }), "een veld zonder eenheid: de tekst, de kern leest de komma");
+  meld(json(leesGetypt({ eenheid: "", toonEenheid: "" }, "3,5")) === json({ waarde: "3,5" }), "een veld zonder eenheid: de tekst, de kern leest de komma");
 
   // In het eenhedenstelsel: het veld toont voet, het blad bewaart meter.
   const us = veld(leesInvoer(reken(PROEF, { L: "4.5" }, { stelsel: STELSELS.us })), "L");
