@@ -48,11 +48,14 @@ const BREED_PANEEL = 780;
 
 /**
  * De hoogte van het beeld boven het formulier: de helft van wat er onder de kop en boven de
- * voetregel is, met een onder- en bovengrens. In px en niet in procenten: het vak van de
- * tekeningen wordt opgemeten, en een hoogte die van de inhoud afhangt zou dan meebewegen.
+ * voetregel is, met een onder- en bovengrens. Niet hoger dan de breedte benut: twee
+ * tekeningen naast elkaar worden in een smal paneel niet groter van meer hoogte. In px en
+ * niet in procenten: het vak van de tekeningen wordt opgemeten, en een hoogte die van de
+ * inhoud afhangt zou dan meebewegen.
  */
-function beeldHoogte(paneelHoogte: number): number {
-  return Math.round(Math.min(340, Math.max(200, (paneelHoogte - 80) * 0.5)));
+function beeldHoogte(paneel: { b: number; h: number }): number {
+  const hoogstens = Math.min(340, paneel.b / 2 + 8);
+  return Math.round(Math.min(hoogstens, Math.max(200, (paneel.h - 80) * 0.5)));
 }
 
 function Naam({ naam }: { naam: string }) {
@@ -204,7 +207,7 @@ function Paneel({ exemplaar, Beeld }: { exemplaar: Exemplaar; Beeld?: ComponentT
 
       <div className="ip-inhoud">
         {Beeld && metBeeld && (
-          <div className="ip-beeld" style={breed ? undefined : { flexBasis: beeldHoogte(maat.h) }}>
+          <div className="ip-beeld" style={breed ? undefined : { flexBasis: beeldHoogte(maat) }}>
             <Beeld source={exemplaar.source} lees={lees} zet={(naam, waarde) => rij.zetNu(naam, waarde)} />
           </div>
         )}

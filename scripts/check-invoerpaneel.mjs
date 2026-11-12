@@ -59,6 +59,8 @@ import {
 import { invoervelden } from "../packages/desktop/src/components/calc/bladVersie.ts";
 import { bronVoorUitvoer } from "../packages/desktop/src/templates/vertalingen.ts";
 import { CANVAS_BLAD } from "../packages/desktop/src/store/canvasBlad.ts";
+import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../packages/desktop/src/store/projectBestand.ts";
+import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { ligger } from "../packages/desktop/src/templates/ligger.ts";
 import { balklaag } from "../packages/desktop/src/templates/balklaag.ts";
 import { tweepaalspoer } from "../packages/desktop/src/templates/tweepaalspoer.ts";
@@ -332,7 +334,16 @@ console.log("\nWelk blad welk scherm krijgt");
     meld(mis.length === 0, "en dat zijn dezelfde als de rekenkern leest, voor elk veld van elk ingebouwd blad", mis.slice(0, 6).join("; "));
   }
   meld(VLOER_OP_PALEN === "vloer-op-palen", "het beeld van de vloer op palen hangt aan het templateId van de module: vloer-op-palen");
-  meld(schermSoort({ templateId: "vloer-op-palen", source: VLOER }, false) === "vloer-op-palen", "een blad van die module krijgt het beeld, ook uit een projectbestand zonder de module");
+  meld(schermSoort({ templateId: "vloer-op-palen", source: VLOER }, false) === "vloer-op-palen", "een blad van die module krijgt het beeld");
+  {
+    // Ook uit een projectbestand, op een computer waar de module niet is geïnstalleerd: het
+    // templateId en de tekst staan in het bestand zelf.
+    const blad = { id: "ex-1", naam: "Vloer", templateId: VLOER_OP_PALEN, source: VLOER, waarden: { L_x: "4.2" }, elementen: [] };
+    const bestand = bouwProjectBestand({ versie: PROJECT_FORMAAT_VERSIE, naam: "Proef", gegevens: legeGegevens(), exemplaren: [blad] }, null);
+    const terug = leesProjectBestand(bestand, "Proef").exemplaren[0];
+    meld(terug?.templateId === VLOER_OP_PALEN && terug.source === VLOER && terug.waarden.L_x === "4.2" && schermSoort(terug, false) === "vloer-op-palen" && opentMetInvoer(terug),
+      "opslaan en openen houdt het templateId: het blad uit het projectbestand krijgt het beeld en opent ermee", json(terug && [terug.templateId, terug.waarden]));
+  }
   meld(schermSoort({ templateId: "", source: VLOER }, false) === "paneel" && schermSoort({ templateId: "iets-anders", source: VLOER }, false) === "paneel",
     "dezelfde tekst onder een ander templateId: het paneel zonder beeld");
   meld(schermSoort({ templateId: "vloer-op-palen", source: PROEF }, false) === "paneel", "het templateId met een tekst zonder de maten van de vloer: het paneel zonder beeld");
