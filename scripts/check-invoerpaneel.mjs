@@ -64,6 +64,7 @@ import { tweepaalspoer } from "../packages/desktop/src/templates/tweepaalspoer.t
 import { doorsnedeSpanningen } from "../packages/desktop/src/templates/doorsnede-spanningen.ts";
 import { rekentaalDemo } from "../packages/desktop/src/templates/rekentaal-demo.ts";
 import { rekentaalIncludes, rekentaalImageUrls } from "../packages/desktop/src/templates/rekentaal-includes.ts";
+import { laadInvoerscherm } from "./lib/invoerscherm-jsdom.mjs";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const SRC = join(hier, "../packages/desktop/src");
@@ -289,6 +290,10 @@ console.log("\nRustig rekenen");
     rij.vergeet("h");
     verder(5000);
     meld(gestuurd.length === 0, "Escape laat wat er wachtte vervallen");
+    rij.typ("h", "300");
+    rij.zetNu("h", "350");
+    verder(5000);
+    meld(json(gestuurd) === json([["h", "350"]]) && rij.aantal === 0, "een keuze of een maat in de tekening gaat meteen, en wat er voor dat veld wachtte vervalt", json(gestuurd));
   }
   {
     const { rij, gestuurd, verder } = maak();
@@ -390,6 +395,22 @@ console.log("\nDe vloer op palen: de tekening");
     meld(json(d.maten.map((x) => x.naam).sort()) === json(verwacht) && d.maten.every((x) => binnen(x, d)) && d.beton.every((pt) => binnen(pt, d)) && vakBinnen(d.paal, d),
       `doorsnede (${naam}): ${verwacht.join(", ")}, alles in een vak van 240 × 230`, json(d.maten.map((x) => [x.naam, Math.round(x.x), Math.round(x.y)])));
     meld(d.schaal * m.h >= 8, `doorsnede (${naam}): de vloer is minstens 8 px dik`, String(d.schaal * m.h));
+    // De dikte bij de paal: de vloer, of de strook of de kop eronder.
+    const bijPaal = Math.max(m.h, m.kop ? m.tk : 0, m.stX || m.stY ? m.ts : 0);
+    const onderkant = Math.max(...d.beton.map((pt) => pt.y));
+    meld(Math.abs(d.paal.y - (d.beton[0].y + bijPaal * d.schaal)) < 0.01 && Math.abs(d.paal.y - onderkant) < 0.01,
+      `doorsnede (${naam}): de paal staat tegen de onderkant van het beton, ${bijPaal} mm onder de bovenkant`, `${d.paal.y} tegen ${onderkant}`);
+  }
+  {
+    // Een kop die dunner is ingevuld dan de strook eronder: de tekening toont de dikte waarmee
+    // het blad rekent (de strook, 350), de maatlijn meet wat er is ingevuld (300).
+    const invoer = vloerInvoer(st, (n) => ({ ponskop: "1", stroken: "1", t_k: "300" })[n]);
+    const m = vloerModel(invoer);
+    const d = tekenDoorsnede(m, invoer, 240, 230);
+    const top = d.beton[0].y;
+    const staand = d.lijnen.filter((l) => !l.ligt).map((l) => Math.round((l.tot - top) / d.schaal));
+    meld(m.tk === 350 && json(staand.sort((a, b) => a - b)) === json([250, 300, 350]) && d.maten.find((x) => x.naam === "t_k")?.waarde === 300,
+      "een kop dunner dan de strook: getekend op 350 mm, gemeten wat er is ingevuld (300)", json(staand));
   }
   const invoer = vloerInvoer(st, (n) => ({ ponskop: "1", L_x: "4.2" })[n]);
   const p = tekenPlattegrond(vloerModel(invoer), invoer, 250, 230);
@@ -426,6 +447,125 @@ console.log("\nDe code van het paneel");
   const papier = ["components/calc/PrintBlad.tsx", "components/calc/varianten/VariantUitwerking.tsx"].map((b) => readFileSync(join(SRC, b), "utf8")).join("\n");
   meld(!/invoer\//.test(papier), "op papier en in de uitwerking van een variant staat het formulier niet");
   meld(/leesInvoer\(/.test(readFileSync(join(SRC, "rekenen/rekenWorker.ts"), "utf8")), "de velden komen uit dezelfde doorrekening als de uitwerking (de rekenworker)");
+}
+
+console.log("\nHet scherm zelf, in jsdom");
+{
+  const app = await laadInvoerscherm();
+  await app.i18next.changeLanguage("nl");
+  const { window } = app;
+  const wacht = (ms) => new Promise((klaar) => setTimeout(klaar, ms));
+  // Wachten tot iets waar is: de worker en de pauze van het paneel lopen op de klok.
+  const tot = async (fn, ms = 20000) => {
+    const eind = Date.now() + ms;
+    while (Date.now() < eind) {
+      if (fn()) return true;
+      await wacht(25);
+    }
+    return !!fn();
+  };
+  const store = app.useProjectStore;
+  // React leest de waarde van een veld via de setter van het element.
+  const zetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+  const typ = (inp, tekst) => {
+    zetter.call(inp, tekst);
+    inp.dispatchEvent(new window.Event("input", { bubbles: true }));
+  };
+
+  // De vloer op palen: het blad van de module, zoals het uit een projectbestand komt.
+  const id = store.getState().voegToe(VLOER_OP_PALEN, "Vloer op palen", VLOER);
+  store.getState().selecteer(id);
+  const ex = () => store.getState().exemplaren.find((e) => e.id === id);
+  const versie = app.rekenversie(VLOER);
+  const scherm = app.teken(ex());
+  const { plek } = scherm;
+  const rijVan = (naam) => [...plek.querySelectorAll(".ip-rij")].find((r) => r.querySelector(".ip-naam")?.getAttribute("title") === naam);
+  const veldVan = (naam) => rijVan(naam)?.querySelector("input");
+  const maat = (label) => [...plek.querySelectorAll(".vd-dim-num")].find((b) => b.textContent.startsWith(`${label}=`));
+  const kopregel = () => plek.querySelector(".vd-head")?.textContent ?? "";
+
+  meld(scherm.metBeeld === true && plek.querySelectorAll(".ip-tekening").length === 2 && maat("Lx")?.textContent === "Lx=3,60" && maat("h")?.textContent === "h=250",
+    "de plattegrond en de doorsnede staan er meteen, vóór de eerste doorrekening", `${plek.querySelectorAll(".ip-tekening").length} tekeningen`);
+  meld(plek.querySelectorAll(".ip-veld").length === 0 && plek.querySelector(".ip-leeg") !== null, "het formulier wacht op de doorrekening");
+  meld(await tot(() => plek.querySelectorAll(".ip-veld").length > 0), "en staat er zodra het blad is doorgerekend");
+  const koppen = [...plek.querySelectorAll(".ip-groep > .vd-ctrl-h")].map((k) => k.textContent);
+  meld(json(koppen) === json(["Raster en vloer", "Belastingen"]) && plek.querySelectorAll(".ip-veld").length === 7 && plek.querySelectorAll(".ip-keuze").length === 2,
+    "7 velden en 2 keuzelijsten onder de koppen van het blad", `${json(koppen)} ${plek.querySelectorAll(".ip-veld").length} ${plek.querySelectorAll(".ip-keuze").length}`);
+  meld(veldVan("L_x")?.value === "3.6" && rijVan("L_x").querySelector(".ip-eenheid").textContent === "m" && rijVan("L_x").querySelector(".ip-label").textContent === "paalafstand x"
+    && rijVan("q_k").querySelector(".ip-eenheid").textContent === "kN/m²", "een veld: naam, toelichting, waarde en eenheid (kN/m²)", rijVan("L_x")?.textContent);
+  meld(veldVan("b_k") === undefined, "de maten van de ponskop staan achter een voorwaarde: nog niet in het formulier");
+
+  // Typen: het beeld volgt meteen, het blad pas als het veld wordt verlaten.
+  const rondes = app.rondes();
+  const Lx = veldVan("L_x");
+  Lx.focus();
+  typ(Lx, "4");
+  typ(Lx, "4.");
+  typ(Lx, "4.2");
+  meld(ex().waarden.L_x === undefined, "typen stuurt niets naar het blad");
+  meld(await tot(() => maat("Lx")?.textContent === "Lx=4,20") && kopregel().includes("Nog niet verstuurd"), "het beeld volgt wel meteen, en de kop meldt dat de wijziging wacht", `${maat("Lx")?.textContent} | ${kopregel()}`);
+  meld(app.rondes() === rondes, "er is niets opnieuw gerekend");
+  Lx.blur();
+  meld(await tot(() => ex().waarden.L_x === "4.2") && veldVan("L_x").value === "4.2", "het veld verlaten stuurt de waarde", String(ex().waarden.L_x));
+  meld(await tot(() => app.rondes() > rondes), "en dan rekent het blad opnieuw");
+
+  const h = veldVan("h");
+  h.focus();
+  typ(h, "300");
+  meld(ex().waarden.h === undefined, "ook een pauze stuurt: eerst niets");
+  meld(await tot(() => ex().waarden.h === "300", 5000) && window.document.activeElement === veldVan("h") && veldVan("h").value === "300",
+    "en na de pauze de waarde, terwijl het veld de cursor en zijn tekst houdt", String(ex().waarden.h));
+  typ(h, "3 kN");
+  meld(await tot(() => veldVan("h").classList.contains("ip-fout")), "een eenheid die niet past krijgt een rode rand");
+  h.blur();
+  await wacht(50);
+  meld(ex().waarden.h === "300" && veldVan("h").value === "300", "en wordt niet opgeslagen");
+
+  // Een keuze gaat meteen; het veld achter de voorwaarde komt erbij.
+  const ponskop = [...plek.querySelectorAll(".ip-keuze")].find((r) => r.textContent.includes("Ponskop boven elke paal"));
+  ponskop.querySelector(".themed-select-trigger").click();
+  await tot(() => ponskop.querySelector(".themed-select-item"));
+  [...ponskop.querySelectorAll(".themed-select-item")].find((b) => b.textContent === "ja").click();
+  meld(await tot(() => ex().waarden.ponskop === "1"), "een keuze gaat meteen naar het blad", String(ex().waarden.ponskop));
+  meld(await tot(() => maat("bk")?.textContent === "bk=1000" && maat("tk")?.textContent === "tk=400") && plek.querySelectorAll(".ip-svg .ip-kop").length === 26,
+    "de ponskop staat meteen in beeld: 25 koppen in de plattegrond en één in de doorsnede", String(plek.querySelectorAll(".ip-svg .ip-kop").length));
+  meld(await tot(() => veldVan("b_k")?.value === "1000"), "na het doorrekenen staan de maten van de ponskop ook in het formulier");
+
+  // Een maat in de tekening wijzigen, en ongedaan maken.
+  maat("bk").click();
+  await tot(() => plek.querySelector(".vd-dim-input"));
+  const terPlekke = plek.querySelector(".vd-dim-input");
+  typ(terPlekke, "1200");
+  terPlekke.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  meld(await tot(() => ex().waarden.b_k === "1200" && maat("bk")?.textContent === "bk=1200"), "een maat aanklikken en ter plekke wijzigen zet hem in het blad", String(ex().waarden.b_k));
+  meld(await tot(() => veldVan("b_k")?.value === "1200"), "en het formulier volgt");
+  store.getState().ongedaan();
+  meld(await tot(() => ex().waarden.b_k === undefined && maat("bk")?.textContent === "bk=1000" && veldVan("b_k")?.value === "1000"),
+    "ongedaan maken draait de maat terug: in het blad, in het beeld en in het formulier", `${ex().waarden.b_k} ${maat("bk")?.textContent}`);
+  meld(ex().source === VLOER && app.rekenversie(ex().source) === versie, "de rekentekst en de rekenversie zijn niet veranderd");
+
+  // De tekening kan weg, en wat nog wacht gaat bij het sluiten eerst naar het blad.
+  const knop = plek.querySelector(".ip-voet button");
+  knop.click();
+  meld(await tot(() => plek.querySelectorAll(".ip-tekening").length === 0) && plek.querySelectorAll(".ip-veld").length === 9, "de tekening kan weg; het formulier blijft");
+  const Ly = veldVan("L_y");
+  Ly.focus();
+  typ(Ly, "5");
+  scherm.sluit();
+  meld(ex().waarden.L_y === "5", "gaat het scherm dicht, dan gaat wat nog wacht eerst naar het blad", String(ex().waarden.L_y));
+
+  // Een gewoon blad: het formulier zonder beeld.
+  const id2 = store.getState().voegToe("", "Proef", PROEF);
+  store.getState().selecteer(id2);
+  const gewoon = app.teken(store.getState().exemplaren.find((e) => e.id === id2));
+  meld(gewoon.metBeeld === false && await tot(() => gewoon.plek.querySelectorAll(".ip-veld").length === 6) && gewoon.plek.querySelectorAll(".ip-tekening").length === 0
+    && json([...gewoon.plek.querySelectorAll(".ip-groep > .vd-ctrl-h")].map((k) => k.textContent)) === json(["Maten", "Belasting"]),
+    "een blad zonder eigen beeld: het formulier uit zijn velden, zonder tekening", String(gewoon.plek.querySelectorAll(".ip-veld").length));
+  gewoon.sluit();
+
+  await wacht(100);
+  app.herstelConsole();
+  meld(app.fouten.length === 0, "zonder fouten in de console", app.fouten.slice(0, 4).join(" || "));
 }
 
 // Een blad van buiten nalopen, bijvoorbeeld de module uit de modulebibliotheek.
