@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Invoerscherm voor elk rekenblad: een blad of module zonder eigen beeld, ook uit de modulebibliotheek, heeft naast de uitwerking een formulier met al zijn invoervelden, onder de koppen van het blad en met toelichting en eenheid. Een veld dat het blad nu niet toont, staat er niet. Een module opent met dit scherm; een eigen rekenblad opent met de code en heeft het als tab erbij. Een wijziging rekent door als je het veld verlaat, op Enter drukt of even wacht, en de kop toont of er gerekend wordt. De bedrijfsvloer op palen krijgt daarboven een plattegrond van het paalraster en een doorsnede bij een paal: die bewegen meteen mee, zonder op Open FEM Studio te wachten, en een maat wijzig je in de tekening zelf
+
 ## v2026.46.0 — 2026-11-12
 
 - Rekentaal: met `@fem naam … @end` bouwt een blad een plaatmodel op dat Open FEM Studio doorrekent: platen als rechthoeken met elk hun dikte (een ponskop of strook over de vloer wint), veren en een raster van veren met een paalkop, lijnsteunen, belastinggevallen met vlaklasten, eigen gewicht en puntlasten, en combinaties. Daarna rekent het blad verder met de grootste en kleinste momenten, de doorbuiging en de veerreacties per combinatie (`vloer.UGT.mx_max`, `vloer.R_max`), de waarde op een punt (`fem_waarde`) en het gemiddelde over een strook (`fem_strook`). `beeld UGT mx` zet een plattegrond in kleur onder het blok, en in een 3D-beeld tekent `fem vloer UGT w` de doorbuiging of het momentvlak. Het antwoord gaat mee in het projectbestand; zonder antwoord staat het blok als niet gerekend
