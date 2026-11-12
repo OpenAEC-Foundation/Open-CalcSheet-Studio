@@ -89,10 +89,14 @@ export const HANENBALK = [
   "N_haan = kap.S.hanenbalk.N_max",
 ].join("\n");
 
-/** Euler: een stijl met twee scharnieren onder een drukkracht. α_cr = π²EI/(H²·N). */
+/**
+ * Euler: een stijl met twee scharnieren onder een drukkracht. α_cr = π²EI/(H²·N).
+ * De kracht heet N_Ed en niet N: een variabele N gaat in de rekentaal voor de eenheid
+ * newton, en dan is `11000 N/mm^2` elfduizend keer die kracht per mm².
+ */
 export const EULER = [
   "H = 3 m",
-  "N = 10 kN",
+  "N_Ed = 10 kN",
   "@fem kolom",
   "  materiaal 11000 N/mm^2; 690 N/mm^2",
   "  rechthoek hout: 71 mm; 196 mm",
@@ -102,7 +106,7 @@ export const EULER = [
   "  steun voet; scharnier",
   "  steun top; rol z",
   "  geval N",
-  "    puntlast top; N",
+  "    puntlast top; N_Ed",
   "  knikvormen 2",
   "@end",
   "α = kolom.N.alpha_cr",
@@ -209,6 +213,26 @@ export const SPANT = [
 ].join("\n");
 
 /**
+ * Een ligger met een trapeziumlast over een deel van zijn lengte, op een vast steunpunt
+ * en een veer: de last begint en eindigt tussen de gelijke delen in, en het grootste
+ * moment ligt niet op een knoop.
+ */
+export const DEELLAST = [
+  "L = 4 m",
+  "@fem ligger",
+  "  materiaal 11000 N/mm^2; 690 N/mm^2",
+  "  rechthoek hout: 71 mm; 196 mm",
+  "  knoop A: 0; 0",
+  "  knoop B: L; 0",
+  "  staaf balk: A; B",
+  "  steun A; scharnier",
+  "  steun B; vrij; 1000 kN/m; vrij",
+  "  geval Q",
+  "    lijnlast balk; 1 kN/m; 3 kN/m; 1.1 m; 2.3 m",
+  "@end",
+].join("\n");
+
+/**
  * Het voorbeeld uit docs/fem-model.md: een sporenkap met hanenbalk op twee muurplaten
  * (beide nemen spatkracht op), met eigen gewicht, sneeuw per meter grondvlak en wind
  * loodrecht op het dakvlak, drie combinaties voor de uiterste grenstoestand en een voor
@@ -223,7 +247,7 @@ export const KAP = [
   "b = 59 mm",
   "h = 156 mm",
   "g_dak = 0.55 kN/m^2",
-  "s = 0.56 kN/m^2",
+  "s_k = 0.56 kN/m^2",
   "w_druk = 0.35 kN/m^2",
   "w_zuig = 0.25 kN/m^2",
   "x_h = L/2*z_h/h_nok",
@@ -245,8 +269,8 @@ export const KAP = [
   "    lijnlast spoor_l; g_dak*a",
   "    lijnlast spoor_r; g_dak*a",
   "  geval S",
-  "    lijnlast spoor_l; s*a; projectie",
-  "    lijnlast spoor_r; s*a; projectie",
+  "    lijnlast spoor_l; s_k*a; projectie",
+  "    lijnlast spoor_r; s_k*a; projectie",
   "  geval W",
   "    lijnlast spoor_l; w_druk*a; lokaal",
   "    lijnlast spoor_r; -w_zuig*a; lokaal",
@@ -263,10 +287,33 @@ export const KAP = [
   "w_BGT = kap.BGT.spoor_l.w_max",
   "",
   "@toets spoor = check_timber_beams",
-  '  inputs = [{beam_id: 1, width_mm: b, height_mm: h, strength_class: "C24", service_class: "Sc2", load_duration: "ShortTerm", load_duration_per_combination: [{combination_id: 1, load_duration: "Permanent"}, {combination_id: 2, load_duration: "ShortTerm"}, {combination_id: 3, load_duration: "ShortTerm"}], length_m: kap.spoor_l.L, buckling_length_z_m: 0.3 m, ltb_segment_length_m: 0.3 m, forces_envelope: fem_krachten(kap; "spoor_l"; "UGT_G"; "UGT_S"; "UGT_W"), deflection_inst_mm: -kap.BGT.spoor_l.w_max, deflection_quasi_perm_mm: -kap.G.spoor_l.w_max, deflection_permanent_mm: -kap.G.spoor_l.w_max}]',
+  "  inputs = [{",
+  "    beam_id: 1,",
+  "    width_mm: b,",
+  "    height_mm: h,",
+  '    strength_class: "C24",',
+  '    service_class: "Sc2",',
+  "    length_m: kap.spoor_l.L,",
+  "    // het dakbeschot houdt het spoor zijdelings: knik uit het vlak en kip over 0,3 m",
+  "    buckling_length_z_m: 0.3 m,",
+  "    ltb_segment_length_m: 0.3 m,",
+  "    // de snedekrachten per station, voor de drie combinaties van de uiterste grenstoestand",
+  '    forces_envelope: fem_krachten(kap; "spoor_l"; "UGT_G"; "UGT_S"; "UGT_W"),',
+  "    // k_mod per combinatie: alleen blijvend, en met sneeuw of wind (kort)",
+  '    load_duration: "ShortTerm",',
+  '    load_duration_per_combination: [{combination_id: 1, load_duration: "Permanent"}, {combination_id: 2, load_duration: "ShortTerm"}, {combination_id: 3, load_duration: "ShortTerm"}],',
+  "    // de doorbuiging, met teken: omlaag is negatief",
+  "    deflection_inst_mm: -kap.BGT.spoor_l.w_max,",
+  "    deflection_quasi_perm_mm: -kap.G.spoor_l.w_max,",
+  "    deflection_permanent_mm: -kap.G.spoor_l.w_max",
+  "  }]",
   "@end",
   "UC = spoor.uc_max",
 ].join("\n");
+
+/** Dezelfde houttoets met de staaf op één regel: het verzoek moet gelijk zijn. */
+export const KAP_TOETS_OP_EEN_REGEL =
+  '  inputs = [{beam_id: 1, width_mm: b, height_mm: h, strength_class: "C24", service_class: "Sc2", length_m: kap.spoor_l.L, buckling_length_z_m: 0.3 m, ltb_segment_length_m: 0.3 m, forces_envelope: fem_krachten(kap; "spoor_l"; "UGT_G"; "UGT_S"; "UGT_W"), load_duration: "ShortTerm", load_duration_per_combination: [{combination_id: 1, load_duration: "Permanent"}, {combination_id: 2, load_duration: "ShortTerm"}, {combination_id: 3, load_duration: "ShortTerm"}], deflection_inst_mm: -kap.BGT.spoor_l.w_max, deflection_quasi_perm_mm: -kap.G.spoor_l.w_max, deflection_permanent_mm: -kap.G.spoor_l.w_max}]';
 
 /** De bladen bij naam, voor de proef en de controle; de naam is die van het bestand met het antwoord. */
 export const STAVEN_BLADEN = {
@@ -278,5 +325,6 @@ export const STAVEN_BLADEN = {
   ruimte: RUIMTE,
   kruis: KRUIS,
   spant: SPANT,
+  deellast: DEELLAST,
   kap: KAP,
 };

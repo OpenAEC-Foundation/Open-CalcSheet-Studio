@@ -58,6 +58,12 @@
  *       R = 1,5·F = 9 kN; trekbalk: (R·4 − F·2)/3 = 8,000 kN;
  *       M in het been onder de gording = F·4/4 = 6,000 kNm;
  *       N in het been onder de gording −(8·0,8 + 9·0,6) = −11,800, erboven −(8·0,8 + 3·0,6) = −8,200 kN.
+ *   • Ligger L = 4 m met een trapeziumlast van 1 naar 3 kN/m tussen 1,1 en 2,3 m, rechts op
+ *     een veer van 1000 kN/m:
+ *       W = (1 + 3)/2·1,2 = 2,4 kN, zwaartepunt op 1,1 + 1,2·(1 + 2·3)/(3·4) = 1,8 m;
+ *       R rechts = 2,4·1,8/4 = 1,080 kN, R links = 1,320 kN; de veer zakt 1,080 mm;
+ *       V = 0 op u van het begin van de last: u²/1,2 + u = 1,32, u = 0,79428 m;
+ *       M_max = 1,32·(1,1 + u) − (u²/2 + u³/3,6) = 2,0458 kNm.
  *
  * De antwoorden maakt scripts/proef-fem-staven.mjs opnieuw met de echte server.
  *
@@ -68,7 +74,7 @@ import { existsSync, readFileSync } from "node:fs";
 import * as core from "../packages/core/dist/index.js";
 import * as cache from "../packages/desktop/src/rekenen/toetsCache.ts";
 import { scopeMetVerwijzingen } from "../packages/desktop/src/rekenen/verwijzingen.ts";
-import { DRIESCHARNIER, EULER, HANENBALK, KAP, KRUIS, LIGGER, RUIMTE, SPANT, STAVEN_BLADEN, TWEEDE } from "./fixtures/fem/staven-bladen.mjs";
+import { DEELLAST, EULER, HANENBALK, KAP, KAP_TOETS_OP_EEN_REGEL, KRUIS, LIGGER, RUIMTE, SPANT, STAVEN_BLADEN, TWEEDE } from "./fixtures/fem/staven-bladen.mjs";
 
 const { alsAntwoord, evaluate, evaluateMetScope, parse, render, toetsToolToegestaan } = core;
 
@@ -189,6 +195,30 @@ console.log("\nHet blok lezen");
   meld(/vlak|ruimtelijk|drie/.test(melding(["  knoop A: 0; 0", "  knoop B: 4 m; 0; 0", "  staaf s: A; B"])), "knopen met twee en met drie coördinaten door elkaar is een fout", melding(["  knoop A: 0; 0", "  knoop B: 4 m; 0; 0", "  staaf s: A; B"]));
   meld(/plaat|platen/.test(melding([...basis, "  plaat 0; 0; 1 m; 1 m; 100 mm"])), "platen en staven in één model: nog niet, met de reden", melding([...basis, "  plaat 0; 0; 1 m; 1 m; 100 mm"]));
   meld(/tweede|lineair/.test(melding([...basis, "  analyse plastisch"])), "een onbekende analyse is een fout", melding([...basis, "  analyse plastisch"]));
+
+  // De vormen van een oplegging: bij naam of op een plaats, als soort of per richting.
+  const steun = (regel) => vragen(blad([...basis.slice(0, 3), regel, ...basis.slice(4)]))?.verzoeken?.[0]?.bewaar?.steunen?.[0]?.vast;
+  meld(JSON.stringify(steun("  steun A; inklemming")) === "[true,true,true]" && JSON.stringify(steun("  steun A; rol z")) === "[true,false,false]", "steun A; inklemming en steun A; rol z");
+  meld(JSON.stringify(steun("  steun 0; 0; vast; vast; vrij")) === "[true,true,false]", "steun x; z; vast; vast; vrij: per richting, op een plaats", JSON.stringify(steun("  steun 0; 0; vast; vast; vrij")));
+  meld(JSON.stringify(steun("  steun A; vast; 500 kN/m; 20 kN*m")) === "[true,500,20]", "steun A; vast; 500 kN/m; 20 kNm: een veer langs z en om de draaiing", JSON.stringify(steun("  steun A; vast; 500 kN/m; 20 kN*m")));
+  const veer = femVerzoekArgumenten(vragen(blad([...basis.slice(0, 3), "  steun A; vast; 500 kN/m; 20 kN*m", ...basis.slice(4)])).verzoeken[0]).requests[0].supports[0];
+  meld(veer.ux === true && veer.uz === false && veer.kzKnPerM === 500 && veer.kryKnmPerRad === 20, "een veer gaat als stijfheid naar FEM Studio, niet als vaste richting", JSON.stringify(veer));
+  meld(/al een oplegging/.test(melding([...basis.slice(0, 5), "  steun 4 m; 0; scharnier", ...basis.slice(5)])), "twee opleggingen op één knoop is een fout");
+
+  // Herhalen: staven zonder naam heten s1, s2, … en delen hun knopen.
+  const lus = ["@fem m", "  materiaal 210000 N/mm^2; 0.3", "  doorsnede buis: 10 cm^2; 100 cm^4", "  #for i = 0 : 2", "  staaf i*2 m; 0; (i + 1)*2 m; 0", "  #loop",
+    "  steun 0; 0; scharnier", "  steun 6 m; 0; rol", "  geval G", "    lijnlast s2; 1 kN/m", "  delen 2", "@end"].join("\n");
+  const lm = vragen(lus)?.verzoeken?.[0]?.bewaar;
+  meld(lm?.staven.map((s) => s.naam).join() === "s1,s2,s3" && lm.knopen.length === 4 && lm.x.length === 7,
+    "#for: drie staven zonder naam heten s1, s2 en s3 en delen hun knopen; delen 2 geeft één tussenpunt per staaf", `${lm?.staven.map((s) => s.naam)} ${lm?.knopen.length} ${lm?.x.length} ${vragen(lus)?.melding ?? ""}`);
+  meld(Math.abs(lm?.doorsneden[0].A - 10e-4) < 1e-15 && Math.abs(lm.doorsneden[0].Iy - 100e-8) < 1e-18, "doorsnede naam: A; I_y in cm² en cm⁴ wordt m² en m⁴");
+
+  // Een staaf die alleen trek opneemt, wordt niet geknipt.
+  const trek = ["  knoop A: 0; 0", "  knoop B: 4 m; 0", "  knoop C: 4 m; 3 m", "  staaf s: A; B", "  staaf k: B; C", "  staaf t: A; C; trek; scharnier", "  steun A; scharnier", "  steun B; rol", "  geval G"];
+  const tm = vragen(blad([...trek, "    puntlast C; 1 kN; x"]))?.verzoeken?.[0]?.bewaar;
+  meld(tm?.staven[2].trek === true && tm.staven[2].knopen.length === 2 && tm.staven[0].knopen.length === 5, "een trekstaaf loopt van knoop tot knoop, de andere staven hebben hun tussenpunten", JSON.stringify(tm?.staven.map((s) => s.knopen.length)));
+  meld(/trek/.test(melding([...trek, "    puntlast t; 1 kN; 2 m"])), "een puntlast midden op een trekstaaf is een fout", melding([...trek, "    puntlast t; 1 kN; 2 m"]));
+  meld(/uitkomst|andere naam/.test(parse("@fem x\n  knoop N: 0; 0\n@end").find((n) => n.type === "fem").fouten.join()), "een knoop mag niet heten zoals een uitkomst (N, M, Rz, …)");
 }
 
 // ── Het rekenmodel ──────────────────────────────────────────────────────────
@@ -269,7 +299,9 @@ console.log("\nHet rekenmodel");
   meld(eu && femVerzoekArgumenten(eu).requests[0].bucklingModes === 2, "knikvormen 2 vraagt twee knikvormen");
   const eg = kap ? femVerzoekArgumenten(kap).requests[0] : null;
   const A_spoor = 0.059 * 0.156;
-  meld(eg?.memberLoads.some((l) => l.globalDirection === "z" && !l.perProjection && Math.abs(l.qStartKnPerM + 4.2 * A_spoor) < 1e-9), "eigengewicht: γ·A omlaag per meter staaf", JSON.stringify(eg?.memberLoads?.[0]));
+  meld(eg?.memberLoads.some((l) => l.memberId === 1 && l.globalDirection === "z" && !l.perProjection && Math.abs(l.qStartKnPerM + 4.2 * A_spoor + 0.55 * 0.6) < 1e-9),
+    "eigengewicht: γ·A omlaag per meter staaf, samengenomen met de dakbedekking (0,039 + 0,330 kN/m)", JSON.stringify(eg?.memberLoads?.[0]));
+  meld(eg?.memberLoads.some((l) => l.memberId === 3 && Math.abs(l.qStartKnPerM + 4.2 * 0.046 * 0.121) < 1e-9), "en op de hanenbalk alleen zijn eigen gewicht", JSON.stringify(eg?.memberLoads));
   const wind = kap ? femVerzoekArgumenten(kap).requests[2] : null;
   meld(wind?.memberLoads.some((l) => l.memberId === 1 && Math.abs(l.qzStartKnPerM + 0.35 * 0.6) < 1e-12) && wind.memberLoads.some((l) => l.memberId === 2 && Math.abs(l.qzStartKnPerM - 0.25 * 0.6) < 1e-12),
     "wind lokaal: druk naar de onderzijde van het spoor, zuiging ervan af", JSON.stringify(wind?.memberLoads));
@@ -393,6 +425,25 @@ const EI = 11000e3 * (0.071 * 0.196 ** 3) / 12;
   const V = (x) => core.femStaafWaarde(scope.spant, "G", "been_l", "V", x);
   meld(Math.abs(V(2.4) - V(2.6) - 6 * 0.8) < 1e-6, "de dwarskracht springt onder de gording met F·cos α = 4,8 kN", `${V(2.4)} ${V(2.6)}`);
 }
+{
+  console.log("  Ligger met een trapeziumlast over een deel, op een veer");
+  const blok = vragen(DEELLAST)?.verzoeken?.[0];
+  const balk = blok?.bewaar.staven[0];
+  const xs = balk?.knopen.map((k) => blok.bewaar.x[k]) ?? [];
+  meld(xs.join() === "0,1,1.1,2,2.3,3,4", "een knoop waar de last begint en eindigt, naast de gelijke delen", xs.join());
+  const last = blok ? femVerzoekArgumenten(blok).requests[0].memberLoads[0] : null;
+  meld(last?.startPositionM === 1.1 && last.endPositionM === 2.3 && last.qStartKnPerM === -1 && last.qEndKnPerM === -3, "de last gaat als trapezium over zijn bereik naar FEM Studio", JSON.stringify(last));
+  const { scope } = gerekend("deellast");
+  const u = (-1.2 + Math.sqrt(1.44 + 4 * 1.584)) / 2;
+  naast("R links", kN(scope.ligger_Q_A_Rz), 1.32, 1e-6, " kN");
+  naast("R rechts, in de veer", kN(scope.ligger_Q_B_Rz), 1.08, 1e-6, " kN");
+  naast("M_max, tussen twee knopen", kNm(scope.ligger_Q_balk_M_max), 1.32 * (1.1 + u) - (u * u / 2 + u ** 3 / 3.6), 1e-7, " kNm");
+  naast("de plaats van M_max", scope.ligger.uitersten(scope.ligger.set("Q"), 0, "My").xMax, 1.1 + u, 1e-7, " m");
+  naast("zakking van de veer", -mm(scope.ligger_Q_B_uz), 1.08, 1e-6, " mm");
+  // De doorbuiging tussen de knopen sluit aan op die van de knopen zelf.
+  const w = (x) => core.femStaafWaarde(scope.ligger, "Q", "balk", "uz", x);
+  meld(Math.abs(w(1.1 - 1e-7) - w(1.1 + 1e-7)) < 1e-5 && Math.abs(w(2 - 1e-7) - w(2 + 1e-7)) < 1e-5, "de doorbuigingslijn loopt door over de knopen");
+}
 
 // ── De kap uit de documentatie ──────────────────────────────────────────────
 console.log("\nDe sporenkap met hanenbalk uit docs/fem-model.md");
@@ -509,6 +560,13 @@ console.log("\nDe sporenkap met hanenbalk uit docs/fem-model.md");
   meld(Math.abs(staaf?.deflection_inst_mm + mm(scope.w_BGT)) < 1e-9, "de doorbuiging met teken: negatief is omlaag");
   meld(toets?.status === "klaar" && typeof scope.UC === "number" && scope.UC > 0, "met het vastgelegde antwoord: een UC", `${toets?.status} ${toets?.melding ?? ""} ${scope.UC}`);
   meld(/6\.1\.6|6\.2\.4|6\.3/.test(JSON.stringify(toets?.uitkomst ?? {})), "en de toetsen van NEN-EN 1995-1-1 per artikel");
+  // Het veld `inputs` staat in het blad over meer regels, met commentaar ertussen.
+  const femAntwoord = Object.fromEntries(Object.entries(vast.kap.toetsingen).filter(([, v]) => v.tool !== "check_timber_beams"));
+  const opEenRegel = vanSoort(metAntwoorden(KAP.replace(/ {2}inputs = \[\{[\s\S]*?\n {2}\}\]/, KAP_TOETS_OP_EEN_REGEL), femAntwoord, "vragen").nodes, "toets");
+  meld(opEenRegel?.verzoek?.hash === wacht?.verzoek?.hash && JSON.stringify(opEenRegel?.verzoek?.argumenten) === JSON.stringify(invoer),
+    "een veld over meer regels, met commentaar ertussen, geeft hetzelfde verzoek als op één regel", `${opEenRegel?.status} ${opEenRegel?.melding ?? ""}`);
+  const open = parse("@toets t = check_timber_beams\n  inputs = [{\n    beam_id: 1\n@end").find((n) => n.type === "toets");
+  meld(open?.fouten.some((f) => /haak/.test(f)), "een haak die niet sluit is een fout", JSON.stringify(open?.fouten));
   console.log(`     UC = ${Number(scope.UC).toFixed(3)}, maatgevend ${toets?.uitkomst?.staven?.[0]?.maatgevend ?? toets?.uitkomst?.maatgevend ?? "?"}`);
 }
 
