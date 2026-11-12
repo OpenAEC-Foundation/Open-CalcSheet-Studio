@@ -51,6 +51,9 @@
    paneel uitrekent (InvoerPaneel.tsx, beeldHoogte). */
 .ip-beeld {
   flex: 0 0 225px;
+  /* De hoogte volgt het paneel, nooit de tekeningen: die worden op dit vak gemeten. */
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   border-bottom: 1px solid var(--oa-border);
