@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grafblad: schets</title>
+<style>body{margin:24px;background:#1e1e24;color:#EDEBE8;font-family:Inter,"Segoe UI",system-ui,sans-serif}.subtitle{color:#A7A7A8}.options,.cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}.option,.card{border:1px solid #474750;border-radius:8px;padding:10px;display:flex;gap:10px}.card{flex-direction:column}.letter{font-weight:700;color:#FBBF24}.option h3,.card h3{margin:0 0 4px;font-size:14px}.option p,.card p{margin:0;font-size:13px;color:#A7A7A8}</style>
+</head><body>
+<style>
+  .gb { --frame:#2A2A32; --panel:#33333C; --ws:#26262D; --tx:#EDEBE8; --mu:#A7A7A8; --bd:#474750; --ac:#D97706; --act:#FBBF24;
+        --g-invoer:#D97706; --g-lijst:#3B82F6; --g-reken:#14B8A6; --g-logica:#8B5CF6; --g-tekst:#EC4899; --g-geo:#22C55E; --g-py:#0EA5E9;
+        font-family: Inter, "Segoe UI", system-ui, sans-serif; color: var(--tx); }
+  .gb * { box-sizing: border-box; }
+  .gb-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #1d1d22; }
+  .gb-app { position: relative; width: 1120px; height: 600px; display: flex; background: var(--frame); }
+  /* catalogus */
+  .gb-kat { width: 250px; flex: none; background: var(--panel); border-right: 1px solid var(--bd); padding: 12px 10px; position: relative; font-size: 12px; }
+  .gb-zoek { display: flex; align-items: center; gap: 8px; background: var(--ws); border: 1px solid var(--ac); border-radius: 7px; padding: 7px 9px; color: var(--mu); }
+  .gb-zoek b { color: var(--tx); font-weight: 500; }
+  .gb-kop { margin: 14px 4px 6px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--mu); }
+  .gb-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; }
+  .gb-item:hover, .gb-item.hl { background: rgba(255,255,255,.06); }
+  .gb-item .n { flex: 1; }
+  .gb-item .c { color: var(--mu); font-size: 11px; }
+  .gb-groep { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 6px; font-weight: 600; }
+  .gb-groep .pijl { color: var(--mu); width: 10px; }
+  .gb-sub { padding-left: 18px; }
+  .gb-tip { position: absolute; left: 236px; top: 138px; width: 210px; z-index: 5; background: #1f1f25; border: 1px solid var(--bd); border-radius: 8px; padding: 9px 10px; font-size: 11px; color: var(--mu); box-shadow: 0 8px 22px rgba(0,0,0,.45); }
+  .gb-tip b { color: var(--tx); display: block; margin-bottom: 3px; font-size: 12px; }
+  .gb-later { margin-top: 14px; padding: 7px 8px; border: 1px dashed var(--bd); border-radius: 7px; color: var(--mu); font-size: 11px; }
+  /* icoon */
+  .ic { width: 22px; height: 22px; border-radius: 6px; flex: none; display: grid; place-items: center; font: 700 11px/1 "JetBrains Mono", Consolas, monospace; color: #fff; background: var(--g); }
+  .ic.s { width: 18px; height: 18px; border-radius: 5px; font-size: 10px; }
+  /* vlak */
+  .gb-vlak { position: relative; flex: 1; background-color: var(--ws); background-image: radial-gradient(circle, #3a3a44 1px, transparent 1.3px); background-size: 20px 20px; overflow: hidden; }
+  .gb-balk { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; z-index: 3; }
+  .gb-knop { background: var(--panel); border: 1px solid var(--bd); border-radius: 6px; padding: 4px 9px; font-size: 11px; color: var(--tx); }
+  .gb-hint { position: absolute; left: 12px; right: 12px; bottom: 8px; font-size: 11px; color: var(--mu); }
+  .gb-hint kbd { font: 10px "JetBrains Mono", monospace; background: var(--panel); border: 1px solid var(--bd); border-radius: 4px; padding: 1px 4px; color: var(--tx); }
+  .gb-svg { position: absolute; inset: 0; pointer-events: none; }
+  /* groep op het vlak */
+  .gb-grp { position: absolute; border-radius: 12px; background: rgba(217,119,6,.07); border: 1px solid rgba(217,119,6,.45); }
+  .gb-grp .t { position: absolute; left: 12px; top: 8px; font: 600 12px "Space Grotesk", Inter, sans-serif; color: var(--act); display: flex; gap: 6px; align-items: center; }
+  /* node */
+  .nd { position: absolute; background: var(--panel); border: 1px solid var(--bd); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,.35); font-size: 11px; }
+  .nd::before { content: ""; position: absolute; left: 10px; right: 10px; top: -1px; height: 2px; border-radius: 2px; background: var(--g); }
+  .nd.gek { border-color: var(--ac); box-shadow: 0 0 0 2px rgba(217,119,6,.35), 0 6px 18px rgba(0,0,0,.35); }
+  .nd .kp { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px; border-bottom: 1px solid var(--bd); }
+  .nd .kp .tt { flex: 1; min-width: 0; }
+  .nd .kp .tt b { display: block; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nd .kp .tt i { display: block; font-style: normal; font-size: 10px; color: var(--mu); margin-top: -1px; }
+  .oog { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 5px; color: var(--mu); }
+  .oog.aan { color: var(--act); background: rgba(217,119,6,.14); }
+  .rij { position: relative; height: 22px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: var(--mu); }
+  .rij.r { justify-content: flex-end; color: var(--tx); }
+  .veld { margin: 5px 10px; height: 24px; display: flex; align-items: center; padding: 0 8px; background: var(--ws); border: 1px solid var(--bd); border-radius: 5px; font: 11px "JetBrains Mono", Consolas, monospace; color: var(--tx); }
+  .dot { position: absolute; top: 50%; width: 11px; height: 11px; margin-top: -5.5px; border-radius: 50%; border: 2px solid var(--panel); background: var(--p); }
+  .dot.l { left: -6px; } .dot.rr { right: -6px; }
+  .uit { margin: 6px 8px 8px; padding: 6px 8px; background: var(--ws); border-radius: 6px; font-size: 11px; color: var(--mu); display: flex; justify-content: space-between; }
+  .uit b { color: var(--tx); font-weight: 600; font-family: "Inter AEC", Inter, sans-serif; }
+  .code { margin: 5px 10px; padding: 6px 8px; background: #1f1f25; border: 1px solid var(--bd); border-radius: 6px; font: 10.5px/1.55 "JetBrains Mono", Consolas, monospace; color: var(--tx); white-space: pre; }
+  .k { color: #C084FC; } .cm { color: #7c7c86; } .num { color: var(--act); }
+  /* losse tekst */
+  .noot { position: absolute; padding: 10px 12px; border-radius: 8px; background: rgba(237,235,232,.05); border-left: 3px solid var(--mu); font-size: 12px; line-height: 1.45; color: var(--tx); }
+  .noot b { font-family: "Space Grotesk", Inter, sans-serif; }
+  /* kader */
+  .lasso { position: absolute; border: 1.5px dashed var(--ac); background: rgba(217,119,6,.06); border-radius: 4px; }
+  /* waarde op de lijn */
+  .pil { position: absolute; padding: 3px 8px; border-radius: 999px; background: #1f1f25; border: 1px solid var(--g-invoer); font: 600 11px "Inter AEC", Inter, sans-serif; color: var(--act); white-space: nowrap; }
+  /* menu */
+  .menu { position: absolute; width: 222px; background: #1f1f25; border: 1px solid var(--bd); border-radius: 9px; padding: 5px; box-shadow: 0 12px 30px rgba(0,0,0,.5); font-size: 12px; z-index: 4; }
+  .menu .mk { padding: 5px 8px 6px; font-size: 10px; color: var(--mu); text-transform: uppercase; letter-spacing: .07em; }
+  .menu .mi { display: flex; justify-content: space-between; padding: 5px 8px; border-radius: 5px; }
+  .menu .mi span:last-child { color: var(--mu); font: 10px "JetBrains Mono", monospace; }
+  .menu .mi.hl { background: rgba(217,119,6,.18); }
+  .menu .mi.rood { color: #F87171; }
+  .menu hr { border: 0; border-top: 1px solid var(--bd); margin: 4px 2px; }
+  /* nummers */
+  .nr { position: absolute; z-index: 6; width: 20px; height: 20px; border-radius: 50%; background: var(--act); color: #1f1f25; font: 700 11px/20px Inter, sans-serif; text-align: center; box-shadow: 0 0 0 3px rgba(0,0,0,.35); }
+  /* stijlen */
+  .stijlen { display: flex; gap: 14px; flex-wrap: wrap; }
+  .stijl-doek { background: #26262D; border-radius: 8px; height: 200px; position: relative; overflow: hidden; background-image: radial-gradient(circle, #3a3a44 1px, transparent 1.3px); background-size: 20px 20px; }
+  .ndB { position: absolute; background: var(--panel); border-radius: 10px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.35); font-size: 11px; border: 1px solid var(--bd); }
+  .ndB .kp { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px; background: var(--g); color: #fff; }
+  .ndB .kp b { flex: 1; font-size: 12px; }
+  .ndB .ic { background: rgba(255,255,255,.22); }
+  .ndC { position: absolute; display: flex; align-items: stretch; background: var(--panel); border: 1px solid var(--bd); border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,.35); font-size: 11px; }
+  .ndC .bol { width: 46px; display: grid; place-items: center; border-right: 1px solid var(--bd); }
+  .ndC .bol .ic { width: 30px; height: 30px; border-radius: 50%; font-size: 12px; }
+  .ndC .mid { padding: 8px 12px; }
+  .ndC .mid b { display: block; font-size: 12px; }
+  .ndC .mid i { font-style: normal; color: var(--mu); }
+  .ndC .waarde { padding: 8px 12px; display: grid; place-items: center; border-left: 1px solid var(--bd); font: 600 12px "Inter AEC", Inter, sans-serif; }
+</style>
+
+<h2>Grafblad: eerste schets</h2>
+<p class="subtitle">Eén beeld met alles wat je noemde. De oranje nummers staan hieronder uitgelegd. Wat ik gok, staat erbij als gok.</p>
+
+<div class="gb">
+<div class="gb-wrap">
+<div class="gb-app">
+
+  <!-- ── 1. catalogus ── -->
+  <aside class="gb-kat">
+    <div class="nr" style="left:222px;top:4px">1</div>
+    <div class="gb-zoek">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <b>getal</b><span style="margin-left:auto;font-size:10px">Ctrl+K</span>
+    </div>
+
+    <div class="gb-kop">Recent</div>
+    <div class="gb-item"><span class="ic s" style="--g:var(--g-reken)">ƒx</span><span class="n">Codeblok</span></div>
+    <div class="gb-item"><span class="ic s" style="--g:var(--g-py)">Py</span><span class="n">Python</span></div>
+
+    <div class="gb-kop">Alle nodes</div>
+    <div class="gb-groep"><span class="pijl">▾</span><span class="ic s" style="--g:var(--g-invoer)">12</span>Invoer<span class="c" style="margin-left:auto;color:var(--mu);font-weight:400">4</span></div>
+    <div class="gb-sub">
+      <div class="gb-item hl" style="flex-wrap:wrap"><span class="ic s" style="--g:var(--g-invoer)">12</span><span class="n">Getal</span><span class="c">met eenheid</span>
+        <span style="flex-basis:100%;padding:3px 0 1px 26px;font-size:10.5px;line-height:1.35;color:var(--mu)">Een waarde met eenheid, zoals 6 m of 5 kN/m. Sleep naar het vlak, of Enter.</span></div>
+      <div class="gb-item"><span class="ic s" style="--g:var(--g-invoer)">Aa</span><span class="n">Tekst</span></div>
+      <div class="gb-item"><span class="ic s" style="--g:var(--g-invoer)">✓</span><span class="n">Waar/onwaar</span></div>
+      <div class="gb-item"><span class="ic s" style="--g:var(--g-invoer)">◉</span><span class="n">Bekijken</span></div>
+    </div>
+    <div class="gb-groep"><span class="pijl">▸</span><span class="ic s" style="--g:var(--g-lijst)">≡</span>Lijsten<span style="margin-left:auto;color:var(--mu);font-weight:400">22</span></div>
+    <div class="gb-groep"><span class="pijl">▸</span><span class="ic s" style="--g:var(--g-reken)">±</span>Rekenen<span style="margin-left:auto;color:var(--mu);font-weight:400">19</span></div>
+    <div class="gb-groep"><span class="pijl">▸</span><span class="ic s" style="--g:var(--g-logica)">?</span>Logica<span style="margin-left:auto;color:var(--mu);font-weight:400">13</span></div>
+    <div class="gb-groep"><span class="pijl">▸</span><span class="ic s" style="--g:var(--g-tekst)">T</span>Tekst<span style="margin-left:auto;color:var(--mu);font-weight:400">11</span></div>
+    <div class="gb-groep"><span class="pijl">▸</span><span class="ic s" style="--g:var(--g-geo)">◇</span>Geometrie<span style="margin-left:auto;color:var(--mu);font-weight:400">8</span></div>
+    <div class="gb-groep"><span class="pijl">▸</span><span class="ic s" style="--g:var(--g-py)">Py</span>Python<span style="margin-left:auto;color:var(--mu);font-weight:400">1</span></div>
+    <div class="gb-later">+ Pakket met nodes toevoegen (later)</div>
+
+  </aside>
+
+  <!-- ── het vlak ── -->
+  <section class="gb-vlak">
+    <div class="gb-balk"><span class="gb-knop">⤢ Passend</span><span class="gb-knop">3D-voorbeeld</span></div>
+
+    <!-- 3D-voorbeeld vaag op de achtergrond -->
+    <svg class="gb-svg" viewBox="0 0 870 600">
+      <g stroke="rgba(237,235,232,.07)" stroke-width="2" fill="none">
+        <path d="M560 560 L560 430 L700 380 L700 510"/><path d="M700 380 L840 430 L840 560"/>
+        <path d="M560 430 L620 350 L760 300 L840 430"/><path d="M620 350 L700 380"/><path d="M760 300 L700 380"/>
+      </g>
+    </svg>
+
+    <!-- 5. groep -->
+    <div class="gb-grp" style="left:24px;top:56px;width:480px;height:262px">
+      <div class="t"><span style="color:var(--mu)">▾</span>Belasting en moment</div>
+    </div>
+    <div class="nr" style="left:494px;top:46px">5</div>
+
+    <!-- 4. kader en gekozen nodes -->
+    <div class="lasso" style="left:34px;top:84px;width:184px;height:194px"></div>
+    <div class="nr" style="left:24px;top:266px">4</div>
+
+    <!-- verbindingen -->
+    <svg class="gb-svg" viewBox="0 0 870 600">
+      <g fill="none" stroke-width="2">
+        <path d="M204 142 C 240 142, 234 149, 270 149" stroke="rgba(217,119,6,.75)"/>
+        <path d="M204 246 C 245 246, 229 171, 270 171" stroke="rgba(217,119,6,.75)"/>
+        <path d="M480 227 C 540 227, 530 115, 590 115" stroke="#FBBF24" stroke-width="2.6"/>
+        <path d="M490 402 C 560 402, 520 137, 590 137" stroke="rgba(217,119,6,.75)"/>
+      </g>
+    </svg>
+
+    <!-- getal q (gekozen, uitkomst uit) -->
+    <div class="nd gek" style="--g:var(--g-invoer);left:44px;top:92px;width:160px">
+      <div class="kp"><span class="ic" style="--g:var(--g-invoer)">12</span><span class="tt"><b>Lijnlast q</b><i>Getal</i></span>
+        <span class="oog"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A9.8 9.8 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.6 3.4M6.3 6.3C3.9 8 2.5 12 2.5 12S6 19 12 19a9.6 9.6 0 0 0 4.2-1"/></svg></span></div>
+      <div class="rij" style="height:34px;padding:0 0 0 0"><div class="veld" style="flex:1">5 kN/m</div><span class="dot rr" style="--p:var(--g-invoer)"></span></div>
+    </div>
+
+    <!-- getal L (gekozen, uitkomst uit) -->
+    <div class="nd gek" style="--g:var(--g-invoer);left:44px;top:196px;width:160px">
+      <div class="kp"><span class="ic" style="--g:var(--g-invoer)">12</span><span class="tt"><b>Overspanning L</b><i>Getal</i></span>
+        <span class="oog"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A9.8 9.8 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.6 3.4M6.3 6.3C3.9 8 2.5 12 2.5 12S6 19 12 19a9.6 9.6 0 0 0 4.2-1"/></svg></span></div>
+      <div class="rij" style="height:34px;padding:0"><div class="veld" style="flex:1">6 m</div><span class="dot rr" style="--p:var(--g-invoer)"></span></div>
+    </div>
+
+    <!-- codeblok M -->
+    <div class="nd" style="--g:var(--g-reken);left:270px;top:104px;width:210px">
+      <div class="kp"><span class="ic" style="--g:var(--g-reken)">ƒx</span><span class="tt"><b>Moment in het veld</b><i>Codeblok</i></span>
+        <span class="oog aan"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></span></div>
+      <div class="rij"><span class="dot l" style="--p:var(--g-invoer)"></span>q</div>
+      <div class="rij"><span class="dot l" style="--p:var(--g-invoer)"></span>L</div>
+      <div class="code">M = q*L^2/8</div>
+      <div class="rij r">M<span class="dot rr" style="--p:var(--g-invoer)"></span></div>
+      <div class="uit"><span>M</span><b>22,5 kNm</b></div>
+    </div>
+    <div class="nr" style="left:470px;top:94px">2</div>
+
+    <!-- 8. waarde op de verbinding -->
+    <div class="pil" style="left:500px;top:160px">22,5 kNm</div>
+    <div class="nr" style="left:566px;top:150px">8</div>
+
+    <!-- python -->
+    <div class="nd" style="--g:var(--g-py);left:590px;top:70px;width:250px">
+      <div class="kp"><span class="ic" style="--g:var(--g-py)">Py</span><span class="tt"><b>Spanning in de ligger</b><i>Python</i></span>
+        <span class="oog aan"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></span></div>
+      <div class="rij"><span class="dot l" style="--p:var(--g-invoer)"></span>M</div>
+      <div class="rij"><span class="dot l" style="--p:var(--g-invoer)"></span>W</div>
+<div class="code"><span class="cm"># M en W komen binnen met eenheid</span>
+sigma = M / W
+uc = sigma / (<span class="num">235</span> * N/mm2)
+</div>
+      <div class="rij r">sigma<span class="dot rr" style="--p:var(--g-invoer)"></span></div>
+      <div class="rij r">uc<span class="dot rr" style="--p:var(--g-logica)"></span></div>
+      <div class="uit" style="display:block"><div style="display:flex;justify-content:space-between"><span>sigma</span><b>57,8 N/mm²</b></div><div style="display:flex;justify-content:space-between;margin-top:3px"><span>uc</span><b>0,25</b></div></div>
+    </div>
+    <div class="nr" style="left:580px;top:60px">7</div>
+    <div class="nr" style="left:806px;top:60px">3</div>
+
+    <!-- getal W (uitkomst uit) -->
+    <div class="nd" style="--g:var(--g-invoer);left:300px;top:352px;width:190px">
+      <div class="kp"><span class="ic" style="--g:var(--g-invoer)">12</span><span class="tt"><b>W<sub>el</sub> HEA200</b><i>Getal</i></span>
+        <span class="oog"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A9.8 9.8 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.6 3.4M6.3 6.3C3.9 8 2.5 12 2.5 12S6 19 12 19a9.6 9.6 0 0 0 4.2-1"/></svg></span></div>
+      <div class="rij" style="height:34px;padding:0"><div class="veld" style="flex:1">389 cm³</div><span class="dot rr" style="--p:var(--g-invoer)"></span></div>
+    </div>
+
+    <!-- 6. losse tekst -->
+    <div class="noot" style="left:24px;top:350px;width:250px"><b>Aanname</b><br>Ligger op twee steunpunten. Belasting volgens NEN-EN 1991-1-1, gevolgklasse CC2.</div>
+    <div class="nr" style="left:264px;top:340px">6</div>
+
+    <!-- 9. rechtsklikmenu -->
+    <div class="menu" style="left:618px;top:338px">
+      <div class="mk">Spanning in de ligger</div>
+      <div class="mi"><span>Hernoemen</span><span>F2</span></div>
+      <div class="mi hl"><span>Uitkomst verbergen</span><span>H</span></div>
+      <div class="mi"><span>Uitschakelen</span><span></span></div>
+      <div class="mi"><span>Dupliceren</span><span>Ctrl+D</span></div>
+      <div class="mi"><span>Groeperen</span><span>Ctrl+G</span></div>
+      <hr>
+      <div class="mi"><span>Uitleg bij deze node</span><span>F1</span></div>
+      <hr>
+      <div class="mi rood"><span>Verwijderen</span><span>Del</span></div>
+    </div>
+    <div class="nr" style="left:830px;top:328px">9</div>
+
+    <div class="gb-hint"><kbd>slepen</kbd> op leeg: selecteren · <kbd>Alt</kbd>+slepen: 3D draaien · rechts slepen: schuiven · <kbd>Ctrl+G</kbd> groeperen · <kbd>T</kbd> losse tekst · dubbelklik: zoeken</div>
+  </section>
+</div>
+</div>
+</div>
+
+<h3 style="margin-top:22px">Wat je ziet</h3>
+<p class="subtitle">De onderdelen van de schets; gekozen is stijl A.</p>
+<div class="options" data-multiselect>
+  <div class="option" data-choice="1-catalogus"><div class="letter">1</div><div class="content"><h3>Catalogus aan de zijkant</h3><p>Zoeken, groepen met icoon, recent gebruikt. Slepen of Enter zet een node op het vlak. Een vak voor pakketten met nodes is voor later.</p></div></div>
+  <div class="option" data-choice="2-node"><div class="letter">2</div><div class="content"><h3>Nodes met icoon en kleur</h3><p>Elke groep een kleur, elke node een icoon. De bolletjes van de poorten krijgen de kleur van wat erdoor gaat (getal met eenheid, lijst, punt, tekst). De kleuren zijn mijn keuze.</p></div></div>
+  <div class="option" data-choice="3-oog"><div class="letter">3</div><div class="content"><h3>Oogje: uitkomst aan of uit</h3><p>Per node toon of verberg je de uitkomst. Gok: dit bedoelde je met "gegevens aan of uit zetten".</p></div></div>
+  <div class="option" data-choice="4-selectie"><div class="letter">4</div><div class="content"><h3>Selecteren met een kader</h3><p>Slepen op een lege plek trekt een kader, Ctrl+klik voegt toe. Dan verschuif, kopieer of groepeer je ze samen. Mijn voorstel: het 3D-voorbeeld draai je dan met Alt+slepen, want nu is dat slepen op een lege plek.</p></div></div>
+  <div class="option" data-choice="5-groep"><div class="letter">5</div><div class="content"><h3>Groep</h3><p>Een gekleurd kader met een naam om een paar nodes. Schuift als één geheel en is in te klappen.</p></div></div>
+  <div class="option" data-choice="6-tekst"><div class="letter">6</div><div class="content"><h3>Losse tekst</h3><p>Een tekstblok op het vlak, voor aannames en uitleg, zonder poorten.</p></div></div>
+  <div class="option" data-choice="7-python"><div class="letter">7</div><div class="content"><h3>Python-node</h3><p>Eigen code. De ingangen zijn variabelen; wat je aan een naam toewijst, kan een uitgang worden. Waar het draait en hoe de eenheden meegaan, beslissen we nog.</p></div></div>
+  <div class="option" data-choice="8-lijn"><div class="letter">8</div><div class="content"><h3>Waarde op de verbinding</h3><p>Rechtsklik op een lijn: de waarde die erdoor gaat staat erop, met Verwijderen en Node ertussen. Gok: dit bedoelde je met "de connectie met lezing".</p></div></div>
+  <div class="option" data-choice="9-menu"><div class="letter">9</div><div class="content"><h3>Rechtsklikmenu op een node</h3><p>Hernoemen, uitkomst, uitschakelen, dupliceren, groeperen, uitleg, verwijderen. De inhoud is mijn voorstel.</p></div></div>
+</div>
+
+<h3 style="margin-top:26px">Hoe moet een node eruitzien?</h3>
+<p class="subtitle">Dezelfde node in drie stijlen; gekozen is A.</p>
+<div class="cards">
+  <div class="card" data-choice="stijl-a">
+    <div class="card-image"><div class="gb"><div class="stijl-doek">
+      <div class="nd" style="--g:var(--g-reken);left:40px;top:28px;width:210px">
+        <div class="kp"><span class="ic" style="--g:var(--g-reken)">ƒx</span><span class="tt"><b>Moment in het veld</b><i>Codeblok</i></span><span class="oog aan"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></span></div>
+        <div class="rij"><span class="dot l" style="--p:var(--g-invoer)"></span>q</div>
+        <div class="rij"><span class="dot l" style="--p:var(--g-invoer)"></span>L</div>
+        <div class="rij r">M<span class="dot rr" style="--p:var(--g-invoer)"></span></div>
+        <div class="uit"><span>M</span><b>22,5 kNm</b></div>
+      </div>
+    </div></div></div>
+    <div class="card-body"><h3>A · Kleurstreep</h3><p>Rustige kaart, een dun streepje en het icoon in de kleur van de groep. Zoals in het grote beeld.</p></div>
+  </div>
+  <div class="card" data-choice="stijl-b">
+    <div class="card-image"><div class="gb"><div class="stijl-doek">
+      <div class="ndB" style="--g:var(--g-reken);left:40px;top:28px;width:210px">
+        <div class="kp"><span class="ic">ƒx</span><b>Moment in het veld</b><span class="oog" style="color:#fff"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></span></div>
+        <div class="rij"><span class="dot l" style="--p:var(--g-invoer)"></span>q</div>
+        <div class="rij"><span class="dot l" style="--p:var(--g-invoer)"></span>L</div>
+        <div class="rij r">M<span class="dot rr" style="--p:var(--g-invoer)"></span></div>
+        <div class="uit"><span>M</span><b>22,5 kNm</b></div>
+      </div>
+    </div></div></div>
+    <div class="card-body"><h3>B · Gekleurde kop</h3><p>De hele kop in de kleur van de groep. Je ziet van ver wat voor node het is, maar het vlak wordt bonter.</p></div>
+  </div>
+  <div class="card" data-choice="stijl-c">
+    <div class="card-image"><div class="gb"><div class="stijl-doek">
+      <div class="ndC" style="--g:var(--g-reken);left:30px;top:66px">
+        <span class="dot l" style="--p:var(--g-invoer);top:35%"></span><span class="dot l" style="--p:var(--g-invoer);top:65%"></span>
+        <div class="bol"><span class="ic" style="--g:var(--g-reken)">ƒx</span></div>
+        <div class="mid"><b>Moment in het veld</b><i>q, L → M</i></div>
+        <div class="waarde">22,5 kNm</div>
+        <span class="dot rr" style="--p:var(--g-invoer)"></span>
+      </div>
+    </div></div></div>
+    <div class="card-body"><h3>C · Compact</h3><p>Rond, groot icoon, de uitkomst ernaast. Neemt weinig plek, maar de poorten hebben geen naam meer op de node.</p></div>
+  </div>
+</div>
+</body></html>

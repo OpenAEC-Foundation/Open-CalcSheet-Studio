@@ -714,6 +714,7 @@
       "cirkel": "Deze node hangt in een cirkel: zijn uitkomst hangt van zichzelf af.",
       "ingangOntbreekt": "Ingang {{naam}} ontbreekt.",
       "ingangZonderWaarde": "Ingang {{naam}} heeft geen waarde: de node ervoor rekent niet.",
+      "uitgeschakeld": "Uitgeschakeld: deze node rekent niet.",
       "uitgangZonderWaarde": "Uitgang {{naam}} heeft geen waarde.",
       "veld": "{{naam}}: {{tekst}}",
       "reken": "{{tekst}}",
