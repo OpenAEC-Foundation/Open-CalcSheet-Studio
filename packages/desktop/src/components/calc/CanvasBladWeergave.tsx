@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
@@ -65,21 +65,70 @@ interface Sleep {
   bewogen: boolean;
 }
 
-/** Werkruimte: het vel met de eenheden. */
+/** Werkruimte: het vel met de eenheden van een canvas-blad. */
 export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
   const { t } = useTranslation("werkruimte");
-  const bureau = useRapportBureau();
-  const zetBron = useProjectStore((s) => s.zetBron);
-  const zetWaarde = useProjectStore((s) => s.zetWaarde);
+  const zetBladBron = useProjectStore((s) => s.zetBron);
+  const zetBladWaarde = useProjectStore((s) => s.zetWaarde);
   const scope = useProjectScope();
+  const leesBron = useCallback(
+    () => useProjectStore.getState().exemplaren.find((e) => e.id === ex.id)?.source ?? "",
+    [ex.id],
+  );
+  const zetBron = useCallback((bron: string) => zetBladBron(ex.id, bron), [ex.id, zetBladBron]);
+  const zetWaarde = useCallback((naam: string, waarde: string) => zetBladWaarde(ex.id, naam, waarde), [ex.id, zetBladWaarde]);
+  return (
+    <CanvasVlak
+      bladId={ex.id}
+      naam={ex.naam}
+      source={ex.source}
+      waarden={ex.waarden}
+      scope={scope}
+      leesBron={leesBron}
+      zetBron={zetBron}
+      zetWaarde={zetWaarde}
+      kop={<div className="canvas-kop">{ex.naam}</div>}
+      uitleg={t("canvas.uitleg")}
+      vellen
+    />
+  );
+}
+
+/** Wat een canvas nodig heeft: de tekst met merktekens, de invoer, en waar wijzigingen heen gaan. */
+export interface CanvasVlakProps {
+  /** Het blad, voor het overzicht van de uitkomsten; zonder telt de uitkomst daar niet mee. */
+  bladId?: string;
+  naam: string;
+  source: string;
+  waarden: Record<string, string>;
+  scope: Record<string, unknown>;
+  /** De tekst zoals hij nu bewaard is: tussen twee renders kan er al iets zijn veranderd. */
+  leesBron: () => string;
+  zetBron: (bron: string) => void;
+  zetWaarde: (naam: string, waarde: string) => void;
+  /** Boven het vlak op het vel: de kop van het blad, of het formulier van de projectgegevens. */
+  kop: ReactNode;
+  /** De tekst op een leeg vlak. */
+  uitleg: string;
+  /** Een blad op papier: met de vouwen tussen de vellen. Zonder groeit het vlak gewoon mee. */
+  vellen?: boolean;
+}
+
+/** Zoveel lege ruimte staat er onder de onderste eenheid als er geen vellen zijn, in mm. */
+const RUIMTE_ONDER = 40;
+
+/** Het vel met de eenheden: klik op een lege plek voor een nieuwe, sleep om te verplaatsen. */
+export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zetBron, zetWaarde, kop, uitleg, vellen = false }: CanvasVlakProps) {
+  const { t } = useTranslation("werkruimte");
+  const bureau = useRapportBureau();
 
   useEffect(() => zorgVoorKernstijlen(), []);
 
   // Een tekst zonder merktekens (uit de API of de code) wordt hier één eenheid; de
   // doorrekening krijgt daarom steeds de tekst met merktekens.
-  const bron = useMemo(() => schrijfEenheden(leesEenheden(ex.source)), [ex.source]);
+  const bron = useMemo(() => schrijfEenheden(leesEenheden(source)), [source]);
   const eenheden = useMemo(() => leesEenheden(bron), [bron]);
-  const { doorrekening, bezig } = useDoorrekening(ex.id, bron, ex.waarden, scope, ex.naam);
+  const { doorrekening, bezig } = useDoorrekening(bladId, bron, waarden, scope, naam);
   const htmlVan = useMemo(
     () => new Map((doorrekening?.eenheden ?? []).map((u) => [u.id, u.html])),
     [doorrekening],
@@ -133,11 +182,7 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
     el.scrollTop += r.top + a.y * zoom - a.cy;
   }, [zoom]);
 
-  /** De huidige tekst uit de store: tussen twee renders kan er al iets zijn veranderd. */
-  const huidigeBron = useCallback(
-    () => useProjectStore.getState().exemplaren.find((e) => e.id === ex.id)?.source ?? "",
-    [ex.id],
-  );
+  const huidigeBron = leesBron;
 
   /** Zet wat in het open invoerveld staat in het blad; een leeg veld haalt de eenheid weg. */
   const bewaarOpen = useCallback(() => {
@@ -147,8 +192,8 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
     const oud = leesEenheden(nu).find((e) => e.id === o.id);
     const tekst = o.tekst.trim();
     if (oud ? oud.tekst === tekst : !tekst) return;
-    zetBron(ex.id, tekst ? zetEenheid(nu, o.id, { x: o.x, y: o.y, tekst }) : verwijderEenheid(nu, o.id));
-  }, [ex.id, huidigeBron, zetBron]);
+    zetBron(tekst ? zetEenheid(nu, o.id, { x: o.x, y: o.y, tekst }) : verwijderEenheid(nu, o.id));
+  }, [huidigeBron, zetBron]);
 
   // Opslaan vraagt om de laatste stand, ook van een veld dat nog openstaat; net
   // als de open werkmap (store/spreadsheetBlad.ts). Weggaan van het blad bewaart ook.
@@ -163,11 +208,11 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
     const opWijziging = (e: Event) => {
       const veld = e.target as HTMLInputElement | HTMLSelectElement;
       const naam = veld.dataset?.var ?? veld.dataset?.prompt;
-      if (naam && veld.closest("[data-eenheid]")) zetWaarde(ex.id, naam, veld.value);
+      if (naam && veld.closest("[data-eenheid]")) zetWaarde(naam, veld.value);
     };
     el.addEventListener("change", opWijziging);
     return () => el.removeEventListener("change", opWijziging);
-  }, [ex.id, zetWaarde]);
+  }, [zetWaarde]);
 
   /** Van een plek op het scherm naar millimeters op het vel. */
   const naarMm = (clientX: number, clientY: number) => {
@@ -206,8 +251,8 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
     if (!s) return;
     if (s.bewogen && gesleept) {
       // Neerzetten over de vouw kan niet: dan begint hij het volgende vel.
-      const y = naastDeVouw(gesleept.y, maten[eenheid.id]?.h ?? 0);
-      if (gesleept.x !== eenheid.x || y !== eenheid.y) zetBron(ex.id, zetEenheid(huidigeBron(), eenheid.id, { x: gesleept.x, y }));
+      const y = vellen ? naastDeVouw(gesleept.y, maten[eenheid.id]?.h ?? 0) : gesleept.y;
+      if (gesleept.x !== eenheid.x || y !== eenheid.y) zetBron(zetEenheid(huidigeBron(), eenheid.id, { x: gesleept.x, y }));
     } else if (!s.bewogen) {
       zetOpen(eenheid);
     }
@@ -217,24 +262,26 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
   // Altijd een vel meer dan er gevuld is: er blijft ruimte om iets neer te zetten.
   const onderkant = Math.max(0, ...eenheden.map((u) => u.y + (maten[u.id]?.h ?? 0)), open?.y ?? 0, gesleept?.y ?? 0);
   const aantalVellen = velVan(onderkant) + 2;
+  const vlakHoogte = vellen ? velBegin(aantalVellen) : Math.max(onderkant + RUIMTE_ONDER, 2 * RUIMTE_ONDER);
 
   // Een schaal verandert de ruimte in de opmaak niet: die krijgt het vel van .canvas-schaal.
-  useLayoutEffect(() => zetPapierHoogte(papier.current?.offsetHeight ?? 0), [aantalVellen]);
+  // Elke render: ook de kop kan groeien (het formulier van de projectgegevens).
+  useLayoutEffect(() => zetPapierHoogte(papier.current?.offsetHeight ?? 0));
 
   const zichtbaar = eenheden.filter((u) => u.id !== open?.id);
   return (
     <div className="canvas-weergave" ref={schuif}>
       <div className="canvas-schaal" style={{ "--canvas-zoom": zoom, height: papierHoogte * zoom } as CSSProperties}>
       <div ref={papier} className={`canvas-papier print-opmaak${bezig ? " rekent" : ""}`} data-oa-theme="light" style={huisstijlVariabelen(bureau.huisstijl) as CSSProperties}>
-        <div className="canvas-kop">{ex.naam}</div>
+        {kop}
         <div
           ref={vlak}
           className="canvas-vlak print-blad"
-          style={{ width: `${VEL_BREEDTE}mm`, height: `${velBegin(aantalVellen)}mm` }}
+          style={{ width: `${VEL_BREEDTE}mm`, height: `${vlakHoogte}mm` }}
           onClick={opVlakKlik}
         >
-          {eenheden.length === 0 && !open && <p className="canvas-uitleg">{t("canvas.uitleg")}</p>}
-          {Array.from({ length: aantalVellen - 1 }, (_, i) => (
+          {eenheden.length === 0 && !open && <p className="canvas-uitleg">{uitleg}</p>}
+          {vellen && Array.from({ length: aantalVellen - 1 }, (_, i) => (
             <div key={i} className="canvas-vouw" style={{ top: `${velBegin(i + 1)}mm` }}>
               <span>{t("canvas.pagina", { nummer: i + 2 })}</span>
             </div>
@@ -244,7 +291,7 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
             const maat = maten[u.id];
             const html = htmlVan.get(u.id);
             const x = Math.max(0, Math.min(plek.x, VEL_BREEDTE - (maat?.b ?? 0)));
-            const overDeVouw = !!maat && naastDeVouw(plek.y, maat.h) !== plek.y;
+            const overDeVouw = vellen && !!maat && naastDeVouw(plek.y, maat.h) !== plek.y;
             return (
               <div
                 key={u.id}
@@ -264,7 +311,7 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
                 <button
                   className="canvas-weg"
                   title={t("canvas.verwijderen")}
-                  onClick={() => zetBron(ex.id, verwijderEenheid(huidigeBron(), u.id))}
+                  onClick={() => zetBron(verwijderEenheid(huidigeBron(), u.id))}
                 >
                   <Icoon id="edit.delete" uit="calculations" />
                 </button>
