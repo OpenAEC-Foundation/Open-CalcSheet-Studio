@@ -1,11 +1,14 @@
 import { ucTekst } from "./bladLezen";
-import { Fragment, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
+import { useProjectScope } from "../../store/actiefBlad";
 import { PROJECT_VELDEN, kFiVoor, keuzesVoor, vervallenKeuze, type Keuze, type VeldDef } from "../../store/projectGegevens";
+import { PROJECTBLAD, PROJECTBLAD_WAARDEN, projectBladVan, projectWaardenVan } from "../../store/projectBlad";
 import WindAreaMap from "./WindAreaMap";
 import LocatieKiezer from "./LocatieKiezer";
 import EenhedenEditor from "./EenhedenEditor";
+import { CanvasVlak } from "./CanvasBladWeergave";
 import "./ProjectGegevensPanel.css";
 
 /**
@@ -23,13 +26,49 @@ const GROEP_SLEUTELS: Record<string, string> = {
   "Wind (NEN-EN 1991-1-4 + NB)": "wind",
 };
 
+/** Een groep van PROJECT_VELDEN op zijn sleutel uit GROEP_SLEUTELS. */
+function veldenVan(sleutel: string): VeldDef[] {
+  return PROJECT_VELDEN.filter((v) => GROEP_SLEUTELS[v.groep] === sleutel);
+}
+
+/** Eén regel van het formulier: het label links, het veld rechts, de naam in de bladen eronder. */
+function Rij({ label, naam, hint, children, onder }: {
+  label: string;
+  /** De naam waaronder de waarde in de bladen staat. */
+  naam?: string;
+  /** Normverwijzing of gebruiksregel: achter het i-teken, om het formulier kort te houden. */
+  hint?: string;
+  children: ReactNode;
+  /** Onder het veld: een afgeleide waarde of een melding. */
+  onder?: ReactNode;
+}) {
+  return (
+    <label className="pg-rij">
+      <span className="pg-rij-label">
+        <span className="pg-rij-tekst">
+          {label}
+          {hint && <span className="pg-info" title={hint} aria-label={hint}>i</span>}
+        </span>
+        {naam && <code className="pg-var">{naam}</code>}
+      </span>
+      <span className="pg-rij-veld">
+        {children}
+        {onder}
+      </span>
+    </label>
+  );
+}
+
 /**
- * Formulier met de gegevens die voor het héle project gelden.
+ * De projectgegevens: een vel op het canvas. Bovenaan het formulier met wat voor het
+ * héle project geldt (de gevolgklasse vul je één keer in, niet per blad), daaronder
+ * een vlak waarop je zelf iets neerzet, net als op een canvas-blad. Wat daar staat,
+ * rekent vóór elk blad (store/projectBlad.ts): een variabele die je hier maakt, geldt
+ * in het hele project.
  *
- * Wat je hier invult werkt door in elk rekenblad — de gevolgklasse vul je één
- * keer in, niet per blad. Alles wat per constructiedeel verschilt (belastingen,
- * afmetingen, materiaal) hoort níét hier maar in het blad zelf, zodat twee
- * exemplaren van dezelfde module elkaar nooit in de weg zitten.
+ * Alles wat per constructiedeel verschilt (belastingen, afmetingen, materiaal) hoort
+ * níét hier maar in het blad zelf, zodat twee exemplaren van dezelfde module elkaar
+ * nooit in de weg zitten.
  */
 export default function ProjectGegevensPanel() {
   const { t } = useTranslation("werkruimte");
@@ -38,30 +77,15 @@ export default function ProjectGegevensPanel() {
   const projectNaam = useProjectStore((s) => s.projectNaam);
   const zetProjectNaam = useProjectStore((s) => s.zetProjectNaam);
   const exemplaren = useProjectStore((s) => s.exemplaren);
+  const scope = useProjectScope();
   // De windgebied-kaart is een hulpmiddel, geen invoerveld — inklapbaar zodat
   // het formulier compact blijft voor wie het gebied al weet.
-  const [kaartOpen, setKaartOpen] = useState(true);
-
-  const groepen = useMemo(() => {
-    const uit: { naam: string; velden: VeldDef[] }[] = [];
-    for (const veld of PROJECT_VELDEN) {
-      let groep = uit.find((g) => g.naam === veld.groep);
-      if (!groep) {
-        groep = { naam: veld.groep, velden: [] };
-        uit.push(groep);
-      }
-      groep.velden.push(veld);
-    }
-    return uit;
-  }, []);
+  const [kaartOpen, setKaartOpen] = useState(false);
 
   const cc = parseFloat(gegevens.CC ?? "2");
   const kFi = kFiVoor(Number.isFinite(cc) ? cc : 2);
 
-  const groepNaam = (naam: string) => {
-    const sleutel = GROEP_SLEUTELS[naam];
-    return sleutel ? t(`gegevens.groepen.${sleutel}`, { defaultValue: naam }) : naam;
-  };
+  const groepNaam = (sleutel: string) => t(`gegevens.groepen.${sleutel}`);
   const veldTekst = (veld: VeldDef, deel: "label" | "hint") =>
     t(`gegevens.velden.${veld.naam}.${deel}`, { defaultValue: veld[deel] ?? "" });
   // Dezelfde keuzes als keuzesVoor, met vertaalde labels. Een vervallen of
@@ -81,100 +105,120 @@ export default function ProjectGegevensPanel() {
     });
   };
 
-  return (
-    <div className="pg-panel">
-      <div className="pg-kop">
-        <h1>{t("algemeen.projectgegevens")}</h1>
-        <p>
-          {exemplaren.length === 0
-            ? t("gegevens.introGeen")
-            : t("gegevens.intro", { count: exemplaren.length })}
-        </p>
-      </div>
-
-      <div className="pg-groep">
-        <h2>{t("gegevens.bestand")}</h2>
-        <label className="pg-veld">
-          <span className="pg-label">{t("gegevens.projectnaam")}</span>
-          <input
-            type="text"
-            value={projectNaam}
-            placeholder={t("gegevens.projectnaamPlaceholder")}
-            onChange={(e) => zetProjectNaam(e.target.value)}
-          />
-          <span className="pg-hint">{t("gegevens.projectnaamHint")}</span>
-        </label>
-      </div>
-
-      {groepen.map((groep) => (
-        <div className="pg-groep" key={groep.naam}>
-          <h2>{groepNaam(groep.naam)}</h2>
-          {groep.velden.map((veld) => (
-            <Fragment key={veld.naam}>
-            <label className="pg-veld">
-              <span className="pg-label">
-                {veldTekst(veld, "label")}
-                <code className="pg-var">{veld.naam}</code>
+  const veld = (v: VeldDef) => {
+    const ruw = gegevens[v.naam] ?? v.standaard;
+    return (
+      <Rij
+        key={v.naam}
+        label={veldTekst(v, "label")}
+        naam={v.naam === "eenheden" || v.naam === "rekenwijze" ? undefined : v.naam}
+        hint={v.hint ? veldTekst(v, "hint") : undefined}
+        onder={
+          <>
+            {vervallenKeuze(v, ruw) && <span className="pg-melding">{t("gegevens.vervallen")}</span>}
+            {v.naam === "CC" && (
+              <span className="pg-afgeleid">
+                {t("gegevens.afgeleid")} K<sub>FI</sub> = {ucTekst(kFi)}
               </span>
-              {veld.type === "keuze" ? (
-                // Een waarde die niet (meer) tussen de keuzes staat, komt er als
-                // extra keuze bij; anders toont de lijst stil de eerste keuze.
-                <select
-                  value={gegevens[veld.naam] ?? veld.standaard}
-                  onChange={(e) => zetGegeven(veld.naam, e.target.value)}
-                >
-                  {keuzesVoor(veld, gegevens[veld.naam] ?? veld.standaard).map((o) => (
-                    <option key={o.waarde} value={o.waarde}>
-                      {keuzeLabel(veld, o)}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={gegevens[veld.naam] ?? ""}
-                  onChange={(e) => zetGegeven(veld.naam, e.target.value)}
-                />
-              )}
-              {veld.hint && <span className="pg-hint">{veldTekst(veld, "hint")}</span>}
-              {vervallenKeuze(veld, gegevens[veld.naam] ?? "") && (
-                <span className="pg-afgeleid">{t("gegevens.vervallen")}</span>
-              )}
-              {veld.naam === "CC" && (
-                <span className="pg-afgeleid">
-                  {t("gegevens.afgeleid")} K<sub>FI</sub> = {ucTekst(kFi)}
-                </span>
-              )}
-            </label>
-            {veld.naam === "eenheden" && <EenhedenEditor />}
-            {veld.naam === "locatie" && <LocatieKiezer />}
-            {veld.naam === "windgebied" && (
-              <div className="pg-windkaart">
-                <button
-                  type="button"
-                  className="pg-windkaart-toggle"
-                  onClick={() => setKaartOpen((o) => !o)}
-                >
-                  <svg className={`panel-section-chevron${kaartOpen ? " open" : ""}`} width="10" height="10" viewBox="0 0 10 10"
-                    fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="2,3 5,6 8,3" />
-                  </svg>
-                  {t("gegevens.kaart")}
-                </button>
-                {kaartOpen && (
-                  <WindAreaMap
-                    initialAddress={gegevens.locatie ?? ""}
-                    onWindGebiedChange={(gebied) => {
-                      if (gebied) zetGegeven("windgebied", String(gebied));
-                    }}
-                  />
-                )}
-              </div>
             )}
-            </Fragment>
-          ))}
+          </>
+        }
+      >
+        {v.type === "keuze" ? (
+          // Een waarde die niet (meer) tussen de keuzes staat, komt er als
+          // extra keuze bij; anders toont de lijst stil de eerste keuze.
+          <select value={ruw} onChange={(e) => zetGegeven(v.naam, e.target.value)}>
+            {keuzesVoor(v, ruw).map((o) => (
+              <option key={o.waarde} value={o.waarde}>
+                {keuzeLabel(v, o)}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input type="text" value={gegevens[v.naam] ?? ""} onChange={(e) => zetGegeven(v.naam, e.target.value)} />
+        )}
+      </Rij>
+    );
+  };
+
+  // Het vlak met de eigen elementen: de rekentekst en invoer staan in de projectgegevens.
+  const leesBron = useCallback(() => projectBladVan(useProjectStore.getState().gegevens), []);
+  const zetBron = useCallback((bron: string) => zetGegeven(PROJECTBLAD, bron), [zetGegeven]);
+  const zetWaarde = useCallback(
+    (naam: string, waarde: string) => {
+      const nu = projectWaardenVan(useProjectStore.getState().gegevens);
+      zetGegeven(PROJECTBLAD_WAARDEN, JSON.stringify({ ...nu, [naam]: waarde }));
+    },
+    [zetGegeven],
+  );
+  const ruweWaarden = gegevens[PROJECTBLAD_WAARDEN];
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- alleen de invoer zelf telt
+  const waarden = useMemo(() => projectWaardenVan(gegevens), [ruweWaarden]);
+
+  const formulier = (
+    <div className="pg-formulier">
+      <header className="pg-kop">
+        <h1>{t("algemeen.projectgegevens")}</h1>
+        <p>{exemplaren.length === 0 ? t("gegevens.introGeen") : t("gegevens.intro", { count: exemplaren.length })}</p>
+      </header>
+
+      <section className="pg-vak">
+        <h2>{groepNaam("project")}</h2>
+        <div className="pg-rijen pg-twee">
+          <Rij label={t("gegevens.projectnaam")} hint={t("gegevens.projectnaamHint")}>
+            <input
+              type="text"
+              value={projectNaam}
+              placeholder={t("gegevens.projectnaamPlaceholder")}
+              onChange={(e) => zetProjectNaam(e.target.value)}
+            />
+          </Rij>
+          {veldenVan("project").map(veld)}
         </div>
-      ))}
+        <div className="pg-onder">
+          <LocatieKiezer />
+        </div>
+      </section>
+
+      <div className="pg-naast">
+        <section className="pg-vak">
+          <h2>{groepNaam("grondslagen")}</h2>
+          <div className="pg-rijen">{veldenVan("grondslagen").map(veld)}</div>
+        </section>
+        <section className="pg-vak">
+          <h2>{groepNaam("wind")}</h2>
+          <div className="pg-rijen">{veldenVan("wind").map(veld)}</div>
+          <button type="button" className="pg-windkaart-toggle" onClick={() => setKaartOpen((o) => !o)}>
+            <svg className={`panel-section-chevron${kaartOpen ? " open" : ""}`} width="10" height="10" viewBox="0 0 10 10"
+              fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="2,3 5,6 8,3" />
+            </svg>
+            {t("gegevens.kaart")}
+          </button>
+        </section>
+      </div>
+      {kaartOpen && (
+        <section className="pg-vak pg-windkaart">
+          <WindAreaMap
+            initialAddress={gegevens.locatie ?? ""}
+            onWindGebiedChange={(gebied) => {
+              if (gebied) zetGegeven("windgebied", String(gebied));
+            }}
+          />
+        </section>
+      )}
+
+      <div className="pg-naast">
+        <section className="pg-vak">
+          <h2>{groepNaam("rekenwijze")}</h2>
+          <div className="pg-rijen">{veldenVan("rekenwijze").map(veld)}</div>
+        </section>
+        <section className="pg-vak">
+          <h2>{groepNaam("eenheden")}</h2>
+          <div className="pg-rijen">{veldenVan("eenheden").map(veld)}</div>
+          <EenhedenEditor />
+        </section>
+      </div>
 
       <p className="pg-voet">
         <Trans
@@ -184,6 +228,25 @@ export default function ProjectGegevensPanel() {
           components={{ code: <code /> }}
         />
       </p>
+
+      <header className="pg-eigen">
+        <h2>{t("gegevens.eigenKop")}</h2>
+        <p>{t("gegevens.eigenUitleg")}</p>
+      </header>
     </div>
+  );
+
+  return (
+    <CanvasVlak
+      naam={t("algemeen.projectgegevens")}
+      source={gegevens[PROJECTBLAD] ?? ""}
+      waarden={waarden}
+      scope={scope}
+      leesBron={leesBron}
+      zetBron={zetBron}
+      zetWaarde={zetWaarde}
+      kop={formulier}
+      uitleg={t("gegevens.eigenLeeg")}
+    />
   );
 }

@@ -181,6 +181,9 @@
     "voet": "In a sheet you can use these names directly, for example <code>{{voorbeeld1}}</code> or <code>{{voorbeeld2}}</code>. A sheet that assigns the name itself overrides the project value for that sheet only.",
     "vervallenKeuze": "{{label}} — discontinued option, calculated as {{vervanger}}",
     "onbekendeKeuze": "{{waarde}} — unknown option",
+    "eigenKop": "Own project data",
+    "eigenUitleg": "Add what applies to the whole project: a value, an input field, a formula or text. A variable you create here applies in every sheet.",
+    "eigenLeeg": "Click an empty spot to add something, for example ψ_0 = 0.7 or h_floor = ?{3} m",
     "groepen": {
       "eenheden": "Units",
       "rekenwijze": "Calculation method",

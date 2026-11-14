@@ -12,6 +12,7 @@ import { bouwKern } from './kernBlok.js';
 import { FemModel, femWaarde, femStrook, femSvg, femGrootheid, FEM_EENHEID } from './femResultaat.js';
 import { bouwJsBlok } from './jsBlok.js';
 import { leesVerwijzing, verwijzingNaam, verwijzingenInMelding } from './verwijzing.js';
+import { parse } from './parser.js';
 import { plaatOplossing, plaatSamenvatting, plaatDoorbuiging, plaatSvg, type PlaatInvoer } from './plaat.js';
 import {
   liggerOplossing, liggerReacties, liggerOmhullende, liggerOmhullendeReacties, liggerExtremen,
@@ -1476,6 +1477,7 @@ function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T
     for (const e of opties.eigenEenheden ?? []) {
       if (geldigeEenheidNaam(e.naam)) maakEenheid(e.naam, e.uitdrukking, scope, stand);
     }
+    rekenProjectDoor(scope, opties, stand);
     return doe(stand);
   } finally {
     currentAngleMode = appModus;
@@ -1506,6 +1508,29 @@ export interface EvalOpties {
   fem?: { versie?: string; schemas?: Record<string, string> };
   /** De taal van de vaste woorden in de uitvoer, zoals `nl` of `en`. */
   taal?: string;
+  /**
+   * De eigen rekentekst van de projectgegevens, met de invoer daarvan. Hij rekent vóór
+   * elk blad, zodat wat daar staat (`ψ_0 = 0,7`, `h_verd = ?{3} m`) in elk blad geldt.
+   * Een blad mag een naam gewoon overschrijven, net als bij de vaste projectgegevens.
+   */
+  project?: { bron: string; waarden?: Record<string, string> };
+}
+
+/**
+ * Rekent de eigen rekentekst van het project door in de scope van het blad. Een fout
+ * daarin laat het blad gewoon rekenen: de projectpagina toont hem zelf.
+ */
+function rekenProjectDoor(scope: Scope, opties: EvalOpties, stand: Stand): void {
+  const bron = opties.project?.bron ?? '';
+  if (!bron.trim()) return;
+  try {
+    const nodes = parse(bron, { eenheden: (opties.eigenEenheden ?? []).map((e) => e.naam) });
+    evaluateNodes(nodes, scope, opties.project?.waarden ?? {}, stand);
+  } catch {
+    /* zie hierboven */
+  }
+  delete scope[BREAK_FLAG];
+  delete scope[CONTINUE_FLAG];
 }
 
 /** Het stelsel van het blad dat nu doorgerekend wordt (zie evaluate). */
