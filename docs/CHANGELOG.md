@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Nieuwe module: poer op drie of vier palen (gewapend beton, NEN-EN 1992-1-1 met de NB), naast de tweepaalspoer. Vier palen in een rechthoek onder een rechthoekige poer, of drie palen in een gelijkzijdige driehoek onder een driehoekige poer met afgeschuinde hoeken. De kolom draagt een normaalkracht en momenten om beide assen; de paalreacties volgen daaruit, met de paalafwijking. Het blad rekent een ruimtelijk staafwerk met trekbanden over de palen en toetst de banden, de minimum- en maximumwapening, de knopen onder de kolom en boven de paal, de dwarskracht (bovengrens en V<sub>Rd,c</sub> met β), de pons langs kolom en paal, de verankering en ombuiging, de scheurwijdte, de huidwapening, de dekking en de detaillering. Met een plattegrond, een 3D-beeld van de korf, de uitvoer in het Engels, en de toetsset in docs/meerpaalspoer-toetsing.md
+
 ## v2026.46.1 — 2026-11-12
 
 - De server van Open FEM Studio in een installer heeft zijn licentie (GNU AGPL-3.0), de vermeldingen van derden en een verwijzing naar zijn broncode naast zich, en Instellingen › Over toont ze. De broncode van precies die versie staat bij de release, naast de installers

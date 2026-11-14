@@ -82,7 +82,7 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 
 ## Modules and library
 
-Modules are ready-made sheets with an input screen: a **timber joist floor** and a **beam in timber or steel** to EN 1995-1-1 and EN 1993-1-1, and a **two-pile cap** to EN 1992-1-1, with the Dutch national annex. The [online module library](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) can add modules without a new release; so far it holds the floor. Every other sheet with input, a module from that library included, gets an input form built from its own fields next to the worked-out sheet. See [how the floor check works](docs/balklaag-toetsing.md) and [the pile cap check](docs/tweepaalspoer-toetsing.md).
+Modules are ready-made sheets with an input screen: a **timber joist floor** and a **beam in timber or steel** to EN 1995-1-1 and EN 1993-1-1, a **two-pile cap** and a **cap on three or four piles** to EN 1992-1-1, with the Dutch national annex. The [online module library](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) can add modules without a new release; so far it holds the floor. Every other sheet with input, a module from that library included, gets an input form built from its own fields next to the worked-out sheet. See [how the floor check works](docs/balklaag-toetsing.md), [the pile cap check](docs/tweepaalspoer-toetsing.md) and [the three and four pile cap check](docs/meerpaalspoer-toetsing.md).
 
 The two-pile cap has a 3D study model next to its drawing. It shows the cap, the piles, the column and every bar, and follows each field and blue dimension at once. **Add module** shows a picture for every choice, from a blank drawing to a Marimo notebook.
 
@@ -118,7 +118,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **76 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **77 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
@@ -129,7 +129,7 @@ Count sources: the files named above and `ls scripts/check-*.mjs`. A module stat
 ## Current limitations
 
 - **The weights library is not complete.** It holds what could be found with a source. Several large suppliers publish no readable weights and are missing, and sheets get replaced: check the sheet of the product you actually use.
-- **Check the results yourself.** The beam, the two-pile cap and section stresses have the status *to be checked*. The app does not replace the judgment of a structural engineer.
+- **Check the results yourself.** The beam, the pile caps and section stresses have the status *to be checked*. The app does not replace the judgment of a structural engineer.
 - **Jupyter and Marimo are only tested on Windows.** On macOS and Linux the sheet will probably not start a kernel, because the webview there limits service workers. Saved files and printing do work.
 - **Notebooks have no network.** `%pip install` does not work, and libraries that rely on JavaScript in their output (plotly, bokeh, ipywidgets) show nothing. That is a deliberate choice for now.
 - **A running cell cannot be stopped.** Marimo also has no SQL cells and follows the dark or light theme only when it loads.
