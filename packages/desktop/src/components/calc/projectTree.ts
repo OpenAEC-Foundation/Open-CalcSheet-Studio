@@ -94,9 +94,10 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-beton",
     label: "Beton",
     defaultExpanded: true,
-    count: 1,
+    count: 2,
     children: [
       { kind: "item", id: "sheet-tweepaalspoer", label: "Tweepaalspoer (gewapend beton)", templateId: "tweepaalspoer", status: "controleren" },
+      { kind: "item", id: "sheet-meerpaalspoer", label: "Poer op drie of vier palen (gewapend beton)", templateId: "meerpaalspoer", status: "controleren" },
     ],
   },
 ];
