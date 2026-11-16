@@ -126,8 +126,8 @@ kop("model.ts — standaardrapport");
   gelijk("windcoëfficiënten", r.belastingen.wind.coefficienten.map((c) => c.c), ["0,04", "0,40", "0,80", "1,10"]);
   gelijk("c_s·c_d", r.belastingen.wind.cscd, "1");
   gelijk("belastingklassen", r.belastingen.klassen, [
-    { categorie: "A-vloer", lichteScheidingswanden: "0,80", dakhelling: "", qlast: "" },
-    { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: "2,0" },
+    { categorie: "A-vloer", lichteScheidingswanden: "0,80", dakhelling: "", qlast: "", symbool: "q_k1" },
+    { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: "2,0", symbool: "q_k2" },
   ]);
   gelijk("geen opbouwen", [r.belastingen.vloerenDaken.length, r.belastingen.wanden.length], [0, 0]);
   gelijk("bureau leeg", r.bureau, leegBureau());
@@ -196,7 +196,7 @@ kop("model.ts — normaliseerRapport");
   gelijk("ontbrekende lijst → standaard", r.uitgangspunten.materialen.length, 6);
   gelijk("wind: hoogte bewaard, c_s·c_d standaard", [r.belastingen.wind.gebouwhoogte, r.belastingen.wind.cscd], ["9", "1"]);
   gelijk("opbouwen gefilterd", r.belastingen.vloerenDaken,
-    [{ soort: "vlak", naam: "Dak", lagen: [{ naam: "dakpannen", d: "", rho: "", p: "0,48" }] }]);
+    [{ soort: "vlak", naam: "Dak", lagen: [{ naam: "dakpannen", d: "", rho: "", p: "0,48" }], symbool: "g_v1" }]);
   gelijk("geen lijst → standaard (leeg)", r.belastingen.wanden, []);
   gelijk("toelichting: alleen tekst", r.toelichting, { "ex-1": "Eigen toelichting." });
   gelijk("inHoofdstuk: alleen ja/nee", r.inHoofdstuk, { "ex-1": true });

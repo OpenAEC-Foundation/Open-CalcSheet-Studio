@@ -19,7 +19,7 @@ import {
 import { useProjectStore } from "../../../store/projectStore";
 import { getalTekst, verplaatst } from "./hulp";
 import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
-import OpbouwEditor from "./OpbouwEditor";
+import BelastingCanvas from "./BelastingCanvas";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
 import { Afgeleid, Kop, Sectie, Veld, useRapport } from "./velden";
@@ -203,8 +203,7 @@ export default function BelastingenSectie() {
 
       <div className="rapport-knoop">
         <Kop id="blijvend" />
-        <OpbouwEditor groep="vloerenDaken" titel={t("belastingen.vloerenDaken")} />
-        <OpbouwEditor groep="wanden" titel={t("belastingen.wanden")} />
+        <BelastingCanvas />
       </div>
     </Sectie>
   );
@@ -258,6 +257,9 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
             ))}
           </optgroup>
         </select>
+        {regel.symbool && (
+          <code className="bc-symbool" title={t("blokken.inBladen", { symbool: regel.symbool })}>{regel.symbool}</code>
+        )}
         <button
           type="button"
           className="rapport-icoon"

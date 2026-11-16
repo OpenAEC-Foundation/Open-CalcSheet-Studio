@@ -18,6 +18,9 @@ import { pxPerMm } from "./paginering";
 import { schoonUitwerking } from "./uitwerkingOpschonen";
 import "katex/dist/katex.min.css";
 import "./PrintDocument.css";
+import { belastingBronnen, type Belastingbron } from "../../rapport/belastingBronnen";
+import { isLastBlok, lastSymbolen, ruimLastOp } from "../../store/lastBlok";
+import LastBlokFormulier, { nieuwLastBlok } from "./LastBlokFormulier";
 import "./CanvasBladWeergave.css";
 
 /*
@@ -77,6 +80,10 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
   );
   const zetBron = useCallback((bron: string) => zetBladBron(ex.id, bron), [ex.id, zetBladBron]);
   const zetWaarde = useCallback((naam: string, waarde: string) => zetBladWaarde(ex.id, naam, waarde), [ex.id, zetBladWaarde]);
+  // De belastingen uit hoofdstuk 5 van het rapport: daaruit kiest een lastblok.
+  const belastingen = useProjectStore((s) => s.rapport.belastingen);
+  const rapportTaal = useProjectStore((s) => s.rapport.taal);
+  const bronnen = useMemo(() => belastingBronnen(belastingen, rapportTaal).bronnen, [belastingen, rapportTaal]);
   return (
     <CanvasVlak
       bladId={ex.id}
@@ -90,6 +97,7 @@ export function CanvasBladWeergave({ ex }: { ex: Exemplaar }) {
       kop={<div className="canvas-kop">{ex.naam}</div>}
       uitleg={t("canvas.uitleg")}
       vellen
+      bronnen={bronnen}
     />
   );
 }
@@ -112,13 +120,18 @@ export interface CanvasVlakProps {
   uitleg: string;
   /** Een blad op papier: met de vouwen tussen de vellen. Zonder groeit het vlak gewoon mee. */
   vellen?: boolean;
+  /**
+   * De belastingen uit hoofdstuk 5 van het rapport. Met deze lijst kan het canvas
+   * lastblokken maken en bewerken (`@last`, LastBlokFormulier.tsx).
+   */
+  bronnen?: readonly Belastingbron[];
 }
 
 /** Zoveel lege ruimte staat er onder de onderste eenheid als er geen vellen zijn, in mm. */
 const RUIMTE_ONDER = 40;
 
 /** Het vel met de eenheden: klik op een lege plek voor een nieuwe, sleep om te verplaatsen. */
-export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zetBron, zetWaarde, kop, uitleg, vellen = false }: CanvasVlakProps) {
+export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zetBron, zetWaarde, kop, uitleg, vellen = false, bronnen }: CanvasVlakProps) {
   const { t } = useTranslation("werkruimte");
   const bureau = useRapportBureau();
 
@@ -222,8 +235,45 @@ export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zet
     return { x: (clientX - r.left) / schaal, y: (clientY - r.top) / schaal };
   };
 
+  // Een lastblok staat open als formulier, tenzij je verder wilt als gewone tekst.
+  const [alsTekst, zetAlsTekst] = useState(false);
+  const formulier = !!open && !!bronnen && !alsTekst && isLastBlok(open.tekst);
+  const sluitOpen = () => {
+    // Een formulier dat dichtgaat laat geen halve regels achter; een leeg blok verdwijnt.
+    const o = openRef.current;
+    if (o && formulier) openRef.current = { ...o, tekst: ruimLastOp(o.tekst) ?? "" };
+    bewaarOpen();
+    zetAlsTekst(false);
+    zetOpen(null);
+  };
+
+  /** Het formulier schrijft elke wijziging meteen in het blad: er gaat niets verloren als je ergens anders klikt. */
+  const wijzigLast = (tekst: string) => {
+    if (!open) return;
+    zetOpen({ ...open, tekst });
+    zetBron(zetEenheid(huidigeBron(), open.id, { x: open.x, y: open.y, tekst }));
+  };
+
+  /** Een nieuw lastblok, onder alles wat er al staat. */
+  const nieuweLast = () => {
+    bewaarOpen();
+    const nu = huidigeBron();
+    const bestaand = leesEenheden(nu);
+    const onder = Math.max(0, ...bestaand.map((u) => u.y + (maten[u.id]?.h ?? 10)));
+    const y = opRaster(bestaand.length ? onder + 2 * 5 : 5);
+    const id = nieuwId(new Set(bestaand.map((u) => u.id)));
+    const tekst = nieuwLastBlok(lastSymbolen(nu));
+    zetBron(zetEenheid(nu, id, { x: 0, y, tekst }));
+    zetAlsTekst(false);
+    zetOpen({ id, x: 0, y, tekst });
+  };
+
   const opVlakKlik = (e: ReactMouseEvent) => {
-    if ((e.target as HTMLElement).closest(".canvas-eenheid, .canvas-invoer")) return;
+    if ((e.target as HTMLElement).closest(".canvas-eenheid, .canvas-invoer, .lb")) return;
+    if (formulier) {
+      sluitOpen();
+      return;
+    }
     const mm = naarMm(e.clientX, e.clientY);
     const { x, y } = klemOpVel(opRaster(mm.x), opRaster(mm.y));
     zetOpen({ id: nieuwId(new Set(eenheden.map((u) => u.id))), x, y, tekst: "" });
@@ -271,6 +321,12 @@ export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zet
   const zichtbaar = eenheden.filter((u) => u.id !== open?.id);
   return (
     <div className="canvas-weergave" ref={schuif}>
+      {bronnen && (
+        <div className="canvas-balk">
+          <button type="button" title={t("lastblok.nieuwUitleg")} onClick={nieuweLast}>+ {t("lastblok.nieuw")}</button>
+          <span>{t("lastblok.balkUitleg")}</span>
+        </div>
+      )}
       <div className="canvas-schaal" style={{ "--canvas-zoom": zoom, height: papierHoogte * zoom } as CSSProperties}>
       <div ref={papier} className={`canvas-papier print-opmaak${bezig ? " rekent" : ""}`} data-oa-theme="light" style={huisstijlVariabelen(bureau.huisstijl) as CSSProperties}>
         {kop}
@@ -318,7 +374,24 @@ export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zet
               </div>
             );
           })}
-          {open && (
+          {open && formulier && (
+            <div style={{ position: "absolute", left: `${Math.max(0, Math.min(open.x, VEL_BREEDTE - 150))}mm`, top: `${open.y}mm`, width: "150mm" }}>
+              <LastBlokFormulier
+                tekst={open.tekst}
+                bronnen={bronnen ?? []}
+                uitkomst={htmlVan.get(open.id) ? <Uitkomst html={htmlVan.get(open.id)!} /> : undefined}
+                onWijzig={wijzigLast}
+                onKlaar={sluitOpen}
+                onVerwijder={() => {
+                  zetBron(verwijderEenheid(huidigeBron(), open.id));
+                  openRef.current = null;
+                  zetOpen(null);
+                }}
+                onAlsTekst={() => zetAlsTekst(true)}
+              />
+            </div>
+          )}
+          {open && !formulier && (
             <textarea
               className="canvas-invoer"
               autoFocus
@@ -330,6 +403,7 @@ export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zet
               onChange={(e) => zetOpen({ ...open, tekst: e.target.value })}
               onBlur={() => {
                 bewaarOpen();
+                zetAlsTekst(false);
                 zetOpen(null);
               }}
               onKeyDown={(e) => {

@@ -14,6 +14,8 @@
  * Puur en zonder React: de rekenworker en de controlescripts laden dit bestand.
  */
 import type { ProjectGegevens } from "./projectGegevens";
+import { belastingProject } from "../rapport/belastingBronnen.ts";
+import type { Belastingen } from "../rapport/model.ts";
 
 export const PROJECTBLAD = "projectblad";
 export const PROJECTBLAD_WAARDEN = "projectblad_waarden";
@@ -34,8 +36,28 @@ export function projectWaardenVan(g: ProjectGegevens): Record<string, string> {
   }
 }
 
-/** Wat de rekenkern vóór elk blad rekent; zonder eigen elementen niets. */
+/** De eigen elementen van de projectgegevens als projecttekst; zonder eigen elementen niets. */
 export function projectOpties(g: ProjectGegevens): { bron: string; waarden: Record<string, string> } | undefined {
   const bron = projectBladVan(g);
   return bron.trim() ? { bron, waarden: projectWaardenVan(g) } : undefined;
+}
+
+/** Wat de rekenkern vóór elk blad rekent (`EvalOpties.project`). */
+export interface ProjectTekst {
+  bron: string;
+  waarden: Record<string, string>;
+  /** De naam van een belasting bij zijn symbool, voor een lastblok. */
+  namen: Record<string, string>;
+}
+
+/**
+ * De hele projecttekst: eerst de belastingen uit hoofdstuk 5 van het rapport
+ * (rapport/belastingBronnen.ts), dan de eigen elementen van de projectgegevens, die de
+ * belastingen dus mogen gebruiken. Niets te rekenen: undefined.
+ */
+export function projectTekstVan(g: ProjectGegevens, belastingen?: Belastingen, taal?: string): ProjectTekst | undefined {
+  const lasten = belastingen ? belastingProject(belastingen, taal) : { bron: "", namen: {} };
+  const eigen = projectOpties(g);
+  const bron = [lasten.bron, eigen?.bron ?? ""].filter((s) => s.trim()).join("\n");
+  return bron ? { bron, waarden: eigen?.waarden ?? {}, namen: lasten.namen } : undefined;
 }
