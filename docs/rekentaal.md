@@ -144,7 +144,9 @@ q_Ed = 1.2*q_L1,G + 1.5*q_L1,Q
   symbool, daarna de kolommen b, l, p_rep, G en Q. Per regel: de omschrijving, de eerste
   maat (b), de tweede (l; bij een lijnlast zonder tweede maat een 1), de belasting (p_rep)
   en de bijdrage in de kolom G of Q. Een kolom zet zijn eenheid in de kop als elke cel
-  dezelfde heeft; anders staat de eenheid bij de cel. Onder de tabel staat de som: Σ, G, Q
+  dezelfde heeft; anders staat de eenheid bij de cel. Een regel zonder omschrijving die
+  geen belasting uit het project is, heeft een witte cel. Getallen in een kolom staan met
+  hun decimaalteken onder elkaar. Onder de tabel staat de som: Σ, G, Q
   en de eenheid. De tabel staat ook op papier en in het eenhedenstelsel.
 - **Waar:** `packages/core/src/lastBlok.ts`; `leesLastBlok` en `schrijfLastBlok` lezen en
   schrijven het blok als structuur, zonder te rekenen. De controle:

@@ -77,7 +77,9 @@ const alle = (nodes, uit = []) => {
 const lastVan = (nodes) => alle(nodes).find((n) => n.type === "last");
 const getal = (w, eenheid) => (w && typeof w.toNumber === "function" ? w.toNumber(eenheid) : Number(w));
 /** Het blok in de uitwerking, zonder de formules eromheen. */
-const blokHtml = (html) => html.match(/<div class="calc-last[^]*?<\/table><\/div>|<div class="calc-last[^]*?<\/div>/)?.[0] ?? "";
+const blokRuw = (html) => html.match(/<div class="calc-last[^]*?<\/table><\/div>|<div class="calc-last[^]*?<\/div>/)?.[0] ?? "";
+/** Het blok zonder de onzichtbare cijfers waarmee de getallen onder elkaar staan. */
+const blokHtml = (html) => blokRuw(html).replace(/<span class="vul">[^<]*<\/span>/g, "");
 
 /** De belastingen uit hoofdstuk 5, zoals de app ze vóór elk blad laat rekenen. */
 const PROJECT = {
@@ -238,16 +240,18 @@ deel("De weergave", () => {
   const rijen = [...blok.matchAll(/<tr class="(blijvend|veranderlijk)">(.*?)<\/tr>/g)].map((m) => m[2]);
   meld(rijen.length === 4, "een rij per regel", String(rijen.length));
   meld(rijen[0] === '<td>1e–3e verdieping <span class="calc-last-var"><var>g<sub>v3</sub></var></span></td><td class="getal">3.6</td><td class="getal">1</td><td class="getal">7.75 kN/m²</td><td class="getal">27.9</td><td class="getal"></td>', "de naam uit het project als omschrijving, de variabele er klein achter; b, l = 1 bij een lijnlast, p_rep, en de bijdrage in de kolom G", rijen[0]);
-  meld(rijen[1] === '<td><var>g<sub>w1</sub></var></td><td class="getal">1</td><td class="getal">1</td><td class="getal">5.25 kN/m</td><td class="getal">5.25</td><td class="getal"></td>', "zonder omschrijving of naam in het project: de bron zelf; een kaal getal als maat", rijen[1]);
+  meld(rijen[1] === '<td><var>g<sub>w1</sub></var></td><td class="getal">1</td><td class="getal">1</td><td class="getal">5.25 kN/m</td><td class="getal">5.25</td><td class="getal"></td>', "zonder omschrijving of naam in het project: de variabele; een kaal getal als maat", rijen[1]);
   meld(rijen[2] === '<td>vloer, categorie A <span class="calc-last-var"><var>q<sub>k1</sub></var></span></td><td class="getal">3.6</td><td class="getal">1</td><td class="getal">1.75 kN/m²</td><td class="getal"></td><td class="getal">6.3</td>', "de omschrijving uit de regel gaat voor de naam uit het project; de bijdrage in de kolom Q", rijen[2]);
-  meld(rijen[3] === '<td>25 kN/m^3*0.3 m*0.5 m</td><td class="getal"></td><td class="getal">1</td><td class="getal">3.75 kN/m</td><td class="getal">3.75</td><td class="getal"></td>', "een uitdrukking als bron: de brontekst, zonder b, en zijn uitkomst als p_rep", rijen[3]);
+  meld(rijen[3] === '<td></td><td class="getal"></td><td class="getal">1</td><td class="getal">3.75 kN/m</td><td class="getal">3.75</td><td class="getal"></td>', "een uitdrukking als bron zonder omschrijving: een witte cel, zonder b, en zijn uitkomst als p_rep", rijen[3]);
   meld(!blok.includes('class="totaal"'), "er is geen aparte rij Totaal meer");
   meld(blok.includes('<tfoot><tr class="som"><td colspan="3"></td><td class="getal">Σ</td><td class="getal" title="q_L1,G">36.9</td><td class="getal" title="q_L1,Q">6.3</td><td class="eenheid">[kN/m]</td></tr></tfoot>'), "onder de tabel de som: Σ, G = 36.9, Q = 6.3 en de eenheid", blok.match(/<tr class="som">.*?<\/tr>/)?.[0]);
   meld(html.indexOf("Vooraf") < html.indexOf("calc-last") && html.indexOf("calc-last") < html.lastIndexOf("calc-line"), "het blok staat op zijn plek tussen de regels van het blad");
 
   const punt = blokHtml(render(reken(PUNT).nodes));
   meld(punt.includes("<strong>Kolom K1</strong> — <var>F<sub>1</sub></var>, puntlast") && punt.includes('<td class="getal">19.44 m²</td><td class="getal"></td><td class="getal">7.75 kN/m²</td><td class="getal">150.7</td>') && punt.includes('<td class="getal">3.6 m</td><td class="getal">5.4</td><td class="getal">1.75 kN/m²</td>') && punt.includes('title="F_1,G">179</td><td class="getal" title="F_1,Q">40.02</td><td class="eenheid">[kN]</td>'), "een puntlast: puntlast in de kop, een oppervlak of twee maten, geen 1 bij l, de som in kN met vier cijfers", punt.match(/<tr class="som">.*?<\/tr>/)?.[0]);
-  meld(punt.includes('<td>wand op as B <span class="calc-last-var"><var>g<sub>w1</sub></var></span></td>') && punt.includes('<td>max(2 kN; 3 kN)</td><td class="getal">2</td><td class="getal"></td><td class="getal">3 kN</td><td class="getal"></td><td class="getal">6</td>'), "een omschrijving bij een kale naam; een functie als bron");
+  meld(punt.includes('<td>wand op as B <span class="calc-last-var"><var>g<sub>w1</sub></var></span></td>') && punt.includes('<td></td><td class="getal">2</td><td class="getal"></td><td class="getal">3 kN</td><td class="getal"></td><td class="getal">6</td>'), "een omschrijving bij een kale naam; een functie als bron");
+  const ruw = blokRuw(html);
+  meld(ruw.includes('<td class="getal">27.9<span class="vul">0</span></td>') && ruw.includes('title="q_L1,G">36.9<span class="vul">0</span></td>') && !ruw.includes('27.90'), "getallen in een kolom staan met het decimaalteken onder elkaar, zonder een nul erbij", ruw);
   const zonderNaam = blokHtml(render(reken("@last q_5 lijn\n  g_w1; 1\n@end").nodes));
   meld(!zonderNaam.includes("calc-last-kop") && zonderNaam.includes('<thead><tr><th><var>q<sub>5</sub></var></th><th class="getal">b [m]</th><th class="getal">l [m]</th><th class="getal">p<sub>rep</sub> [kN/m]</th>'), "zonder naam geen regel boven de tabel: het symbool staat in de kop; één eenheid in een kolom staat in de kop", zonderNaam.match(/<thead>.*?<\/thead>/)?.[0]);
   const tekens = blokHtml(render(reken('@last q_6 "A & <b>" lijn\n  g_w1; 1; "x < y"\n@end').nodes));

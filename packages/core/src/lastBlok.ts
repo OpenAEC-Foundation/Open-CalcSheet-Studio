@@ -419,16 +419,29 @@ export function renderLast(node: EvaluatedLast): string {
         : { getal: rest.map((d) => (d.eenheid ? `${d.getal} ${eenheidInBeeld(d.eenheid)}` : d.getal)).join(' × '), eenheid: '' };
     return { p: (p ?? null) as Deel, b: (b ?? null) as Deel, l };
   });
+  // Getallen in een kolom staan met hun decimaalteken onder elkaar: een korter getal krijgt
+  // onzichtbare cijfers erachter. Er komt geen nul bij die er niet gerekend is.
+  const decimalen = (t: string) => (/^-?\d+(?:[.,]\d+)?$/.test(t) ? (t.split(/[.,]/)[1]?.length ?? 0) : -1);
+  const uitlijner = (teksten: string[]) => {
+    const breedste = Math.max(0, ...teksten.map(decimalen));
+    return (t: string) => {
+      const n = decimalen(t);
+      if (n < 0 || n === breedste) return esc(t);
+      return `${esc(t)}<span class="vul">${n === 0 ? '.' : ''}${'0'.repeat(breedste - n)}</span>`;
+    };
+  };
   // Een kolom zet zijn eenheid in de kop als elke gevulde cel dezelfde heeft; anders staat hij bij de cel.
   const kolom = (naam: string, delen: Deel[], standaard: string | null) => {
     // Een kaal getal (een factor zonder eenheid) telt niet mee: het past bij elke kolom.
     const eenheden = new Set(delen.filter((d): d is NonNullable<Deel> => d !== null && d.eenheid !== '').map((d) => d.eenheid));
     const gedeeld = eenheden.size === 0 ? standaard : eenheden.size === 1 ? [...eenheden][0] : null;
     const inKop = gedeeld ? ` [${esc(eenheidInBeeld(gedeeld))}]` : '';
+    const tekst = (d: NonNullable<Deel>) => (gedeeld !== null || !d.eenheid ? d.getal : `${d.getal} ${eenheidInBeeld(d.eenheid)}`);
+    const lijn = uitlijner(delen.filter((d): d is NonNullable<Deel> => d !== null).map(tekst));
     return {
       eenheid: gedeeld,
       kop: `<th class="getal">${naam}${inKop}</th>`,
-      cel: (d: Deel) => `<td class="getal">${d ? esc(gedeeld !== null || !d.eenheid ? d.getal : `${d.getal} ${eenheidInBeeld(d.eenheid)}`) : ''}</td>`,
+      cel: (d: Deel) => `<td class="getal">${d ? lijn(tekst(d)) : ''}</td>`,
     };
   };
   const kb = kolom('b', cellen.map((c) => c.b), 'm');
@@ -436,18 +449,21 @@ export function renderLast(node: EvaluatedLast): string {
   const kl = kolom('l', cellen.map((c) => c.l), kb.eenheid);
   const kp = kolom('p<sub>rep</sub>', cellen.map((c) => c.p), 'kN/m^2');
   const leeg = '<td class="getal"></td>';
+  const u = node.uitkomsten;
+  const lijnG = uitlijner([...node.rijen.filter((r) => r.soort !== 'Q').map((r) => r.bijdrage), u.G.tekst]);
+  const lijnQ = uitlijner([...node.rijen.filter((r) => r.soort === 'Q').map((r) => r.bijdrage), u.Q.tekst]);
   const rijen = node.rijen.map((rij, i) => {
     const variabele = rij.variabele ? naamHtml(rij.variabele) : '';
     const omschrijving = rij.omschrijving !== undefined
       ? `${esc(rij.omschrijving)}${variabele ? ` <span class="calc-last-var">${variabele}</span>` : ''}`
-      : variabele || esc(rij.bron);
-    const bijdrage = `<td class="getal">${esc(rij.bijdrage)}</td>`;
+      // Zonder omschrijving blijft de cel wit: de bron staat al in de kolom p.
+      : variabele;
+    const bijdrage = `<td class="getal">${(rij.soort === 'Q' ? lijnQ : lijnG)(rij.bijdrage)}</td>`;
     const c = cellen[i];
     return `<tr class="${rij.soort === 'Q' ? 'veranderlijk' : 'blijvend'}"><td>${omschrijving}</td>${kb.cel(c.b)}${kl.cel(c.l)}${kp.cel(c.p)}${rij.soort === 'Q' ? leeg + bijdrage : bijdrage + leeg}</tr>`;
   });
-  const u = node.uitkomsten;
   // De som staat onder de tabel, buiten het raster: Σ, G, Q en de eenheid.
-  const som = `<tr class="som"><td colspan="3"></td><td class="getal">Σ</td><td class="getal" title="${esc(u.G.naam)}">${esc(u.G.tekst)}</td><td class="getal" title="${esc(u.Q.naam)}">${esc(u.Q.tekst)}</td><td class="eenheid">[${e}]</td></tr>`;
+  const som = `<tr class="som"><td colspan="3"></td><td class="getal">Σ</td><td class="getal" title="${esc(u.G.naam)}">${lijnG(u.G.tekst)}</td><td class="getal" title="${esc(u.Q.naam)}">${lijnQ(u.Q.tekst)}</td><td class="eenheid">[${e}]</td></tr>`;
   return `<div class="calc-last"${merk}>${node.naam ? kop : ''}<table class="calc-last-tabel">`
     + `<thead><tr><th>${symbool || esc(w.blok)}</th>${kb.kop}${kl.kop}${kp.kop}<th class="getal">G</th><th class="getal">Q</th></tr></thead>`
     + `<tbody>${rijen.join('')}</tbody><tfoot>${som}</tfoot></table></div>`;
@@ -463,6 +479,7 @@ export const LAST_CSS = `
 .calc-last-tabel th { background: var(--calc-last-kop, #45b5aa); font-weight: 500; }
 .calc-last-tabel th.getal, .calc-last-tabel td.getal { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 3.2em; }
 .calc-last-tabel th.getal { text-align: left; }
+.calc-last-tabel .vul { visibility: hidden; }
 /* Een naam zoals in een formule: schuin, de index rechtop. */
 .calc-last var { font-family: KaTeX_Math, 'Times New Roman', serif; font-size: 1.08em; }
 .calc-last var sub { font-family: KaTeX_Main, 'Times New Roman', serif; font-style: normal; font-size: 0.72em; }
