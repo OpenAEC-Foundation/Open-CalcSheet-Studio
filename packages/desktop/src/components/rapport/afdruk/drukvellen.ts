@@ -145,8 +145,9 @@ export function verwijzingenIn(tekst: string, bekend: (nummer: string) => boolea
 
 /**
  * Maakt het rapport doorklikbaar in de PDF. Elke regel van een inhoudsopgave is een link
- * naar zijn kop: het nummer, de titel en het paginanummer. Een verwijzing in de tekst
- * ("zie 5.2", "bijlage A.3") is een link naar die paragraaf of dat blad. Alleen op de
+ * naar zijn kop: het nummer, de titel en het paginanummer. Een verwijzing in de tekst van
+ * het rapport of van een blad ("zie 5.2", "bijlage A.3") is een link naar die paragraaf of
+ * dat blad. Alleen op de
  * kopie: daar staat elke kop één keer, en een id op de vellen van het voorbeeld zou er
  * dan dubbel zijn.
  */
@@ -183,11 +184,15 @@ export function linkInhoud(wortel: HTMLElement): PdfKop[] {
     if (vakken.length) for (const vak of vakken) inLink(vak, id);
     else inLink(doel, id);
   }
-  // Verwijzingen in de lopende tekst van het rapport.
-  for (const alinea of wortel.querySelectorAll<HTMLElement>(".rpa-tekst")) {
+  // Verwijzingen in de lopende tekst van het rapport en in de uitwerking van een blad:
+  // een tekstregel, een cel van een tabel. Niet in een formule of een tekening.
+  if (opNummer.size === 0) return koppen;
+  for (const alinea of wortel.querySelectorAll<HTMLElement>(".rpa-tekst, .ifc-calc")) {
     const loper = document.createTreeWalker(alinea, NodeFilter.SHOW_TEXT);
     const teksten: Text[] = [];
-    for (let n = loper.nextNode(); n; n = loper.nextNode()) if (!n.parentElement?.closest("a")) teksten.push(n as Text);
+    for (let n = loper.nextNode(); n; n = loper.nextNode()) {
+      if (!n.parentElement?.closest("a, .katex, svg, script, style")) teksten.push(n as Text);
+    }
     for (const knoop of teksten) {
       const stukken = verwijzingenIn(knoop.data, (nummer) => opNummer.has(nummer));
       if (!stukken.some((s) => s.nummer)) continue;
