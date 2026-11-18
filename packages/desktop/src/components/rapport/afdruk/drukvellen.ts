@@ -11,7 +11,7 @@
  */
 
 import i18next from "../../../i18n/config";
-import { meldRapportPdfFout, schrijfRapportPdf } from "../../../tauri/rapportPdf";
+import { meldRapportPdfFout, schrijfRapportPdf, type PdfKop } from "../../../tauri/rapportPdf";
 import { iframesNaarDruk } from "../../calc/iframeBlok";
 
 const VELLEN = ".av-vellen-binnen .av-pagina";
@@ -81,12 +81,24 @@ export async function wachtOpDrukbeelden(): Promise<void> {
  */
 export async function vellenNaarPdf(pad: string): Promise<boolean> {
   try {
-    await schrijfRapportPdf(pad);
+    await schrijfRapportPdf(pad, drukKoppen);
     return true;
   } catch (err) {
     await meldRapportPdfFout(pad, err);
     return false;
   }
+}
+
+/** De bladwijzers van de vellen die nu klaarstaan (zetDrukvellenKlaar); leeg als er niets klaarstaat. */
+let drukKoppen: PdfKop[] = [];
+
+/**
+ * Het niveau van een regel uit de inhoudsopgave voor de bladwijzers: een hoofdstuk of een
+ * bijlage is 1, een paragraaf of een blad ("5.2", "A.3") is 2, een kop uit een blad is 3.
+ */
+export function kopNiveau(nummer: string, kopUitBlad: boolean): number {
+  if (kopUitBlad) return 3;
+  return /^(?:\d+|[A-Z]+)\.\d+/.test(nummer.trim()) ? 2 : 1;
 }
 
 /** Zet de inhoud van `el` in een link naar `id`. */
@@ -138,7 +150,9 @@ export function verwijzingenIn(tekst: string, bekend: (nummer: string) => boolea
  * kopie: daar staat elke kop één keer, en een id op de vellen van het voorbeeld zou er
  * dan dubbel zijn.
  */
-export function linkInhoud(wortel: HTMLElement) {
+export function linkInhoud(wortel: HTMLElement): PdfKop[] {
+  const koppen: PdfKop[] = [];
+  const gezien = new Set<string>();
   const ids = new Map<string, string>();
   const opNummer = new Map<string, string>();
   for (const kop of wortel.querySelectorAll<HTMLElement>("[data-inhoud]")) {
@@ -157,6 +171,15 @@ export function linkInhoud(wortel: HTMLElement) {
     // De hele regel: elk vak van de rij is een link, niet alleen het paginanummer.
     const rij = doel.closest<HTMLElement>(".rpa-rij, .print-inhoud-rij");
     const vakken = rij ? ([...rij.children] as HTMLElement[]).filter((v) => v.textContent && !v.querySelector("a")) : [];
+    // De inhoudsopgave voorin is ook de lijst van bladwijzers: elke regel één keer.
+    if (rij && rij.closest(".rpa-inhoud") && !gezien.has(id)) {
+      const delen = ([...rij.children] as HTMLElement[]).filter((v) => !v.contains(doel)).map((v) => (v.textContent ?? "").trim()).filter(Boolean);
+      const titel = delen.join(" ");
+      if (titel) {
+        gezien.add(id);
+        koppen.push({ titel, niveau: kopNiveau(delen[0], rij.querySelector(".rpa-io-kop3") !== null), doel: id });
+      }
+    }
     if (vakken.length) for (const vak of vakken) inLink(vak, id);
     else inLink(doel, id);
   }
@@ -178,6 +201,7 @@ export function linkInhoud(wortel: HTMLElement) {
       }));
     }
   }
+  return koppen;
 }
 
 /**
@@ -188,7 +212,7 @@ export function zetDrukvellenKlaar(vellen: HTMLElement[]): () => void {
   const bak = document.createElement("div");
   bak.className = "rpa-drukvellen";
   for (const vel of vellen) bak.appendChild(vel.cloneNode(true));
-  linkInhoud(bak);
+  drukKoppen = linkInhoud(bak);
   // Een gekopieerd iframe begint opnieuw en komt leeg op papier: de geladen
   // iframes verhuizen zolang naar de kopie.
   const verhuis = iframesNaarDruk(vellen, bak);
@@ -198,6 +222,7 @@ export function zetDrukvellenKlaar(vellen: HTMLElement[]): () => void {
   return () => {
     iframesTerug();
     bak.remove();
+    drukKoppen = [];
     document.documentElement.classList.remove("rapportdruk");
   };
 }

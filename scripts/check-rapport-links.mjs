@@ -25,11 +25,12 @@ const stuk = (begin, eind) => {
   return bron.slice(a, bron.indexOf(eind, a) + eind.length);
 };
 const code = [
+  stuk("export function kopNiveau", "\n}\n"),
   stuk("export function kopNummer", "\n}\n"),
   stuk("const VERWIJZING_RE", ";\n"),
   stuk("export function verwijzingenIn", "\n}\n"),
 ].join("\n");
-const { kopNummer, verwijzingenIn } = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(code)).toString("base64")}`);
+const { kopNiveau, kopNummer, verwijzingenIn } = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(code)).toString("base64")}`);
 
 console.log("\nHet nummer van een kop");
 meld(kopNummer("5.2 Sneeuwbelastingen(Q)", "sneeuw") === "5.2", "een paragraaf: 5.2");
@@ -37,6 +38,11 @@ meld(kopNummer("6 Berekeningen", "berekeningen") === "6", "een hoofdstuk: 6");
 meld(kopNummer("A.3Uitdraai spanten", "bijlage-blad-x") === "A.3" && kopNummer("A.12 Ligger", "x") === "A.12", "een blad in bijlage A, ook zonder spatie na het nummer");
 meld(kopNummer("Bijlage A: Uitgebreide uitwerking", "bijlage-A") === "A" && kopNummer("Appendix B: Soil report", "bijlage-B") === "B", "de kop van een bijlage: zijn letter");
 meld(kopNummer("1e verdieping", "kop-1") === null && kopNummer("Toelichting", "x") === null && kopNummer("2.5m overstek", "x") === null, "een kop zonder nummer, of met een getal dat geen nummer is");
+
+console.log("\nHet niveau van een bladwijzer");
+meld(kopNiveau("6", false) === 1 && kopNiveau("Bijlage A", false) === 1 && kopNiveau("Appendix B", false) === 1, "een hoofdstuk en een bijlage: 1");
+meld(kopNiveau("6.3", false) === 2 && kopNiveau("A.12", false) === 2, "een paragraaf en een blad in bijlage A: 2");
+meld(kopNiveau("Toelichting", true) === 3 && kopNiveau("6.1", true) === 3, "een kop uit een blad: 3");
 
 console.log("\nVerwijzingen in lopende tekst");
 const BEKEND = new Set(["4", "5.2", "6.3", "A", "A.3"]);
