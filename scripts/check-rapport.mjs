@@ -1014,6 +1014,29 @@ kop("materialen.ts — 4.3: geen opmerking over de bevestigingsmiddelen");
   toets("bevestigingsmiddelen niet verder omlaag dan nodig", mis.onnodig.length === 0, mis.onnodig[0]);
 }
 
+kop("opzet.ts — bladen in bijlage A zonder paragraaf in hoofdstuk Berekeningen");
+{
+  const teksten = standaardTeksten("nl");
+  const bladen = [
+    { id: "pdf1", naam: "Uitdraai spanten" },
+    { id: "a", naam: "Ligger", plek: "hoofdstuk" },
+    { id: "pdf2", naam: "Uitdraai wapening" },
+    { id: "b", naam: "Kolom", plek: "hoofdstuk" },
+  ];
+  const aan = normaliseerRapport({}, VANDAAG, teksten, "nl");
+  const uit = normaliseerRapport({ opmaak: { bijlageParagrafen: false } }, VANDAAG, teksten, "nl");
+  const paragrafen = (r) => bouwOpzet(r, bladen).find((k) => k.inhoud === "berekeningen").kinderen;
+  const h = paragrafen(aan)[0].nummer.split(".")[0];
+  gelijk("standaard: elk blad een paragraaf, in de volgorde van de bladen", paragrafen(aan).map((k) => k.nummer), [1, 2, 3, 4].map((n) => `${h}.${n}`));
+  toets("standaard staat het veld niet in het rapport; uit blijft bewaard", !("bijlageParagrafen" in aan.opmaak) && uit.opmaak.bijlageParagrafen === false
+    && !("bijlageParagrafen" in normaliseerRapport({ opmaak: { bijlageParagrafen: true } }, VANDAAG, teksten, "nl").opmaak));
+  gelijk("uit: de bladen in het hoofdstuk nummeren door, de bijlagebladen hebben geen nummer", paragrafen(uit).map((k) => k.nummer), ["", `${h}.1`, "", `${h}.2`]);
+  gelijk("uit: de bijlagebladen houden hun plek in bijlage A", paragrafen(uit).map((k) => [k.blad.bijlage, k.blad.zonderParagraaf === true]), [["A.1", true], ["", false], ["A.2", true], ["", false]]);
+  gelijk("uit: bijlage A noemt ze nog steeds", bijlageRegels(bouwOpzet(uit, bladen)).map((i) => `${i.nummer} ${i.titel}`), ["A.1 Uitdraai spanten", "A.2 Uitdraai wapening"]);
+  gelijk("uit: de inhoudsopgave noemt de bladen in het hoofdstuk met hun nieuwe nummer", inhoudsopgave(bouwOpzet(uit, bladen), true).filter((i) => i.nummer.startsWith(`${h}.`)).map((i) => `${i.nummer} ${i.titel}`), [`${h}.1 Ligger`, `${h}.2 Kolom`]);
+  gelijk("een blad dat de gebruiker naar het hoofdstuk haalt, krijgt weer een paragraaf", paragrafen({ ...uit, inHoofdstuk: { pdf1: true } }).map((k) => k.nummer), [`${h}.1`, `${h}.2`, "", `${h}.3`]);
+}
+
 // ── Uitslag ─────────────────────────────────────────────────────────────────
 if (fouten > 0) {
   console.error(`\nRapport: ${fouten} van de ${aantal} controles gezakt.`);

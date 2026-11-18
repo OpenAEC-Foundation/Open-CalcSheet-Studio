@@ -260,6 +260,8 @@
     "staatInHoofdstuk": "The full output appears directly below the notes.",
     "staatInBijlage": "The full output is in appendix {{letter}}.",
     "koppenInInhoud": "Headings from the text in the table of contents",
+    "bijlageParagrafen": "Sheets in appendix A also as a section in this chapter",
+    "bijlageParagrafenUitleg": "Every sheet with its calculation in appendix A then has a section in this chapter, with the reference to the appendix. When off, those sheets are only in appendix A and do not count in the numbering of this chapter.",
     "bladenInInhoud": "Sheets in the table of contents",
     "bladenInInhoudUitleg": "The table of contents at the front then also lists every sheet with its page: under this chapter or under appendix A. When off, the sheets are only listed in the table of contents of this chapter."
   },

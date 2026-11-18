@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Rapport, hoofdstuk Berekeningen: met het vinkje *Bladen in bijlage A ook als paragraaf in dit hoofdstuk* uit staan bladen met hun uitwerking in bijlage A alleen nog in die bijlage. Ze hebben dan geen paragraaf met een verwijzing in het hoofdstuk en tellen niet mee in de nummering; de bladen in het hoofdstuk nummeren door. Standaard staat het aan, zoals het was
+
 ## v2026.46.1 — 2026-11-12
 
 - De server van Open FEM Studio in een installer heeft zijn licentie (GNU AGPL-3.0), de vermeldingen van derden en een verwijzing naar zijn broncode naast zich, en Instellingen › Over toont ze. De broncode van precies die versie staat bij de release, naast de installers

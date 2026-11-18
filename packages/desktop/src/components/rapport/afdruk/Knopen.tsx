@@ -89,7 +89,7 @@ function RolInhoud({ w }: { w: RapportWeergave }) {
  * Berekeningen (bouwOpzet laat het weg).
  */
 function BerekeningenInhoud({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
-  const paragrafen = knoop.kinderen.filter((k) => k.blad);
+  const paragrafen = knoop.kinderen.filter((k) => k.blad && !k.blad.zonderParagraaf);
   if (paragrafen.length === 0) return null;
   return (
     <>
@@ -235,7 +235,8 @@ function voegToe(knoop: Rapportknoop, w: RapportWeergave, plaats: Plaats, uit: S
   // Het eerste kind staat direct onder deze kop als deze knoop zelf niets
   // toont en het kind niet op een nieuw vel begint.
   const zonderEigen = !knoop.inhoud && !knoop.blad;
-  knoop.kinderen.forEach((kind, i) =>
+  // Een blad dat alleen in bijlage A staat, heeft hier geen paragraaf.
+  knoop.kinderen.filter((kind) => !kind.blad?.zonderParagraaf).forEach((kind, i) =>
     voegToe(
       kind,
       w,
