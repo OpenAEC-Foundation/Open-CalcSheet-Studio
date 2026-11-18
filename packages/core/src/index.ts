@@ -7,6 +7,7 @@ export { rekenUitdrukking, uitkomstTekst } from './evaluator.js';
 export { analyseerRekenblok, rekenRekenblok, rekenWaarde, type RekenblokAnalyse, type RekenblokUitkomst } from './rekenblok.js';
 export type { SelectValues, AngleMode, Scope } from './evaluator.js';
 export { render, defaultStyles, type RenderOpties } from './renderer.js';
+export { metDecimaalKomma, taalMetKomma } from './decimaalteken.js';
 export {
   TOETS_START_RE, leesToetsBlok, naarSchema, canoniek, toetsHash, leesAntwoord, bouwToets, renderToets,
   eenheidVanVeld, toetsToolToegestaan, TOETS_UITGESLOTEN, schemaHash, alsAntwoord, leesVastgelegdeToetsingen, type ToetsRekenaar,
