@@ -537,6 +537,13 @@ html.rapportdruk .rpa-drukvellen .av-pagina {
 /* Een paginanummer in de inhoudsopgave is in de PDF een link (linkInhoud in
    drukvellen.ts); op papier ziet het eruit als het nummer. */
 .rpa-drukvellen .inhoud-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Een verwijzing in de tekst: klikbaar in de PDF, op papier gewone tekst. */
+.rpa-drukvellen .tekst-link {
   color: inherit;
   text-decoration: none;
 }
