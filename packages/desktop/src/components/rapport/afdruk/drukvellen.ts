@@ -92,6 +92,9 @@ export async function vellenNaarPdf(pad: string): Promise<boolean> {
 /** De bladwijzers van de vellen die nu klaarstaan (zetDrukvellenKlaar); leeg als er niets klaarstaat. */
 let drukKoppen: PdfKop[] = [];
 
+/** De bladwijzers bij de vellen die nu klaarstaan, voor wie de PDF zelf wegschrijft. */
+export const klaargezetteKoppen = (): readonly PdfKop[] => drukKoppen;
+
 /**
  * Het niveau van een regel uit de inhoudsopgave voor de bladwijzers: een hoofdstuk of een
  * bijlage is 1, een paragraaf of een blad ("5.2", "A.3") is 2, een kop uit een blad is 3.
