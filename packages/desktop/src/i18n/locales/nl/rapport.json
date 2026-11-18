@@ -222,7 +222,11 @@
     "qlast": "q-last",
     "bijAlfa": "bij α",
     "dakhellingInvullen": "— (vul de dakhelling in)",
-    "qkDirect": "{{qk}}; direct onder het dakbeschot {{direct}}"
+    "qkDirect": "{{qk}}; direct onder het dakbeschot {{direct}}",
+    "zelfInvullen": "— (vul zelf in)",
+    "verplicht": "zelf invullen",
+    "leegIsTabel": "leeg = tabel",
+    "eigenWaarde": "eigen waarde"
   },
   "opbouw": {
     "geen": "Nog geen opbouwen in deze groep.",

@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Rapport, belastingklassen: categorie E (opslagruimtes) is erbij, en bij elke klasse zijn q_k en Q_k zelf in te vullen. Een leeg veld is de waarde uit de tabel; bij categorie E is er geen tabelwaarde en vul je beide zelf in
+
 ## v2026.46.1 — 2026-11-12
 
 - De server van Open FEM Studio in een installer heeft zijn licentie (GNU AGPL-3.0), de vermeldingen van derden en een verwijzing naar zijn broncode naast zich, en Instellingen › Over toont ze. De broncode van precies die versie staat bij de release, naast de installers
