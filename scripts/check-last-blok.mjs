@@ -252,7 +252,9 @@ deel("De weergave", () => {
   meld(punt.includes('<td>wand op as B <span class="calc-last-var"><var>g<sub>w1</sub></var></span></td>') && punt.includes('<td></td><td class="getal">2</td><td class="getal"></td><td class="getal">3 kN</td><td class="getal"></td><td class="getal">6</td>'), "een omschrijving bij een kale naam; een functie als bron");
   const ruw = blokRuw(html);
   meld(ruw.includes('<td class="getal">27.9<span class="vul">0</span></td>') && ruw.includes('title="q_L1,G">36.9<span class="vul">0</span></td>') && !ruw.includes('27.90'), "getallen in een kolom staan met het decimaalteken onder elkaar, zonder een nul erbij", ruw);
-  const zonderNaam = blokHtml(render(reken("@last q_5 lijn\n  g_w1; 1\n@end").nodes));
+  const alleenG = blokHtml(render(reken("@last q_8 lijn\n  g_w1; 1\n@end").nodes));
+  meld(alleenG.includes('title="q_8,G">5.25</td><td class="getal" title="q_8,Q"></td>'), "zonder veranderlijke regel is de som van Q wit, net als de cellen erboven", alleenG);
+  const zonderNaam =blokHtml(render(reken("@last q_5 lijn\n  g_w1; 1\n@end").nodes));
   meld(!zonderNaam.includes("calc-last-kop") && zonderNaam.includes('<thead><tr><th><var>q<sub>5</sub></var></th><th class="getal">b [m]</th><th class="getal">l [m]</th><th class="getal">p<sub>rep</sub> [kN/m]</th>'), "zonder naam geen regel boven de tabel: het symbool staat in de kop; één eenheid in een kolom staat in de kop", zonderNaam.match(/<thead>.*?<\/thead>/)?.[0]);
   const tekens = blokHtml(render(reken('@last q_6 "A & <b>" lijn\n  g_w1; 1; "x < y"\n@end').nodes));
   meld(tekens.includes("<strong>A &amp; &lt;b&gt;</strong>") && tekens.includes("<td>x &lt; y <span"), "tekens in een naam of omschrijving blijven tekst");

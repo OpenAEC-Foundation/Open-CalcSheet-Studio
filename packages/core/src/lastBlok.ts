@@ -462,8 +462,11 @@ export function renderLast(node: EvaluatedLast): string {
     const c = cellen[i];
     return `<tr class="${rij.soort === 'Q' ? 'veranderlijk' : 'blijvend'}"><td>${omschrijving}</td>${kb.cel(c.b)}${kl.cel(c.l)}${kp.cel(c.p)}${rij.soort === 'Q' ? leeg + bijdrage : bijdrage + leeg}</tr>`;
   });
+  // Zonder regels in een kolom blijft ook zijn som wit, net als de cellen erboven.
+  const heeftG = node.rijen.some((r) => r.soort !== 'Q');
+  const heeftQ = node.rijen.some((r) => r.soort === 'Q');
   // De som staat onder de tabel, buiten het raster: Σ, G, Q en de eenheid.
-  const som = `<tr class="som"><td colspan="3"></td><td class="getal">Σ</td><td class="getal" title="${esc(u.G.naam)}">${lijnG(u.G.tekst)}</td><td class="getal" title="${esc(u.Q.naam)}">${lijnQ(u.Q.tekst)}</td><td class="eenheid">[${e}]</td></tr>`;
+  const som = `<tr class="som"><td colspan="3"></td><td class="getal">Σ</td><td class="getal" title="${esc(u.G.naam)}">${heeftG ? lijnG(u.G.tekst) : ''}</td><td class="getal" title="${esc(u.Q.naam)}">${heeftQ ? lijnQ(u.Q.tekst) : ''}</td><td class="eenheid">[${e}]</td></tr>`;
   return `<div class="calc-last"${merk}>${node.naam ? kop : ''}<table class="calc-last-tabel">`
     + `<thead><tr><th>${symbool || esc(w.blok)}</th>${kb.kop}${kl.kop}${kp.kop}<th class="getal">G</th><th class="getal">Q</th></tr></thead>`
     + `<tbody>${rijen.join('')}</tbody><tfoot>${som}</tfoot></table></div>`;
