@@ -166,6 +166,7 @@ const RAPPORT = object({
       lagen: opt(lijst(object(velden(['naam', 'd', 'rho', 'p', 'h', 'vulling'])))),
     }))),
   })),
+  beelden: opt(VRIJ),
   toelichting: opt(VRIJ),
   inHoofdstuk: opt(VRIJ),
   bijlagen: opt(lijst(TEKST)),

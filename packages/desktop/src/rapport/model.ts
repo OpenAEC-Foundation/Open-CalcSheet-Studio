@@ -241,6 +241,22 @@ export interface Opmaak {
   bladenInInhoud: boolean;
 }
 
+/** Een afbeelding onder de tekst van een paragraaf, zoals een overzichtstekening. */
+export interface Rapportbeeld {
+  /** data-URL van een PNG of JPEG. */
+  data: string;
+  bijschrift: string;
+  /** Breedte in procenten van de tekstbreedte: BEELD_BREEDTE.min t/m 100. */
+  breedte: number;
+}
+
+export const BEELD_BREEDTE = { min: 20, max: 100, standaard: 100 } as const;
+
+/** Is dit een afbeelding die het rapport kan tonen? Alleen PNG en JPEG, als data-URL. */
+export function isBeeldData(s: unknown): s is string {
+  return typeof s === "string" && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+=*$/.test(s);
+}
+
 export interface Rapport {
   /**
    * Versie van de rapportopbouw waarmee dit rapport is gemaakt (RAPPORT_VERSIE).
@@ -269,6 +285,8 @@ export interface Rapport {
   rol: Rol;
   uitgangspunten: Uitgangspunten;
   belastingen: Belastingen;
+  /** Per tekst-id (zie opzet.ts) de afbeeldingen onder de tekst van die paragraaf. */
+  beelden: Record<string, Rapportbeeld[]>;
   /** Per exemplaar-id een eigen toelichting voor hoofdstuk Berekeningen. */
   toelichting: Record<string, string>;
   /** Per exemplaar-id: uitwerking in het hoofdstuk zelf in plaats van in bijlage A. */
@@ -505,6 +523,7 @@ export function standaardRapport(vandaag: string, teksten: Record<string, string
     rol: standaardRol(taal),
     uitgangspunten: standaardUitgangspunten(taal),
     belastingen: standaardBelastingen(taal),
+    beelden: {},
     toelichting: {},
     inHoofdstuk: {},
     bijlagen: [],
@@ -557,6 +576,28 @@ function tekstRecord(x: unknown, basis: Record<string, string> = {}): Record<str
   const uit: Record<string, string> = { ...basis };
   const o = object(x);
   if (o) for (const [k, v] of Object.entries(o)) if (typeof v === "string") uit[k] = v;
+  return uit;
+}
+
+/** Afbeeldingen per tekst-id. Wat geen PNG of JPEG is, valt weg; een lege lijst ook. */
+function beeldenRecord(x: unknown): Record<string, Rapportbeeld[]> {
+  const uit: Record<string, Rapportbeeld[]> = {};
+  const o = object(x);
+  if (!o) return uit;
+  for (const [k, v] of Object.entries(o)) {
+    const beelden = lijst<Rapportbeeld>(v, [], (b) => {
+      if (!isBeeldData(b.data)) return null;
+      const breedte = typeof b.breedte === "number" && Number.isFinite(b.breedte) ? b.breedte : Number(b.breedte);
+      return {
+        data: b.data,
+        bijschrift: tekst(b.bijschrift, ""),
+        breedte: Number.isFinite(breedte) && breedte > 0
+          ? Math.round(Math.min(BEELD_BREEDTE.max, Math.max(BEELD_BREEDTE.min, breedte)))
+          : BEELD_BREEDTE.standaard,
+      };
+    });
+    if (beelden.length) uit[k] = beelden;
+  }
   return uit;
 }
 
@@ -738,6 +779,7 @@ export function normaliseerRapport(
       vloerenDaken: lijst(b.vloerenDaken, sb.vloerenDaken, normaliseerOpbouw),
       wanden: lijst(b.wanden, sb.wanden, normaliseerOpbouw),
     },
+    beelden: beeldenRecord(o.beelden),
     toelichting: tekstRecord(o.toelichting),
     inHoofdstuk: waarheidRecord(o.inHoofdstuk),
     bijlagen: Array.isArray(o.bijlagen) ? o.bijlagen.filter((t): t is string => typeof t === "string") : s.bijlagen,

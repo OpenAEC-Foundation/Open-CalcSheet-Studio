@@ -28,7 +28,7 @@
  * Draaien:  node scripts/check-rapport.mjs
  */
 import {
-  leegBureau, normaliseerRapport, RAPPORT_VERSIE, standaardRapport, STANDAARD_HUISSTIJL,
+  isBeeldData, leegBureau, normaliseerRapport, RAPPORT_VERSIE, standaardRapport, STANDAARD_HUISSTIJL,
 } from "../packages/desktop/src/rapport/model.ts";
 import { leesPad, zetOpPad } from "../packages/desktop/src/rapport/pad.ts";
 import { datumTekst, eersteDatum, laatsteRevisie, rapportStatus, volgendeCode } from "../packages/desktop/src/rapport/revisies.ts";
@@ -1012,6 +1012,32 @@ kop("materialen.ts — 4.3: geen opmerking over de bevestigingsmiddelen");
   toets("materialen op hun eigen regel, bevestigingsmiddelen compleet en aaneengesloten", mis.volgorde.length === 0, mis.volgorde[0]);
   toets("bevestigingsmiddelen nooit hoger dan de derde regel", mis.verschoven.length === 0, mis.verschoven[0]);
   toets("bevestigingsmiddelen niet verder omlaag dan nodig", mis.onnodig.length === 0, mis.onnodig[0]);
+}
+
+kop("model.ts — afbeeldingen bij een paragraaf");
+{
+  const teksten = standaardTeksten("nl");
+  const PNG = "data:image/png;base64,iVBORw0KGgo=";
+  const r = normaliseerRapport({
+    beelden: {
+      projectomschrijving: [
+        { data: PNG, bijschrift: "Situatie", breedte: 60 },
+        { data: PNG, breedte: 5 },
+        { data: PNG, breedte: "250" },
+        { data: "data:text/html;base64,PGI+", bijschrift: "geen afbeelding" },
+        { bijschrift: "zonder data" },
+      ],
+      inleiding: [],
+      rol: "geen lijst",
+    },
+  }, VANDAAG, teksten, "nl");
+  const b = r.beelden.projectomschrijving ?? [];
+  toets("een PNG met bijschrift en breedte blijft", b[0]?.data === PNG && b[0].bijschrift === "Situatie" && b[0].breedte === 60, JSON.stringify(b[0]));
+  toets("de breedte blijft tussen 20 en 100, zonder bijschrift een lege tekst", b[1]?.breedte === 20 && b[1].bijschrift === "" && b[2]?.breedte === 100, JSON.stringify(b.map((x) => x.breedte)));
+  toets("wat geen PNG of JPEG is, of geen data heeft, valt weg", b.length === 3, String(b.length));
+  toets("een lege lijst of iets anders dan een lijst geeft geen sleutel", !("inleiding" in r.beelden) && !("rol" in r.beelden), Object.keys(r.beelden).join());
+  gelijk("een rapport met afbeeldingen is na opnieuw inlezen gelijk", normaliseerRapport(JSON.parse(JSON.stringify(r)), VANDAAG, teksten, "nl").beelden, r.beelden);
+  toets("isBeeldData: PNG en JPEG wel, SVG en een webadres niet", isBeeldData(PNG) && isBeeldData("data:image/jpeg;base64,/9j/4A==") && !isBeeldData("data:image/svg+xml;base64,PHN2Zz4=") && !isBeeldData("https://voorbeeld.nl/a.png"));
 }
 
 // ── Uitslag ─────────────────────────────────────────────────────────────────
