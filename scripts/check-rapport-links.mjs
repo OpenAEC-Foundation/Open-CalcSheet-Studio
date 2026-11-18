@@ -17,9 +17,10 @@ function meld(ok, wat, detail) {
 }
 const gelijk = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-// De twee zuivere functies uit drukvellen.ts, zonder de imports van de app eromheen.
+// De zuivere functies uit drukvellen.ts, zonder de imports van de app eromheen. Met de
+// regeleinden van Unix: een uitgecheckt bestand op Windows heeft er twee tekens voor.
 const hier = dirname(fileURLToPath(import.meta.url));
-const bron = readFileSync(join(hier, "../packages/desktop/src/components/rapport/afdruk/drukvellen.ts"), "utf8");
+const bron = readFileSync(join(hier, "../packages/desktop/src/components/rapport/afdruk/drukvellen.ts"), "utf8").replace(/\r\n/g, "\n");
 const stuk = (begin, eind) => {
   const a = bron.indexOf(begin);
   return bron.slice(a, bron.indexOf(eind, a) + eind.length);
