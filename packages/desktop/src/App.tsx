@@ -102,7 +102,7 @@ export default function App() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState("general");
   const [helpOpen, setHelpOpen] = useState(false);
-  // Het welkomstvenster bij het opstarten, tot je het uitzet (Welkom.tsx).
+  // Het welkomstvenster, alleen de eerste keer dat de app opent (Welkom.tsx).
   const [welkomOpen, setWelkomOpen] = useState(false);
   useEffect(() => {
     welkomBijStart().then((tonen) => { if (tonen) setWelkomOpen(true); });
