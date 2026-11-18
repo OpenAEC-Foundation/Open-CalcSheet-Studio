@@ -1779,19 +1779,24 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
           // Resolve prose interpolation — eval each `expr` part and
           // concat with literal parts. Failed exprs fall back to the source.
           const out: string[] = [];
+          // Waar een ingevuld getal staat: op papier volgt het de taal (decimaalteken.ts).
+          const waarden: Array<[number, number]> = [];
+          let lengte = 0;
           for (const p of node.parts) {
-            if (p.kind === 'literal') {
-              out.push(p.value);
-            } else {
+            let stuk = p.value;
+            if (p.kind !== 'literal') {
               try {
                 const v = reken(p.value, scope);
-                out.push(stringifyInterpolated(v, p.formaat, stand.decimalen));
+                stuk = stringifyInterpolated(v, p.formaat, stand.decimalen);
+                if ((typeof v === 'number' || isUnit(v)) && stuk !== '') waarden.push([lengte, lengte + stuk.length]);
               } catch {
-                out.push(p.value);
+                stuk = p.value;
               }
             }
+            out.push(stuk);
+            lengte += stuk.length;
           }
-          result.push({ type: 'text', text: out.join(''), html: true, ...(node.inline ? { inline: true } : {}) });
+          result.push({ type: 'text', text: out.join(''), html: true, ...(node.inline ? { inline: true } : {}), ...(waarden.length ? { waarden } : {}) });
         } else {
           // De normbladen schrijven een uitkomst als {{naam}} in een tekstregel,
           // zoals in een tekening. Zonder invulling stond er letterlijk

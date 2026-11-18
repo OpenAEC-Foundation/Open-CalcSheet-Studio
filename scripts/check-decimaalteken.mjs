@@ -36,6 +36,14 @@ meld(komma.includes('<span class="vul">,0</span>') && !komma.includes('<span cla
 meld(/<annotation[^>]*>[^<]*2\.5/.test(komma), "de bron van een formule (annotation) houdt de punt");
 meld(komma.replace(/,/g, ".") === punt.replace(/,/g, "."), "verder verandert er niets aan de uitwerking");
 
+console.log("\nEen ingevuld getal in een tekstregel");
+{
+  const tekst = render(evaluate(parse(["w = 0.87 m", "'De wand is 'w' m breed, zie 5.4.", "'<b title='w'>vet</b>"].join("\n")), {}, {}, {}));
+  meld(tekst.includes('De wand is <span class="calc-waarde">0.87</span> m breed, zie 5.4.'), "het ingevulde getal staat in een calc-waarde", tekst);
+  meld(metDecimaalKomma(tekst).includes('<span class="calc-waarde">0,87</span> m breed, zie 5.4.'), "op papier 0,87; de getypte 5.4 blijft");
+  meld(tekst.includes('<b title=0.87>vet</b>') || tekst.includes("title=0.87"), "binnen een tag komt er geen span omheen", tekst.match(/<b[^>]*>/)?.[0]);
+}
+
 console.log("\nLosse gevallen");
 meld(metDecimaalKomma('<p x="1.5">1.5</p><td class="getal">2 × 3.5 m</td><td>v1.2.3</td><td class="uc">0.94</td>') === '<p x="1.5">1,5</p><td class="getal">2 × 3,5 m</td><td>v1.2.3</td><td class="uc">0,94</td>', "een eigenschap blijft, een versienummer blijft, UC krijgt een komma");
 meld(metDecimaalKomma("<text>-12.50</text><text>−0.5</text><text> 3.0 </text>") === "<text>-12,50</text><text>−0,5</text><text> 3,0 </text>", "een maat in een tekening, ook negatief en met witruimte");
