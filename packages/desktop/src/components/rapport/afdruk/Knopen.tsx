@@ -91,7 +91,10 @@ function RolInhoud({ w }: { w: RapportWeergave }) {
  */
 function BerekeningenInhoud({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
   const paragrafen = knoop.kinderen.filter((k) => k.blad);
-  if (paragrafen.length === 0) return null;
+  // Een afbeelding bij het hoofdstuk (rapport.beelden.berekeningen), zoals het 3D-model van de
+  // constructie: onder de inhoudsopgave van het hoofdstuk, vóór de eerste paragraaf.
+  const beelden = <Beelden beelden={w.rapport.beelden[knoop.id]} invul={w.invul} />;
+  if (paragrafen.length === 0) return beelden;
   return (
     <>
       <h3 className="rpa-io-kop">{w.t("afdruk.inhoud.inhoudsopgave")}</h3>
@@ -102,6 +105,7 @@ function BerekeningenInhoud({ knoop, w }: { knoop: Rapportknoop; w: RapportWeerg
         </Rij>
       ))}
       <Leeg />
+      {beelden}
     </>
   );
 }

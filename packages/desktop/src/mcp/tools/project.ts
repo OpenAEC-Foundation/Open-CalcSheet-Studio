@@ -416,7 +416,7 @@ export const PROJECTTOOLS: McpToolDef[] = [
     kind: "mutate",
     description:
       "Set report fields by dot path (see report_get), e.g. {path: 'belastingen.wind.gebouwhoogte', value: '12'}. Text and checkbox fields take a string or boolean. Setting 'taal' ('en', 'nl') switches the report language: built-in texts switch along, text typed by the user stays. " +
-      "A list or object value replaces that part (e.g. append a revision with path 'revisies.2'); the app then completes it to a valid report. Images under the text of a paragraph: path 'beelden.<paragraph id>' (e.g. 'beelden.projectomschrijving') with a list of {path: 'C:/.../plan.png', bijschrift: 'caption', breedte: 20-100 (% of the text width)}; PNG or JPEG, or pass data (a data URL) instead of path. An empty list removes them. Pass values {path: value} for several. The parent of each path must exist.",
+      "A list or object value replaces that part (e.g. append a revision with path 'revisies.2'); the app then completes it to a valid report. Images under the text of a paragraph: path 'beelden.<paragraph id>' (e.g. 'beelden.projectomschrijving', or 'beelden.berekeningen' for the start of the Calculations chapter) with a list of {path: 'C:/.../plan.png', bijschrift: 'caption', breedte: 20-100 (% of the text width)}; PNG or JPEG, or pass data (a data URL) instead of path. An empty list removes them. Pass values {path: value} for several. The parent of each path must exist.",
     inputSchema: objectSchema({
       path: { type: "string", minLength: 1, description: "Dot path into the report." },
       value: { description: "New value: string, boolean, number, list or object." },
