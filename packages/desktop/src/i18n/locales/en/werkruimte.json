@@ -489,6 +489,11 @@
     "pagina": "Page {{nummer}}"
   },
   "lastblok": {
+    "omschrijving": "Description",
+    "kolomB": "Load width, with unit: 3.6 m",
+    "kolomL": "Second dimension; empty is 1 (per metre)",
+    "kolomBPunt": "Area or first dimension, with unit: 12 m^2",
+    "kolomLPunt": "Second dimension, with unit: 5 m",
     "nieuw": "Load block",
     "nieuwUitleg": "A block that builds a line load or point load from the loads in chapter 5",
     "balkUitleg": "Click an empty spot for a formula. A load block picks its loads from chapter 5 of the report.",

@@ -489,6 +489,11 @@
     "pagina": "Pagina {{nummer}}"
   },
   "lastblok": {
+    "omschrijving": "Omschrijving",
+    "kolomB": "Belastingbreedte, met eenheid: 3.6 m",
+    "kolomL": "Tweede maat; leeg is 1 (per meter)",
+    "kolomBPunt": "Oppervlak of eerste maat, met eenheid: 12 m^2",
+    "kolomLPunt": "Tweede maat, met eenheid: 5 m",
     "nieuw": "Lastblok",
     "nieuwUitleg": "Een blok dat een lijnlast of puntlast opbouwt uit de belastingen van hoofdstuk 5",
     "balkUitleg": "Klik op een lege plek voor een formule. Een lastblok kiest zijn belastingen uit hoofdstuk 5 van het rapport.",
