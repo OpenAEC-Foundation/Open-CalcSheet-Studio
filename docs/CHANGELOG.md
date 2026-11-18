@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Het lastblok (`@last`) staat als tabel met een raster en een gekleurde kop: het symbool, b, l, p_rep, G en Q per regel, en eronder de som van G en Q met de eenheid
+
 - Rapport, 5.5 Blijvende belastingen als canvas: elke opbouw (vloer, dak, wand of gevel) is een blok op een rastervlak, met zijn naam, zijn lagen en de som. Een klik opent het blok om het te bewerken, met het plusje komt er een laag bij, ook uit de gewichtenbibliotheek, en je sleept een blok naar de plek waar je het wilt hebben. Elk blok en elke belastingklasse uit 5.4 heeft een symbool (`g_v1`, `g_w1`, `q_k1`) dat je kunt wijzigen: onder dat symbool bestaat de belasting in elk rekenblad, en het staat achter de naam in het rapport. Het projectbestand bewaart de blokken met hun symbool en plek, en heeft per belasting een eigen object (`ocss::belasting`)
 - Canvasblad: met *+ Lastblok* maak je een blok dat een lijnlast (kN/m) of puntlast (kN) opbouwt uit de belastingen van hoofdstuk 5. Per regel kies je de belasting uit een lijst en geef je de belastingbreedte, het oppervlak of de lengte; een regel mag ook een eigen waarde zijn. Het blok staat als tabel op het blad en op papier, gescheiden in blijvend en veranderlijk, en het blad rekent verder met `q_L1`, `q_L1,G` en `q_L1,Q`. Wijzigt de opbouw in hoofdstuk 5, dan rekent het blok mee. In de rekentaal is het `@last symbool "naam" lijn … @end`, in elk blad te gebruiken
 - De server van Open FEM Studio in een installer heeft zijn licentie (GNU AGPL-3.0), de vermeldingen van derden en een verwijzing naar zijn broncode naast zich, en Instellingen › Over toont ze. De broncode van precies die versie staat bij de release, naast de installers

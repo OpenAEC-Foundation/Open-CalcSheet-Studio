@@ -407,41 +407,68 @@ export function renderLast(node: EvaluatedLast): string {
     return `<div class="calc-last calc-last-fout"${merk}>${kop}<p class="calc-last-melding">${esc(tekst)}</p></div>`;
   }
   const e = esc(eenheidInBeeld(node.eenheid));
+  type Deel = { getal: string; eenheid: string } | null;
+  // Per regel: p (de bron), b (de eerste maat) en l (de rest). Een lijnlast is per meter:
+  // zonder tweede maat staat er bij l een 1.
+  const cellen = node.rijen.map((rij) => {
+    const [p, b, ...rest] = rij.delen;
+    const l: Deel = rest.length === 0
+      ? (node.soort === 'lijn' ? { getal: '1', eenheid: '' } : null)
+      : rest.length === 1
+        ? rest[0]
+        : { getal: rest.map((d) => (d.eenheid ? `${d.getal} ${eenheidInBeeld(d.eenheid)}` : d.getal)).join(' × '), eenheid: '' };
+    return { p: (p ?? null) as Deel, b: (b ?? null) as Deel, l };
+  });
+  // Een kolom zet zijn eenheid in de kop als elke gevulde cel dezelfde heeft; anders staat hij bij de cel.
+  const kolom = (naam: string, delen: Deel[], standaard: string | null) => {
+    // Een kaal getal (een factor zonder eenheid) telt niet mee: het past bij elke kolom.
+    const eenheden = new Set(delen.filter((d): d is NonNullable<Deel> => d !== null && d.eenheid !== '').map((d) => d.eenheid));
+    const gedeeld = eenheden.size === 0 ? standaard : eenheden.size === 1 ? [...eenheden][0] : null;
+    const inKop = gedeeld ? ` [${esc(eenheidInBeeld(gedeeld))}]` : '';
+    return {
+      eenheid: gedeeld,
+      kop: `<th class="getal">${naam}${inKop}</th>`,
+      cel: (d: Deel) => `<td class="getal">${d ? esc(gedeeld !== null || !d.eenheid ? d.getal : `${d.getal} ${eenheidInBeeld(d.eenheid)}`) : ''}</td>`,
+    };
+  };
+  const kb = kolom('b', cellen.map((c) => c.b), 'm');
+  // l zonder eigen eenheid (de 1 van een lijnlast) volgt de eenheid van b.
+  const kl = kolom('l', cellen.map((c) => c.l), kb.eenheid);
+  const kp = kolom('p<sub>rep</sub>', cellen.map((c) => c.p), 'kN/m^2');
   const leeg = '<td class="getal"></td>';
-  const rijen = node.rijen.map((rij) => {
+  const rijen = node.rijen.map((rij, i) => {
     const variabele = rij.variabele ? naamHtml(rij.variabele) : '';
     const omschrijving = rij.omschrijving !== undefined
       ? `${esc(rij.omschrijving)}${variabele ? ` <span class="calc-last-var">${variabele}</span>` : ''}`
       : variabele || esc(rij.bron);
-    const berekening = rij.delen.map((d) => esc(d.eenheid ? `${d.getal} ${eenheidInBeeld(d.eenheid)}` : d.getal)).join(' × ');
     const bijdrage = `<td class="getal">${esc(rij.bijdrage)}</td>`;
-    return `<tr class="${rij.soort === 'Q' ? 'veranderlijk' : 'blijvend'}"><td>${omschrijving}</td><td class="berekening">${berekening}</td>${rij.soort === 'Q' ? leeg + bijdrage : bijdrage + leeg}</tr>`;
+    const c = cellen[i];
+    return `<tr class="${rij.soort === 'Q' ? 'veranderlijk' : 'blijvend'}"><td>${omschrijving}</td>${kb.cel(c.b)}${kl.cel(c.l)}${kp.cel(c.p)}${rij.soort === 'Q' ? leeg + bijdrage : bijdrage + leeg}</tr>`;
   });
   const u = node.uitkomsten;
-  const G = naamHtml(u.G.scope);
-  const Q = naamHtml(u.Q.scope);
-  const totaal = `<tr class="totaal"><td>${esc(w.totaal)}</td><td>${G} ${esc(w.blijvend)}, ${Q} ${esc(w.veranderlijk)}</td><td class="getal">${esc(u.G.tekst)}</td><td class="getal">${esc(u.Q.tekst)}</td></tr>`;
-  const som = `<tr class="som"><td colspan="2">${naamHtml(u.som.scope)} = ${G} + ${Q}</td><td class="getal" colspan="2">${esc(u.som.tekst)} ${e}</td></tr>`;
-  return `<div class="calc-last"${merk}>${kop}<table class="calc-last-tabel">`
-    + `<thead><tr><th>${esc(w.belasting)}</th><th>${esc(w.berekening)}</th><th class="getal">G [${e}]</th><th class="getal">Q [${e}]</th></tr></thead>`
-    + `<tbody>${rijen.join('')}</tbody><tfoot>${totaal}${som}</tfoot></table></div>`;
+  // De som staat onder de tabel, buiten het raster: Σ, G, Q en de eenheid.
+  const som = `<tr class="som"><td colspan="3"></td><td class="getal">Σ</td><td class="getal" title="${esc(u.G.naam)}">${esc(u.G.tekst)}</td><td class="getal" title="${esc(u.Q.naam)}">${esc(u.Q.tekst)}</td><td class="eenheid">[${e}]</td></tr>`;
+  return `<div class="calc-last"${merk}>${node.naam ? kop : ''}<table class="calc-last-tabel">`
+    + `<thead><tr><th>${symbool || esc(w.blok)}</th>${kb.kop}${kl.kop}${kp.kop}<th class="getal">G</th><th class="getal">Q</th></tr></thead>`
+    + `<tbody>${rijen.join('')}</tbody><tfoot>${som}</tfoot></table></div>`;
 }
 
 /** De opmaak, bij de andere blokken in renderer.ts. */
 export const LAST_CSS = `
 .calc-last { margin: 6px 0 10px; break-inside: avoid; page-break-inside: avoid; }
 .calc-last-kop { margin: 0 0 4px; }
+/* Een tabel met een raster en een gekleurde kop: de as, b, l, p_rep, G en Q. */
 .calc-last-tabel { border-collapse: collapse; font-size: 0.95em; margin: 4px 0; }
-.calc-last-tabel th, .calc-last-tabel td { border-bottom: 1px solid #e5e7eb; padding: 1px 12px 1px 0; text-align: left; vertical-align: baseline; }
-.calc-last-tabel th.getal, .calc-last-tabel td.getal { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding: 1px 0 1px 12px; }
-.calc-last-tabel td.berekening { white-space: nowrap; }
+.calc-last-tabel th, .calc-last-tabel td { border: 1px solid #1f2937; padding: 2px 8px; text-align: left; vertical-align: baseline; }
+.calc-last-tabel th { background: var(--calc-last-kop, #45b5aa); font-weight: 500; }
+.calc-last-tabel th.getal, .calc-last-tabel td.getal { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 3.2em; }
+.calc-last-tabel th.getal { text-align: left; }
 /* Een naam zoals in een formule: schuin, de index rechtop. */
 .calc-last var { font-family: KaTeX_Math, 'Times New Roman', serif; font-size: 1.08em; }
 .calc-last var sub { font-family: KaTeX_Main, 'Times New Roman', serif; font-style: normal; font-size: 0.72em; }
 .calc-last-var { color: #6b7280; font-size: 0.9em; }
-.calc-last-tabel tr.totaal td { border-top: 1px solid #9ca3af; font-weight: 600; }
-.calc-last-tabel tr.totaal td:nth-child(2) { font-weight: normal; color: #6b7280; font-size: 0.9em; }
-.calc-last-tabel tr.som td { border-bottom: none; }
-.calc-last-tabel tr.som td.getal { font-weight: 600; color: #059669; }
+/* De som staat onder het raster, zonder lijnen. */
+.calc-last-tabel tr.som td { border: none; }
+.calc-last-tabel tr.som td.eenheid { padding-left: 4px; white-space: nowrap; }
 .calc-last-fout .calc-last-melding { color: #dc2626; font-weight: 600; }
 `;
