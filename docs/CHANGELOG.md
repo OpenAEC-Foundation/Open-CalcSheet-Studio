@@ -7,6 +7,13 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- API (MCP en REST): `report_export_pdf` schrijft het hele rapport, met hoofdstukken, bladen en tekeningen, naar een opgegeven PDF-bestand, zonder dialoog. Alleen in de desktop-app op Windows
+- API (MCP en REST): `sheet_add` met `templateId` `canvas` maakt een canvas-blad, met `units` (tekst en plek in mm) om de eenheden meteen te plaatsen
+- Rapport, belastingklassen: categorie E (opslagruimtes) is erbij, en bij elke klasse zijn q_k en Q_k zelf in te vullen. Een leeg veld is de waarde uit de tabel; bij categorie E is er geen tabelwaarde en vul je beide zelf in
+- Een dev-build (`npm run build:dev-exe`) draait naast de geïnstalleerde app: hij heeft een eigen identifier, en daarmee eigen voorkeuren, een eigen token en standaard MCP-poort 3880
+
+## v2026.46.1 — 2026-11-12
+
 - De server van Open FEM Studio in een installer heeft zijn licentie (GNU AGPL-3.0), de vermeldingen van derden en een verwijzing naar zijn broncode naast zich, en Instellingen › Over toont ze. De broncode van precies die versie staat bij de release, naast de installers
 - De installers kunnen de server van Open FEM Studio meeleveren, met de handtekening van FEM Studio, en de controles van de release zoeken hem erin. De release-tekst zegt per platform of hij is meegeleverd
 - Rekentaal: met `@kern naam = tool … @end` roept een blad een rekentool van Open FEM Studio aan waarvan de invoer genest is en de uitkomst uit getallen bestaat, zoals het drielagenmodel voor de wapening van een plaat en de scheurwijdte volgens NEN-EN 1992-1-1 7.3.4 (`solve_native_fem`). Een pad met punten bouwt de invoer op (`inputs.input.thicknessMm = h`), eenheden worden omgerekend naar wat de tool vraagt, en daarna rekent het blad verder met de getallen uit het antwoord (`drie.result.bottom.requiredAsXmm2PerM`). Met `per k = 1 : n` doet het blok een reeks aanroepen in één keer. Het antwoord gaat mee in het projectbestand; zonder antwoord staat het blok als niet gerekend en bestaat er geen uitkomst
