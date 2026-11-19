@@ -222,7 +222,11 @@
     "qlast": "Roof q-load",
     "bijAlfa": "at α",
     "dakhellingInvullen": "— (enter the roof pitch)",
-    "qkDirect": "{{qk}}; directly below the roof decking {{direct}}"
+    "qkDirect": "{{qk}}; directly below the roof decking {{direct}}",
+    "zelfInvullen": "— (enter a value)",
+    "verplicht": "enter a value",
+    "leegIsTabel": "empty = table",
+    "eigenWaarde": "own value"
   },
   "opbouw": {
     "geen": "No build-ups in this group yet.",

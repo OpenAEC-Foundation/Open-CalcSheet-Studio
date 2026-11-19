@@ -19,7 +19,7 @@
  * Puur en zonder React: de controlescripts laden dit bestand rechtstreeks.
  */
 import type { Belastingen, Belastingklasse, Opbouw } from "./model.ts";
-import { categorie, dakQk, getal, rond } from "./normwaarden.ts";
+import { categorie, dakQk, getal, klasseWaarden, rond } from "./normwaarden.ts";
 import { gevelOpbouw, vlakOpbouw } from "./opbouw.ts";
 import { inTaal } from "./meertalig.ts";
 
@@ -99,7 +99,10 @@ export function klasseQk(k: Belastingklasse): number {
   if (!c) return NaN;
   if (c.soort === "dak") return dakQk(getal(k.dakhelling));
   const toeslag = k.lichteScheidingswanden.trim() ? getal(k.lichteScheidingswanden) : 0;
-  return c.qk + (Number.isFinite(toeslag) ? toeslag : 0);
+  // Een zelf ingevulde q_k gaat voor de tabel; categorie E heeft alleen die (klasseWaarden).
+  const qk = klasseWaarden(k)?.qk ?? null;
+  if (qk === null) return NaN;
+  return qk + (Number.isFinite(toeslag) ? toeslag : 0);
 }
 
 /** Zoveel decimalen heeft een belasting in hoofdstuk 5 van het rapport. */
