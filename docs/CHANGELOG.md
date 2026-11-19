@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+## v2026.47.0 — 2026-11-19
+
 - De betonbibliotheek bevat een conceptmodule voor voorgespannen prefab palen met momentenlijnen, een trektoets en ruimtelijke wapeningsdetails.
 - De API hergebruikt de laatst ingelezen bladtekst bij het opvragen van invoervelden en rekenresultaten.
 - Met `--headless` draait de desktop-app zonder zichtbaar venster voor lokale berekeningen en rapportexport via de API.
