@@ -307,5 +307,26 @@ console.log("Sessies:");
   meld(sessies.size() === 2 && !sessies.has(eerste), "boven het maximum verdwijnt de oudste sessie");
 }
 
+console.log("\nEen dev-build naast de geïnstalleerde app");
+{
+  const K = await import("../packages/desktop/src/mcp/koppeling.ts");
+  const { readFileSync } = await import("node:fs");
+  const lees = (pad) => JSON.parse(readFileSync(new URL(pad, import.meta.url), "utf8"));
+  try {
+    meld(K.standaardPoort("studio.openstructuralcalculation.app") === MCP_STANDAARD_POORT && K.standaardPoort(undefined) === MCP_STANDAARD_POORT,
+      "de geïnstalleerde app (en een onbekende identifier) houdt de standaardpoort");
+    meld(K.standaardPoort(K.DEV_IDENTIFIER) === MCP_STANDAARD_POORT + 1, "een dev-build krijgt standaard de poort erna", String(K.standaardPoort(K.DEV_IDENTIFIER)));
+    const dev = lees("../packages/desktop/src-tauri/tauri.dev.conf.json");
+    const gewoon = lees("../packages/desktop/src-tauri/tauri.conf.json");
+    meld(dev.identifier === K.DEV_IDENTIFIER && dev.identifier !== gewoon.identifier && !("app" in dev),
+      "tauri.dev.conf.json zet alleen een eigen identifier (eigen voorkeuren en token); de vensterinstellingen blijven");
+    const scripts = lees("../packages/desktop/package.json").scripts ?? {};
+    meld(/--debug/.test(scripts["build:dev-exe"] ?? "") && /tauri\.dev\.conf\.json/.test(scripts["build:dev-exe"] ?? ""),
+      "npm run build:dev-exe bouwt de dev-build met die instelling", scripts["build:dev-exe"]);
+  } catch (e) {
+    meld(false, `dev-build: ${e.message}`);
+  }
+}
+
 console.log(`\n${aantal - fouten} van ${aantal} controles goed.`);
 process.exit(fouten === 0 ? 0 : 1);

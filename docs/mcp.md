@@ -32,6 +32,12 @@ De instellingen staan in `preferences.json` in de app-gegevensmap
 (`%APPDATA%\studio.openstructuralcalculation.app\` op Windows) onder
 `mcpAan`, `mcpPoort`, `mcpToken` en `mcpAlleenLezen`.
 
+Een dev-build (`npm run build:dev-exe`, `src-tauri/tauri.dev.conf.json`) heeft de
+identifier `studio.openstructuralcalculation.dev`. Hij leest en schrijft daardoor
+zijn eigen `preferences.json` (`%APPDATA%\studio.openstructuralcalculation.dev\`),
+met een eigen token, en luistert standaard op poort 3880. Zo draait hij naast de
+geïnstalleerde app, die op 3879 blijft.
+
 ## Verbinden
 
 Op de tab staan beide regels kant-en-klaar, met het juiste token en de juiste
