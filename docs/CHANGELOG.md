@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Rapport, belastingklassen: categorie E (opslagruimtes) is erbij, en bij elke klasse zijn q_k en Q_k zelf in te vullen. Een leeg veld is de waarde uit de tabel; bij categorie E is er geen tabelwaarde en vul je beide zelf in
 - Een dev-build (`npm run build:dev-exe`) draait naast de geïnstalleerde app: hij heeft een eigen identifier, en daarmee eigen voorkeuren, een eigen token en standaard MCP-poort 3880
 
 ## v2026.46.1 — 2026-11-12
