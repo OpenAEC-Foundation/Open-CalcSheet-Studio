@@ -121,6 +121,7 @@ de alleen-lezenstand.
 | `GET /export/ifc` | `ifc_get` | lezen | **format** (`ifc`/`ifcx`), id |
 | `POST /export/ifc` | `export_ifc` | bestand | **format**, **path**, id |
 | `POST /export/pdf` | `export_pdf` | bestand | **path**, ids |
+| `POST /report/export/pdf` | `report_export_pdf` | bestand | **path** |
 | `POST /print` | `print` | beeld | **what** (`report`/`sheets`), ids |
 | `GET /view` | `view_get` | lezen | — |
 | `PUT /view` | `view_set` | beeld | **view** |
