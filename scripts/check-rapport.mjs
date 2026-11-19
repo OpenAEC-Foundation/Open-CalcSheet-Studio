@@ -1014,6 +1014,34 @@ kop("materialen.ts — 4.3: geen opmerking over de bevestigingsmiddelen");
   toets("bevestigingsmiddelen niet verder omlaag dan nodig", mis.onnodig.length === 0, mis.onnodig[0]);
 }
 
+// ── Categorie E en eigen q_k en Q_k per regel ───────────────────────────────
+kop("normwaarden.ts — categorie E en eigen waarden per belastingklasse");
+{
+  const N = await import("../packages/desktop/src/rapport/normwaarden.ts");
+  try {
+    const e = categorie("E");
+    gelijk("categorie E bestaat, zonder tabelwaarden, met ψ 1,0 / 0,9 / 0,8", [e?.soort, e?.qk, e?.Qk, e?.psi], ["vloer", null, null, [1.0, 0.9, 0.8]]);
+    const basis = { lichteScheidingswanden: "", dakhelling: "", qlast: "" };
+    gelijk("B zonder eigen waarden: de tabel", N.klasseWaarden({ ...basis, categorie: "B", qk: "", Qk: "" }),
+      { qk: 2.5, Qk: 3.0, psi: [0.5, 0.5, 0.3], eigen: { qk: false, Qk: false } });
+    gelijk("B met eigen q_k: die gaat voor, Q_k blijft de tabel", N.klasseWaarden({ ...basis, categorie: "B", qk: "4", Qk: "" }),
+      { qk: 4, Qk: 3.0, psi: [0.5, 0.5, 0.3], eigen: { qk: true, Qk: false } });
+    gelijk("E met 10 kN/m² en 150 kN (komma mag)", N.klasseWaarden({ ...basis, categorie: "E", qk: "10,0", Qk: "150" }),
+      { qk: 10, Qk: 150, psi: [1.0, 0.9, 0.8], eigen: { qk: true, Qk: true } });
+    gelijk("E zonder invoer: geen waarde, niet 0", N.klasseWaarden({ ...basis, categorie: "E", qk: "", Qk: "" }),
+      { qk: null, Qk: null, psi: [1.0, 0.9, 0.8], eigen: { qk: false, Qk: false } });
+    gelijk("een regel uit een ouder rapport (zonder de velden): de tabel", N.klasseWaarden({ ...basis, categorie: "A-vloer" }).qk, 1.75);
+    gelijk("onbekende categorie: niets", N.klasseWaarden({ ...basis, categorie: "bestaat-niet" }), null);
+    const r = normaliseerRapport({ versie: RAPPORT_VERSIE, taal: "nl", belastingen: { klassen: [
+      { categorie: "E", qk: "110", Qk: "150" }, { categorie: "B" },
+    ] } }, VANDAAG, {});
+    gelijk("normaliseerRapport bewaart qk en Qk; zonder invoer komen de velden er niet bij",
+      r.belastingen.klassen.map((k) => [k.categorie, k.qk ?? null, k.Qk ?? null, "qk" in k]), [["E", "110", "150", true], ["B", null, null, false]]);
+  } catch (err) {
+    toets(`categorie E: ${err.message}`, false, "");
+  }
+}
+
 // ── Uitslag ─────────────────────────────────────────────────────────────────
 if (fouten > 0) {
   console.error(`\nRapport: ${fouten} van de ${aantal} controles gezakt.`);
