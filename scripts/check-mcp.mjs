@@ -307,6 +307,21 @@ console.log("Sessies:");
   meld(sessies.size() === 2 && !sessies.has(eerste), "boven het maximum verdwijnt de oudste sessie");
 }
 
+console.log("\nHet rapport als PDF naar een pad");
+{
+  const voor = app.afdrukken.length;
+  const goed = await roep("report_export_pdf", { path: "C:/werk/2321-CB-21" });
+  meld(!goed.isError && goed.data.path === "C:/werk/2321-CB-21.pdf" && goed.data.bytes === 12345 && app.rapportPdfs.at(-1) === "C:/werk/2321-CB-21.pdf",
+    "report_export_pdf schrijft het rapport naar het pad, met .pdf erachter", goed.tekst);
+  meld(app.afdrukken.length === voor, "er gaat geen printdialoog open");
+  const relatief = await roep("report_export_pdf", { path: "rapport.pdf" });
+  meld(relatief.isError && /absolute/i.test(relatief.tekst ?? ""), "een relatief pad is een fout", relatief.tekst);
+  app.app.rapportPdfFout = { code: "NOT_AVAILABLE", melding: "This platform cannot write the report PDF." };
+  const niet = await roep("report_export_pdf", { path: "C:/werk/x.pdf" });
+  meld(niet.isError && /NOT_AVAILABLE/.test(niet.tekst ?? "") && app.afdrukken.length === voor, "kan de app het niet, dan NOT_AVAILABLE en geen printdialoog", niet.tekst);
+  app.app.rapportPdfFout = null;
+}
+
 console.log("\nEen canvas-blad via de API");
 {
   const { leesEenheden } = await import("../packages/desktop/src/store/canvasBlad.ts");

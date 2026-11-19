@@ -82,7 +82,7 @@ De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 | Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_set_pdf`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_insert_formula` |
 | Rekenen | `calc_evaluate` |
 | Formules | `formulas_list`, `formula_get` |
-| Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `print` |
+| Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `report_export_pdf`, `print` |
 | Weergave en instellingen | `view_get`, `view_set`, `settings_get`, `settings_set` |
 
 `id` is een blad-id uit `project_get` of `sheets_list`. Elke wijziging van het
