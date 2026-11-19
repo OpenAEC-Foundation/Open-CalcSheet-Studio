@@ -504,6 +504,8 @@ export interface EvaluatedText {
   html?: boolean;
   /** Zie TextNode.inline. */
   inline?: boolean;
+  /** De plekken in `text` (van, tot) waar een uitgerekend getal is ingevuld (`'naam'`). */
+  waarden?: Array<[number, number]>;
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
