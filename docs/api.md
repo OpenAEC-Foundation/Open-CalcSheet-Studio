@@ -192,3 +192,13 @@ Origin-weigering en de binding aan 127.0.0.1 gelden ook voor deze route.
 - **Weergave.** `view_set` kiest code/visueel/uitwerking, afdrukvoorbeeld of IFC
   in de werkruimte; het lint springt daarbij niet mee naar de tab IFC.
 - **Bureauprofiel en sneltoetsen** zijn (nog) niet via de API te zetten.
+
+## Windows zonder zichtbaar venster
+
+Start de geïnstalleerde executable met `--headless` in een aangemelde Windows-sessie.
+De WebView blijft actief. De REST- en MCP-instellingen, poort en autorisatie zijn
+dezelfde als bij een gewone start. Sluit eerst de interactieve instantie als
+die de ingestelde poort gebruikt. Vraag `GET /api/v1/openapi.json` op zodra de
+brug gereed is. Open een project via de API en gebruik
+`POST /api/v1/report/export/pdf` met het absolute uitvoerpad in het veld
+`path`. Beëindig na de export het gestarte proces.

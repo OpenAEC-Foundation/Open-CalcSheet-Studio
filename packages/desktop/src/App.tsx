@@ -105,9 +105,6 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   // Het welkomstvenster, alleen de eerste keer dat de app opent (Welkom.tsx).
   const [welkomOpen, setWelkomOpen] = useState(false);
-  useEffect(() => {
-    welkomBijStart().then((tonen) => { if (tonen) setWelkomOpen(true); });
-  }, []);
   const openSettings = useCallback((tab = "general") => {
     setSettingsTab(tab);
     setSettingsOpen(true);
@@ -137,13 +134,12 @@ export default function App() {
     };
     window.addEventListener("units-changed", onUnits);
     // Show window once theme is applied (avoids flash of unstyled chrome)
-    import("@tauri-apps/api/window")
-      .then(({ getCurrentWindow }) => {
-        getCurrentWindow().show();
-      })
-      .catch(() => {
-        // Browser fallback (npm run dev without Tauri)
-      });
+    const zichtbaar = "__TAURI_INTERNALS__" in window
+      ? import("@tauri-apps/api/core").then(({ invoke }) => invoke<boolean>("toon_werkvenster"))
+      : Promise.resolve(true);
+    zichtbaar.then(async (tonen) => {
+      if (tonen && await welkomBijStart()) setWelkomOpen(true);
+    }).catch(console.error);
     return () => window.removeEventListener("units-changed", onUnits);
   }, []);
 
