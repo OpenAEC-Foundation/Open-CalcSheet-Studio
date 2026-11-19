@@ -686,6 +686,18 @@
   font-size: 1em !important;
 }
 
+/* Alle tekst in een rekenblad is op papier even groot: ook een eigen <p> of lijst in een
+   tekstregel (die buiten .calc-text valt) en de toelichting achter een formule. Een
+   markdown-blad heeft zijn eigen maten (MarkdownBladWeergave.css). */
+.print-opmaak .print-blad .ifc-calc :is(p, li, dd, dt, blockquote):not(.md-papier *) {
+  font-size: 12.3px !important;
+  line-height: 1.4 !important;
+}
+
+.print-opmaak .print-blad .calc-comment {
+  font-size: 1em !important;
+}
+
 /* Koppen houden lucht erbóven — dat markeert de paragraafovergang — maar
    niet eronder: de kop hoort al bij de tekst die volgt. */
 .print-opmaak .print-blad h1,
