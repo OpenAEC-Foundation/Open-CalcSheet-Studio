@@ -619,3 +619,12 @@ html.rapportdruk .rpa-drukvellen .av-pagina:last-child {
   gap: 4mm;
   margin-top: 4mm;
 }
+
+/* Het symbool van een belasting achter zijn naam (5.4 en 5.5): daarmee verwijst een rekenblad ernaar. */
+.rpa-wortel .rpa-symbool {
+  margin-left: 0.6em;
+  font-family: var(--oa-font-mono, "Cascadia Mono", Consolas, monospace);
+  font-size: 0.85em;
+  font-weight: 400;
+  opacity: 0.75;
+}
