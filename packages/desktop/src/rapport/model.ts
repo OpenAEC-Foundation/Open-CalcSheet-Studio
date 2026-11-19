@@ -12,6 +12,7 @@
  */
 import { inTaal, type Meertalig } from "./meertalig.ts";
 import { normaliseerSituatie, type Situatie } from "./situatie.ts";
+import { metSymbolen } from "./belastingBronnen.ts";
 
 
 export type Fase = "" | "SO" | "VO" | "DO" | "TO" | "UO";
@@ -205,6 +206,12 @@ export interface Belastingklasse {
   dakhelling: string;
   /** kN/m¹, alleen bij daken. */
   qlast: string;
+  /** Eigen q_k in kN/m²; "" of afwezig = de waarde uit de tabel. Bij categorie E verplicht. */
+  qk?: string;
+  /** Eigen Q_k in kN; "" of afwezig = de waarde uit de tabel. Bij categorie E verplicht. */
+  Qk?: string;
+  /** De naam waaronder q_k in de rekenbladen bestaat (rapport/belastingBronnen.ts). */
+  symbool?: string;
 }
 
 /** Een laag in een vlakopbouw: p = d × ρ, of de ingevulde p als die er staat. */
@@ -212,9 +219,16 @@ export interface Laag { naam: string; d: string; rho: string; p: string; }
 /** Een laag in een gevelopbouw: q = p × h × vulling. */
 export interface Gevellaag { naam: string; p: string; h: string; vulling: string; }
 
+/**
+ * Wat een opbouw tot een los blok maakt: het symbool waaronder zijn som in de rekenbladen
+ * bestaat (rapport/belastingBronnen.ts), en zijn plek op het canvas van 5.5 in px. Zonder
+ * plek zet het canvas hem zelf neer.
+ */
+export interface Blokplek { symbool?: string; x?: number; y?: number; }
+
 export type Opbouw =
-  | { soort: "vlak"; naam: string; lagen: Laag[] }
-  | { soort: "gevel"; naam: string; lagen: Gevellaag[] };
+  | ({ soort: "vlak"; naam: string; lagen: Laag[] } & Blokplek)
+  | ({ soort: "gevel"; naam: string; lagen: Gevellaag[] } & Blokplek);
 
 export interface Belastingen {
   wind: Wind;
@@ -239,6 +253,22 @@ export interface Opmaak {
    * uitwerking daar, onder bijlage A de rest (inhoudsopgave in opzet.ts).
    */
   bladenInInhoud: boolean;
+}
+
+/** Een afbeelding onder de tekst van een paragraaf, zoals een overzichtstekening. */
+export interface Rapportbeeld {
+  /** data-URL van een PNG of JPEG. */
+  data: string;
+  bijschrift: string;
+  /** Breedte in procenten van de tekstbreedte: BEELD_BREEDTE.min t/m 100. */
+  breedte: number;
+}
+
+export const BEELD_BREEDTE = { min: 20, max: 100, standaard: 100 } as const;
+
+/** Is dit een afbeelding die het rapport kan tonen? Alleen PNG en JPEG, als data-URL. */
+export function isBeeldData(s: unknown): s is string {
+  return typeof s === "string" && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+=*$/.test(s);
 }
 
 export interface Rapport {
@@ -269,6 +299,8 @@ export interface Rapport {
   rol: Rol;
   uitgangspunten: Uitgangspunten;
   belastingen: Belastingen;
+  /** Per tekst-id (zie opzet.ts) de afbeeldingen onder de tekst van die paragraaf. */
+  beelden: Record<string, Rapportbeeld[]>;
   /** Per exemplaar-id een eigen toelichting voor hoofdstuk Berekeningen. */
   toelichting: Record<string, string>;
   /** Per exemplaar-id: uitwerking in het hoofdstuk zelf in plaats van in bijlage A. */
@@ -479,8 +511,8 @@ function standaardBelastingen(taal: string): Belastingen {
       ],
     },
     klassen: [
-      { categorie: "A-vloer", lichteScheidingswanden: n("0,80"), dakhelling: "", qlast: "" },
-      { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: n("2,0") },
+      { categorie: "A-vloer", lichteScheidingswanden: n("0,80"), dakhelling: "", qlast: "", symbool: "q_k1" },
+      { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: n("2,0"), symbool: "q_k2" },
     ],
     vloerenDaken: [],
     wanden: [],
@@ -505,6 +537,7 @@ export function standaardRapport(vandaag: string, teksten: Record<string, string
     rol: standaardRol(taal),
     uitgangspunten: standaardUitgangspunten(taal),
     belastingen: standaardBelastingen(taal),
+    beelden: {},
     toelichting: {},
     inHoofdstuk: {},
     bijlagen: [],
@@ -560,6 +593,28 @@ function tekstRecord(x: unknown, basis: Record<string, string> = {}): Record<str
   return uit;
 }
 
+/** Afbeeldingen per tekst-id. Wat geen PNG of JPEG is, valt weg; een lege lijst ook. */
+function beeldenRecord(x: unknown): Record<string, Rapportbeeld[]> {
+  const uit: Record<string, Rapportbeeld[]> = {};
+  const o = object(x);
+  if (!o) return uit;
+  for (const [k, v] of Object.entries(o)) {
+    const beelden = lijst<Rapportbeeld>(v, [], (b) => {
+      if (!isBeeldData(b.data)) return null;
+      const breedte = typeof b.breedte === "number" && Number.isFinite(b.breedte) ? b.breedte : Number(b.breedte);
+      return {
+        data: b.data,
+        bijschrift: tekst(b.bijschrift, ""),
+        breedte: Number.isFinite(breedte) && breedte > 0
+          ? Math.round(Math.min(BEELD_BREEDTE.max, Math.max(BEELD_BREEDTE.min, breedte)))
+          : BEELD_BREEDTE.standaard,
+      };
+    });
+    if (beelden.length) uit[k] = beelden;
+  }
+  return uit;
+}
+
 /** Ja/nee-waarden per sleutel; andere typen vallen weg. */
 function waarheidRecord(x: unknown): Record<string, boolean> {
   const uit: Record<string, boolean> = {};
@@ -568,10 +623,22 @@ function waarheidRecord(x: unknown): Record<string, boolean> {
   return uit;
 }
 
+/** Symbool en plek van een blok; een plek alleen als beide maten een getal zijn. */
+function blokplek(o: Los): Blokplek {
+  const uit: Blokplek = {};
+  if (typeof o.symbool === "string" && o.symbool.trim()) uit.symbool = o.symbool.trim();
+  if (typeof o.x === "number" && typeof o.y === "number" && Number.isFinite(o.x) && Number.isFinite(o.y)) {
+    uit.x = Math.max(0, o.x);
+    uit.y = Math.max(0, o.y);
+  }
+  return uit;
+}
+
 function normaliseerOpbouw(o: Los): Opbouw | null {
   const naam = tekst(o.naam, "");
   if (o.soort === "vlak") {
     return {
+      ...blokplek(o),
       soort: "vlak", naam,
       lagen: lijst(o.lagen, [], (l): Laag => ({
         naam: tekst(l.naam, ""), d: tekst(l.d, ""), rho: tekst(l.rho, ""), p: tekst(l.p, ""),
@@ -580,6 +647,7 @@ function normaliseerOpbouw(o: Los): Opbouw | null {
   }
   if (o.soort === "gevel") {
     return {
+      ...blokplek(o),
       soort: "gevel", naam,
       lagen: lijst(o.lagen, [], (l): Gevellaag => ({
         naam: tekst(l.naam, ""), p: tekst(l.p, ""), h: tekst(l.h, ""), vulling: tekst(l.vulling, ""),
@@ -721,7 +789,7 @@ export function normaliseerRapport(
         onderdeel: tekst(v.onderdeel, ""), ueind: tekst(v.ueind, ""), ubij: tekst(v.ubij, ""), uhor: tekst(v.uhor, ""),
       })),
     },
-    belastingen: {
+    belastingen: metSymbolen({
       wind: {
         gebouwhoogte: tekst(wind.gebouwhoogte, sb.wind.gebouwhoogte),
         cscd: tekst(wind.cscd, sb.wind.cscd),
@@ -734,10 +802,15 @@ export function normaliseerRapport(
         lichteScheidingswanden: tekst(k.lichteScheidingswanden, ""),
         dakhelling: tekst(k.dakhelling, ""),
         qlast: tekst(k.qlast, ""),
+        // Alleen als er iets staat: een rapport zonder eigen waarden blijft zoals het was.
+        ...(tekst(k.qk, "").trim() ? { qk: tekst(k.qk, "") } : {}),
+        ...(tekst(k.Qk, "").trim() ? { Qk: tekst(k.Qk, "") } : {}),
+        ...(typeof k.symbool === "string" && k.symbool.trim() ? { symbool: k.symbool.trim() } : {}),
       })),
       vloerenDaken: lijst(b.vloerenDaken, sb.vloerenDaken, normaliseerOpbouw),
       wanden: lijst(b.wanden, sb.wanden, normaliseerOpbouw),
-    },
+    }),
+    beelden: beeldenRecord(o.beelden),
     toelichting: tekstRecord(o.toelichting),
     inHoofdstuk: waarheidRecord(o.inHoofdstuk),
     bijlagen: Array.isArray(o.bijlagen) ? o.bijlagen.filter((t): t is string => typeof t === "string") : s.bijlagen,
