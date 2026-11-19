@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Het welkomstpaneel onderin verschijnt alleen de eerste keer dat je de app opent. Via Help › Aan de slag haal je het terug
 - Rapport als PDF: in een inhoudsopgave is de hele regel een link naar zijn kop (het nummer, de titel en het paginanummer), en een verwijzing in de tekst van het rapport of van een rekenblad, zoals "zie 5.2", "hoofdstuk 4" of "bijlage A.3", springt naar die paragraaf of dat blad. De PDF heeft bladwijzers: de hoofdstukken, paragrafen, bladen en bijlagen uit de inhoudsopgave voorin, met de paragrafen ingeklapt onder hun hoofdstuk
 - Rapport, hoofdstuk Berekeningen: met het vinkje *Bladen in bijlage A ook als paragraaf in dit hoofdstuk* uit staan bladen met hun uitwerking in bijlage A alleen nog in die bijlage. Ze hebben dan geen paragraaf met een verwijzing in het hoofdstuk en tellen niet mee in de nummering; de bladen in het hoofdstuk nummeren door. Standaard staat het aan, zoals het was
 - Op papier is alle tekst in een rekenblad even groot: een toelichting achter een formule en een eigen `<p>` of lijst in een tekstregel hebben dezelfde maat als een gewone tekstregel
