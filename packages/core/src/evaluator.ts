@@ -9,6 +9,7 @@ import { bouwIfcxBlok } from './ifcxBlok.js';
 import { bouwToets } from './toetsBlok.js';
 import { bouwFem } from './femBlok.js';
 import { bouwKern } from './kernBlok.js';
+import { bouwLast } from './lastBlok.js';
 import { FemModel, femWaarde, femStrook, femSvg, femGrootheid, FEM_EENHEID } from './femResultaat.js';
 import { bouwJsBlok } from './jsBlok.js';
 import { leesVerwijzing, verwijzingNaam, verwijzingenInMelding } from './verwijzing.js';
@@ -1470,14 +1471,16 @@ function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T
   huidigStelsel = opties.stelsel;
   huidigeTaal = opties.taal?.toLowerCase().startsWith('en') ? 'en' : 'nl';
   const stand = nieuweStand();
-  stand.opties = opties;
+  // De projecttekst van de app (zetProjectTekst) geldt waar de aanroep er zelf geen meegeeft.
+  const metProject = opties.project || !projectTekst ? opties : { ...opties, project: projectTekst };
+  stand.opties = metProject;
   try {
     // Een ongeldige of al bestaande naam slaat over; zo'n melding toont het projectpaneel
     // (zetProjectEenheden).
     for (const e of opties.eigenEenheden ?? []) {
       if (geldigeEenheidNaam(e.naam)) maakEenheid(e.naam, e.uitdrukking, scope, stand);
     }
-    rekenProjectDoor(scope, opties, stand);
+    rekenProjectDoor(scope, metProject, stand);
     return doe(stand);
   } finally {
     currentAngleMode = appModus;
@@ -1512,8 +1515,10 @@ export interface EvalOpties {
    * De eigen rekentekst van de projectgegevens, met de invoer daarvan. Hij rekent vóór
    * elk blad, zodat wat daar staat (`ψ_0 = 0,7`, `h_verd = ?{3} m`) in elk blad geldt.
    * Een blad mag een naam gewoon overschrijven, net als bij de vaste projectgegevens.
+   * `namen`: de weergavenaam bij een variabele uit die tekst (`g_v3` → "1e–3e verdieping");
+   * een `@last`-blok gebruikt hem als omschrijving van een regel (lastBlok.ts).
    */
-  project?: { bron: string; waarden?: Record<string, string> };
+  project?: { bron: string; waarden?: Record<string, string>; namen?: Record<string, string> };
 }
 
 /**
@@ -1531,6 +1536,19 @@ function rekenProjectDoor(scope: Scope, opties: EvalOpties, stand: Stand): void 
   }
   delete scope[BREAK_FLAG];
   delete scope[CONTINUE_FLAG];
+}
+
+/**
+ * De projecttekst, blijvend op deze kant (de app): de belastingen uit het rapport en de
+ * eigen elementen van de projectgegevens. Zo kennen alle routes hem die zelf geen
+ * `project` meegeven: de uitdraai, het rapport, de varianten en de IFCX-export. Elke
+ * aanroep vervangt de vorige tekst; zonder tekst is hij weg. De rekenworker heeft zijn
+ * eigen rekenkern en krijgt de tekst per verzoek in de opties.
+ */
+let projectTekst: EvalOpties['project'];
+
+export function zetProjectTekst(project: EvalOpties['project'] | null): void {
+  projectTekst = project?.bron.trim() ? project : undefined;
 }
 
 /** Het stelsel van het blad dat nu doorgerekend wordt (zie evaluate). */
@@ -2106,6 +2124,29 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
           },
           scope,
           opties: stand.opties,
+        }));
+        break;
+      }
+
+      case 'last': {
+        // Het blok rekent zelf, ook verborgen: zijn uitkomsten gelden voor wat eronder
+        // staat. De getallen volgen `#round`, de eenheden het eenhedenstelsel.
+        const opmaak = opmaakVan(stand);
+        result.push(bouwLast(node, {
+          reken: (expr) => reken(expr, scope),
+          scope,
+          opties: stand.opties,
+          getal: (n) => formatGetal(n, opmaak),
+          toon: (waarde) => {
+            let w = waarde;
+            try {
+              w = inHetStelsel(waarde) ?? waarde;
+            } catch {
+              /* een fout in de weergave: dan zoals het blad */
+            }
+            if (isUnit(w)) return { getal: formatGetal(getNumericValue(w), opmaak), eenheid: simplifyUnitString(w) };
+            return { getal: typeof w === 'number' ? formatGetal(w, opmaak) : String(w), eenheid: '' };
+          },
         }));
         break;
       }

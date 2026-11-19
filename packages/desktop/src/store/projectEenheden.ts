@@ -1,6 +1,5 @@
 import { STELSELS, geldigeEenheidNaam, type EvalOpties, type Grootheid, type Stelsel } from "@ifc-calc/core";
 import type { ProjectGegevens } from "./projectGegevens";
-import { projectOpties } from "./projectBlad.ts";
 
 /**
  * Het eenhedenstelsel van een project (docs/superpowers/specs/2026-11-06-eenheden-design.md).
@@ -102,8 +101,7 @@ export function evalOptiesVan(g: ProjectGegevens): EvalOpties {
     : keuze === "eigen"
       ? { ...STELSELS["si-mm"], ...eigenStelselVan(g) }
       : STELSELS[keuze];
-  const project = projectOpties(g);
-  return { ...(stelsel ? { stelsel } : {}), eigenEenheden, ...(project ? { project } : {}) };
+  return { ...(stelsel ? { stelsel } : {}), eigenEenheden };
 }
 
 /** De namen van de eigen eenheden van het project, voor het lezen van de bladen (ParseOptions.eenheden). */

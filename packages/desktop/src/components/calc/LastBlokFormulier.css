@@ -1,0 +1,206 @@
+/* Het formulier van een lastblok op het canvas (LastBlokFormulier.tsx). Het vel is licht,
+   dus de kleuren komen uit de Blueprint-tokens van dat thema, zoals bij de projectgegevens. */
+
+.lb {
+  position: absolute;
+  z-index: 6;
+  box-sizing: border-box;
+  width: 150mm;
+  max-width: 100%;
+  padding: 3mm;
+  font-family: var(--oa-font-body, "Inter", system-ui, sans-serif);
+  font-size: 12px;
+  color: var(--oa-text);
+  background: var(--oa-panel, #fff);
+  border: 1px solid var(--oa-accent, #d97706);
+  border-radius: var(--oa-radius-medium, 6px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  cursor: default;
+}
+
+.lb input,
+.lb select {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 26px;
+  padding: 0 6px;
+  font: inherit;
+  color: var(--oa-text);
+  background: var(--oa-field, #fff);
+  border: 1px solid var(--oa-border, #d6d3d1);
+  border-radius: var(--oa-radius-small, 4px);
+}
+
+.lb input:focus,
+.lb select:focus {
+  outline: none;
+  border-color: var(--oa-focus, #d97706);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--oa-focus, #d97706) 20%, transparent);
+}
+
+.lb-kop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6.5em 9em;
+  gap: 2mm;
+  margin-bottom: 3mm;
+}
+
+.lb-naam {
+  font-weight: 600;
+}
+
+.lb-symbool,
+.lb-eigen,
+.lb-maat {
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 11.5px;
+}
+
+.lb-regels {
+  display: grid;
+  gap: 1.5mm;
+}
+
+.lb-regel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 9em 24px;
+  gap: 2mm;
+  align-items: center;
+}
+
+.lb-koppen {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--oa-text-secondary);
+}
+
+.lb-bron {
+  display: flex;
+  gap: 1.5mm;
+  min-width: 0;
+}
+
+.lb-bron > select:first-child {
+  flex: 1 1 0;
+}
+
+.lb-bron .lb-eigen {
+  flex: 1 1 0;
+}
+
+.lb-bron > select:last-child:not(:first-child) {
+  flex: 0 0 3.6em;
+}
+
+.lb-icoon {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 11px;
+  color: var(--oa-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--oa-radius-small, 4px);
+  cursor: pointer;
+}
+
+.lb-icoon:hover:not(:disabled) {
+  color: var(--oa-error, #b91c1c);
+  border-color: var(--oa-border, #d6d3d1);
+}
+
+.lb-icoon:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.lb-voet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2mm;
+  margin-top: 3mm;
+}
+
+.lb-hint {
+  flex: 1 1 12em;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--oa-text-secondary);
+}
+
+.lb-knop {
+  height: 26px;
+  padding: 0 9px;
+  font: inherit;
+  color: var(--oa-text);
+  background: var(--oa-panel, #fff);
+  border: 1px solid var(--oa-border, #d6d3d1);
+  border-radius: var(--oa-radius-small, 4px);
+  cursor: pointer;
+}
+
+.lb-knop:hover {
+  background: var(--oa-hover, rgba(0, 0, 0, 0.05));
+}
+
+.lb-plus {
+  color: var(--oa-accent-text, #b45309);
+}
+
+.lb-klaar {
+  color: var(--oa-text-on-accent, #fff);
+  background: var(--oa-accent, #d97706);
+  border-color: var(--oa-accent, #d97706);
+}
+
+.lb-klaar:hover {
+  background: var(--oa-accent-hover, #b45309);
+}
+
+.lb-melding {
+  margin: 2mm 0 0;
+  font-size: 11px;
+  color: var(--oa-warning, #b45309);
+}
+
+/* De balk boven het vel van een canvas-blad: een lastblok erbij. */
+.canvas-balk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 210mm;
+  max-width: 100%;
+  margin: 0 0 8px;
+  font-size: var(--oa-size-body, 12px);
+  color: var(--oa-workspace-text, var(--oa-text-secondary));
+}
+
+.canvas-balk button {
+  height: 26px;
+  padding: 0 10px;
+  font: inherit;
+  color: var(--oa-text);
+  background: var(--oa-panel, #fff);
+  border: 1px solid var(--oa-border, #d6d3d1);
+  border-radius: var(--oa-radius-small, 4px);
+  cursor: pointer;
+}
+
+.canvas-balk button:hover {
+  border-color: var(--oa-accent, #d97706);
+}
+
+/* Het doorgerekende blok onder het formulier: zo komt het op het blad. */
+.lb-uitkomst {
+  margin-top: 3mm;
+  padding-top: 2mm;
+  border-top: 1px solid var(--oa-border, #d6d3d1);
+  overflow-x: auto;
+}
+
+.lb-uitkomst .calc-last {
+  margin: 0;
+}

@@ -8,7 +8,7 @@
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
 import { evalOptiesVan } from "../packages/desktop/src/store/projectEenheden.ts";
-import { projectOpties, projectWaardenVan, PROJECTBLAD, PROJECTBLAD_WAARDEN } from "../packages/desktop/src/store/projectBlad.ts";
+import { projectOpties, projectTekstVan, projectWaardenVan, PROJECTBLAD, PROJECTBLAD_WAARDEN } from "../packages/desktop/src/store/projectBlad.ts";
 import { projectScope, legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { schrijfEenheden } from "../packages/desktop/src/store/canvasBlad.ts";
 import { rekenUitwerking } from "../packages/desktop/src/components/calc/canvasRekenen.ts";
@@ -32,13 +32,15 @@ const project = {
 
 console.log("Opslag in de projectgegevens");
 meld(projectOpties(legeGegevens()) === undefined, "zonder eigen elementen geen projecttekst in de opties");
-meld(evalOptiesVan(legeGegevens()).project === undefined, "een oud project rekent zoals voorheen");
+meld(projectTekstVan(legeGegevens()) === undefined && evalOptiesVan(legeGegevens()).project === undefined, "een oud project rekent zoals voorheen");
 meld(projectOpties(project)?.waarden.h_verd === "2.5", "de invoer van het projectblad gaat mee", JSON.stringify(projectOpties(project)));
 meld(Object.keys(projectWaardenVan({ [PROJECTBLAD_WAARDEN]: "{kapot" })).length === 0, "kapotte invoer geldt als leeg");
 meld(!(PROJECTBLAD in projectScope(project)), "de rekentekst zelf is geen variabele in de bladen");
 
 console.log("\nIn elk blad");
-const opties = evalOptiesVan(project);
+// De projecttekst gaat apart mee: de worker krijgt hem per verzoek, deze kant kent hem via zetProjectTekst.
+const metProject = (g) => ({ ...evalOptiesVan(g), project: projectTekstVan(g) });
+const opties = metProject(project);
 const blad = rekenUitwerking("H = 4*h_verd\nM = ψ_0*10", {}, projectScope(project), {}, undefined, opties);
 meld(/10\s*m\b/.test(tekst(blad.html)), "een invoer van het projectblad geldt in het blad: H = 4·2,5 m = 10 m", tekst(blad.html).slice(0, 200));
 meld(/=\s*7\b/.test(tekst(blad.html)), "een waarde van het projectblad geldt in het blad: M = 0,7·10 = 7", tekst(blad.html).slice(0, 300));
@@ -53,7 +55,7 @@ const kapot = { ...project, [PROJECTBLAD]: schrijfEenheden([{ id: "e1", x: 0, y:
 let breekt = false;
 let html = "";
 try {
-  html = rekenUitwerking("b = 2", {}, projectScope(kapot), {}, undefined, evalOptiesVan(kapot)).html;
+  html = rekenUitwerking("b = 2", {}, projectScope(kapot), {}, undefined, metProject(kapot)).html;
 } catch {
   breekt = true;
 }

@@ -12,6 +12,7 @@
  */
 import { inTaal, type Meertalig } from "./meertalig.ts";
 import { normaliseerSituatie, type Situatie } from "./situatie.ts";
+import { metSymbolen } from "./belastingBronnen.ts";
 
 
 export type Fase = "" | "SO" | "VO" | "DO" | "TO" | "UO";
@@ -209,6 +210,8 @@ export interface Belastingklasse {
   qk?: string;
   /** Eigen Q_k in kN; "" of afwezig = de waarde uit de tabel. Bij categorie E verplicht. */
   Qk?: string;
+  /** De naam waaronder q_k in de rekenbladen bestaat (rapport/belastingBronnen.ts). */
+  symbool?: string;
 }
 
 /** Een laag in een vlakopbouw: p = d × ρ, of de ingevulde p als die er staat. */
@@ -216,9 +219,16 @@ export interface Laag { naam: string; d: string; rho: string; p: string; }
 /** Een laag in een gevelopbouw: q = p × h × vulling. */
 export interface Gevellaag { naam: string; p: string; h: string; vulling: string; }
 
+/**
+ * Wat een opbouw tot een los blok maakt: het symbool waaronder zijn som in de rekenbladen
+ * bestaat (rapport/belastingBronnen.ts), en zijn plek op het canvas van 5.5 in px. Zonder
+ * plek zet het canvas hem zelf neer.
+ */
+export interface Blokplek { symbool?: string; x?: number; y?: number; }
+
 export type Opbouw =
-  | { soort: "vlak"; naam: string; lagen: Laag[] }
-  | { soort: "gevel"; naam: string; lagen: Gevellaag[] };
+  | ({ soort: "vlak"; naam: string; lagen: Laag[] } & Blokplek)
+  | ({ soort: "gevel"; naam: string; lagen: Gevellaag[] } & Blokplek);
 
 export interface Belastingen {
   wind: Wind;
@@ -483,8 +493,8 @@ function standaardBelastingen(taal: string): Belastingen {
       ],
     },
     klassen: [
-      { categorie: "A-vloer", lichteScheidingswanden: n("0,80"), dakhelling: "", qlast: "" },
-      { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: n("2,0") },
+      { categorie: "A-vloer", lichteScheidingswanden: n("0,80"), dakhelling: "", qlast: "", symbool: "q_k1" },
+      { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: n("2,0"), symbool: "q_k2" },
     ],
     vloerenDaken: [],
     wanden: [],
@@ -572,10 +582,22 @@ function waarheidRecord(x: unknown): Record<string, boolean> {
   return uit;
 }
 
+/** Symbool en plek van een blok; een plek alleen als beide maten een getal zijn. */
+function blokplek(o: Los): Blokplek {
+  const uit: Blokplek = {};
+  if (typeof o.symbool === "string" && o.symbool.trim()) uit.symbool = o.symbool.trim();
+  if (typeof o.x === "number" && typeof o.y === "number" && Number.isFinite(o.x) && Number.isFinite(o.y)) {
+    uit.x = Math.max(0, o.x);
+    uit.y = Math.max(0, o.y);
+  }
+  return uit;
+}
+
 function normaliseerOpbouw(o: Los): Opbouw | null {
   const naam = tekst(o.naam, "");
   if (o.soort === "vlak") {
     return {
+      ...blokplek(o),
       soort: "vlak", naam,
       lagen: lijst(o.lagen, [], (l): Laag => ({
         naam: tekst(l.naam, ""), d: tekst(l.d, ""), rho: tekst(l.rho, ""), p: tekst(l.p, ""),
@@ -584,6 +606,7 @@ function normaliseerOpbouw(o: Los): Opbouw | null {
   }
   if (o.soort === "gevel") {
     return {
+      ...blokplek(o),
       soort: "gevel", naam,
       lagen: lijst(o.lagen, [], (l): Gevellaag => ({
         naam: tekst(l.naam, ""), p: tekst(l.p, ""), h: tekst(l.h, ""), vulling: tekst(l.vulling, ""),
@@ -725,7 +748,7 @@ export function normaliseerRapport(
         onderdeel: tekst(v.onderdeel, ""), ueind: tekst(v.ueind, ""), ubij: tekst(v.ubij, ""), uhor: tekst(v.uhor, ""),
       })),
     },
-    belastingen: {
+    belastingen: metSymbolen({
       wind: {
         gebouwhoogte: tekst(wind.gebouwhoogte, sb.wind.gebouwhoogte),
         cscd: tekst(wind.cscd, sb.wind.cscd),
@@ -741,10 +764,11 @@ export function normaliseerRapport(
         // Alleen als er iets staat: een rapport zonder eigen waarden blijft zoals het was.
         ...(tekst(k.qk, "").trim() ? { qk: tekst(k.qk, "") } : {}),
         ...(tekst(k.Qk, "").trim() ? { Qk: tekst(k.Qk, "") } : {}),
+        ...(typeof k.symbool === "string" && k.symbool.trim() ? { symbool: k.symbool.trim() } : {}),
       })),
       vloerenDaken: lijst(b.vloerenDaken, sb.vloerenDaken, normaliseerOpbouw),
       wanden: lijst(b.wanden, sb.wanden, normaliseerOpbouw),
-    },
+    }),
     toelichting: tekstRecord(o.toelichting),
     inHoofdstuk: waarheidRecord(o.inHoofdstuk),
     bijlagen: Array.isArray(o.bijlagen) ? o.bijlagen.filter((t): t is string => typeof t === "string") : s.bijlagen,

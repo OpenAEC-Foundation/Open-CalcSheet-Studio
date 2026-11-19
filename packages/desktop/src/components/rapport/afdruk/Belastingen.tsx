@@ -151,7 +151,7 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
   const rijen: ReactNode[] = [
     <>
       <Cel k={1} n={2} o>{t("afdruk.belastingen.klasse")}</Cel>
-      <Cel k={3} n={3} o klasse="rpa-invoer">{cat ? inTaal(cat.label, w.taal) : bk.categorie}</Cel>
+      <Cel k={3} n={3} o klasse="rpa-invoer">{cat ? inTaal(cat.label, w.taal) : bk.categorie}<Symbool s={bk.symbool} w={w} /></Cel>
     </>,
   ];
   if (!cat || cat.soort === "vloer") {
@@ -256,7 +256,7 @@ function VlakTabel({ opbouw, w }: { opbouw: Extract<Opbouw, { soort: "vlak" }>; 
   return (
     <>
       <Rij klasse="rpa-vet" houd>
-        <Cel k={1} n={2} b o l klasse="rpa-kop-licht">{opbouw.naam}</Cel>
+        <Cel k={1} n={2} b o l klasse="rpa-kop-licht">{opbouw.naam}<Symbool s={opbouw.symbool} w={w} /></Cel>
         <Cel k={3} b o klasse="rpa-kop-licht">d<Eenheid e="m" /></Cel>
         <Cel k={4} b o klasse="rpa-kop-licht">ρ<Eenheid e="kN/m3" /></Cel>
         <Cel k={5} n={2} b o r klasse="rpa-kop-licht">p<sub>rep</sub></Cel>
@@ -294,7 +294,7 @@ function GevelTabel({ opbouw, w }: { opbouw: Extract<Opbouw, { soort: "gevel" }>
   return (
     <>
       <Rij klasse="rpa-vet" houd>
-        <Cel k={1} b o l klasse="rpa-kop-licht">{opbouw.naam}</Cel>
+        <Cel k={1} b o l klasse="rpa-kop-licht">{opbouw.naam}<Symbool s={opbouw.symbool} w={w} /></Cel>
         <Cel k={2} b o klasse="rpa-kop-licht">p<sub>rep</sub>{w.eenheden.doel("kN/m2") && <Eenheid e="kN/m2" />}</Cel>
         <Cel k={3} b o klasse="rpa-kop-licht">h<Eenheid e="m" /></Cel>
         <Cel k={4} b o klasse="rpa-kop-licht">{w.t("afdruk.belastingen.vulling")}</Cel>
@@ -346,4 +346,13 @@ export function Groep({ titel, opbouwen, direct, inspringen, w }: {
       {inspringen ? <Vlak klasse="rpa-in">{tabellen}</Vlak> : tabellen}
     </>
   );
+}
+
+/**
+ * Het symbool waaronder een belasting in de rekenbladen bestaat, klein achter de naam.
+ * Alleen als een blad het gebruikt: zo vindt de lezer van hoofdstuk 6 de belasting hier
+ * terug, en verandert een rapport zonder zulke bladen niet.
+ */
+function Symbool({ s, w }: { s?: string; w: RapportWeergave }) {
+  return s && w.symbolen.has(s) ? <span className="rpa-symbool">{s}</span> : null;
 }
