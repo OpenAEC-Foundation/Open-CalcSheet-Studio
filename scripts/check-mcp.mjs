@@ -307,6 +307,31 @@ console.log("Sessies:");
   meld(sessies.size() === 2 && !sessies.has(eerste), "boven het maximum verdwijnt de oudste sessie");
 }
 
+console.log("\nEen canvas-blad via de API");
+{
+  const { leesEenheden } = await import("../packages/desktop/src/store/canvasBlad.ts");
+  const c = await roep("sheet_add", { templateId: "canvas", name: "Lastafdracht", units: [
+    { x: 62, y: 18, text: "b = a*3" },
+    { x: 10, y: 15, text: "a = 2 m" },
+  ] });
+  const blad = app.s.exemplaren.find((e) => e.id === c.data?.id);
+  meld(!c.isError && blad?.templateId === "canvas" && blad.naam === "Lastafdracht", "sheet_add met templateId canvas maakt een canvas-blad", c.tekst);
+  const eenheden = blad ? leesEenheden(blad.source) : [];
+  gelijk(eenheden.map((e) => [e.x, e.y, e.tekst]), [[10, 15, "a = 2 m"], [60, 20, "b = a*3"]], "de eenheden staan op het raster van 5 mm, in de volgorde van doorrekenen");
+  gelijk(c.data?.units?.map((u) => u.id), eenheden.map((e) => e.id), "het antwoord noemt de eenheden met hun id");
+  const r = await roep("sheet_evaluate", { id: c.data?.id });
+  const b = r.data?.numbers?.b;
+  meld(!r.isError && Math.abs((typeof b === "object" && b !== null ? b.value : b) - 6) < 1e-9, "het canvas rekent door: b = 6 m", JSON.stringify(r.data?.numbers));
+  const leeg = await roep("sheet_add", { templateId: "canvas" });
+  meld(!leeg.isError && app.s.exemplaren.find((e) => e.id === leeg.data?.id)?.source === "", "zonder eenheden: een leeg canvas");
+  const fout1 = await roep("sheet_add", { units: [{ x: 0, y: 0, text: "a = 1" }] });
+  meld(fout1.isError, "units zonder templateId canvas is een fout");
+  const fout2 = await roep("sheet_add", { templateId: "canvas", source: "a = 1", units: [{ x: 0, y: 0, text: "a = 1" }] });
+  meld(fout2.isError, "source en units samen is een fout");
+  const bron = await roep("sheet_add", { templateId: "canvas", source: "//@eenheid id=e1 x=10 y=15\nq = 5 kN/m" });
+  meld(!bron.isError && leesEenheden(app.s.exemplaren.find((e) => e.id === bron.data?.id)?.source ?? "").length === 1, "een canvas mag ook met rekentekst met merktekens");
+}
+
 console.log("\nEen dev-build naast de geïnstalleerde app");
 {
   const K = await import("../packages/desktop/src/mcp/koppeling.ts");
