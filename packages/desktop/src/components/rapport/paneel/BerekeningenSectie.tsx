@@ -75,6 +75,14 @@ export default function BerekeningenSectie() {
           hint={t("berekeningen.bladenInInhoudUitleg")}
         />
       )}
+      {exemplaren.length > 0 && (
+        <Vink
+          label={t("berekeningen.bijlageParagrafen")}
+          pad="opmaak.bijlageParagrafen"
+          aan={rapport.opmaak.bijlageParagrafen !== false}
+          hint={t("berekeningen.bijlageParagrafenUitleg")}
+        />
+      )}
       {exemplaren.map((ex) => {
         const uitkomst = uitkomsten.get(ex.id);
         const r = uitkomst?.resultaat;

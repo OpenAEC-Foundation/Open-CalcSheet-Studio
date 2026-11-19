@@ -294,6 +294,8 @@
     "staatInHoofdstuk": "De volledige uitwerking staat direct onder de toelichting.",
     "staatInBijlage": "De volledige uitwerking staat in bijlage {{letter}}.",
     "koppenInInhoud": "Koppen uit de tekst in de inhoudsopgave",
+    "bijlageParagrafen": "Bladen in bijlage A ook als paragraaf in dit hoofdstuk",
+    "bijlageParagrafenUitleg": "Elk blad met zijn uitwerking in bijlage A heeft dan een paragraaf in dit hoofdstuk, met de verwijzing naar de bijlage. Staat dit uit, dan staan die bladen alleen in bijlage A en tellen ze niet mee in de nummering van dit hoofdstuk.",
     "bladenInInhoud": "Bladen in de inhoudsopgave",
     "bladenInInhoudUitleg": "De inhoudsopgave voorin noemt dan ook elk blad met zijn pagina: onder dit hoofdstuk of onder bijlage A. Staat dit uit, dan staan de bladen alleen in de inhoudsopgave van dit hoofdstuk."
   },

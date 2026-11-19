@@ -253,6 +253,12 @@ export interface Opmaak {
    * uitwerking daar, onder bijlage A de rest (inhoudsopgave in opzet.ts).
    */
   bladenInInhoud: boolean;
+  /**
+   * Alleen `false` wordt bewaard: een blad met zijn uitwerking in bijlage A heeft dan geen
+   * paragraaf in hoofdstuk Berekeningen en telt daar niet mee in de nummering (bladKnopen
+   * in opzet.ts). Zonder dit veld heeft elk blad er een, met de verwijzing naar de bijlage.
+   */
+  bijlageParagrafen?: boolean;
 }
 
 /** Een afbeelding onder de tekst van een paragraaf, zoals een overzichtstekening. */
@@ -819,6 +825,7 @@ export function normaliseerRapport(
       constructieprincipe: keuze(opmaak.constructieprincipe, s.opmaak.constructieprincipe),
       subkoppen: keuze(opmaak.subkoppen, s.opmaak.subkoppen),
       bladenInInhoud: typeof opmaak.bladenInInhoud === "boolean" ? opmaak.bladenInInhoud : versie >= 4 && s.opmaak.bladenInInhoud,
+      ...(opmaak.bijlageParagrafen === false ? { bijlageParagrafen: false } : {}),
     },
     ...(situatie ? { situatie } : {}),
     bureau: normaliseerBureau(o.bureau),
