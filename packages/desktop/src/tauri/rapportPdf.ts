@@ -37,9 +37,10 @@ export async function kiesRapportPdf(naam: string, projectPad: string | null): P
 }
 
 /** Schrijft wat er op dit moment voor de afdruk klaarstaat naar `pad`. */
-export async function schrijfRapportPdf(pad: string): Promise<void> {
+/** Geeft het aantal geschreven bytes. */
+export async function schrijfRapportPdf(pad: string): Promise<number> {
   const { invoke } = await import("@tauri-apps/api/core");
-  await invoke<number>("rapport_pdf_schrijven", { pad });
+  return invoke<number>("rapport_pdf_schrijven", { pad });
 }
 
 /**

@@ -54,6 +54,10 @@ curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
 curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
   -d '{"path": "C:/projecten/hal/fem-rapport.pdf"}' $API/sheets/pdf
 
+# Een afbeelding onder de tekst van een rapportparagraaf (PNG of JPEG; breedte in % van de tekst)
+curl -X PATCH -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
+  -d '{"path": "beelden.projectomschrijving", "value": [{"path": "C:/projecten/hal/situatie.png", "bijschrift": "Situatie", "breedte": 80}]}' $API/report
+
 # Opslaan als, IFC exporteren
 curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
   -d '{"path": "C:/projecten/hal/hal"}' $API/project/save-as
@@ -121,6 +125,7 @@ de alleen-lezenstand.
 | `GET /export/ifc` | `ifc_get` | lezen | **format** (`ifc`/`ifcx`), id |
 | `POST /export/ifc` | `export_ifc` | bestand | **format**, **path**, id |
 | `POST /export/pdf` | `export_pdf` | bestand | **path**, ids |
+| `POST /report/export/pdf` | `report_export_pdf` | bestand | **path** |
 | `POST /print` | `print` | beeld | **what** (`report`/`sheets`), ids |
 | `GET /view` | `view_get` | lezen | — |
 | `PUT /view` | `view_set` | beeld | **view** |
