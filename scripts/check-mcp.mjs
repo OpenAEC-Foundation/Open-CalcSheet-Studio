@@ -307,6 +307,30 @@ console.log("Sessies:");
   meld(sessies.size() === 2 && !sessies.has(eerste), "boven het maximum verdwijnt de oudste sessie");
 }
 
+console.log("Afbeeldingen bij een paragraaf:");
+{
+  const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==";
+  app.schijf.set("C:/proef/situatie.png", Buffer.from(PNG, "base64").toString("latin1"));
+  const gezet = await roep("report_set", { path: "beelden.projectomschrijving", value: [{ path: "C:/proef/situatie.png", bijschrift: "Situatie", breedte: 60 }] });
+  const beeld = app.s.rapport.beelden?.projectomschrijving?.[0];
+  meld(!gezet.isError && beeld?.data === `data:image/png;base64,${PNG}` && beeld.bijschrift === "Situatie" && beeld.breedte === 60, "report_set: een PNG van schijf, met bijschrift en breedte", JSON.stringify(gezet.data).slice(0, 200));
+  const antwoord = gezet.data.set?.["beelden.projectomschrijving"]?.[0];
+  meld(antwoord && antwoord.bytes > 0 && antwoord.data === undefined && antwoord.bijschrift === "Situatie", "het antwoord geeft de grootte, niet de data", JSON.stringify(antwoord));
+  const gelezen = await roep("report_get", { path: "beelden.projectomschrijving" });
+  await roep("report_set", { path: "beelden.projectomschrijving", value: gelezen.data.value.map((b) => ({ ...b, bijschrift: "Overzicht" })) });
+  const na = app.s.rapport.beelden.projectomschrijving[0];
+  meld(na.bijschrift === "Overzicht" && na.data === beeld.data, "wat report_get gaf terugzetten houdt de afbeelding");
+  await roep("report_set", { path: "beelden.projectomschrijving.0.breedte", value: 5 });
+  await roep("report_set", { path: "beelden.projectomschrijving.0.bijschrift", value: "Vogelvlucht" });
+  const los = app.s.rapport.beelden.projectomschrijving[0];
+  meld(los.bijschrift === "Vogelvlucht" && los.breedte === 20, "een los veld van een afbeelding zetten; de breedte blijft een getal binnen zijn grenzen", JSON.stringify({ ...los, data: "" }));
+  const fout1 = await roep("report_set", { path: "beelden.projectomschrijving", value: [{ path: "C:/proef/tekening.pdf", bijschrift: "x" }] });
+  const fout2 = await roep("report_set", { path: "beelden.projectomschrijving", value: [{ path: "C:/proef/weg.png", bijschrift: "x" }] });
+  meld(fout1.data.code === "VALIDATION" && fout2.data.code === "VALIDATION" && app.s.rapport.beelden.projectomschrijving.length === 1, "geen PNG of JPEG, of een bestand dat er niet is: een melding en niets verandert", `${fout1.data.code} ${fout2.data.code}`);
+  await roep("report_set", { path: "beelden.projectomschrijving", value: [] });
+  meld(app.s.rapport.beelden.projectomschrijving === undefined, "een lege lijst haalt de afbeeldingen weg");
+}
+
 console.log("\nHet rapport als PDF naar een pad");
 {
   const voor = app.afdrukken.length;

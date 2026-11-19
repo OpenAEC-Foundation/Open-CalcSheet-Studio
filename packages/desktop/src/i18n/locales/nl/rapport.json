@@ -99,6 +99,15 @@
     "leeg": "Nog geen revisies: het voorblad laat datum en status dan leeg.",
     "rapportstatus": "Rapportstatus:"
   },
+  "beelden": {
+    "afbeelding": "Afbeelding",
+    "toevoegen": "+ Afbeelding",
+    "bijschrift": "Bijschrift",
+    "breedte": "Breedte (%)",
+    "verwijder": "Verwijder",
+    "teGroot": "{{naam}} is groter dan 8 MB; verklein de afbeelding eerst.",
+    "geenBeeld": "{{naam}} is geen PNG of JPEG."
+  },
   "teksten": {
     "intro": "Per onderdeel een tekst. Standaardtekst ▾ kiest een meegeleverde of eigen variant. Een optioneel blok dat leeg blijft, valt weg uit het rapport.",
     "optioneelLeeg": "Leeg laten: dan valt dit onderdeel weg.",

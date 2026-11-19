@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Rapport: onder de tekst van een paragraaf in hoofdstuk 1 t/m 3 kunnen afbeeldingen staan (PNG of JPEG), elk met een bijschrift en een breedte, bijvoorbeeld een overzichtstekening bij 2.1 Projectomschrijving. Ook aan het begin van hoofdstuk Berekeningen kan een afbeelding staan, zoals het 3D-model van de constructie (`beelden.berekeningen`). In het rapportpaneel voeg je ze toe met *+ Afbeelding*; ze gaan mee in het projectbestand
+- API (MCP en REST): `report_set` met pad `beelden.<paragraaf>` zet de afbeeldingen van een paragraaf, uit een bestand (`path`) of als data-URL (`data`); `report_get` geeft per afbeelding het bijschrift, de breedte en de grootte
 - Het lastblok (`@last`) staat als tabel met een raster en een gekleurde kop: het symbool, b, l, p_rep, G en Q per regel, en eronder de som van G en Q met de eenheid. Een regel zonder omschrijving heeft een witte cel, en de getallen in een kolom staan met hun decimaalteken onder elkaar. Het invulscherm van een lastblok heeft dezelfde tabel: je vult de cellen omschrijving, b, l en p_rep in en zet met een stip of de regel onder G of Q telt
 - Op papier in het Nederlands staan de getallen van een rekenblad met een komma als decimaalteken: in formules, tabellen en tekeningen. De rekentaal en het scherm houden de punt, en lopende tekst blijft zoals hij getypt is
 

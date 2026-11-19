@@ -169,6 +169,7 @@ const RAPPORT = object({
     vloerenDaken: opt(lijst(OPBOUW)),
     wanden: opt(lijst(OPBOUW)),
   })),
+  beelden: opt(VRIJ),
   toelichting: opt(VRIJ),
   inHoofdstuk: opt(VRIJ),
   bijlagen: opt(lijst(TEKST)),
