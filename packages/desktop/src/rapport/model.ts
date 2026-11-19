@@ -205,6 +205,10 @@ export interface Belastingklasse {
   dakhelling: string;
   /** kN/m¹, alleen bij daken. */
   qlast: string;
+  /** Eigen q_k in kN/m²; "" of afwezig = de waarde uit de tabel. Bij categorie E verplicht. */
+  qk?: string;
+  /** Eigen Q_k in kN; "" of afwezig = de waarde uit de tabel. Bij categorie E verplicht. */
+  Qk?: string;
 }
 
 /** Een laag in een vlakopbouw: p = d × ρ, of de ingevulde p als die er staat. */
@@ -734,6 +738,9 @@ export function normaliseerRapport(
         lichteScheidingswanden: tekst(k.lichteScheidingswanden, ""),
         dakhelling: tekst(k.dakhelling, ""),
         qlast: tekst(k.qlast, ""),
+        // Alleen als er iets staat: een rapport zonder eigen waarden blijft zoals het was.
+        ...(tekst(k.qk, "").trim() ? { qk: tekst(k.qk, "") } : {}),
+        ...(tekst(k.Qk, "").trim() ? { Qk: tekst(k.Qk, "") } : {}),
       })),
       vloerenDaken: lijst(b.vloerenDaken, sb.vloerenDaken, normaliseerOpbouw),
       wanden: lijst(b.wanden, sb.wanden, normaliseerOpbouw),
