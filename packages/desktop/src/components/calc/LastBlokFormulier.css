@@ -40,58 +40,136 @@
 
 .lb-kop {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 6.5em 9em;
+  grid-template-columns: minmax(0, 1fr) 10em;
   gap: 2mm;
-  margin-bottom: 3mm;
+  margin-bottom: 2mm;
 }
 
 .lb-naam {
   font-weight: 600;
 }
 
-.lb-symbool,
-.lb-eigen,
-.lb-maat {
+/* De tabel van het blok, zoals hij op het blad komt: een raster, een gekleurde kop en
+   cellen die je invult zoals in een rekenblad. */
+.lb-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.lb-tabel th,
+.lb-tabel td {
+  height: 26px;
+  padding: 0;
+  border: 1px solid #1f2937;
+  vertical-align: middle;
+}
+
+.lb-tabel th {
+  padding: 0 6px;
+  font-weight: 500;
+  text-align: left;
+  background: var(--calc-last-kop, #45b5aa);
+}
+
+.lb-tabel th:nth-child(2),
+.lb-tabel th:nth-child(3) { width: 5.6em; }
+.lb-tabel th:nth-child(4) { width: 8.4em; }
+.lb-tabel th:nth-child(5),
+.lb-tabel th:nth-child(6) { width: 2.6em; text-align: center; }
+
+.lb-tabel .lb-th-symbool {
+  padding: 0;
+}
+
+.lb-tabel .lb-th-weg,
+.lb-tabel .lb-td-weg {
+  width: 26px;
+  padding: 0 0 0 2px;
+  background: transparent;
+  border: none;
+}
+
+/* Een cel is zijn invoerveld: geen eigen rand, wel een kader als je erin staat. De
+   velden op het canvas hebben een eigen vlak en lijn (CanvasBladWeergave.css); hier is de
+   cel het vlak, dus deze regels moeten daar bovenuit. */
+.lb .lb-tabel input,
+.lb .lb-tabel select,
+.print-opmaak .print-blad.canvas-vlak .lb .lb-tabel input,
+.print-opmaak .print-blad.canvas-vlak .lb .lb-tabel select {
+  display: block;
+  width: 100% !important;
+  height: 26px;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.lb .lb-tabel input:focus,
+.lb .lb-tabel select:focus,
+.print-opmaak .print-blad.canvas-vlak .lb .lb-tabel input:focus,
+.print-opmaak .print-blad.canvas-vlak .lb .lb-tabel select:focus {
+  background: var(--oa-field, #fff) !important;
+  box-shadow: inset 0 0 0 2px var(--oa-focus, #d97706);
+}
+
+.lb-tabel input:disabled {
+  cursor: default;
+}
+
+.lb-symbool {
+  font-family: var(--oa-font-mono, monospace);
+  font-weight: 600;
+}
+
+.lb-getal {
   font-family: var(--oa-font-mono, monospace);
   font-size: 11.5px;
+  text-align: right;
 }
 
-.lb-regels {
-  display: grid;
-  gap: 1.5mm;
-}
-
-.lb-regel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 9em 24px;
-  gap: 2mm;
-  align-items: center;
-}
-
-.lb-koppen {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
+.lb-vast {
+  display: block;
+  padding: 0 6px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: var(--oa-text-secondary);
 }
 
-.lb-bron {
+.lb-td-bron {
   display: flex;
-  gap: 1.5mm;
-  min-width: 0;
 }
 
-.lb-bron > select:first-child {
-  flex: 1 1 0;
+.lb .lb-tabel .lb-td-bron .lb-smal {
+  flex: 0 0 22px;
+  width: 22px !important;
+  padding: 0;
+  /* Alleen het pijltje: de tekst van de keuze staat al in de cel ernaast. */
+  text-indent: -99px;
 }
 
-.lb-bron .lb-eigen {
-  flex: 1 1 0;
+/* G of Q: een stip in de kolom waar de regel in telt. */
+.lb-soort {
+  display: block;
+  width: 100%;
+  height: 26px;
+  padding: 0;
+  font: inherit;
+  font-size: 10px;
+  color: var(--oa-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
-.lb-bron > select:last-child:not(:first-child) {
-  flex: 0 0 3.6em;
+.lb-soort:hover:not(.lb-aan) {
+  background: var(--oa-hover, rgba(0, 0, 0, 0.06));
+}
+
+.lb-soort:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--oa-focus, #d97706);
 }
 
 .lb-icoon {

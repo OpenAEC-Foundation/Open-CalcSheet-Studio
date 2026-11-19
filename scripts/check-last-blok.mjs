@@ -77,7 +77,9 @@ const alle = (nodes, uit = []) => {
 const lastVan = (nodes) => alle(nodes).find((n) => n.type === "last");
 const getal = (w, eenheid) => (w && typeof w.toNumber === "function" ? w.toNumber(eenheid) : Number(w));
 /** Het blok in de uitwerking, zonder de formules eromheen. */
-const blokHtml = (html) => html.match(/<div class="calc-last[^]*?<\/table><\/div>|<div class="calc-last[^]*?<\/div>/)?.[0] ?? "";
+const blokRuw = (html) => html.match(/<div class="calc-last[^]*?<\/table><\/div>|<div class="calc-last[^]*?<\/div>/)?.[0] ?? "";
+/** Het blok zonder de onzichtbare cijfers waarmee de getallen onder elkaar staan. */
+const blokHtml = (html) => blokRuw(html).replace(/<span class="vul">[^<]*<\/span>/g, "");
 
 /** De belastingen uit hoofdstuk 5, zoals de app ze vóór elk blad laat rekenen. */
 const PROJECT = {
@@ -232,27 +234,33 @@ deel("De weergave", () => {
   const blok = blokHtml(html);
   meld(blok.startsWith('<div class="calc-last" data-last="q_L1">') && !blok.includes("alleen-scherm"), "het blok staat op het blad, ook op papier", blok.slice(0, 80));
   meld(blok.includes('<p class="calc-last-kop"><strong>Ligger L1, as 2</strong> — <var>q<sub>L1</sub></var>, lijnlast</p>'), "de kop: de naam vet, dan het symbool en lijnlast", blok.match(/<p class="calc-last-kop">.*?<\/p>/)?.[0]);
-  meld(blok.includes('<thead><tr><th>Belasting</th><th>Berekening</th><th class="getal">G [kN/m]</th><th class="getal">Q [kN/m]</th></tr></thead>'), "de kolommen: Belasting, Berekening, G en Q in kN/m", blok.match(/<thead>.*?<\/thead>/)?.[0]);
+  // De tabel: het symbool in de kop, dan b, l en p_rep, en de bijdrage in de kolom G of Q.
+  // Een kolom zet zijn eenheid in de kop als alle cellen dezelfde hebben; anders staat hij bij de cel.
+  meld(blok.includes('<thead><tr><th><var>q<sub>L1</sub></var></th><th class="getal">b [m]</th><th class="getal">l [m]</th><th class="getal">p<sub>rep</sub></th><th class="getal">G</th><th class="getal">Q</th></tr></thead>'), "de kolommen: het symbool, b en l in m, p_rep, G en Q", blok.match(/<thead>.*?<\/thead>/)?.[0]);
   const rijen = [...blok.matchAll(/<tr class="(blijvend|veranderlijk)">(.*?)<\/tr>/g)].map((m) => m[2]);
   meld(rijen.length === 4, "een rij per regel", String(rijen.length));
-  meld(rijen[0] === '<td>1e–3e verdieping <span class="calc-last-var"><var>g<sub>v3</sub></var></span></td><td class="berekening">7.75 kN/m² × 3.6 m</td><td class="getal">27.9</td><td class="getal"></td>', "de naam uit het project als omschrijving, de variabele er klein achter, de bijdrage in de kolom G", rijen[0]);
-  meld(rijen[1] === '<td><var>g<sub>w1</sub></var></td><td class="berekening">5.25 kN/m × 1</td><td class="getal">5.25</td><td class="getal"></td>', "zonder omschrijving of naam in het project: de bron zelf", rijen[1]);
-  meld(rijen[2] === '<td>vloer, categorie A <span class="calc-last-var"><var>q<sub>k1</sub></var></span></td><td class="berekening">1.75 kN/m² × 3.6 m</td><td class="getal"></td><td class="getal">6.3</td>', "de omschrijving uit de regel gaat voor de naam uit het project; de bijdrage in de kolom Q", rijen[2]);
-  meld(rijen[3] === '<td>25 kN/m^3*0.3 m*0.5 m</td><td class="berekening">3.75 kN/m</td><td class="getal">3.75</td><td class="getal"></td>', "een uitdrukking als bron: de brontekst en zijn uitkomst", rijen[3]);
-  meld(blok.includes('<tr class="totaal"><td>Totaal</td><td><var>q<sub>L1,G</sub></var> blijvend, <var>q<sub>L1,Q</sub></var> veranderlijk</td><td class="getal">36.9</td><td class="getal">6.3</td></tr>'), "de slotrij Totaal met q_L1,G en q_L1,Q", blok.match(/<tr class="totaal">.*?<\/tr>/)?.[0]);
-  meld(blok.includes('<tr class="som"><td colspan="2"><var>q<sub>L1</sub></var> = <var>q<sub>L1,G</sub></var> + <var>q<sub>L1,Q</sub></var></td><td class="getal" colspan="2">43.2 kN/m</td></tr>'), "en daaronder de som q_L1 = 43.2 kN/m", blok.match(/<tr class="som">.*?<\/tr>/)?.[0]);
+  meld(rijen[0] === '<td>1e–3e verdieping <span class="calc-last-var"><var>g<sub>v3</sub></var></span></td><td class="getal">3.6</td><td class="getal">1</td><td class="getal">7.75 kN/m²</td><td class="getal">27.9</td><td class="getal"></td>', "de naam uit het project als omschrijving, de variabele er klein achter; b, l = 1 bij een lijnlast, p_rep, en de bijdrage in de kolom G", rijen[0]);
+  meld(rijen[1] === '<td><var>g<sub>w1</sub></var></td><td class="getal">1</td><td class="getal">1</td><td class="getal">5.25 kN/m</td><td class="getal">5.25</td><td class="getal"></td>', "zonder omschrijving of naam in het project: de variabele; een kaal getal als maat", rijen[1]);
+  meld(rijen[2] === '<td>vloer, categorie A <span class="calc-last-var"><var>q<sub>k1</sub></var></span></td><td class="getal">3.6</td><td class="getal">1</td><td class="getal">1.75 kN/m²</td><td class="getal"></td><td class="getal">6.3</td>', "de omschrijving uit de regel gaat voor de naam uit het project; de bijdrage in de kolom Q", rijen[2]);
+  meld(rijen[3] === '<td></td><td class="getal"></td><td class="getal">1</td><td class="getal">3.75 kN/m</td><td class="getal">3.75</td><td class="getal"></td>', "een uitdrukking als bron zonder omschrijving: een witte cel, zonder b, en zijn uitkomst als p_rep", rijen[3]);
+  meld(!blok.includes('class="totaal"'), "er is geen aparte rij Totaal meer");
+  meld(blok.includes('<tfoot><tr class="som"><td colspan="3"></td><td class="getal">Σ</td><td class="getal" title="q_L1,G">36.9</td><td class="getal" title="q_L1,Q">6.3</td><td class="eenheid">[kN/m]</td></tr></tfoot>'), "onder de tabel de som: Σ, G = 36.9, Q = 6.3 en de eenheid", blok.match(/<tr class="som">.*?<\/tr>/)?.[0]);
   meld(html.indexOf("Vooraf") < html.indexOf("calc-last") && html.indexOf("calc-last") < html.lastIndexOf("calc-line"), "het blok staat op zijn plek tussen de regels van het blad");
 
   const punt = blokHtml(render(reken(PUNT).nodes));
-  meld(punt.includes("<strong>Kolom K1</strong> — <var>F<sub>1</sub></var>, puntlast") && punt.includes('<th class="getal">G [kN]</th>') && punt.includes('<td class="berekening">7.75 kN/m² × 19.44 m²</td><td class="getal">150.7</td>') && punt.includes('colspan="2">219 kN</td>'), "een puntlast: puntlast in de kop, kN in de kolommen, vier cijfers", punt.match(/<tr class="som">.*?<\/tr>/)?.[0]);
-  meld(punt.includes('<td>wand op as B <span class="calc-last-var"><var>g<sub>w1</sub></var></span></td>') && punt.includes('<td>max(2 kN; 3 kN)</td><td class="berekening">3 kN × 2</td><td class="getal"></td><td class="getal">6</td>'), "een omschrijving bij een kale naam; een functie als bron");
-  const zonderNaam = blokHtml(render(reken("@last q_5 lijn\n  g_w1; 1\n@end").nodes));
-  meld(zonderNaam.includes('<p class="calc-last-kop"><strong><var>q<sub>5</sub></var></strong> — lijnlast</p>'), "zonder naam staat het symbool vet in de kop", zonderNaam.match(/<p class="calc-last-kop">.*?<\/p>/)?.[0]);
+  meld(punt.includes("<strong>Kolom K1</strong> — <var>F<sub>1</sub></var>, puntlast") && punt.includes('<td class="getal">19.44 m²</td><td class="getal"></td><td class="getal">7.75 kN/m²</td><td class="getal">150.7</td>') && punt.includes('<td class="getal">3.6 m</td><td class="getal">5.4</td><td class="getal">1.75 kN/m²</td>') && punt.includes('title="F_1,G">179</td><td class="getal" title="F_1,Q">40.02</td><td class="eenheid">[kN]</td>'), "een puntlast: puntlast in de kop, een oppervlak of twee maten, geen 1 bij l, de som in kN met vier cijfers", punt.match(/<tr class="som">.*?<\/tr>/)?.[0]);
+  meld(punt.includes('<td>wand op as B <span class="calc-last-var"><var>g<sub>w1</sub></var></span></td>') && punt.includes('<td></td><td class="getal">2</td><td class="getal"></td><td class="getal">3 kN</td><td class="getal"></td><td class="getal">6</td>'), "een omschrijving bij een kale naam; een functie als bron");
+  const ruw = blokRuw(html);
+  meld(ruw.includes('<td class="getal">27.9<span class="vul">0</span></td>') && ruw.includes('title="q_L1,G">36.9<span class="vul">0</span></td>') && !ruw.includes('27.90'), "getallen in een kolom staan met het decimaalteken onder elkaar, zonder een nul erbij", ruw);
+  const alleenG = blokHtml(render(reken("@last q_8 lijn\n  g_w1; 1\n@end").nodes));
+  meld(alleenG.includes('title="q_8,G">5.25</td><td class="getal" title="q_8,Q"></td>'), "zonder veranderlijke regel is de som van Q wit, net als de cellen erboven", alleenG);
+  const zonderNaam =blokHtml(render(reken("@last q_5 lijn\n  g_w1; 1\n@end").nodes));
+  meld(!zonderNaam.includes("calc-last-kop") && zonderNaam.includes('<thead><tr><th><var>q<sub>5</sub></var></th><th class="getal">b [m]</th><th class="getal">l [m]</th><th class="getal">p<sub>rep</sub> [kN/m]</th>'), "zonder naam geen regel boven de tabel: het symbool staat in de kop; één eenheid in een kolom staat in de kop", zonderNaam.match(/<thead>.*?<\/thead>/)?.[0]);
   const tekens = blokHtml(render(reken('@last q_6 "A & <b>" lijn\n  g_w1; 1; "x < y"\n@end').nodes));
   meld(tekens.includes("<strong>A &amp; &lt;b&gt;</strong>") && tekens.includes("<td>x &lt; y <span"), "tekens in een naam of omschrijving blijven tekst");
 
   const en = blokHtml(render(reken(LIJN, { taal: "en" }).nodes));
-  meld(en.includes(", line load</p>") && en.includes("<th>Load</th><th>Calculation</th>") && en.includes("<td>Total</td>") && en.includes("</var> permanent, <var>") && en.includes("</var> variable</td>"), "in het Engels: line load, Load, Calculation, Total, permanent, variable", en.match(/<thead>.*?<\/thead>/)?.[0]);
+  meld(en.includes(", line load</p>") && en.includes('<th class="getal">b [m]</th>') && en.includes("Σ"), "in het Engels: line load boven de tabel; de kolommen zijn symbolen en blijven gelijk", en.match(/<thead>.*?<\/thead>/)?.[0]);
   // Alleen de tekst in beeld: de klassen van de rijen heten in elke taal blijvend en veranderlijk.
   const enTekst = en.replace(/<[^>]+>/g, " ");
   meld(blokHtml(render(reken(PUNT, { taal: "en-US" }).nodes)).includes(", point load</p>") && !/lijnlast|puntlast|Belasting|Berekening|Totaal|blijvend|veranderlijk/.test(enTekst), "point load; geen Nederlands vast woord in de Engelse tabel", enTekst);
@@ -262,13 +270,13 @@ deel("De weergave", () => {
 
   const us = reken(LIJN, { stelsel: STELSELS.us });
   const usBlok = blokHtml(render(us.nodes));
-  meld(lastVan(us.nodes).eenheid === "klf" && usBlok.includes("G [klf]") && usBlok.includes("161.9 psf × 11.81 ft") && Math.abs(parseFloat(lastVan(us.nodes).uitkomsten.som.tekst) - 43.2 / 14.5939) < 0.001 && usBlok.includes('colspan="2">2.96 klf</td>'), "in het eenhedenstelsel US: psf, ft en klf, de som 2,96 klf", usBlok.match(/<tr class="som">.*?<\/tr>/)?.[0]);
+  meld(lastVan(us.nodes).eenheid === "klf" && usBlok.includes('<th class="getal">b [ft]</th><th class="getal">l [ft]</th>') && usBlok.includes('<td class="getal">11.81</td><td class="getal">1</td><td class="getal">161.9 psf</td>') && Math.abs(parseFloat(lastVan(us.nodes).uitkomsten.som.tekst) - 43.2 / 14.5939) < 0.001 && usBlok.includes('title="q_L1,G">2.528</td><td class="getal" title="q_L1,Q">0.4317</td><td class="eenheid">[klf]</td>'), "in het eenhedenstelsel US: ft in de kop van b en l, psf bij de cel, de som in klf", usBlok.match(/<tr class="som">.*?<\/tr>/)?.[0]);
   meld(String(us.scope.q_L1) === "43.2 kN / m" && dichtbij(lastVan(us.nodes).uitkomsten.som.waarde, 43.2), "het stelsel raakt alleen de weergave: de uitkomst blijft 43,2 kN/m");
   const usFout = lastVan(reken("@last q lijn\n  g_v3; 3.6 m^2\n@end", { stelsel: STELSELS.us }).nodes).melding;
   meld(usFout === "regel 1: g_v3 × 3.6 m^2 geeft 6.272 kip, verwacht klf", "een melding in dat stelsel: wat eruit kwam en wat verwacht werd in dezelfde eenheden (27,9 kN = 6,272 kip)", usFout);
-  meld(blokHtml(render(reken(PUNT, { stelsel: STELSELS.us }).nodes)).includes("G [kip]") && lastVan(reken(LIJN, { stelsel: STELSELS["si-mm"] }).nodes).eenheid === "kN / m", "een puntlast in kip; in SI blijft het kN/m");
+  meld(blokHtml(render(reken(PUNT, { stelsel: STELSELS.us }).nodes)).includes('<td class="eenheid">[kip]</td>') && lastVan(reken(LIJN, { stelsel: STELSELS["si-mm"] }).nodes).eenheid === "kN / m", "een puntlast in kip; in SI blijft het kN/m");
   const rond = blokHtml(render(reken(`#round 1\n${PUNT}`).nodes));
-  meld(rond.includes('<td class="getal">150.7</td>') && rond.includes('colspan="2">219 kN</td>') && blokHtml(render(reken(`#round 2\n${PUNT}`).nodes)).includes('colspan="2">219.03 kN</td>'), "#round geldt ook in de tabel: 219.03 kN met twee decimalen");
+  meld(rond.includes('<td class="getal">150.7</td>') && rond.includes('title="F_1,G">179</td>') && blokHtml(render(reken(`#round 2\n${PUNT}`).nodes)).includes('title="F_1,G">179.01</td>'), "#round geldt ook in de tabel: G = 179.01 kN met twee decimalen");
 
   const verborgen = reken(`#hide\n${LIJN}\n#show\nx = q_L1`);
   meld(lastVan(verborgen.nodes)?.verborgen === true && !render(verborgen.nodes).includes("calc-last") && dichtbij(getal(verborgen.scope.x, "kN/m"), 43.2), "achter #hide: niet op het blad, de uitkomsten gelden wel");

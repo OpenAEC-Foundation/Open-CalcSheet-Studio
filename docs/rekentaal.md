@@ -140,9 +140,14 @@ q_Ed = 1.2*q_L1,G + 1.5*q_L1,Q
   kracht (punt). Klopt dat niet, is een naam onbekend of rekent een regel niet, dan staat
   het blok als NIET GEREKEND met het regelnummer en de reden, en bestaan de uitkomsten
   niet.
-- **Op het blad:** een tabel met per regel de omschrijving, de berekening
-  (`7.75 kN/m² × 3.6 m`) en de bijdrage in de kolom G of Q, en onderaan de totalen en hun
-  som. De tabel staat ook op papier, in de taal van de app en in het eenhedenstelsel.
+- **Op het blad:** een tabel met een raster en een gekleurde kop. In de kop staat het
+  symbool, daarna de kolommen b, l, p_rep, G en Q. Per regel: de omschrijving, de eerste
+  maat (b), de tweede (l; bij een lijnlast zonder tweede maat een 1), de belasting (p_rep)
+  en de bijdrage in de kolom G of Q. Een kolom zet zijn eenheid in de kop als elke cel
+  dezelfde heeft; anders staat de eenheid bij de cel. Een regel zonder omschrijving die
+  geen belasting uit het project is, heeft een witte cel. Getallen in een kolom staan met
+  hun decimaalteken onder elkaar. Onder de tabel staat de som: Σ, G, Q
+  en de eenheid. De tabel staat ook op papier en in het eenhedenstelsel.
 - **Waar:** `packages/core/src/lastBlok.ts`; `leesLastBlok` en `schrijfLastBlok` lezen en
   schrijven het blok als structuur, zonder te rekenen. De controle:
   `scripts/check-last-blok.mjs`.
