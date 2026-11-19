@@ -83,6 +83,16 @@ fn engine_preview_pdf(report: serde_json::Value) -> Result<String, String> {
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// In een headless sessie blijft de WebView actief voor rekenen en PDF-export.
+#[tauri::command]
+fn toon_werkvenster(window: tauri::WebviewWindow) -> Result<bool, String> {
+    let zichtbaar = !std::env::args_os().any(|arg| arg == "--headless");
+    if zichtbaar {
+        window.show().map_err(|err| err.to_string())?;
+    }
+    Ok(zichtbaar)
+}
+
 /// Het projectbestand waarmee de app is gestart. Een dubbelklik in de
 /// Verkenner geeft via de bestandskoppeling het pad mee als argument.
 #[tauri::command]
@@ -195,6 +205,7 @@ pub fn run() {
             engine_save_pdf,
             engine_preview_pdf,
             startbestand,
+            toon_werkvenster,
             rapport_pdf::rapport_pdf_beschikbaar,
             rapport_pdf::rapport_pdf_schrijven,
             mcp_bridge::mcp_bridge_start,

@@ -86,6 +86,7 @@
     "modules": {
       "ligger": "Ligger (hout of staal)",
       "balklaag": "Balklaag (houten vloerbalken)",
+      "voorgespannen-heipaal": "Voorgespannen prefab betonpaal",
       "tweepaalspoer": "Tweepaalspoer (gewapend beton)",
       "doorsnede-spanningen": "Spanningen in een doorsnede",
       "rekentaal-demo": "Open CalcSheet Studio demo"
