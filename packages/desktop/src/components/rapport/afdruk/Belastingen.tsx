@@ -6,6 +6,7 @@ import {
   dakQk,
   getal,
   klasse,
+  klasseWaarden,
   PSI_WIND,
   sneeuwPlatDak,
   windLabel,
@@ -142,6 +143,8 @@ export function Wind({ w }: { w: RapportWeergave }) {
  */
 function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; w: RapportWeergave }) {
   const cat = categorie(bk.categorie);
+  // Een ingevulde q_k of Q_k gaat voor de tabel; zonder waarde blijft de cel leeg.
+  const kw = klasseWaarden(bk);
   const { t, f, n, fe, ne } = w;
   const algemeen = t("afdruk.belastingen.algemeen");
   const dakPlat = t("afdruk.belastingen.dakPlat");
@@ -155,7 +158,7 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
     rijen.push(
       <>
         <Cel k={1} n={2} o>{algemeen} q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{cat ? fe(cat.qk, "kN/m2", 2) : ""}</Cel>
+        <Cel k={3} o klasse="rpa-invoer">{kw && kw.qk !== null ? fe(kw.qk, "kN/m2", 2) : ""}</Cel>
         <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
       </>,
     );
@@ -169,7 +172,7 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
         </>,
         <>
           <Cel k={1} n={2} o>{algemeen} q<sub>k</sub>+{t("afdruk.belastingen.ls")}</Cel>
-          <Cel k={3} o>{cat ? fe(cat.qk + ls, "kN/m2", 2) : ""}</Cel>
+          <Cel k={3} o>{kw && kw.qk !== null ? fe(kw.qk + ls, "kN/m2", 2) : ""}</Cel>
           <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
         </>,
       );
@@ -177,7 +180,7 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
     rijen.push(
       <>
         <Cel k={1} n={2} o>{algemeen} Q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{cat ? fe(cat.Qk, "kN", 2) : ""}</Cel>
+        <Cel k={3} o klasse="rpa-invoer">{kw && kw.Qk !== null ? fe(kw.Qk, "kN", 2) : ""}</Cel>
         <Cel k={4} o><Eenheid e="kN" /></Cel>
       </>,
     );
@@ -186,12 +189,12 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
     rijen.push(
       <>
         <Cel k={1} n={2} o>{dakPlat} q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{fe(cat.qk, "kN/m2", 1)}</Cel>
+        <Cel k={3} o klasse="rpa-invoer">{fe(cat.qk ?? 0, "kN/m2", 1)}</Cel>
         <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
       </>,
       <>
         <Cel k={1} n={2} o>{dakPlat} Q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{fe(cat.Qk, "kN", 1)}</Cel>
+        <Cel k={3} o klasse="rpa-invoer">{fe(cat.Qk ?? 0, "kN", 1)}</Cel>
         <Cel k={4} o><Eenheid e="kN" /></Cel>
       </>,
       <>
@@ -223,7 +226,7 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
               <Cel k={9} o>{f(cat.psi[i], 1)}</Cel>
             </>
           )}
-          {i === 0 && eerste && <span className="rpa-boven rpa-norm">6.3.1.2 NEN-EN 1991-1-1</span>}
+          {i === 0 && eerste && <span className="rpa-boven rpa-norm">{cat?.norm ?? "6.3.1.2 NEN-EN 1991-1-1"}</span>}
         </Rij>
       ))}
     </>
