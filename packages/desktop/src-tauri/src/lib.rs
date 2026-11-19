@@ -21,6 +21,7 @@ mod erpnext;
 mod fem_studio;
 mod jupyter_omgeving;
 mod mcp_bridge;
+mod bladwijzers;
 mod rapport_pdf;
 
 #[cfg(feature = "rapportengine")]

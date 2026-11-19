@@ -18,7 +18,7 @@ import { designerVoor } from "./components/calc/designerKeuze";
 import { invoerSchermVoor } from "./components/calc/invoer/invoerScherm";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
-import { vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { klaargezetteKoppen, vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
 import { schrijfRapportPdf } from "./tauri/rapportPdf";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
@@ -208,7 +208,7 @@ export default function App() {
           if (pdfPad && stil) {
             // Via de API: geen melding en geen printdialoog; de aanroeper krijgt de reden.
             try {
-              meldPdfGeschreven(pdfPad, await schrijfRapportPdf(pdfPad));
+              meldPdfGeschreven(pdfPad, await schrijfRapportPdf(pdfPad, klaargezetteKoppen()));
             } catch (err) {
               meldPdfFout(String(err));
             }

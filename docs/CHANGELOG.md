@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Rapport als PDF: in een inhoudsopgave is de hele regel een link naar zijn kop (het nummer, de titel en het paginanummer), en een verwijzing in de tekst van het rapport of van een rekenblad, zoals "zie 5.2", "hoofdstuk 4" of "bijlage A.3", springt naar die paragraaf of dat blad. De PDF heeft bladwijzers: de hoofdstukken, paragrafen, bladen en bijlagen uit de inhoudsopgave voorin, met de paragrafen ingeklapt onder hun hoofdstuk
 - Rapport, hoofdstuk Berekeningen: met het vinkje *Bladen in bijlage A ook als paragraaf in dit hoofdstuk* uit staan bladen met hun uitwerking in bijlage A alleen nog in die bijlage. Ze hebben dan geen paragraaf met een verwijzing in het hoofdstuk en tellen niet mee in de nummering; de bladen in het hoofdstuk nummeren door. Standaard staat het aan, zoals het was
 - Op papier is alle tekst in een rekenblad even groot: een toelichting achter een formule en een eigen `<p>` of lijst in een tekstregel hebben dezelfde maat als een gewone tekstregel
 - Rapport: onder de tekst van een paragraaf in hoofdstuk 1 t/m 3 kunnen afbeeldingen staan (PNG of JPEG), elk met een bijschrift en een breedte, bijvoorbeeld een overzichtstekening bij 2.1 Projectomschrijving. Ook aan het begin van hoofdstuk Berekeningen kan een afbeelding staan, zoals het 3D-model van de constructie (`beelden.berekeningen`). In het rapportpaneel voeg je ze toe met *+ Afbeelding*; ze gaan mee in het projectbestand
