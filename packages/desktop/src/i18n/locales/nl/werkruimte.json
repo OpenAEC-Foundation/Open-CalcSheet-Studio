@@ -181,6 +181,9 @@
     "voet": "In een rekenblad zijn deze namen direct te gebruiken, bijvoorbeeld <code>{{voorbeeld1}}</code> of <code>{{voorbeeld2}}</code>. Een blad dat de naam zelf opnieuw toekent, overschrijft de projectwaarde alleen voor dat blad.",
     "vervallenKeuze": "{{label}} — vervallen keuze, gerekend als {{vervanger}}",
     "onbekendeKeuze": "{{waarde}} — onbekende keuze",
+    "eigenKop": "Eigen projectgegevens",
+    "eigenUitleg": "Zet hier zelf neer wat voor het hele project geldt: een waarde, een invoerveld, een formule of tekst. Een variabele die je hier maakt, geldt in elk blad.",
+    "eigenLeeg": "Klik op een lege plek om iets toe te voegen, bijvoorbeeld ψ_0 = 0,7 of h_verd = ?{3} m",
     "groepen": {
       "eenheden": "Eenheden",
       "rekenwijze": "Rekenwijze",
