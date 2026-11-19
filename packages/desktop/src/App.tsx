@@ -18,7 +18,8 @@ import { designerVoor } from "./components/calc/designerKeuze";
 import { invoerSchermVoor } from "./components/calc/invoer/invoerScherm";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
-import { vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { klaargezetteKoppen, vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { schrijfRapportPdf } from "./tauri/rapportPdf";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
 import BladBijwerken from "./components/calc/BladBijwerken";
@@ -203,8 +204,15 @@ export default function App() {
         const opruimen = zetDrukvellenKlaar(vellen);
         try {
           await wachtOpDrukbeelden();
-          const { pdfPad, meldPdfGeschreven } = usePrintStore.getState();
-          if (pdfPad && (await vellenNaarPdf(pdfPad))) meldPdfGeschreven(pdfPad);
+          const { pdfPad, stil, meldPdfGeschreven, meldPdfFout } = usePrintStore.getState();
+          if (pdfPad && stil) {
+            // Via de API: geen melding en geen printdialoog; de aanroeper krijgt de reden.
+            try {
+              meldPdfGeschreven(pdfPad, await schrijfRapportPdf(pdfPad, klaargezetteKoppen()));
+            } catch (err) {
+              meldPdfFout(String(err));
+            }
+          } else if (pdfPad && (await vellenNaarPdf(pdfPad))) meldPdfGeschreven(pdfPad);
           else window.print();
         } finally {
           opruimen();
@@ -213,7 +221,9 @@ export default function App() {
         }
       })
       .catch((err) => {
-        alert((err as Error).message);
+        const { stil, meldPdfFout } = usePrintStore.getState();
+        if (stil) meldPdfFout((err as Error).message);
+        else alert((err as Error).message);
         printKlaar();
       });
     return () => {

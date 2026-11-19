@@ -22,7 +22,11 @@ pub fn rapport_pdf_beschikbaar() -> bool {
 /// meldt zich daar ook terug. Een synchrone opdracht zou die thread vasthouden.
 #[cfg(windows)]
 #[tauri::command]
-pub async fn rapport_pdf_schrijven(venster: tauri::WebviewWindow, pad: String) -> Result<u64, String> {
+pub async fn rapport_pdf_schrijven(
+    venster: tauri::WebviewWindow,
+    pad: String,
+    koppen: Option<Vec<crate::bladwijzers::Kop>>,
+) -> Result<u64, String> {
     let doel = std::path::Path::new(&pad);
     if !doel.is_absolute() {
         return Err(format!("not an absolute path: {pad}"));
@@ -48,12 +52,29 @@ pub async fn rapport_pdf_schrijven(venster: tauri::WebviewWindow, pad: String) -
 
     // Zonder antwoord is de afhandeling weggegooid: de webview is er niet meer.
     uitkomst.recv().await.ok_or("no answer from the webview")??;
-    controleer_pdf(doel)
+    let grootte = controleer_pdf(doel)?;
+    Ok(zet_bladwijzers(doel, koppen.as_deref().unwrap_or(&[])).unwrap_or(grootte))
+}
+
+/// Zet de bladwijzers achter de PDF (`bladwijzers.rs`). Lukt dat niet, dan blijft de PDF
+/// zoals hij is: een rapport zonder bladwijzers is nog steeds het rapport.
+#[cfg(windows)]
+fn zet_bladwijzers(pad: &std::path::Path, koppen: &[crate::bladwijzers::Kop]) -> Option<u64> {
+    use std::io::Write;
+    if koppen.is_empty() {
+        return None;
+    }
+    let pdf = std::fs::read(pad).ok()?;
+    let erbij = crate::bladwijzers::aanvulling(&pdf, koppen)?;
+    let mut bestand = std::fs::OpenOptions::new().append(true).open(pad).ok()?;
+    bestand.write_all(&erbij).ok()?;
+    Some((pdf.len() + erbij.len()) as u64)
 }
 
 #[cfg(not(windows))]
 #[tauri::command]
-pub async fn rapport_pdf_schrijven(pad: String) -> Result<u64, String> {
+pub async fn rapport_pdf_schrijven(pad: String, koppen: Option<Vec<crate::bladwijzers::Kop>>) -> Result<u64, String> {
+    let _ = koppen;
     Err(format!("{pad}: only available on Windows"))
 }
 
