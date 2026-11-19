@@ -41,11 +41,11 @@ export interface PdfKop { titel: string; niveau: number; doel: string }
 
 /**
  * Schrijft wat er op dit moment voor de afdruk klaarstaat naar `pad`. Met `koppen` krijgt
- * de PDF bladwijzers (src-tauri/src/bladwijzers.rs).
+ * de PDF bladwijzers (src-tauri/src/bladwijzers.rs). Geeft het aantal geschreven bytes.
  */
-export async function schrijfRapportPdf(pad: string, koppen: readonly PdfKop[] = []): Promise<void> {
+export async function schrijfRapportPdf(pad: string, koppen: readonly PdfKop[] = []): Promise<number> {
   const { invoke } = await import("@tauri-apps/api/core");
-  await invoke<number>("rapport_pdf_schrijven", { pad, koppen });
+  return invoke<number>("rapport_pdf_schrijven", { pad, koppen });
 }
 
 /**
