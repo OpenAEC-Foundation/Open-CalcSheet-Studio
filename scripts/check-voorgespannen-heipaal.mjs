@@ -21,7 +21,26 @@ for (const [index, [zijde, strengen, transport, hijsen]] of profielen.entries())
   const waarde = (naam) => parseFloat(nodes.find((n) => n.name === naam).result);
   assert.equal(waarde("M_tr"), transport);
   assert.equal(waarde("M_h"), hijsen);
-  assert.equal(nodes.filter((n) => n.type === "plot" && n.svg.includes("<path")).length, 2);
+  const regels = nodes.map((n) => n.text ?? "");
+  const velden = regels.filter((tekst) => tekst.includes('stroke="#25597c"') && tekst.includes(" Q"));
+  // Zonder schommels drie velden per fase, met schommels vijf bij transport.
+  const schommels = [1, 3, 5].includes(index);
+  assert.equal(velden.length, schommels ? 8 : 6);
+  assert.equal(regels.filter((t) => t.includes("positieve veldmomenten onder")).length, 2);
+  assert.equal(regels.filter((t) => t.includes('fill="#153b5a">−')).length, 4);
+  assert.equal(regels.filter((t) => t.includes('fill="#153b5a">+')).length, 2);
+  assert.equal(waarde("N_som"), 0);
+  assert(waarde("N_staal") > 0);
+  assert.equal(waarde("N_beton"), -waarde("N_staal"));
+  // V direct naast het binnenste contact is q*(L/2-a-e); buiten is V = -q*(a-e).
+  const lengte = [18.5, 21.5, 19, 21.5, 18.5, 26][index];
+  const gewicht = (zijde ** 2 - 529) * 24e-6;
+  const labels = regels.filter((t) => t.includes("V maximaal")).map((t) => Number(t.match(/±([.0-9]+)/)[1]));
+  for (const [fase, factor] of [1.6, 1.2].entries()) {
+    const offset = fase === 0 && schommels ? 0.75 : 0;
+    const verwacht = factor * gewicht * (0.293 * lengte - offset);
+    assert(Math.abs(labels[fase] - verwacht) < 0.006);
+  }
   assert(nodes.some((n) => n.text?.includes("M33 147 h" + (zijde * 0.40 - 10) + " ")));
   const model = nodes.find((n) => n.type === "3d");
   assert.deepEqual(model.meldingen, []);
