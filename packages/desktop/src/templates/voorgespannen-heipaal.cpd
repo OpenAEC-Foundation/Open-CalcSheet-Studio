@@ -136,10 +136,80 @@ M_veld_h = m_h(l_m/2)*kN*m
 M_veld_t = m_t(l_m/2)*kN*m
 M_lijn_t = max(abs(m_t(x_l));abs(m_t(x_r));abs(m_t(l_m/2));abs(m_t(min(x_r;max(x_l;l_m/4)))))*kN*m
 η_lijn_t = M_lijn_t/M_Rk
-'Transport · x in m · M in kNm
-$Plot{m_t(x) @ x = 0 : l_m}
-'Hijsen · x in m · M in kNm
-$Plot{m_h(x) @ x = 0 : l_m}
+#hide
+s_x(x) = 30 + 540*x/l_m
+#show
+#for fase = 1 : 2
+#if fase ≡ 1
+# Transport · momenten en dwarskrachten
+#else
+# Hijsen · momenten en dwarskrachten
+#end if
+#hide
+f_dyn = if(fase ≡ 1; 1.6; 1.2)
+e_contact = if(fase ≡ 1; e_tr/(1 m); 0)
+a_links = 0.207*l_m-e_contact
+a_rechts = 0.207*l_m+e_contact
+x_p(j) = if(j ≡ 0; 0; if(j ≡ 1; a_links; if(j ≡ 2; a_rechts; if(j ≡ 3; l_m-a_rechts; if(j ≡ 4; l_m-a_links; l_m)))))
+m_f(x) = if(fase ≡ 1; m_t(x); m_h(x))
+q_f = f_dyn*q_m
+r_f = q_f*l_m/4
+v_f(x;j) = j*r_f-q_f*x
+m_s = max(abs(m_f(a_links));abs(m_f(a_rechts));abs(m_f(l_m/2));abs(m_f(min(a_rechts;max(a_links;l_m/4)))))
+v_s = max(abs(v_f(a_links;0));abs(v_f(a_links;1));abs(v_f(a_rechts;1));abs(v_f(a_rechts;2)))
+y_m(v) = 88+44*v/m_s
+y_v(v) = 238-40*v/v_s
+#show
+'<svg class="dxf" viewBox="0 0 600 322" style="width:100%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<text x="30" y="18">M [kNm] · positieve veldmomenten onder de as</text>
+'<text x="30" y="178">V [kN] · positief boven de as</text>
+#for j = 0 : 4
+#hide
+x_a = x_p(j)
+x_b = x_p(j+1)
+v_a = v_f(x_a;j)
+v_b = v_f(x_b;j)
+#show
+#if x_b > x_a
+'<path d="M's_x(x_a)' 88 L's_x(x_a)' 'y_m(m_f(x_a))' Q's_x((x_a+x_b)/2)' 'y_m(m_f(x_a)+v_a*(x_b-x_a)/2)' 's_x(x_b)' 'y_m(m_f(x_b))' L's_x(x_b)' 88 Z" fill="#d4e4f3"/>
+'<path d="M's_x(x_a)' 'y_m(m_f(x_a))' Q's_x((x_a+x_b)/2)' 'y_m(m_f(x_a)+v_a*(x_b-x_a)/2)' 's_x(x_b)' 'y_m(m_f(x_b))'" fill="none" stroke="#25597c" stroke-width="1.8"/>
+'<path d="M's_x(x_a)' 238 L's_x(x_a)' 'y_v(v_a)' L's_x(x_b)' 'y_v(v_b)' L's_x(x_b)' 238 Z" fill="#d2eae3"/>
+'<path d="M's_x(x_a)' 'y_v(v_a)' L's_x(x_b)' 'y_v(v_b)'" stroke="#1f6754" fill="none" stroke-width="1.8"/>
+#end if
+#if j < 4
+'<line x1="'s_x(x_b)'" x2="'s_x(x_b)'" y1="'y_v(v_b)'" y2="'y_v(v_b+r_f)'" stroke="#1f6754" stroke-width="1.8"/>
+#end if
+#loop
+'<path d="M30 88 H570 M30 238 H570" stroke="#495766" fill="none"/>
+#for j = 0 : 2
+#hide
+x_merk = if(j ≡ 0; a_links; if(j ≡ 1; l_m/2; l_m-a_links))
+#show
+'<text x="'s_x(x_merk)'" y="'y_m(m_f(x_merk)/2)+4'" text-anchor="middle" fill="#153b5a">'if(j ≡ 1; "+"; "−")'</text>
+#loop
+'<text x="30" y="151">Buitenste steunpunt 'round(m_f(a_links)*100)/100' kNm · middenveld +'round(m_f(l_m/2)*100)/100' kNm</text>
+'<text x="'s_x(a_rechts+(l_m/2-a_rechts)/4)'" y="228" text-anchor="middle">+</text>
+'<text x="'s_x(l_m-a_rechts-(l_m/2-a_rechts)/4)'" y="252" text-anchor="middle">−</text>
+'<text x="30" y="300">V maximaal ±'round(v_s*100)/100' kN</text>
+'<text x="570" y="300" text-anchor="end">x = 0 … 'l_m' m</text>
+'</svg>
+#loop
+# Normaalkracht door voorspanning
+'N is positief bij trek. Na de voorspanverliezen trekken de strengen aan het beton. In een vrij opgelegde paal zonder uitwendige axiale belasting zijn de trek in het staal en de druk in het beton in evenwicht.
+N_staal = P_eff
+N_beton = -P_eff
+N_som = N_staal + N_beton
+'De lijn toont het schachtdeel met volledig overgedragen voorspanning. Het verloop in de overdrachtszones bij kop en voet vraagt de overdrachtslengte van de strengen.
+'<svg class="dxf" viewBox="0 0 600 145" style="width:100%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<rect x="30" y="22" width="540" height="42" fill="#d4e4f3"/>
+'<rect x="30" y="64" width="540" height="42" fill="#f5dfd4"/>
+'<path d="M30 22 H570" fill="none" stroke="#25597c" stroke-width="2"/>
+'<path d="M30 106 H570" fill="none" stroke="#98522f" stroke-width="2"/>
+'<path d="M30 64 H570" fill="none" stroke="#394755" stroke-dasharray="5 3"/>
+'<text x="42" y="46">+ 'round(N_staal/(1 kN)*10)/10' kN · strengen</text>
+'<text x="42" y="90">− 'round(-N_beton/(1 kN)*10)/10' kN · beton</text>
+'<text x="570" y="137" text-anchor="end">Ontwikkelde schacht · gezamenlijke resultante 0 kN</text>
+'</svg>
 # Trekpaal · constructieve UGT-toets
 'Trek positief invoeren. De krachten en momenten gelden in deze toets voor alle drie zones. De module interpoleert lineair op de trektak van de UGT-profieltabellen voor buiging om de x-as. De geotechnische uittrekweerstand vereist afzonderlijke grondgegevens.
 T_Ed = ?{0}*(kN)', ontwerpwaarde centrische trek'
