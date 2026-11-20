@@ -246,7 +246,7 @@ export const liveOmgeving: McpOmgeving = {
     start: (soort, selectie) => usePrintStore.getState().afdrukken(selectie, soort),
     rapportPdf: async (pad) => {
       if (!(await kanRapportPdfSchrijven())) {
-        throw new McpFout("NOT_AVAILABLE", "This app cannot write the report PDF by itself (Windows desktop app only). Use the print tool and choose a PDF printer.");
+        throw new McpFout("NOT_AVAILABLE", "This app cannot write the report PDF by itself (Windows or Linux desktop app only). Use the print tool and choose a PDF printer.");
       }
       if (usePrintStore.getState().bezig) throw new McpFout("CONFLICT", "The app is already printing. Try again when it has finished.");
       // Dezelfde weg als de knop Rapport (PDF): App.tsx zet de vellen klaar en schrijft ze weg.
