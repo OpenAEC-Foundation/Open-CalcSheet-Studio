@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+## v2026.47.1 — 2026-11-20
+
 - De voorgespannen paal toont bij transport en hijsen gevulde momenten- en dwarskrachtenlijnen met tekens. Een normaalkrachtenlijn toont de trek in het voorspanstaal en de druk in de betonschacht.
 
 ## v2026.47.0 — 2026-11-19
