@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+## v2026.47.2 — 2026-11-20
+
 - Op Linux schrijft de rapport-API met WebKitGTK rechtstreeks een PDF. Op een server kan de headless app op een virtueel scherm draaien.
 
 ## v2026.47.1 — 2026-11-20
