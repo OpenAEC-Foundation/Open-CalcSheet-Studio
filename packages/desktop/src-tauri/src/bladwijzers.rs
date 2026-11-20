@@ -8,8 +8,7 @@
 //! Zuiver en zonder afhankelijkheden: bytes in, de aanvulling uit. Herkent de functie de
 //! opbouw van het bestand niet, dan geeft zij `None` en blijft de PDF zoals hij was.
 
-// Alleen de Windows-build schrijft het rapport zelf weg (rapport_pdf.rs).
-#![cfg_attr(not(windows), allow(dead_code))]
+#![cfg_attr(not(any(windows, target_os = "linux")), allow(dead_code))]
 
 /// Eén regel van de inhoudsopgave: de titel, het niveau (1 = hoofdstuk) en de naam van
 /// de bestemming in de PDF (het `id` van de kop op de vellen).

@@ -287,7 +287,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     kind: "file",
     description:
       "Write the full structural report (cover, chapters, calculation sheets and drawings, as in the print preview) to a PDF file, without any dialog. " +
-      "The app window briefly shows the report preview while it writes. Windows desktop app only; elsewhere NOT_AVAILABLE. A large report can take a minute or more.",
+      "The app window briefly shows the report preview while it writes. Windows or Linux desktop app only; elsewhere NOT_AVAILABLE. A large report can take a minute or more.",
     inputSchema: objectSchema(
       { path: { type: "string", minLength: 1, description: "Absolute path of the PDF (.pdf is added when missing). An existing file is overwritten." } },
       ["path"],

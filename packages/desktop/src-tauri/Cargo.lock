@@ -3182,6 +3182,7 @@ dependencies = [
 name = "open-calcsheet-studio"
 version = "2026.47.1"
 dependencies = [
+ "gtk",
  "keyring",
  "ocss-fem-brug",
  "openaec-core",
@@ -3194,9 +3195,11 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-os",
  "tauri-plugin-store",
+ "tempfile",
  "tiny_http",
  "ureq",
  "url",
+ "webkit2gtk",
  "webview2-com",
  "windows",
  "zeroize",
