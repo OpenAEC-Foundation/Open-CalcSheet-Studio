@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+## v2026.47.3 — 2026-11-21
+
 - Bij Projectgegevens toont het 3D-projectmodel de berekende elementen, veldlengten, doorsneden en toegerekende vloerstroken op schaal. De zichtbaarheid, plaatsing en gekoppelde rekenbladmaten worden in het project bewaard.
 
 ## v2026.47.2 — 2026-11-20
