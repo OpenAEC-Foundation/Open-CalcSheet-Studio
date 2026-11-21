@@ -122,8 +122,13 @@ export interface GraafGegevens {
     naam?: string;
     invoer?: Record<string, string>;
     geheel?: string[];
+    verborgen?: boolean;
+    uit?: true;
+    schuif?: true;
   }[];
-  verbindingen: { vanNode: string; vanPoort: string; naarNode: string; naarPoort: string }[];
+  verbindingen: { vanNode: string; vanPoort: string; naarNode: string; naarPoort: string; label?: true }[];
+  groepen?: { id: string; naam: string; leden: string[]; ingeklapt?: true }[];
+  teksten?: { id: string; x: number; y: number; breedte: number; titel?: string; tekst: string }[];
 }
 
 export interface IfcGenerationResult {
