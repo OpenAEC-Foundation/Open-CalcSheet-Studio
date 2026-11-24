@@ -48,6 +48,7 @@
     "dark": "Donker",
     "blueprint": "Blueprint",
     "font": "Lettertype",
+    "lettertype": { "ui": "Lettertype voor de interface", "code": "Lettertype voor code" },
     "uiFontSize": "UI-lettergrootte",
     "highContrastDark": "High contrast donker",
     "highContrastLight": "High contrast licht",

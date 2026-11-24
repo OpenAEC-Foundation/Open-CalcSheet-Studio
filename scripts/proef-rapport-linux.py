@@ -11,7 +11,8 @@ from urllib.request import Request, urlopen
 
 def api(route, token, body=None):
     data = None if body is None else json.dumps(body).encode()
-    request = Request("http://127.0.0.1:3879/api/v1/" + route, data=data,
+    poort = int(os.environ.get("OCSS_PROEF_POORT", "3879"))
+    request = Request(f"http://127.0.0.1:{poort}/api/v1/" + route, data=data,
                       headers={"Authorization": "Bearer " + token,
                                "Content-Type": "application/json"})
     with urlopen(request, timeout=90) as response:
@@ -47,6 +48,18 @@ def controleer(mapnaam):
         tekst = subprocess.check_output(["pdftotext", str(pad), "-"], text=True)
         if marker not in tekst:
             raise RuntimeError("Rekenblad ontbreekt in de geëxporteerde PDF")
+        # Neem de eerste pagina van de zojuist geschreven PDF als bijlage op.
+        subprocess.run(["pdfseparate", "-f", "1", "-l", "1", str(pad),
+                        str(mapnaam / "bijlage-%d.pdf")], check=True)
+        api("sheets/pdf", token, {"path": str(mapnaam / "bijlage-1.pdf"), "name": "PDF-proefblad"})
+        met_bijlage = mapnaam / "rapport met bijlage.pdf"
+        resultaat = api("report/export/pdf", token, {"path": str(met_bijlage)})
+        if resultaat["bytes"] != met_bijlage.stat().st_size:
+            raise RuntimeError("Aantal PDF-bytes met bijlage wijkt af")
+        beelden = subprocess.check_output(["pdfimages", "-list", str(met_bijlage)], text=True)
+        if not any(regel.split()[2:3] == ["image"] for regel in beelden.splitlines()):
+            raise RuntimeError("De afbeelding van het PDF-blad ontbreekt")
+        api("info", token)
         print(f"Headless export gecontroleerd ({pad.stat().st_size} bytes)")
     finally:
         app.terminate()

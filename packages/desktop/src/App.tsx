@@ -6,7 +6,7 @@ import Ribbon from "./components/ribbon/Ribbon";
 import DocumentBar from "./components/DocumentBar";
 import StatusBar from "./components/StatusBar";
 import Backstage from "./components/backstage/Backstage";
-import SettingsDialog, { applyTheme, applyTextSize } from "./components/settings/SettingsDialog";
+import SettingsDialog, { leesLetters, pasLettersToe, applyTheme, applyTextSize } from "./components/settings/SettingsDialog";
 import Modal from "./components/Modal";
 import HelpPanel from "./components/calc/HelpPanel";
 import Welkom, { welkomBijStart } from "./components/Welkom";
@@ -124,6 +124,7 @@ export default function App() {
       setTheme(saved);
       applyTheme(saved);
     });
+    void leesLetters().then(pasLettersToe);
     getSetting<string>("textSize", "standard").then(applyTextSize);
     getSetting<UnitsSettings>("units", UNITS_DEFAULTS).then((u) => {
       zetHoekmodus(u.angleMode as AngleMode);
