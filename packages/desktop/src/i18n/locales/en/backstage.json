@@ -50,7 +50,7 @@
   "exportPanel": {
     "title": "Export",
     "asPdf": "Export as PDF",
-    "asPdfDesc": "Save the current document as a PDF file",
+    "asPdfDesc": "The report with all sheets as a PDF file, like the Report button on the ribbon",
     "asImage": "Export as Image",
     "asImageDesc": "Save as PNG or JPEG image files",
     "asHtml": "Export as HTML",

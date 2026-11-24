@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { rapportAlsPdf } from "../../tauri/rapportPdf";
 import { useTranslation } from "react-i18next";
 import { useRecentFiles, type RecentFile } from "../../hooks/useRecentFiles";
 import { useBestandActies } from "../../hooks/useBestandActies";
@@ -204,7 +205,7 @@ export default function Backstage({ open, onClose, onOpenSettings, onOpenFile, o
             />
           )}
           {activePanel === "about" && <AboutPanel />}
-          {activePanel === "export" && <ExportPanel />}
+          {activePanel === "export" && <ExportPanel onPdf={() => { onClose(); void rapportAlsPdf(); }} />}
         </div>
       )}
       {/* Click anywhere outside the menu/panel to close */}
@@ -435,13 +436,13 @@ function OpenPanel({
   );
 }
 
-function ExportPanel() {
+function ExportPanel({ onPdf }: { onPdf: () => void }) {
   const { t } = useTranslation("backstage");
   return (
     <div className="bs-export-panel">
       <h2 className="bs-export-title">{t("exportPanel.title")}</h2>
       <div className="bs-export-cards">
-        <div className="bs-export-card">
+        <button type="button" className="bs-export-card bs-export-actie" onClick={onPdf}>
           <div className="bs-export-card-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -452,7 +453,7 @@ function ExportPanel() {
             <h3>{t("exportPanel.asPdf")}</h3>
             <p>{t("exportPanel.asPdfDesc")}</p>
           </div>
-        </div>
+        </button>
         <div className="bs-export-card">
           <div className="bs-export-card-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
