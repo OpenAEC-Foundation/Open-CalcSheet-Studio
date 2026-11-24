@@ -256,7 +256,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     kind: "file",
     description:
       "Write calculation sheets to a PDF file through the report engine (a cover page plus the sheets; without drawings). Only available in an app build that includes the report engine; otherwise NOT_AVAILABLE. " +
-      "The full structural report with drawings is printed through the app's print dialog: use print and choose a PDF printer there.",
+      "Use report_export_pdf on Windows or Linux to write the full report with drawings without opening a dialog.",
     inputSchema: objectSchema(
       {
         path: { type: "string", minLength: 1, description: "Absolute path of the PDF (.pdf is added when missing)." },
@@ -310,7 +310,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     kind: "ui",
     description:
       "Print from the app, as the Print buttons do: what='report' for the structural report (cover, chapters, sheets in appendix A), what='sheets' for calculation sheets (ids, default all). " +
-      "The system print dialog opens in the app; the user picks the printer there, or a PDF printer to save a PDF. The app waits until the dialog is closed.",
+      "The system print dialog opens in the app; the user picks the printer there, or a PDF printer to save a PDF. MCP and REST requests may block until someone closes the dialog. For unattended report export on Windows or Linux, use report_export_pdf.",
     inputSchema: objectSchema(
       {
         what: { type: "string", enum: ["report", "sheets"], description: "The structural report or calculation sheets." },

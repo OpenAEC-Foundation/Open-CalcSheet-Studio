@@ -3155,7 +3155,7 @@ dependencies = [
 
 [[package]]
 name = "ocss-fem-brug"
-version = "0.1.0"
+version = "2026.47.3"
 dependencies = [
  "serde_json",
  "sha2",

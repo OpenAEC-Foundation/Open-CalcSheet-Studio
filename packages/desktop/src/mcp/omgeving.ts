@@ -279,7 +279,7 @@ export const liveOmgeving: McpOmgeving = {
         if (/rapportengine/i.test(melding)) {
           throw new McpFout(
             "NOT_AVAILABLE",
-            "This build of the app has no report engine, so it cannot write a PDF by itself. Use the print tool and choose a PDF printer in the print dialog (that printout includes the drawings).",
+            "This build lacks the optional report engine. On Windows or Linux, use report_export_pdf to write the full report with drawings without opening a dialog.",
           );
         }
         throw e;
