@@ -16,6 +16,9 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 - Een gekoppeld blad bewaart het pad van de bron, ook relatief tot het projectbestand, en een kopie van de laatst gelezen inhoud. Zonder de bron opent en drukt het project gewoon af; het blad en de afdruk melden dan dat de bron niet gevonden is en wanneer hij laatst gelezen is. In de browser geldt alleen de bewaarde kopie, met die melding.
 - De gekoppelde werkmapbereiken van een project kun je als werkmapsjabloon bewaren. Bij een volgend project pas je het toe op de werkmap van dat project: je ziet per onderdeel of het gevonden is en vinkt aan wat erin komt.
 
+- De app en het rapport zijn er ook in het Litouws. Kies de taal bij Instellingen, of per rapport in het rapportpaneel.
+- Alles wat het rapport meelevert, zoals de koppen, de standaardteksten, de normlabels en de korte gewichtenlijst, staat nu per taal in de vertaalbestanden. Een nieuwe taal is daarmee een map met vertalingen en één regel in de lijst van talen (docs/talen.md).
+- Een taal zonder eigen tekst krijgt Engels in plaats van Nederlands, ook in de Library, de formulebibliotheek en de modulekiezer.
 - De verborgen Linux-app kan een rapport met een ingevoegd PDF-blad naar PDF schrijven.
 - Bij Weergave kun je de lettertypen van de interface en de code afzonderlijk instellen.
 - Bij PDF-export via MCP vermeldt de app hoe het volledige rapport zonder dialoog kan worden opgeslagen en wanneer afdrukken andere opdrachten blokkeert.

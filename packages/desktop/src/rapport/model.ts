@@ -10,7 +10,8 @@
  * Wat de app meelevert is meertalig, met Engels als bron (meertalig.ts). Een rapport
  * bewaart de tekst in zijn eigen taal (`Rapport.taal`), zoals de gebruiker hem ziet.
  */
-import { inTaal, type Meertalig } from "./meertalig.ts";
+import { BRONTAAL, bundel, decimaleKomma as kommaTaal } from "../i18n/talen.ts";
+import { inTaal, mt, RAPPORTTEKSTEN, type Meertalig } from "./meertalig.ts";
 import { normaliseerSituatie, type Situatie } from "./situatie.ts";
 import { metSymbolen } from "./belastingBronnen.ts";
 
@@ -354,74 +355,59 @@ export const RAPPORT_VERSIE = 5;
 // taal. Wisselen van taal zoekt hierin (taalwissel.ts): een waarde die gelijk is aan een
 // regel hier, wisselt mee; eigen invoer blijft staan.
 
+/** De meegeleverde tekst op standaard.<sleutel> in rapportteksten.json. */
+const st = (sleutel: string): Meertalig => mt(`standaard.${sleutel}`);
+
+/** Een lijst uit standaard.<sleutel>: even lang als in het Engels, de bron. */
+function stLijst(sleutel: string): Meertalig[] {
+  const bron = bundel(BRONTAAL, RAPPORTTEKSTEN)?.standaard as Record<string, readonly unknown[]>;
+  return bron[sleutel].map((_, i) => st(`${sleutel}.${i}`));
+}
+
 /** Suggesties voor de rapporttitel; de eerste is de standaard. */
-export const TITELS: readonly Meertalig[] = [
-  { en: "Structural advice & calculations", nl: "Constructieadvies & berekeningen" },
-  { en: "Structural calculation", nl: "Constructieve berekening" },
-  { en: "Structural advice", nl: "Constructief advies" },
-  { en: "Structural calculations and drawings", nl: "Constructieve berekeningen en tekeningen" },
-  { en: "Assessment of the existing structure", nl: "Beoordeling bestaande constructie" },
-];
+export const TITELS: readonly Meertalig[] = stLijst("titels");
 
 /** Suggesties voor de rol in 2.2; de eerste is de standaard. */
-export const ROLLEN: readonly Meertalig[] = [
-  { en: "Lead structural engineer", nl: "Hoofdconstructeur" },
-  { en: "Structural engineer", nl: "Constructeur" },
-  { en: "Structural consultant", nl: "Constructief adviseur" },
-  { en: "Checking engineer", nl: "Controlerend constructeur" },
-];
+export const ROLLEN: readonly Meertalig[] = stLijst("rollen");
 
 /** Suggesties voor de soort bouwwerk in 4.1; de eerste is de standaard. */
-export const SOORTEN_BOUWWERK: readonly Meertalig[] = [
-  { en: "Dwelling", nl: "Woning" },
-  { en: "Single-family house", nl: "Eengezinswoning" },
-  { en: "Apartment building", nl: "Appartementencomplex" },
-  { en: "Villa", nl: "Villa" },
-  { en: "Office", nl: "Kantoor" },
-  { en: "Industrial hall", nl: "Bedrijfshal" },
-  { en: "Outbuilding", nl: "Bijgebouw" },
-  { en: "Shed", nl: "Schuur" },
-];
+export const SOORTEN_BOUWWERK: readonly Meertalig[] = stLijst("soortenBouwwerk");
 
-const NORMEN: Meertalig = { en: "NEN-EN 1990 to 1997", nl: "NEN-EN 1990 t/m 1997" };
-const EERSTE_UITGAVE: Meertalig = { en: "First issue", nl: "Eerste uitgave" };
-const NIET_VAN_TOEPASSING: Meertalig = { en: "n/a", nl: "n.v.t." };
+const NORMEN = st("normen");
+const EERSTE_UITGAVE = st("eersteUitgave");
+const NIET_VAN_TOEPASSING = st("nietVanToepassing");
 
+const MATERIAAL_TYPE = stLijst("materiaalType");
+const MATERIAAL_OPMERKING = stLijst("materiaalOpmerking");
 /** 4.3: de standaardregels; de sterkteklassen zijn codes en blijven in elke taal gelijk. */
 const MATERIALEN: readonly { type: Meertalig; soort: string; opmerking: Meertalig | string }[] = [
-  {
-    type: { en: "In-situ concrete", nl: "TPG Beton" },
-    soort: "C20/25",
-    opmerking: { en: "(for exposure classes see concrete calculations and drawing)", nl: "(voor milieuklassen zie berekening betononderdelen en tekening)" },
-  },
-  { type: { en: "Timber", nl: "Hout" }, soort: "C24", opmerking: "" },
-  { type: { en: "Wood-based panels", nl: "Plaatmateriaal" }, soort: "CE2+", opmerking: "" },
-  { type: { en: "Reinforcing steel", nl: "Wapeningsstaal" }, soort: "B500", opmerking: "" },
-  { type: { en: "Steel", nl: "Staal" }, soort: "S235", opmerking: "JR" },
-  { type: { en: "Grout under steel", nl: "Ondervoeging staal" }, soort: "K50", opmerking: "" },
+  { type: MATERIAAL_TYPE[0], soort: "C20/25", opmerking: MATERIAAL_OPMERKING[0] },
+  { type: MATERIAAL_TYPE[1], soort: "C24", opmerking: "" },
+  { type: MATERIAAL_TYPE[2], soort: "CE2+", opmerking: "" },
+  { type: MATERIAAL_TYPE[3], soort: "B500", opmerking: "" },
+  { type: MATERIAAL_TYPE[4], soort: "S235", opmerking: "JR" },
+  { type: MATERIAAL_TYPE[5], soort: "K50", opmerking: "" },
 ];
-const MATERIALEN_NOOT: Meertalig = { en: "(unless stated otherwise)", nl: "(tenzij anders aangegeven)" };
+const MATERIALEN_NOOT = st("materialenNoot");
+const BEVESTIGING_TYPE = stLijst("bevestiging");
 const BEVESTIGING: readonly { type: Meertalig; kwaliteit: string }[] = [
-  { type: { en: "Bolts", nl: "Bouten" }, kwaliteit: "8.8" },
-  { type: { en: "Coach screws", nl: "Houtdraaibout" }, kwaliteit: "4.6" },
-  { type: { en: "Chemical anchors", nl: "Chemische Ankers" }, kwaliteit: "5.8" },
+  { type: BEVESTIGING_TYPE[0], kwaliteit: "8.8" },
+  { type: BEVESTIGING_TYPE[1], kwaliteit: "4.6" },
+  { type: BEVESTIGING_TYPE[2], kwaliteit: "5.8" },
 ];
-const CONSERVERING: readonly { onderdeel: Meertalig; systeem: Meertalig }[] = [
-  { onderdeel: { en: "External structures", nl: "Buitenconstructies" }, systeem: { en: "Duplex or hot-dip galvanised", nl: "Duplex of thermisch verzinkt" } },
-  { onderdeel: { en: "In cavity walls", nl: "Constructies in spouw" }, systeem: { en: "Hot-dip galvanised", nl: "Thermisch verzinkt" } },
-  { onderdeel: { en: "Internal steelwork", nl: "Staal binnen" }, systeem: { en: "Paint system", nl: "Verf systeem" } },
-];
-const CONSERVERING_SLOT: Meertalig = {
-  en: "Corrosion protection applies to newly installed structural elements.",
-  nl: "Conservering wordt toegepast op nieuw te plaatsen constructieonderdelen.",
-};
+const CONSERVERING_ONDERDEEL = stLijst("conserveringOnderdeel");
+const CONSERVERING_SYSTEEM = stLijst("conserveringSysteem");
+const CONSERVERING: readonly { onderdeel: Meertalig; systeem: Meertalig }[] =
+  CONSERVERING_ONDERDEEL.map((onderdeel, i) => ({ onderdeel, systeem: CONSERVERING_SYSTEEM[i] }));
+const CONSERVERING_SLOT = st("conserveringSlot");
+const VERVORMING_ONDERDEEL = stLijst("vervormingOnderdeel");
 /** 4.8: de eisen zijn getallen en symbolen; die krijgen de notatie van de taal (standaardVervormingen). */
 const VERVORMINGEN: readonly { onderdeel: Meertalig; ueind: string; ubij: string; uhor: string }[] = [
-  { onderdeel: { en: "Vertical deflection of roofs", nl: "Verticale doorbuiging van daken" }, ueind: "0,004l_rep", ubij: "0,004l_rep", uhor: "" },
-  { onderdeel: { en: "Vertical deflection of floors", nl: "Verticale doorbuiging van vloeren" }, ueind: "0,004l_rep", ubij: "0,003l_rep", uhor: "" },
-  { onderdeel: { en: "Floors with masonry walls", nl: "Vloer met steenachtige wanden" }, ueind: "", ubij: "0,002l_rep", uhor: "" },
-  { onderdeel: { en: "Horizontal displacement, building", nl: "Horizontale verplaatsing bouwwerk" }, ueind: "", ubij: "", uhor: "H/300" },
-  { onderdeel: { en: "Horizontal displacement, partition", nl: "Horizontale verplaatsing afscheiding" }, ueind: "", ubij: "", uhor: "< 20 mm" },
+  { onderdeel: VERVORMING_ONDERDEEL[0], ueind: "0,004l_rep", ubij: "0,004l_rep", uhor: "" },
+  { onderdeel: VERVORMING_ONDERDEEL[1], ueind: "0,004l_rep", ubij: "0,003l_rep", uhor: "" },
+  { onderdeel: VERVORMING_ONDERDEEL[2], ueind: "", ubij: "0,002l_rep", uhor: "" },
+  { onderdeel: VERVORMING_ONDERDEEL[3], ueind: "", ubij: "", uhor: "H/300" },
+  { onderdeel: VERVORMING_ONDERDEEL[4], ueind: "", ubij: "", uhor: "< 20 mm" },
 ];
 
 const meertalig = (x: Meertalig | string): x is Meertalig => typeof x !== "string";
@@ -451,11 +437,11 @@ export function leesTaal(x: unknown): string | undefined {
 }
 
 /**
- * Talen die een getal met een decimale komma schrijven. Ook de bron van het
- * vaste getal in een meegeleverde waarde: die staat hier met een komma.
+ * Schrijft deze taal een getal met een decimale komma? Dat staat in de lijst van talen
+ * (i18n/talen.ts). Het vaste getal in een meegeleverde waarde staat hier met een komma.
  */
 export function decimaleKomma(taal: string): boolean {
-  return /^(nl|de|fr)\b/.test(taal);
+  return kommaTaal(taal);
 }
 
 /**

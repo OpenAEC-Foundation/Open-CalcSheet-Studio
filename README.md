@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/OpenAEC-Foundation/Open-CalcSheet-Studio?include_prereleases&label=release&color=D97706)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
 [![CI](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-LGPL--3.0-blue)](#license)
-[![Languages](https://img.shields.io/badge/languages-English%20%C2%B7%20Dutch-informational)](#screenshots)
+[![Languages](https://img.shields.io/badge/languages-English%20%C2%B7%20Dutch%20%C2%B7%20Lithuanian-informational)](#screenshots)
 
 ### [Download](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
 
@@ -143,7 +143,7 @@ Count sources: the files named above and `ls scripts/check-*.mjs`. A module stat
 - **Spreadsheet cells only go one way, as a number, into an input field.** A calculation sheet can take a cell (`#3.Sheet1!B4 kN`), but it cannot write back to the spreadsheet, and a formula in a calculation sheet cannot use a cell directly.
 - **No feet-and-inches with fractions yet.** You cannot type or show 5'-6 ½" yet, and temperatures stay in the unit of the sheet. Explanatory notes that quote values from a standard, the weights library and the drawings a sheet makes itself also keep their own units.
 - **Report straight to PDF is Windows only.** Other platforms use the print dialog.
-- **Some text stays in Dutch for now.** The app, the sheets, the Code tab and the report follow your language, but the variable names in the modules and some names in the IFC tree are Dutch.
+- **Some text stays in Dutch for now.** The app, the sheets, the Code tab and the report follow your language, but the variable names in the modules and some names in the IFC tree are Dutch. In Lithuanian, the worked-out modules, the formula library and the entries of the weights library are in English. See [languages](docs/talen.md) for how to add a language.
 - **Page breaks can differ slightly between screen scales.** At 100% and 150% a few lines can move to another page.
 - **No WebRTC in the app.** It is blocked everywhere, so an external page in `@iframe` that needs it will not work.
 - **Open FEM Studio projects are not there yet.** The menu item is visible but disabled.
