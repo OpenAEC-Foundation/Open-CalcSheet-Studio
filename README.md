@@ -71,7 +71,7 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 | Sheet | What it is |
 |-------|------------|
 | **Calculation sheet** | Text in the [calculation language](docs/rekentaal.md), with formulas, conditions, plots and drawings |
-| **Spreadsheet** | An `.xlsx` workbook with formulas, cell pointing, fill and page edges |
+| **Spreadsheet** | An `.xlsx` workbook with formulas, cell pointing, fill and page edges; a cell can feed an input field of a calculation sheet |
 | **Canvas** | Formula units placed freely, calculated top to bottom with the same kernel |
 | **Graph** | Nodes for numbers, logic, lists, text and geometry, and code blocks, with a 3D preview. Reads graph files (`.dyn`) |
 | **Drawing** | A4, A3 or A2 with views to scale: grids, levels, walls, steel sections, hollow-core floors and schemes |
@@ -118,7 +118,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **83 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **84 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
@@ -136,7 +136,7 @@ Count sources: the files named above and `ls scripts/check-*.mjs`. A module stat
 - **Fonts are not embedded in the project.** Apart from Inter and Space Grotesk, a font in your house style must be installed on the computer that prints.
 - **The library needs internet the first time.** Without a connection it stays empty until it has been fetched once. After that it uses the last version.
 - **A graph file is not always complete.** Nodes this app does not have, scripts and most geometry stay on the graph with a message and do not calculate.
-- **Spreadsheet values do not reach calculation sheets yet.** A spreadsheet stands on its own for now.
+- **Spreadsheet cells only go one way, as a number, into an input field.** A calculation sheet can take a cell (`#3.Sheet1!B4 kN`), but it cannot write back to the spreadsheet, and a formula in a calculation sheet cannot use a cell directly.
 - **No feet-and-inches with fractions yet.** You cannot type or show 5'-6 ½" yet, and temperatures stay in the unit of the sheet. Explanatory notes that quote values from a standard, the weights library and the drawings a sheet makes itself also keep their own units.
 - **Report straight to PDF is Windows only.** Other platforms use the print dialog.
 - **Some text stays in Dutch for now.** The app, the sheets, the Code tab and the report follow your language, but the variable names in the modules and some names in the IFC tree are Dutch.

@@ -455,6 +455,7 @@
     "inlezen": "Replace…",
     "inlezenUitleg": "Replace this workbook with an XLSX file. Name, position and notes in the report stay as they are.",
     "vervangenVraag": "Replace the workbook of \"{{naam}}\" with the chosen file?",
+    "vervangenGekoppeld": "Linked input fields: {{aantal}}. After replacing, they take their cells from the new workbook; a worksheet or cell that is no longer there gives a message and that sheet is not calculated.",
     "exporteren": "Export…",
     "exporterenUitleg": "Write this workbook to a separate XLSX file.",
     "vulgreep": "Drag to fill; double-click fills down as far as the column next to it is filled",
