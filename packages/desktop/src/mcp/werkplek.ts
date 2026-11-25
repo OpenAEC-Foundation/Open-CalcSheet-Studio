@@ -37,9 +37,16 @@ declare global {
   }
 }
 
-/** Wat in de werkplek mag: alles behalve schrijven naar schijf en exporteren. */
+/**
+ * Tools die met een pad op deze computer werken: een project openen van schijf en de
+ * recente bestanden. In de werkplek opent de gebruiker via Docs; een aanroep geeft
+ * daar `niet_in_browser`.
+ */
+const ALLEEN_BUREAUBLAD = new Set(["project_open", "recent_files"]);
+
+/** Wat in de werkplek mag: alles behalve schrijven naar schijf, exporteren en paden op deze computer. */
 export function werkplekTools(alle: McpToolDef[] = MCP_TOOLS): McpToolDef[] {
-  return alle.filter((t) => t.kind !== "file");
+  return alle.filter((t) => t.kind !== "file" && !ALLEEN_BUREAUBLAD.has(t.name));
 }
 
 export function werkplekDefinitie(t: McpToolDef): WerkplekDefinitie {

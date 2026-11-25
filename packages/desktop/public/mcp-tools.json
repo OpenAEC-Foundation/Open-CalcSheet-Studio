@@ -38,38 +38,6 @@
     "bevestigen": true
   },
   {
-    "name": "calcsheet_project_open",
-    "description": "Open a project file (.ifccalculation, or an older .ifc-calculation/.cpd) from a path on this computer, as File > Open does; it is added to the recent files. Refused with CONFLICT when the open project has unsaved changes, unless force=true. Desktop app only.",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "path": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Absolute path of the project file."
-        },
-        "force": {
-          "type": "boolean",
-          "description": "Discard unsaved changes of the open project."
-        }
-      },
-      "required": [
-        "path"
-      ],
-      "additionalProperties": false
-    },
-    "bevestigen": true
-  },
-  {
-    "name": "calcsheet_recent_files",
-    "description": "The recently opened and saved project files (File > Recent).",
-    "inputSchema": {
-      "type": "object",
-      "properties": {},
-      "additionalProperties": false
-    }
-  },
-  {
     "name": "calcsheet_project_set_name",
     "description": "Set the project name (the name of the project file and the heading of the printout). The project data field project_naam is separate (project_set_data).",
     "inputSchema": {
@@ -178,7 +146,7 @@
   },
   {
     "name": "calcsheet_report_set",
-    "description": "Set report fields by dot path (see report_get), e.g. {path: 'belastingen.wind.gebouwhoogte', value: '12'}. Text and checkbox fields take a string or boolean. Setting 'taal' ('en', 'nl') switches the report language: built-in texts switch along, text typed by the user stays. A list or object value replaces that part (e.g. append a revision with path 'revisies.2'); the app then completes it to a valid report. Pass values {path: value} for several. The parent of each path must exist.",
+    "description": "Set report fields by dot path (see report_get), e.g. {path: 'belastingen.wind.gebouwhoogte', value: '12'}. Text and checkbox fields take a string or boolean. Setting 'taal' ('en', 'nl') switches the report language: built-in texts switch along, text typed by the user stays. A list or object value replaces that part (e.g. append a revision with path 'revisies.2'); the app then completes it to a valid report. Images under the text of a paragraph: path 'beelden.<paragraph id>' (e.g. 'beelden.projectomschrijving', or 'beelden.berekeningen' for the start of the Calculations chapter) with a list of {path: 'C:/.../plan.png', bijschrift: 'caption', breedte: 20-100 (% of the text width)}; PNG or JPEG, or pass data (a data URL) instead of path. An empty list removes them. Pass values {path: value} for several. The parent of each path must exist.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -244,7 +212,7 @@
   },
   {
     "name": "calcsheet_sheet_add",
-    "description": "Add a calculation sheet to the project and open it. Either pass templateId (from modules_list) to insert that module, or omit it to add an empty sheet, optionally with your own calculation text in source. name sets the sheet name (default: the module name with a number). Returns the new sheet id and its input fields.",
+    "description": "Add a calculation sheet to the project and open it. Either pass templateId (from modules_list) to insert that module, templateId \"canvas\" for a canvas sheet (formulas as free-standing units, see units), or omit it to add an empty sheet, optionally with your own calculation text in source. name sets the sheet name (default: the module name with a number). Returns the new sheet id and its input fields.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -260,7 +228,35 @@
         },
         "source": {
           "type": "string",
-          "description": "Calculation text of an empty sheet. Not allowed together with templateId."
+          "description": "Calculation text of an empty sheet. Not allowed together with templateId, except with templateId \"canvas\"."
+        },
+        "units": {
+          "type": "array",
+          "description": "Only with templateId \"canvas\": the units to place on the canvas sheet. Each unit is a piece of calculation text at a position in millimetres from the top-left corner of the sheet (snapped to a 5 mm grid). Units are calculated by position: top to bottom, then left to right; a variable exists for everything placed lower.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "Millimetres from the left edge."
+              },
+              "y": {
+                "type": "number",
+                "description": "Millimetres from the top; a new page starts every 245 mm (the first after 220 mm)."
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Calculation text of this unit."
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "text"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -775,7 +771,7 @@
   },
   {
     "name": "calcsheet_print",
-    "description": "Print from the app, as the Print buttons do: what='report' for the structural report (cover, chapters, sheets in appendix A), what='sheets' for calculation sheets (ids, default all). The system print dialog opens in the app; the user picks the printer there, or a PDF printer to save a PDF. The app waits until the dialog is closed.",
+    "description": "Print from the app, as the Print buttons do: what='report' for the structural report (cover, chapters, sheets in appendix A), what='sheets' for calculation sheets (ids, default all). The system print dialog opens in the app; the user picks the printer there, or a PDF printer to save a PDF. MCP and REST requests may block until someone closes the dialog. For unattended report export on Windows or Linux, use report_export_pdf.",
     "inputSchema": {
       "type": "object",
       "properties": {

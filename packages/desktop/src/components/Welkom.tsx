@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import Icoon from "./Icoon";
 import { getSetting, setSetting } from "../store";
+import { browserVoorkeur } from "../werkplek/werkplek";
 import { useModuleKiezer } from "../store/moduleKiezer";
 import { modulesPerTemplate } from "./calc/projectTree";
 import "./Welkom.css";
@@ -112,19 +113,12 @@ export default function Welkom({ onSluit }: { onSluit: () => void }) {
  */
 export async function welkomBijStart(): Promise<boolean> {
   // In de browser zijn er geen voorkeuren op schijf: daar onthoudt de browser zelf dat het paneel er was.
-  try {
-    if (localStorage.getItem(GEZIEN) === "1") return false;
-  } catch {
-    /* geen opslag (privévenster): dan alleen de instelling */
-  }
+  // In de werkplek onthoudt de host het, via de instellingen (store.ts).
+  if (browserVoorkeur.lees(GEZIEN) === "1") return false;
   const eersteKeer = await getSetting<boolean>(INSTELLING, true);
   if (eersteKeer) {
     await setSetting(INSTELLING, false);
-    try {
-      localStorage.setItem(GEZIEN, "1");
-    } catch {
-      /* zie hierboven */
-    }
+    browserVoorkeur.bewaar(GEZIEN, "1");
   }
   return eersteKeer;
 }

@@ -27,6 +27,7 @@ import {
 } from "../../store/moduleBibliotheek";
 import ModuleAfbeelding from "./ModuleAfbeelding";
 import LokaleNormen from "./LokaleNormen";
+import { openBuiten } from "../../werkplek/werkplek";
 import "../settings/SettingsDialog.css";
 import "./ProjectBrowser.css";
 import "./ModuleKiezer.css";
@@ -89,14 +90,7 @@ function filter(groep: Groep, zoek: string, tw: Vertaler): Groep | null {
 
 const aantal = (g: Groep): number => g.items.length + g.subgroepen.reduce((s, sg) => s + aantal(sg), 0);
 
-async function openNormBron(url: string) {
-  if ("__TAURI_INTERNALS__" in window) {
-    const { openUrl } = await import("@tauri-apps/plugin-opener");
-    await openUrl(url);
-  } else {
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-}
+const openNormBron = openBuiten;
 
 /**
  * De beelden van de tegels buiten de catalogus: de naam van het bestand in

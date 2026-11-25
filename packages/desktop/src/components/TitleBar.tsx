@@ -4,6 +4,7 @@ import { useAfdrukken } from "../store/printStore";
 import { useProjectStore } from "../store/projectStore";
 import { useBestandActies } from "../hooks/useBestandActies";
 import Icoon from "./Icoon";
+import { IN_WERKPLEK } from "../werkplek/werkplek";
 import "./TitleBar.css";
 
 interface TitleBarProps {
@@ -129,7 +130,7 @@ function TitleBar({ onSettingsClick, onFeedbackClick }: TitleBarProps) {
 
       <div className="titlebar-controls">
         {/* De SuperCloud heeft een eigen feedbackknop; in de werkplek geen eigen knop. */}
-        {import.meta.env.MODE !== "platform" && (
+        {!IN_WERKPLEK && (
           <button className="send-feedback-btn" onClick={() => onFeedbackClick?.()} tabIndex={-1}>
             {t("sendFeedback")}
           </button>

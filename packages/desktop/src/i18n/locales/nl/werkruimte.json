@@ -996,7 +996,16 @@
     "geenProject": "Dit IFCX-bestand bevat geen project van deze app.",
     "geenDocs": "Er staan nog geen bestanden van deze app in deze map in Docs.",
     "kiesDocs": "Welk bestand openen? Typ het nummer.",
-    "naamInDocs": "Naam in Docs"
+    "naamInDocs": "Naam in Docs",
+    "kopieInDocs": "Iemand anders had het bestand intussen gewijzigd. Je werk staat in een kopie: {{naam}}"
+  },
+  "werkplek": {
+    "nietHier": "{{wat}}: dat kan niet in de werkplek van de SuperCloud. Daar is er geen internet buiten de app.",
+    "linkNaarBuiten": "Een link naar buiten opent niet in de werkplek van de SuperCloud. Het adres:\n\n{{url}}",
+    "kaartZonderNet": "Klik op de kaart om de speld te plaatsen, of typ coördinaten (52.37, 4.89). In de werkplek van de SuperCloud is er geen internet buiten de app: geen kaartachtergrond, adressen zoeken, kaartbeelden of meting van het water.",
+    "onlineBibliotheek": "De online bibliotheek",
+    "webpagina": "Een webpagina in een blad",
+    "script": "Een script in een blad"
   },
   "ifcxBewaren": {
     "titel": "IFCX opslaan",

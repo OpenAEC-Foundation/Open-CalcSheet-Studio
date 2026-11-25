@@ -119,6 +119,10 @@ async function bewaarInDocs(host: SiteHost, payload: string, doel: { path?: stri
     ? await host.save(bytes, { id: bekend.id, expectedVersion: bekend.version })
     : await host.save(bytes, { name: doel.name ?? bekend?.name ?? "Berekening.ifccalculation" });
   // Een conflict geeft een kopie met een eigen id: die is daarna het geopende bestand.
+  // De gebruiker krijgt de naam van die kopie te zien.
+  if (bekend && !bekend.readOnly && ref.name && ref.name !== bekend.name) {
+    alert(i18next.t("werkruimte:bestandDialoog.kopieInDocs", { naam: ref.name }));
+  }
   const path = DOCS + ref.id;
   docsBestanden.set(path, { ...ref, readOnly: false });
   return path;
@@ -245,6 +249,7 @@ export async function openCalculationFile(): Promise<OpenedFile | null> {
 }
 
 let startbestandVraag: Promise<string | null> | null = null;
+const HOST_WACHTTIJD_MS = 3000;
 
 /**
  * Het bestand waarmee de app is gestart: een dubbelklik in de Verkenner geeft
@@ -256,6 +261,18 @@ export function startbestand(): Promise<string | null> {
   // In de werkplek: het bestand waarmee de gebruiker de tool uit Docs opende.
   const host = siteHost();
   if (host) return Promise.resolve(host.initialFileId ? DOCS + host.initialFileId : null);
+  // De platformbouw zonder host (nog): even wachten op `openaec-host-ready`.
+  if (typeof __WERKPLEK__ === "boolean" && __WERKPLEK__) {
+    startbestandVraag ??= new Promise((klaar) => {
+      const klok = setTimeout(() => klaar(null), HOST_WACHTTIJD_MS);
+      window.addEventListener("openaec-host-ready", () => {
+        clearTimeout(klok);
+        const h = siteHost();
+        klaar(h?.initialFileId ? DOCS + h.initialFileId : null);
+      }, { once: true });
+    });
+    return startbestandVraag;
+  }
   if (!isTauri()) return Promise.resolve(null);
   startbestandVraag ??= import("@tauri-apps/api/core").then(({ invoke }) => invoke<string | null>("startbestand"));
   return startbestandVraag;

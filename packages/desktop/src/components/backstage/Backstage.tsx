@@ -6,6 +6,7 @@ import { useAfdrukken } from "../../store/printStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { sprite } from "../ribbon/calcIcons";
 import { version as pakketVersie } from "../../../package.json";
+import { openBuiten } from "../../werkplek/werkplek";
 import "./Backstage.css";
 
 const ICONS = {
@@ -218,12 +219,7 @@ function AboutPanel() {
 
   const openExternal = (url: string) => async (e: React.MouseEvent) => {
     e.preventDefault();
-    try {
-      const { openUrl } = await import("@tauri-apps/plugin-opener");
-      await openUrl(url);
-    } catch {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
+    await openBuiten(url);
   };
 
   return (

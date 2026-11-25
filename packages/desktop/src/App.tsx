@@ -30,6 +30,7 @@ import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave"
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
 import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
 import FeedbackDialog from "./components/FeedbackDialog";
+import { IN_WERKPLEK } from "./werkplek/werkplek";
 import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
 import VariantenPaneel from "./components/calc/varianten/VariantenPaneel";
 import { isPdfBlad } from "./store/pdfBijlage";
@@ -567,7 +568,8 @@ export default function App() {
       {welkomOpen && <Welkom onSluit={() => setWelkomOpen(false)} />}
       <StatusBar />
       <SpreadsheetHouder />
-      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      {/* De SuperCloud heeft een eigen feedbackknop; in de werkplek geen eigen dialoog. */}
+      {!IN_WERKPLEK && <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
       <JupyterHouder />
       <Backstage
         open={backstageOpen}

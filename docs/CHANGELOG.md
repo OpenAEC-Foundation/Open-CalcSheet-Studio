@@ -11,6 +11,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 - Bij Weergave kun je de lettertypen van de interface en de code afzonderlijk instellen.
 - Bij PDF-export via MCP vermeldt de app hoe het volledige rapport zonder dialoog kan worden opgeslagen en wanneer afdrukken andere opdrachten blokkeert.
 - De rekenkern rekent met precies 1000 lbf per kip, ook bij lijnlasten.
+- De app draait in de werkplek van de OpenAEC SuperCloud. Openen en opslaan gaan daar via Docs, de instellingen via de SuperCloud, en de app gebruikt geen netwerk, opslag of popups van de browser.
+- De speld op de kaarten van Locatie en Windgebied zit in de app en komt niet meer van internet.
 
 ## v2026.47.3 — 2026-11-21
 
