@@ -4,8 +4,11 @@ import { ligger } from "./ligger";
 import { tweepaalspoer } from "./tweepaalspoer";
 import { doorsnedeSpanningen } from "./doorsnede-spanningen";
 
+import voorgespannenHeipaal from "./voorgespannen-heipaal.cpd?raw";
+
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
+  "voorgespannen-heipaal": voorgespannenHeipaal,
   "ligger": ligger,
   "tweepaalspoer": tweepaalspoer,
   "doorsnede-spanningen": doorsnedeSpanningen,
