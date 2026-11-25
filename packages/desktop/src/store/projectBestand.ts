@@ -1,4 +1,16 @@
-import { bouwProjectIfcx, isIfcxBestand, isProjectIfcx, leesProjectIfcx, leesVastgelegdeToetsingen, type IfcCalcSheet } from "@ifc-calc/core";
+import {
+  bouwProjectIfcx,
+  isIfcxBestand,
+  isProjectIfcx,
+  leesProjectIfcx,
+  leesVastgelegdeToetsingen,
+  metVreemdeGegevens,
+  vreemdeGegevens,
+  type IfcCalcSheet,
+  type IfcxBestand,
+  type IfcxVreemd,
+} from "@ifc-calc/core";
+import { bladenVoorIfc } from "./projectIfcx.ts";
 import { gebruikteToetsingen } from "../rekenen/toetsCache.ts";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens.ts";
 import type { Exemplaar, Verborgen } from "./projectStore";
@@ -62,6 +74,10 @@ import { leesVarianten } from "./varianten.ts";
  * lege `source` en daarnaast `pdf`: `{ bestandsnaam, data }`, met in `data` het
  * hele PDF-bestand als base64. Zo zit de PDF in het projectbestand en blijft het
  * project overdraagbaar.
+ *
+ * Gegevens van een ander programma in het bestand (een eigen knoop, of een eigen
+ * attribuut op een knoop van deze app) gaan bij het openen mee als `vreemd` en
+ * komen bij het opslaan ongewijzigd terug: zie packages/core/src/ifcx/vreemd.ts.
  */
 
 export const PROJECT_FORMAAT_VERSIE = 2;
@@ -85,6 +101,8 @@ export interface ProjectPayload {
   rapport?: Rapport;
   /** Uit de projectboom gehaalde onderdelen; ontbreekt als niets verborgen is. */
   verborgen?: Verborgen;
+  /** Gegevens van een ander programma uit het geopende bestand; ze gaan ongewijzigd terug. */
+  vreemd?: IfcxVreemd;
 }
 
 export interface GelezenProject {
@@ -94,6 +112,8 @@ export interface GelezenProject {
   /** Afwezig bij een oud bestand of een los blad; laadProject maakt dan een nieuw rapport. */
   rapport?: Rapport;
   verborgen?: Verborgen;
+  /** Alleen bij een IFCX-bestand waarin een ander programma iets heeft gezet. */
+  vreemd?: IfcxVreemd;
 }
 
 /**
@@ -103,8 +123,13 @@ export interface GelezenProject {
  * uit `payload`.
  */
 export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet[] | null): string {
+  return JSON.stringify(metVreemdeGegevens(eigenDocument(payload, bladen), payload.vreemd), null, 2);
+}
+
+/** Alleen wat de app zelf schrijft, zonder de gegevens van een ander. */
+function eigenDocument(payload: ProjectPayload, bladen: IfcCalcSheet[] | null): IfcxBestand {
   const uitkomsten = new Map((bladen ?? []).map((b) => [b.id, b]));
-  const doc = bouwProjectIfcx({
+  return bouwProjectIfcx({
     naam: payload.naam,
     formaatversie: PROJECT_FORMAAT_VERSIE,
     gegevens: payload.gegevens,
@@ -132,7 +157,23 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       ...(ex.varianten ? { varianten: ex.varianten } : {}),
     })),
   });
-  return JSON.stringify(doc, null, 2);
+}
+
+/**
+ * Wat een ander programma in het bestand zette. De app bouwt het document opnieuw op
+ * uit wat ze heeft gelezen, doorgerekend zoals bij het opslaan; wat het bestand meer
+ * heeft, is van een ander (core: ifcx/vreemd.ts).
+ */
+function vreemdUit(bron: IfcxBestand, p: GelezenProject): IfcxVreemd | undefined {
+  const payload: ProjectPayload = {
+    versie: PROJECT_FORMAAT_VERSIE,
+    naam: p.projectNaam,
+    gegevens: p.gegevens,
+    exemplaren: p.exemplaren,
+    rapport: p.rapport,
+    verborgen: p.verborgen,
+  };
+  return vreemdeGegevens(bron, eigenDocument(payload, bladenVoorIfc(payload)));
 }
 
 let losTeller = 0;
@@ -179,7 +220,7 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
     const p: { naam?: unknown; gegevens?: unknown; exemplaren?: unknown; rapport?: unknown; verborgen?: unknown } | undefined =
       isProjectIfcx(parsed) ? leesProjectIfcx(parsed) : parsed.project;
     if (p && Array.isArray(p.exemplaren)) {
-      return {
+      const gelezen: GelezenProject = {
         projectNaam: (typeof p.naam === "string" && p.naam) || bestandsnaam,
         gegevens: { ...legeGegevens(), ...((p.gegevens as ProjectGegevens | undefined) ?? {}) },
         exemplaren: normaliseerExemplaren(p.exemplaren, bestandsnaam),
@@ -191,6 +232,11 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
           : undefined,
         verborgen: leesVerborgen(p.verborgen),
       };
+      if (isProjectIfcx(parsed)) {
+        const vreemd = vreemdUit(parsed, gelezen);
+        if (vreemd) gelezen.vreemd = vreemd;
+      }
+      return gelezen;
     }
 
     if (typeof parsed.source?.content === "string") {

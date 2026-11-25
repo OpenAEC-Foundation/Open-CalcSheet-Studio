@@ -23,7 +23,9 @@ import {
   extractScope,
   type IfcCalcSheet,
   type IfcxBestand,
+  metVreemdeGegevens,
   type ElementRef,
+  type IfcxVreemd,
   type VastgelegdeToets,
 } from "@ifc-calc/core";
 import { projectScope } from "./projectGegevens.ts";
@@ -71,6 +73,8 @@ export interface ProjectVoorIfc {
   exemplaren: BladVoorIfc[];
   rapport?: unknown;
   verborgen?: { gegevens?: boolean; rapport?: boolean };
+  /** Gegevens van een ander programma uit het geopende bestand; ze komen ongewijzigd terug. */
+  vreemd?: IfcxVreemd;
 }
 
 /** Ook de antwoorden van FEM Studio tellen: een nieuw antwoord geeft een andere uitkomst. */
@@ -144,7 +148,7 @@ export function bladenVoorIfc(project: Pick<ProjectVoorIfc, "exemplaren" | "gege
 
 /** Het project als IFCX-document. `bladen` zijn de doorgerekende bladen; zonder rekent dit ze door. */
 export function projectIfcx(project: ProjectVoorIfc, bladen?: IfcCalcSheet[]): IfcxBestand {
-  return bouwProjectIfcx({
+  return metVreemdeGegevens(bouwProjectIfcx({
     naam: project.naam,
     formaatversie: project.versie,
     gegevens: project.gegevens,
@@ -152,7 +156,7 @@ export function projectIfcx(project: ProjectVoorIfc, bladen?: IfcCalcSheet[]): I
     rapport: project.rapport,
     belastingen: belastingenVoorIfc(project.rapport),
     verborgen: project.verborgen,
-  });
+  }), project.vreemd);
 }
 
 /** Het project als STEP, uit hetzelfde document als het IFCX. */

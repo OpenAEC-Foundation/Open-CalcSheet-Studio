@@ -15,6 +15,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 - Bij Weergave kun je de lettertypen van de interface en de code afzonderlijk instellen.
 - Bij PDF-export via MCP vermeldt de app hoe het volledige rapport zonder dialoog kan worden opgeslagen en wanneer afdrukken andere opdrachten blokkeert.
 - De rekenkern rekent met precies 1000 lbf per kip, ook bij lijnlasten.
+- Gegevens die een andere Studio in een projectbestand zet, zoals een eigen knoop of een eigen attribuut op een gekoppeld element, blijven bij opnieuw opslaan staan, met hun schema's en imports.
+- Een element in een bronmodel kan worden aangewezen met zijn IFCX-pad met `/`, zoals `/elements/…`; de toetsing komt dan op precies dat pad.
 
 ## v2026.47.3 — 2026-11-21
 
