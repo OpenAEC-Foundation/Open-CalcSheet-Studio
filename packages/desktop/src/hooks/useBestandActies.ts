@@ -25,11 +25,12 @@ const melding = (sleutel: string, fout?: unknown) =>
  * document, want binnen het OpenAEC-ecosysteem is IFCX de drager waarmee de
  * gereedschappen data uitwisselen. Elk blad wordt doorgerekend voor de uitkomsten
  * in het bestand (store/projectIfcx.ts); een blad dat omvalt blijft erin staan.
+ * Wat een ander programma in het geopende bestand zette, gaat ongewijzigd mee.
  */
 export function projectInhoud(): string {
-  const { projectNaam, gegevens, exemplaren, rapport, verborgen } = useProjectStore.getState();
+  const { projectNaam, gegevens, exemplaren, rapport, verborgen, vreemd } = useProjectStore.getState();
   return bouwProjectBestand(
-    { versie: PROJECT_FORMAAT_VERSIE, naam: projectNaam, gegevens, exemplaren, rapport, verborgen: Object.keys(verborgen).length ? verborgen : undefined },
+    { versie: PROJECT_FORMAAT_VERSIE, naam: projectNaam, gegevens, exemplaren, rapport, verborgen: Object.keys(verborgen).length ? verborgen : undefined, vreemd },
     bladenVoorIfc({ exemplaren, gegevens }),
   );
 }
@@ -98,8 +99,8 @@ export function useBestandActies() {
     if (!kanDirectOpslaan(pad)) return opslaanAls();
     try {
       await bewaarOpenWerkmappen();
-      await schrijfCalculationFile(pad, projectInhoud());
-      useProjectStore.getState().markeerOpgeslagen(pad);
+      const opgeslagen = await schrijfCalculationFile(pad, projectInhoud());
+      useProjectStore.getState().markeerOpgeslagen(opgeslagen);
     } catch (err) {
       console.error("Save file failed:", err);
       alert(melding("opslaanMislukt", err));

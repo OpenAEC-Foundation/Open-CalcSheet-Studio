@@ -136,12 +136,13 @@ export function uuidUitIfcGuid(guid: string): string {
 /**
  * Het IFCX-pad van een element in een bronmodel. Een GlobalId wordt zijn UUID,
  * want zo heet hetzelfde element in de IFCX van dat model; een UUID of ander
- * bruikbaar pad blijft staan. Bij het samenstellen met het bronmodel komen de
- * attributen zo op het echte element terecht.
+ * bruikbaar pad blijft staan, ook een pad met `/` zoals `/elements/0900…`: dat
+ * patroon staat in de specificatie (`ifcx.tsp`). Bij het samenstellen met het
+ * bronmodel komen de attributen zo op het echte element terecht.
  */
 export function padVanElement(id: string): string {
   const t = id.trim();
   if (isIfcGuid(t)) return uuidUitIfcGuid(t);
-  if (/^[A-Za-z0-9_.:-]+$/.test(t)) return t;
+  if (/^[A-Za-z0-9_.:/-]+$/.test(t)) return t;
   return uuidVan(`element/${t}`);
 }

@@ -5,7 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { drieDSvg, type DrieDScene } from "@ifc-calc/core";
 import { useProjectStore } from "../../store/projectStore";
 import { projectScope } from "../../store/projectGegevens";
-import { isLosBlad } from "../../store/spreadsheetBlad";
+import { isLosBlad, isSpreadsheetBlad } from "../../store/spreadsheetBlad";
 import { projectTekstVan } from "../../store/projectBlad";
 import { evalOptiesVan } from "../../store/projectEenheden";
 import { metToetsingen } from "../../rekenen/toetsCache";
@@ -71,12 +71,13 @@ export default function ProjectModelVenster({ sluit }: { sluit: () => void }) {
     worker.onerror = () => zetFout(true);
     const invoer: ModelInvoer = {
       bladen: bladen.map(({ id, ref, source, waarden }) => ({ id, ref, source, waarden })),
+      bronnen: alle.filter(isSpreadsheetBlad).map(({ ref, templateId, source, waarden, xlsx }) => ({ ref, templateId, source, waarden, xlsx })),
       scope: projectScope(gegevens), hoekmodus: hoekmodusNu(),
       opties: metToetsingen({ ...evalOptiesVan(gegevens), project: projectTekstVan(gegevens, belastingen, taal) }, "lezen"),
     };
     worker.postMessage(invoer);
     return () => worker.terminate();
-  }, [bladen, gegevens, belastingen, taal, toetsversie]);
+  }, [bladen, alle, gegevens, belastingen, taal, toetsversie]);
   const rijen = useMemo(() => bladen.map((e, index) => {
     const keuze = { y: index * 5, ...standaardKoppeling(e.templateId), ...keuzes[e.id] };
     const lengtes = maten?.[e.id] ?? {};

@@ -57,6 +57,38 @@ zijn in deze taal geschreven.
   (`packages/core/src/verwijzing.ts`); de app zet de waarde onder die naam in de scope
   (`packages/desktop/src/rekenen/verwijzingen.ts`). Een losse module verwijst nooit naar
   een ander blad: dat doet de constructeur in zijn eigen project.
+- **Een cel uit een spreadsheet-blad:** typ in een invoerveld `#3.Blad1!B4`: blad 3,
+  werkblad Blad1, cel B4. Een werkblad met een spatie of leesteken staat tussen enkele
+  aanhalingstekens, zoals in een spreadsheet: `#3.'Lasten vloer'!B4`. Het invoerscherm
+  heeft naast elk veld een knop om het blad, het werkblad en de cel te kiezen; daar staan
+  ook de bron, de waarde waarmee gerekend is en *Koppeling verwijderen* (het veld houdt
+  dan het laatste getal uit de cel). Alleen in een invoerveld, niet in een formule, en
+  alleen van de spreadsheet naar het rekenblad.
+- **Eenheid van de cel:** zet de eenheid van het getal in de cel achter de verwijzing:
+  `#3.Blad1!B4 kN`. Het veld rekent het dan om naar zijn eigen eenheid (12,5 kN in een
+  veld in N wordt 12 500 N). Zonder eenheid achter de verwijzing krijgt het getal de
+  eenheid van het veld, en in een veld zonder eenheid blijft het een kaal getal. Past de
+  eenheid niet (12,5 m in een veld in kN), of staat er een eenheid bij een veld zonder,
+  dan is dat een fout: er wordt nooit stil omgerekend.
+- **Wat er uit de cel komt:** een getal, of de uitkomst van een formule zoals de
+  spreadsheet die bij het bewaren in de werkmap zette. Een lege cel, tekst, een ja/nee-
+  waarde, een formulefout (`#DIV/0!`), een formule zonder uitkomst (uit een bestand van
+  elders: open het spreadsheet-blad één keer), een werkblad dat er niet is of een blad dat
+  er niet (meer) is of geen spreadsheet is, geeft een melding onder het veld, op het blad
+  en in het rapport. Anders dan bij `#2.R_paal` rekent het veld dan niet met zijn
+  standaardwaarde: het staat niet in de scope, wat ervan afhangt rekent niet, en het blad
+  krijgt geen UC en geen oordeel.
+- **Verandert de cel:** het blad rekent opnieuw; de waarde van de cel hoort bij de
+  doorrekening zoals de invoer. Een cel die nog openstaat in de spreadsheet gaat eerst
+  naar het project zodra je het blad verlaat, opslaat of de kiezer opent. Het kenmerk van
+  het blad (`#3`) blijft bij een nieuwe naam van het blad. De editor kan een werkblad niet
+  hernoemen; een andere werkmap inlezen vraagt eerst bevestiging als er velden aan het blad
+  hangen, en een werkblad dat daarna ontbreekt geeft de melding hierboven.
+- **Waar:** de kern leest de verwijzing (`leesCelVerwijzing` in
+  `packages/core/src/verwijzing.ts`) en maakt het veld (`celInvoer` in `evaluator.ts`); de app
+  leest de cel uit de XLSX (`packages/desktop/src/rekenen/spreadsheetCellen.ts`) en zet de
+  waarde of de fout onder `celNaam` in de scope (`verwijzingen.ts`). Controle:
+  `scripts/check-spreadsheet-invoer.mjs`.
 
 ## Plaat op palen
 

@@ -13,7 +13,7 @@ import { bouwLast } from './lastBlok.js';
 import { FemModel, femWaarde, femStrook, femSvg, femGrootheid, FEM_EENHEID } from './femResultaat.js';
 import { FemStaafModel, femStaafEenheid, femStaafGrootheid, femStaafKnoop, femStaafKrachten, femStaafSvg, femStaafWaarde } from './femStaafResultaat.js';
 import { bouwJsBlok } from './jsBlok.js';
-import { leesVerwijzing, verwijzingNaam, verwijzingenInMelding } from './verwijzing.js';
+import { celNaam, celVerwijzingTekst, leesCelVerwijzing, leesVerwijzing, verwijzingNaam, verwijzingenInMelding, type CelFout, type CelVerwijzing } from './verwijzing.js';
 import { parse } from './parser.js';
 import { plaatOplossing, plaatSamenvatting, plaatDoorbuiging, plaatSvg, type PlaatInvoer } from './plaat.js';
 import {
@@ -1914,8 +1914,25 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             scope[node.name] = gevonden;
           }
         }
+        // Een cel uit een spreadsheet-blad (`#3.Blad1!B4 kN`, verwijzing.ts). Anders dan
+        // hierboven geen terugval op de standaardwaarde: lukt het niet, dan staat het veld
+        // niet in de scope en rekent wat ervan afhangt niet. Zo staat er nooit een oordeel
+        // op een waarde die niet uit de cel komt.
+        const cel = ref ? null : leesCelVerwijzing(invoer);
+        let koppeling: { bron: string; waarde?: string; fout?: string } | undefined;
+        if (cel) {
+          const uit = celInvoer(cel, scope[celNaam(cel.ref, cel.blad, cel.cel)], node.unit);
+          koppeling = { bron: celVerwijzingTekst({ ...cel, eenheid: '' }) };
+          if ('fout' in uit) {
+            delete scope[node.name];
+            koppeling.fout = uit.fout;
+          } else {
+            scope[node.name] = uit.waarde;
+            koppeling.waarde = formatResult(uit.waarde);
+          }
+        }
         const raw = ref ? standaard.trim().replace(',', '.') || '0' : invoer.trim().replace(',', '.') || standaard.trim().replace(',', '.') || '0';
-        if (!ref || refFout) try {
+        if (!cel && (!ref || refFout)) try {
           // Wat geen getal oplevert (alleen een eenheid of een teken, zoals
           // "kN" of "-"), gaat naar de afhandeling van een halve invoer. Dat
           // geldt voor de invoer zelf, zonder de eenheid erachter: een eenheid
@@ -1948,6 +1965,8 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
           let standaardInBeeld = standaard;
           try {
             toon = huidigStelsel && node.unit && !eigen ? doelInStelsel(node.unit, huidigStelsel) : null;
+            // Een koppeling staat er zoals getypt; de eenheid erin geldt voor de cel.
+            if (toon && cel) toon = null;
             if (toon) {
               // Een eenheid in het stelsel die niet bij het veld past (met de hand
               // bewerkt project): dan zoals in het blad.
@@ -1968,7 +1987,11 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             currentValue,
             standaard: standaardInBeeld,
             ...(toon ? { toonEenheid: toon } : {}),
+            ...(koppeling ? { koppeling } : {}),
           });
+        } else if (koppeling?.fout) {
+          // Een verborgen veld: de melding moet toch op het blad staan.
+          result.push({ type: 'text', text: `${koppeling.bron}: ${koppeling.fout}` });
         }
         if (refFout) result.push({ type: 'text', text: `Error evaluating ${refFout}` });
         break;
@@ -2269,6 +2292,78 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
   }
 
   return result;
+}
+
+/** De vaste woorden van een melding bij een gekoppelde cel, in de taal van de uitvoer. */
+const CEL_MELDING: Record<'nl' | 'en', Record<CelFout | 'eenheid' | 'eenheid-onbekend', (c: CelVerwijzing, detail: string) => string>> = {
+  nl: {
+    bron: (c) => `koppeling niet gerekend: er is geen blad #${c.ref} (meer)`,
+    'geen-spreadsheet': (c) => `koppeling niet gerekend: blad #${c.ref} is geen spreadsheet-blad`,
+    werkmap: (c) => `koppeling niet gerekend: de werkmap van blad #${c.ref} is niet te lezen`,
+    werkblad: (c) => `koppeling niet gerekend: blad #${c.ref} heeft geen werkblad "${c.blad}"`,
+    leeg: (c) => `koppeling niet gerekend: cel ${c.cel} is leeg`,
+    tekst: (c, d) => `koppeling niet gerekend: cel ${c.cel} bevat geen getal${d ? ` maar "${d}"` : ''}`,
+    formulefout: (c, d) => `koppeling niet gerekend: de formule in cel ${c.cel} geeft ${d || 'een fout'}`,
+    'geen-waarde': (c) => `koppeling niet gerekend: de formule in cel ${c.cel} heeft nog geen uitkomst; open het spreadsheet-blad`,
+    eenheid: (c, d) => `koppeling niet gerekend: ${d} uit cel ${c.cel} past niet bij de eenheid van dit veld`,
+    'eenheid-onbekend': (c) => `koppeling niet gerekend: onbekende eenheid "${c.eenheid}"`,
+  },
+  en: {
+    bron: (c) => `link not calculated: there is no sheet #${c.ref} (any more)`,
+    'geen-spreadsheet': (c) => `link not calculated: sheet #${c.ref} is not a spreadsheet sheet`,
+    werkmap: (c) => `link not calculated: the workbook of sheet #${c.ref} cannot be read`,
+    werkblad: (c) => `link not calculated: sheet #${c.ref} has no worksheet "${c.blad}"`,
+    leeg: (c) => `link not calculated: cell ${c.cel} is empty`,
+    tekst: (c, d) => `link not calculated: cell ${c.cel} does not hold a number${d ? ` but "${d}"` : ''}`,
+    formulefout: (c, d) => `link not calculated: the formula in cell ${c.cel} gives ${d || 'an error'}`,
+    'geen-waarde': (c) => `link not calculated: the formula in cell ${c.cel} has no result yet; open the spreadsheet sheet`,
+    eenheid: (c, d) => `link not calculated: ${d} from cell ${c.cel} does not match the unit of this field`,
+    'eenheid-onbekend': (c) => `link not calculated: unknown unit "${c.eenheid}"`,
+  },
+};
+
+/**
+ * De waarde van een invoerveld dat aan een cel gekoppeld is. `gevonden` is wat de app
+ * in de scope zette (een getal of een fout, verwijzing.ts); niets als het blad er niet is.
+ *
+ * De eenheid: een eenheid in de koppeling (`#3.Blad1!B4 kN`) is die van het getal in de
+ * cel; het veld rekent het dan om naar zijn eigen eenheid. Zonder eenheid in de koppeling
+ * krijgt het getal de eenheid van het veld; zonder beide is het een kaal getal. Een
+ * eenheid die niet bij het veld past, of een getal met een eenheid in een veld zonder
+ * (en omgekeerd), is een fout: er wordt nooit stil iets anders van gemaakt.
+ */
+function celInvoer(cel: CelVerwijzing, gevonden: unknown, doel: string): { waarde: unknown } | { fout: string } {
+  const woorden = CEL_MELDING[huidigeTaal === 'en' ? 'en' : 'nl'];
+  if (gevonden === undefined) return { fout: woorden.bron(cel, '') };
+  if (typeof gevonden !== 'number') {
+    const f = gevonden as { fout?: CelFout; detail?: string };
+    return { fout: (woorden[f.fout ?? 'werkmap'] ?? woorden.werkmap)(cel, f.detail ?? '') };
+  }
+  if (!Number.isFinite(gevonden)) return { fout: woorden.tekst(cel, String(gevonden)) };
+  const getal = String(gevonden);
+  if (!cel.eenheid) {
+    if (!doel) return { waarde: gevonden };
+    try {
+      return { waarde: getalMetEenheid(getal, doel) };
+    } catch {
+      return { fout: woorden.eenheid(cel, getal) };
+    }
+  }
+  let bron: unknown;
+  try {
+    bron = getalMetEenheid(getal, cel.eenheid);
+    if (zonderGetal(bron)) throw new Error('geen getal');
+  } catch {
+    return { fout: woorden['eenheid-onbekend'](cel, '') };
+  }
+  const tekst = `${getal} ${cel.eenheid}`;
+  if (!doel) return isUnit(bron) ? { fout: woorden.eenheid(cel, tekst) } : { waarde: bron };
+  if (!isUnit(bron)) return { fout: woorden.eenheid(cel, tekst) };
+  try {
+    return { waarde: (bron as { to: (eenheid: string) => unknown }).to(doel) };
+  } catch {
+    return { fout: woorden.eenheid(cel, tekst) };
+  }
 }
 
 /** Geen getal: niets, of een eenheid zonder waarde (`kN`). */

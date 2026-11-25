@@ -5,17 +5,9 @@
  */
 import DOMPurify from "dompurify";
 import { linkNaarBuiten, maakOpschoner } from "./uitwerkingRegels";
+import { openBuiten } from "../../werkplek/werkplek";
 
 export const schoonUitwerking = maakOpschoner(DOMPurify);
-
-async function openBuiten(url: string) {
-  if ("__TAURI_INTERNALS__" in window) {
-    const { openUrl } = await import("@tauri-apps/plugin-opener");
-    await openUrl(url);
-  } else {
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-}
 
 /**
  * Een link in de uitwerking laat de app niet verdwijnen: hij opent in de systeembrowser,

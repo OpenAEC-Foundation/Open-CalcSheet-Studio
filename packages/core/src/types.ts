@@ -599,6 +599,13 @@ export interface EvaluatedInputPrompt {
    * `currentValue` en `standaard` staan dan in die eenheid. Opgeslagen wordt in `unit`.
    */
   toonEenheid?: string;
+  /**
+   * Het veld is gekoppeld aan een cel van een spreadsheet-blad (`#3.Blad1!B4 kN`,
+   * verwijzing.ts): de verwijzing zoals getypt, en de waarde waarmee het veld rekent
+   * (`12.5 kN`), of de melding waarom het niet rekent. Bij een melding staat het veld
+   * niet in de scope: wat ervan afhangt, rekent niet.
+   */
+  koppeling?: { bron: string; waarde?: string; fout?: string };
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }

@@ -88,7 +88,7 @@ constructeur een element heeft aangewezen.
 
 Bij het openen telt: de projectnaam, de gegevens, de verborgen onderdelen, het
 rapport, en per blad zijn naam, id, `templateId`, `bronVersie`, rekentekst,
-invoer, elementen, PDF, werkmap en Markdown-tekst, en de antwoorden van Open FEM
+invoer, elementen, PDF, werkmap en Markdown-tekst (met de koppeling van een gekoppeld blad: soort, pad, relatief pad, verwijzing, moment en hash van de laatste lezing), en de antwoorden van Open FEM
 Studio op de `@toets`-blokken (`ocss::blad::toetsing`). Die antwoorden zijn geen
 afleiding: de app kan ze niet zelf opnieuw maken. Per hash van de invoer op het
 blad staan er de tool, de datum, de herkomst (`versie`, `sha256`, `schema`) en het
@@ -102,8 +102,36 @@ gebruiken zonder de rekentaal te kennen, en blijft de tekst de waarheid.
 Opslaan, openen en opslaan geeft dezelfde inhoud, afgezien van het tijdstempel.
 Een andere lezer die een knoop aanvult (dezelfde `path` nog een keer, zoals IFCX
 dat bedoelt), wordt gelezen zoals IFCX het samenstelt: de laatste wint per
-attribuut. Knopen van een ander programma die de app niet kent, blijven bij
-opnieuw opslaan niet staan.
+attribuut.
+
+### Gegevens van een andere Studio
+
+Wat een ander programma in het projectbestand zet, blijft bij opnieuw opslaan
+staan zoals het was (`packages/core/src/ifcx/vreemd.ts`). Bij het openen bouwt de
+app het document opnieuw op uit wat ze heeft gelezen, doorgerekend zoals bij het
+opslaan; wat het bestand meer heeft, is van een ander en gaat apart mee
+(`vreemd` in de projectstore). Bij het opslaan komt het terug:
+
+- een **knoop** met een pad dat de app niet schrijft en zonder attribuut `ocss::`,
+  met al zijn attributen, `children` en `inherits`;
+- een **attribuut** dat de app op een van haar eigen paden niet zet, buiten
+  `ocss::`, zoals een categorie of een materiaalverwijzing op een gekoppelde balk;
+- een **naam** onder `children` of `inherits` die de app op dat pad niet gebruikt;
+- de **schema's** die de app niet schrijft, en de **imports** die ze zelf nooit
+  schrijft; de imports van de standaard die vreemde attributen nodig hebben, komen
+  erbij.
+
+Wat de app zelf schrijft gaat voor: krijgt een vreemd attribuut later dezelfde
+naam als iets van de app, dan wint de app. Een knoop met `ocss::` die de app niet
+meer schrijft (een verwijderd blad), vervalt; vreemde attributen op een pad dat de
+app niet meer schrijft (een ontkoppelde balk), blijven als eigen knoop staan.
+Meerdere knopen met hetzelfde pad komen samengesteld terug in één knoop.
+
+Grenzen: de vergelijking is met wat deze versie van de app schrijft, en de paden
+van de app volgen uit de projectnaam en het projectnummer. Wie die wijzigt, krijgt
+nieuwe paden; vreemde attributen op de oude paden van de app blijven dan op die
+oude paden staan. Op een gekoppeld element, waarvan het pad uit het bronmodel komt,
+speelt dat niet.
 
 ### De namespace `ocss::`
 
@@ -218,8 +246,40 @@ elementen?: ElementRef[]   // { id: GlobalId of IFCX-pad, naam?: string }
   aan alle balken van die laag hangen; dat is precies hoe je toetst.
 
 Een GlobalId wordt in IFCX de UUID van dat element, zo heet het in de IFCX van het
-bronmodel. Bij het samenstellen van de twee komt de toetsing dus op het echte
-element terecht.
+bronmodel. Een IFCX-pad blijft staan zoals het is, ook met `/`
+(`/elements/0900…`; `padVanElement` in `ifcx/identiteit.ts`). Bij het samenstellen
+van de twee komt de toetsing dus op het echte element terecht.
+
+### Proef: een funderingsbalk in IFCX Explorer
+
+`scripts/fixtures/ifcx-pilot/` legt de koppeling vast met één balk uit het
+referentiemodel van IFCX Explorer, `/elements/0900886be4fa5a0fab2c5a3b2c6282be`
+(een funderingsbalk 400×500):
+
+- `funderingsbalk-buiging.cpd` — een klein rekenblad, geen module: de buigtoets
+  van een gewapendbetonnen balk volgens EN 1992-1-1 (3.1.7), zonder FEM. Bij een
+  te grote drukzone geeft het blad geen oordeel ("niet getoetst").
+- `funderingsbalk.ifccalculation` — een project met dat blad, `elementen` op het
+  pad van de balk en M_Ed = 180 kNm (UC 0,81, voldoet). Een andere Studio heeft er
+  het materiaal van de balk als eigen knoop in gezet, en op de balk een categorie
+  en een verwijzing naar dat materiaal, met hun schema's en de import
+  `urn:openaec:school:schema`.
+- `funderingsbalk-gewijzigd.ifccalculation` — hetzelfde bestand na openen, M_Ed
+  naar 240 kNm en opslaan: UC 1,08, voldoet niet.
+
+`scripts/check-ifcx-pilot.mjs` controleert dat openen, wijzigen en opslaan de
+vreemde knoop, de vreemde attributen, hun waarden, paden, verwijzingen, schema's
+en imports ongewijzigd laat, dat het blad en de balk hun pad houden, en dat
+`ocss::blad::uitkomst` en de verwijzing in `ocss::element` de nieuwe uitkomst
+tonen. Met `--schrijf` maakt het de twee projectbestanden opnieuw.
+
+Een lezer vindt de toetsing van een element langs twee wegen: het blad met
+`ocss::blad::elementen` waarin het pad staat, of `ocss::element.toetsingen[].ref`
+op het element. Uit `ocss::blad::uitkomst` leest hij de norm (`norm`), de
+maatgevende UC (`uc`, zonder eenheid), de invoer met eenheid (`invoervelden`) en
+het oordeel (`status`). Alleen `voldoet` is voldoet; `geen_oordeel` en
+`niet_doorgerekend` zijn niet getoetst. IFCX Explorer toont dat bij het selecteren
+van de balk, na het openen van het projectbestand.
 
 De koppeling wordt **nooit geraden**. De herkenning in `ifcx/herkenning.ts` herkent
 hoogstens het *soort* element aan de variabelenamen: paal, fundering of balk. Wélk
@@ -239,7 +299,8 @@ ingekort; de export bevat alles.
 
 `scripts/check-ifcx.mjs` loopt mee in de controles en werkt zonder netwerk: de
 vorm volgens de specificatie, elk attribuut tegen zijn schema, heen en terug, oude
-bestanden en de STEP tegen het IFCX.
+bestanden en de STEP tegen het IFCX. `scripts/check-ifcx-pilot.mjs` controleert de
+proef met de funderingsbalk en de gegevens van een andere Studio.
 
 Daarnaast, met de hand en lokaal, want er komt software van buiten bij kijken:
 

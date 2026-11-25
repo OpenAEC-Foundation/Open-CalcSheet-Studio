@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { LANGUAGES, STANDAARD_TAAL, changeLanguage } from "../../i18n/config";
 import { getSetting, setSetting } from "../../store";
+import { openBuiten } from "../../werkplek/werkplek";
 import Modal from "../Modal";
 import ThemedSelect from "../ThemedSelect";
 import BureauTab from "../rapport/BureauTab";
@@ -644,12 +645,7 @@ function AboutTabContent() {
   const openBron = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!femBron) return;
-    try {
-      const { openUrl } = await import("@tauri-apps/plugin-opener");
-      await openUrl(femBron);
-    } catch {
-      window.open(femBron, "_blank", "noopener,noreferrer");
-    }
+    await openBuiten(femBron);
   };
   const toonBijlage = async (e: React.MouseEvent) => {
     e.preventDefault();

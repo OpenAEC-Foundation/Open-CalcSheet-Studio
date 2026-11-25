@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { defaultStyles, evaluate, parse, render } from "@ifc-calc/core";
+import { isNederlands } from "../../i18n/talen";
 import { useProjectStore } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
 import { isLosBlad } from "../../store/spreadsheetBlad";
 import { useLibrary } from "../../store/library";
 import { werkLibraryBij } from "../../store/libraryLaden";
+import { browserVoorkeur } from "../../werkplek/werkplek";
 import Icoon from "../Icoon";
 import FormuleVenster from "../ribbon/FormuleVenster";
 import { codeVan, type Formule, type Tekst } from "../ribbon/formules";
@@ -46,7 +48,7 @@ interface Stand {
 
 function leesStand(): Stand {
   try {
-    const s = JSON.parse(localStorage.getItem(SLEUTEL) ?? "{}") as Partial<Stand>;
+    const s = JSON.parse(browserVoorkeur.lees(SLEUTEL) ?? "{}") as Partial<Stand>;
     return {
       sectieDicht: s.sectieDicht === true,
       groepenDicht: Array.isArray(s.groepenDicht) ? s.groepenDicht : [],
@@ -56,12 +58,9 @@ function leesStand(): Stand {
   }
 }
 
+// Geen opslag beschikbaar (privévenster, de werkplek): dan onthoudt het paneel het alleen deze sessie.
 function bewaarStand(s: Stand) {
-  try {
-    localStorage.setItem(SLEUTEL, JSON.stringify(s));
-  } catch {
-    // Geen opslag beschikbaar: dan onthoudt het paneel het alleen deze sessie.
-  }
+  browserVoorkeur.bewaar(SLEUTEL, JSON.stringify(s));
 }
 
 // ─── Het voorbeeld ──────────────────────────────────────────────────────────
@@ -103,7 +102,7 @@ function meetPlek(paneel: Element | null | undefined) {
 
 function VoorbeeldVak({ f, anker, onSluit }: { f: Formule; anker: HTMLElement | null; onSluit: () => void }) {
   const { t, i18n } = useTranslation("library");
-  const taal = (w: Tekst) => (i18n.language?.startsWith("en") ? w.en : w.nl) || w.nl;
+  const taal = (w: Tekst) => (isNederlands(i18n.language) ? w.nl : w.en) || w.nl;
   const scope = useProjectScope();
   const blad = useProjectStore((s) => s.exemplaren.find((e) => e.id === s.activeId));
   const open = blad && !isLosBlad(blad) ? blad : null;
@@ -202,7 +201,7 @@ function LibraryMelding() {
 
 export default function LibrarySectie() {
   const { t, i18n } = useTranslation("library");
-  const taal = (w: Tekst) => (i18n.language?.startsWith("en") ? w.en : w.nl) || w.nl;
+  const taal = (w: Tekst) => (isNederlands(i18n.language) ? w.nl : w.en) || w.nl;
   const groepen = useLibrary((s) => s.groepen);
   const voorbeelden = useLibrary((s) => s.voorbeelden);
   const [stand, setStand] = useState(leesStand);
