@@ -1,4 +1,4 @@
-import { combineerLasten, femStaafAssen, femStaafPunt, femStaafVrijheden, vDot, vLengte, vMaal, vMin, vPlus, type Vec3 } from './femStaven.js';
+import { FEM_GEVAL_ZONDER_NAAM, combineerLasten, femStaafAssen, femStaafPunt, femStaafVrijheden, vDot, vLengte, vMaal, vMin, vPlus, type Vec3 } from './femStaven.js';
 import type { DrieDElement, FemStaafLast, FemStaafRekenmodel, FemStaafUitkomstCompact, Punt3D } from './types.js';
 
 /**
@@ -611,19 +611,25 @@ function steunenSvg(m: FemStaafRekenmodel, k: Kader): string {
   return uit.join('');
 }
 
-/** De namen van de staven en de knopen, klein, bij het schema. */
-function namenSvg(m: FemStaafRekenmodel, k: Kader): string {
+/**
+ * De namen van de staven en de knopen, klein, bij het schema. `kant` -1 zet de naam van
+ * een staaf aan de onderzijde: in het schema met de lasten staan die erboven.
+ */
+function namenSvg(m: FemStaafRekenmodel, k: Kader, kant = 1): string {
   const uit: string[] = [];
   const tekst = (x: number, y: number, t: string, stijl: string) => `<text x="${f1(x)}" y="${f1(y)}" font-size="10" ${stijl} stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(t)}</text>`;
   /** Een tekst die van de lijn af loopt: links ervan eindigt hij op het punt, rechts begint hij er. */
   const anker = (dx: number) => (dx < -0.3 ? 'end' : dx > 0.3 ? 'start' : 'middle');
+  const metSteun = new Set(m.steunen.map((s) => s.knoop));
   m.staven.forEach((st, i) => {
     const as = femStaafAssen(m, i);
     const [a, b] = [k.p(femStaafPunt(m, st.knopen[0])), k.p(femStaafPunt(m, st.knopen[st.knopen.length - 1]))];
-    const n = opPapier(as.ez);
-    uit.push(tekst((a[0] + b[0]) / 2 + 8 * n[0], (a[1] + b[1]) / 2 + 8 * n[1] + 3, st.naam, `text-anchor="${anker(n[0])}" font-style="italic" fill="${GRIJS}"`));
+    const n = opPapier(vMaal(as.ez, kant));
+    // Midden op de staaf, of anders op een plek die vrij is van een tussensteun of benoemde knoop.
+    const bezet = st.knopen.slice(1, -1).filter((kn) => metSteun.has(kn) || m.knopen[kn]).map((kn) => k.p(femStaafPunt(m, kn)));
+    const t = [0.5, 0.3, 0.7, 0.2, 0.8, 0.12].find((f) => bezet.every((p) => Math.hypot(a[0] + f * (b[0] - a[0]) - p[0], a[1] + f * (b[1] - a[1]) - p[1]) > 26)) ?? 0.5;
+    uit.push(tekst(a[0] + t * (b[0] - a[0]) + 8 * n[0], a[1] + t * (b[1] - a[1]) + 8 * n[1] + 3, st.naam, `text-anchor="${anker(n[0])}" font-style="italic" fill="${GRIJS}"`));
   });
-  const metSteun = new Set(m.steunen.map((s) => s.knoop));
   m.knopen.forEach((naam, i) => {
     if (!naam) return;
     const [x, y] = k.p(femStaafPunt(m, i));
@@ -637,6 +643,8 @@ function namenSvg(m: FemStaafRekenmodel, k: Kader): string {
     const l = Math.hypot(sx, sy);
     let [dx, dy] = l < 0.2 ? [0, -1] : [-sx / l, -sy / l];
     if (metSteun.has(i) && dy > 0.2) [dx, dy] = [dx < 0 ? -1 : 1, -0.2];
+    // Een oplegging midden op een staaf: de naam rechtsonder, naast het teken, niet in de lasten erboven.
+    if (metSteun.has(i) && l < 0.2) [dx, dy] = [1.15, 1.3];
     uit.push(tekst(x + 11 * dx, y + 11 * dy + 3.5, naam, `text-anchor="${anker(dx)}" font-weight="600" fill="${INKT}"`));
   });
   return uit.join('');
@@ -743,9 +751,10 @@ export function femStaafSvg(model: FemStaafModel, set: string, grootheid: string
   if (!m.vlak) throw new Error('een beeld als SVG is er voor een vlak staafwerk; teken een ruimtelijk staafwerk in een @3d-blok (fem model geval M)');
   const soort = grootheid.trim().toLowerCase();
   const k = kader(m, breedte, 78, 84, 66);
-  const naam = `${esc(model.naam)} · ${esc(set)}`;
+  // Het geval zonder naam (een blok zonder `geval`) staat niet in de titel.
+  const naam = set === FEM_GEVAL_ZONDER_NAAM && m.gevallen.length === 1 ? esc(model.naam) : `${esc(model.naam)} · ${esc(set)}`;
   if (soort === 'lasten' || soort === 'last' || soort === 'loads') {
-    return `${kop('calc-fem-beeld', k, `${model.naam} ${set}`)}${titel(k, `${naam} · ${taal === 'nl' ? 'lasten' : 'loads'}`)}${stavenSvg(m, k)}${steunenSvg(m, k)}${lastenSvg(model, set, k, taal)}</svg>`;
+    return `${kop('calc-fem-beeld', k, `${model.naam} ${set}`)}${titel(k, `${naam} · ${taal === 'nl' ? 'lasten' : 'loads'}`)}${stavenSvg(m, k)}${steunenSvg(m, k)}${namenSvg(m, k, -1)}${lastenSvg(model, set, k, taal)}</svg>`;
   }
   const omhullende = set === 'omhullende' || set === 'envelope';
   const sets = omhullende ? model.omhullendeSets() : [model.set(set)];

@@ -20,7 +20,10 @@
  * Waar de server staat: OCSS_FEM_SERVER, anders de vastgezette server van CalcSheet
  * (packages/desktop/src-tauri/fem-studio, op te halen met scripts/haal-fem-server.mjs).
  *
- * Draaien:  node scripts/proef-fem-staven.mjs [--bewaar] [--zonder-node]
+ * Met `--blad naam,naam` rekent de proef alleen die bladen, en schrijft hij met `--bewaar`
+ * alleen hun antwoorden (niet de schema's, de lijst van tools en staven-ruw.json).
+ *
+ * Draaien:  node scripts/proef-fem-staven.mjs [--bewaar] [--zonder-node] [--blad naam,naam]
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
 import { spawn } from "node:child_process";
@@ -32,6 +35,12 @@ import { LIGGER, STAVEN_BLADEN } from "./fixtures/fem/staven-bladen.mjs";
 
 const bewaar = process.argv.includes("--bewaar");
 const zonderNode = process.argv.includes("--zonder-node");
+const bladArg = process.argv.indexOf("--blad");
+const alleen = bladArg >= 0 ? (process.argv[bladArg + 1] ?? "").split(",").filter(Boolean) : null;
+if (alleen?.some((n) => !STAVEN_BLADEN[n])) {
+  console.log(`Onbekend blad: ${alleen.filter((n) => !STAVEN_BLADEN[n]).join(", ")} (wel: ${Object.keys(STAVEN_BLADEN).join(", ")})`);
+  process.exit(1);
+}
 const server = [process.env.OCSS_FEM_SERVER, VASTGEZET].filter(Boolean).find((p) => existsSync(p));
 if (!server) {
   console.log("Geen server van FEM Studio gevonden: zet OCSS_FEM_SERVER of draai node scripts/haal-fem-server.mjs.");
@@ -123,7 +132,7 @@ const schrijf = (naam, data) => {
   console.log(`  geschreven: scripts/fixtures/fem/${naam}`);
 };
 
-for (const [naam, bron] of Object.entries(STAVEN_BLADEN)) {
+for (const [naam, bron] of Object.entries(STAVEN_BLADEN).filter(([n]) => !alleen || alleen.includes(n))) {
   const toetsingen = {};
   // In rondes, zoals de werkruimte: eerst het staafwerk, dan wat ervan afhangt.
   for (let ronde = 0; ronde < 4; ronde++) {
@@ -162,7 +171,7 @@ for (const [naam, bron] of Object.entries(STAVEN_BLADEN)) {
   if (bewaar && !zonderNode) schrijf(`staven-${naam}.json`, { versie, toetsingen });
 }
 
-if (bewaar && !zonderNode) {
+if (bewaar && !zonderNode && !alleen) {
   // De ligger met het antwoord zoals het kwam: alleen wat femStaafBewaar leest.
   const v = vanSoort(evaluate(parse(LIGGER), {}, {}, { toetsModus: "vragen" }), ["fem"])[0].verzoeken[0];
   const argumenten = femVerzoekArgumenten(v);

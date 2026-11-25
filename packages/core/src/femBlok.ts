@@ -3,6 +3,7 @@ import { femArgumenten, femBewaar as femPlaatBewaar, femRekenmodel, femSomLast, 
 import { FemModel, femGrootheid, femModelSvg, femSvg } from './femResultaat.js';
 import { FEM_STAAF_GERESERVEERD, bouwFemStaven, isFemStaafwerk, renderFemStaven, wisFemStaven } from './femStaafBlok.js';
 import { FEM_STAVEN_TOOL, femStaafArgumenten, femStaafBewaar } from './femStaven.js';
+import { staafProfiel } from './profielTabel.js';
 import { schemaHash, toetsHash } from './toetsBlok.js';
 import type {
   EvaluatedFem, FemNode, FemRegel, FemRekenmodel, FemStaafRekenmodel, FemStaafUitkomstCompact, FemUitersten, FemUitkomstCompact, ToetsAntwoord, ToetsVerzoek,
@@ -80,16 +81,27 @@ const OPDRACHTEN: Readonly<Record<string, Opdrachtsoort>> = {
   eigengewicht: { aantallen: [1, 2], vorm: 'eigengewicht γ [; staaf]', last: true },
   puntlast: { aantallen: [2, 3, 4], vorm: 'puntlast F; x; y (plaat), puntlast knoop; F [; richting] of puntlast staaf; F; a [; richting]', last: true },
   combinatie: { aantallen: [1], vorm: 'combinatie naam = 1.2*G + 1.5*Q' },
-  beeld: { aantallen: [0], vorm: 'beeld UGT mx (een geval of combinatie, en w, mx, my, mxy, vx of vy; bij een staafwerk M, V, N, u of lasten)' },
+  beeld: { aantallen: [0], vorm: 'beeld UGT mx (een geval of combinatie, en w, mx, my, mxy, vx of vy; bij een staafwerk M, V, N, u of lasten, of beeld uit)' },
   // Een staafwerk (femStaafBlok.ts).
   rechthoek: { aantallen: [2, 3], vorm: 'rechthoek naam: b; h [; materiaal]', naam: 'moet' },
-  doorsnede: { aantallen: [2, 3, 4, 5], vorm: 'doorsnede naam: A; I_y [; I_z; I_t] [; materiaal]', naam: 'moet' },
+  doorsnede: { aantallen: [1, 2, 3, 4, 5], vorm: 'doorsnede HEA200 (een profiel) of doorsnede naam: A; I_y [; I_z; I_t] [; materiaal]', naam: 'moet' },
   knoop: { aantallen: [2, 3], vorm: 'knoop naam: x; z of knoop naam: x; y; z', naam: 'moet' },
   staaf: { aantallen: [2, 3, 4, 5, 6, 7, 8, 9], vorm: 'staaf [naam:] knoop; knoop [; doorsnede] [; scharnier [begin|eind]] [; trek] of staaf [naam:] x_1; z_1; x_2; z_2 …', naam: 'mag' },
   steun: { aantallen: [2, 3, 4, 5, 7, 9], vorm: 'steun knoop; soort of steun x; z; soort, met soort scharnier, rol, rol z of inklemming; of per richting vast, vrij of een veer' },
   lijnlast: { aantallen: [2, 3, 4, 5, 6], vorm: 'lijnlast staaf; q [; q_eind] [; richting] [; van; tot]', last: true },
   delen: { aantallen: [1], vorm: 'delen n' },
   knikvormen: { aantallen: [1], vorm: 'knikvormen n' },
+};
+
+/**
+ * De Engelse woorden van het blok, naast de Nederlandse: beide werken, ook door elkaar.
+ * Het blok leest ze als het Nederlandse woord.
+ */
+export const FEM_ENGELS: Readonly<Record<string, string>> = {
+  material: 'materiaal', mesh: 'maas', analysis: 'analyse', plate: 'plaat', spring: 'veer', springs: 'veren',
+  linesupport: 'lijnsteun', case: 'geval', areaload: 'vlaklast', selfweight: 'eigengewicht', pointload: 'puntlast',
+  combination: 'combinatie', view: 'beeld', rectangle: 'rechthoek', section: 'doorsnede', node: 'knoop',
+  beam: 'staaf', member: 'staaf', support: 'steun', lineload: 'lijnlast', divisions: 'delen', bucklingmodes: 'knikvormen',
 };
 
 /** Splitst op `;` buiten haakjes en aanhalingstekens. */
@@ -124,6 +136,8 @@ export function leesFemBlok(naam: string, bron: string[], normaliseer: (expr: st
   /** De namen van knopen en staven: samen met de gevallen en combinaties één reeks namen. */
   const delen = new Set<string>();
   let inGeval = false;
+  // Zonder één regel `geval` horen alle lasten bij één belastinggeval (femStaafBlok.ts).
+  const zonderGeval = !bron.some((r) => /^\s*(geval|case)\b/i.test(r));
   let i = 0;
 
   function blok(eindes: RegExp[]): { regels: FemRegel[]; eind: string | null } {
@@ -170,14 +184,14 @@ export function leesFemBlok(naam: string, bron: string[], normaliseer: (expr: st
         continue;
       }
       const m = t.match(/^([\p{L}_][\p{L}\p{N}_]*)\s*(.*)$/u);
-      const woord = m?.[1].toLowerCase() ?? '';
+      const woord = FEM_ENGELS[m?.[1].toLowerCase() ?? ''] ?? m?.[1].toLowerCase() ?? '';
       const soort = OPDRACHTEN[woord];
       if (!m || !soort) {
         meld(nr, `onbekend woord "${m?.[1] ?? t}" (bekend: ${Object.keys(OPDRACHTEN).join(', ')})`);
         continue;
       }
       const rest = m[2].trim();
-      if (soort.last && !inGeval) {
+      if (soort.last && !inGeval && !zonderGeval) {
         meld(nr, `${woord} hoort bij een belastinggeval: zet eerst geval naam`);
         continue;
       }
@@ -195,6 +209,15 @@ export function leesFemBlok(naam: string, bron: string[], normaliseer: (expr: st
       }
       if (woord === 'beeld') {
         const delen = rest.split(/\s+/);
+        // `beeld uit` laat de beelden van een staafwerk weg; `beeld M` is het beeld van het enige geval.
+        if (delen.length === 1 && /^(uit|off)$/i.test(delen[0])) {
+          uit.push({ soort: 'opdracht', regel: nr, woord, naam: 'uit', args: [] });
+          continue;
+        }
+        if (delen.length === 1 && /^[a-z]+$/i.test(delen[0])) {
+          uit.push({ soort: 'opdracht', regel: nr, woord, naam: '', args: [delen[0]] });
+          continue;
+        }
         if (delen.length !== 2 || !IDENT.test(delen[0]) || !/^[a-z]+$/i.test(delen[1])) { meld(nr, `schrijf ${soort.vorm}`); continue; }
         uit.push({ soort: 'opdracht', regel: nr, woord, naam: delen[0], args: [delen[1]] });
         continue;
@@ -213,6 +236,9 @@ export function leesFemBlok(naam: string, bron: string[], normaliseer: (expr: st
       if (soort.naam) {
         const n = rest.match(/^([\p{L}_][\p{L}\p{N}_]*)\s*:(?!=)\s*(.*)$/u);
         if (n) [eigenNaam, tekst] = [n[1], n[2]];
+        // Een profiel zonder naam (`doorsnede HEA200`) heet zoals het profiel; een naam die op
+        // een profiel lijkt maar er geen is, meldt femStaafBlok.ts met de profielen die er zijn.
+        else if (woord === 'doorsnede' && (staafProfiel(rest) || /^[a-z]{2,4}\s*\d+$/i.test(rest))) [eigenNaam, tekst] = [rest.replace(/\s+/g, '').toUpperCase(), rest];
         else if (soort.naam === 'moet') {
           meld(nr, `${woord} heeft een naam nodig: ${soort.vorm}`);
           continue;

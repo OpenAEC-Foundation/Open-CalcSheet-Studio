@@ -49,6 +49,8 @@ import type { FemStaafGevalCompact, FemStaafLast, FemStaafRekenmodel, FemStaafUi
 
 /** De tool van FEM Studio die een staafwerk rekent: alle rekengevallen in één aanroep. */
 export const FEM_STAVEN_TOOL = 'solve_open_fem_3d_batch';
+/** De naam van het belastinggeval als een blok geen `geval` heeft: dan horen alle lasten erbij. */
+export const FEM_GEVAL_ZONDER_NAAM = 'belasting';
 export const FEM_STAVEN_MAX_KNOPEN = 4000;
 export const FEM_STAVEN_MAX_STAVEN = 1000;
 export const FEM_STAVEN_MAX_GEVALLEN = 200;

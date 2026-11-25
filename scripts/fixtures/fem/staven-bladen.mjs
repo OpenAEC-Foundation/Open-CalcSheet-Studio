@@ -315,8 +315,117 @@ export const KAP = [
 export const KAP_TOETS_OP_EEN_REGEL =
   '  inputs = [{beam_id: 1, width_mm: b, height_mm: h, strength_class: "C24", service_class: "Sc2", length_m: kap.spoor_l.L, buckling_length_z_m: 0.3 m, ltb_segment_length_m: 0.3 m, forces_envelope: fem_krachten(kap; "spoor_l"; "UGT_G"; "UGT_S"; "UGT_W"), load_duration: "ShortTerm", load_duration_per_combination: [{combination_id: 1, load_duration: "Permanent"}, {combination_id: 2, load_duration: "ShortTerm"}, {combination_id: 3, load_duration: "ShortTerm"}], deflection_inst_mm: -kap.BGT.spoor_l.w_max, deflection_quasi_perm_mm: -kap.G.spoor_l.w_max, deflection_permanent_mm: -kap.G.spoor_l.w_max}]';
 
+/**
+ * De kortste vorm: een ligger in vijf regels, met een profiel uit de tabel, zonder geval en
+ * zonder beeld (het blok tekent dan zelf de lasten, M, V en u). HEA200, L = 6 m,
+ * q = 10 kN/m: M = qL²/8 = 45 kNm, w = 5qL⁴/(384EI).
+ */
+export const LIGGER_KORT = [
+  "@fem ligger",
+  "  doorsnede HEA200",
+  "  knoop A: 0; 0",
+  "  knoop B: 6 m; 0",
+  "  staaf A; B",
+  "  steun A; scharnier",
+  "  steun B; rol",
+  "  lijnlast s1; 10 kN/m",
+  "@end",
+  "M_max = ligger.s1.M_max",
+  "V_max = ligger.s1.V_max",
+  "w_max = ligger.s1.w_max",
+  "R_A = ligger.A.Rz_max",
+].join("\n");
+
+/**
+ * Een doorgaande ligger op drie steunpunten, in het Engels: één staaf over de middelste
+ * knoop. IPE300, twee velden van 5 m, q = 10 kN/m: steunmoment qL²/8, reacties 3/8·qL,
+ * 10/8·qL en 3/8·qL.
+ */
+export const DOORGAAND_3 = [
+  "L = 5 m",
+  "q = 10 kN/m",
+  "@fem d3",
+  "  section IPE300",
+  "  node A: 0; 0",
+  "  node B: L; 0",
+  "  node C: 2*L; 0",
+  "  beam A; C",
+  "  support A; pin",
+  "  support B; roller",
+  "  support C; roller",
+  "  lineload s1; q",
+  "@end",
+  "M_steun = d3.s1.M_min",
+  "M_veld = d3.s1.M_max",
+  "w_veld = d3.s1.w_max",
+  "R_A = d3.A.Rz_max",
+  "R_B = d3.B.Rz_max",
+  "R_C = d3.C.Rz_max",
+].join("\n");
+
+/**
+ * Een doorgaande ligger op vier steunpunten, met een staaf per veld. HEB300, drie velden
+ * van 4 m, q = 10 kN/m: steunmoment 0,100·qL², veldmoment 0,080·qL² in een eindveld en
+ * 0,025·qL² in het middenveld, reacties 0,400·qL en 1,100·qL.
+ */
+export const DOORGAAND_4 = [
+  "L = 4 m",
+  "q = 10 kN/m",
+  "@fem d4",
+  "  doorsnede HEB300",
+  "  knoop A: 0; 0",
+  "  knoop B: L; 0",
+  "  knoop C: 2*L; 0",
+  "  knoop D: 3*L; 0",
+  "  staaf v1: A; B",
+  "  staaf v2: B; C",
+  "  staaf v3: C; D",
+  "  steun A; scharnier",
+  "  steun B; rol",
+  "  steun C; rol",
+  "  steun D; rol",
+  "  lijnlast v1; q",
+  "  lijnlast v2; q",
+  "  lijnlast v3; q",
+  "@end",
+  "M_B = d4.v1.M_min",
+  "M_1 = d4.v1.M_max",
+  "M_2 = d4.v2.M_max",
+  "R_A = d4.A.Rz_max",
+  "R_B = d4.B.Rz_max",
+].join("\n");
+
+/**
+ * Een ligger met een overstek en een puntlast op het eind. HEA200, veld 5 m, overstek
+ * 1,5 m, F = 20 kN: M_B = −F·a, R_A = −F·a/L, R_B = F·(L + a)/L,
+ * zakking van het eind F·a²·(L + a)/(3EI).
+ */
+export const OVERSTEK = [
+  "L = 5 m",
+  "a = 1.5 m",
+  "F = 20 kN",
+  "@fem overstek",
+  "  doorsnede HEA200",
+  "  knoop A: 0; 0",
+  "  knoop B: L; 0",
+  "  knoop C: L + a; 0",
+  "  staaf A; C",
+  "  steun A; scharnier",
+  "  steun B; rol",
+  "  puntlast C; F",
+  "@end",
+  "M_B = overstek.s1.M_min",
+  "R_A = overstek.A.Rz_max",
+  "R_B = overstek.B.Rz_max",
+  "u_C = overstek.belasting.C.uz",
+].join("\n");
+
 /** De bladen bij naam, voor de proef en de controle; de naam is die van het bestand met het antwoord. */
 export const STAVEN_BLADEN = {
+  liggerkort: LIGGER_KORT,
+  doorgaand3: DOORGAAND_3,
+  doorgaand4: DOORGAAND_4,
+  overstek: OVERSTEK,
   ligger: LIGGER,
   driescharnier: DRIESCHARNIER,
   hanenbalk: HANENBALK,

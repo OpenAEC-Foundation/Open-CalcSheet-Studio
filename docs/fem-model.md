@@ -245,6 +245,91 @@ controle: `scripts/check-fem-staven.mjs`, met de antwoorden van de echte server 
 `scripts/fixtures/fem/staven-*.json` (opnieuw te maken met
 `node scripts/proef-fem-staven.mjs --bewaar`).
 
+## Een ligger in vijf regels
+
+```text
+@fem ligger
+  doorsnede HEA200
+  knoop A: 0; 0
+  knoop B: 6 m; 0
+  staaf A; B
+  steun A; scharnier
+  steun B; rol
+  lijnlast s1; 10 kN/m
+@end
+M_max = ligger.s1.M_max
+```
+
+Meer is er niet nodig:
+
+- **Een profiel uit de tabel.** `doorsnede HEA200` (of `IPE300`, `HEB300`, …) haalt A, I_y,
+  I_z en I_t uit de profieltabel van de app en rekent met staal (E = 210000 N/mm²,
+  ν = 0,3). Een materiaal schrijf je dan niet. Hout blijft `materiaal` met `rechthoek`.
+- **Geen geval.** Zonder regel `geval` horen alle lasten bij één belastinggeval (het heet
+  `belasting`), en de uitkomsten lees je zonder geval of combinatie:
+  `ligger.s1.M_max`, `ligger.s1.w_max`, `ligger.A.Rz_max`.
+- **Een staaf zonder naam** heet `s1`, `s2`, … en neemt de laatste doorsnede.
+- **Vanzelf op het blad.** Een klein vlak staafwerk zonder `beeld` krijgt onder het blok
+  het schema met de lasten, de momentenlijn, de dwarskrachtenlijn en de doorbuiging, en
+  een korte tabel (zie [Op het blad](#op-het-blad)). `beeld uit` laat de beelden weg.
+
+Met het vastgelegde antwoord: M_max = 45,00 kNm (qL²/8), w_max = 21,77 mm (5qL⁴/384EI).
+
+**Een doorgaande ligger** is één staaf over alle steunpunten: een knoop op de as van een
+staaf zit aan de staaf vast, dus een oplegging op die knoop is een tussensteun.
+
+```text
+@fem d3
+  doorsnede IPE300
+  knoop A: 0; 0
+  knoop B: 5 m; 0
+  knoop C: 10 m; 0
+  staaf A; C
+  steun A; scharnier
+  steun B; rol
+  steun C; rol
+  lijnlast s1; 10 kN/m
+@end
+M_steun = d3.s1.M_min
+R_B = d3.B.Rz_max
+```
+
+M_min is het steunmoment (−31,25 kNm = −qL²/8), M_max het veldmoment, en de reacties staan
+per knoop (R_B = 62,50 kN = 10/8·qL). Een vierde steunpunt is een knoop en een `steun`
+erbij. Wil je per veld een eigen rij in de tabel, schrijf dan een staaf per veld
+(`staaf v1: A; B`, `staaf v2: B; C`) met elk zijn lijnlast. Een overstek is een knoop
+voorbij de laatste steun.
+
+**In het Engels.** Elk woord van het blok heeft een Engels woord ernaast; beide werken, ook
+door elkaar in één blok. De aanvullijst van de editor toont de woorden in de taal van de
+app.
+
+| Nederlands | Engels |
+|---|---|
+| `knoop`, `staaf`, `steun` | `node`, `beam` of `member`, `support` |
+| `scharnier`, `rol`, `inklemming` | `pin`, `roller`, `fixed` |
+| `vast`, `vrij` (per richting) | `fixed`, `free` |
+| `doorsnede`, `rechthoek`, `materiaal` | `section`, `rectangle`, `material` |
+| `lijnlast`, `puntlast`, `eigengewicht` | `lineload`, `pointload`, `selfweight` |
+| `geval`, `combinatie`, `beeld`, `beeld uit` | `case`, `combination`, `view`, `view off` |
+| `scharnier begin`, `scharnier eind`, `trek` | `hinge start`, `hinge end`, `tension` |
+| `projectie`, `lokaal`, `lasten` | `projection`, `local`, `loads` |
+| `analyse`, `delen`, `knikvormen` | `analysis`, `divisions`, `bucklingmodes` |
+
+```text
+@fem girder
+  section IPE300
+  node A: 0; 0
+  node B: 5 m; 0
+  node C: 10 m; 0
+  beam A; C
+  support A; pin
+  support B; roller
+  support C; roller
+  lineload s1; 10 kN/m
+@end
+```
+
 ## Voorbeeld: een sporenkap met hanenbalk
 
 Twee sporen op muurplaten die de spatkracht opnemen, met een scharnier in de nok en een
@@ -326,6 +411,7 @@ en een woord (`scharnier`, `rol`, `projectie`) staan er zoals ze zijn.
 |---|---|---|
 | `materiaal [naam:] E; G` | elasticiteitsmodulus en glijdingsmodulus, zoals bij hout. Ook `E; ν` (G volgt dan uit E en ν) en `E; ν; G`. De tweede waarde is G als hij een spanning is, anders ν | MPa |
 | `rechthoek naam: b; h [; materiaal]` | een rechthoekige doorsnede; h staat in het vlak van de buiging. Zonder materiaal: het laatste | mm |
+| `doorsnede HEA200` | een profiel uit de tabel (HEA, HEB, IPE), van staal; met een eigen naam `doorsnede ligger: HEA200 [; materiaal]`. Ook achter een staaf: `staaf A; B; IPE300` | |
 | `doorsnede naam: A; I_y [; I_z; I_t] [; materiaal]` | vrije waarden; ruimtelijk zijn I_z en I_t nodig | mm², mm⁴ |
 | `knoop naam: x; z` | een benoemde knoop; ruimtelijk `x; y; z` | m |
 | `staaf [naam:] knoop; knoop [; doorsnede] [; scharnier] [; trek]` | een staaf tussen twee knopen. Zonder doorsnede: de laatste. Zonder naam heet hij `s1`, `s2`, … | |
@@ -338,13 +424,13 @@ en een woord (`scharnier`, `rol`, `projectie`) staan er zoals ze zijn.
 | `delen n` | elke staaf in n gelijke delen (standaard 4, hoogstens 16) | |
 | `analyse lineair` of `analyse tweede-orde` | eerste orde (standaard) of tweede orde (P-Δ) | |
 | `knikvormen n` | het aantal knikvormen, voor de knikfactor α_cr (standaard 0; bij tweede orde altijd minstens 1) | |
-| `geval naam` | een belastinggeval; de lasten eronder horen erbij | |
+| `geval naam` | een belastinggeval; de lasten eronder horen erbij. Zonder één `geval` zijn alle lasten samen het geval `belasting` | |
 | `lijnlast staaf; q [; q_eind] [; richting] [; van; tot]` | een lijnlast, gelijkmatig of als trapezium, over de staaf of een deel ervan | kN/m, m |
 | `puntlast knoop; F [; richting]` | een puntlast op een knoop | kN |
 | `puntlast staaf; F; a [; richting]` | een puntlast op een staaf, op de afstand a van zijn begin | kN, m |
 | `eigengewicht γ [; staaf]` | γ maal de doorsnede, omlaag per meter staaf, op alle staven of op één | kN/m³ |
 | `combinatie naam = 1.2*G + 1.5*Q` | een som van factor maal geval | |
-| `beeld UGT M` | een beeld onder het blok: `M`, `V`, `N`, `u` (de vervormde stand) of `lasten`; `beeld omhullende M` tekent de grootste en kleinste lijn over de combinaties | |
+| `beeld UGT M` | een beeld onder het blok: `M`, `V`, `N`, `u` (de vervormde stand) of `lasten`; `beeld omhullende M` tekent de grootste en kleinste lijn over de combinaties. `beeld M` is het beeld van de eerste combinatie of van het enige geval; `beeld uit` laat ook de beelden weg die een klein staafwerk vanzelf krijgt | |
 
 De **richting** van een last:
 
@@ -443,6 +529,11 @@ reactiemomenten.
 
 ## Beelden
 
+Een vlak staafwerk van hoogstens acht staven zonder regel `beeld` krijgt er vier vanzelf,
+van de eerste combinatie of van het enige geval: de lasten (met de namen van de knopen en
+staven), M, V en u. Bij meer gevallen zonder combinatie kiest het blok niet: schrijf dan
+zelf `beeld`.
+
 `beeld UGT_S M` zet een beeld onder het blok, leesbaar op papier: de staven met hun
 scharnieren en opleggingen, de lijn op elke staaf en de uitersten per staaf als getal. De
 M-lijn staat aan de trekzijde; V en N staan positief aan de bovenzijde. `u` tekent de
@@ -513,6 +604,12 @@ een schema met de namen, per rekengeval de belasting en de reacties samen (het e
 per geval en combinatie de uitersten over alle staven met de knikfactor, per staaf de
 omhullende, en per oplegging de omhullende van de reacties. Wacht, NIET GEREKEND en
 opnieuw rekenen werken zoals bij een plaatmodel.
+
+**Kort bij één geval.** Met één belastinggeval en geen combinatie (een ligger) is het blok
+kort: het evenwicht op één regel, per staaf L, V, M en w, per oplegging één reactie, en
+daaronder de vier beelden. Een kolom die overal nul is valt weg, ook bij meer gevallen: N in
+een ligger, R_x zonder horizontale last. Een ligger past zo op ongeveer één pagina. Het
+schema met de lasten heeft de namen al; dan staat er geen tweede schema boven.
 
 ## Hoe het werkt
 
@@ -589,10 +686,23 @@ E = 11000 N/mm², tenzij anders.
 | Kruis van trekstangen, wind 10 kN | N in de dragende diagonaal | 12,500 kN | 12,500 kN | 0,000 % |
 | Spant met gordingen | N in de trekbalk | 8,000 kN | 8,000 kN | 0,000 % |
 | Trapeziumlast over een deel, op een veer | M_max, tussen twee knopen | 2,0458 kNm | 2,0458 kNm | 0,000 % |
+| HEA200, L = 6 m, q = 10 kN/m (staal) | M = qL²/8 | 45,000 kNm | 45,000 kNm | 0,000 % |
+| | w = 5qL⁴/(384EI) | 21,765 mm | 21,765 mm | 0,000 % |
+| Doorgaande ligger op 3 steunpunten, IPE300, 2 × 5 m | steunmoment −qL²/8 | −31,250 kNm | −31,250 kNm | 0,000 % |
+| | veldmoment 9qL²/128 | 17,578 kNm | 17,578 kNm | 0,000 % |
+| | reacties 3/8·qL, 10/8·qL, 3/8·qL | 18,750; 62,500; 18,750 kN | 18,750; 62,500; 18,750 kN | 0,000 % |
+| | doorbuiging in een veld 0,0054162·qL⁴/EI | 1,929 mm | 1,929 mm | −0,008 % |
+| Doorgaande ligger op 4 steunpunten, HEB300, 3 × 4 m | steunmoment −0,100·qL² | −16,000 kNm | −16,000 kNm | 0,000 % |
+| | veldmoment 0,080·qL² en 0,025·qL² | 12,800; 4,000 kNm | 12,800; 4,000 kNm | 0,000 % |
+| | reacties 0,400·qL en 1,100·qL | 16,000; 44,000 kN | 16,000; 44,000 kN | 0,000 % |
+| Overstek, HEA200, veld 5 m, overstek 1,5 m, F = 20 kN | M_B = −F·a | −30,000 kNm | −30,000 kNm | 0,000 % |
+| | R_A = −F·a/L, R_B = F·(L + a)/L | −6,000; 26,000 kN | −6,000; 26,000 kN | 0,000 % |
+| | zakking van het eind F·a²(L + a)/(3EI) | 12,575 mm | 12,575 mm | 0,000 % |
 
 De staafelementen zijn exact voor een staaf met een last die per deel een rechte lijn is;
-de enige afwijking die boven de afronding uitkomt is die van de knikfactor, die met de
-verdeling van de staaf samenhangt.
+de afwijkingen die boven de afronding uitkomen zijn die van de knikfactor, die met de
+verdeling van de staaf samenhangt, en die van de grootste doorbuiging midden in een deel:
+die zoekt CalcSheet op een rij plaatsen langs de staaf, niet precies op de top.
 
 ## Wat er nog niet is
 
@@ -608,5 +718,8 @@ verdeling van de staaf samenhangt.
   oplegging van een staafeind).
 - **Dwarskrachtvervorming:** de doorsnede gaat zonder dwarskrachtoppervlak naar FEM
   Studio (Euler-Bernoulli).
+- **Meer profielen.** De tabel heeft HEA 100 tot 300, HEB 100 tot 300 en IPE 200 tot 400,
+  dezelfde als de staalmodules van de app. Een ander profiel schrijf je als
+  `doorsnede naam: A; I_y; I_z; I_t` met `materiaal 210000 N/mm^2; 0.3`.
 - **Namen in een lus:** een staaf in een `#for` heeft geen eigen naam; hij heet `s1`,
   `s2`, … naar zijn volgnummer.

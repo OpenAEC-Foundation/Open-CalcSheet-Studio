@@ -24,6 +24,9 @@
  *   • vastleggen: het verzoek zoals het bewaard wordt geeft dezelfde JSON als wat
  *     verzonden is, het antwoord wordt compact bewaard en teruggelezen, een fout van één
  *     rekengeval is een fout van het geheel;
+ *   • de korte schrijfwijze: een profiel uit de tabel (`doorsnede HEA200`), lasten zonder
+ *     geval, uitkomsten zonder combinatie, de Engelse woorden naast de Nederlandse, de
+ *     beelden die een kleine ligger vanzelf krijgt en de korte tabel;
  *   • de houttoets: de snedekrachten per staaf als `forces_envelope` voor
  *     `check_timber_beams`, tegen het schema van die tool, met het antwoord van de
  *     echte server.
@@ -65,6 +68,30 @@
  *       V = 0 op u van het begin van de last: u²/1,2 + u = 1,32, u = 0,79428 m;
  *       M_max = 1,32·(1,1 + u) − (u²/2 + u³/3,6) = 2,0458 kNm.
  *
+ *
+ * De korte schrijfwijze (een profiel uit de tabel, geen geval, Engelse woorden), staal
+ * E = 210000 N/mm², q = 10 kN/m:
+ *   • HEA200, I_y = 3692 cm⁴, EI = 210·10⁶ · 3692·10⁻⁸ = 7753,2 kNm². Ligger op twee
+ *     steunpunten, L = 6 m:
+ *       M = qL²/8 = 10·36/8 = 45,000 kNm; V = R = qL/2 = 30,000 kN;
+ *       w = 5qL⁴/(384EI) = 5·10·1296/(384·7753,2) = 21,765 mm.
+ *   • IPE300, I_y = 8356 cm⁴, EI = 17547,6 kNm². Doorgaande ligger op drie steunpunten,
+ *     twee velden L = 5 m (één staaf over de middelste knoop):
+ *       steunmoment −qL²/8 = −31,250 kNm; veldmoment 9qL²/128 = 17,578 kNm;
+ *       reacties 3/8·qL = 18,750 kN, 10/8·qL = 62,500 kN, 3/8·qL = 18,750 kN;
+ *       doorbuiging in een veld (een veld is een ligger met een scharnier en een
+ *       inklemming): w(ξ) = qL⁴·ξ(1 − 3ξ² + 2ξ³)/(48EI), grootst bij ξ = 0,42153:
+ *       0,0054162·qL⁴/EI = 1,929 mm.
+ *   • HEB300, drie velden L = 4 m, een staaf per veld (de tabelwaarden van een doorgaande
+ *     ligger met drie gelijke velden):
+ *       steunmoment −0,100·qL² = −16,000 kNm; veldmoment 0,080·qL² = 12,800 kNm in een
+ *       eindveld en 0,025·qL² = 4,000 kNm in het middenveld;
+ *       reacties 0,400·qL = 16,000 kN en 1,100·qL = 44,000 kN.
+ *   • HEA200 met een overstek: veld L = 5 m, overstek a = 1,5 m, F = 20 kN op het eind:
+ *       M_B = −F·a = −30,000 kNm; R_A = −F·a/L = −6,000 kN (trekt omlaag);
+ *       R_B = F·(L + a)/L = 26,000 kN;
+ *       zakking van het eind F·a²·(L + a)/(3EI) = 20·2,25·6,5/(3·7753,2) = 12,575 mm.
+ *
  * De antwoorden maakt scripts/proef-fem-staven.mjs opnieuw met de echte server.
  *
  * Draaien:  node scripts/check-fem-staven.mjs
@@ -74,7 +101,9 @@ import { existsSync, readFileSync } from "node:fs";
 import * as core from "../packages/core/dist/index.js";
 import * as cache from "../packages/desktop/src/rekenen/toetsCache.ts";
 import { scopeMetVerwijzingen } from "../packages/desktop/src/rekenen/verwijzingen.ts";
-import { DEELLAST, EULER, HANENBALK, KAP, KAP_TOETS_OP_EEN_REGEL, KRUIS, LIGGER, RUIMTE, SPANT, STAVEN_BLADEN, TWEEDE } from "./fixtures/fem/staven-bladen.mjs";
+import {
+  DEELLAST, DOORGAAND_3, EULER, HANENBALK, KAP, KAP_TOETS_OP_EEN_REGEL, KRUIS, LIGGER, LIGGER_KORT, RUIMTE, SPANT, STAVEN_BLADEN, TWEEDE,
+} from "./fixtures/fem/staven-bladen.mjs";
 
 const { alsAntwoord, evaluate, evaluateMetScope, parse, render, toetsToolToegestaan } = core;
 
@@ -173,9 +202,9 @@ console.log("\nHet blok lezen");
   const woorden = new Set((n?.regels ?? []).map((r) => r.woord));
   meld(["materiaal", "rechthoek", "knoop", "staaf", "steun", "geval", "lijnlast", "eigengewicht", "combinatie", "beeld"].every((w) => woorden.has(w)),
     "met materiaal, rechthoek, knoop, staaf, steun, geval, lijnlast, eigengewicht, combinatie en beeld", [...woorden].join(" "));
-  const fout = parse("@fem x\n  staaf 0; 0\n  lijnlast a; 1\n  knoop 0; 0\n  rechthoek 1; 2\n  knoop A: 0; 0\n  knoop A: 1; 0\n@end").find((x) => x.type === "fem");
+  const fout = parse("@fem x\n  staaf 0; 0\n  lijnlast a; 1\n  knoop 0; 0\n  rechthoek 1; 2\n  knoop A: 0; 0\n  knoop A: 1; 0\n  geval G\n@end").find((x) => x.type === "fem");
   const f = (fout?.fouten ?? []).join(" | ");
-  meld(/regel 2/.test(f) && /geval/.test(f), "een lijnlast vóór het eerste geval is een fout", f);
+  meld(/regel 2/.test(f) && /geval/.test(f), "een lijnlast vóór het eerste geval is een fout als het blok wel een geval heeft", f);
   meld(/regel 3/.test(f) && /naam/.test(f), "een knoop zonder naam is een fout", f);
   meld(/regel 4/.test(f) && /naam/.test(f), "een rechthoek zonder naam is een fout", f);
   meld(/regel 6/.test(f) && /A/.test(f), "een naam die er al is, is een fout", f);
@@ -445,6 +474,119 @@ const EI = 11000e3 * (0.071 * 0.196 ** 3) / 12;
   meld(Math.abs(w(1.1 - 1e-7) - w(1.1 + 1e-7)) < 1e-5 && Math.abs(w(2 - 1e-7) - w(2 + 1e-7)) < 1e-5, "de doorbuigingslijn loopt door over de knopen");
 }
 
+// ── De korte schrijfwijze ───────────────────────────────────────────────────
+console.log("\nEen ligger in vijf regels: profielen, geen geval, Engelse woorden");
+{
+  const s = (naam) => gerekend(naam).scope;
+  const k = s("liggerkort");
+  naast("HEA200, L = 6 m: M = qL²/8", kNm(k.M_max), 45, 1e-6, " kNm");
+  naast("V = qL/2", kN(k.V_max), 30, 1e-6, " kN");
+  naast("R_A = qL/2", kN(k.R_A), 30, 1e-6, " kN");
+  naast("w = 5qL⁴/(384EI)", mm(k.w_max), (5 * 10 * 6 ** 4) / (384 * 210e6 * 3692e-8) * 1000, 1e-4, " mm");
+  const d3 = s("doorgaand3");
+  const L3 = 5, EI3 = 210e6 * 8356e-8;
+  naast("IPE300, drie steunpunten: steunmoment −qL²/8", kNm(d3.M_steun), -10 * L3 ** 2 / 8, 1e-6, " kNm");
+  naast("veldmoment 9qL²/128", kNm(d3.M_veld), (9 * 10 * L3 ** 2) / 128, 1e-6, " kNm");
+  naast("R_A = 3/8·qL", kN(d3.R_A), (3 / 8) * 10 * L3, 1e-6, " kN");
+  naast("R_B = 10/8·qL", kN(d3.R_B), (10 / 8) * 10 * L3, 1e-6, " kN");
+  naast("R_C = 3/8·qL", kN(d3.R_C), (3 / 8) * 10 * L3, 1e-6, " kN");
+  // De doorbuiging in een veld: het grootste van ξ(1 − 3ξ² + 2ξ³)/48 maal qL⁴/EI.
+  let f = 0;
+  for (let i = 0; i <= 100000; i++) {
+    const x = i / 100000;
+    f = Math.max(f, (x * (1 - 3 * x * x + 2 * x ** 3)) / 48);
+  }
+  naast(`doorbuiging in een veld ${f.toFixed(7)}·qL⁴/EI`, mm(d3.w_veld), (f * 10 * L3 ** 4) / EI3 * 1000, 1e-4, " mm");
+  const d4 = s("doorgaand4");
+  naast("HEB300, vier steunpunten: steunmoment −0,100·qL²", kNm(d4.M_B), -0.1 * 10 * 16, 1e-6, " kNm");
+  naast("veldmoment eindveld 0,080·qL²", kNm(d4.M_1), 0.08 * 10 * 16, 1e-6, " kNm");
+  naast("veldmoment middenveld 0,025·qL²", kNm(d4.M_2), 0.025 * 10 * 16, 1e-6, " kNm");
+  naast("R_A = 0,400·qL", kN(d4.R_A), 0.4 * 10 * 4, 1e-6, " kN");
+  naast("R_B = 1,100·qL", kN(d4.R_B), 1.1 * 10 * 4, 1e-6, " kN");
+  const o = s("overstek");
+  const EI = 210e6 * 3692e-8;
+  naast("overstek: M_B = −F·a", kNm(o.M_B), -30, 1e-6, " kNm");
+  naast("R_A = −F·a/L", kN(o.R_A), -6, 1e-6, " kN");
+  naast("R_B = F·(L + a)/L", kN(o.R_B), 26, 1e-6, " kN");
+  naast("zakking van het eind F·a²·(L + a)/(3EI)", -mm(o.u_C), (20 * 2.25 * 6.5) / (3 * EI) * 1000, 1e-4, " mm");
+
+  // Een profiel uit de tabel: A, I_y, I_z en I_t van de tabel, en staal.
+  const bewaard = (bron) => vragen(bron)?.verzoeken?.[0]?.bewaar;
+  const regel = core.I_TABEL.find((r) => r[1] === "HEA 200");
+  const m = bewaard(LIGGER_KORT);
+  const d = m?.doorsneden?.[0];
+  meld(!!d && Math.abs(d.A - regel[7] * 1e-4) < 1e-12 && Math.abs(d.Iy - regel[8] * 1e-8) < 1e-15 && Math.abs(d.It - regel[17] * 1e-8) < 1e-15,
+    "doorsnede HEA200: A, I_y en I_t uit de profieltabel (packages/core/src/profielTabel.ts)", JSON.stringify(d));
+  meld(m?.materialen?.length === 1 && m.materialen[0].E === 210000 && m.materialen[0].nu === 0.3,
+    "met staal: E = 210000 N/mm², ν = 0,3", JSON.stringify(m?.materialen));
+  const hash = (bron) => vragen(bron)?.hashes?.[0];
+  const h = hash(LIGGER_KORT);
+  meld(hash(LIGGER_KORT.replace("doorsnede HEA200", "doorsnede HEA 200")) === h && hash(LIGGER_KORT.replace("doorsnede HEA200", "doorsnede hea200")) === h,
+    "HEA200, HEA 200 en hea200 zijn hetzelfde profiel");
+  meld(hash(LIGGER_KORT.replace("  doorsnede HEA200\n", "").replace("staaf A; B", "staaf A; B; HEA200")) === h,
+    "een profiel achter een staaf (staaf A; B; HEA200) is dezelfde ligger");
+  const eigen = bewaard(LIGGER_KORT.replace("doorsnede HEA200", "doorsnede ligger: HEA200").replace("staaf A; B", "staaf A; B; ligger"))?.doorsneden?.[0];
+  meld(eigen?.naam === "ligger" && eigen.A === d?.A && eigen.Iy === d?.Iy && eigen.It === d?.It, "een profiel met een eigen naam (doorsnede ligger: HEA200) ook", JSON.stringify(eigen));
+  const onbekend = vragen(LIGGER_KORT.replace("HEA200", "HEA210"));
+  meld(onbekend?.status === "fout" && /HEA210/.test(onbekend.melding) && /IPE300/.test(onbekend.melding),
+    "een profiel dat niet in de tabel staat is een fout, met de profielen die er wel zijn", onbekend?.melding);
+  const hout = bewaard(["@fem m", "  doorsnede HEA200", "  materiaal 11000 N/mm^2; 690 N/mm^2", "  rechthoek r: 71 mm; 196 mm",
+    "  staaf 0; 0; 4 m; 0; HEA200", "  staaf 4 m; 0; 8 m; 0; r", "  steun 0; 0; scharnier", "  steun 8 m; 0; rol", "  lijnlast s1; 1", "@end"].join("\n"));
+  const mat = (i) => hout?.materialen?.[hout.doorsneden[hout.staven[i].doorsnede].materiaal];
+  meld(mat(0)?.E === 210000 && mat(1)?.E === 11000, "een rechthoek na een profiel rekent met zijn eigen materiaal, niet met het staal",
+    `${mat(0)?.E} ${mat(1)?.E}`);
+
+  // Zonder geval: één belastinggeval, en de uitkomsten zonder combinatie.
+  meld(m?.gevallen?.length === 1 && m.gevallen[0].naam === core.FEM_GEVAL_ZONDER_NAAM, `zonder geval horen alle lasten bij één geval, ${core.FEM_GEVAL_ZONDER_NAAM}`);
+  meld(kNm(k.ligger_belasting_s1_M_max) === kNm(k.M_max), "ligger.s1.M_max is ligger.belasting.s1.M_max");
+  const vooraf = vragen(LIGGER_KORT.replace("  lijnlast s1; 10 kN/m", "  lijnlast s1; 10 kN/m\n  geval Q\n    lijnlast s1; 1 kN/m"));
+  meld(vooraf?.status === "fout" && /geval/.test(vooraf.melding ?? ""), "met een geval verderop is een last zonder geval een fout", vooraf?.melding);
+
+  // In het Engels: dezelfde ligger, ook met de woorden door elkaar.
+  const nl = DOORGAAND_3.replace("section", "doorsnede").replace(/ {2}node/g, "  knoop").replace("beam", "staaf").replace(/support (\w); pin/, "steun $1; scharnier")
+    .replace(/support (\w); roller/g, "steun $1; rol").replace("lineload", "lijnlast");
+  meld(!/section|node|beam|support|lineload|pin|roller/.test(nl) && hash(nl) === hash(DOORGAAND_3), "section, node, beam, support, pin, roller en lineload zijn doorsnede, knoop, staaf, steun, scharnier, rol en lijnlast");
+  meld(hash(DOORGAAND_3.replace("node B", "knoop B").replace("support C; roller", "steun C; rol")) === hash(DOORGAAND_3), "Engels en Nederlands door elkaar in één blok");
+  const engels = (regels) => bewaard(["@fem m", "  material 11000 N/mm^2; 690 N/mm^2", "  rectangle r: 71 mm; 196 mm", ...regels, "@end"].join("\n"));
+  const ingeklemd = engels(["  member a: 0; 0; 3 m; 0; hinge end", "  support 0; 0; fixed", "  case G", "    selfweight 5 kN/m^3", "    pointload a; 1 kN; 1 m", "  combination U = 1.35*G"]);
+  meld(ingeklemd?.steunen?.[0]?.vast?.join() === "true,true,true" && ingeklemd.staven[0].scharnier?.join() === "false,true",
+    "fixed is een inklemming, hinge end een scharnier aan het eind; material, rectangle, member, case, selfweight, pointload en combination werken", JSON.stringify(ingeklemd?.steunen ?? vragen(["@fem m", "@end"].join("\n"))?.melding));
+  const richting = engels(["  member a: 0; 0; 4 m; 0", "  support 0; 0; pin", "  support 4 m; 0; free; fixed; free", "  case G", "    lineload a; 1; projection", "    lineload a; 1; local"]);
+  meld(richting?.steunen?.[1]?.vast?.join() === "false,true,false", "per richting: free en fixed zijn vrij en vast", JSON.stringify(richting?.steunen));
+
+  // Op het blad: vanzelf de beelden en een korte tabel.
+  const blad = (bron, extra = "") => {
+    const { nodes } = metAntwoorden(bron + extra, vast.liggerkort.toetsingen);
+    return { blok: femVan(nodes), html: render(nodes) };
+  };
+  const { blok, html } = blad(LIGGER_KORT);
+  const titels = (blok?.beelden ?? []).map((svg) => /<text[^>]*>([^<]*)<\/text>/.exec(svg)?.[1] ?? "");
+  meld(titels.length === 4 && /lasten/.test(titels[0]) && /· M \[kNm\]/.test(titels[1]) && /· V \[kN\]/.test(titels[2]) && /vervorming/.test(titels[3]),
+    "een ligger zonder beeld: vanzelf de lasten, de momentenlijn, de dwarskrachtenlijn en de doorbuiging", titels.join(" | "));
+  meld(/>A</.test(blok?.beelden?.[0] ?? "") && />s1</.test(blok?.beelden?.[0] ?? "") && /10,0 kN\/m/.test(blok?.beelden?.[0] ?? ""), "het schema met de lasten heeft de namen en de last", "");
+  meld(/45,0/.test(blok?.beelden?.[1] ?? "") && /21,8 mm/.test(blok?.beelden?.[3] ?? ""), "met het grootste moment en de grootste doorbuiging als getal");
+  meld(!blok?.modelSvg, "en dan geen tweede schema zonder lasten");
+  const hoog = (blok?.beelden ?? []).map((svg) => Number(/viewBox="0 0 \d+ ([\d.]+)"/.exec(svg)?.[1]));
+  meld(hoog.every((x) => x > 0 && x <= 200), `vier lage beelden voor op papier (${hoog.join(", ")} px hoog bij 640 breed)`);
+  meld(/calc-fem-kort/.test(html) && /Evenwicht: Σ F<sub>z<\/sub> ↓ = 60,00 kN, Σ R<sub>z<\/sub> ↑ = 60,00 kN/.test(html), "een korte tabel: het evenwicht op één regel", html.match(/Evenwicht[^<]*/)?.[0]);
+  const tabellen = html.match(/<table[\s\S]*?<\/table>/g) ?? [];
+  meld(tabellen.length === 2 && !/N<sub>min/.test(html) && !/omhullende/.test(html) && /R<sub>z<\/sub>/.test(tabellen[1]) && !/R<sub>x/.test(tabellen[1]),
+    "per staaf V, M en w (geen N in een ligger), per oplegging R_z; geen omhullende bij één geval", `${tabellen.length} tabellen`);
+  meld(/<td>s1<\/td><td class="getal">6,000<\/td><td class="getal">-30,00<\/td><td class="getal">30,00<\/td><td class="getal">0,00<\/td><td class="getal">45,00<\/td><td class="getal">21,77<\/td>/.test(tabellen[0] ?? ""),
+    "de rij van de ligger: L, V_min, V_max, M_min, M_max en w", (tabellen[0] ?? "").replace(/<thead[\s\S]*?<\/thead>/, "").slice(0, 300));
+  const uit = blad(LIGGER_KORT.replace("@end", "  beeld uit\n@end"));
+  meld(!uit.blok?.beelden?.length && /calc-fem-model/.test(uit.html), "beeld uit: geen beelden, wel het schema");
+  const een = blad(LIGGER_KORT.replace("@end", "  view M\n@end"));
+  meld(een.blok?.beelden?.length === 1 && />ligger · M \[kNm\]</.test(een.blok.beelden[0]), "view M (Engels, zonder geval): alleen de momentenlijn, van het enige geval, zonder de naam van het geval in de titel",
+    /<text[^>]*>([^<]*)<\/text>/.exec(een.blok?.beelden?.[0] ?? "")?.[1]);
+  // De naam van de staaf staat niet op de tussensteun midden onder de doorgaande ligger.
+  const d3blok = femVan(gerekend("doorgaand3").nodes);
+  const xVan = (t) => Number(new RegExp(`<text x="([\\d.]+)"[^>]*>${t}</text>`).exec(d3blok?.beelden?.[0] ?? "")?.[1]);
+  meld(Math.abs(xVan("s1") - xVan("B")) > 26, "in het schema van de doorgaande ligger staat s1 naast de tussensteun B, niet erop", `${xVan("s1")} ${xVan("B")}`);
+  const kap = femVan(gerekend("kap").nodes);
+  meld(kap?.beelden?.length === 1 && !!kap.modelSvg && /omhullende/.test(render([kap])), "een blok met een eigen beeld en combinaties blijft zoals het was");
+}
+
 // ── De kap uit de documentatie ──────────────────────────────────────────────
 console.log("\nDe sporenkap met hanenbalk uit docs/fem-model.md");
 {
@@ -636,16 +778,41 @@ console.log("\nDe documentatie en de editor");
   for (const tekst of [`M_Ed = ${nl(kNm(scope.M_Ed), 2)} kNm`, `N_haan = ${nl(kN(scope.N_haan), 2)} kN`, `H_A = ${nl(kN(scope.H_A), 2)} kN`, `w_BGT = ${nl(mm(scope.w_BGT), 2)} mm`, `UC = ${nl(scope.UC, 2)}`]) {
     meld(plat.includes(tekst), `de documentatie noemt ${tekst}`);
   }
+  // De ligger in vijf regels en de doorgaande ligger uit de documentatie, met hun getallen.
+  const kortOntbreekt = LIGGER_KORT.split("\n").slice(0, 10).filter((r) => r.trim() && !blokken.includes(r));
+  meld(kortOntbreekt.length === 0, "de ligger in vijf regels in docs/fem-model.md is het blad van de controle", kortOntbreekt.slice(0, 3).join(" | "));
+  for (const kop of ["@fem d3", "@fem girder"]) {
+    const blok = new RegExp(`${kop}\\n[\\s\\S]*?@end`).exec(blokken)?.[0] ?? "";
+    meld(!!blok && vragen(blok)?.hashes?.[0] === vragen(DOORGAAND_3)?.hashes?.[0], `de doorgaande ligger ${kop} in de documentatie is die van de controle`);
+  }
+  const k = gerekend("liggerkort").scope;
+  const d3 = gerekend("doorgaand3").scope;
+  for (const tekst of [`M_max = ${nl(kNm(k.M_max), 2)} kNm`, `w_max = ${nl(mm(k.w_max), 2)} mm`, `${nl(kNm(d3.M_steun), 2)} kNm = −qL²/8`, `R_B = ${nl(kN(d3.R_B), 2)} kN`]) {
+    meld(plat.includes(tekst), `de documentatie noemt ${tekst}`);
+  }
   // De aanvullijst van de editor heeft een staafwerk dat rekent, met zijn tekst in elke taal.
   const taal = readFileSync(new URL("../packages/desktop/src/components/calc/ifcCalcLanguage.ts", import.meta.url), "utf8");
   const fragment = /label: "@fem staaf"[^}]*?sleutel: "femStaven"[^}]*?apply: "((?:[^"\\]|\\.)*)"/.exec(taal)?.[1];
   const voorbeeld = fragment ? JSON.parse(`"${fragment}"`) : "";
   const blok = voorbeeld ? vragen(voorbeeld) : null;
   meld(blok?.status === "wacht" && blok.staven?.staven >= 2, "de aanvullijst van de editor heeft een staafwerk dat zo naar FEM Studio kan", `${blok?.status ?? "geen voorbeeld"} ${blok?.melding ?? ""}`);
+  const jsons = Object.fromEntries(["en", "nl"].map((t) => [t, JSON.parse(readFileSync(new URL(`../packages/desktop/src/i18n/locales/${t}/rekentaal.json`, import.meta.url), "utf8"))]));
   for (const t of ["en", "nl"]) {
-    const j = JSON.parse(readFileSync(new URL(`../packages/desktop/src/i18n/locales/${t}/rekentaal.json`, import.meta.url), "utf8"));
-    meld(typeof j.editor?.femStaven === "string" && j.editor.femStaven.length > 0, `de omschrijving ervan in ${t}/rekentaal.json`);
+    meld(typeof jsons[t].editor?.femStaven === "string" && jsons[t].editor.femStaven.length > 0, `de omschrijving ervan in ${t}/rekentaal.json`);
   }
+  // De kortste ligger in elke taal, en de woorden van het blok in het Nederlands en het Engels.
+  for (const naam of ["nl", "en"]) {
+    const fragment = /const FEM_LIGGER = \{([\s\S]*?)\};/.exec(taal)?.[1] ?? "";
+    const tekst = JSON.parse(`"${/\s*(?:nl|en): "((?:[^"\\]|\\.)*)"/g.exec(fragment.slice(fragment.indexOf(`${naam}:`)))?.[1] ?? ""}"`);
+    const b = tekst ? vragen(tekst) : null;
+    meld(b?.status === "wacht" && b.verzoeken?.[0]?.bewaar?.staven?.length === 1, `de aanvulling "@fem ${naam === "nl" ? "ligger" : "girder"}" is de kortste ligger en kan zo naar FEM Studio`, `${b?.status ?? "geen tekst"} ${b?.melding ?? ""}`);
+    if (naam === "en") meld(b?.verzoeken?.[0]?.hash === vragen(LIGGER_KORT.split("\n").slice(0, 9).join("\n"))?.verzoeken?.[0]?.hash, "en de Engelse is dezelfde ligger als de Nederlandse");
+  }
+  const paren = [...(/const FEM_WOORDEN[^=]*=\s*\[([\s\S]*?)\];/.exec(taal)?.[1] ?? "").matchAll(/\["(\w+)", "(\w+)"\]/g)].map((m) => [m[1], m[2]]);
+  const soorten = { scharnier: "pin", rol: "roller", inklemming: "fixed" };
+  meld(paren.length >= 12 && paren.every(([nl, en]) => core.FEM_ENGELS[en] === nl || soorten[nl] === en),
+    `de aanvullijst heeft ${paren.length} woorden in het Nederlands en het Engels, en het blok kent ze allebei`, paren.filter(([nl, en]) => core.FEM_ENGELS[en] !== nl && soorten[nl] !== en).join(" "));
+  meld(paren.every(([nl]) => typeof jsons.en.editor?.fem?.[nl] === "string" && typeof jsons.nl.editor?.fem?.[nl] === "string"), "met een omschrijving van elk woord in en/ en nl/rekentaal.json");
 }
 
 console.log(fouten ? `\n${fouten} fout(en).` : "\nDe staven in het FEM-model kloppen.");

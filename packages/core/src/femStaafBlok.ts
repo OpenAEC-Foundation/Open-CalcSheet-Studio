@@ -1,7 +1,8 @@
 import { math } from './eenheden.js';
 import type { FemRekenaar } from './femBlok.js';
-import { FEM_STAVEN_TOOL, maakFemStaafModel, vLengte, vMin, type FemStaafInvoer, type FemStaafInvoerLast, type Vec3 } from './femStaven.js';
+import { FEM_GEVAL_ZONDER_NAAM, FEM_STAVEN_TOOL, maakFemStaafModel, vLengte, vMin, type FemStaafInvoer, type FemStaafInvoerLast, type Vec3 } from './femStaven.js';
 import { FemStaafModel, femStaafModelSvg, femStaafSvg, type FemSnedekracht, type FemStaafSet } from './femStaafResultaat.js';
+import { STAAF_PROFIELEN, staafProfiel } from './profielTabel.js';
 import { toetsHash } from './toetsBlok.js';
 import type { EvaluatedFem, FemBereik, FemNode, FemRegel, FemStaafBlad, FemStaafRekenmodel, FemStaafUitkomstCompact, ToetsAntwoord, ToetsVerzoek } from './types.js';
 
@@ -51,6 +52,43 @@ import type { EvaluatedFem, FemBereik, FemNode, FemRegel, FemStaafBlad, FemStaaf
  *                                        de omhullende over de combinaties (zonder combinaties: over de gevallen)
  *   <naam>_<S>_L                         de lengte van een staaf (m)
  */
+
+/**
+ * De kortste vorm, een ligger:
+ *
+ *   @fem ligger
+ *     doorsnede HEA200
+ *     knoop A: 0; 0
+ *     knoop B: 6 m; 0
+ *     staaf A; B
+ *     steun A; scharnier
+ *     steun B; rol
+ *     lijnlast s1; 10 kN/m
+ *   @end
+ *   M_max = ligger.s1.M_max
+ *
+ * Een profiel (`HEA200`, `IPE300`, `HEB300`) brengt zijn A, I_y, I_z en I_t uit de
+ * profieltabel mee en staal (E = 210000 N/mm², ν = 0,3). Zonder `geval` horen alle lasten
+ * bij één belastinggeval, `belasting`. Een klein vlak staafwerk krijgt zonder `beeld`
+ * vanzelf de beelden lasten, M, V en u; `beeld uit` laat ze weg. De woorden mogen ook in
+ * het Engels (femBlok.ts, FEM_ENGELS; hieronder ENGELS voor de woorden in een regel).
+ */
+
+export { FEM_GEVAL_ZONDER_NAAM };
+
+/** Staal bij een profiel uit de tabel. */
+const STAAL = { E: 210000, nu: 0.3 } as const;
+
+/** Tot hoeveel staven een vlak staafwerk zonder `beeld` vanzelf zijn beelden krijgt. */
+const KLEIN = 8;
+
+/** De Engelse woorden in een regel: een soort oplegging, een scharnier, een richting. */
+const ENGELS: Readonly<Record<string, string>> = {
+  pin: 'scharnier', pinned: 'scharnier', hinge: 'scharnier', hinges: 'scharnieren', roller: 'rol', fixed: 'inklemming',
+  free: 'vrij', tension: 'trek', projection: 'projectie', local: 'lokaal', start: 'begin', end: 'eind', both: 'beide',
+};
+/** Een woord uit een regel, in kleine letters en in het Nederlands. */
+const nlWoord = (t: string) => t.trim().toLowerCase().replace(/\s+/g, ' ').split(' ').map((w) => ENGELS[w] ?? w).join(' ');
 
 /** De woorden die van een `@fem`-blok een staafwerk maken. */
 export const FEM_STAAF_WOORDEN: readonly string[] = ['rechthoek', 'doorsnede', 'knoop', 'staaf', 'steun', 'lijnlast', 'delen', 'knikvormen'];
@@ -102,7 +140,7 @@ type As = 'x' | 'y' | 'z' | 'ly' | 'lz';
 
 /** Een richting van een last: `z` (omlaag), `x`, `y`, `projectie`, `x projectie`, `lokaal`, `lokaal y`. */
 function leesRichting(tekst: string): { as: As; projectie: boolean } | null {
-  const t = tekst.trim().toLowerCase().replace(/\s+/g, ' ');
+  const t = nlWoord(tekst);
   if (t === 'projectie') return { as: 'z', projectie: true };
   const globaal = /^([xyz])( projectie)?$/.exec(t);
   if (globaal) return { as: globaal[1] as As, projectie: !!globaal[2] };
@@ -121,7 +159,7 @@ const teken = (as: As) => (as === 'z' || as === 'lz' ? -1 : 1);
 const SOORT_RE = /^(scharnier|inklemming|rol(?:\s+[xyz])?)$/i;
 /** De vaste vrijheidsgraden van een oplegging bij naam. */
 function steunSoort(tekst: string, vlak: boolean): boolean[] {
-  const t = tekst.trim().toLowerCase().replace(/\s+/g, ' ');
+  const t = nlWoord(tekst);
   if (vlak) {
     if (t === 'scharnier') return [true, true, false];
     if (t === 'inklemming') return [true, true, true];
@@ -137,6 +175,8 @@ function steunSoort(tekst: string, vlak: boolean): boolean[] {
 interface Gelezen {
   invoer: FemStaafInvoer;
   beelden: { set: string; grootheid: string }[];
+  /** `beeld uit`: geen beelden, ook niet vanzelf. */
+  beeldUit: boolean;
   fouten: string[];
 }
 
@@ -155,13 +195,40 @@ function leesStaafInvoer(node: FemNode, r: FemRekenaar): Gelezen {
   const staafNamen = new Map<string, number>();
   const combinaties: { naam: string; expr: string; regel: number }[] = [];
   const beelden: { set: string; grootheid: string; regel: number }[] = [];
+  let beeldUit = false;
   let geval: FemStaafInvoer['gevallen'][number] | null = null;
 
   // Op twaalf cijfers: 350 mm is dan 0,35 m, niet 0,35000000000000003.
   const getal = (expr: string, eenheid: string, wat: string) => Number(alsGetal(r.reken(expr), eenheid, wat).toPrecision(12));
   const inGeval = () => {
+    // Zonder `geval` (de lezer liet de last dan door) is er één geval, met alle lasten.
+    if (!geval && !inv.gevallen.length) {
+      geval = { naam: FEM_GEVAL_ZONDER_NAAM, lasten: [] };
+      inv.gevallen.push(geval);
+    }
     if (!geval) throw new Error('een last hoort bij een belastinggeval: zet eerst geval naam');
     return geval;
+  };
+  /** Het staal van de profielen; één keer erbij. */
+  let staal = -1;
+  /** Het laatste materiaal uit een regel `materiaal`: daarmee rekent een rechthoek zonder materiaal. */
+  let eigen = -1;
+  const staalMateriaal = () => {
+    if (staal < 0) {
+      inv.materialen.push({ naam: '', E: STAAL.E, nu: STAAL.nu, G: null });
+      staal = inv.materialen.length - 1;
+    }
+    return staal;
+  };
+  /** Een profiel uit de tabel als doorsnede, met de naam zonder spatie (`HEA200`). */
+  const profielDoorsnede = (naam: string, profiel: string, materiaal?: number): number => {
+    const p = staafProfiel(profiel);
+    if (!p) throw new Error(`er is geen profiel ${profiel} (wel: ${STAAF_PROFIELEN.join(', ')})`);
+    if (doorsnedeNamen.has(naam)) throw new Error(`de doorsnede ${naam} staat er al`);
+    const twaalf = (v: number) => Number(v.toPrecision(12));
+    inv.doorsneden.push({ naam, A: twaalf(p.A / 1e6), Iy: twaalf(p.Iy / 1e12), Iz: twaalf(p.Iz / 1e12), It: twaalf(p.It / 1e12), materiaal: materiaal ?? staalMateriaal() });
+    doorsnedeNamen.set(naam, inv.doorsneden.length - 1);
+    return inv.doorsneden.length - 1;
   };
   const zetDimensie = (d: 2 | 3) => {
     if (dimensie && dimensie !== d) {
@@ -219,15 +286,21 @@ function leesStaafInvoer(node: FemNode, r: FemRekenaar): Gelezen {
           materiaalNamen.set(o.naam, inv.materialen.length);
         }
         inv.materialen.push({ naam: o.naam ?? '', E, nu, G });
+        eigen = inv.materialen.length - 1;
         break;
       }
       case 'rechthoek':
       case 'doorsnede': {
         if (!o.naam) throw new Error(`geef de doorsnede een naam: ${o.woord} naam: …`);
         if (doorsnedeNamen.has(o.naam)) throw new Error(`de doorsnede ${o.naam} staat er al`);
-        if (!inv.materialen.length) throw new Error('zet eerst het materiaal: materiaal E; G');
+        // Een profiel uit de tabel: `doorsnede HEA200`, of `doorsnede ligger: IPE300 [; materiaal]`.
+        if (o.woord === 'doorsnede' && (a.length === 1 || (a.length === 2 && materiaalNamen.has(tekst(o, 1))))) {
+          profielDoorsnede(o.naam, tekst(o, 0), a.length === 2 ? materiaalNamen.get(tekst(o, 1)) : undefined);
+          break;
+        }
+        if (eigen < 0) throw new Error('zet eerst het materiaal: materiaal E; G (een profiel als HEA200 is vanzelf staal)');
         // Een naam van een materiaal achteraan; anders het laatste materiaal.
-        let materiaal = inv.materialen.length - 1;
+        let materiaal = eigen;
         let waarden = a;
         const laatste = tekst(o, a.length - 1);
         const metNaam = o.woord === 'rechthoek' ? a.length === 3 : a.length === 3 || a.length === 5;
@@ -274,7 +347,7 @@ function leesStaafInvoer(node: FemNode, r: FemRekenaar): Gelezen {
         const scharnier: [boolean, boolean] = [false, false];
         let trek = false;
         for (; n > 0; n--) {
-          const t = tekst(o, n - 1).toLowerCase().replace(/\s+/g, ' ');
+          const t = nlWoord(tekst(o, n - 1));
           const s = /^scharnier(?:en)?(?: (begin|eind|beide))?$/.exec(t);
           if (s) {
             if (s[1] !== 'eind') scharnier[0] = true;
@@ -283,12 +356,15 @@ function leesStaafInvoer(node: FemNode, r: FemRekenaar): Gelezen {
           else break;
         }
         let doorsnede = inv.doorsneden.length - 1;
-        const kandidaat = n > 0 ? doorsnedeNamen.get(tekst(o, n - 1)) : undefined;
-        if (kandidaat !== undefined && [2, 4, 6].includes(n - 1)) {
-          doorsnede = kandidaat;
+        // Een doorsnede bij naam, of een profiel uit de tabel dat er nog niet is (`staaf A; B; IPE300`).
+        const achter = n > 0 ? tekst(o, n - 1) : '';
+        const profiel = achter.replace(/\s+/g, '').toUpperCase();
+        const kandidaat = doorsnedeNamen.get(achter) ?? doorsnedeNamen.get(profiel);
+        if ([2, 4, 6].includes(n - 1) && (kandidaat !== undefined || (!knoopNamen.has(achter) && staafProfiel(achter)))) {
+          doorsnede = kandidaat ?? profielDoorsnede(profiel, achter);
           n--;
         }
-        if (doorsnede < 0) throw new Error('zet eerst een doorsnede: rechthoek naam: b; h of doorsnede naam: A; I_y');
+        if (doorsnede < 0) throw new Error('zet eerst een doorsnede: doorsnede HEA200, rechthoek naam: b; h of doorsnede naam: A; I_y');
         let van: number;
         let naar: number;
         if (n === 2) {
@@ -321,7 +397,8 @@ function leesStaafInvoer(node: FemNode, r: FemRekenaar): Gelezen {
         const bijNaam = knoopNamen.get(tekst(o, 0));
         const veer = (k: number, draaiing: boolean): boolean | number => {
           const t = tekst(o, k).toLowerCase();
-          if (t === 'vast') return true;
+          if (t === 'vast' || t === 'fixed') return true;
+          if (t === 'free') return false;
           if (t === 'vrij') return false;
           const w = r.reken(a[k]);
           let v: number;
@@ -335,7 +412,9 @@ function leesStaafInvoer(node: FemNode, r: FemRekenaar): Gelezen {
           if (!(v >= 0)) throw new Error('een veer is vast, vrij of een stijfheid groter dan 0');
           return v === 0 ? false : Number(v.toPrecision(12));
         };
-        if (SOORT_RE.test(laatste)) {
+        // Een soort achteraan (`steun A; scharnier`, `steun x; z; rol`); bij een knoop met meer
+        // waarden zijn het de richtingen, ook als de laatste `fixed` is.
+        if (SOORT_RE.test(nlWoord(laatste)) && (bijNaam !== undefined ? a.length === 2 : a.length === 3 || a.length === 4)) {
           const voor = a.length - 1;
           if (voor === 1) {
             if (bijNaam === undefined) throw new Error(`er is geen knoop ${tekst(o, 0)}`);
@@ -452,7 +531,8 @@ function leesStaafInvoer(node: FemNode, r: FemRekenaar): Gelezen {
         break;
       }
       case 'beeld':
-        beelden.push({ set: o.naam!, grootheid: a[0], regel: o.regel });
+        if (o.naam === 'uit') beeldUit = true;
+        else beelden.push({ set: o.naam ?? '', grootheid: a[0], regel: o.regel });
         break;
       default:
         throw new Error(`${o.woord} hoort niet in een staafwerk`);
@@ -510,10 +590,10 @@ function leesStaafInvoer(node: FemNode, r: FemRekenaar): Gelezen {
   }
   voerUit(node.regels);
 
-  if (!inv.materialen.length) fouten.push('het model heeft geen materiaal: materiaal E; G');
+  if (!inv.materialen.length) fouten.push('het model heeft geen materiaal: materiaal E; G, of een profiel: doorsnede HEA200');
   if (!inv.staven.length) fouten.push('het model heeft geen staven: staaf naam: knoop; knoop');
   if (!inv.steunen.length) fouten.push('het model heeft geen opleggingen: steun knoop; scharnier');
-  if (!inv.gevallen.length) fouten.push('het model heeft geen belastinggeval: geval naam');
+  if (!inv.gevallen.length) fouten.push('het model heeft geen lasten: lijnlast staaf; q (en met meer belastinggevallen geval naam erboven)');
   for (const g of inv.gevallen) if (!g.lasten.length) fouten.push(`het geval ${g.naam} heeft geen lasten`);
   if (!inv.vlak) {
     for (const d of inv.doorsneden) if (!(d.Iz > 0 && d.It > 0)) fouten.push(`de doorsnede ${d.naam} heeft in een ruimtelijk staafwerk ook I_z en I_t nodig`);
@@ -545,7 +625,7 @@ function leesStaafInvoer(node: FemNode, r: FemRekenaar): Gelezen {
       for (const h of herstel.reverse()) h();
     }
   }
-  return { invoer: inv, beelden, fouten };
+  return { invoer: inv, beelden, beeldUit, fouten };
 }
 
 /** Is het antwoord gemaakt met een andere FEM Studio of een ander schema dan die van nu? */
@@ -726,7 +806,8 @@ function maakBlad(model: FemStaafModel, kort: FemStaafBlad, knoopNaam: (k: numbe
 export function bouwFemStaven(node: FemNode, r: FemRekenaar, basis: Pick<EvaluatedFem, 'type' | 'naam' | 'taal' | 'gevallen' | 'verborgen' | 'scherm'>): EvaluatedFem {
   const taal = basis.taal;
   const kop = { ...basis, tool: FEM_STAVEN_TOOL };
-  const { invoer, beelden, fouten } = leesStaafInvoer(node, r);
+  const gelezen = leesStaafInvoer(node, r);
+  const { invoer, fouten } = gelezen;
   if (fouten.length) return { ...kop, status: 'fout', melding: fouten.join('; ') };
   let model: FemStaafRekenmodel;
   try {
@@ -734,12 +815,21 @@ export function bouwFemStaven(node: FemNode, r: FemRekenaar, basis: Pick<Evaluat
   } catch (e) {
     return { ...kop, status: 'fout', melding: melding(e) };
   }
-  const sets = new Set([...invoer.gevallen.map((g) => g.naam), ...invoer.combinaties.map((c) => c.naam), 'omhullende']);
+  const sets = new Set([...invoer.gevallen.map((g) => g.naam), ...invoer.combinaties.map((c) => c.naam), 'omhullende', 'envelope']);
+  // Het geval of de combinatie van een beeld zonder naam: de eerste combinatie, of het enige geval.
+  const standaard = invoer.combinaties[0]?.naam ?? (invoer.gevallen.length === 1 ? invoer.gevallen[0].naam : null);
+  let beelden = gelezen.beelden;
   for (const b of beelden) {
-    if (!sets.has(b.set)) return { ...kop, status: 'fout', melding: `beeld: er is geen geval of combinatie ${b.set}` };
-    if (!/^(m|v|n|u|lasten)$/i.test(b.grootheid)) return { ...kop, status: 'fout', melding: `beeld ${b.set} ${b.grootheid}: een staafwerk heeft de beelden M, V, N, u (de vervormde stand) en lasten` };
+    if (!b.set && !standaard) return { ...kop, status: 'fout', melding: `beeld ${b.grootheid}: er zijn meer gevallen; schrijf beeld geval ${b.grootheid}` };
+    if (b.set && !sets.has(b.set)) return { ...kop, status: 'fout', melding: `beeld: er is geen geval of combinatie ${b.set}` };
+    if (!/^(m|v|n|u|lasten|loads)$/i.test(b.grootheid)) return { ...kop, status: 'fout', melding: `beeld ${b.set} ${b.grootheid}: een staafwerk heeft de beelden M, V, N, u (de vervormde stand) en lasten` };
     if (!model.vlak) return { ...kop, status: 'fout', melding: 'beeld is er voor een vlak staafwerk; teken een ruimtelijk staafwerk in een @3d-blok' };
   }
+  beelden = beelden.map((b) => ({ ...b, set: b.set || standaard! }));
+  // Een klein vlak staafwerk zonder `beeld` krijgt vanzelf het schema met de lasten, de
+  // momentenlijn, de dwarskrachtenlijn en de doorbuiging.
+  const vanzelf = !beelden.length && !gelezen.beeldUit && model.vlak && model.staven.length <= KLEIN && !!standaard;
+  if (vanzelf) beelden = ['lasten', 'M', 'V', 'u'].map((grootheid) => ({ set: standaard!, grootheid }));
   const kort: FemStaafBlad = {
     vlak: model.vlak, analyse: model.analyse, staven: model.staven.length, knopen: model.x.length, steunen: model.steunen.length,
     trek: model.staven.filter((s) => s.trek).length, knik: model.knik,
@@ -788,7 +878,8 @@ export function bouwFemStaven(node: FemNode, r: FemRekenaar, basis: Pick<Evaluat
   return {
     ...metModel,
     staven: maakBlad(femModel, kort, knoopNaam),
-    modelSvg: femStaafModelSvg(bewaard, taal),
+    // Het schema met de lasten heeft de namen al: dan geen tweede schema.
+    modelSvg: beelden.some((b) => /^(lasten|loads)$/i.test(b.grootheid)) ? undefined : femStaafModelSvg(bewaard, taal),
     status: 'klaar',
     ...(svgs.length ? { beelden: svgs } : {}),
     ...herkomst,
@@ -809,6 +900,7 @@ const WOORDEN = {
       `${b.vlak ? 'Vlak' : 'Ruimtelijk'} staafwerk${b.vlak ? ', uit het vlak gehouden' : ''}: ${b.staven} ${b.staven === 1 ? 'staaf' : 'staven'}, ${b.knopen} knopen met de tussenpunten, ${b.steunen} ${b.steunen === 1 ? 'oplegging' : 'opleggingen'}`
       + `${b.trek ? `; ${b.trek} ${b.trek === 1 ? 'staaf neemt' : 'staven nemen'} alleen trek op` : ''}; ${b.analyse === 'tweede-orde' ? 'tweede orde' : 'lineair'}${b.knik ? `, ${b.knik} ${b.knik === 1 ? 'knikvorm' : 'knikvormen'}` : ''}.`,
     geval: 'Rekengeval', set: 'Geval of combinatie', staaf: 'Staaf', steun: 'Oplegging', omhullende: 'omhullende',
+    evenwicht: 'Evenwicht',
     weg: (set: string, staven: string[]) => `${set}: ${staven.join(', ')} ${staven.length === 1 ? 'neemt' : 'nemen'} geen druk op en ${staven.length === 1 ? 'doet' : 'doen'} niet mee.`,
     verouderdVersie: (oud: string, nu: string) => `Gerekend met versie ${oud}; deze CalcSheet heeft FEM Studio ${nu}.`,
     verouderdSchema: `Het schema van ${FEM_STAVEN_TOOL} is veranderd sinds deze berekening.`,
@@ -822,6 +914,7 @@ const WOORDEN = {
       `${b.vlak ? 'Plane' : 'Space'} frame${b.vlak ? ', restrained out of plane' : ''}: ${b.staven} ${b.staven === 1 ? 'member' : 'members'}, ${b.knopen} nodes including the intermediate points, ${b.steunen} ${b.steunen === 1 ? 'support' : 'supports'}`
       + `${b.trek ? `; ${b.trek} ${b.trek === 1 ? 'member takes' : 'members take'} tension only` : ''}; ${b.analyse === 'tweede-orde' ? 'second order' : 'linear'}${b.knik ? `, ${b.knik} buckling ${b.knik === 1 ? 'mode' : 'modes'}` : ''}.`,
     geval: 'Analysis case', set: 'Case or combination', staaf: 'Member', steun: 'Support', omhullende: 'envelope',
+    evenwicht: 'Equilibrium',
     weg: (set: string, staven: string[]) => `${set}: ${staven.join(', ')} ${staven.length === 1 ? 'takes' : 'take'} no compression and ${staven.length === 1 ? 'is' : 'are'} left out.`,
     verouderdVersie: (oud: string, nu: string) => `Calculated with version ${oud}; this CalcSheet has FEM Studio ${nu}.`,
     verouderdSchema: `The schema of ${FEM_STAVEN_TOOL} has changed since this calculation.`,
@@ -885,22 +978,41 @@ export function renderFemStaven(node: EvaluatedFem): string {
       .map((g) => `<tr><td>${esc(g.naam)}</td>${cel(g.lastX)}${cel(g.reactieX)}${ruim ? `${cel(g.lastY)}${cel(g.reactieY)}` : ''}${cel(g.lastZ)}${cel(g.reactieZ)}</tr>`)
       .join('')}</tbody></table>`;
   const knik = b.sets.some((s) => s.alpha !== null);
-  const krachten = `${minMax('N')}${minMax('V', ruim ? 'z' : '')}${minMax('M', ruim ? 'y' : '')}`;
-  const eenheden = '<th colspan="4">[kN]</th><th colspan="2">[kNm]</th><th>[mm]</th>';
-  const sets = `<table class="calc-fem-tabel"><thead><tr>${th(esc(w.set))}${krachten}${th('w')}${knik ? th('α<sub>cr</sub>') : ''}</tr>`
+  // Kort bij één rekengeval zonder combinaties (een ligger): het evenwicht op één regel, geen
+  // tabel per geval, en per oplegging één reactie. Een kolom die overal nul is, valt weg (N
+  // in een ligger, R_x zonder horizontale last).
+  const kort = b.sets.length === 1 && (b.gevallen?.length ?? 0) === 1 && !knik;
+  const nul = (p: FemBereik | undefined) => !p || (Math.abs(p[0]) < 1e-9 && Math.abs(p[1]) < 1e-9);
+  const metN = ruim || !(b.omhullende ?? []).every((s) => nul(s.N));
+  const metRx = ruim || !(b.reacties ?? []).every((r) => nul(r.Rx));
+  const krachten = `${metN ? minMax('N') : ''}${minMax('V', ruim ? 'z' : '')}${minMax('M', ruim ? 'y' : '')}`;
+  const eenheden = `<th colspan="${metN ? 4 : 2}">[kN]</th><th colspan="2">[kNm]</th><th>[mm]</th>`;
+  const sets = kort ? '' : `<table class="calc-fem-tabel"><thead><tr>${th(esc(w.set))}${krachten}${th('w')}${knik ? th('α<sub>cr</sub>') : ''}</tr>`
     + `<tr class="eenheid"><th></th>${eenheden}${knik ? '<th></th>' : ''}</tr></thead><tbody>${b.sets
-      .map((s) => `<tr class="${s.soort}"><td>${esc(s.naam)}</td>${paar(s.N)}${paar(s.V)}${paar(s.M)}${cel(s.w)}${knik ? cel(s.alpha) : ''}</tr>`)
+      .map((s) => `<tr class="${s.soort}"><td>${esc(s.naam)}</td>${metN ? paar(s.N) : ''}${paar(s.V)}${paar(s.M)}${cel(s.w)}${knik ? cel(s.alpha) : ''}</tr>`)
       .join('')}</tbody></table>`;
   const weg = b.sets.filter((s) => s.inactief?.length).map((s) => `<p class="calc-fem-samenvatting">${esc(w.weg(s.naam, s.inactief!))}</p>`).join('');
-  const staven = `<table class="calc-fem-tabel"><thead><tr>${th(`${esc(w.staaf)} (${esc(w.omhullende)})`)}${th('L')}${krachten}${th('w')}</tr>`
+  const welke = (h: string) => (kort ? esc(h) : `${esc(h)} (${esc(w.omhullende)})`);
+  const staven = `<table class="calc-fem-tabel"><thead><tr>${th(welke(w.staaf))}${th('L')}${krachten}${th('w')}</tr>`
     + `<tr class="eenheid"><th></th><th>[m]</th>${eenheden}</tr></thead><tbody>${(b.omhullende ?? [])
-      .map((s) => `<tr><td>${esc(s.naam)}</td>${cel(s.lengte, 3)}${paar(s.N)}${paar(s.V)}${paar(s.M)}${cel(s.w)}</tr>`)
+      .map((s) => `<tr><td>${esc(s.naam)}</td>${cel(s.lengte, 3)}${metN ? paar(s.N) : ''}${paar(s.V)}${paar(s.M)}${cel(s.w)}</tr>`)
       .join('')}</tbody></table>`;
   const moment = (b.reacties ?? []).some((r) => r.M !== null);
-  const reacties = `<table class="calc-fem-tabel"><thead><tr>${th(`${esc(w.steun)} (${esc(w.omhullende)})`)}${minMax('R', 'x')}${ruim ? minMax('R', 'y') : ''}${minMax('R', 'z')}${moment ? minMax('M', 'y') : ''}</tr>`
-    + `<tr class="eenheid"><th></th><th colspan="${ruim ? 6 : 4}">[kN]</th>${moment ? '<th colspan="2">[kNm]</th>' : ''}</tr></thead><tbody>${(b.reacties ?? [])
-      .map((r) => `<tr><td>${esc(r.naam)}</td>${paar(r.Rx)}${ruim ? paar(r.Ry) : ''}${paar(r.Rz)}${moment ? paar(r.M) : ''}</tr>`)
+  // Bij één rekengeval is de kleinste reactie de grootste: één kolom per richting.
+  const reactie = (g: string, as: string) => (kort ? th(`${g}<sub>${as}</sub>`) : minMax(g, as));
+  const waarde = (p: FemBereik | undefined) => (kort ? cel(p?.[1]) : paar(p));
+  const breed = kort ? 1 : 2;
+  const kN = (metRx ? 1 : 0) + (ruim ? 1 : 0) + 1;
+  const reacties = `<table class="calc-fem-tabel"><thead><tr>${th(welke(w.steun))}${metRx ? reactie('R', 'x') : ''}${ruim ? reactie('R', 'y') : ''}${reactie('R', 'z')}${moment ? reactie('M', 'y') : ''}</tr>`
+    + `<tr class="eenheid"><th></th><th colspan="${kN * breed}">[kN]</th>${moment ? `<th colspan="${breed}">[kNm]</th>` : ''}</tr></thead><tbody>${(b.reacties ?? [])
+      .map((r) => `<tr><td>${esc(r.naam)}</td>${metRx ? waarde(r.Rx) : ''}${ruim ? waarde(r.Ry) : ''}${waarde(r.Rz)}${moment ? waarde(r.M ?? undefined) : ''}</tr>`)
       .join('')}</tbody></table>`;
+  // Het evenwicht van het enige geval op één regel: de som van de lasten en die van de reacties.
+  const g0 = b.gevallen?.[0];
+  const evenwicht = kort && g0 && !ruim
+    ? `<p class="calc-fem-samenvatting">${esc(w.evenwicht)}: Σ F<sub>z</sub> ↓ = ${getalTekst(g0.lastZ, t)} kN, Σ R<sub>z</sub> ↑ = ${getalTekst(g0.reactieZ, t)} kN`
+      + `${Math.abs(g0.lastX) > 1e-9 || Math.abs(g0.reactieX) > 1e-9 ? `; Σ F<sub>x</sub> = ${getalTekst(g0.lastX, t)} kN, Σ R<sub>x</sub> = ${getalTekst(g0.reactieX, t)} kN` : ''}.</p>`
+    : gevallen;
   const beelden = (node.beelden ?? []).map((s) => `<div class="calc-fem-kaart">${s}</div>`).join('');
-  return `<div class="calc-fem${scherm}" data-fem="${esc(hashes)}">${kop}${verouderd}${samenvatting}${beeld}${gevallen}${sets}${weg}${staven}${reacties}${beelden}</div>`;
+  return `<div class="calc-fem${kort ? ' calc-fem-kort' : ''}${scherm}" data-fem="${esc(hashes)}">${kop}${verouderd}${samenvatting}${beeld}${evenwicht}${sets}${weg}${staven}${reacties}${beelden}</div>`;
 }

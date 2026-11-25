@@ -12,7 +12,7 @@ export {
   TOETS_START_RE, leesToetsBlok, naarSchema, canoniek, toetsHash, leesAntwoord, bouwToets, renderToets,
   eenheidVanVeld, toetsToolToegestaan, TOETS_UITGESLOTEN, schemaHash, alsAntwoord, leesVastgelegdeToetsingen, type ToetsRekenaar,
 } from './toetsBlok.js';
-export { FEM_START_RE, FEM_TOOL, leesFemBlok, bouwFem, renderFem, femVerzoekArgumenten, femBewaar, type FemRekenaar } from './femBlok.js';
+export { FEM_START_RE, FEM_TOOL, FEM_ENGELS, leesFemBlok, bouwFem, renderFem, femVerzoekArgumenten, femBewaar, type FemRekenaar } from './femBlok.js';
 export { KERN_START_RE, leesKernBlok, bouwKern, renderKern, naarKernSchema, kernAanroepen, kernVerzoekBewaard, type KernRekenaar } from './kernBlok.js';
 export { LAST_START_RE, leesLastKop, leesLastBlok, schrijfLastBlok, lastNamen, bouwLast, renderLast, type LastKop, type LastRekenaar } from './lastBlok.js';
 export {
@@ -31,7 +31,8 @@ export {
   FemStaafModel, femStaafWaarde, femStaafKnoop, femStaafKrachten, femStaafSvg, femStaafModelSvg, femStaaf3D, femStaafGrootheid, femStaafEenheid,
   type FemStaafGrootheid, type FemStaafSet, type FemSnedekracht,
 } from './femStaafResultaat.js';
-export { FEM_STAAF_WOORDEN, isFemStaafwerk, renderFemStaven } from './femStaafBlok.js';
+export { FEM_STAAF_WOORDEN, FEM_GEVAL_ZONDER_NAAM, isFemStaafwerk, renderFemStaven } from './femStaafBlok.js';
+export { I_TABEL, staafProfiel, STAAF_PROFIELEN, type IRegel, type StaafProfiel } from './profielTabel.js';
 export { exprToLatex, nameToLatex } from './latex.js';
 export {
   drieDVlakken, drieDBeeldvlak, drieDGrenzen, drieDGrootte, drieDSvg, DRIE_D_KLEUREN, type DrieDVlak,

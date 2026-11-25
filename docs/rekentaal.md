@@ -188,7 +188,11 @@ portaal, een kap. Het blad schrijft de doorsneden, de knopen en staven met hun
 scharnieren, de opleggingen en de lasten; Open FEM Studio rekent alle gevallen in één
 aanroep (`solve_open_fem_3d_batch`) en het blad rekent verder met N, V, M, de doorbuiging,
 de reacties en de knikfactor. Alles staat in
-[fem-model.md](fem-model.md#een-staafwerk-staven-in-fem); in het kort:
+[fem-model.md](fem-model.md#een-staafwerk-staven-in-fem). Een ligger kan in vijf regels:
+een profiel (`doorsnede HEA200`, staal), twee knopen, een staaf, twee steunen en een
+lijnlast, zonder geval; het blok tekent dan zelf de lasten, M, V en de doorbuiging, en
+`ligger.s1.M_max` is het grootste moment. De woorden mogen ook in het Engels (`node`,
+`beam`, `support`, `pin`, `roller`, `lineload`). Een groter voorbeeld:
 
 ```text
 @fem kap
