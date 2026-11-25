@@ -87,7 +87,8 @@ export interface IfcxGelezenBlad {
   /** `aantekeningen` en `opPapier` beheert de app (store/pdfAantekeningen.ts); hier gaan ze ongezien door. */
   pdf?: { bestandsnaam: string; data: string; aantekeningen?: unknown[]; opPapier?: boolean };
   xlsx?: { bestandsnaam: string; data: string };
-  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
+  /** `koppeling` beheert de app (store/koppeling.ts); hier gaat hij ongezien door. */
+  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean; koppeling?: unknown };
   graaf?: GraafGegevens;
   tekenvel?: Record<string, unknown>;
   jupyter?: { bestandsnaam: string; data: string; metCode: boolean; automatisch?: boolean };
@@ -333,6 +334,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         tekst: blad.md.tekst,
         ...(blad.md.beelden ? { beelden: blad.md.beelden } : {}),
         ...(blad.md.koppenUit ? { koppenUit: true } : {}),
+        ...(blad.md.koppeling ? { koppeling: blad.md.koppeling } : {}),
       };
     }
     if (blad.graaf) attributes[ATTR.graaf] = graafAttribuut(blad.graaf);
@@ -666,7 +668,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown; ref?: unknown };
     const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown; aantekeningen?: unknown; opPapier?: unknown } | undefined;
     const xlsx = a[ATTR.xlsx] as { bestandsnaam?: unknown; data?: unknown } | undefined;
-    const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown } | undefined;
+    const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown; koppeling?: unknown } | undefined;
     const graaf = graafUitAttribuut(a[ATTR.graaf]);
     const tekenvel = a[ATTR.tekenvel];
     const jupyter = a[ATTR.jupyter] as { bestandsnaam?: unknown; data?: unknown; metCode?: unknown; automatisch?: unknown } | undefined;
@@ -696,6 +698,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
         tekst: md.tekst,
         ...(md.beelden && typeof md.beelden === 'object' ? { beelden: md.beelden as Record<string, string> } : {}),
         ...(md.koppenUit === true ? { koppenUit: true } : {}),
+        ...(md.koppeling && typeof md.koppeling === 'object' && !Array.isArray(md.koppeling) ? { koppeling: md.koppeling } : {}),
       };
     }
     if (graaf) blad.graaf = graaf;

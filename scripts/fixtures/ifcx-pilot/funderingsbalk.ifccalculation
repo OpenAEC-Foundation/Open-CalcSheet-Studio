@@ -1,0 +1,758 @@
+{
+  "header": {
+    "id": "ocss:project:0511c1f3-ae4d-59da-9dfd-3d6b9ac6e7f6",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "2.0.0",
+    "author": "Open CalcSheet Studio",
+    "timestamp": "2026-11-25T00:00:00.000Z"
+  },
+  "imports": [
+    {
+      "uri": "https://ifcx.dev/@standards.buildingsmart.org/ifc/core/ifc@v5a.ifcx"
+    },
+    {
+      "uri": "https://ifcx.dev/@standards.buildingsmart.org/ifc/core/prop@v5a.ifcx"
+    },
+    {
+      "uri": "urn:openaec:school:schema"
+    }
+  ],
+  "schemas": {
+    "ocss::project": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "formaatversie": {
+              "dataType": "Integer"
+            },
+            "gegevens": {
+              "dataType": "Array",
+              "arrayRestrictions": {
+                "value": {
+                  "dataType": "Object",
+                  "objectRestrictions": {
+                    "values": {
+                      "naam": {
+                        "dataType": "String"
+                      },
+                      "waarde": {
+                        "dataType": "String"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "verborgen": {
+              "dataType": "Object",
+              "objectRestrictions": {
+                "values": {
+                  "gegevens": {
+                    "dataType": "Boolean",
+                    "optional": true
+                  },
+                  "rapport": {
+                    "dataType": "Boolean",
+                    "optional": true
+                  }
+                }
+              },
+              "optional": true
+            }
+          }
+        }
+      }
+    },
+    "ocss::blad": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "id": {
+              "dataType": "String"
+            },
+            "volgorde": {
+              "dataType": "Integer"
+            },
+            "templateId": {
+              "dataType": "String"
+            },
+            "soort": {
+              "dataType": "Enum",
+              "enumRestrictions": {
+                "options": [
+                  "rekenblad",
+                  "pdf",
+                  "spreadsheet",
+                  "markdown",
+                  "graaf",
+                  "tekenblad",
+                  "jupyter",
+                  "marimo"
+                ]
+              }
+            },
+            "module": {
+              "dataType": "String",
+              "optional": true
+            },
+            "bronVersie": {
+              "dataType": "String",
+              "optional": true
+            },
+            "ref": {
+              "dataType": "String",
+              "optional": true
+            }
+          }
+        }
+      }
+    },
+    "ocss::blad::rekentekst": {
+      "value": {
+        "dataType": "String"
+      }
+    },
+    "ocss::blad::invoer": {
+      "value": {
+        "dataType": "Array",
+        "arrayRestrictions": {
+          "value": {
+            "dataType": "Object",
+            "objectRestrictions": {
+              "values": {
+                "naam": {
+                  "dataType": "String"
+                },
+                "waarde": {
+                  "dataType": "String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ocss::blad::elementen": {
+      "value": {
+        "dataType": "Array",
+        "arrayRestrictions": {
+          "value": {
+            "dataType": "Object",
+            "objectRestrictions": {
+              "values": {
+                "id": {
+                  "dataType": "String"
+                },
+                "naam": {
+                  "dataType": "String",
+                  "optional": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ocss::blad::uitkomst": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "status": {
+              "dataType": "Enum",
+              "enumRestrictions": {
+                "options": [
+                  "voldoet",
+                  "voldoet_niet",
+                  "geen_oordeel",
+                  "niet_doorgerekend"
+                ]
+              }
+            },
+            "titel": {
+              "dataType": "String"
+            },
+            "norm": {
+              "dataType": "String",
+              "optional": true
+            },
+            "uc": {
+              "dataType": "Real",
+              "optional": true
+            },
+            "ucTekst": {
+              "dataType": "String",
+              "optional": true
+            },
+            "fout": {
+              "dataType": "String",
+              "optional": true
+            },
+            "invoervelden": {
+              "dataType": "Array",
+              "arrayRestrictions": {
+                "value": {
+                  "dataType": "Object",
+                  "objectRestrictions": {
+                    "values": {
+                      "naam": {
+                        "dataType": "String"
+                      },
+                      "label": {
+                        "dataType": "String",
+                        "optional": true
+                      },
+                      "soort": {
+                        "dataType": "Enum",
+                        "enumRestrictions": {
+                          "options": [
+                            "veld",
+                            "keuze"
+                          ]
+                        }
+                      },
+                      "waarde": {
+                        "dataType": "String"
+                      },
+                      "getal": {
+                        "dataType": "Real",
+                        "optional": true
+                      },
+                      "eenheid": {
+                        "dataType": "String",
+                        "optional": true
+                      },
+                      "keuzeTekst": {
+                        "dataType": "String",
+                        "optional": true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "variabelen": {
+              "dataType": "Array",
+              "arrayRestrictions": {
+                "value": {
+                  "dataType": "Object",
+                  "objectRestrictions": {
+                    "values": {
+                      "naam": {
+                        "dataType": "String"
+                      },
+                      "tekst": {
+                        "dataType": "String"
+                      },
+                      "waarde": {
+                        "dataType": "Real",
+                        "optional": true
+                      },
+                      "eenheid": {
+                        "dataType": "String",
+                        "optional": true
+                      },
+                      "formule": {
+                        "dataType": "String",
+                        "optional": true
+                      },
+                      "invulling": {
+                        "dataType": "String",
+                        "optional": true
+                      },
+                      "kop": {
+                        "dataType": "String",
+                        "optional": true
+                      },
+                      "verborgen": {
+                        "dataType": "Boolean",
+                        "optional": true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "unityChecks": {
+              "dataType": "Array",
+              "arrayRestrictions": {
+                "value": {
+                  "dataType": "Object",
+                  "objectRestrictions": {
+                    "values": {
+                      "naam": {
+                        "dataType": "String"
+                      },
+                      "tekst": {
+                        "dataType": "String"
+                      },
+                      "waarde": {
+                        "dataType": "Real",
+                        "optional": true
+                      },
+                      "voldoet": {
+                        "dataType": "Boolean",
+                        "optional": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ocss::element": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "bron": {
+              "dataType": "Enum",
+              "enumRestrictions": {
+                "options": [
+                  "herkend",
+                  "gekoppeld",
+                  "geometrie"
+                ]
+              }
+            },
+            "soort": {
+              "dataType": "Enum",
+              "enumRestrictions": {
+                "options": [
+                  "paal",
+                  "fundering",
+                  "balk"
+                ]
+              },
+              "optional": true
+            },
+            "bronId": {
+              "dataType": "String",
+              "optional": true
+            },
+            "bronNaam": {
+              "dataType": "String",
+              "optional": true
+            },
+            "toetsingen": {
+              "dataType": "Array",
+              "arrayRestrictions": {
+                "value": {
+                  "dataType": "Object",
+                  "objectRestrictions": {
+                    "values": {
+                      "ref": {
+                        "dataType": "String"
+                      },
+                      "blad": {
+                        "dataType": "String"
+                      },
+                      "status": {
+                        "dataType": "Enum",
+                        "enumRestrictions": {
+                          "options": [
+                            "voldoet",
+                            "voldoet_niet",
+                            "geen_oordeel",
+                            "niet_doorgerekend"
+                          ]
+                        }
+                      },
+                      "uc": {
+                        "dataType": "Real",
+                        "optional": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "openaec::assignedMaterials": {
+      "value": {
+        "dataType": "Array",
+        "arrayRestrictions": {
+          "value": {
+            "dataType": "Reference"
+          }
+        }
+      }
+    },
+    "openaec::material": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "name": {
+              "dataType": "String"
+            }
+          }
+        }
+      }
+    },
+    "openaec::reference::category": {
+      "value": {
+        "dataType": "String"
+      }
+    }
+  },
+  "data": [
+    {
+      "path": "0511c1f3-ae4d-59da-9dfd-3d6b9ac6e7f6",
+      "children": {
+        "Site": "8c145faf-a3f7-5fd3-b4e7-f9f9ee787ec1",
+        "Rekenbladen": "ab74cd05-6e6f-58c6-a77e-5dbc2a89fa90"
+      },
+      "attributes": {
+        "bsi::ifc::class": {
+          "code": "IfcProject",
+          "uri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcProject"
+        },
+        "bsi::ifc::prop::Name": "Proef funderingsbalk",
+        "ocss::project": {
+          "formaatversie": 2,
+          "gegevens": [
+            {
+              "naam": "eenheden",
+              "waarde": "blad"
+            },
+            {
+              "naam": "rekenwijze",
+              "waarde": "1"
+            },
+            {
+              "naam": "project_nummer",
+              "waarde": ""
+            },
+            {
+              "naam": "project_naam",
+              "waarde": ""
+            },
+            {
+              "naam": "opdrachtgever",
+              "waarde": ""
+            },
+            {
+              "naam": "constructeur",
+              "waarde": ""
+            },
+            {
+              "naam": "locatie",
+              "waarde": ""
+            },
+            {
+              "naam": "onderdeel",
+              "waarde": ""
+            },
+            {
+              "naam": "CC",
+              "waarde": "2"
+            },
+            {
+              "naam": "RC",
+              "waarde": "2"
+            },
+            {
+              "naam": "DesignLife",
+              "waarde": "50"
+            },
+            {
+              "naam": "windgebied",
+              "waarde": "2"
+            },
+            {
+              "naam": "terreincategorie",
+              "waarde": "2"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "path": "8c145faf-a3f7-5fd3-b4e7-f9f9ee787ec1",
+      "children": {
+        "Gebouw": "6103aea9-5e94-5b07-9927-e0dfb332cc95"
+      },
+      "attributes": {
+        "bsi::ifc::class": {
+          "code": "IfcSite",
+          "uri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcSite"
+        },
+        "bsi::ifc::prop::Name": "Site"
+      }
+    },
+    {
+      "path": "6103aea9-5e94-5b07-9927-e0dfb332cc95",
+      "children": {
+        "Begane_grond": "f9ec0d13-1b52-5905-a5b7-c754cea95261"
+      },
+      "attributes": {
+        "bsi::ifc::class": {
+          "code": "IfcBuilding",
+          "uri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcBuilding"
+        },
+        "bsi::ifc::prop::Name": "Hoofdgebouw"
+      }
+    },
+    {
+      "path": "f9ec0d13-1b52-5905-a5b7-c754cea95261",
+      "attributes": {
+        "bsi::ifc::class": {
+          "code": "IfcBuildingStorey",
+          "uri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcBuildingStorey"
+        },
+        "bsi::ifc::prop::Name": "Begane grond",
+        "bsi::ifc::prop::RefElevation": 0
+      },
+      "children": {
+        "Funderingsbalk_BB_400x500": "/elements/0900886be4fa5a0fab2c5a3b2c6282be"
+      }
+    },
+    {
+      "path": "/elements/0900886be4fa5a0fab2c5a3b2c6282be",
+      "attributes": {
+        "bsi::ifc::class": {
+          "code": "IfcBeam",
+          "uri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcBeam"
+        },
+        "bsi::ifc::prop::Name": "Funderingsbalk BB 400x500",
+        "bsi::ifc::prop::Width": 0.4,
+        "bsi::ifc::prop::Height": 0.5,
+        "ocss::element": {
+          "bron": "gekoppeld",
+          "soort": "balk",
+          "bronId": "/elements/0900886be4fa5a0fab2c5a3b2c6282be",
+          "bronNaam": "Funderingsbalk BB 400x500",
+          "toetsingen": [
+            {
+              "ref": "f7680b65-ff9b-5358-8f36-2d64ec495120",
+              "blad": "Funderingsbalk BB 400x500",
+              "status": "voldoet",
+              "uc": 0.8115
+            }
+          ]
+        },
+        "openaec::reference::category": "Fundering",
+        "openaec::assignedMaterials": [
+          "/materials/57414cd8d24659a5bd49ebb498949707"
+        ]
+      }
+    },
+    {
+      "path": "ab74cd05-6e6f-58c6-a77e-5dbc2a89fa90",
+      "attributes": {
+        "bsi::ifc::prop::Name": "Rekenbladen"
+      },
+      "children": {
+        "B001_Funderingsbalk_BB_400x500": "f7680b65-ff9b-5358-8f36-2d64ec495120"
+      }
+    },
+    {
+      "path": "f7680b65-ff9b-5358-8f36-2d64ec495120",
+      "attributes": {
+        "bsi::ifc::class": {
+          "code": "IfcGroup",
+          "uri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcGroup"
+        },
+        "bsi::ifc::prop::Name": "Funderingsbalk BB 400x500",
+        "ocss::blad": {
+          "id": "ex-funderingsbalk",
+          "volgorde": 0,
+          "templateId": "",
+          "soort": "rekenblad"
+        },
+        "bsi::ifc::prop::Description": "EN 1992-1-1",
+        "ocss::blad::rekentekst": "\"Funderingsbalk, buiging — EN 1992-1-1\n\n'Buigtoets van een gewapendbetonnen funderingsbalk in de uiterste grenstoestand, met het rechthoekige spanningsblok uit 3.1.7. Het moment komt uit een eigen berekening van de balk op de palen. Een klein proefblad voor de koppeling met een model; geen module.\n\n# 1. Invoer\n\nb = ?*(mm)', breedte balk'\nh = ?*(mm)', hoogte balk'\na_s = ?*(mm)', onderkant balk tot hart onderwapening'\nA_s = ?*(mm^2)', onderwapening'\nM_Ed = ?*(kN*m)', rekenwaarde buigend moment'\n@select betonklasse \"Betonsterkteklasse\"\n  C20/25 = 20\n  C25/30 = 25\n  C30/37 = 30\n  C35/45 = 35\n@end\n\n# 2. Sterkte\n\nf_ck = betonklasse*(1 N/mm^2)\nf_cd = f_ck/1.5', 3.1.6 (NB)'\nf_yd = (500 N/mm^2)/1.15', B500'\nd = h - a_s', nuttige hoogte'\nx_u = A_s*f_yd/(0.8*b*f_cd)', hoogte drukzone (3.1.7)'\nM_Rd = A_s*f_yd*(d - 0.4*x_u) to kN*m', momentcapaciteit'\n\n# 3. Toetsing\n\n#if x_u > 0.45*d\n    '<b>Eindoordeel: niet getoetst</b>. De drukzone is groter dan 0,45·d: de wapening vloeit niet zeker. Kies een hogere balk of minder wapening.\n#else\n    UC_buiging = M_Ed/M_Rd\n    UC_max = UC_buiging\n    #if UC_max > 1\n        '<b>Maatgevende UC = 'UC_max'</b> > 1,0 → <b>Funderingsbalk voldoet niet</b>\n    #else\n        '<b>Maatgevende UC = 'UC_max'</b> ≤ 1,0 → <b>Funderingsbalk voldoet</b>\n    #end if\n#end if\n",
+        "ocss::blad::invoer": [
+          {
+            "naam": "b",
+            "waarde": "400"
+          },
+          {
+            "naam": "h",
+            "waarde": "500"
+          },
+          {
+            "naam": "a_s",
+            "waarde": "60"
+          },
+          {
+            "naam": "A_s",
+            "waarde": "1257"
+          },
+          {
+            "naam": "M_Ed",
+            "waarde": "180"
+          },
+          {
+            "naam": "betonklasse",
+            "waarde": "30"
+          }
+        ],
+        "ocss::blad::elementen": [
+          {
+            "id": "/elements/0900886be4fa5a0fab2c5a3b2c6282be",
+            "naam": "Funderingsbalk BB 400x500"
+          }
+        ],
+        "ocss::blad::uitkomst": {
+          "status": "voldoet",
+          "titel": "Funderingsbalk, buiging",
+          "invoervelden": [
+            {
+              "naam": "b",
+              "soort": "veld",
+              "waarde": "400",
+              "label": "b",
+              "getal": 400,
+              "eenheid": "mm"
+            },
+            {
+              "naam": "h",
+              "soort": "veld",
+              "waarde": "500",
+              "label": "h",
+              "getal": 500,
+              "eenheid": "mm"
+            },
+            {
+              "naam": "a_s",
+              "soort": "veld",
+              "waarde": "60",
+              "label": "a_s",
+              "getal": 60,
+              "eenheid": "mm"
+            },
+            {
+              "naam": "A_s",
+              "soort": "veld",
+              "waarde": "1257",
+              "label": "A_s",
+              "getal": 1257,
+              "eenheid": "mm^2"
+            },
+            {
+              "naam": "M_Ed",
+              "soort": "veld",
+              "waarde": "180",
+              "label": "M_Ed",
+              "getal": 180,
+              "eenheid": "kN*m"
+            },
+            {
+              "naam": "betonklasse",
+              "soort": "keuze",
+              "waarde": "30",
+              "label": "Betonsterkteklasse",
+              "getal": 30,
+              "keuzeTekst": "C30/37"
+            }
+          ],
+          "variabelen": [
+            {
+              "naam": "f_ck",
+              "tekst": "30 N / mm^2",
+              "waarde": 30,
+              "eenheid": "N / mm^2",
+              "formule": "betonklasse*(1 N/mm^2)",
+              "invulling": "30*(1 N/mm^2)",
+              "kop": "2. Sterkte"
+            },
+            {
+              "naam": "f_cd",
+              "tekst": "20 N / mm^2",
+              "waarde": 20,
+              "eenheid": "N / mm^2",
+              "formule": "f_ck/1.5",
+              "invulling": "(30 N / mm^2)/1.5",
+              "kop": "2. Sterkte"
+            },
+            {
+              "naam": "f_yd",
+              "tekst": "434.8 N / mm^2",
+              "waarde": 434.7826086956522,
+              "eenheid": "N / mm^2",
+              "formule": "(500 N/mm^2)/1.15",
+              "kop": "2. Sterkte"
+            },
+            {
+              "naam": "d",
+              "tekst": "440 mm",
+              "waarde": 440,
+              "eenheid": "mm",
+              "formule": "h - a_s",
+              "invulling": "(500 mm) - (60 mm)",
+              "kop": "2. Sterkte"
+            },
+            {
+              "naam": "x_u",
+              "tekst": "85.39 mm",
+              "waarde": 85.39402173913041,
+              "eenheid": "mm",
+              "formule": "A_s*f_yd/(0.8*b*f_cd)",
+              "invulling": "(1257 mm^2)*(434.8 N / mm^2)/(0.8*(400 mm)*(20 N / mm^2))",
+              "kop": "2. Sterkte"
+            },
+            {
+              "naam": "M_Rd",
+              "tekst": "221.8 kN m",
+              "waarde": 221.8016895085066,
+              "eenheid": "kN m",
+              "formule": "A_s*f_yd*(d - 0.4*x_u)",
+              "invulling": "(1257 mm^2)*(434.8 N / mm^2)*((440 mm) - 0.4*(85.39 mm))",
+              "kop": "2. Sterkte"
+            },
+            {
+              "naam": "UC_buiging",
+              "tekst": "0.8115",
+              "waarde": 0.8115357479867014,
+              "formule": "M_Ed/M_Rd",
+              "invulling": "(180 kN m)/(221.8 kN m)",
+              "kop": "3. Toetsing"
+            },
+            {
+              "naam": "UC_max",
+              "tekst": "0.8115",
+              "waarde": 0.8115357479867014,
+              "formule": "UC_buiging",
+              "invulling": "0.8115",
+              "kop": "3. Toetsing"
+            }
+          ],
+          "unityChecks": [
+            {
+              "naam": "UC_buiging",
+              "tekst": "0.8115",
+              "waarde": 0.8115357479867014,
+              "voldoet": true
+            },
+            {
+              "naam": "UC_max",
+              "tekst": "0.8115",
+              "waarde": 0.8115357479867014,
+              "voldoet": true
+            }
+          ],
+          "norm": "EN 1992-1-1",
+          "uc": 0.8115
+        }
+      }
+    },
+    {
+      "path": "/materials/57414cd8d24659a5bd49ebb498949707",
+      "attributes": {
+        "openaec::material": {
+          "name": "Beton C30/37"
+        }
+      }
+    }
+  ]
+}

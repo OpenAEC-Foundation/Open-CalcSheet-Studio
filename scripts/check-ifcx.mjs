@@ -30,6 +30,8 @@
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  * Draaien:  node scripts/check-ifcx.mjs
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./lib/talen.mjs";
 import { readFileSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
 import { laadTemplate } from "./lib/refcheck.mjs";

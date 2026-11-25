@@ -35,6 +35,8 @@
  */
 import { useLayoutEffect, useSyncExternalStore, type RefObject } from "react";
 import { herkomstVan, iframeAttributen, magLaden } from "./iframeRegels";
+import { IN_WERKPLEK, nietInWerkplek } from "../../werkplek/werkplek";
+import i18next from "i18next";
 
 /** Zo lang wacht een afdruk op een externe pagina. Daarna komt het kader op papier. */
 const MAX_LADEN_MS = 8000;
@@ -60,8 +62,10 @@ export function useIframeVersie(): number {
   return useSyncExternalStore(abonneer, () => versie);
 }
 
+// In de werkplek van de SuperCloud laadt niets van buiten (geen netwerk buiten de
+// bundel): dan is niets bevestigd en staat er een melding in plaats van de knop.
 function isBevestigd(url: string): boolean {
-  return bevestigd.has(herkomstVan(url));
+  return !IN_WERKPLEK && bevestigd.has(herkomstVan(url));
 }
 
 function bevestig(url: string) {
@@ -108,7 +112,7 @@ function zetBeelden(wortel: HTMLElement, knop?: { tekst: (host: string) => strin
     plek.className = "calc-extern-plek";
     plek.textContent = host;
     (el.closest("svg") ?? el).after(plek);
-    if (!knop || gezien.has(herkomstVan(url))) continue;
+    if (!knop || IN_WERKPLEK || gezien.has(herkomstVan(url))) continue;
     gezien.add(herkomstVan(url));
     const b = document.createElement("button");
     b.type = "button";
@@ -194,6 +198,14 @@ export class IframeBeelden {
   private plaatshouder(blok: HTMLElement, url: string, scripts: boolean) {
     const kader = blok.querySelector<HTMLElement>(".calc-iframe-kader");
     if (!kader || kader.querySelector(".calc-iframe-laden")) return;
+    if (IN_WERKPLEK) {
+      if (kader.querySelector(".calc-iframe-uitleg")) return;
+      const melding = document.createElement("span");
+      melding.className = "calc-iframe-uitleg";
+      melding.textContent = nietInWerkplek(i18next.t("werkruimte:werkplek.webpagina"));
+      kader.append(melding);
+      return;
+    }
     const t = this.teksten();
     const uitleg = document.createElement("span");
     uitleg.className = "calc-iframe-uitleg";

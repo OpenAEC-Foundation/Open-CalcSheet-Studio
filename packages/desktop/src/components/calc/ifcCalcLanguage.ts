@@ -320,7 +320,24 @@ const ifcCalcHighlight = HighlightStyle.define([
  * (rekentaal:editor.…); die wordt pas bij het tonen vertaald, zodat de taal
  * volgt wat de gebruiker op dat moment gekozen heeft.
  */
-type Aanvulling = Completion & { sleutel?: string };
+type Aanvulling = Completion & { sleutel?: string; taal?: "nl" | "en" };
+
+/**
+ * De woorden van een staafwerk in `@fem`, Nederlands en Engels. Het blok leest beide
+ * (FEM_ENGELS in de kern); de aanvulling toont ze in de taal van de app.
+ */
+const FEM_WOORDEN: readonly (readonly [nl: string, en: string])[] = [
+  ["knoop", "node"], ["staaf", "beam"], ["steun", "support"], ["lijnlast", "lineload"], ["puntlast", "pointload"],
+  ["eigengewicht", "selfweight"], ["geval", "case"], ["combinatie", "combination"], ["doorsnede", "section"],
+  ["materiaal", "material"], ["beeld", "view"], ["rechthoek", "rectangle"], ["scharnier", "pin"], ["rol", "roller"],
+  ["inklemming", "fixed"],
+];
+
+/** De kortste vorm van een ligger, in elke taal. */
+const FEM_LIGGER = {
+  nl: "@fem ligger\n  doorsnede HEA200\n  knoop A: 0; 0\n  knoop B: 6 m; 0\n  staaf A; B\n  steun A; scharnier\n  steun B; rol\n  lijnlast s1; 10 kN/m\n@end\nM_max = ligger.s1.M_max",
+  en: "@fem girder\n  section HEA200\n  node A: 0; 0\n  node B: 6 m; 0\n  beam A; B\n  support A; pin\n  support B; roller\n  lineload s1; 10 kN/m\n@end\nM_max = girder.s1.M_max",
+};
 
 /** Static keyword/snippet completions — directives, functions, units. */
 const STATIC_COMPLETIONS: Aanvulling[] = [
@@ -348,6 +365,16 @@ const STATIC_COMPLETIONS: Aanvulling[] = [
     label: "@fem", type: "namespace", sleutel: "femBlok",
     apply: "@fem vloer\n  materiaal 33 GPa; 0.2\n  maas 0.5 m\n  plaat 0; 0; 10 m; 10 m; 250 mm\n  veren 0; 0; 3; 3; 5 m; 5 m; 200 MN/m; 400 mm\n  geval G\n    eigengewicht 25 kN/m^3\n  geval Q\n    vlaklast 5 kN/m^2\n  combinatie UGT = 1.2*G + 1.5*Q\n@end",
   },
+  {
+    label: "@fem staaf", type: "namespace", sleutel: "femStaven",
+    apply: "@fem kap\n  materiaal 11000 N/mm^2; 690 N/mm^2\n  rechthoek spoor: 59 mm; 156 mm\n  knoop A: 0; 0\n  knoop B: 7.2 m; 0\n  knoop nok: 3.6 m; 3.2 m\n  staaf spoor_l: A; nok; spoor; scharnier eind\n  staaf spoor_r: nok; B; spoor\n  steun A; scharnier\n  steun B; scharnier\n  geval G\n    eigengewicht 4.2 kN/m^3\n    lijnlast spoor_l; 0.33 kN/m\n    lijnlast spoor_r; 0.33 kN/m\n  geval S\n    lijnlast spoor_l; 0.34 kN/m; projectie\n    lijnlast spoor_r; 0.34 kN/m; projectie\n  combinatie UGT = 1.2*G + 1.5*S\n  beeld UGT M\n@end",
+  },
+  { label: "@fem ligger", type: "namespace", sleutel: "femLigger", taal: "nl", apply: FEM_LIGGER.nl },
+  { label: "@fem girder", type: "namespace", sleutel: "femLigger", taal: "en", apply: FEM_LIGGER.en },
+  ...FEM_WOORDEN.flatMap(([nl, en]) => [
+    { label: nl, type: "keyword" as const, sleutel: `fem.${nl}`, taal: "nl" as const },
+    { label: en, type: "keyword" as const, sleutel: `fem.${nl}`, taal: "en" as const },
+  ]),
   {
     label: "@kern", type: "namespace", sleutel: "kernBlok",
     apply: "@kern drie = solve_native_fem\n  inputs.kind = \"threeLayer\"\n  inputs.input.forces = {nx: 0, ny: 0, nxy: 0, mx: 50, my: 0, mxy: 0, vx: 0, vy: 0}\n  inputs.input.thicknessMm = 250 mm\n  inputs.input.topSkinMm = 80 mm\n  inputs.input.bottomSkinMm = 84 mm\n  inputs.input.topReinforcement = {asX: 524, asY: 524}\n  inputs.input.bottomReinforcement = {asX: 754, asY: 754}\n  inputs.input.fcdMpa = 20 N/mm^2\n  inputs.input.fydMpa = 435 N/mm^2\n  inputs.input.nuPrime = 0.88\n  inputs.input.compressionModel = \"ec2AnnexF\"\n@end",
@@ -401,9 +428,12 @@ const STATIC_COMPLETIONS: Aanvulling[] = [
 /** De omschrijving in de gekozen taal; aangeroepen bij elke aanvulling, nooit bij het laden. */
 const omschrijving = (sleutel: string) => i18next.t(`editor.${sleutel}`, { ns: "rekentaal" });
 
-function vertaald({ sleutel, ...c }: Aanvulling): Completion {
+function vertaald({ sleutel, taal: _taal, ...c }: Aanvulling): Completion {
   return sleutel ? { ...c, detail: omschrijving(sleutel) } : c;
 }
+
+/** Hoort de aanvulling bij de taal van de app? Zonder taal altijd. */
+const inDezeTaal = (c: Aanvulling) => !c.taal || c.taal === (i18next.language?.startsWith("nl") ? "nl" : "en");
 
 /**
  * Build completions by scanning the document for user-defined variables and
@@ -471,7 +501,7 @@ function rekentaalCompletionSource(ctx: CompletionContext): CompletionResult | n
 
   return {
     from: word.from,
-    options: [...STATIC_COMPLETIONS.map(vertaald), ...dynamic],
+    options: [...STATIC_COMPLETIONS.filter(inDezeTaal).map(vertaald), ...dynamic],
     validFor: /^[#@$]?[\p{L}\p{N}_]*$/u,
   };
 }

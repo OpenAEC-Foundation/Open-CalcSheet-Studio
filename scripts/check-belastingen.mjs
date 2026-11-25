@@ -8,6 +8,8 @@
  * Draaien:  node scripts/check-belastingen.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./lib/talen.mjs";
 import {
   belastingBronnen, belastingProject, belastingenVoorIfc, gebruikteSymbolen, geldigSymbool, klasseQk, metSymbolen, opbouwSom,
 } from "../packages/desktop/src/rapport/belastingBronnen.ts";

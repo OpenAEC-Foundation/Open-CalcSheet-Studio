@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { alsOpbouw, opbouwenVoor } from "../../../rapport/gewichten";
+import { alsOpbouw, naamIn, opbouwenVoor } from "../../../rapport/gewichten";
 import { alsOpbouwUitRegel, taalVoorRapport } from "../../../rapport/gewichtenBibliotheek";
 import { belastingBronnen, geldigSymbool } from "../../../rapport/belastingBronnen";
 import type { Opbouw } from "../../../rapport/model";
@@ -166,9 +166,9 @@ export default function BelastingCanvas() {
       BOUWDELEN[groep].map((deel) => ({
         naam: t(BOUWDEEL_KOP[deel]),
         regels: opbouwenVoor([deel]).map((o) => ({
-          label: o.naam,
-          uittreksel: opbouwTekst(o, t, e),
-          kies: () => voegToe(groep, alsOpbouw(o)),
+          label: naamIn(o, rapportTaal),
+          uittreksel: opbouwTekst(o, t, e, rapportTaal),
+          kies: () => voegToe(groep, alsOpbouw(o, rapportTaal)),
         })),
       })),
     ),

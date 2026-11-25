@@ -98,7 +98,10 @@
       "notebook": "Notebook or Python script…",
       "marimo": "Marimo notebook",
       "marimoBestand": "Marimo notebook…",
-      "grafBestand": "Graph file (.dyn)…"
+      "grafBestand": "Graph file (.dyn)…",
+      "rtf": "RTF file (linked)…",
+      "bereik": "Workbook range (linked)…",
+      "sjabloon": "Apply workbook template…"
     },
     "inhoud": "Contents",
     "inhoudZonderPaginas": "The page numbers appear once you open the print preview of the report."
@@ -456,6 +459,7 @@
     "inlezen": "Replace…",
     "inlezenUitleg": "Replace this workbook with an XLSX file. Name, position and notes in the report stay as they are.",
     "vervangenVraag": "Replace the workbook of \"{{naam}}\" with the chosen file?",
+    "vervangenGekoppeld": "Linked input fields: {{aantal}}. After replacing, they take their cells from the new workbook; a worksheet or cell that is no longer there gives a message and that sheet is not calculated.",
     "exporteren": "Export…",
     "exporterenUitleg": "Write this workbook to a separate XLSX file.",
     "vulgreep": "Drag to fill; double-click fills down as far as the column next to it is filled",
@@ -994,7 +998,19 @@
     "openen": "Open file",
     "opslaanAls": "Save file as",
     "geenBestand": "No open file to overwrite",
-    "geenProject": "This IFCX file does not contain a project of this app."
+    "geenProject": "This IFCX file does not contain a project of this app.",
+    "geenDocs": "There are no files of this app in this Docs folder yet.",
+    "kiesDocs": "Which file do you want to open? Type its number.",
+    "naamInDocs": "Name in Docs",
+    "kopieInDocs": "Someone else changed the file in the meantime. Your work is in a copy: {{naam}}"
+  },
+  "werkplek": {
+    "nietHier": "{{wat}}: not possible in the SuperCloud workspace. There is no internet outside the app there.",
+    "linkNaarBuiten": "A link to an outside page does not open in the SuperCloud workspace. The address:\n\n{{url}}",
+    "kaartZonderNet": "Click the map to place the pin, or type coordinates (52.37, 4.89). In the SuperCloud workspace there is no internet outside the app: no map background, address search, map images or water measurement.",
+    "onlineBibliotheek": "The online library",
+    "webpagina": "A web page in a sheet",
+    "script": "A script in a sheet"
   },
   "ifcxBewaren": {
     "titel": "Save IFCX",
@@ -1090,5 +1106,84 @@
     "kandidaten_other": "{{count}} values to try per variant",
     "geenWaarde": "{{variant}}: no value from {{van}} to {{tot}} is OK.",
     "terug": "← Back to the table"
+  },
+  "document": {
+    "opslaanTitel": "Save report as document",
+    "filter": {
+      "docx": "Word document (.docx)",
+      "odt": "OpenDocument text (.odt)"
+    },
+    "nietMeeTitel": "Not everything can be included",
+    "nietMeeVraag": "These parts of the report are not included in the document; a line takes their place:\n\n{{lijst}}\n\nExport anyway?",
+    "toch": "Export anyway",
+    "afbreken": "Cancel",
+    "nietMee": {
+      "pdf_one": "PDF sheet {{naam}} ({{count}} page)",
+      "pdf_other": "PDF sheet {{naam}} ({{count}} pages)",
+      "iframe": "External page {{naam}}",
+      "js": "Output of a @js block",
+      "ingebed": "Embedded content ({{naam}})",
+      "beeld_one": "{{count}} image that could not be converted",
+      "beeld_other": "{{count}} images that could not be converted"
+    },
+    "schrijvenMislukt": "The document could not be saved to {{pad}}:\n{{fout}}"
+  },
+  "koppeling": {
+    "rtfUitleg": "Add an RTF file as a sheet to the project. Text, bold, italic and lists are kept. The sheet stays linked: when the file is saved or replaced, the sheet updates by itself.",
+    "rtfImporteren": "Link RTF file…",
+    "bereikUitleg": "Add a range from a workbook (.xlsx) as a table in the report, by range name or by sheet and cells. The sheet stays linked: when the workbook is saved, the table updates by itself.",
+    "sjabloonUitleg": "Apply a saved workbook template to the workbook of this project. For each part you see whether the workbook has it, and you choose what goes in.",
+    "filterRtf": "RTF files",
+    "kiesRtf": "Choose an RTF file",
+    "kiesWerkmap": "Choose a workbook",
+    "kiesSjabloon": "Choose a workbook template",
+    "filterSjabloon": "Workbook templates",
+    "geenRtfBestand": "\"{{naam}}\" is not an RTF file.",
+    "nietAlles": "Not everything in the file could be kept: {{lijst}}.",
+    "nietAllesKort": "not everything kept",
+    "beeldOvergeslagen": "an image in {{formaat}} format",
+    "lezenMislukt": "Reading the file failed: {{fout}}",
+    "schrijvenMislukt": "Writing the template failed: {{fout}}",
+    "sjabloonLeeg": "This project has no linked workbook ranges to save in a template.",
+    "geenSjabloon": "This file is not a workbook template, or it has no usable parts.",
+    "bereikTitel": "Link workbook range",
+    "sjabloonTitel": "Apply workbook template",
+    "werkmap": "Workbook: {{naam}}",
+    "opNaam": "Range name",
+    "opCellen": "Sheet and cells",
+    "cellen": "Cells, for example B4:F20",
+    "bladnaam": "Name of the sheet",
+    "geenNamen": "This workbook has no range names; choose a sheet and cells.",
+    "uitlegNaam": "The range name is looked up again on every change: rows inserted into the range appear in the table by themselves.",
+    "uitlegCellen": "These cells are fixed: rows inserted below them are not added. A range name does grow along.",
+    "bereikLeeg": "This range is empty.",
+    "bereikMaat_one": "{{blad}}!{{cellen}} · {{count}} row",
+    "bereikMaat_other": "{{blad}}!{{cellen}} · {{count}} rows",
+    "invoegen": "Insert",
+    "annuleren": "Cancel",
+    "sjabloonToevoegen_one": "Add {{count}} part",
+    "sjabloonToevoegen_other": "Add {{count}} parts",
+    "sjabloonOntbreekt_one": "{{count}} part is not in this workbook.",
+    "sjabloonOntbreekt_other": "{{count}} parts are not in this workbook.",
+    "onderdeel": "Part",
+    "verwijzing": "Reference",
+    "inWerkmap": "In this workbook",
+    "gevonden_one": "{{blad}}!{{cellen}}, {{count}} row",
+    "gevonden_other": "{{blad}}!{{cellen}}, {{count}} rows",
+    "gelezenOp": "Last read on {{datum}}",
+    "staat": {
+      "actueel": "Linked: {{bron}}",
+      "lezen": "Linked: {{bron}} (reading)",
+      "ontbreekt": "Source not found: {{bron}}",
+      "fout": "Cannot update: {{bron}}",
+      "geenToegang": "Linked: {{bron}} (saved copy)"
+    },
+    "lees": "Read now",
+    "leesUitleg": "Read the source again now.",
+    "sjabloonBewaren": "Save template…",
+    "sjabloonBewarenUitleg": "Save the linked workbook ranges of this project, with their place and reference, as a template for a next project.",
+    "ontkoppel": "Unlink",
+    "ontkoppelUitleg": "Break the link with the source. The text stays and can then be edited as usual.",
+    "ontkoppelVraag": "Break the link of \"{{naam}}\"? The sheet will no longer update by itself."
   }
 }

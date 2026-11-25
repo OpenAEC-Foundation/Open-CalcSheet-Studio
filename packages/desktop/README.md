@@ -33,6 +33,10 @@ npm run build
 # Native debug-binary zonder installatiepakket
 npm run build:debug
 
+# Platformbouw voor de werkplek van de OpenAEC SuperCloud (dist-platform/);
+# zie docs/supercloud-werkplek.md
+npm run build:platform
+
 # Alle rekencontroles
 npm run check
 ```

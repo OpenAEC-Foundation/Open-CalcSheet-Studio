@@ -50,10 +50,14 @@
   "exportPanel": {
     "title": "Exporteren",
     "asPdf": "Exporteren als PDF",
-    "asPdfDesc": "Sla het huidige document op als een PDF-bestand",
+    "asPdfDesc": "Het rapport met alle bladen als PDF-bestand, zoals de knop Rapport in het lint",
     "asImage": "Exporteren als afbeelding",
     "asImageDesc": "Opslaan als PNG- of JPEG-afbeeldingsbestanden",
     "asHtml": "Exporteren als HTML",
-    "asHtmlDesc": "Exporteer het document als een HTML-bestand"
+    "asHtmlDesc": "Exporteer het document als een HTML-bestand",
+    "asDocx": "Exporteren als Word-document (.docx)",
+    "asDocxDesc": "Het rapport als bewerkbaar document, met formules als vergelijking. Een momentopname: niets rekent mee",
+    "asOdt": "Exporteren als OpenDocument (.odt)",
+    "asOdtDesc": "Het rapport als bewerkbare OpenDocument-tekst, met formules als formuleobject. Een momentopname: niets rekent mee"
   }
 }

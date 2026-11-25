@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import i18next from "i18next";
+import { landcode } from "../../i18n/talen";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { projectScope, projectWaarde } from "../../store/projectGegevens";
 import { evalOptiesVan } from "../../store/projectEenheden";
@@ -87,7 +88,7 @@ export function useUitdraai(): Uitdraai {
     alleBladen: exemplaren,
     enkel: bladen.length === 1,
     kopregels: kop.filter((r): r is [string, string] => !!r[1]),
-    datum: new Date().toLocaleDateString(i18next.language?.startsWith("nl") ? "nl-NL" : "en-GB", { day: "numeric", month: "long", year: "numeric" }),
+    datum: new Date().toLocaleDateString(landcode(i18next.language), { day: "numeric", month: "long", year: "numeric" }),
     onderdeel: gegevens.onderdeel,
     projectNummer: gegevens.project_nummer,
     constructeur: gegevens.constructeur,

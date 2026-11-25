@@ -11,8 +11,9 @@ import { bouwFem } from './femBlok.js';
 import { bouwKern } from './kernBlok.js';
 import { bouwLast } from './lastBlok.js';
 import { FemModel, femWaarde, femStrook, femSvg, femGrootheid, FEM_EENHEID } from './femResultaat.js';
+import { FemStaafModel, femStaafEenheid, femStaafGrootheid, femStaafKnoop, femStaafKrachten, femStaafSvg, femStaafWaarde } from './femStaafResultaat.js';
 import { bouwJsBlok } from './jsBlok.js';
-import { leesVerwijzing, verwijzingNaam, verwijzingenInMelding } from './verwijzing.js';
+import { celNaam, celVerwijzingTekst, leesCelVerwijzing, leesVerwijzing, verwijzingNaam, verwijzingenInMelding, type CelFout, type CelVerwijzing } from './verwijzing.js';
 import { parse } from './parser.js';
 import { plaatOplossing, plaatSamenvatting, plaatDoorbuiging, plaatSvg, type PlaatInvoer } from './plaat.js';
 import {
@@ -823,8 +824,22 @@ math.import(
 
 function femModelUit(model: unknown, functie: string): FemModel {
   if (model instanceof FemModel) return model;
+  if (model instanceof FemStaafModel) throw new Error(`${functie}: ${model.naam} is een staafwerk; gebruik fem_staaf, fem_knoop of fem_krachten`);
   throw new Error(`${functie}: het eerste argument is een @fem-model, zoals vloer (de naam van het blok)`);
 }
+/** Een staafwerk uit een @fem-blok (femStaafBlok.ts). */
+function femStavenUit(model: unknown, functie: string): FemStaafModel {
+  if (model instanceof FemStaafModel) return model;
+  if (model instanceof FemModel) throw new Error(`${functie}: ${model.naam} is een plaatmodel; gebruik fem_waarde of fem_strook`);
+  throw new Error(`${functie}: het eerste argument is een @fem-model met staven, zoals kap (de naam van het blok)`);
+}
+/** Een staaf bij naam ("spoor") of nummer. */
+function femStaafRef(v: unknown, functie: string): string | number {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' && Number.isInteger(v)) return v;
+  throw new Error(`${functie}: de staaf is een naam tussen aanhalingstekens, zoals "spoor", of een nummer`);
+}
+const FEM_STAAF_EENHEID = { kN: 'kN', kNm: 'kN m', mm: 'mm', rad: 'rad' } as const;
 function femTekst(v: unknown, functie: string, wat: string): string {
   if (typeof v === 'string') return v;
   throw new Error(`${functie}: ${wat} staat tussen aanhalingstekens, zoals "UGT"`);
@@ -851,13 +866,63 @@ math.import(
         g,
       );
     },
-    /** fem_svg(model; "UGT"; "mx" [; breedte]) → een plattegrond in kleur met legenda, als <svg> voor een @svg-blok. */
+    /**
+     * fem_svg(model; "UGT"; "mx" [; breedte]) → een plattegrond in kleur met legenda, als <svg> voor een @svg-blok.
+     * Bij een staafwerk: "M", "V", "N" (de lijn), "u" (de vervormde stand) of "lasten"; "omhullende" als geval tekent
+     * de grootste en kleinste lijn over de combinaties.
+     */
     fem_svg: function (model: unknown, set: unknown, grootheid: unknown, breedte?: unknown) {
-      const b = breedte === undefined ? 640 : Math.round(liggerGetal(breedte));
-      return femSvg(femModelUit(model, 'fem_svg'), femTekst(set, 'fem_svg', 'het geval'), femTekst(grootheid, 'fem_svg', 'de grootheid'), Math.min(1600, Math.max(240, b)), huidigeTaal);
+      const b = Math.min(1600, Math.max(240, breedte === undefined ? 640 : Math.round(liggerGetal(breedte))));
+      if (model instanceof FemStaafModel) return femStaafSvg(model, femTekst(set, 'fem_svg', 'het geval'), femTekst(grootheid, 'fem_svg', 'de grootheid'), b, huidigeTaal);
+      return femSvg(femModelUit(model, 'fem_svg'), femTekst(set, 'fem_svg', 'het geval'), femTekst(grootheid, 'fem_svg', 'de grootheid'), b, huidigeTaal);
     },
-    /** fem_reacties(model; "UGT") → per veer [x; y; R] (m, m, kN), in de volgorde van het blok. */
+    /**
+     * fem_staaf(model; "UGT"; "spoor"; "M"; x) → de waarde op de afstand x van het begin van een staaf: N en V in kN,
+     * M in kNm, de doorbuiging "w" en de verplaatsing "ux", "uz" in mm. "max" of "min" als geval: de omhullende.
+     */
+    fem_staaf: function (model: unknown, set: unknown, staaf: unknown, grootheid: unknown, x: unknown) {
+      const m = femStavenUit(model, 'fem_staaf');
+      const g = femTekst(grootheid, 'fem_staaf', 'de grootheid');
+      const v = femStaafWaarde(m, femTekst(set, 'fem_staaf', 'het geval'), femStaafRef(staaf, 'fem_staaf'), g, femMeter(x));
+      return math.unit(v, FEM_STAAF_EENHEID[femStaafEenheid(femStaafGrootheid(m, g))]);
+    },
+    /**
+     * fem_knoop(model; "UGT"; "nok"; "uz") → een grootheid van een benoemde knoop: de verplaatsing "ux", "uy", "uz"
+     * (mm), de verdraaiing "ry" (rad), of van zijn oplegging de reactie "Rx", "Rz" (kN) en "My" (kNm).
+     */
+    fem_knoop: function (model: unknown, set: unknown, knoop: unknown, grootheid: unknown) {
+      const u = femStaafKnoop(femStavenUit(model, 'fem_knoop'), femTekst(set, 'fem_knoop', 'het geval'), femTekst(knoop, 'fem_knoop', 'de knoop'), femTekst(grootheid, 'fem_knoop', 'de grootheid'));
+      return math.unit(u.waarde, FEM_STAAF_EENHEID[u.eenheid]);
+    },
+    /**
+     * fem_krachten(model; "spoor"; "UGT_1"; "UGT_2"; …) → de snedekrachten van een staaf als matrix voor een toets
+     * (`forces_envelope`): per combinatie en station [nummer; x; N; V_y; V_z; M_t; M_y; M_z], de combinaties
+     * genummerd in de volgorde waarin ze staan.
+     */
+    fem_krachten: function (model: unknown, staaf: unknown, ...sets: unknown[]) {
+      const m = femStavenUit(model, 'fem_krachten');
+      const namen = sets.map((s) => femTekst(s, 'fem_krachten', 'een geval of combinatie'));
+      const rijen = femStaafKrachten(m, femStaafRef(staaf, 'fem_krachten'), namen).map((r) => [
+        r[0], math.unit(r[1], 'm'), math.unit(r[2], 'kN'), math.unit(r[3], 'kN'), math.unit(r[4], 'kN'),
+        math.unit(r[5], 'kN m'), math.unit(r[6], 'kN m'), math.unit(r[7], 'kN m'),
+      ]);
+      return math.matrix(rijen as unknown as number[][]);
+    },
+    /**
+     * fem_reacties(model; "UGT") → per veer [x; y; R] (m, m, kN), in de volgorde van het blok. Bij een staafwerk per
+     * oplegging [x; z; R_x; R_z; M_y], ruimtelijk [x; y; z; R_x; R_y; R_z; M_x; M_y; M_z].
+     */
     fem_reacties: function (model: unknown, set: unknown) {
+      if (model instanceof FemStaafModel) {
+        const s = model.set(femTekst(set, 'fem_reacties', 'het geval'));
+        const sm = model.m;
+        const rijen = sm.steunen.map((st, i) => {
+          const R = model.reactie(s, i);
+          const plek = (sm.vlak ? [sm.x[st.knoop], sm.z[st.knoop]] : [sm.x[st.knoop], sm.y[st.knoop], sm.z[st.knoop]]).map((v) => math.unit(v, 'm'));
+          return [...plek, ...R.map((v, k) => math.unit(v, k < R.length / 2 || (sm.vlak && k < 2) ? 'kN' : 'kN m'))];
+        });
+        return math.matrix(rijen as unknown as number[][]);
+      }
       const m = femModelUit(model, 'fem_reacties');
       const R = m.verenReactie(m.set(femTekst(set, 'fem_reacties', 'het geval')));
       const rijen = m.m.veren.map((v, i) => [math.unit(m.m.x[v[0][0]], 'm'), math.unit(m.m.y[v[0][0]], 'm'), math.unit(R[i], 'kN')]);
@@ -1849,8 +1914,25 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             scope[node.name] = gevonden;
           }
         }
+        // Een cel uit een spreadsheet-blad (`#3.Blad1!B4 kN`, verwijzing.ts). Anders dan
+        // hierboven geen terugval op de standaardwaarde: lukt het niet, dan staat het veld
+        // niet in de scope en rekent wat ervan afhangt niet. Zo staat er nooit een oordeel
+        // op een waarde die niet uit de cel komt.
+        const cel = ref ? null : leesCelVerwijzing(invoer);
+        let koppeling: { bron: string; waarde?: string; fout?: string } | undefined;
+        if (cel) {
+          const uit = celInvoer(cel, scope[celNaam(cel.ref, cel.blad, cel.cel)], node.unit);
+          koppeling = { bron: celVerwijzingTekst({ ...cel, eenheid: '' }) };
+          if ('fout' in uit) {
+            delete scope[node.name];
+            koppeling.fout = uit.fout;
+          } else {
+            scope[node.name] = uit.waarde;
+            koppeling.waarde = formatResult(uit.waarde);
+          }
+        }
         const raw = ref ? standaard.trim().replace(',', '.') || '0' : invoer.trim().replace(',', '.') || standaard.trim().replace(',', '.') || '0';
-        if (!ref || refFout) try {
+        if (!cel && (!ref || refFout)) try {
           // Wat geen getal oplevert (alleen een eenheid of een teken, zoals
           // "kN" of "-"), gaat naar de afhandeling van een halve invoer. Dat
           // geldt voor de invoer zelf, zonder de eenheid erachter: een eenheid
@@ -1883,6 +1965,8 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
           let standaardInBeeld = standaard;
           try {
             toon = huidigStelsel && node.unit && !eigen ? doelInStelsel(node.unit, huidigStelsel) : null;
+            // Een koppeling staat er zoals getypt; de eenheid erin geldt voor de cel.
+            if (toon && cel) toon = null;
             if (toon) {
               // Een eenheid in het stelsel die niet bij het veld past (met de hand
               // bewerkt project): dan zoals in het blad.
@@ -1903,7 +1987,11 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             currentValue,
             standaard: standaardInBeeld,
             ...(toon ? { toonEenheid: toon } : {}),
+            ...(koppeling ? { koppeling } : {}),
           });
+        } else if (koppeling?.fout) {
+          // Een verborgen veld: de melding moet toch op het blad staan.
+          result.push({ type: 'text', text: `${koppeling.bron}: ${koppeling.fout}` });
         }
         if (refFout) result.push({ type: 'text', text: `Error evaluating ${refFout}` });
         break;
@@ -2204,6 +2292,78 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
   }
 
   return result;
+}
+
+/** De vaste woorden van een melding bij een gekoppelde cel, in de taal van de uitvoer. */
+const CEL_MELDING: Record<'nl' | 'en', Record<CelFout | 'eenheid' | 'eenheid-onbekend', (c: CelVerwijzing, detail: string) => string>> = {
+  nl: {
+    bron: (c) => `koppeling niet gerekend: er is geen blad #${c.ref} (meer)`,
+    'geen-spreadsheet': (c) => `koppeling niet gerekend: blad #${c.ref} is geen spreadsheet-blad`,
+    werkmap: (c) => `koppeling niet gerekend: de werkmap van blad #${c.ref} is niet te lezen`,
+    werkblad: (c) => `koppeling niet gerekend: blad #${c.ref} heeft geen werkblad "${c.blad}"`,
+    leeg: (c) => `koppeling niet gerekend: cel ${c.cel} is leeg`,
+    tekst: (c, d) => `koppeling niet gerekend: cel ${c.cel} bevat geen getal${d ? ` maar "${d}"` : ''}`,
+    formulefout: (c, d) => `koppeling niet gerekend: de formule in cel ${c.cel} geeft ${d || 'een fout'}`,
+    'geen-waarde': (c) => `koppeling niet gerekend: de formule in cel ${c.cel} heeft nog geen uitkomst; open het spreadsheet-blad`,
+    eenheid: (c, d) => `koppeling niet gerekend: ${d} uit cel ${c.cel} past niet bij de eenheid van dit veld`,
+    'eenheid-onbekend': (c) => `koppeling niet gerekend: onbekende eenheid "${c.eenheid}"`,
+  },
+  en: {
+    bron: (c) => `link not calculated: there is no sheet #${c.ref} (any more)`,
+    'geen-spreadsheet': (c) => `link not calculated: sheet #${c.ref} is not a spreadsheet sheet`,
+    werkmap: (c) => `link not calculated: the workbook of sheet #${c.ref} cannot be read`,
+    werkblad: (c) => `link not calculated: sheet #${c.ref} has no worksheet "${c.blad}"`,
+    leeg: (c) => `link not calculated: cell ${c.cel} is empty`,
+    tekst: (c, d) => `link not calculated: cell ${c.cel} does not hold a number${d ? ` but "${d}"` : ''}`,
+    formulefout: (c, d) => `link not calculated: the formula in cell ${c.cel} gives ${d || 'an error'}`,
+    'geen-waarde': (c) => `link not calculated: the formula in cell ${c.cel} has no result yet; open the spreadsheet sheet`,
+    eenheid: (c, d) => `link not calculated: ${d} from cell ${c.cel} does not match the unit of this field`,
+    'eenheid-onbekend': (c) => `link not calculated: unknown unit "${c.eenheid}"`,
+  },
+};
+
+/**
+ * De waarde van een invoerveld dat aan een cel gekoppeld is. `gevonden` is wat de app
+ * in de scope zette (een getal of een fout, verwijzing.ts); niets als het blad er niet is.
+ *
+ * De eenheid: een eenheid in de koppeling (`#3.Blad1!B4 kN`) is die van het getal in de
+ * cel; het veld rekent het dan om naar zijn eigen eenheid. Zonder eenheid in de koppeling
+ * krijgt het getal de eenheid van het veld; zonder beide is het een kaal getal. Een
+ * eenheid die niet bij het veld past, of een getal met een eenheid in een veld zonder
+ * (en omgekeerd), is een fout: er wordt nooit stil iets anders van gemaakt.
+ */
+function celInvoer(cel: CelVerwijzing, gevonden: unknown, doel: string): { waarde: unknown } | { fout: string } {
+  const woorden = CEL_MELDING[huidigeTaal === 'en' ? 'en' : 'nl'];
+  if (gevonden === undefined) return { fout: woorden.bron(cel, '') };
+  if (typeof gevonden !== 'number') {
+    const f = gevonden as { fout?: CelFout; detail?: string };
+    return { fout: (woorden[f.fout ?? 'werkmap'] ?? woorden.werkmap)(cel, f.detail ?? '') };
+  }
+  if (!Number.isFinite(gevonden)) return { fout: woorden.tekst(cel, String(gevonden)) };
+  const getal = String(gevonden);
+  if (!cel.eenheid) {
+    if (!doel) return { waarde: gevonden };
+    try {
+      return { waarde: getalMetEenheid(getal, doel) };
+    } catch {
+      return { fout: woorden.eenheid(cel, getal) };
+    }
+  }
+  let bron: unknown;
+  try {
+    bron = getalMetEenheid(getal, cel.eenheid);
+    if (zonderGetal(bron)) throw new Error('geen getal');
+  } catch {
+    return { fout: woorden['eenheid-onbekend'](cel, '') };
+  }
+  const tekst = `${getal} ${cel.eenheid}`;
+  if (!doel) return isUnit(bron) ? { fout: woorden.eenheid(cel, tekst) } : { waarde: bron };
+  if (!isUnit(bron)) return { fout: woorden.eenheid(cel, tekst) };
+  try {
+    return { waarde: (bron as { to: (eenheid: string) => unknown }).to(doel) };
+  } catch {
+    return { fout: woorden.eenheid(cel, tekst) };
+  }
 }
 
 /** Geen getal: niets, of een eenheid zonder waarde (`kN`). */
