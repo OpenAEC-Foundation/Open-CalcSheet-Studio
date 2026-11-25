@@ -13,6 +13,7 @@ import { TEKEN_BLAD } from "../../store/tekenBlad";
 import { useModuleKiezer, type KiezerTab } from "../../store/moduleKiezer";
 import { useProjectStore } from "../../store/projectStore";
 import { voegLeegMarkdownToe, voegMarkdownBestandToe } from "./markdownBlad";
+import { voegRtfToe } from "./koppelingen";
 import { JUPYTER_BLAD } from "../../store/jupyterBlad";
 import { voegLeegJupyterToe } from "./jupyterBlad";
 import { MARIMO_BLAD } from "../../store/marimoBlad";
@@ -251,7 +252,7 @@ function DocumentenGroep({ onKlaar }: { onKlaar: () => void }) {
   const voegToe = useProjectStore((s) => s.voegMarkdownToe);
   return (
     <section className="mk-groep mk-niveau-0">
-      <h3>{tw("kiezer.documenten")} <span className="mk-aantal">2</span></h3>
+      <h3>{tw("kiezer.documenten")} <span className="mk-aantal">3</span></h3>
       <div className="mk-tegels">
         <button type="button" className="mk-tegel" title={tw("markdown.toevoegenUitleg")}
           onClick={() => { voegLeegMarkdownToe(voegToe); onKlaar(); }}>
@@ -262,6 +263,11 @@ function DocumentenGroep({ onKlaar }: { onKlaar: () => void }) {
           onClick={() => { void voegMarkdownBestandToe(voegToe); onKlaar(); }}>
           <ModuleAfbeelding templateId={TEGEL_BEELD.markdownImport} />
           <span className="mk-kop"><span className="mk-naam">{tw("markdown.importeren")}</span></span>
+        </button>
+        <button type="button" className="mk-tegel" title={tw("koppeling.rtfUitleg")}
+          onClick={() => { void voegRtfToe(); onKlaar(); }}>
+          <ModuleAfbeelding templateId={TEGEL_BEELD.markdownImport} />
+          <span className="mk-kop"><span className="mk-naam">{tw("koppeling.rtfImporteren")}</span></span>
         </button>
       </div>
     </section>

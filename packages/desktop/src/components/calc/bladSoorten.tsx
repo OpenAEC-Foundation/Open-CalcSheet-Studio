@@ -34,8 +34,11 @@ import { MarimoPapier } from "./MarimoPapier";
 export interface BladSoort {
   /** `templateId` van de bladen van deze soort. */
   templateId: string;
-  /** De naam van de soort op papier, onder de kop en in de kolom grondslag, in de taal van de uitdraai. */
-  soortTekst: (taal?: string) => string;
+  /**
+   * De naam van de soort op papier, onder de kop en in de kolom grondslag, in de taal
+   * van de uitdraai. `ex`: het blad, voor een soort met varianten (een gekoppeld blad).
+   */
+  soortTekst: (taal?: string, ex?: Exemplaar) => string;
   /**
    * Het afdrukonderdeel: de inhoud van het blad onder zijn kop, binnen de
    * bladspiegel van `maten`. Elk blok is een los kind; `print-nieuw-vel` begint een
@@ -81,9 +84,12 @@ const SOORTEN: readonly BladSoort[] = [
   },
   {
     templateId: MARKDOWN_BLAD,
-    soortTekst: (taal) => papier(taal)("markdownBlad.soort"),
+    // Een gekoppeld blad heet naar zijn bron: een RTF-bestand of een werkmapbereik.
+    soortTekst: (taal, ex) => papier(taal)(
+      ex?.md?.koppeling?.soort === "rtf" ? "markdownBlad.soortRtf" : ex?.md?.koppeling?.soort === "werkmapbereik" ? "markdownBlad.soortBereik" : "markdownBlad.soort",
+    ),
     Afdruk: MarkdownPapier,
-    useOnderkop: (ex) => [ex.md?.bestandsnaam],
+    useOnderkop: (ex) => [ex.md?.bestandsnaam, ex.md?.koppeling?.verwijzing],
     plek: "hoofdstuk",
     inhoudsKoppen: (ex) => (ex.md && !ex.md.koppenUit ? koppenVoorInhoud(ex.md.tekst, ex) : []),
     RapportKeuze: MarkdownRapportKeuze,
@@ -129,7 +135,7 @@ export function LosBladAfdruk({ soort, ex, nummer, maten, anker }: {
   // Een blad verandert niet van soort, dus deze haak blijft dezelfde.
   const extra = soort.useOnderkop?.(ex) ?? [];
   const taal = useAfdrukTaal();
-  const onderkop = [soort.soortTekst(taal), ...extra].filter(Boolean).join(" · ");
+  const onderkop = [soort.soortTekst(taal, ex), ...extra].filter(Boolean).join(" · ");
   return (
     <section className="print-blad print-pdf">
       <header className="print-blad-kop" data-inhoud={anker}>

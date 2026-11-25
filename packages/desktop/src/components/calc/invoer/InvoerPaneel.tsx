@@ -1,11 +1,13 @@
-import { memo, useEffect, useId, useRef, useState, type ComponentType } from "react";
+import { memo, useEffect, useId, useMemo, useRef, useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { eenheidInBeeld } from "@ifc-calc/core";
+import { celVerwijzingTekst, eenheidInBeeld, invoerNaarBron, leesCelVerwijzing, type CelVerwijzing } from "@ifc-calc/core";
 import ThemedSelect from "../../ThemedSelect";
 import { Kop, UitkomstKop } from "../designerKit";
 import { useActiefExemplaar, useProjectScope } from "../../../store/actiefBlad";
-import type { Exemplaar } from "../../../store/projectStore";
+import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
+import { bewaarOpenWerkmappen, isSpreadsheetBlad } from "../../../store/spreadsheetBlad";
 import { useDoorrekening } from "../../../rekenen/doorrekening";
+import { leesCel, werkbladNamen } from "../../../rekenen/spreadsheetCellen";
 import { inBeeld, leesGetypt, naamDelen, pauzeVoor, platTekst, type BladInvoer, type PaneelVeld, type TekstDeel } from "./velden";
 import { useInvoerWachtrij } from "./useInvoerWachtrij";
 import type { InvoerWachtrij } from "./wachtrij";
@@ -78,9 +80,157 @@ function Tekst({ delen }: { delen: readonly TekstDeel[] }) {
   );
 }
 
-/** Een `?`-veld: naam, toelichting, het getal en de eenheid. */
-const GetalVeld = memo(function GetalVeld({ veld, opgeslagen, rij }: { veld: PaneelVeld; opgeslagen: string | undefined; rij: InvoerWachtrij }) {
+/** Een spreadsheet-blad van het project waaruit een veld een cel kan nemen. */
+interface CelBron {
+  ref: string;
+  naam: string;
+  data: string | undefined;
+}
+
+/** Een getal uit een cel in de taal van de app, met de eenheid erachter als die er is. */
+function getalTekst(n: number, eenheid: string, taal: string): string {
+  const tekst = n.toLocaleString(taal.startsWith("nl") ? "nl-NL" : "en-GB", { maximumSignificantDigits: 8 });
+  return eenheid ? `${tekst} ${eenheid}` : tekst;
+}
+
+const CEL_RE = /^\$?([A-Za-z]{1,3})\$?([1-9][0-9]{0,6})$/;
+
+/**
+ * Kiest een cel uit een spreadsheet-blad van het project voor een invoerveld: het blad,
+ * het werkblad, de cel en de eenheid van het getal in de cel. Toont wat er nu in de cel
+ * staat. `Koppelen` zet de verwijzing (`#3.Blad1!B4 kN`) als waarde van het veld.
+ */
+function CelKiezer({ veld, bronnen, huidig, kies, sluit }: {
+  veld: PaneelVeld;
+  bronnen: readonly CelBron[];
+  huidig: CelVerwijzing | null;
+  kies: (tekst: string) => void;
+  sluit: () => void;
+}) {
+  const { t, i18n } = useTranslation("beelden");
+  const [ref, setRef] = useState(() => (huidig && bronnen.some((b) => b.ref === huidig.ref) ? huidig.ref : bronnen[0]?.ref ?? ""));
+  const bron = bronnen.find((b) => b.ref === ref);
+  const namen = useMemo(() => werkbladNamen(bron?.data) ?? [], [bron?.data]);
+  const [blad, setBlad] = useState(() => huidig?.blad ?? "");
+  const gekozenBlad = namen.includes(blad) ? blad : namen[0] ?? "";
+  const [cel, setCel] = useState(() => huidig?.cel ?? "A1");
+  const [eenheid, setEenheid] = useState(() => huidig?.eenheid ?? "");
+  const adres = cel.trim().match(CEL_RE);
+  const celAdres = adres ? `${adres[1].toUpperCase()}${adres[2]}` : null;
+  const inDeCel = bron && gekozenBlad && celAdres ? leesCel(bron.data, gekozenBlad, celAdres) : null;
+  const klaar = !!bron && !!gekozenBlad && !!celAdres;
   const id = useId();
+  return (
+    <div className="ip-kiezer" role="group" aria-label={t("invoer.koppeling.titel")}>
+      <div className="ip-kiezer-kop">{t("invoer.koppeling.titel")}</div>
+      <span className="ip-kiezer-naam">{t("invoer.koppeling.spreadsheet")}</span>
+      <ThemedSelect value={ref} options={bronnen.map((b) => ({ value: b.ref, label: `${b.naam} (#${b.ref})` }))} onChange={setRef} />
+      <span className="ip-kiezer-naam">{t("invoer.koppeling.werkblad")}</span>
+      <ThemedSelect value={gekozenBlad} options={namen.map((n) => ({ value: n, label: n }))} onChange={setBlad} />
+      <label className="ip-kiezer-naam" htmlFor={`${id}-cel`}>{t("invoer.koppeling.cel")}</label>
+      <input
+        id={`${id}-cel`}
+        className={celAdres ? "ip-veld" : "ip-veld ip-fout"}
+        type="text"
+        autoComplete="off"
+        spellCheck={false}
+        value={cel}
+        title={celAdres ? undefined : t("invoer.koppeling.celOngeldig")}
+        aria-invalid={celAdres ? undefined : true}
+        onChange={(e) => setCel(e.target.value)}
+      />
+      <label className="ip-kiezer-naam" htmlFor={`${id}-eenheid`}>{t("invoer.koppeling.eenheid")}</label>
+      <input
+        id={`${id}-eenheid`}
+        className="ip-veld"
+        type="text"
+        autoComplete="off"
+        spellCheck={false}
+        value={eenheid}
+        placeholder={veld.eenheid}
+        onChange={(e) => setEenheid(e.target.value)}
+      />
+      <p className="ip-kiezer-uitleg">
+        {veld.eenheid ? t("invoer.koppeling.metVeldEenheid", { eenheid: eenheidInBeeld(veld.eenheid) }) : t("invoer.koppeling.zonderEenheid")}
+      </p>
+      {inDeCel !== null && (
+        <p className={typeof inDeCel === "number" ? "ip-kiezer-waarde" : "ip-kiezer-waarde ip-koppeling-fout"}>
+          {typeof inDeCel === "number"
+            ? t("invoer.koppeling.inDeCel", { waarde: getalTekst(inDeCel, eenheid.trim() || veld.eenheid, i18n.language) })
+            : t(`invoer.koppeling.fout.${inDeCel.fout}`, { detail: inDeCel.detail ?? "" })}
+        </p>
+      )}
+      <div className="ip-kiezer-knoppen">
+        <button
+          type="button"
+          className="settings-btn"
+          disabled={!klaar}
+          onClick={() => {
+            if (!klaar) return;
+            kies(celVerwijzingTekst({ ref, blad: gekozenBlad, cel: celAdres!, eenheid: eenheid.trim() }));
+          }}
+        >
+          {t("invoer.koppeling.koppel")}
+        </button>
+        <button type="button" className="settings-btn settings-btn-secondary" onClick={sluit}>
+          {t("invoer.koppeling.annuleer")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Onder een veld dat aan een cel gekoppeld is: waar de waarde vandaan komt, en de waarde
+ * waarmee het blad rekende of waarom het niet rekende. Met de knop om de koppeling los te
+ * maken; het veld houdt dan het laatste getal uit de cel.
+ */
+function Koppeling({ veld, cel, bronnen, rij }: { veld: PaneelVeld; cel: CelVerwijzing; bronnen: readonly CelBron[]; rij: InvoerWachtrij }) {
+  const { t } = useTranslation("beelden");
+  const bron = bronnen.find((b) => b.ref === cel.ref);
+  const plek = celVerwijzingTekst({ ...cel, eenheid: "" }).replace(/^#[^.]+\./, "");
+  const k = veld.koppeling;
+  const verwijder = () => {
+    const w = bron ? leesCel(bron.data, cel.blad, cel.cel) : null;
+    let waarde = "";
+    if (typeof w === "number") {
+      const tekst = cel.eenheid ? `${w} ${cel.eenheid}` : String(w);
+      if (!veld.eenheid) waarde = cel.eenheid ? "" : tekst;
+      else {
+        const terug = invoerNaarBron(tekst, veld.eenheid, veld.eenheid);
+        waarde = "waarde" in terug ? terug.waarde : "";
+      }
+    }
+    rij.zetNu(veld.naam, waarde);
+  };
+  return (
+    <div className="ip-koppeling">
+      <span className="ip-koppeling-bron" title={celVerwijzingTekst(cel)}>
+        {t("invoer.koppeling.bron", { blad: bron?.naam ?? t("invoer.koppeling.onbekendBlad", { ref: cel.ref }), cel: plek })}
+      </span>
+      {k?.fout !== undefined ? (
+        <span className="ip-koppeling-fout" role="alert">{k.fout}</span>
+      ) : k?.waarde !== undefined ? (
+        <span className="ip-koppeling-waarde">= {k.waarde}</span>
+      ) : null}
+      <button type="button" className="ip-koppeling-los" onClick={verwijder} title={t("invoer.koppeling.verwijderUitleg")}>
+        {t("invoer.koppeling.verwijder")}
+      </button>
+    </div>
+  );
+}
+
+/** Een `?`-veld: naam, toelichting, het getal en de eenheid. */
+const GetalVeld = memo(function GetalVeld({ veld, opgeslagen, rij, bronnen }: {
+  veld: PaneelVeld;
+  opgeslagen: string | undefined;
+  rij: InvoerWachtrij;
+  bronnen: readonly CelBron[];
+}) {
+  const { t } = useTranslation("beelden");
+  const id = useId();
+  const [kiezen, setKiezen] = useState(false);
+  const cel = opgeslagen !== undefined ? leesCelVerwijzing(opgeslagen) : null;
   // Wat er staat zolang niemand typt. Tijdens het typen blijft staan wat er getypt is:
   // teruggerekend en weer omgezet zou "12," halverwege "12" worden.
   const rust = inBeeld(veld, opgeslagen);
@@ -106,6 +256,7 @@ const GetalVeld = memo(function GetalVeld({ veld, opgeslagen, rij }: { veld: Pan
   };
   const toelichting = platTekst(veld.label);
   return (
+    <>
     <div className="ip-rij">
       <label className="ip-naam" htmlFor={id} title={veld.toonNaam}>
         <Naam naam={veld.toonNaam} />
@@ -143,7 +294,47 @@ const GetalVeld = memo(function GetalVeld({ veld, opgeslagen, rij }: { veld: Pan
         }}
       />
       <span className="ip-eenheid">{eenheidInBeeld(veld.toonEenheid)}</span>
+      {bronnen.length > 0 || cel ? (
+        <button
+          type="button"
+          className={kiezen || cel ? "ip-koppel ip-koppel-aan" : "ip-koppel"}
+          title={t("invoer.koppeling.knop")}
+          aria-label={t("invoer.koppeling.knop")}
+          aria-expanded={kiezen}
+          onClick={() => {
+            // Wat nog in een open spreadsheet staat eerst naar het project, zodat de kiezer de laatste cellen leest.
+            if (!kiezen) void bewaarOpenWerkmappen();
+            setKiezen((open) => !open);
+          }}
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M6.5 9.5l3-3M7 4.5l1.2-1.2a2.5 2.5 0 013.5 3.5L10.5 8M9 11.5l-1.2 1.2a2.5 2.5 0 01-3.5-3.5L5.5 8" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          </svg>
+        </button>
+      ) : (
+        <span />
+      )}
     </div>
+    {cel && <Koppeling veld={veld} cel={cel} bronnen={bronnen} rij={rij} />}
+    {kiezen && (
+      bronnen.length > 0 ? (
+        <CelKiezer
+          veld={veld}
+          bronnen={bronnen}
+          huidig={cel}
+          kies={(tekst) => {
+            setKiezen(false);
+            setTekst(null);
+            setFout(null);
+            rij.zetNu(veld.naam, tekst);
+          }}
+          sluit={() => setKiezen(false)}
+        />
+      ) : (
+        <p className="ip-kiezer-uitleg">{t("invoer.koppeling.geenSpreadsheet")}</p>
+      )
+    )}
+    </>
   );
 });
 
@@ -167,6 +358,12 @@ function Paneel({ exemplaar, Beeld }: { exemplaar: Exemplaar; Beeld?: ComponentT
   const { t } = useTranslation("beelden");
   const scope = useProjectScope();
   const { doorrekening, bezig } = useDoorrekening(exemplaar.id, exemplaar.source, exemplaar.waarden, scope, exemplaar.naam);
+  // De spreadsheet-bladen van het project: daaruit kan een veld een cel nemen.
+  const exemplaren = useProjectStore((s) => s.exemplaren);
+  const bronnen = useMemo<CelBron[]>(
+    () => exemplaren.filter((e) => isSpreadsheetBlad(e) && e.ref).map((e) => ({ ref: e.ref!, naam: e.naam, data: e.xlsx?.data })),
+    [exemplaren],
+  );
   const rij = useInvoerWachtrij(exemplaar.id, pauzeVoor(exemplaar.source));
   const [toonBeeld, setToonBeeld] = useState(true);
 
@@ -225,7 +422,7 @@ function Paneel({ exemplaar, Beeld }: { exemplaar: Exemplaar; Beeld?: ComponentT
                     veld.soort === "keuze" ? (
                       <KeuzeVeld key={veld.naam} veld={veld} opgeslagen={exemplaar.waarden[veld.naam]} rij={rij} />
                     ) : (
-                      <GetalVeld key={veld.naam} veld={veld} opgeslagen={exemplaar.waarden[veld.naam]} rij={rij} />
+                      <GetalVeld key={veld.naam} veld={veld} opgeslagen={exemplaar.waarden[veld.naam]} rij={rij} bronnen={bronnen} />
                     ),
                   )}
                 </section>

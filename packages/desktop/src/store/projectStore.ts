@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { zetProjectEenheden, zetProjectTekst, type ElementRef, type VastgelegdeToets } from "@ifc-calc/core";
+import { zetProjectEenheden, zetProjectTekst, type ElementRef, type IfcxVreemd, type VastgelegdeToets } from "@ifc-calc/core";
 import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
 import { projectTekstVan } from "./projectBlad";
@@ -161,6 +161,8 @@ interface Persisted {
   rapport?: Rapport;
   /** Ontbreekt als niets verborgen is. */
   verborgen?: Verborgen;
+  /** Gegevens van een ander programma uit het geopende bestand (core: ifcx/vreemd.ts). */
+  vreemd?: IfcxVreemd;
 }
 
 interface ProjectState {
@@ -174,6 +176,11 @@ interface ProjectState {
   activeId: string;
   /** Uit de projectboom gehaald (projectgegevens, rapport). */
   verborgen: Verborgen;
+  /**
+   * Wat een ander programma in het geopende bestand zette. De app wijzigt het niet;
+   * het gaat bij opslaan ongewijzigd terug (projectBestand.ts).
+   */
+  vreemd?: IfcxVreemd;
   dirty: boolean;
   /** Stapels voor ongedaan maken; niet opgeslagen, alleen voor deze sessie. */
   verleden: Momentopname[];
@@ -202,6 +209,18 @@ interface ProjectState {
   voegMarkdownToe: (naam: string, md: MarkdownBestand) => string;
   /** De tekst van een Markdown-blad; doortypen telt als één stap ongedaan maken. */
   zetMarkdown: (id: string, md: MarkdownBestand) => void;
+  /**
+   * Gekoppelde bladen (store/koppeling.ts) op hun plek tussen de bladen, in één stap
+   * ongedaan maken. `plek` telt in de lijst zoals die na de vorige in deze reeks is;
+   * zonder: achteraan. Het eerste wordt het actieve blad. Geeft de nieuwe id's.
+   */
+  voegGekoppeldeToe: (bladen: { naam: string; md: MarkdownBestand; plek?: number }[]) => string[];
+  /**
+   * De nieuwe inhoud van een gekoppeld blad uit zijn bron. Geen stap in de
+   * geschiedenis: de gebruiker deed niets. `inhoud`: de tekst veranderde, dus het
+   * project is gewijzigd; zonder alleen het pad, en dat gaat mee bij het volgende opslaan.
+   */
+  werkKoppelingBij: (id: string, md: MarkdownBestand, inhoud: boolean) => void;
   /** Een leeg canvas-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
   voegCanvasToe: (naam: string) => string;
   /** Een leeg grafblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
@@ -535,6 +554,31 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
         ...metGeschiedenis(s, `md:${id}`),
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, md } : e)),
         dirty: true,
+      };
+    }),
+
+  voegGekoppeldeToe: (bladen) => {
+    const ids: string[] = [];
+    set((s) => {
+      const lijst = [...s.exemplaren];
+      for (const b of bladen) {
+        const id = nieuweId();
+        ids.push(id);
+        const ex: Exemplaar = { id, naam: vrijeNaam(lijst, b.naam, false), templateId: MARKDOWN_BLAD, source: "", waarden: {}, md: b.md };
+        lijst.splice(Math.max(0, Math.min(b.plek ?? lijst.length, lijst.length)), 0, ex);
+      }
+      if (ids.length === 0) return s;
+      return { ...metGeschiedenis(s, null), exemplaren: lijst, activeId: ids[0], dirty: true };
+    });
+    return ids;
+  },
+
+  werkKoppelingBij: (id, md, inhoud) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, md } : e)),
+        ...(inhoud ? { dirty: true } : {}),
       };
     }),
 
@@ -900,6 +944,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     wisSessie();
     set({
       verborgen: {},
+      vreemd: undefined,
       projectNaam: nieuweProjectNaam(),
       bestandspad: null,
       // Het eenhedenstelsel uit Instellingen, tab Units; daarna hoort het bij het project.
@@ -918,6 +963,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     wisSessie();
     set({
       verborgen: p.verborgen ?? {},
+      vreemd: p.vreemd,
       projectNaam: p.projectNaam ?? nieuweProjectNaam(),
       bestandspad: p.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(p.gegevens ?? {}) },
@@ -1037,6 +1083,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       rapport: rapportUit(saved.rapport),
       activeId: saved.activeId ?? PROJECT_ID,
       verborgen: saved.verborgen ?? {},
+      vreemd: saved.vreemd,
       dirty: false,
     });
     volgTaalVanApp();
@@ -1052,6 +1099,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       rapport: s.rapport,
       activeId: s.activeId,
       verborgen: s.verborgen,
+      vreemd: s.vreemd,
     }),
   );
 });
