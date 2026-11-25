@@ -108,6 +108,8 @@ The **weights library** holds over 2,300 self-weights, each with a source you ca
 | **Markdown** (`.md`) | Yes | Yes |
 | **Notebook** (`.ipynb`, `.py`, data files) | Yes | The work folder as `.zip` |
 | **PDF** | As a sheet | Yes, the report |
+| **DOCX** | No | Yes, the report as an editable document, with formulas as equations ([snapshot](docs/rapport-docx-odt.md)) |
+| **ODT** (OpenDocument) | No | Yes, the report as an editable document, with formulas as formula objects |
 | **DXF** | Converted to a drawing in a sheet | No |
 
 Every sheet with its text, input and results is in the IFCX file. Drawings that a module's input screen draws are not stored as figures, only what the calculation text draws itself. The two-pile cap does add its 3D model: in IFC4x3 every bar of the cage is an `IfcReinforcingBar`. Most sheets do not know where their part sits in the building, so elements without geometry are placed at the origin of the storey. See [the IFC documentation](docs/ifc-export.md).

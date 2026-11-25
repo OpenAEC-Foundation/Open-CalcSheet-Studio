@@ -592,7 +592,8 @@ export function PdfBladInfo({ ex }: { ex: Exemplaar }) {
  * na elke pagina begint een nieuw vel (`print-nieuw-vel` en `print-vel-af`, zie
  * paginering.ts), zodat ook de volgende paragraaf niet op het vel van een
  * liggende pagina doorloopt. Een pagina die nog getekend wordt draagt
- * `data-afdruk-laadt`; het printen wacht daarop.
+ * `data-afdruk-laadt`; het printen wacht daarop. `data-pdf-bestand` noemt het bestand
+ * voor de export naar DOCX en ODT, die de pagina's niet meeneemt (rapport/document/).
  *
  * Het afdrukonderdeel van een PDF-blad (bladSoorten.tsx): in hoofdstuk Berekeningen
  * onder de paragraafkop, in de losse uitdraai en bijlage A onder de kop van het blad.
@@ -625,6 +626,7 @@ export function PdfPaginas({ ex, maten }: { ex: Exemplaar; maten: Maten }) {
             className={i === 0 ? "print-pdf-pagina print-vel-af" : "print-pdf-pagina print-nieuw-vel print-vel-af"}
             style={{ width: `${(b * schaal).toFixed(2)}mm`, height: `${(h * schaal).toFixed(2)}mm` }}
             data-afdruk-laadt={klaar ? undefined : ""}
+            data-pdf-bestand={ex.pdf?.bestandsnaam || ex.naam}
           >
             {p.url ? (
               <img src={p.url} alt="" />

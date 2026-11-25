@@ -1090,5 +1090,26 @@
     "kandidaten_other": "{{count}} values to try per variant",
     "geenWaarde": "{{variant}}: no value from {{van}} to {{tot}} is OK.",
     "terug": "← Back to the table"
+  },
+  "document": {
+    "opslaanTitel": "Save report as document",
+    "filter": {
+      "docx": "Word document (.docx)",
+      "odt": "OpenDocument text (.odt)"
+    },
+    "nietMeeTitel": "Not everything can be included",
+    "nietMeeVraag": "These parts of the report are not included in the document; a line takes their place:\n\n{{lijst}}\n\nExport anyway?",
+    "toch": "Export anyway",
+    "afbreken": "Cancel",
+    "nietMee": {
+      "pdf_one": "PDF sheet {{naam}} ({{count}} page)",
+      "pdf_other": "PDF sheet {{naam}} ({{count}} pages)",
+      "iframe": "External page {{naam}}",
+      "js": "Output of a @js block",
+      "ingebed": "Embedded content ({{naam}})",
+      "beeld_one": "{{count}} image that could not be converted",
+      "beeld_other": "{{count}} images that could not be converted"
+    },
+    "schrijvenMislukt": "The document could not be saved to {{pad}}:\n{{fout}}"
   }
 }

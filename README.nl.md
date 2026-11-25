@@ -110,6 +110,8 @@ De **gewichtenbibliotheek** heeft ruim 2300 eigen gewichten, elk met een bron di
 | **Markdown** (`.md`) | Ja | Ja |
 | **Notebook** (`.ipynb`, `.py`, databestanden) | Ja | De werkmap als `.zip` |
 | **PDF** | Als blad | Ja, het rapport |
+| **DOCX** | Nee | Ja, het rapport als bewerkbaar document, met formules als vergelijking ([momentopname](docs/rapport-docx-odt.md)) |
+| **ODT** (OpenDocument) | Nee | Ja, het rapport als bewerkbaar document, met formules als formuleobject |
 | **DXF** | Omgezet naar een tekening in een blad | Nee |
 
 Elk blad staat met tekst, invoer en uitkomsten in het IFCX-bestand. Tekeningen die het invoerscherm van een module tekent, staan er niet als figuur in, alleen wat de rekentekst zelf tekent. De tweepaalspoer voegt wel zijn 3D-model toe: in IFC4x3 is elke staaf van de korf een `IfcReinforcingBar`. De meeste bladen weten niet waar hun onderdeel in het gebouw zit, dus elementen zonder geometrie staan op de oorsprong van de bouwlaag. Zie [de IFC-documentatie](docs/ifc-export.md).

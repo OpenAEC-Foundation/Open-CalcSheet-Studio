@@ -1090,5 +1090,26 @@
     "kandidaten_other": "{{count}} waarden te proberen per variant",
     "geenWaarde": "{{variant}}: geen waarde van {{van}} tot {{tot}} voldoet.",
     "terug": "← Terug naar de tabel"
+  },
+  "document": {
+    "opslaanTitel": "Rapport opslaan als document",
+    "filter": {
+      "docx": "Word-document (.docx)",
+      "odt": "OpenDocument-tekst (.odt)"
+    },
+    "nietMeeTitel": "Niet alles kan mee",
+    "nietMeeVraag": "Deze onderdelen van het rapport komen niet in het document; er staat een regel op hun plek:\n\n{{lijst}}\n\nToch exporteren?",
+    "toch": "Toch exporteren",
+    "afbreken": "Afbreken",
+    "nietMee": {
+      "pdf_one": "PDF-blad {{naam}} ({{count}} pagina)",
+      "pdf_other": "PDF-blad {{naam}} ({{count}} pagina's)",
+      "iframe": "Externe pagina {{naam}}",
+      "js": "Uitvoer van een @js-blok",
+      "ingebed": "Ingebed onderdeel ({{naam}})",
+      "beeld_one": "{{count}} afbeelding die niet kon worden omgezet",
+      "beeld_other": "{{count}} afbeeldingen die niet konden worden omgezet"
+    },
+    "schrijvenMislukt": "Het document kon niet worden opgeslagen in {{pad}}:\n{{fout}}"
   }
 }
