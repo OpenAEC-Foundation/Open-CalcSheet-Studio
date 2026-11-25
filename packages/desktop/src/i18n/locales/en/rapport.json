@@ -491,5 +491,16 @@
       "vloerDaken": "FLOOR, ROOFS",
       "wanden": "WALLS"
     }
+  },
+  "documentExport": {
+    "momentopname": "Snapshot of {{project}}, revision {{revisie}}, made on {{moment}} with Open CalcSheet Studio. Numbers, formulas and checks in this document do not recalculate: changes made here are not recalculated and do not return to the calculation.",
+    "voet": "{{project}} · revision {{revisie}} · snapshot {{moment}}",
+    "zonderRevisie": "no revision",
+    "pdfNietOpgenomen_one": "Appendix: {{bestand}} ({{count}} page), not included in this document.",
+    "pdfNietOpgenomen_other": "Appendix: {{bestand}} ({{count}} pages), not included in this document.",
+    "iframeNietOpgenomen": "External page {{adres}}: not included in this document.",
+    "jsNietOpgenomen": "Output of a script: not included in this document.",
+    "ingebedNietOpgenomen": "Embedded content ({{soort}}): not included in this document.",
+    "beeldNietOpgenomen": "[Image not included]"
   }
 }

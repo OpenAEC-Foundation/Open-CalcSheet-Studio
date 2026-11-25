@@ -1,7 +1,8 @@
 export { parse, type ParseOptions } from './parser.js';
 export { evaluate, evaluateMetScope, extractScope, setAngleMode, zetProjectEenheden, projectEenheidFouten, zetProjectTekst, type EvalOpties } from './evaluator.js';
 export { geldigeEenheidNaam } from './eenheden.js';
-export { verwijzingNaam, vervangVerwijzingen, leesVerwijzing, verwijzingenIn, verwijzingVanNaam, verwijzingenInMelding } from './verwijzing.js';
+export { verwijzingNaam, vervangVerwijzingen, leesVerwijzing, verwijzingenIn, verwijzingVanNaam, verwijzingenInMelding, leesCelVerwijzing, celVerwijzingTekst, celNaam, celVerwijzingenIn, isVerwijzingInvoer } from './verwijzing.js';
+export type { CelVerwijzing, CelFout, CelWaarde } from './verwijzing.js';
 export { STELSELS, grootheidVan, decimalenNa, doelInStelsel, toonInvoer, invoerNaarBron, omrekenen, eenheidUitBeeld, eenheidInBeeld, type Grootheid, type Stelsel } from './eenheidstelsel.js';
 export { rekenUitdrukking, uitkomstTekst } from './evaluator.js';
 export { analyseerRekenblok, rekenRekenblok, rekenWaarde, type RekenblokAnalyse, type RekenblokUitkomst } from './rekenblok.js';

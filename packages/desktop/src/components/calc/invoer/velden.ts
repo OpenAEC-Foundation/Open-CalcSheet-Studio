@@ -11,7 +11,7 @@
  * Zuiver, zonder React of stores: de rekenworker en scripts/check-invoerpaneel.mjs laden
  * dit.
  */
-import { invoerNaarBron, leesVerwijzing, toonInvoer, type EvaluatedNode } from "@ifc-calc/core";
+import { invoerNaarBron, isVerwijzingInvoer, toonInvoer, type EvaluatedNode } from "@ifc-calc/core";
 import { isCanvasBlad } from "../../../store/canvasBlad.ts";
 import { VLOER_OP_PALEN, VLOER_VEREIST } from "./vloerOpPalen.ts";
 
@@ -40,6 +40,8 @@ export interface PaneelVeld {
   standaard: string;
   /** Alleen bij een keuzelijst. */
   keuzes: { tekst: string; waarde: string }[];
+  /** Gekoppeld aan een spreadsheetcel: de waarde waarmee het blad rekende, of de melding (rekenkern). */
+  koppeling?: { bron: string; waarde?: string; fout?: string };
 }
 
 /** De velden onder één kop van het blad. */
@@ -151,6 +153,7 @@ export function leesInvoer(nodes: readonly EvaluatedNode[], namen: Readonly<Reco
           waarde: n.currentValue,
           standaard: n.standaard ?? "0",
           keuzes: [],
+          ...(n.koppeling ? { koppeling: n.koppeling } : {}),
         });
       } else if (n.type === "select") {
         if (gezien.has(n.name)) return;
@@ -176,11 +179,12 @@ export function leesInvoer(nodes: readonly EvaluatedNode[], namen: Readonly<Reco
 /**
  * Wat iemand in een veld van het paneel typt, in de eenheid van het blad: zoals een
  * invoerveld in de uitwerking (Preview.tsx). Met een eenheid erachter geldt de waarde in
- * die eenheid, een verwijzing naar een ander blad (`#2.R_paal`) gaat mee zoals getypt, en
+ * die eenheid, een verwijzing naar een ander blad (`#2.R_paal`) of een cel (`#3.Blad1!B4`)
+ * gaat mee zoals getypt, en
  * een eenheid die niet past of niet af is geeft een fout: dan wordt er niets opgeslagen.
  */
 export function leesGetypt(veld: Pick<PaneelVeld, "eenheid" | "toonEenheid">, tekst: string): { waarde: string } | { fout: string } {
-  if (leesVerwijzing(tekst)) return { waarde: tekst.trim() };
+  if (isVerwijzingInvoer(tekst)) return { waarde: tekst.trim() };
   if (!veld.eenheid) return { waarde: tekst };
   return invoerNaarBron(tekst, veld.toonEenheid || veld.eenheid, veld.eenheid);
 }
@@ -192,7 +196,7 @@ export function leesGetypt(veld: Pick<PaneelVeld, "eenheid" | "toonEenheid">, te
  */
 export function inBeeld(veld: Pick<PaneelVeld, "eenheid" | "toonEenheid" | "standaard">, opgeslagen: string | undefined): string {
   if (opgeslagen === undefined) return veld.standaard;
-  if (!veld.eenheid || veld.toonEenheid === veld.eenheid || leesVerwijzing(opgeslagen)) return opgeslagen;
+  if (!veld.eenheid || veld.toonEenheid === veld.eenheid || isVerwijzingInvoer(opgeslagen)) return opgeslagen;
   return toonInvoer(opgeslagen, veld.eenheid, veld.toonEenheid);
 }
 
