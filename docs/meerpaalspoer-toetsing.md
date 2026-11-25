@@ -144,5 +144,47 @@ praktijkrapporten, proefresultaten of een externe referentie-berekening, en er h
 geen controle door een tweede constructeur plaatsgevonden.** Daarom staat de module in de
 catalogus op *controleren*.
 
-Nog niet in deze module: een parametrisch beeld met invoer in de tekening, de korf in de
-IFC-uitvoer, een staaflijst, en een andere vorm van de driepaalspoer.
+Nog niet in deze module: een parametrisch beeld met invoer in de tekening, en een andere
+vorm van de driepaalspoer.
+
+## 8. Staaflijst, DXF-detail en IFC-wapening
+
+Bij het blad staat een beeld met de staaflijst (op papier een tabel), en op het scherm het
+wapeningsdetail: een plattegrond en twee doorsneden. De staven komen uit
+`meerpaalDefinitie.ts`, dezelfde als het DXF-detail en de IFC-uitvoer; de afspraken voor
+merk, vormcode, lengte en buigstraal zijn die van de tweepaalspoer
+([tweepaalspoer-toetsing.md](tweepaalspoer-toetsing.md), §9), net als het ontwerpschema en
+*Vrijgegeven voor uitvoering*.
+
+Wat het blad niet vastlegt en de definitie kiest:
+
+- **Banden**: bij vier palen de band in x onderin en de band in y erop, bij drie palen de
+  band tussen de twee onderste palen onderin en de schuine banden erop, zoals het blad.
+- **Been binnen de randbeugel.** Een omgebogen band buigt op binnen de randbeugel: het hart
+  van het been ligt op c_z + Ø_randbeugel + Ø/2 van de rand (u_r in het blad). Het blad meet
+  de verankering (l_h) daar ook; de eerste versie mat tot de dekking, een randbeugel verder.
+- **Driehoek: alle staven van een band even lang.** De buitenste staaf van een band ligt
+  (n − 1)/2·s naar buiten en raakt de afgeschuinde hoek het eerst: t = (r − c_z − u_r −
+  (n − 1)/2·s·sin 30°)/cos 30° voorbij het paalhart. Het blad rekent de verankering met deze
+  t, de kortste; de eerste versie rekende met de middelste staaf, wat bij de standaardinvoer
+  ruim 90 mm te gunstig was.
+- **Ondernet** in twee eigen lagen direct op de banden, over de volle breedte binnen de
+  dekking, h.o.h. ten hoogste s_n; aan de einden stopt het tegen het been van een omgebogen
+  band. Bij vier palen zijn het rechte staven van één lengte, bij drie palen verloopt de
+  lengte en is elke richting één merk met de kortste en de langste lengte. Bij drie palen
+  telt de toets het aantal staven dat werkelijk door de doorsnede gaat:
+  floor((b − 2δ_e/cos 30°)/s_n), met δ_e de dekking en bij een omgebogen band ook het been;
+  de eerste versie telde b/s_n, meer dan er ligt. Bij vier palen telt de toets
+  (b − 2·b_band)/s_n en ligt er meer.
+- **Randbeugels** liggen op de dekking langs de omtrek (bij drie palen een zeshoek, vorm
+  99), gelijk verdeeld over de hoogte tussen de banden en de bovendekking; elk met twee haken.
+
+Open punt: bij drie palen kruisen de twee schuine banden elkaar boven de bovenste paal op
+dezelfde hoogte. Het blad rekent met twee lagen; in het werk moet een van beide een laag
+hoger, wat d daar met één staafdiameter verkleint. Dat staat nog niet in de toets.
+
+De **IFCX** van de poer (ook in het projectbestand en de STEP) heeft het beton als prisma
+met de omtrek van de poer, de palen en de kolom als aanzet, en elke staaf als een eigen
+IfcReinforcingBar met een buis langs de hartlijn, met de bochten, en met merk, diameter
+en lengte. Op het scherm is hij als IFCX te bewaren. `scripts/check-poer-staaflijst.mjs`
+controleert dit alles, met de handberekening in de kop.

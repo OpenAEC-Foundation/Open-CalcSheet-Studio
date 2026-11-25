@@ -41,6 +41,8 @@ import { gebruikteToetsingen, toetsVersie } from "../rekenen/toetsCache.ts";
 import { variantToetsHashes } from "../rekenen/varianten.ts";
 import { maakPoer } from "../components/calc/poerDefinitie.ts";
 import { poerIfcxKnopen } from "../components/calc/poerIfcx.ts";
+import { maakMeerpaalPoer } from "../components/calc/meerpaalDefinitie.ts";
+import { meerpaalIfcxKnopen } from "../components/calc/meerpaalIfcx.ts";
 
 /** Wat dit bestand van een blad nodig heeft; een uittreksel van `Exemplaar`. */
 export interface BladVoorIfc {
@@ -116,6 +118,25 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
           return Number.isFinite(n) ? n : 0;
         };
         blad.geometrie = poerIfcxKnopen(maakPoer(lees), ex.id) ?? undefined;
+      }
+      // Een poer op drie of vier palen: de invoer, en waar die leeg is de beginwaarde uit
+      // de bladtekst (?{…}); via dezelfde definitie als de staaflijst en het DXF-detail.
+      if (ex.templateId === "meerpaalspoer") {
+        const scope = extractScope(leesBron(ex.source), ex.waarden, projectScope(gegevens));
+        const lees = (naam: string) => {
+          const n = parseFloat(String(ex.waarden[naam] ?? "").replace(",", "."));
+          if (Number.isFinite(n)) return n;
+          const v = scope[naam] as unknown;
+          if (typeof v === "number") return v;
+          const g = v as { toNumber?: (eenheid?: string) => number } | undefined;
+          try {
+            const w = g?.toNumber?.("mm");
+            return typeof w === "number" && Number.isFinite(w) ? w : 0;
+          } catch {
+            return 0;
+          }
+        };
+        blad.geometrie = meerpaalIfcxKnopen(maakMeerpaalPoer(lees), ex.id) ?? undefined;
       }
     } catch (err) {
       blad.fout = (err as Error).message;

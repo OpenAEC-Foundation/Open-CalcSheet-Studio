@@ -129,6 +129,64 @@
       "verdieping": "Verdieping"
     }
   },
+  "poerDetail": {
+    "titel": "Staaflijst en wapeningsdetail",
+    "staaflijst": "Staaflijst",
+    "merk": "Merk",
+    "aantal": "Aantal",
+    "diameter": "Ø",
+    "vorm": "Vorm",
+    "zijden": "Zijlengtes (hart)",
+    "lengte": "Lengte",
+    "totaal": "Totaal (m)",
+    "massa": "Massa (kg)",
+    "totaalMassa": "Totaal",
+    "verlopend": "verlopend",
+    "maten": "Maten in mm; zijlengtes hart op hart van de knikken, lengte langs de hartlijn.",
+    "bovenaanzicht": "Bovenaanzicht",
+    "doorsnede": "Doorsnede",
+    "soorten": {
+      "trekband": "trekband",
+      "beugel": "beugel",
+      "zijstaaf": "zijstaaf",
+      "bovenstaaf": "bovenstaaf",
+      "haarspeld": "haarspeld",
+      "dwarsstaaf": "dwarsstaaf",
+      "band": "band",
+      "net": "ondernet",
+      "randbeugel": "randbeugel"
+    },
+    "ontwerp": "Ontwerpschema",
+    "vrijgegeven": "Vrijgegeven voor uitvoering",
+    "nietVrij": "niet vrij te geven: het blad zegt niet dat de poer voldoet",
+    "vrijgeven": "Vrijgegeven voor uitvoering",
+    "uitleg": "Uit dezelfde staven als de tekening en de toets. Vormcode 00 recht, 21 U-vorm, 51 gesloten beugel met twee haken van 135°, 99 bijzondere vorm. Buigstraal: de ingevoerde doorn bij de trekband, anders de kleinste doorn uit tabel 8.1N. Vrijgeven kan alleen als het blad zegt dat de poer voldoet.",
+    "bewaarDxf": "Detail als DXF opslaan",
+    "bewaarIfcx": "Poer met wapening als IFCX opslaan",
+    "detailKop": "Wapeningsdetail",
+    "dxfFilter": "DXF-tekening",
+    "ifcxFilter": "IFCX",
+    "alleBestanden": "Alle bestanden",
+    "model": {
+      "driepaalspoer": "Poer op drie palen",
+      "vierpaalspoer": "Poer op vier palen",
+      "hartOpHart": "palen h.o.h.",
+      "poer": "Poer",
+      "paal": "Paal",
+      "kolom": "Kolom",
+      "korf": "Wapeningskorf",
+      "alleenAanzet": "Alleen de aanzet is getekend; de lengte valt buiten dit blad.",
+      "project": "Project",
+      "terrein": "Terrein",
+      "gebouw": "Gebouw",
+      "verdieping": "Verdieping",
+      "soorten": {
+        "band": "Bandstaaf",
+        "net": "Netstaaf",
+        "randbeugel": "Randbeugel"
+      }
+    }
+  },
   "doorsnede": {
     "titel": "Parametrisch beeld — spanningen in een doorsnede",
     "koppen": {
