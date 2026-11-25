@@ -310,7 +310,9 @@
   },
   "markdownBlad": {
     "soort": "Markdown",
-    "ontbreekt": "De tekst van dit blad ontbreekt."
+    "ontbreekt": "De tekst van dit blad ontbreekt.",
+    "soortRtf": "RTF-bestand",
+    "soortBereik": "Werkmapbereik"
   },
   "spreadsheetBlad": {
     "soort": "Spreadsheet",
@@ -490,6 +492,23 @@
       "vulling": "vulling",
       "vloerDaken": "VLOER, DAKEN",
       "wanden": "WANDEN"
+    }
+  },
+  "koppeling": {
+    "lezen": "De bron wordt gelezen…",
+    "ontbreekt": "Bron niet gevonden ({{bestand}}). Dit is de bewaarde kopie, laatst gelezen op {{datum}}.",
+    "fout": "Bron niet bij te werken ({{bestand}}): {{reden}}. Dit is de bewaarde kopie, laatst gelezen op {{datum}}.",
+    "geenToegang": "Bron niet te lezen zonder bestandstoegang ({{bestand}}). Dit is de bewaarde kopie, laatst gelezen op {{datum}}.",
+    "reden": {
+      "ongeldig": "de verwijzing \"{{detail}}\" is geen bereiknaam of werkblad met cellen",
+      "naamOntbreekt": "de bereiknaam \"{{detail}}\" staat niet in de werkmap",
+      "naamKapot": "de bereiknaam wijst naar cellen die er niet meer zijn ({{detail}})",
+      "meerdereGebieden": "de bereiknaam bestaat uit meer dan één gebied ({{detail}})",
+      "bladOntbreekt": "het werkblad \"{{detail}}\" staat niet in de werkmap",
+      "teGroot": "het bereik {{detail}} is te groot voor één tabel",
+      "leesFout": "het bestand is niet te lezen",
+      "geenRtf": "het bestand is geen RTF-bestand",
+      "geenWerkmap": "het bestand is geen werkmap (.xlsx)"
     }
   }
 }

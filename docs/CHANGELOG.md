@@ -7,6 +7,11 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Een RTF-bestand kan als blad in het project, met alinea's, vet, cursief, onderstreept, lijsten, koppen, tabellen en PNG- of JPEG-afbeeldingen. Het blad blijft gekoppeld aan het bestand: wordt het opgeslagen of door een nieuwe versie vervangen, dan werken het blad, het afdrukvoorbeeld en de volgende rapportexport vanzelf bij.
+- Een bereik uit een werkmap (.xlsx) kan als tabel in het rapport, op bereiknaam of op werkblad met cellen (`Belastingen!B4:F20`). Getallen staan zoals de werkmap ze toont en formules als hun uitkomst. Een bereiknaam wordt bij elke wijziging opnieuw opgezocht, dus een ingevoegde rij komt vanzelf in de tabel.
+- Een gekoppeld blad bewaart het pad van de bron, ook relatief tot het projectbestand, en een kopie van de laatst gelezen inhoud. Zonder de bron opent en drukt het project gewoon af; het blad en de afdruk melden dan dat de bron niet gevonden is en wanneer hij laatst gelezen is. In de browser geldt alleen de bewaarde kopie, met die melding.
+- De gekoppelde werkmapbereiken van een project kun je als werkmapsjabloon bewaren. Bij een volgend project pas je het toe op de werkmap van dat project: je ziet per onderdeel of het gevonden is en vinkt aan wat erin komt.
+
 - De verborgen Linux-app kan een rapport met een ingevoegd PDF-blad naar PDF schrijven.
 - Bij Weergave kun je de lettertypen van de interface en de code afzonderlijk instellen.
 - Bij PDF-export via MCP vermeldt de app hoe het volledige rapport zonder dialoog kan worden opgeslagen en wanneer afdrukken andere opdrachten blokkeert.

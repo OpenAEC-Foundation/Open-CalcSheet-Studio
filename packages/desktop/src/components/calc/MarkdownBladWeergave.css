@@ -52,6 +52,10 @@
 .md-tekst :is(th, td) {
   padding: 3px 8px;
   border: 1px solid var(--theme-border);
+}
+
+/* Links, tenzij de tekst iets anders vraagt (`|--:|` in de scheidingsregel), net als op papier. */
+.md-tekst :is(th, td):not([align]) {
   text-align: left;
 }
 

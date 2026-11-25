@@ -78,7 +78,7 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 | **Jupyter** | A [notebook with Python](docs/jupyter-blad.md), numpy, scipy, pandas and matplotlib, without installing anything. Optionally it runs again after every change |
 | **Marimo** | A reactive Python notebook: move a slider and everything that depends on it follows |
 | **PDF** | An existing PDF as part of the report. Zoom in, and add notes, highlights, arrows, boxes and revision clouds, on screen and on paper |
-| **Markdown** | Existing text, as part of the report |
+| **Markdown** | Existing text, as part of the report. Also an RTF file or a range from a workbook, linked: when the source is saved, the sheet updates by itself |
 
 ## Modules and library
 
@@ -106,6 +106,8 @@ The **weights library** holds over 2,300 self-weights, each with a source you ca
 | **Calculation text** (`.cpd`) | Yes | No, it is saved as the project file |
 | **Spreadsheet** (`.xlsx`) | Yes | Yes |
 | **Markdown** (`.md`) | Yes | Yes |
+| **RTF** (`.rtf`) | As a linked sheet | No |
+| **Workbook range** (`.xlsx`, by range name or cells) | As a linked table | No |
 | **Notebook** (`.ipynb`, `.py`, data files) | Yes | The work folder as `.zip` |
 | **PDF** | As a sheet | Yes, the report |
 | **DXF** | Converted to a drawing in a sheet | No |
@@ -118,7 +120,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **83 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **84 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
