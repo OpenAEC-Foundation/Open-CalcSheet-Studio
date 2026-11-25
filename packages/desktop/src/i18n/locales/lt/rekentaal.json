@@ -345,7 +345,26 @@
     "omrekenen": "perskaičiuoti vienetą",
     "eenheid": "vienetas",
     "invoerveld": "įvesties užklausa",
-    "variabele": "kintamasis"
+    "variabele": "kintamasis",
+    "femStaven": "strypinė sistema (sija, rėmas, stogas), apskaičiuota Open FEM Studio",
+    "femLigger": "sija ant atramų keliomis eilutėmis, su M, V ir įlinkiu; apskaičiuota Open FEM Studio",
+    "fem": {
+      "knoop": "mazgas su pavadinimu: node A: x; z",
+      "staaf": "strypas tarp dviejų mazgų; be pavadinimo – s1, s2, …",
+      "steun": "atrama: lankstinė, slankioji arba standžioji",
+      "lijnlast": "išskirstytoji apkrova strypui, žemyn teigiama (kN/m)",
+      "puntlast": "sutelktoji apkrova mazgui arba strypui tam tikru atstumu (kN)",
+      "eigengewicht": "savasis svoris: γ kart skerspjūvis (kN/m³)",
+      "geval": "apkrovos atvejis; be jo visos apkrovos sudaro vieną atvejį",
+      "combinatie": "apkrovų derinys: 1.35*G + 1.5*Q",
+      "doorsnede": "skerspjūvis: profilis, pvz., HEA200 ar IPE300 (plienas), arba A; I_y",
+      "materiaal": "medžiaga: E; G arba E; ν",
+      "beeld": "vaizdas po bloku: M, V, N, u arba apkrovos; view off jų nerodo",
+      "rechthoek": "stačiakampis skerspjūvis: b; h",
+      "scharnier": "lankstinė atrama arba lankstas strypo gale",
+      "rol": "slankioji atrama",
+      "inklemming": "standžioji atrama"
+    }
   },
   "formules": {
     "titel": "Formulių biblioteka",

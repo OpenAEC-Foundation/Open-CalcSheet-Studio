@@ -3,7 +3,9 @@
  * de antwoorden bij het blad vastleggen. Een `@fem`-blok stuurt een verzoek per
  * belastinggeval, met zijn rekenmodel (`bewaar`): daaruit volgen de argumenten, en het
  * antwoord wordt compact bewaard met het raster erbij (femNet.ts in de kern). Een
- * `@kern`-blok met `per` stuurt één verzoek met een reeks aanroepen (kernBlok.ts).
+ * `@fem`-blok met staven stuurt één verzoek voor het hele staafwerk, met alle
+ * rekengevallen (femStaven.ts): dezelfde weg, één antwoord. Een `@kern`-blok met `per`
+ * stuurt één verzoek met een reeks aanroepen (kernBlok.ts).
  *
  * De werkruimte rekent een blad in de rekenworker door met `toetsModus: "vragen"`.
  * Een blok zonder antwoord geeft dan een verzoek mee (doorrekening.ts). Hier gaat
