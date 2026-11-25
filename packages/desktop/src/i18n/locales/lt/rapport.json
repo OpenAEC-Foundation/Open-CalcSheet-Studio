@@ -316,7 +316,9 @@
   },
   "markdownBlad": {
     "soort": "Markdown",
-    "ontbreekt": "Trūksta šio lapo teksto."
+    "ontbreekt": "Trūksta šio lapo teksto.",
+    "soortRtf": "RTF failas",
+    "soortBereik": "Darbaknygės sritis"
   },
   "spreadsheetBlad": {
     "soort": "Skaičiuoklė",
@@ -498,6 +500,36 @@
       "vulling": "užpildas",
       "vloerDaken": "PERDANGOS, STOGAI",
       "wanden": "SIENOS"
+    }
+  },
+  "documentExport": {
+    "momentopname": "{{project}} momentinė kopija, laida {{revisie}}, sukurta {{moment}} su Open CalcSheet Studio. Šio dokumento skaičiai, formulės ir patikros neperskaičiuojami: čia atlikti pakeitimai neperskaičiuojami ir negrįžta į skaičiavimą.",
+    "voet": "{{project}} · laida {{revisie}} · momentinė kopija {{moment}}",
+    "zonderRevisie": "be laidos",
+    "pdfNietOpgenomen_one": "Priedas: {{bestand}} ({{count}} puslapis), į šį dokumentą neįtrauktas.",
+    "pdfNietOpgenomen_few": "Priedas: {{bestand}} ({{count}} puslapiai), į šį dokumentą neįtrauktas.",
+    "pdfNietOpgenomen_many": "Priedas: {{bestand}} ({{count}} puslapio), į šį dokumentą neįtrauktas.",
+    "pdfNietOpgenomen_other": "Priedas: {{bestand}} ({{count}} puslapių), į šį dokumentą neįtrauktas.",
+    "iframeNietOpgenomen": "Išorinis puslapis {{adres}}: į šį dokumentą neįtrauktas.",
+    "jsNietOpgenomen": "Scenarijaus išvestis: į šį dokumentą neįtraukta.",
+    "ingebedNietOpgenomen": "Įterptas turinys ({{soort}}): į šį dokumentą neįtrauktas.",
+    "beeldNietOpgenomen": "[Paveikslas neįtrauktas]"
+  },
+  "koppeling": {
+    "lezen": "Skaitomas šaltinis…",
+    "ontbreekt": "Šaltinis nerastas ({{bestand}}). Tai išsaugota kopija, paskutinį kartą perskaityta {{datum}}.",
+    "fout": "Šaltinio nepavyksta atnaujinti ({{bestand}}): {{reden}}. Tai išsaugota kopija, paskutinį kartą perskaityta {{datum}}.",
+    "geenToegang": "Šaltinio negalima perskaityti be prieigos prie failų ({{bestand}}). Tai išsaugota kopija, paskutinį kartą perskaityta {{datum}}.",
+    "reden": {
+      "ongeldig": "nuoroda „{{detail}}“ nėra srities pavadinimas ar lapas su langeliais",
+      "naamOntbreekt": "srities pavadinimo „{{detail}}“ darbaknygėje nėra",
+      "naamKapot": "srities pavadinimas rodo į langelius, kurių nebėra ({{detail}})",
+      "meerdereGebieden": "srities pavadinimą sudaro daugiau nei viena sritis ({{detail}})",
+      "bladOntbreekt": "lapo „{{detail}}“ darbaknygėje nėra",
+      "teGroot": "sritis {{detail}} per didelė vienai lentelei",
+      "leesFout": "failo nepavyksta perskaityti",
+      "geenRtf": "failas nėra RTF failas",
+      "geenWerkmap": "failas nėra darbaknygė (.xlsx)"
     }
   }
 }

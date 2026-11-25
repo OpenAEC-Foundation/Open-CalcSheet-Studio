@@ -428,7 +428,36 @@
     "geenVelden": "Šiuo metu šis lapas nerodo įvesties laukų.",
     "uitleg": "Skaičiuojama, kai paliekate lauką, paspaudžiate Enter arba trumpam stabtelite.",
     "verbergBeeld": "Slėpti brėžinį",
-    "toonBeeld": "Rodyti brėžinį"
+    "toonBeeld": "Rodyti brėžinį",
+    "koppeling": {
+      "knop": "Susieti su skaičiuoklės langeliu",
+      "titel": "Reikšmė iš skaičiuoklės langelio",
+      "spreadsheet": "Skaičiuoklės lapas",
+      "werkblad": "Darbalapis",
+      "cel": "Langelis",
+      "eenheid": "Langelio matavimo vienetas",
+      "metVeldEenheid": "Tuščia: skaičius gauna lauko matavimo vienetą ({{eenheid}}).",
+      "zonderEenheid": "Tuščia: skaičius be matavimo vieneto.",
+      "celOngeldig": "Įveskite langelį, pavyzdžiui, B4.",
+      "inDeCel": "Langelyje: {{waarde}}",
+      "koppel": "Susieti",
+      "annuleer": "Atšaukti",
+      "bron": "Iš {{blad}}, {{cel}}",
+      "onbekendBlad": "lapas #{{ref}}",
+      "verwijder": "Pašalinti saitą",
+      "verwijderUitleg": "Laukas išlaiko paskutinę reikšmę iš langelio.",
+      "geenSpreadsheet": "Šiame projekte dar nėra skaičiuoklės lapo.",
+      "fout": {
+        "bron": "Lapo nėra (nebėra).",
+        "geen-spreadsheet": "Šis lapas nėra skaičiuoklės lapas.",
+        "werkmap": "Darbaknygės nepavyksta perskaityti.",
+        "werkblad": "Šio darbalapio nėra (nebėra).",
+        "leeg": "Langelis tuščias.",
+        "tekst": "Langelyje nėra skaičiaus: {{detail}}",
+        "formulefout": "Formulės rezultatas: {{detail}}.",
+        "geen-waarde": "Formulė dar neturi rezultato; atidarykite skaičiuoklės lapą."
+      }
+    }
   },
   "vloerOpPalen": {
     "plattegrond": "Planas",

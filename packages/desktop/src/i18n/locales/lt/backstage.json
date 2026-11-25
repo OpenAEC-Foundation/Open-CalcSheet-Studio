@@ -54,6 +54,10 @@
     "asImage": "Eksportuoti kaip paveikslėlį",
     "asImageDesc": "Išsaugoti kaip PNG arba JPEG paveikslėlio failus",
     "asHtml": "Eksportuoti kaip HTML",
-    "asHtmlDesc": "Eksportuoti dokumentą kaip HTML failą"
+    "asHtmlDesc": "Eksportuoti dokumentą kaip HTML failą",
+    "asDocx": "Eksportuoti kaip Word dokumentą (.docx)",
+    "asDocxDesc": "Ataskaita kaip redaguojamas dokumentas, formulės kaip lygtys. Momentinė kopija: niekas neperskaičiuojama",
+    "asOdt": "Eksportuoti kaip OpenDocument (.odt)",
+    "asOdtDesc": "Ataskaita kaip redaguojamas OpenDocument tekstas, formulės kaip formulių objektai. Momentinė kopija: niekas neperskaičiuojama"
   }
 }

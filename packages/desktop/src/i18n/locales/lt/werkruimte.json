@@ -98,7 +98,10 @@
       "notebook": "Užrašų knygelė arba Python scenarijus…",
       "marimo": "Marimo užrašų knygelė",
       "marimoBestand": "Marimo užrašų knygelė…",
-      "grafBestand": "Grafo failas (.dyn)…"
+      "grafBestand": "Grafo failas (.dyn)…",
+      "rtf": "RTF failas (susietas)…",
+      "bereik": "Darbaknygės sritis (susieta)…",
+      "sjabloon": "Taikyti darbaknygės šabloną…"
     },
     "inhoud": "Turinys",
     "inhoudZonderPaginas": "Puslapių numeriai atsiras, kai atidarysite ataskaitos spausdinio peržiūrą."
@@ -483,7 +486,8 @@
       "vastzettenCel": "Pasirinkite langelį už pirmos eilutės ar stulpelio; eilutės virš jo ir stulpeliai į kairę nuo jo lieka užfiksuoti.",
       "sorteerLeeg": "Čia nėra ką rikiuoti.",
       "sorteerSamengevoegd": "Srities su sujungtais langeliais rikiuoti negalima."
-    }
+    },
+    "vervangenGekoppeld": "Susietų įvesties laukų: {{aantal}}. Pakeitus jie ima langelius iš naujos darbaknygės; jei darbalapio ar langelio nebėra, rodomas pranešimas ir tas lapas neskaičiuojamas."
   },
   "markdown": {
     "toevoegen": "Pridėti Markdown",
@@ -1105,5 +1109,96 @@
     "kandidaten_other": "{{count}} bandomų reikšmių kiekvienam variantui",
     "geenWaarde": "{{variant}}: nė viena reikšmė nuo {{van}} iki {{tot}} netenkina.",
     "terug": "← Atgal į lentelę"
+  },
+  "document": {
+    "opslaanTitel": "Išsaugoti ataskaitą kaip dokumentą",
+    "filter": {
+      "docx": "Word dokumentas (.docx)",
+      "odt": "OpenDocument tekstas (.odt)"
+    },
+    "nietMeeTitel": "Ne viską galima įtraukti",
+    "nietMeeVraag": "Šios ataskaitos dalys į dokumentą neįtraukiamos; jų vietoje bus eilutė:\n\n{{lijst}}\n\nVis tiek eksportuoti?",
+    "toch": "Vis tiek eksportuoti",
+    "afbreken": "Atšaukti",
+    "nietMee": {
+      "pdf_one": "PDF lapas {{naam}} ({{count}} puslapis)",
+      "pdf_few": "PDF lapas {{naam}} ({{count}} puslapiai)",
+      "pdf_many": "PDF lapas {{naam}} ({{count}} puslapio)",
+      "pdf_other": "PDF lapas {{naam}} ({{count}} puslapių)",
+      "iframe": "Išorinis puslapis {{naam}}",
+      "js": "@js bloko išvestis",
+      "ingebed": "Įterptas turinys ({{naam}})",
+      "beeld_one": "{{count}} paveikslas, kurio nepavyko konvertuoti",
+      "beeld_few": "{{count}} paveikslai, kurių nepavyko konvertuoti",
+      "beeld_many": "{{count}} paveikslo, kurių nepavyko konvertuoti",
+      "beeld_other": "{{count}} paveikslų, kurių nepavyko konvertuoti"
+    },
+    "schrijvenMislukt": "Dokumento nepavyko išsaugoti į {{pad}}:\n{{fout}}"
+  },
+  "koppeling": {
+    "rtfUitleg": "Pridėkite RTF failą kaip projekto lapą. Tekstas, paryškinimas, kursyvas ir sąrašai išlaikomi. Lapas lieka susietas: išsaugojus ar pakeitus failą, lapas atsinaujina pats.",
+    "rtfImporteren": "Susieti RTF failą…",
+    "bereikUitleg": "Pridėkite darbaknygės (.xlsx) sritį kaip ataskaitos lentelę, pagal srities pavadinimą arba pagal lapą ir langelius. Lapas lieka susietas: išsaugojus darbaknygę, lentelė atsinaujina pati.",
+    "sjabloonUitleg": "Pritaikykite išsaugotą darbaknygės šabloną šio projekto darbaknygei. Kiekvienai daliai matote, ar darbaknygėje ji yra, ir pasirenkate, kas įtraukiama.",
+    "filterRtf": "RTF failai",
+    "kiesRtf": "Pasirinkite RTF failą",
+    "kiesWerkmap": "Pasirinkite darbaknygę",
+    "kiesSjabloon": "Pasirinkite darbaknygės šabloną",
+    "filterSjabloon": "Darbaknygių šablonai",
+    "geenRtfBestand": "„{{naam}}“ nėra RTF failas.",
+    "nietAlles": "Ne viską iš failo pavyko išlaikyti: {{lijst}}.",
+    "nietAllesKort": "ne viskas išlaikyta",
+    "beeldOvergeslagen": "{{formaat}} formato paveikslas",
+    "lezenMislukt": "Failo perskaityti nepavyko: {{fout}}",
+    "schrijvenMislukt": "Šablono įrašyti nepavyko: {{fout}}",
+    "sjabloonLeeg": "Šiame projekte nėra susietų darbaknygės sričių, kurias būtų galima išsaugoti šablone.",
+    "geenSjabloon": "Šis failas nėra darbaknygės šablonas arba jame nėra tinkamų dalių.",
+    "bereikTitel": "Susieti darbaknygės sritį",
+    "sjabloonTitel": "Taikyti darbaknygės šabloną",
+    "werkmap": "Darbaknygė: {{naam}}",
+    "opNaam": "Srities pavadinimas",
+    "opCellen": "Lapas ir langeliai",
+    "cellen": "Langeliai, pavyzdžiui, B4:F20",
+    "bladnaam": "Lapo pavadinimas",
+    "geenNamen": "Šioje darbaknygėje nėra sričių pavadinimų; pasirinkite lapą ir langelius.",
+    "uitlegNaam": "Srities pavadinimas ieškomas iš naujo po kiekvieno pakeitimo: į sritį įterptos eilutės lentelėje atsiranda pačios.",
+    "uitlegCellen": "Šie langeliai fiksuoti: žemiau įterptos eilutės nepridedamos. Srities pavadinimas plečiasi kartu.",
+    "bereikLeeg": "Ši sritis tuščia.",
+    "bereikMaat_one": "{{blad}}!{{cellen}} · {{count}} eilutė",
+    "bereikMaat_few": "{{blad}}!{{cellen}} · {{count}} eilutės",
+    "bereikMaat_many": "{{blad}}!{{cellen}} · {{count}} eilutės",
+    "bereikMaat_other": "{{blad}}!{{cellen}} · {{count}} eilučių",
+    "invoegen": "Įterpti",
+    "annuleren": "Atšaukti",
+    "sjabloonToevoegen_one": "Pridėti {{count}} dalį",
+    "sjabloonToevoegen_few": "Pridėti {{count}} dalis",
+    "sjabloonToevoegen_many": "Pridėti {{count}} dalies",
+    "sjabloonToevoegen_other": "Pridėti {{count}} dalių",
+    "sjabloonOntbreekt_one": "{{count}} dalies šioje darbaknygėje nėra.",
+    "sjabloonOntbreekt_few": "{{count}} dalių šioje darbaknygėje nėra.",
+    "sjabloonOntbreekt_many": "{{count}} dalies šioje darbaknygėje nėra.",
+    "sjabloonOntbreekt_other": "{{count}} dalių šioje darbaknygėje nėra.",
+    "onderdeel": "Dalis",
+    "verwijzing": "Nuoroda",
+    "inWerkmap": "Šioje darbaknygėje",
+    "gevonden_one": "{{blad}}!{{cellen}}, {{count}} eilutė",
+    "gevonden_few": "{{blad}}!{{cellen}}, {{count}} eilutės",
+    "gevonden_many": "{{blad}}!{{cellen}}, {{count}} eilutės",
+    "gevonden_other": "{{blad}}!{{cellen}}, {{count}} eilučių",
+    "gelezenOp": "Paskutinį kartą perskaityta {{datum}}",
+    "staat": {
+      "actueel": "Susieta: {{bron}}",
+      "lezen": "Susieta: {{bron}} (skaitoma)",
+      "ontbreekt": "Šaltinis nerastas: {{bron}}",
+      "fout": "Nepavyksta atnaujinti: {{bron}}",
+      "geenToegang": "Susieta: {{bron}} (išsaugota kopija)"
+    },
+    "lees": "Skaityti dabar",
+    "leesUitleg": "Dabar iš naujo perskaityti šaltinį.",
+    "sjabloonBewaren": "Išsaugoti šabloną…",
+    "sjabloonBewarenUitleg": "Išsaugokite šio projekto susietas darbaknygės sritis su jų vieta ir nuoroda kaip šabloną kitam projektui.",
+    "ontkoppel": "Atsieti",
+    "ontkoppelUitleg": "Nutraukti saitą su šaltiniu. Tekstas lieka ir toliau gali būti redaguojamas įprastai.",
+    "ontkoppelVraag": "Nutraukti „{{naam}}“ saitą? Lapas nebeatsinaujins pats."
   }
 }
