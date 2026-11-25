@@ -5,6 +5,8 @@ import { useBladUitkomst } from "./bladResultaat";
 import { maakPoer } from "./poerDefinitie";
 import { tekenPoer, TEKENING_MIN_BREEDTE, type TekeningTeksten } from "./poerTekening";
 import PoerModel from "./PoerModel";
+import PoerStaaflijst from "./PoerStaaflijst";
+import { tweepaalVorm } from "./poerDxf";
 import { useActiefExemplaar, useAlleenLezen } from "../../store/actiefBlad";
 import { bewaarAls } from "../../store/ifcInhoud";
 import "./VoetplaatDesigner.css";
@@ -17,6 +19,8 @@ import "./VoetplaatDesigner.css";
  * Het beeld rekent niet: de staven komen uit de invoer via de poerdefinitie
  * (poerDefinitie.ts), het staafwerk en het oordeel uit het doorgerekende blad. De SVG
  * op het scherm, op papier en in de download is dezelfde tekst (poerTekening.ts).
+ * Onder de tekening de staaflijst uit dezelfde staven, met het DXF-detail
+ * (PoerStaaflijst.tsx); op het scherm ingeklapt, op papier als tabel.
  *
  * De indeling hangt af van de maat van het paneel; de tekening staat in rust altijd
  * helemaal in beeld:
@@ -245,6 +249,17 @@ export default function TweepaalspoerDesigner() {
           {!alleenLezen && <PoerModel poer={poer} hoogte={modelHoogte} naast={naast} />}
         </div>
       </div>
+
+      {alleenLezen ? (
+        <PoerStaaflijst vorm={tweepaalVorm(poer)} titel={exemplaar?.naam ?? MARKER} bestand={exemplaar?.naam ?? MARKER}
+          d={d} set={set} uitkomst={uitkomst} alleenLezen />
+      ) : (
+        <details className="poer-staaflijst-scherm" style={{ flex: "none", borderTop: "1px solid var(--theme-border-subtle, #d1d5db)" }}>
+          <summary style={{ padding: "6px 16px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>{t("poerDetail.titel")}</summary>
+          <PoerStaaflijst vorm={tweepaalVorm(poer)} titel={exemplaar?.naam ?? MARKER} bestand={exemplaar?.naam ?? MARKER}
+            d={d} set={set} uitkomst={uitkomst} alleenLezen={false} />
+        </details>
+      )}
 
       <div className="vd-foot">
         <span>{t("tweepaalspoer.klik")}</span>

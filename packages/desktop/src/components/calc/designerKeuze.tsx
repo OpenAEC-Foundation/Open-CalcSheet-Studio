@@ -4,6 +4,7 @@ import BalklaagDesigner from "./BalklaagDesigner";
 import DoorsnedeDesigner from "./DoorsnedeDesigner";
 import LiggerDesigner from "./LiggerDesigner";
 import TweepaalspoerDesigner from "./TweepaalspoerDesigner";
+import MeerpaalspoerDesigner from "./MeerpaalspoerDesigner";
 import { hoortBij } from "../../templates/vertalingen";
 
 /**
@@ -22,6 +23,7 @@ const DESIGNERS: { marker: string; beeld: () => ReactElement }[] = [
   { marker: "Balklaag", beeld: () => <BalklaagDesigner /> },
   { marker: "Ligger van hout of staal", beeld: () => <LiggerDesigner /> },
   { marker: "Tweepaalspoer", beeld: () => <TweepaalspoerDesigner /> },
+  { marker: "Poer op drie of vier palen", beeld: () => <MeerpaalspoerDesigner /> },
   { marker: "Spanningen in een doorsnede", beeld: () => <DoorsnedeDesigner /> },
 ];
 

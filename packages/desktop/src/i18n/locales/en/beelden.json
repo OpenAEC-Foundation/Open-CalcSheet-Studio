@@ -129,6 +129,64 @@
       "verdieping": "Storey"
     }
   },
+  "poerDetail": {
+    "titel": "Bar schedule and reinforcement detail",
+    "staaflijst": "Bar schedule",
+    "merk": "Mark",
+    "aantal": "No.",
+    "diameter": "Ø",
+    "vorm": "Shape",
+    "zijden": "Leg lengths (centre)",
+    "lengte": "Length",
+    "totaal": "Total (m)",
+    "massa": "Mass (kg)",
+    "totaalMassa": "Total",
+    "verlopend": "varying",
+    "maten": "Dimensions in mm; leg lengths between bend points on the bar centre line, length along the centre line.",
+    "bovenaanzicht": "Plan",
+    "doorsnede": "Section",
+    "soorten": {
+      "trekband": "tie",
+      "beugel": "link",
+      "zijstaaf": "side bar",
+      "bovenstaaf": "top bar",
+      "haarspeld": "hairpin",
+      "dwarsstaaf": "transverse bar",
+      "band": "tie",
+      "net": "bottom mesh",
+      "randbeugel": "edge link"
+    },
+    "ontwerp": "Design scheme",
+    "vrijgegeven": "Released for construction",
+    "nietVrij": "cannot be released: the sheet does not say the cap is OK",
+    "vrijgeven": "Released for construction",
+    "uitleg": "From the same bars as the drawing and the checks. Shape code 00 straight, 21 U-bar, 51 closed link with two 135° hooks, 99 other shape. Bend radius: the entered mandrel for the tie, otherwise the smallest mandrel from table 8.1N. Release is only possible when the sheet says the cap is OK.",
+    "bewaarDxf": "Save detail as DXF",
+    "bewaarIfcx": "Save cap with reinforcement as IFCX",
+    "detailKop": "Reinforcement detail",
+    "dxfFilter": "DXF drawing",
+    "ifcxFilter": "IFCX",
+    "alleBestanden": "All files",
+    "model": {
+      "driepaalspoer": "Cap on three piles",
+      "vierpaalspoer": "Cap on four piles",
+      "hartOpHart": "pile centres",
+      "poer": "Pile cap",
+      "paal": "Pile",
+      "kolom": "Column",
+      "korf": "Reinforcement cage",
+      "alleenAanzet": "Only the stub is drawn; the length is outside this sheet.",
+      "project": "Project",
+      "terrein": "Site",
+      "gebouw": "Building",
+      "verdieping": "Storey",
+      "soorten": {
+        "band": "Tie bar",
+        "net": "Mesh bar",
+        "randbeugel": "Edge link"
+      }
+    }
+  },
   "doorsnede": {
     "titel": "Parametric view — section stresses",
     "koppen": {

@@ -118,6 +118,7 @@
       "balklaag": "Timber joist floor",
       "voorgespannen-heipaal": "Prestressed precast concrete pile",
       "tweepaalspoer": "Two-pile cap (reinforced concrete)",
+      "meerpaalspoer": "Cap on three or four piles (reinforced concrete)",
       "doorsnede-spanningen": "Section stresses",
       "rekentaal-demo": "Open CalcSheet Studio demo"
     }
