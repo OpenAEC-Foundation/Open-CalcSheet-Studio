@@ -110,11 +110,14 @@ function hand(i) {
     UC_Vc = β(a_v) * 2 * R * 1000 / (v_rc(A_v / (i.b * d)) * i.b * d);
   } else {
     const bb = b3(i.c / 2), bo = b3(-i.c / 2);
+    // Het net: de staven die door de doorsnede gaan, h.o.h. s_n binnen de dekking en het been.
+    const δe = i.c_z + (i.n_z > 0 ? i.d_z : 0) + i.d_t;
+    const n3 = (b) => Math.floor(Math.max(b - 2 * δe / Math.cos(30 * rad), 0) / i.s_n);
     UC_V = Math.max(R_bov / Vrd(bb), 2 * R_ond / Vrd(bo));
     const a_b = R_3 - i.p / 2 - i.c / 2 + i.e_p, a_o = R_3 / 2 - i.p / 2 - i.c / 2 + i.e_p;
     UC_Vc = Math.max(
-      β(a_b) * R_bov * 1000 / (v_rc(A_n1 * bb / i.s_n / (bb * d)) * bb * d),
-      β(a_o) * 2 * R_ond * 1000 / (v_rc(A_n1 * bo / i.s_n / (bo * d)) * bo * d),
+      β(a_b) * R_bov * 1000 / (v_rc(A_n1 * n3(bb) / (bb * d)) * bb * d),
+      β(a_o) * 2 * R_ond * 1000 / (v_rc(A_n1 * n3(bo) / (bo * d)) * bo * d),
     );
   }
   const v_k = 1.15 * i.N * 1000 / (4 * i.c * d), v_p = 1.5 * R * 1000 / (Math.min(3 * d, 2 * i.p) * d);
@@ -125,7 +128,11 @@ function hand(i) {
   const c_d = Math.min((i.s_t - i.d_t) / 2, c_1);
   const α_1 = c_d > 3 * i.d_t ? 0.7 : 1.0, α_2 = Math.min(1, Math.max(0.7, 1 - 0.15 * (c_d - 3 * i.d_t) / i.d_t));
   const l_bd = Math.max(α_1 * α_2 * l_rqd, Math.max(0.3 * l_rqd, 10 * i.d_t, 100));
-  const l_h = v ? i.l / 2 - i.a / 2 - i.c_z - (i.p / 2 + i.e_p) - i.d_t / 2 : (i.r_rand - i.c_z) / Math.cos(30 * rad) - i.p / 2 - i.e_p - i.d_t / 2;
+  // Het been staat binnen de randbeugel (Ø12): u_r = 12 + Ø/2. Bij drie palen raakt de buitenste
+  // staaf van de band, (n − 1)/2·s naar buiten, de afgeschuinde hoek het eerst.
+  const u_r = (i.n_z > 0 ? i.d_z : 0) + i.d_t / 2;
+  const l_h = v ? i.l / 2 - i.a / 2 - i.c_z - u_r - (i.p / 2 + i.e_p)
+    : (i.r_rand - i.c_z - u_r - (i.n_t - 1) / 2 * i.s_t * Math.sin(30 * rad)) / Math.cos(30 * rad) - i.p / 2 - i.e_p;
   const l_av = l_h + i.l_op - (2 - Math.PI / 2) * (i.D_m + i.d_t) / 2;
   // Scheurwijdte, frequent.
   const α_e = 200000 / E_cm, c_w = i.c_o, b_eff = b_band + 10 * (c_w + i.d_t / 2);
@@ -142,7 +149,7 @@ function hand(i) {
 }
 
 const BASIS = { n_p: 4, a: 1000, l: 1700, b: 1700, r_rand: 400, h: 900, e_p: 50, t_in: 50, p: 320, c: 400, c_o: 75, c_z: 40,
-  n_t: 5, d_t: 20, s_t: 80, l_op: 500, D_m: 200, d_n: 12, s_n: 150, N: 2000, Mx: 0, My: 0, Nf: 1450, Mxf: 0, Myf: 0 };
+  n_t: 5, d_t: 20, s_t: 80, l_op: 500, D_m: 200, d_n: 12, s_n: 150, n_z: 3, d_z: 12, N: 2000, Mx: 0, My: 0, Nf: 1450, Mxf: 0, Myf: 0 };
 const verwachting = (h, vier) => ({
   R_Ed: h.R, R_min: h.R_min, θ_g: h.θ, z_u: h.z, [vier ? "T_x" : "T_s"]: h.T, F_c: h.F_c, UC_T: h.UC_T, UC_ccc: h.UC_ccc, UC_ctt: h.UC_ctt,
   UC_V: h.UC_V, UC_Vc: h.UC_Vc, UC_v: h.UC_v, UC_l: h.UC_l, σ_s: h.σ_s, w_k: h.w_k,

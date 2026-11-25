@@ -320,8 +320,11 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         A_m4x = min(f_ctm*b_poer*h_poer^2/6/(0.9*d_eff*f_yd); 1.25*2*T_x/f_yd)
         A_m4y = min(f_ctm*l_poer*h_poer^2/6/(0.9*d_eff*f_yd); 1.25*2*T_y/f_yd)
         'Drie palen: een doorsnede door het zwaartepunt snijdt twee banden; de breedte daar is b_3(0).
+        'Het net telt met de staven die er werkelijk door de doorsnede gaan: h.o.h. s_n tussen de schuine randen, binnen de dekking en bij een omgebogen band binnen het been.
+        δ_e = c_z + if(vorm_t ≡ 2; if(n_z > 0; d_z; 0 mm) + d_t; 0 mm)
+        n_3(b) = floor(max(b - 2*δ_e/cos(30*π/180); 0 mm)/s_n)
         b_30 = b_3(0 mm)
-        A_v3 = 2*A_b + if(d_n > 0 mm; A_n1*b_30/s_n; 0 mm^2)
+        A_v3 = 2*A_b + if(d_n > 0 mm; A_n1*n_3(b_30); 0 mm^2)
         A_m3 = min(f_ctm*b_30*h_poer^2/6/(0.9*d_eff*f_yd); 1.25*2*T_Ed/f_yd)
         UC_A4 = max(A_m4x/A_v4x; A_m4y/A_v4y; A_v4x/(0.04*b_poer*h_poer); A_v4y/(0.04*l_poer*h_poer))
         UC_A3 = max(A_m3/A_v3; A_v3/(0.04*b_30*h_poer))
@@ -355,8 +358,8 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         β_v(a) = min(max(a; 0.5*d_eff)/(2*d_eff); 1)
         b_3b = b_3(c_ye/2)
         b_3o = b_3(-c_ye/2)
-        A_net3b = if(d_n > 0 mm; A_n1*b_3b/s_n; 0 mm^2)
-        A_net3o = if(d_n > 0 mm; A_n1*b_3o/s_n; 0 mm^2)
+        A_net3b = if(d_n > 0 mm; A_n1*n_3(b_3b); 0 mm^2)
+        A_net3o = if(d_n > 0 mm; A_n1*n_3(b_3o); 0 mm^2)
         a_v3o = R_3/2 - max(p_x; p_y)/2 - max(c_x; c_y)/2 + e_p
         UC_V4 = max(2*R_Ed/V_rd(b_poer); 2*R_Ed/V_rd(l_poer))
         UC_V3 = max(R_bov/V_rd(b_3b); 2*R_ond/V_rd(b_3o))
@@ -391,9 +394,11 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         α_2 = min(1; max(0.7; α_2o))
         l_bmin = max(0.3*l_rqd; 10*d_t; 100 mm)
         l_bd = max(α_1*α_2*l_rqd; l_bmin)
-        'Vanaf de binnenkant van de paal (6.5.4(7)), de paal naar buiten verschoven. Bij drie palen loopt de band schuin naar de afgeschuinde hoek: daar is de afstand r/cos 30°.
-        l_h4 = min(l_poer/2 - a_x/2 - c_z - (p_x/2 + e_p) - if(vorm_t ≡ 2; d_t/2; 0 mm); b_poer/2 - a_y/2 - c_z - (p_y/2 + e_p) - if(vorm_t ≡ 2; d_t/2; 0 mm))
-        l_h3 = (r_rand - c_z)/cos(30*π/180) - max(p_x; p_y)/2 - e_p - if(vorm_t ≡ 2; d_t/2; 0 mm)
+        'Vanaf de binnenkant van de paal (6.5.4(7)), de paal naar buiten verschoven. Een omgebogen band buigt op binnen de randbeugel: u_r van de dekking tot het hart van het been.
+        'Bij drie palen loopt de band schuin naar de afgeschuinde hoek; de buitenste staaf van de band raakt die het eerst, en alle staven van een band zijn even lang.
+        u_r = if(vorm_t ≡ 2; if(n_z > 0; d_z; 0 mm) + d_t/2; 0 mm)
+        l_h4 = min(l_poer/2 - a_x/2 - c_z - u_r - (p_x/2 + e_p); b_poer/2 - a_y/2 - c_z - u_r - (p_y/2 + e_p))
+        l_h3 = (r_rand - c_z - u_r - (n_t - 1)/2*s_t*sin(30*π/180))/cos(30*π/180) - max(p_x; p_y)/2 - e_p
         l_h = if(vier ≡ 1; l_h4; l_h3)
         r_m = (D_m + d_t)/2
         l_av = if(vorm_t ≡ 2; l_h + l_op - (2 - π/2)*r_m; l_h)
@@ -602,8 +607,8 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         t_af = r_rand*tan(30*π/180)
         h_x(k; s) = q_x(k) + r_rand*cos(φ_k(k)) + s*t_af*(-sin(φ_k(k)))
         h_y(k; s) = q_y(k) + r_rand*sin(φ_k(k)) + s*t_af*cos(φ_k(k))
-        'De band van paal k naar paal k+1, doorgetrokken tot de afgeschuinde hoeken (min de dekking).
-        L_x3 = (r_rand - c_z)/cos(30*π/180)
+        'De band van paal k naar paal k+1, doorgetrokken tot de afgeschuinde hoeken (min de dekking), zoals in de verankering.
+        L_x3 = (r_rand - c_z - u_r - (n_t - 1)/2*s_t*sin(30*π/180))/cos(30*π/180)
         b_ux(k) = (q_x(mod(k + 1; 3)) - q_x(k))/a_3
         b_uy(k) = (q_y(mod(k + 1; 3)) - q_y(k))/a_3
         #show
