@@ -108,6 +108,8 @@ The **weights library** holds over 2,300 self-weights, each with a source you ca
 | **Markdown** (`.md`) | Yes | Yes |
 | **Notebook** (`.ipynb`, `.py`, data files) | Yes | The work folder as `.zip` |
 | **PDF** | As a sheet | Yes, the report |
+| **DOCX** | No | Yes, the report as an editable document, with formulas as equations ([snapshot](docs/rapport-docx-odt.md)) |
+| **ODT** (OpenDocument) | No | Yes, the report as an editable document, with formulas as formula objects |
 | **DXF** | Converted to a drawing in a sheet | No |
 
 Every sheet with its text, input and results is in the IFCX file. Drawings that a module's input screen draws are not stored as figures, only what the calculation text draws itself. The two-pile cap does add its 3D model: in IFC4x3 every bar of the cage is an `IfcReinforcingBar`. Most sheets do not know where their part sits in the building, so elements without geometry are placed at the origin of the storey. See [the IFC documentation](docs/ifc-export.md).
@@ -118,7 +120,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **83 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **84 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { rapportAlsPdf } from "../../tauri/rapportPdf";
+import { rapportAlsDocument } from "../../tauri/rapportDocument";
 import { useTranslation } from "react-i18next";
 import { useRecentFiles, type RecentFile } from "../../hooks/useRecentFiles";
 import { useBestandActies } from "../../hooks/useBestandActies";
-import { useAfdrukken } from "../../store/printStore";
+import { useAfdrukken, type DocumentFormaat } from "../../store/printStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { sprite } from "../ribbon/calcIcons";
 import { version as pakketVersie } from "../../../package.json";
@@ -205,7 +206,12 @@ export default function Backstage({ open, onClose, onOpenSettings, onOpenFile, o
             />
           )}
           {activePanel === "about" && <AboutPanel />}
-          {activePanel === "export" && <ExportPanel onPdf={() => { onClose(); void rapportAlsPdf(); }} />}
+          {activePanel === "export" && (
+            <ExportPanel
+              onPdf={() => { onClose(); void rapportAlsPdf(); }}
+              onDocument={(formaat) => { onClose(); rapportAlsDocument(formaat); }}
+            />
+          )}
         </div>
       )}
       {/* Click anywhere outside the menu/panel to close */}
@@ -436,7 +442,19 @@ function OpenPanel({
   );
 }
 
-function ExportPanel({ onPdf }: { onPdf: () => void }) {
+/** Een document-icoon met een paar regels tekst: het rapport als bewerkbaar document. */
+function DocumentIcoon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <path d="M14 2v6h6" />
+      <line x1="8" y1="13" x2="16" y2="13" />
+      <line x1="8" y1="17" x2="14" y2="17" />
+    </svg>
+  );
+}
+
+function ExportPanel({ onPdf, onDocument }: { onPdf: () => void; onDocument: (formaat: DocumentFormaat) => void }) {
   const { t } = useTranslation("backstage");
   return (
     <div className="bs-export-panel">
@@ -452,6 +470,24 @@ function ExportPanel({ onPdf }: { onPdf: () => void }) {
           <div className="bs-export-card-info">
             <h3>{t("exportPanel.asPdf")}</h3>
             <p>{t("exportPanel.asPdfDesc")}</p>
+          </div>
+        </button>
+        <button type="button" className="bs-export-card bs-export-actie" onClick={() => onDocument("docx")}>
+          <div className="bs-export-card-icon">
+            <DocumentIcoon />
+          </div>
+          <div className="bs-export-card-info">
+            <h3>{t("exportPanel.asDocx")}</h3>
+            <p>{t("exportPanel.asDocxDesc")}</p>
+          </div>
+        </button>
+        <button type="button" className="bs-export-card bs-export-actie" onClick={() => onDocument("odt")}>
+          <div className="bs-export-card-icon">
+            <DocumentIcoon />
+          </div>
+          <div className="bs-export-card-info">
+            <h3>{t("exportPanel.asOdt")}</h3>
+            <p>{t("exportPanel.asOdtDesc")}</p>
           </div>
         </button>
         <div className="bs-export-card">

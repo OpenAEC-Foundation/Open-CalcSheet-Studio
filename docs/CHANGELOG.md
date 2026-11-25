@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Bestand › Exporteren zet het rapport ook in een bewerkbaar document: DOCX of ODT. Tekst, koppen en tabellen blijven bewerkbaar, formules worden vergelijkingen, tekeningen gaan als afbeelding mee. Het is een momentopname met project, revisie en exportmoment; wat niet mee kan, zoals de pagina's van een PDF-blad, noemt de app vooraf
 - Bestand › Exporteren › Exporteren als PDF doet weer iets: het maakt het rapport als PDF, net als de knop Rapport in het lint. De kaart reageerde niet op een klik
 - De verborgen Linux-app kan een rapport met een ingevoegd PDF-blad naar PDF schrijven.
 - Bij Weergave kun je de lettertypen van de interface en de code afzonderlijk instellen.

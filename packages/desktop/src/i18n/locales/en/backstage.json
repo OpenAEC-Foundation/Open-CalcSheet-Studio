@@ -54,6 +54,10 @@
     "asImage": "Export as Image",
     "asImageDesc": "Save as PNG or JPEG image files",
     "asHtml": "Export as HTML",
-    "asHtmlDesc": "Export the document as an HTML file"
+    "asHtmlDesc": "Export the document as an HTML file",
+    "asDocx": "Export as Word document (.docx)",
+    "asDocxDesc": "The report as an editable document, with formulas as equations. A snapshot: nothing recalculates",
+    "asOdt": "Export as OpenDocument (.odt)",
+    "asOdtDesc": "The report as editable OpenDocument text, with formulas as formula objects. A snapshot: nothing recalculates"
   }
 }
