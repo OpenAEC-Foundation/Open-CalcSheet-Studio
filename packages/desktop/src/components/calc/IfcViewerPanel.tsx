@@ -385,6 +385,7 @@ function useProjectIfc(): GebouwdeIfc | null | "fout" {
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const rapport = useProjectStore((s) => s.rapport);
   const verborgen = useProjectStore((s) => s.verborgen);
+  const vreemd = useProjectStore((s) => s.vreemd);
   const [uit, setUit] = useState<GebouwdeIfc | null | "fout">(null);
 
   useEffect(() => {
@@ -397,6 +398,7 @@ function useProjectIfc(): GebouwdeIfc | null | "fout" {
           exemplaren,
           rapport,
           verborgen,
+          vreemd,
         });
         setUit({ doc, ifcx: JSON.stringify(doc, null, 2), step: bouwProjectStep(doc) });
       } catch (err) {
@@ -405,7 +407,7 @@ function useProjectIfc(): GebouwdeIfc | null | "fout" {
       }
     }, 150);
     return () => clearTimeout(klok);
-  }, [projectNaam, gegevens, exemplaren, rapport, verborgen]);
+  }, [projectNaam, gegevens, exemplaren, rapport, verborgen, vreemd]);
 
   return uit;
 }

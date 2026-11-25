@@ -9,6 +9,8 @@
  * `dirty` en is ongedaan te maken. `acties` telt mee, zodat te zien is dat elke
  * mutatie via een store-actie loopt.
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./talen.mjs";
 import { readFileSync } from "node:fs";
 import { modulesPerTemplate } from "../../packages/desktop/src/components/calc/projectTree.ts";
 import { laadTemplate } from "./refcheck.mjs";

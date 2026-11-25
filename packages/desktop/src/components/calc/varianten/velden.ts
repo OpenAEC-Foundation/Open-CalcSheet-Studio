@@ -3,7 +3,7 @@
  * blad en de kop waaronder ze staan. Zuiver, zonder React: scripts/check-varianten.mjs
  * laadt dit in Node.
  */
-import { invoerNaarBron, leesVerwijzing, type AstNode } from "@ifc-calc/core";
+import { invoerNaarBron, isVerwijzingInvoer, type AstNode } from "@ifc-calc/core";
 import { invoervelden, type Invoerveld } from "../bladVersie.ts";
 
 export interface VariantVeld extends Invoerveld {
@@ -81,7 +81,7 @@ export function leesCel(veld: Invoerveld, tekst: string): { waarde: string } | {
     const k = veld.keuzes.find((x) => x.value === t) ?? veld.keuzes.find((x) => x.text.toLowerCase() === t.toLowerCase());
     return k ? { waarde: k.value } : { fout: t };
   }
-  if (leesVerwijzing(t)) return { waarde: t };
+  if (isVerwijzingInvoer(t)) return { waarde: t };
   if (isDubbelzinnig(t)) return { fout: DUBBELZINNIG };
   return veld.eenheid ? invoerNaarBron(tekst, veld.eenheid, veld.eenheid) : { waarde: tekst };
 }

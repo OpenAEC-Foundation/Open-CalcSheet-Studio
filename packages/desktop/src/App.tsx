@@ -19,6 +19,7 @@ import { invoerSchermVoor } from "./components/calc/invoer/invoerScherm";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
 import { klaargezetteKoppen, vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { maakRapportDocument } from "./tauri/rapportDocument";
 import { schrijfRapportPdf } from "./tauri/rapportPdf";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
@@ -29,6 +30,7 @@ import IfcViewerPanel from "./components/calc/IfcViewerPanel";
 import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
 import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
+import GekoppeldeBestanden from "./components/calc/GekoppeldeBestanden";
 import FeedbackDialog from "./components/FeedbackDialog";
 import { IN_WERKPLEK } from "./werkplek/werkplek";
 import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
@@ -199,6 +201,16 @@ export default function App() {
       .then(() => wachtOpVellen())
       .then(async (vellen) => {
         if (afgebroken) return;
+        // Een bewerkbaar document (DOCX, ODT) leest de afdruk zelf uit; geen kopie van de vellen.
+        const { documentFormaat } = usePrintStore.getState();
+        if (documentFormaat) {
+          try {
+            await maakRapportDocument(documentFormaat);
+          } finally {
+            printKlaar();
+          }
+          return;
+        }
         const opruimen = zetDrukvellenKlaar(vellen);
         try {
           await wachtOpDrukbeelden();
@@ -568,6 +580,7 @@ export default function App() {
       {welkomOpen && <Welkom onSluit={() => setWelkomOpen(false)} />}
       <StatusBar />
       <SpreadsheetHouder />
+      <GekoppeldeBestanden />
       {/* De SuperCloud heeft een eigen feedbackknop; in de werkplek geen eigen dialoog. */}
       {!IN_WERKPLEK && <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
       <JupyterHouder />

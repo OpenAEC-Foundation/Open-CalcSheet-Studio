@@ -59,7 +59,7 @@ export function rekenBladDoor(
   // staat in de kolom grondslag van het overzicht; de inhoud tekent de soort zelf.
   const soort = bladSoortVan(ex);
   if (soort) {
-    return { html: "", resultaat: { titel: ex.naam, norm: soort.soortTekst(taal), uc: null, voldoet: null } };
+    return { html: "", resultaat: { titel: ex.naam, norm: soort.soortTekst(taal, ex), uc: null, voldoet: null } };
   }
   // Een Jupyter-blad rekent hier ook niets: de uitwerking komt uit de opgeslagen uitvoer.
   if (isJupyterBlad(ex)) {

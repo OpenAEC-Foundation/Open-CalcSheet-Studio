@@ -7,6 +7,9 @@ import { create } from "zustand";
  */
 export type AfdrukSoort = "bladen" | "rapport";
 
+/** Een bewerkbaar document als uitvoer van het rapport (rapport/document/). */
+export type DocumentFormaat = "docx" | "odt";
+
 /**
  * Schakelaar voor de afdrukweergave.
  *
@@ -50,10 +53,17 @@ interface PrintState {
   pdfFout: string | null;
   /** De grootte van de laatst weggeschreven PDF, in bytes. */
   pdfBytes: number;
+  /**
+   * Het rapport gaat als bewerkbaar document naar een bestand (tauri/rapportDocument.ts),
+   * niet naar de printer. `null` tijdens elke andere afdruk.
+   */
+  documentFormaat: DocumentFormaat | null;
   /** Start het afdrukken; een opgegeven selectie of soort wordt eerst ingesteld. */
   afdrukken: (selectie?: string[] | null, soort?: AfdrukSoort) => void;
   /** Start het afdrukken van het rapport naar een bestand. */
   rapportNaarPdf: (pad: string, stil?: boolean) => void;
+  /** Zet het rapport klaar voor de export als DOCX of ODT. */
+  rapportNaarDocument: (formaat: DocumentFormaat) => void;
   /** De PDF staat op schijf. */
   meldPdfGeschreven: (pad: string, bytes?: number) => void;
   /** Stil schrijven mislukte. */
@@ -83,11 +93,13 @@ export const usePrintStore = create<PrintState>((set) => ({
   stil: false,
   pdfFout: null,
   pdfBytes: 0,
-  afdrukken: (selectie, soort) => set({ bezig: true, pdfPad: null, stil: false, ...opgegeven(selectie, soort) }),
-  rapportNaarPdf: (pad, stil = false) => set({ bezig: true, pdfPad: pad, pdfGeschreven: null, pdfFout: null, stil, ...opgegeven(null, "rapport") }),
+  documentFormaat: null,
+  afdrukken: (selectie, soort) => set({ bezig: true, pdfPad: null, stil: false, documentFormaat: null, ...opgegeven(selectie, soort) }),
+  rapportNaarPdf: (pad, stil = false) => set({ bezig: true, pdfPad: pad, pdfGeschreven: null, pdfFout: null, stil, documentFormaat: null, ...opgegeven(null, "rapport") }),
+  rapportNaarDocument: (formaat) => set({ bezig: true, pdfPad: null, stil: false, documentFormaat: formaat, ...opgegeven(null, "rapport") }),
   meldPdfGeschreven: (pad, bytes = 0) => set({ pdfGeschreven: pad, pdfBytes: bytes }),
   meldPdfFout: (fout) => set({ pdfFout: fout }),
-  klaar: () => set({ bezig: false, pdfPad: null }),
+  klaar: () => set({ bezig: false, pdfPad: null, documentFormaat: null }),
   toonVoorbeeld: (selectie, soort) => set({ voorbeeld: true, ...opgegeven(selectie, soort) }),
   sluitVoorbeeld: () => set({ voorbeeld: false }),
   kiesSelectie: (selectie) => set({ selectie }),
