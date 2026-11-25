@@ -27,6 +27,8 @@
  *
  * Draaien:  node scripts/check-rapport.mjs
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import { TALEN } from "./lib/talen.mjs";
 import {
   isBeeldData, leegBureau, normaliseerRapport, RAPPORT_VERSIE, standaardRapport, STANDAARD_HUISSTIJL,
 } from "../packages/desktop/src/rapport/model.ts";
@@ -40,7 +42,7 @@ import {
 } from "../packages/desktop/src/rapport/normwaarden.ts";
 import { gevelOpbouw, leesVulling, vlakOpbouw, vullingTekst } from "../packages/desktop/src/rapport/opbouw.ts";
 import {
-  alsGevellaag, alsLaag, alsOpbouw, LAAGGROEPEN, laaggroepenVoor, OPBOUWEN, opbouwenVoor, omschrijving, somVan, voegToe,
+  alsGevellaag, alsLaag, alsOpbouw, LAAGGROEPEN, laaggroepenVoor, naamIn, OPBOUWEN, opbouwenVoor, omschrijving, somVan, voegToe,
 } from "../packages/desktop/src/rapport/gewichten.ts";
 import {
   noemtVorigeProductnaam, STANDAARD_IN_NIEUW_RAPPORT, STANDAARD_TEKSTEN, standaardTeksten, VORIGE_PRODUCTNAAM,
@@ -632,7 +634,9 @@ kop("gewichten.ts — bibliotheek: eenheden en orde van grootte");
 {
   const lagen = LAAGGROEPEN.flatMap((g) => g.lagen);
   const alle = [...lagen, ...OPBOUWEN.flatMap((o) => o.lagen)];
-  const namen = (lijst) => lijst.map((l) => l.naam);
+  // De namen zijn meertalig; de controle leest ze in het Nederlands, zoals de bibliotheek begon.
+  const nl = (x) => naamIn(x, "nl");
+  const namen = (lijst) => lijst.map(nl);
   // Een verwisselde eenheid (kg/m³ in plaats van kN/m³, mm in plaats van m)
   // valt hier meteen buiten.
   gelijk("p tussen 0 en 8 kN/m²", namen(alle.filter((l) => l.p !== undefined && !(l.p > 0 && l.p <= 8))), []);
@@ -646,11 +650,11 @@ kop("gewichten.ts — bibliotheek: eenheden en orde van grootte");
   // beton van dezelfde dikte, maar niet minder dan 40% ervan; per reeks is hij
   // zwaarder naarmate hij dikker is. Een tikfout in een gewicht valt zo op.
   const reeksen = new Map();
-  for (const l of LAAGGROEPEN.find((g) => g.naam === "Vloerelementen").lagen) {
-    const m = /^(kanaalplaatvloer.*?) (\d+) mm$/.exec(l.naam);
+  for (const l of LAAGGROEPEN.find((g) => nl(g) === "Vloerelementen").lagen) {
+    const m = /^(kanaalplaatvloer.*?) (\d+) mm$/.exec(nl(l));
     if (!m) continue;
     const h = Number(m[2]) / 1000;
-    toets(`${l.naam}: ${fmt(l.p / (h * 25) * 100, 0)}% van massief beton (40–85%)`,
+    toets(`${nl(l)}: ${fmt(l.p / (h * 25) * 100, 0)}% van massief beton (40–85%)`,
       l.p >= 0.4 * h * 25 && l.p <= 0.85 * h * 25);
     reeksen.set(m[1], [...(reeksen.get(m[1]) ?? []), { h, p: l.p }]);
   }
@@ -659,21 +663,24 @@ kop("gewichten.ts — bibliotheek: eenheden en orde van grootte");
   }
 
   const dubbel = (lijst) => lijst.filter((n, i) => lijst.indexOf(n) !== i);
-  gelijk("namen van lagen uniek", dubbel(namen(lagen)), []);
-  gelijk("namen van opbouwen uniek", dubbel(OPBOUWEN.map((o) => o.naam)), []);
+  for (const { code } of TALEN) {
+    const in_ = (x) => naamIn(x, code);
+    gelijk(`namen van lagen uniek (${code})`, dubbel(lagen.map(in_)), []);
+    gelijk(`namen van opbouwen uniek (${code})`, dubbel(OPBOUWEN.map(in_)), []);
+  }
   gelijk("elke laag uit een opbouw ook los te kiezen", namen(OPBOUWEN.flatMap((o) => o.lagen).filter((l) => !lagen.includes(l))), []);
   gelijk("elke groep heeft lagen en bouwdelen",
-    LAAGGROEPEN.filter((g) => g.lagen.length === 0 || g.bouwdelen.length === 0).map((g) => g.naam), []);
+    LAAGGROEPEN.filter((g) => g.lagen.length === 0 || g.bouwdelen.length === 0).map(nl), []);
   gelijk("opbouwen per bouwdeel", ["vloer", "dak", "wand"].map((b) => opbouwenVoor([b]).length > 0), [true, true, true]);
   gelijk("vloeren en daken zonder wanden", opbouwenVoor(["vloer", "dak"]).filter((o) => o.bouwdeel === "wand").length, 0);
-  gelijk("laaggroepen bij wanden", laaggroepenVoor(["wand"]).map((g) => g.naam),
+  gelijk("laaggroepen bij wanden", laaggroepenVoor(["wand"]).map(nl),
     ["Houtskeletbouw", "Glazen puien en daken", "Steenachtige materialen", "Metalen", "Afwerking"]);
 }
 
 kop("gewichten.ts — sommen en invoegen");
 {
-  const opbouw = (naam) => OPBOUWEN.find((o) => o.naam === naam);
-  const laag = (naam) => LAAGGROEPEN.flatMap((g) => g.lagen).find((l) => l.naam === naam);
+  const opbouw = (naam) => OPBOUWEN.find((o) => naamIn(o, "nl") === naam);
+  const laag = (naam) => LAAGGROEPEN.flatMap((g) => g.lagen).find((l) => naamIn(l, "nl") === naam);
 
   // De opbouwen met meer lagen tegen de sommen in het gewichtenoverzicht.
   bijna("HSB-binnenwand met gipsplaat: 0,431", somVan(opbouw("HSB-binnenwand met gipsplaat")), 0.431, 1e-9);
@@ -697,12 +704,15 @@ kop("gewichten.ts — sommen en invoegen");
   gelijk("als gevellaag: totaal als p, h en vulling leeg", gevellaag, { naam: "Glazen pui", p: "0,75", h: "", vulling: "" });
   bijna("als gevellaag: q = 0,75 × 3,00", gevelOpbouw([{ ...gevellaag, h: "3,00" }]).som, 2.25, 1e-9);
 
-  gelijk("omschrijving", [laag("kanaalplaatvloer 200 mm"), laag("OSB/3"), laag("metselwerk"), laag("substraat")].map(omschrijving), [
+  gelijk("omschrijving", [laag("kanaalplaatvloer 200 mm"), laag("OSB/3"), laag("metselwerk"), laag("substraat")].map((g) => omschrijving(g)), [
     "3,03 kN/m²",
     "0,010 m × 6,0 kN/m³ = 0,06 kN/m²",
     "ρ = 20,0 kN/m³, dikte invullen",
     "ρ = 14,0 kN/m³, dikte invullen (voor beplanting)",
   ]);
+  gelijk("in het Engels: naam, kop en omschrijving", [
+    alsLaag(laag("staal"), "en").naam, alsOpbouw(opbouw("Kanaalplaatvloer 200 mm"), "en").naam, omschrijving(laag("substraat"), "en"),
+  ], ["steel", "Hollow-core slab 200 mm", "ρ = 14,0 kN/m³, enter thickness (for planting)"]);
 
   const leeg = { naam: "", d: "", rho: "", p: "" };
   const a = { naam: "a", d: "", rho: "", p: "1" };

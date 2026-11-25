@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18next from "../../i18n/config";
+import { isNederlands } from "../../i18n/talen";
 import Modal from "../Modal";
 import {
   moduleCatalogus,
@@ -42,7 +43,7 @@ import "./ModuleKiezer.css";
  */
 
 /** Tekst in de taal van de app, uit een tweetalig veld. */
-const inTaal = (w: Tweetalig) => (i18next.language?.startsWith("en") ? w.en : w.nl) || w.nl;
+const inTaal = (w: Tweetalig) => (isNederlands(i18next.language) ? w.nl : w.en) || w.nl;
 
 type Item = Extract<TreeNode, { kind: "item" }>;
 interface Groep {

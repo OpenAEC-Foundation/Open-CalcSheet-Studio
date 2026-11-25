@@ -9,6 +9,8 @@
  *
  * Draaien:  node scripts/check-rapportpaneel.mjs
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./lib/talen.mjs";
 import {
   adresRegel,
   bijlageLetter,

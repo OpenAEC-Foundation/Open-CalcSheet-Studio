@@ -15,6 +15,8 @@
  * Alles is fictief. De PDF en de werkmap worden hier gemaakt, zodat er geen
  * bestanden van buiten in de repo hoeven.
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./talen.mjs";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

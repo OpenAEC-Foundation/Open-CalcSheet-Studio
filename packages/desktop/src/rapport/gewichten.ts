@@ -22,14 +22,19 @@
  * gewichtenBibliotheek.ts; die bevat ook deze regels.
  */
 import type { Gevellaag, Laag, Opbouw } from "./model.ts";
+import { inTaal, mt, mtMet, type Meertalig } from "./meertalig.ts";
 import { fmt } from "./normwaarden.ts";
 import { vlakOpbouw } from "./opbouw.ts";
 
 export type Bouwdeel = "vloer" | "dak" | "wand";
 
-/** Eén laag uit de bibliotheek. Getallen, zodat de controle ermee kan rekenen. */
+/**
+ * Eén laag uit de bibliotheek. Getallen, zodat de controle ermee kan rekenen. De namen
+ * staan per taal in rapportteksten.json (gewichten); de opbouw krijgt ze in de taal van
+ * het rapport.
+ */
 export interface Gewicht {
-  naam: string;
+  naam: Meertalig;
   /** Dikte [m]. */
   d?: number;
   /** Volumiek gewicht [kN/m³]. */
@@ -37,17 +42,17 @@ export interface Gewicht {
   /** Gewicht per m² [kN/m²]; gaat voor d × ρ. */
   p?: number;
   /** Korte toelichting in het keuzemenu. */
-  opmerking?: string;
+  opmerking?: Meertalig;
 }
 
 export interface Bibliotheekopbouw {
   bouwdeel: Bouwdeel;
-  naam: string;
+  naam: Meertalig;
   lagen: readonly Gewicht[];
 }
 
 export interface Laaggroep {
-  naam: string;
+  naam: Meertalig;
   /** Bij welke bouwdelen de groep in het keuzemenu staat. */
   bouwdelen: readonly Bouwdeel[];
   lagen: readonly Gewicht[];
@@ -55,16 +60,21 @@ export interface Laaggroep {
 
 const ALLE: readonly Bouwdeel[] = ["vloer", "dak", "wand"];
 
+/** Naam en opmerking uit rapportteksten.json. */
+const laag = (sleutel: string) => mt(`gewichten.lagen.${sleutel}`);
+const opm = (sleutel: string) => mt(`gewichten.opmerkingen.${sleutel}`);
+const groep = (sleutel: string) => mt(`gewichten.groepen.${sleutel}`);
+
 // ── Elementen ───────────────────────────────────────────────────────────────
 
-const kanaalplaat = (h: number, p: number): Gewicht => ({ naam: `kanaalplaatvloer ${h} mm`, p });
+const kanaalplaat = (h: number, p: number): Gewicht => ({ naam: mtMet("gewichten.lagen.kanaalplaat", { h }), p });
 const verzwaard = (h: number, p: number): Gewicht => ({
-  naam: `kanaalplaatvloer verzwaard ${h} mm`,
+  naam: mtMet("gewichten.lagen.kanaalplaatVerzwaard", { h }),
   p,
-  opmerking: "woningscheidend",
+  opmerking: opm("woningscheidend"),
 });
 const kernactivering = (h: number, p: number): Gewicht => ({
-  naam: `kanaalplaatvloer met betonkernactivering ${h} mm`,
+  naam: mtMet("gewichten.lagen.kernactivering", { h }),
   p,
 });
 
@@ -79,52 +89,52 @@ const VLOERELEMENTEN: readonly Gewicht[] = [
   kernactivering(200, 3.78),
   kernactivering(260, 4.99),
   kernactivering(320, 5.94),
-  { naam: "combinatievloer, beton met EPS-vulelementen", p: 2.45 },
-  { naam: "ribcassettevloer", p: 2.6 },
-  { naam: "gipsvezel vloerelement 2×12,5 mm + houtwol", p: 0.38 },
-  { naam: "renovatievloer met EPS-elementen, droge afwerking", p: 0.4 },
-  { naam: "renovatievloer met EPS-elementen, halfdroge afwerking", p: 0.88 },
-  { naam: "renovatievloer met EPS-elementen, standaard afwerking", p: 1.72 },
+  { naam: laag("combinatievloer"), p: 2.45 },
+  { naam: laag("ribcassette"), p: 2.6 },
+  { naam: laag("gipsvezel"), p: 0.38 },
+  { naam: laag("renovatieDroog"), p: 0.4 },
+  { naam: laag("renovatieHalfdroog"), p: 0.88 },
+  { naam: laag("renovatieStandaard"), p: 1.72 },
 ];
 
-const HOUTVEZELCEMENT: Gewicht = { naam: "houtvezelcement dakplaten 100 mm", p: 0.95 };
-const BESTAAND: readonly Gewicht[] = [{ naam: "bimsbetonplaten", rho: 10 }, HOUTVEZELCEMENT];
+const HOUTVEZELCEMENT: Gewicht = { naam: laag("houtvezelcement"), p: 0.95 };
+const BESTAAND: readonly Gewicht[] = [{ naam: laag("bims"), rho: 10 }, HOUTVEZELCEMENT];
 
-const DAKPANEEL: Gewicht = { naam: "geïsoleerd stalen dakpaneel, grote overspanning", p: 0.2 };
+const DAKPANEEL: Gewicht = { naam: laag("dakpaneel"), p: 0.2 };
 const DAKELEMENTEN: readonly Gewicht[] = [
   DAKPANEEL,
-  { naam: "zonnepanelen op hellend dak", p: 0.25 },
-  { naam: "zonnepanelen op plat dak, met ballast", p: 1.0 },
+  { naam: laag("zonnepanelenHellend"), p: 0.25 },
+  { naam: laag("zonnepanelenPlat"), p: 1.0 },
 ];
 
 const DAKTUIN: readonly Gewicht[] = [
-  { naam: "mos-sedumvegetatie", p: 1.05, opmerking: "dak met afschot" },
-  { naam: "substraat", rho: 14, opmerking: "voor beplanting" },
-  { naam: "mineraal granulaat", rho: 13, opmerking: "drainagelaag" },
-  { naam: "zand", rho: 19 },
+  { naam: laag("sedum"), p: 1.05, opmerking: opm("afschot") },
+  { naam: laag("substraat"), rho: 14, opmerking: opm("beplanting") },
+  { naam: laag("granulaat"), rho: 13, opmerking: opm("drainage") },
+  { naam: laag("zand"), rho: 19 },
 ];
 
 // ── Houtskeletbouw en glas ──────────────────────────────────────────────────
 
-const GIPSPLAAT: Gewicht = { naam: "gipsplaat", d: 0.012, rho: 9 };
-const OSB: Gewicht = { naam: "OSB/3", d: 0.01, rho: 6 };
-const HPL_PANEEL: Gewicht = { naam: "wandpaneel natte ruimte (HPL)", p: 0.08 };
+const GIPSPLAAT: Gewicht = { naam: laag("gipsplaat"), d: 0.012, rho: 9 };
+const OSB: Gewicht = { naam: laag("osb"), d: 0.01, rho: 6 };
+const HPL_PANEEL: Gewicht = { naam: laag("hpl"), p: 0.08 };
 const STIJLWERK: Gewicht = {
-  naam: "HSB-stijlwerk, vulling 9%",
+  naam: laag("stijlwerk"),
   d: 0.1,
   rho: 5,
   p: 0.045,
-  opmerking: "0,100 m × 5,0 kN/m³ × 9%",
+  opmerking: opm("stijlwerk"),
 };
-const ISOLATIE: Gewicht = { naam: "isolatie", p: 0.05 };
+const ISOLATIE: Gewicht = { naam: laag("isolatie"), p: 0.05 };
 
 const HSB: readonly Gewicht[] = [GIPSPLAAT, OSB, HPL_PANEEL, STIJLWERK, ISOLATIE];
 
-const GLAS_PAKKET: Gewicht = { naam: "glas, totale glasdikte 25 mm", d: 0.025, rho: 25 };
+const GLAS_PAKKET: Gewicht = { naam: laag("glasPakket"), d: 0.025, rho: 25 };
 const GLAS_STIJLEN: Gewicht = {
-  naam: "stijlen 67×120 mm, 4 m¹ per m²",
+  naam: laag("glasStijlen"),
   p: 0.129,
-  opmerking: "0,067 × 0,120 m × 4,0 kN/m³ × 4 m¹/m²",
+  opmerking: opm("glasStijlen"),
 };
 
 const GLAS: readonly Gewicht[] = [GLAS_PAKKET, GLAS_STIJLEN];
@@ -132,38 +142,38 @@ const GLAS: readonly Gewicht[] = [GLAS_PAKKET, GLAS_STIJLEN];
 // ── Materialen ──────────────────────────────────────────────────────────────
 
 const STEENACHTIG: readonly Gewicht[] = [
-  { naam: "beton, ter plaatse gestort", rho: 25 },
-  { naam: "beton, prefab", rho: 25 },
-  { naam: "kalkzandsteen", rho: 18 },
-  { naam: "metselwerk", rho: 20 },
-  { naam: "gipsblokken", rho: 11 },
-  { naam: "poreuze kleiblokken", rho: 14 },
-  { naam: "grind", rho: 19 },
+  { naam: laag("betonInSitu"), rho: 25 },
+  { naam: laag("betonPrefab"), rho: 25 },
+  { naam: laag("kalkzandsteen"), rho: 18 },
+  { naam: laag("metselwerk"), rho: 20 },
+  { naam: laag("gipsblokken"), rho: 11 },
+  { naam: laag("kleiblokken"), rho: 14 },
+  { naam: laag("grind"), rho: 19 },
 ];
 
 const METALEN: readonly Gewicht[] = [
-  { naam: "staal", rho: 78.5 },
-  { naam: "aluminium", rho: 27 },
+  { naam: laag("staal"), rho: 78.5 },
+  { naam: laag("aluminium"), rho: 27 },
 ];
 
 const AFWERKING: readonly Gewicht[] = [
-  { naam: "gipskartonplaat", rho: 9 },
-  { naam: "gips", rho: 11 },
-  { naam: "cementdekvloer", rho: 20 },
-  { naam: "glas", rho: 25 },
+  { naam: laag("gipskarton"), rho: 9 },
+  { naam: laag("gips"), rho: 11 },
+  { naam: laag("cementdekvloer"), rho: 20 },
+  { naam: laag("glas"), rho: 25 },
 ];
 
 /** De losse lagen, per groep in de volgorde van het keuzemenu. */
 export const LAAGGROEPEN: readonly Laaggroep[] = [
-  { naam: "Vloerelementen", bouwdelen: ["vloer"], lagen: VLOERELEMENTEN },
-  { naam: "Bestaande vloer- en dakplaten", bouwdelen: ["vloer", "dak"], lagen: BESTAAND },
-  { naam: "Dakelementen", bouwdelen: ["dak"], lagen: DAKELEMENTEN },
-  { naam: "Daktuin", bouwdelen: ["dak"], lagen: DAKTUIN },
-  { naam: "Houtskeletbouw", bouwdelen: ["wand"], lagen: HSB },
-  { naam: "Glazen puien en daken", bouwdelen: ["dak", "wand"], lagen: GLAS },
-  { naam: "Steenachtige materialen", bouwdelen: ALLE, lagen: STEENACHTIG },
-  { naam: "Metalen", bouwdelen: ALLE, lagen: METALEN },
-  { naam: "Afwerking", bouwdelen: ALLE, lagen: AFWERKING },
+  { naam: groep("vloerelementen"), bouwdelen: ["vloer"], lagen: VLOERELEMENTEN },
+  { naam: groep("bestaand"), bouwdelen: ["vloer", "dak"], lagen: BESTAAND },
+  { naam: groep("dakelementen"), bouwdelen: ["dak"], lagen: DAKELEMENTEN },
+  { naam: groep("daktuin"), bouwdelen: ["dak"], lagen: DAKTUIN },
+  { naam: groep("hsb"), bouwdelen: ["wand"], lagen: HSB },
+  { naam: groep("glas"), bouwdelen: ["dak", "wand"], lagen: GLAS },
+  { naam: groep("steenachtig"), bouwdelen: ALLE, lagen: STEENACHTIG },
+  { naam: groep("metalen"), bouwdelen: ALLE, lagen: METALEN },
+  { naam: groep("afwerking"), bouwdelen: ALLE, lagen: AFWERKING },
 ];
 
 // ── Complete opbouwen ───────────────────────────────────────────────────────
@@ -173,29 +183,38 @@ function hoofdletter(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** De naam van een laag of opbouw in deze taal. */
+export function naamIn(x: { naam: Meertalig }, taal = "nl"): string {
+  return inTaal(x.naam, taal);
+}
+
 /** Een element als opbouw van één laag; de afwerking komt er in het rapport bij. */
-const enkel = (bouwdeel: Bouwdeel, g: Gewicht): Bibliotheekopbouw => ({
-  bouwdeel,
-  naam: hoofdletter(g.naam),
-  lagen: [g],
-});
+const enkel = (bouwdeel: Bouwdeel, g: Gewicht): Bibliotheekopbouw => {
+  const naam = {} as Meertalig;
+  for (const code of Object.keys(g.naam)) {
+    Object.defineProperty(naam, code, { enumerable: true, get: () => (g.naam[code] === undefined ? undefined : hoofdletter(g.naam[code])) });
+  }
+  return { bouwdeel, naam, lagen: [g] };
+};
+
+const opbouw = (sleutel: string) => mt(`gewichten.opbouwen.${sleutel}`);
 
 export const OPBOUWEN: readonly Bibliotheekopbouw[] = [
   ...VLOERELEMENTEN.map((g) => enkel("vloer", g)),
   enkel("dak", DAKPANEEL),
   enkel("dak", HOUTVEZELCEMENT),
-  { bouwdeel: "dak", naam: "Glazen dak", lagen: GLAS },
+  { bouwdeel: "dak", naam: opbouw("glazenDak"), lagen: GLAS },
   {
     bouwdeel: "wand",
-    naam: "HSB-binnenwand met gipsplaat",
+    naam: opbouw("hsbGipsplaat"),
     lagen: [GIPSPLAAT, OSB, STIJLWERK, ISOLATIE, OSB, GIPSPLAAT],
   },
   {
     bouwdeel: "wand",
-    naam: "HSB-binnenwand natte ruimte",
+    naam: opbouw("hsbNatteRuimte"),
     lagen: [HPL_PANEEL, OSB, STIJLWERK, ISOLATIE, OSB, HPL_PANEEL],
   },
-  { bouwdeel: "wand", naam: "Glazen pui", lagen: GLAS },
+  { bouwdeel: "wand", naam: opbouw("glazenPui"), lagen: GLAS },
 ];
 
 // ── Kiezen en invoegen ──────────────────────────────────────────────────────
@@ -222,19 +241,19 @@ function invoer(v: number | undefined, min: number, max: number): string {
   return `${heel},${dec.padEnd(min, "0")}`;
 }
 
-/** Een bibliotheeklaag zoals hij in een vlakopbouw komt te staan. */
-export function alsLaag(g: Gewicht): Laag {
-  return { naam: g.naam, d: invoer(g.d, 3, 3), rho: invoer(g.rho, 1, 2), p: invoer(g.p, 2, 3) };
+/** Een bibliotheeklaag zoals hij in een vlakopbouw komt te staan, met de naam in `taal`. */
+export function alsLaag(g: Gewicht, taal = "nl"): Laag {
+  return { naam: naamIn(g, taal), d: invoer(g.d, 3, 3), rho: invoer(g.rho, 1, 2), p: invoer(g.p, 2, 3) };
 }
 
-/** Een bibliotheekopbouw als nieuwe vlakopbouw in het rapport. */
-export function alsOpbouw(o: Bibliotheekopbouw): Opbouw {
-  return { soort: "vlak", naam: o.naam, lagen: o.lagen.map(alsLaag) };
+/** Een bibliotheekopbouw als nieuwe vlakopbouw in het rapport, in `taal`. */
+export function alsOpbouw(o: Bibliotheekopbouw, taal = "nl"): Opbouw {
+  return { soort: "vlak", naam: naamIn(o, taal), lagen: o.lagen.map((g) => alsLaag(g, taal)) };
 }
 
 /** Het totaal van een bibliotheekopbouw in kN/m², met dezelfde som als het rapport. */
 export function somVan(o: Bibliotheekopbouw): number {
-  return vlakOpbouw(o.lagen.map(alsLaag)).som;
+  return vlakOpbouw(o.lagen.map((g) => alsLaag(g))).som;
 }
 
 /**
@@ -242,19 +261,20 @@ export function somVan(o: Bibliotheekopbouw): number {
  * m², afgerond zoals het rapport de som van een vlakopbouw toont. Hoogte en
  * vulling vult de constructeur in.
  */
-export function alsGevellaag(o: Bibliotheekopbouw): Gevellaag {
-  return { naam: o.naam, p: fmt(somVan(o), 2), h: "", vulling: "" };
+export function alsGevellaag(o: Bibliotheekopbouw, taal = "nl"): Gevellaag {
+  return { naam: naamIn(o, taal), p: fmt(somVan(o), 2), h: "", vulling: "" };
 }
 
-/** Wat het menu onder de naam van een laag laat zien. */
-export function omschrijving(g: Gewicht): string {
-  const toe = g.opmerking ? ` (${g.opmerking})` : "";
+/** Wat het menu onder de naam van een laag laat zien, in `taal`. */
+export function omschrijving(g: Gewicht, taal = "nl"): string {
+  const opmerking = g.opmerking ? inTaal(g.opmerking, taal) : undefined;
+  const toe = opmerking ? ` (${opmerking})` : "";
   if (g.p !== undefined) return `${invoer(g.p, 2, 3)} kN/m²${toe}`;
   if (g.d !== undefined && g.rho !== undefined) {
     return `${invoer(g.d, 3, 3)} m × ${invoer(g.rho, 1, 2)} kN/m³ = ${fmt(g.d * g.rho, 2)} kN/m²${toe}`;
   }
-  if (g.rho !== undefined) return `ρ = ${invoer(g.rho, 1, 2)} kN/m³, dikte invullen${toe}`;
-  return g.opmerking ?? "";
+  if (g.rho !== undefined) return `ρ = ${invoer(g.rho, 1, 2)} kN/m³, ${inTaal(mt("gewichten.dikteInvullen"), taal)}${toe}`;
+  return opmerking ?? "";
 }
 
 /** Een rij waarin niets is ingevuld. */

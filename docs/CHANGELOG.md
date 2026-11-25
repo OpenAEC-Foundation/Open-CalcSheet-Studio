@@ -7,6 +7,9 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- De app en het rapport zijn er ook in het Litouws. Kies de taal bij Instellingen, of per rapport in het rapportpaneel.
+- Alles wat het rapport meelevert, zoals de koppen, de standaardteksten, de normlabels en de korte gewichtenlijst, staat nu per taal in de vertaalbestanden. Een nieuwe taal is daarmee een map met vertalingen en één regel in de lijst van talen (docs/talen.md).
+- Een taal zonder eigen tekst krijgt Engels in plaats van Nederlands, ook in de Library, de formulebibliotheek en de modulekiezer.
 - De verborgen Linux-app kan een rapport met een ingevoegd PDF-blad naar PDF schrijven.
 - Bij Weergave kun je de lettertypen van de interface en de code afzonderlijk instellen.
 - Bij PDF-export via MCP vermeldt de app hoe het volledige rapport zonder dialoog kan worden opgeslagen en wanneer afdrukken andere opdrachten blokkeert.

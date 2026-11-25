@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/OpenAEC-Foundation/Open-CalcSheet-Studio?include_prereleases&label=release&color=D97706)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
 [![CI](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml)
 [![Licentie](https://img.shields.io/badge/licentie-LGPL--3.0-blue)](#licentie)
-[![Talen](https://img.shields.io/badge/talen-Engels%20%C2%B7%20Nederlands-informational)](#schermafbeeldingen)
+[![Talen](https://img.shields.io/badge/talen-Engels%20%C2%B7%20Nederlands%20%C2%B7%20Litouws-informational)](#schermafbeeldingen)
 
 ### [Downloaden](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
 
@@ -141,7 +141,7 @@ Bron van de getallen: de genoemde bestanden en `ls scripts/check-*.mjs`. De stat
 - **Waarden uit een spreadsheet komen nog niet in rekenbladen.** Een spreadsheet staat voorlopig op zichzelf.
 - **Nog geen voet-en-inch met breuken.** 5'-6 ½" kun je nog niet typen of tonen, en een temperatuur blijft in de eenheid van het blad. Toelichtingen die waarden uit een norm citeren, de gewichtenbibliotheek en de tekeningen die een blad zelf maakt, houden ook hun eigen eenheden.
 - **Het rapport rechtstreeks naar PDF kan alleen op Windows.** Andere platforms gebruiken de printdialoog.
-- **Sommige tekst blijft voorlopig Nederlands.** De app, de bladen, de tab Code en het rapport volgen je taal, maar de namen van de variabelen in de modules en sommige namen in de IFC-boom zijn Nederlands.
+- **Sommige tekst blijft voorlopig Nederlands.** De app, de bladen, de tab Code en het rapport volgen je taal, maar de namen van de variabelen in de modules en sommige namen in de IFC-boom zijn Nederlands. In het Litouws staan de uitgewerkte modules, de formulebibliotheek en de regels van de gewichtenbibliotheek in het Engels. Zie [talen](docs/talen.md) voor het toevoegen van een taal.
 - **Pagina-einden kunnen iets verschillen per schermschaal.** Op 100% en 150% kunnen een paar regels op een ander vel komen.
 - **Geen WebRTC in de app.** Het is overal geblokkeerd, dus een externe pagina in `@iframe` die het nodig heeft, werkt niet.
 - **Open FEM Studio-projecten zijn er nog niet.** Het menu-item is zichtbaar maar staat uit.

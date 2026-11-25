@@ -5,6 +5,7 @@ import {
   alsGevellaag,
   alsLaag,
   laaggroepenVoor,
+  naamIn,
   omschrijving,
   opbouwenVoor,
   somVan,
@@ -18,6 +19,7 @@ import {
   effectieveP,
   taalVoorRapport,
 } from "../../../rapport/gewichtenBibliotheek";
+import { inTaal } from "../../../rapport/meertalig";
 import type { Gevellaag, Laag, Opbouw } from "../../../rapport/model";
 import { gevelOpbouw, vlakOpbouw } from "../../../rapport/opbouw";
 import { useProjectStore } from "../../../store/projectStore";
@@ -125,20 +127,20 @@ export function OpbouwKaart({ opbouw, pad, index, bouwdelen, wijzig, symboolMeld
   // wanden als één laag met hun gewicht per m²; h en vulling vul je zelf in.
   const bibliotheek: Menugroep[] = vlak
     ? laaggroepenVoor(bouwdelen).map((g) => ({
-        naam: g.naam,
+        naam: naamIn(g, rapportTaal),
         regels: g.lagen.map((laag) => ({
-          label: laag.naam,
-          uittreksel: omschrijving(laag),
-          kies: () => voegLaagToe(alsLaag(laag)),
+          label: naamIn(laag, rapportTaal),
+          uittreksel: omschrijving(laag, rapportTaal),
+          kies: () => voegLaagToe(alsLaag(laag, rapportTaal)),
         })),
       }))
     : [
         {
           naam: t(BOUWDEEL_KOP.wand),
           regels: opbouwenVoor(["wand"]).map((o) => ({
-            label: o.naam,
-            uittreksel: opbouwTekst(o, t, eenheden),
-            kies: () => voegGevellaagToe(alsGevellaag(o)),
+            label: naamIn(o, rapportTaal),
+            uittreksel: opbouwTekst(o, t, eenheden, rapportTaal),
+            kies: () => voegGevellaagToe(alsGevellaag(o, rapportTaal)),
           })),
         },
       ];
@@ -279,9 +281,10 @@ function GevelLagen({ pad, lagen, knoppen }: { pad: string; lagen: Gevellaag[]; 
  * laag met een toelichting komt die erachter (die toelichting komt uit de
  * bibliotheek en blijft Nederlands).
  */
-export function opbouwTekst(o: Bibliotheekopbouw, t: TFunction<"rapport">, e: BeeldEenheden): string {
+export function opbouwTekst(o: Bibliotheekopbouw, t: TFunction<"rapport">, e: BeeldEenheden, taal: string): string {
   const n = o.lagen.length;
-  const toe = n === 1 && o.lagen[0].opmerking ? ` · ${o.lagen[0].opmerking}` : "";
+  const opmerking = o.lagen[0].opmerking;
+  const toe = n === 1 && opmerking ? ` · ${inTaal(opmerking, taal)}` : "";
   return `${t("opbouw.aantalLagen", { count: n })} · ${inStelsel(e, somVan(o), "kN/m²", 2)} ${e.eenheid("kN/m²")}${toe}`;
 }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { defaultStyles, evaluate, parse, render } from "@ifc-calc/core";
+import { isNederlands } from "../../i18n/talen";
 import { useProjectStore } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
 import { isLosBlad } from "../../store/spreadsheetBlad";
@@ -103,7 +104,7 @@ function meetPlek(paneel: Element | null | undefined) {
 
 function VoorbeeldVak({ f, anker, onSluit }: { f: Formule; anker: HTMLElement | null; onSluit: () => void }) {
   const { t, i18n } = useTranslation("library");
-  const taal = (w: Tekst) => (i18n.language?.startsWith("en") ? w.en : w.nl) || w.nl;
+  const taal = (w: Tekst) => (isNederlands(i18n.language) ? w.nl : w.en) || w.nl;
   const scope = useProjectScope();
   const blad = useProjectStore((s) => s.exemplaren.find((e) => e.id === s.activeId));
   const open = blad && !isLosBlad(blad) ? blad : null;
@@ -202,7 +203,7 @@ function LibraryMelding() {
 
 export default function LibrarySectie() {
   const { t, i18n } = useTranslation("library");
-  const taal = (w: Tekst) => (i18n.language?.startsWith("en") ? w.en : w.nl) || w.nl;
+  const taal = (w: Tekst) => (isNederlands(i18n.language) ? w.nl : w.en) || w.nl;
   const groepen = useLibrary((s) => s.groepen);
   const voorbeelden = useLibrary((s) => s.voorbeelden);
   const [stand, setStand] = useState(leesStand);
