@@ -320,6 +320,16 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       beelden: opt(VRIJ),
       // De koppen uit de tekst blijven uit de inhoudsopgave van het rapport.
       koppenUit: opt(JANEE),
+      // Gekoppeld aan een bestand buiten het project (een RTF-bestand of een werkmapbereik):
+      // de tekst is de kopie van de laatste lezing; de app leest de bron opnieuw.
+      koppeling: opt(object({
+        soort: keuze('rtf', 'werkmapbereik'),
+        pad: TEKST,
+        relatief: opt(TEKST),
+        verwijzing: opt(TEKST),
+        gelezenOp: TEKST,
+        hash: TEKST,
+      })),
     }),
   },
   [ATTR.graaf]: {

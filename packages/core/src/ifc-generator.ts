@@ -79,7 +79,7 @@ export interface IfcCalcSheet {
   /** Bij een spreadsheet-blad: de werkmap, als base64. */
   xlsx?: { bestandsnaam: string; data: string };
   /** Bij een Markdown-blad: de tekst, met de afbeeldingen die erbij horen. */
-  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
+  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean; koppeling?: unknown };
   /** Bij een grafblad: de graaf. */
   graaf?: GraafGegevens;
   /** Alleen bij een tekenblad: het vel met zijn views (ocss::blad::tekenvel). */

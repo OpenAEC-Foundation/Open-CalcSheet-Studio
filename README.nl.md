@@ -80,7 +80,7 @@ Een project is een lijst bladen. Elke soort staat beschreven in [de documentatie
 | **Jupyter** | Een [notebook met Python](docs/jupyter-blad.md), numpy, scipy, pandas en matplotlib, zonder iets te installeren. Op verzoek rekent het opnieuw na elke wijziging |
 | **Marimo** | Een reactief Python-notebook: verschuif een schuif en alles wat daarvan afhangt, volgt |
 | **PDF** | Een bestaande PDF als onderdeel van het rapport. Inzoomen, en opmerkingen, markeringen, pijlen, kaders en wijzigingswolken toevoegen, op het scherm en op papier |
-| **Markdown** | Bestaande tekst, als onderdeel van het rapport |
+| **Markdown** | Bestaande tekst, als onderdeel van het rapport. Ook een RTF-bestand of een bereik uit een werkmap, gekoppeld: wordt de bron opgeslagen, dan werkt het blad vanzelf bij |
 
 ## Modules en bibliotheek
 
@@ -108,6 +108,8 @@ De **gewichtenbibliotheek** heeft ruim 2300 eigen gewichten, elk met een bron di
 | **Rekentekst** (`.cpd`) | Ja | Nee, wordt opgeslagen als projectbestand |
 | **Spreadsheet** (`.xlsx`) | Ja | Ja |
 | **Markdown** (`.md`) | Ja | Ja |
+| **RTF** (`.rtf`) | Als gekoppeld blad | Nee |
+| **Werkmapbereik** (`.xlsx`, op bereiknaam of cellen) | Als gekoppelde tabel | Nee |
 | **Notebook** (`.ipynb`, `.py`, databestanden) | Ja | De werkmap als `.zip` |
 | **PDF** | Als blad | Ja, het rapport |
 | **DOCX** | Nee | Ja, het rapport als bewerkbaar document, met formules als vergelijking ([momentopname](docs/rapport-docx-odt.md)) |
@@ -122,7 +124,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **86 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **87 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.

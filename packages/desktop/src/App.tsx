@@ -30,6 +30,7 @@ import IfcViewerPanel from "./components/calc/IfcViewerPanel";
 import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
 import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
+import GekoppeldeBestanden from "./components/calc/GekoppeldeBestanden";
 import FeedbackDialog from "./components/FeedbackDialog";
 import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
 import VariantenPaneel from "./components/calc/varianten/VariantenPaneel";
@@ -571,6 +572,7 @@ export default function App() {
       {welkomOpen && <Welkom onSluit={() => setWelkomOpen(false)} />}
       <StatusBar />
       <SpreadsheetHouder />
+      <GekoppeldeBestanden />
       <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <JupyterHouder />
       <Backstage
