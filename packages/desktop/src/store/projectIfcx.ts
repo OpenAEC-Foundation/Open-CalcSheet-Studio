@@ -39,6 +39,7 @@ import type { Varianten } from "./varianten.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 import { gebruikteToetsingen, toetsVersie } from "../rekenen/toetsCache.ts";
 import { variantToetsHashes } from "../rekenen/varianten.ts";
+import { scopeMetVerwijzingen, verwezenBladen } from "../rekenen/verwijzingen.ts";
 import { maakPoer } from "../components/calc/poerDefinitie.ts";
 import { poerIfcxKnopen } from "../components/calc/poerIfcx.ts";
 
@@ -75,11 +76,17 @@ export interface ProjectVoorIfc {
 /** Ook de antwoorden van FEM Studio tellen: een nieuw antwoord geeft een andere uitkomst. */
 const bewaard = new WeakMap<object, { gegevens: object; toetsV: number; blad: IfcCalcSheet }>();
 
-/** Eén blad, doorgerekend, zoals de kern het wil. Zonder doorrekenen: alleen de velden van het blad. */
-function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalcSheet {
+/**
+ * Eén blad, doorgerekend, zoals de kern het wil. Zonder doorrekenen: alleen de velden van het blad.
+ * Een blad dat naar een ander blad of een spreadsheetcel verwijst (`#1.R_paal`, `#3.Blad1!B4`),
+ * rekent met die waarden (rekenen/verwijzingen.ts); de bewaarde uitkomst geldt dan niet, want
+ * het andere blad kan veranderd zijn.
+ */
+function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>, alle: readonly BladVoorIfc[]): IfcCalcSheet {
   const hier = bewaard.get(ex);
   const toetsV = toetsVersie();
-  if (hier && hier.gegevens === gegevens && hier.toetsV === toetsV) return hier.blad;
+  const verwezen = isLosBlad(ex) ? [] : verwezenBladen(ex.source, ex.waarden, alle);
+  if (verwezen.length === 0 && hier && hier.gegevens === gegevens && hier.toetsV === toetsV) return hier.blad;
 
   const blad: IfcCalcSheet = {
     id: ex.id,
@@ -101,7 +108,9 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
   };
   if (!isLosBlad(ex)) {
     try {
-      const { nodes, resultaat } = rekenDoor(ex.source, ex.waarden, projectScope(gegevens), ex.naam);
+      const basis = projectScope(gegevens);
+      const scope = verwezen.length ? scopeMetVerwijzingen(ex.source, ex.waarden, basis, verwezen, {}, {}) : basis;
+      const { nodes, resultaat } = rekenDoor(ex.source, ex.waarden, scope, ex.naam);
       blad.nodes = nodes;
       blad.resultaat = resultaat;
       // Een balklaagblad levert ook zijn balken en plaat als elementen met geometrie.
@@ -130,7 +139,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
 
 /** Alle bladen van het project, doorgerekend. */
 export function bladenVoorIfc(project: Pick<ProjectVoorIfc, "exemplaren" | "gegevens">): IfcCalcSheet[] {
-  return project.exemplaren.map((ex) => bladVoorIfc(ex, project.gegevens));
+  return project.exemplaren.map((ex) => bladVoorIfc(ex, project.gegevens, project.exemplaren));
 }
 
 /** Het project als IFCX-document. `bladen` zijn de doorgerekende bladen; zonder rekent dit ze door. */

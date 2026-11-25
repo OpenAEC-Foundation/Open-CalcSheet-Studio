@@ -9,6 +9,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 - Bestand › Exporteren zet het rapport ook in een bewerkbaar document: DOCX of ODT. Tekst, koppen en tabellen blijven bewerkbaar, formules worden vergelijkingen, tekeningen gaan als afbeelding mee. Het is een momentopname met project, revisie en exportmoment; wat niet mee kan, zoals de pagina's van een PDF-blad, noemt de app vooraf
 - Bestand › Exporteren › Exporteren als PDF doet weer iets: het maakt het rapport als PDF, net als de knop Rapport in het lint. De kaart reageerde niet op een klik
+- Een invoerveld van een rekenblad kan een getal uit een cel van een spreadsheet-blad in hetzelfde project nemen, zoals `#3.Blad1!B4 kN`. Kies het blad, het werkblad en de cel met de knop naast het veld in het invoerscherm; de bron en de waarde staan naast het veld, en de koppeling is weer los te maken. Verandert de cel, dan rekent het blad opnieuw. Een lege cel, tekst, een formulefout, een onverenigbare eenheid of een ontbrekend werkblad of blad geeft een melding, en dan staat er geen UC en geen "voldoet", ook niet in het rapport.
+- Het IFCX en het projectbestand rekenen een blad dat naar een ander blad verwijst (`#1.R_paal`) met de waarde uit dat blad, net als het scherm en het rapport.
 - De verborgen Linux-app kan een rapport met een ingevoegd PDF-blad naar PDF schrijven.
 - Bij Weergave kun je de lettertypen van de interface en de code afzonderlijk instellen.
 - Bij PDF-export via MCP vermeldt de app hoe het volledige rapport zonder dialoog kan worden opgeslagen en wanneer afdrukken andere opdrachten blokkeert.

@@ -455,6 +455,7 @@
     "inlezen": "Vervangen…",
     "inlezenUitleg": "Deze werkmap vervangen door een XLSX-bestand. Naam, plaats en toelichting in het rapport blijven staan.",
     "vervangenVraag": "De werkmap van \"{{naam}}\" vervangen door het gekozen bestand?",
+    "vervangenGekoppeld": "Gekoppelde invoervelden: {{aantal}}. Na het vervangen nemen ze de cellen uit de nieuwe werkmap; een werkblad of cel die er niet meer is, geeft een melding en dat blad rekent niet.",
     "exporteren": "Exporteren…",
     "exporterenUitleg": "Deze werkmap wegschrijven als los XLSX-bestand.",
     "vulgreep": "Slepen om door te voeren; dubbelklikken vult omlaag zover als de kolom ernaast gevuld is",

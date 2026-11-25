@@ -424,7 +424,36 @@
     "geenVelden": "Dit blad toont nu geen invoervelden.",
     "uitleg": "Rekent door als je een veld verlaat, op Enter drukt of even wacht.",
     "verbergBeeld": "Tekening verbergen",
-    "toonBeeld": "Tekening tonen"
+    "toonBeeld": "Tekening tonen",
+    "koppeling": {
+      "knop": "Koppel aan een spreadsheetcel",
+      "titel": "Waarde uit een spreadsheetcel",
+      "spreadsheet": "Spreadsheet-blad",
+      "werkblad": "Werkblad",
+      "cel": "Cel",
+      "eenheid": "Eenheid in de cel",
+      "metVeldEenheid": "Leeg: het getal krijgt de eenheid van het veld ({{eenheid}}).",
+      "zonderEenheid": "Leeg: een getal zonder eenheid.",
+      "celOngeldig": "Typ een cel als B4.",
+      "inDeCel": "In de cel: {{waarde}}",
+      "koppel": "Koppelen",
+      "annuleer": "Annuleren",
+      "bron": "Uit {{blad}}, {{cel}}",
+      "onbekendBlad": "blad #{{ref}}",
+      "verwijder": "Koppeling verwijderen",
+      "verwijderUitleg": "Het veld houdt de laatste waarde uit de cel.",
+      "geenSpreadsheet": "Dit project heeft nog geen spreadsheet-blad.",
+      "fout": {
+        "bron": "Het blad bestaat niet (meer).",
+        "geen-spreadsheet": "Dit blad is geen spreadsheet-blad.",
+        "werkmap": "De werkmap is niet te lezen.",
+        "werkblad": "Dit werkblad bestaat niet (meer).",
+        "leeg": "De cel is leeg.",
+        "tekst": "De cel bevat geen getal: {{detail}}",
+        "formulefout": "De formule geeft {{detail}}.",
+        "geen-waarde": "De formule heeft nog geen uitkomst; open het spreadsheet-blad."
+      }
+    }
   },
   "vloerOpPalen": {
     "plattegrond": "Plattegrond",
