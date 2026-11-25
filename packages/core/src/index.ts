@@ -84,9 +84,10 @@ export {
   type IfcxGelezenProject,
   type IfcxProjectInvoer,
 } from './ifcx/document.js';
+export { metVreemdeGegevens, vreemdeGegevens, type IfcxVreemd } from './ifcx/vreemd.js';
 export { bouwProjectStep, type StepOpties } from './ifcx/step.js';
 export { ATTR as IFCX_ATTR, OCSS_SCHEMAS, ifcKlasse } from './ifcx/namespace.js';
-export { ifcGuid, uuidUitIfcGuid, uuidVan } from './ifcx/identiteit.js';
+export { ifcGuid, padVanElement, uuidUitIfcGuid, uuidVan } from './ifcx/identiteit.js';
 export type {
   BladFiguur,
   BladOordeel,

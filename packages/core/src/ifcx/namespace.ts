@@ -87,6 +87,9 @@ export function isGeimporteerd(attribuut: string): boolean {
   return UIT_IFC.has(attribuut) || UIT_PROP.has(attribuut) || UIT_USD.has(attribuut) || UIT_MAT.has(attribuut);
 }
 
+/** Alle imports die de app zelf kan schrijven; de rest van de lijst komt van een ander (vreemd.ts). */
+export const EIGEN_IMPORTS: ReadonlySet<string> = new Set([IFC_URI, PROP_URI, USD_URI, MAT_URI]);
+
 /** De imports bij deze attributen: ifc en prop altijd, usd en ifc-mat alleen als ze gebruikt worden. */
 export function importsVoor(attributen: Iterable<string>): IfcxImport[] {
   const lijst = [...attributen];

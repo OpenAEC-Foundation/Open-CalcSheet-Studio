@@ -15,6 +15,7 @@
  * Dit bestand en de andere kernbestanden importeren met `.ts`-extensie en
  * zonder React of stores, zodat Node ze rechtstreeks kan laden.
  */
+import type { IfcxVreemd } from "@ifc-calc/core";
 import type { TekenVel } from "../store/tekenBlad.ts";
 
 import type { Graaf } from "../graaf/model.ts";
@@ -54,6 +55,8 @@ export interface McpProjectStand {
   dirty: boolean;
   /** Uit de projectboom gehaald. */
   verborgen: { gegevens?: boolean; rapport?: boolean };
+  /** Gegevens van een ander programma uit het geopende bestand; ze gaan mee in de IFCX. */
+  vreemd?: IfcxVreemd;
   /** Het constructierapport (rapport/model.ts). */
   rapport: unknown;
   /** Aantal stappen voor ongedaan maken en opnieuw. */

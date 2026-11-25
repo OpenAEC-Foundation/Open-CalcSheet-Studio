@@ -1,0 +1,40 @@
+"Funderingsbalk, buiging — EN 1992-1-1
+
+'Buigtoets van een gewapendbetonnen funderingsbalk in de uiterste grenstoestand, met het rechthoekige spanningsblok uit 3.1.7. Het moment komt uit een eigen berekening van de balk op de palen. Een klein proefblad voor de koppeling met een model; geen module.
+
+# 1. Invoer
+
+b = ?*(mm)', breedte balk'
+h = ?*(mm)', hoogte balk'
+a_s = ?*(mm)', onderkant balk tot hart onderwapening'
+A_s = ?*(mm^2)', onderwapening'
+M_Ed = ?*(kN*m)', rekenwaarde buigend moment'
+@select betonklasse "Betonsterkteklasse"
+  C20/25 = 20
+  C25/30 = 25
+  C30/37 = 30
+  C35/45 = 35
+@end
+
+# 2. Sterkte
+
+f_ck = betonklasse*(1 N/mm^2)
+f_cd = f_ck/1.5', 3.1.6 (NB)'
+f_yd = (500 N/mm^2)/1.15', B500'
+d = h - a_s', nuttige hoogte'
+x_u = A_s*f_yd/(0.8*b*f_cd)', hoogte drukzone (3.1.7)'
+M_Rd = A_s*f_yd*(d - 0.4*x_u) to kN*m', momentcapaciteit'
+
+# 3. Toetsing
+
+#if x_u > 0.45*d
+    '<b>Eindoordeel: niet getoetst</b>. De drukzone is groter dan 0,45·d: de wapening vloeit niet zeker. Kies een hogere balk of minder wapening.
+#else
+    UC_buiging = M_Ed/M_Rd
+    UC_max = UC_buiging
+    #if UC_max > 1
+        '<b>Maatgevende UC = 'UC_max'</b> > 1,0 → <b>Funderingsbalk voldoet niet</b>
+    #else
+        '<b>Maatgevende UC = 'UC_max'</b> ≤ 1,0 → <b>Funderingsbalk voldoet</b>
+    #end if
+#end if

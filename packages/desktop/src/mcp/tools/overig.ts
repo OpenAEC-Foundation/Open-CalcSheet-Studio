@@ -63,7 +63,7 @@ function maakIfc(ctx: McpContext, formaat: "ifc" | "ifcx", id: string | null): {
     doc = projectIfcx({ ...basis, exemplaren: [blad] });
     return { inhoud: formaat === "ifc" ? bouwProjectStep(doc) : JSON.stringify(doc, null, 2), naam: blad.naam };
   }
-  doc = projectIfcx({ ...basis, exemplaren: stand.exemplaren, rapport: stand.rapport, verborgen: stand.verborgen });
+  doc = projectIfcx({ ...basis, exemplaren: stand.exemplaren, rapport: stand.rapport, verborgen: stand.verborgen, vreemd: stand.vreemd });
   return { inhoud: formaat === "ifc" ? bouwProjectStep(doc) : JSON.stringify(doc, null, 2), naam };
 }
 
