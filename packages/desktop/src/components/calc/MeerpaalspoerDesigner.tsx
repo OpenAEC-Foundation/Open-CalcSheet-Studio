@@ -59,7 +59,7 @@ export default function MeerpaalspoerDesigner() {
       {!alleenLezen && (
         <div ref={wrapRef} style={{ padding: "6px 16px 14px", flex: "none" }}>
           <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{t("poerDetail.detailKop")}</div>
-          {detail && <div className="vd-svg" style={{ maxWidth: "100%" }} dangerouslySetInnerHTML={{ __html: detail.svg }} />}
+          {detail && <div className="poer-detail-svg" style={{ maxWidth: "100%", overflowX: "auto" }} dangerouslySetInnerHTML={{ __html: detail.svg }} />}
         </div>
       )}
     </div>

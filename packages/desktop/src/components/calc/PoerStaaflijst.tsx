@@ -36,15 +36,16 @@ export function useTekeningStatus(d: (naam: string) => number, uitkomst: BladUit
   });
 }
 
-export function StaaflijstTabel({ lijst, status }: { lijst: Staaflijst; status: string }) {
+/** `kort`: op papier, zo laag mogelijk; het blad moet kort blijven. */
+export function StaaflijstTabel({ lijst, status, kort = false }: { lijst: Staaflijst; status: string; kort?: boolean }) {
   const { t, i18n } = useTranslation("beelden");
   const g = (w: number, n = 0) => fmt(w, n, i18n.language);
-  const cel = { padding: "1px 6px" } as const;
+  const cel = { padding: kort ? "0 4px" : "1px 6px" } as const;
   const rechts = { ...cel, textAlign: "right" as const };
   return (
     <div className="poer-staaflijst" style={{ breakInside: "avoid" }}>
-      <div style={{ fontWeight: 700, fontSize: 12, margin: "4px 0 2px" }}>{t("poerDetail.staaflijst")} · {status}</div>
-      <table style={{ borderCollapse: "collapse", fontSize: 11, lineHeight: 1.15, fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ fontWeight: 700, fontSize: kort ? 10.5 : 12, margin: kort ? "2px 0 1px" : "4px 0 2px" }}>{t("poerDetail.staaflijst")} · {status}</div>
+      <table style={{ borderCollapse: "collapse", fontSize: kort ? 9.5 : 11, lineHeight: kort ? 1.05 : 1.15, fontVariantNumeric: "tabular-nums" }}>
         <thead>
           <tr style={{ borderBottom: "1.5px solid #374151" }}>
             <th style={{ ...cel, textAlign: "left" }}>{t("poerDetail.merk")}</th>
@@ -72,7 +73,7 @@ export function StaaflijstTabel({ lijst, status }: { lijst: Staaflijst; status: 
           ))}
         </tbody>
       </table>
-      <div style={{ fontSize: 11, marginTop: 2 }}>
+      <div style={{ fontSize: kort ? 9.5 : 11, marginTop: kort ? 1 : 2 }}>
         {lijst.perDiameter.map((p) => `Ø${g(p.d)}: ${g(p.lengte, 2)} m, ${g(p.massa, 1)} kg`).join(" · ")}
         {" · "}<b>{`${t("poerDetail.totaalMassa")}: ${g(lijst.massa, 1)} kg`}</b>
       </div>
@@ -103,8 +104,8 @@ export default function PoerStaaflijst({ vorm, titel, bestand, d, set, uitkomst,
   };
 
   return (
-    <div className="poer-detail" style={{ padding: alleenLezen ? "2px 0" : "6px 16px" }}>
-      <StaaflijstTabel lijst={lijst} status={status.tekst} />
+    <div className="poer-detail" style={{ padding: alleenLezen ? "0" : "6px 16px" }}>
+      <StaaflijstTabel lijst={lijst} status={status.tekst} kort={alleenLezen} />
       {!alleenLezen && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 6 }}>
           <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12 }}>
