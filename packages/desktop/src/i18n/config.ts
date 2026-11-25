@@ -2,6 +2,7 @@ import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { getSetting } from "../store";
+import { IN_WERKPLEK } from "../werkplek/werkplek";
 
 import { NAMESPACES, RESOURCES } from "./bundels";
 import { BRONTAAL, TALEN } from "./talen";
@@ -21,8 +22,8 @@ export const STANDAARD_TAAL = "en";
 // De namespaces zijn de bestanden in locales/<taal>/ (bundels.ts): van de sjabloon common,
 // ribbon, backstage, settings, feedback; van deze app onder meer werkruimte, rapport,
 // rapportteksten (wat het rapport meelevert), rekentaal, beelden, tekenen, library en gewichten.
-i18next
-  .use(LanguageDetector)
+// In de werkplek geen taaldetectie: het frame heeft geen opslag, en de host geeft de taal.
+(IN_WERKPLEK ? i18next : i18next.use(LanguageDetector))
   .use(initReactI18next)
   .init({
     resources: RESOURCES,
@@ -43,9 +44,23 @@ i18next.on("languageChanged", (lng) => {
 });
 
 // Load saved language from Tauri store on startup
+// In de werkplek van de SuperCloud gaat de taal van de gebruiker daar voor; een
+// taal die de app niet kent, wordt Engels. Verandert hij daar, dan meldt de host
+// dat met `openaec-host-preferences`.
+const hostTaal = (): string | undefined => {
+  const taal = (window as { openaecHost?: { taal?: string } }).openaecHost?.taal;
+  if (!taal) return undefined;
+  return Object.keys(i18next.options.resources || {}).includes(taal) ? taal : "en";
+};
 getSetting("language", STANDAARD_TAAL).then((lang) => {
-  changeLanguage(lang);
+  changeLanguage(hostTaal() ?? lang);
 });
+if (IN_WERKPLEK) {
+  window.addEventListener("openaec-host-preferences", () => {
+    const taal = hostTaal();
+    if (taal) void changeLanguage(taal);
+  });
+}
 
 export function changeLanguage(lang: string) {
   if (lang === "auto") {

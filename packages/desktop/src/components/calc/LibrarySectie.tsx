@@ -8,6 +8,7 @@ import { useProjectScope } from "../../store/actiefBlad";
 import { isLosBlad } from "../../store/spreadsheetBlad";
 import { useLibrary } from "../../store/library";
 import { werkLibraryBij } from "../../store/libraryLaden";
+import { browserVoorkeur } from "../../werkplek/werkplek";
 import Icoon from "../Icoon";
 import FormuleVenster from "../ribbon/FormuleVenster";
 import { codeVan, type Formule, type Tekst } from "../ribbon/formules";
@@ -47,7 +48,7 @@ interface Stand {
 
 function leesStand(): Stand {
   try {
-    const s = JSON.parse(localStorage.getItem(SLEUTEL) ?? "{}") as Partial<Stand>;
+    const s = JSON.parse(browserVoorkeur.lees(SLEUTEL) ?? "{}") as Partial<Stand>;
     return {
       sectieDicht: s.sectieDicht === true,
       groepenDicht: Array.isArray(s.groepenDicht) ? s.groepenDicht : [],
@@ -57,12 +58,9 @@ function leesStand(): Stand {
   }
 }
 
+// Geen opslag beschikbaar (privévenster, de werkplek): dan onthoudt het paneel het alleen deze sessie.
 function bewaarStand(s: Stand) {
-  try {
-    localStorage.setItem(SLEUTEL, JSON.stringify(s));
-  } catch {
-    // Geen opslag beschikbaar: dan onthoudt het paneel het alleen deze sessie.
-  }
+  browserVoorkeur.bewaar(SLEUTEL, JSON.stringify(s));
 }
 
 // ─── Het voorbeeld ──────────────────────────────────────────────────────────

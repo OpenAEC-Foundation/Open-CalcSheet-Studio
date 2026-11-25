@@ -1009,7 +1009,11 @@
     "openen": "Atidaryti failą",
     "opslaanAls": "Įrašyti failą kaip",
     "geenBestand": "Nėra atidaryto failo, kurį būtų galima perrašyti",
-    "geenProject": "Šiame IFCX faile nėra šios programos projekto."
+    "geenProject": "Šiame IFCX faile nėra šios programos projekto.",
+    "geenDocs": "Šiame Docs aplanke dar nėra šios programos failų.",
+    "kiesDocs": "Kurį failą norite atidaryti? Įveskite jo numerį.",
+    "naamInDocs": "Pavadinimas Docs",
+    "kopieInDocs": "Kažkas kitas tuo metu pakeitė failą. Jūsų darbas yra kopijoje: {{naam}}"
   },
   "ifcxBewaren": {
     "titel": "Įrašyti IFCX",
@@ -1200,5 +1204,13 @@
     "ontkoppel": "Atsieti",
     "ontkoppelUitleg": "Nutraukti saitą su šaltiniu. Tekstas lieka ir toliau gali būti redaguojamas įprastai.",
     "ontkoppelVraag": "Nutraukti „{{naam}}“ saitą? Lapas nebeatsinaujins pats."
+  },
+  "werkplek": {
+    "nietHier": "{{wat}}: SuperCloud darbo vietoje neįmanoma. Ten nėra interneto už programos ribų.",
+    "linkNaarBuiten": "Nuoroda į išorinį puslapį SuperCloud darbo vietoje neatsidaro. Adresas:\n\n{{url}}",
+    "kaartZonderNet": "Spustelėkite žemėlapį, kad padėtumėte žymeklį, arba įveskite koordinates (52.37, 4.89). SuperCloud darbo vietoje nėra interneto už programos ribų: nėra žemėlapio fono, adreso paieškos, žemėlapio vaizdų ir atstumo iki vandens matavimo.",
+    "onlineBibliotheek": "Internetinė biblioteka",
+    "webpagina": "Tinklalapis lape",
+    "script": "Scenarijus lape"
   }
 }

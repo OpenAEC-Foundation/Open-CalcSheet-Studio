@@ -7,6 +7,7 @@ import { projectIfcx } from "../../store/projectIfcx";
 import { bouwProjectStep, IFCX_ATTR, platteKnopen, type BladUitkomstGegevens, type IfcxBestand, type IfcxKnoop } from "@ifc-calc/core";
 import i18next from "../../i18n/config";
 import { useIfcInhoud } from "../../store/ifcInhoud";
+import { openBuiten } from "../../werkplek/werkplek";
 import "./IfcViewerPanel.css";
 
 /** Tooltip bij een IFC-type: een link naar de documentatie. Opgezocht bij het tekenen. */
@@ -24,12 +25,7 @@ function getIfcDocsUrl(entityType: string): string {
 
 function openIfcDocs(entityType: string, e: React.MouseEvent) {
   e.stopPropagation();
-  const url = getIfcDocsUrl(entityType);
-  import("@tauri-apps/plugin-opener").then(({ openUrl }) => {
-    openUrl(url);
-  }).catch(() => {
-    window.open(url, "_blank", "noopener");
-  });
+  void openBuiten(getIfcDocsUrl(entityType));
 }
 
 // ── Syntax highlighting for IFC4 STEP ─────────────────────────

@@ -32,6 +32,7 @@ import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from 
 import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
 import GekoppeldeBestanden from "./components/calc/GekoppeldeBestanden";
 import FeedbackDialog from "./components/FeedbackDialog";
+import { IN_WERKPLEK } from "./werkplek/werkplek";
 import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
 import VariantenPaneel from "./components/calc/varianten/VariantenPaneel";
 import { isPdfBlad } from "./store/pdfBijlage";
@@ -54,7 +55,7 @@ import { useSneltoetsen } from "./hooks/useSneltoetsen";
 import { useMcpBrug } from "./mcp/useMcpBrug";
 import { useBestandActies } from "./hooks/useBestandActies";
 import { GeenProjectFout, leesProjectBestand } from "./store/projectBestand";
-import { startbestand } from "./tauri/fileOps";
+import { isDocsPad, openUitDocs, startbestand } from "./tauri/fileOps";
 import type { AngleMode } from "@ifc-calc/core";
 import { zetHoekmodus, useBladResultaat } from "./rekenen/doorrekening";
 import { werkToetsingenBij } from "./rekenen/femToetsing";
@@ -405,6 +406,13 @@ export default function App() {
   // effect hieronder het startbestand niet opnieuw.
   const handleOpenRecent = useCallback(async (path: string) => {
     try {
+      // In de werkplek van de SuperCloud: een bestand uit Docs (pad docs:<id>).
+      if (isDocsPad(path)) {
+        const file = await openUitDocs(path);
+        laadProject(leesProjectBestand(file.raw, file.name));
+        markeerOpgeslagen(file.path);
+        return;
+      }
       // Only Tauri runtime can read by absolute path; browser fallback cannot.
       const win = window as unknown as { __TAURI_INTERNALS__?: unknown };
       if (!win.__TAURI_INTERNALS__) {
@@ -573,7 +581,8 @@ export default function App() {
       <StatusBar />
       <SpreadsheetHouder />
       <GekoppeldeBestanden />
-      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      {/* De SuperCloud heeft een eigen feedbackknop; in de werkplek geen eigen dialoog. */}
+      {!IN_WERKPLEK && <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
       <JupyterHouder />
       <Backstage
         open={backstageOpen}

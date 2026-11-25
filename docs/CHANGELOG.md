@@ -25,6 +25,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 - De rekenkern rekent met precies 1000 lbf per kip, ook bij lijnlasten.
 - Gegevens die een andere Studio in een projectbestand zet, zoals een eigen knoop of een eigen attribuut op een gekoppeld element, blijven bij opnieuw opslaan staan, met hun schema's en imports.
 - Een element in een bronmodel kan worden aangewezen met zijn IFCX-pad met `/`, zoals `/elements/…`; de toetsing komt dan op precies dat pad.
+- De app draait in de werkplek van de OpenAEC SuperCloud. Openen en opslaan gaan daar via Docs, de instellingen via de SuperCloud, en de app gebruikt geen netwerk, opslag of popups van de browser.
+- De speld op de kaarten van Locatie en Windgebied zit in de app en komt niet meer van internet.
 
 ## v2026.47.3 — 2026-11-21
 
