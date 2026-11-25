@@ -40,6 +40,11 @@ export const VERSIEVELDEN = [
     pad: "packages/desktop/src-tauri/Cargo.lock",
     patroon: /(\[\[package\]\]\r?\nname = "open-calcsheet-studio"\r?\nversion = ")([^"]*)(")/g,
   },
+  ...["fem-brug/Cargo.toml", "fem-brug/Cargo.lock", "Cargo.lock"].map((bestand) => ({
+    pad: "packages/desktop/src-tauri/" + bestand,
+    veld: "ocss-fem-brug",
+    patroon: /(\nname = "ocss-fem-brug"\r?\nversion = ")([^"]*)(")/g,
+  })),
   {
     pad: "package-lock.json",
     veld: "packages/core",

@@ -14,6 +14,8 @@ import { create, all, type MathJsInstance } from 'mathjs';
  */
 export const math: MathJsInstance = create(all, {});
 
+math.createUnit('kip', { definition: '1000 lbf', prefixes: 'long' }, { override: true });
+
 const AMERIKAANS: [string, string][] = [
   ['ksi', '1000 psi'],
   ['psf', '1 lbf/ft^2'],

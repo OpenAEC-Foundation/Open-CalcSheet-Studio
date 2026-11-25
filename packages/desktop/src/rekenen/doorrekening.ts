@@ -17,8 +17,10 @@ import i18next from "i18next";
 import { setAngleMode, type AngleMode, type EvalOpties, type ToetsVerzoek } from "@ifc-calc/core";
 import { useProjectStore } from "../store/projectStore";
 import { evalOptiesVan } from "../store/projectEenheden";
+import { projectTekstVan } from "../store/projectBlad";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
+import type { BladInvoer } from "../components/calc/invoer/velden";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
 import { verwezenBladen, type VerwijsBlad } from "./verwijzingen";
 import { metToetsingen } from "./toetsCache";
@@ -52,12 +54,16 @@ export interface RekenAntwoord {
   verzoeken?: ToetsVerzoek[];
   /** De hashes van alle @toets-blokken, met of zonder antwoord. */
   toetsen?: string[];
+  /** De invoervelden die het blad nu toont, per kop (components/calc/invoer/velden.ts). */
+  invoer?: BladInvoer;
   uitkomst: BladUitkomst | null;
 }
 
 export interface Doorrekening {
   html: string;
   eenheden?: CanvasUitwerking[];
+  /** Ontbreekt als het blad niet doorrekende. */
+  invoer?: BladInvoer;
   uitkomst: BladUitkomst | null;
 }
 
@@ -81,10 +87,10 @@ function deWorker(): Worker {
   if (!worker) {
     worker = new Worker(new URL("./rekenWorker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (e: MessageEvent<RekenAntwoord>) => {
-      const { sleutel, html, eenheden, uitkomst, verzoeken, toetsen } = e.data;
+      const { sleutel, html, eenheden, uitkomst, verzoeken, toetsen, invoer } = e.data;
       const blad = bezig?.blad;
       if (verzoeken?.length) void vraagToetsingen(verzoeken);
-      uitkomsten.set(sleutel, { html, eenheden, uitkomst });
+      uitkomsten.set(sleutel, { html, eenheden, uitkomst, invoer });
       while (uitkomsten.size > BEWAARD) uitkomsten.delete(uitkomsten.keys().next().value!);
       bezig = null;
       const volgende = wachtend;
@@ -110,6 +116,11 @@ function vraag(v: RekenVerzoek) {
   if (uitkomsten.has(v.sleutel) || bezig?.sleutel === v.sleutel) return;
   if (bezig) wachtend = v;
   else stuur(v);
+}
+
+/** De hoekmodus van nu, voor de worker van de varianten (variantRekenen.ts). */
+export function hoekmodusNu(): AngleMode {
+  return hoekmodus;
 }
 
 /**
@@ -159,7 +170,14 @@ export function useDoorrekening(
   const taal = i18next.language ?? "";
   // Het eenhedenstelsel van het project: een wissel geeft een nieuwe sleutel.
   const gegevens = useProjectStore((s) => s.gegevens);
-  const basisOpties = useMemo(() => evalOptiesVan(gegevens), [gegevens]);
+  // De belastingen uit hoofdstuk 5 en de eigen elementen van de projectgegevens rekenen vóór
+  // het blad; de worker kent het project niet en krijgt die tekst dus mee.
+  const belastingen = useProjectStore((s) => s.rapport.belastingen);
+  const rapportTaal = useProjectStore((s) => s.rapport.taal);
+  const basisOpties = useMemo(() => {
+    const project = projectTekstVan(gegevens, belastingen, rapportTaal);
+    return { ...evalOptiesVan(gegevens), ...(project ? { project } : {}) };
+  }, [gegevens, belastingen, rapportTaal]);
   // Een nieuw antwoord van FEM Studio maakt elke doorrekening verouderd; de antwoorden
   // zelf staan niet in de sleutel (ze zijn groot), hun versie wel.
   const toetsV = useToetsVersie();

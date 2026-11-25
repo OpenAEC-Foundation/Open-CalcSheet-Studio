@@ -7,6 +7,60 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- De verborgen Linux-app kan een rapport met een ingevoegd PDF-blad naar PDF schrijven.
+- Bij Weergave kun je de lettertypen van de interface en de code afzonderlijk instellen.
+- Bij PDF-export via MCP vermeldt de app hoe het volledige rapport zonder dialoog kan worden opgeslagen en wanneer afdrukken andere opdrachten blokkeert.
+- De rekenkern rekent met precies 1000 lbf per kip, ook bij lijnlasten.
+
+## v2026.47.3 — 2026-11-21
+
+- Bij Projectgegevens toont het 3D-projectmodel de berekende elementen, veldlengten, doorsneden en toegerekende vloerstroken op schaal. De zichtbaarheid, plaatsing en gekoppelde rekenbladmaten worden in het project bewaard.
+
+## v2026.47.2 — 2026-11-20
+
+- Op Linux schrijft de rapport-API met WebKitGTK rechtstreeks een PDF. Op een server kan de headless app op een virtueel scherm draaien.
+
+## v2026.47.1 — 2026-11-20
+
+- De voorgespannen paal toont bij transport en hijsen gevulde momenten- en dwarskrachtenlijnen met tekens. Een normaalkrachtenlijn toont de trek in het voorspanstaal en de druk in de betonschacht.
+
+## v2026.47.0 — 2026-11-19
+
+- De betonbibliotheek bevat een conceptmodule voor voorgespannen prefab palen met momentenlijnen, een trektoets en ruimtelijke wapeningsdetails.
+- De API hergebruikt de laatst ingelezen bladtekst bij het opvragen van invoervelden en rekenresultaten.
+- Met `--headless` draait de desktop-app zonder zichtbaar venster voor lokale berekeningen en rapportexport via de API.
+
+- Het welkomstpaneel onderin verschijnt alleen de eerste keer dat je de app opent. Via Help › Aan de slag haal je het terug
+- Rapport als PDF: in een inhoudsopgave is de hele regel een link naar zijn kop (het nummer, de titel en het paginanummer), en een verwijzing in de tekst van het rapport of van een rekenblad, zoals "zie 5.2", "hoofdstuk 4" of "bijlage A.3", springt naar die paragraaf of dat blad. De PDF heeft bladwijzers: de hoofdstukken, paragrafen, bladen en bijlagen uit de inhoudsopgave voorin, met de paragrafen ingeklapt onder hun hoofdstuk
+- Rapport, hoofdstuk Berekeningen: met het vinkje *Bladen in bijlage A ook als paragraaf in dit hoofdstuk* uit staan bladen met hun uitwerking in bijlage A alleen nog in die bijlage. Ze hebben dan geen paragraaf met een verwijzing in het hoofdstuk en tellen niet mee in de nummering; de bladen in het hoofdstuk nummeren door. Standaard staat het aan, zoals het was
+- Op papier is alle tekst in een rekenblad even groot: een toelichting achter een formule en een eigen `<p>` of lijst in een tekstregel hebben dezelfde maat als een gewone tekstregel
+- Rapport: onder de tekst van een paragraaf in hoofdstuk 1 t/m 3 kunnen afbeeldingen staan (PNG of JPEG), elk met een bijschrift en een breedte, bijvoorbeeld een overzichtstekening bij 2.1 Projectomschrijving. Ook aan het begin van hoofdstuk Berekeningen kan een afbeelding staan, zoals het 3D-model van de constructie (`beelden.berekeningen`). In het rapportpaneel voeg je ze toe met *+ Afbeelding*; ze gaan mee in het projectbestand
+- API (MCP en REST): `report_set` met pad `beelden.<paragraaf>` zet de afbeeldingen van een paragraaf, uit een bestand (`path`) of als data-URL (`data`); `report_get` geeft per afbeelding het bijschrift, de breedte en de grootte
+- Het lastblok (`@last`) staat als tabel met een raster en een gekleurde kop: het symbool, b, l, p_rep, G en Q per regel, en eronder de som van G en Q met de eenheid. Een regel zonder omschrijving heeft een witte cel, en de getallen in een kolom staan met hun decimaalteken onder elkaar. Het invulscherm van een lastblok heeft dezelfde tabel: je vult de cellen omschrijving, b, l en p_rep in en zet met een stip of de regel onder G of Q telt
+- Op papier in het Nederlands staan de getallen van een rekenblad met een komma als decimaalteken: in formules, tabellen en tekeningen. De rekentaal en het scherm houden de punt, en lopende tekst blijft zoals hij getypt is
+
+- Rapport, 5.5 Blijvende belastingen als canvas: elke opbouw (vloer, dak, wand of gevel) is een blok op een rastervlak, met zijn naam, zijn lagen en de som. Een klik opent het blok om het te bewerken, met het plusje komt er een laag bij, ook uit de gewichtenbibliotheek, en je sleept een blok naar de plek waar je het wilt hebben. Elk blok en elke belastingklasse uit 5.4 heeft een symbool (`g_v1`, `g_w1`, `q_k1`) dat je kunt wijzigen: onder dat symbool bestaat de belasting in elk rekenblad, en het staat achter de naam in het rapport. Het projectbestand bewaart de blokken met hun symbool en plek, en heeft per belasting een eigen object (`ocss::belasting`)
+- Canvasblad: met *+ Lastblok* maak je een blok dat een lijnlast (kN/m) of puntlast (kN) opbouwt uit de belastingen van hoofdstuk 5. Per regel kies je de belasting uit een lijst en geef je de belastingbreedte, het oppervlak of de lengte; een regel mag ook een eigen waarde zijn. Het blok staat als tabel op het blad en op papier, gescheiden in blijvend en veranderlijk, en het blad rekent verder met `q_L1`, `q_L1,G` en `q_L1,Q`. Wijzigt de opbouw in hoofdstuk 5, dan rekent het blok mee. In de rekentaal is het `@last symbool "naam" lijn … @end`, in elk blad te gebruiken
+- API (MCP en REST): `report_export_pdf` schrijft het hele rapport, met hoofdstukken, bladen en tekeningen, naar een opgegeven PDF-bestand, zonder dialoog. Alleen in de desktop-app op Windows
+- API (MCP en REST): `sheet_add` met `templateId` `canvas` maakt een canvas-blad, met `units` (tekst en plek in mm) om de eenheden meteen te plaatsen
+- Rapport, belastingklassen: categorie E (opslagruimtes) is erbij, en bij elke klasse zijn q_k en Q_k zelf in te vullen. Een leeg veld is de waarde uit de tabel; bij categorie E is er geen tabelwaarde en vul je beide zelf in
+- Een dev-build (`npm run build:dev-exe`) draait naast de geïnstalleerde app: hij heeft een eigen identifier, en daarmee eigen voorkeuren, een eigen token en standaard MCP-poort 3880
+
+## v2026.46.1 — 2026-11-12
+
+- De server van Open FEM Studio in een installer heeft zijn licentie (GNU AGPL-3.0), de vermeldingen van derden en een verwijzing naar zijn broncode naast zich, en Instellingen › Over toont ze. De broncode van precies die versie staat bij de release, naast de installers
+- De installers kunnen de server van Open FEM Studio meeleveren, met de handtekening van FEM Studio, en de controles van de release zoeken hem erin. De release-tekst zegt per platform of hij is meegeleverd
+- Rekentaal: met `@kern naam = tool … @end` roept een blad een rekentool van Open FEM Studio aan waarvan de invoer genest is en de uitkomst uit getallen bestaat, zoals het drielagenmodel voor de wapening van een plaat en de scheurwijdte volgens NEN-EN 1992-1-1 7.3.4 (`solve_native_fem`). Een pad met punten bouwt de invoer op (`inputs.input.thicknessMm = h`), eenheden worden omgerekend naar wat de tool vraagt, en daarna rekent het blad verder met de getallen uit het antwoord (`drie.result.bottom.requiredAsXmm2PerM`). Met `per k = 1 : n` doet het blok een reeks aanroepen in één keer. Het antwoord gaat mee in het projectbestand; zonder antwoord staat het blok als niet gerekend en bestaat er geen uitkomst
+- Invoerscherm voor elk rekenblad: een blad of module zonder eigen beeld, ook uit de modulebibliotheek, heeft naast de uitwerking een formulier met al zijn invoervelden, onder de koppen van het blad en met toelichting en eenheid. Een veld dat het blad nu niet toont, staat er niet. Een module opent met dit scherm; een eigen rekenblad opent met de code en heeft het als tab erbij. Een wijziging rekent door als je het veld verlaat, op Enter drukt of even wacht, en de kop toont of er gerekend wordt. De bedrijfsvloer op palen krijgt daarboven een plattegrond van het paalraster en een doorsnede bij een paal: die bewegen meteen mee, zonder op Open FEM Studio te wachten, en een maat wijzig je in de tekening zelf
+
+## v2026.46.0 — 2026-11-12
+
+- Rekentaal: met `@fem naam … @end` bouwt een blad een plaatmodel op dat Open FEM Studio doorrekent: platen als rechthoeken met elk hun dikte (een ponskop of strook over de vloer wint), veren en een raster van veren met een paalkop, lijnsteunen, belastinggevallen met vlaklasten, eigen gewicht en puntlasten, en combinaties. Daarna rekent het blad verder met de grootste en kleinste momenten, de doorbuiging en de veerreacties per combinatie (`vloer.UGT.mx_max`, `vloer.R_max`), de waarde op een punt (`fem_waarde`) en het gemiddelde over een strook (`fem_strook`). `beeld UGT mx` zet een plattegrond in kleur onder het blok, en in een 3D-beeld tekent `fem vloer UGT w` de doorbuiging of het momentvlak. Het antwoord gaat mee in het projectbestand; zonder antwoord staat het blok als niet gerekend
+- Een `@toets`-blok mag elke rekentool van Open FEM Studio gebruiken, ook een die er later bij komt; alleen de tools die de app van FEM Studio sturen of bestanden lezen of schrijven, blijven uitgesloten
+- Een gedupliceerd blad krijgt een eigen kenmerk (#n). Het nam het kenmerk van het origineel mee, en dan wees `#1.R_paal` in een ander blad stil naar een van de twee. Een project waarin twee bladen al hetzelfde kenmerk hebben, krijgt bij het openen een eigen nummer voor het tweede blad; het eerste houdt het zijne, en een verwijzing wijst daarna naar dat eerste
+- Varianten op papier: met het vinkje *In de afdruk en het rapport* komt onder de uitwerking van het blad een beknopte tabel, met de velden die verschillen, de gekozen uitkomsten, de maatgevende UC en het oordeel per variant. Meer dan acht varianten: een tweede tabel eronder. Vóór het afdrukken worden ook de `@toets`-blokken van die varianten getoetst
+- Varianten: elk rekenblad en elke module heeft de tab Varianten. Kies de paar velden die je wilt variëren; de rest blijft gelijk aan het blad. Typ de waarden per variant, plak een blok uit een werkmap of maak een reeks (van–tot–stap). Elke variant rekent vanzelf door, en de tabel toont naast het blad de maatgevende UC, het oordeel, elke UC en zelfgekozen uitkomsten. Optimaliseren zoekt per variant de kleinste waarde van een veld waarmee het blad voldoet. Een variant kun je bekijken met zijn volledige uitwerking, overnemen in het blad of toevoegen als eigen blad
+- Het projectbestand bewaart varianten van een blad: dezelfde rekentekst met andere invoer, met per variant alleen de eigen waarden van de gekozen velden. Ook de antwoorden van FEM Studio die de varianten gebruiken, blijven bij het opslaan bewaard. De tab Varianten om ze te maken en naast elkaar te zien, volgt
 - De antwoorden van Open FEM Studio op `@toets`-blokken gaan mee in het projectbestand, met de datum en de versie waarmee getoetst is. Een geopend blad toont zijn uitkomst zonder opnieuw te toetsen, ook op een computer zonder FEM Studio. Vóór het afdrukken worden blokken zonder antwoord eerst getoetst. Heeft CalcSheet een andere versie van FEM Studio dan waarmee getoetst is, dan meldt het blad dat en biedt het "Opnieuw toetsen" aan; dat gebeurt nooit vanzelf
 - Rekentaal: met `@toets naam = tool … @end` laat een blad een normtoets doen door Open FEM Studio, bijvoorbeeld `check_steel_beam`. Het blok staat als tabel met per toets het artikel, de UC en het oordeel, en daarna rekent het blad verder met `naam.uc_max` en `naam.voldoet`. Eenheden worden omgerekend naar wat FEM Studio vraagt. Een blok zonder antwoord staat op papier als niet getoetst, nooit als voldoet
 - CalcSheet kan de server van Open FEM Studio meeleveren en headless starten, als begin van de normtoetsing uit één bron. Instellingen › Over toont de versie van FEM Studio, of dat hij niet is meegeleverd; de toetsing in de rekenbladen volgt in een volgende versie

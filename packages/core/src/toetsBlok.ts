@@ -1,5 +1,5 @@
 import { math } from './eenheden.js';
-import type { EvaluatedToets, ToetsAntwoord, ToetsNode, ToetsRij, ToetsUitkomst, VastgelegdeToets } from './types.js';
+import type { EvaluatedToets, FemRekenmodel, ToetsAntwoord, ToetsNode, ToetsRij, ToetsUitkomst, VastgelegdeToets } from './types.js';
 
 /**
  * Een normtoets door Open FEM Studio: het blok `@toets`.
@@ -30,9 +30,24 @@ import type { EvaluatedToets, ToetsAntwoord, ToetsNode, ToetsRij, ToetsUitkomst,
 export const TOETS_START_RE = /^@toets\s+([\p{L}_][\p{L}\p{N}_]*)\s*=\s*([a-z][a-z0-9_]*)\s*$/iu;
 const VELD_RE = /^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/;
 
-/** De reken- en opzoektools; dezelfde lijst als de Rust-kant (fem-brug, toegestaan). */
+/**
+ * Wat een blad niet mag aanroepen; dezelfde lijst als de Rust-kant (fem-brug,
+ * UITGESLOTEN_VOORVOEGSELS en UITGESLOTEN_NAMEN). Uitgesloten zijn de tools die de app
+ * van FEM Studio sturen (`gui_*`, `app_*`, `extensions_*`), die het project of het model
+ * in de app bijhouden (`project_*`, `model3d_*`) en die bestanden lezen of schrijven
+ * (`load_*`, `generate_*` en de drie IFC-tools). Al het andere uit `tools/list` is een
+ * rekentool en mag, ook een die er later bij komt.
+ */
+export const TOETS_UITGESLOTEN = {
+  voorvoegsels: ['gui_', 'app_', 'project_', 'model3d_', 'extensions_', 'load_', 'generate_'],
+  namen: ['open_fem_3d_ifc_importeren', 'fem_resultaten_ifc_schrijven', 'fem_resultaten_ifc_lezen'],
+} as const;
+
+/** Mag een blad deze tool van FEM Studio gebruiken? Alle rekentools, zie TOETS_UITGESLOTEN. */
 export function toetsToolToegestaan(tool: string): boolean {
-  return /^(check_|list_|compute_|concrete_)/.test(tool) || ['validate_fem_model', 'solve_fem_model', 'portaal_maken', 'fem_solver_status'].includes(tool);
+  return /^[a-z][a-z0-9_]*$/.test(tool)
+    && !TOETS_UITGESLOTEN.voorvoegsels.some((v) => tool.startsWith(v))
+    && !(TOETS_UITGESLOTEN.namen as readonly string[]).includes(tool);
 }
 
 // ── Lezen ────────────────────────────────────────────────────────────────────
@@ -77,9 +92,31 @@ const ACHTERVOEGSELS: readonly (readonly [string, string])[] = [
   ['_m', 'm'],
 ];
 
+/**
+ * Hetzelfde voor een naam in camelCase, zoals de rekenkernen van `solve_native_fem` ze
+ * schrijven (`thicknessMm`, `fcdMpa`, `vRdcKnPerM`); de langste eerst. Het achtervoegsel
+ * begint met een hoofdletter en er staat een naam vóór: `M` alleen is geen lengte.
+ */
+const ACHTERVOEGSELS_CAMEL: readonly (readonly [string, string])[] = [
+  ['Mm2PerM2', 'mm^2/m^2'],
+  ['Mm2PerM', 'mm^2/m'],
+  ['KnPerM2', 'kN/m^2'],
+  ['KnPerM', 'kN/m'],
+  ['KnM2', 'kN/m^2'],
+  ['Mm2', 'mm^2'],
+  ['Mm4', 'mm^4'],
+  ['Mpa', 'MPa'],
+  ['Knm', 'kN m'],
+  ['Mm', 'mm'],
+  ['Kn', 'kN'],
+  ['M', 'm'],
+];
+
 export function eenheidVanVeld(veld: string): string | null {
   const v = veld.toLowerCase();
-  return ACHTERVOEGSELS.find(([achter]) => v.endsWith(achter))?.[1] ?? null;
+  const metStreepje = ACHTERVOEGSELS.find(([achter]) => v.endsWith(achter))?.[1];
+  if (metStreepje) return metStreepje;
+  return ACHTERVOEGSELS_CAMEL.find(([achter]) => veld.length > achter.length && veld.endsWith(achter) && /[a-z0-9]/i.test(veld[veld.length - achter.length - 1]))?.[1] ?? null;
 }
 
 /** De kolommen van `forces_envelope` als matrix: per rij één station. */
@@ -204,14 +241,19 @@ export function schemaHash(schema: unknown): string {
 
 // ── Vastleggen ───────────────────────────────────────────────────────────────
 
-/** Een vastgelegd antwoord zoals het blok het opzoekt (`EvalOpties.toetsingen`). */
+/**
+ * Een vastgelegd antwoord zoals het blok het opzoekt (`EvalOpties.toetsingen`). Bij een
+ * `@fem`-blok gaat het bewaarde verzoek mee: daarin staat het raster van het antwoord.
+ */
 export function alsAntwoord(v: VastgelegdeToets): ToetsAntwoord {
+  const fem = (v.verzoek as { vorm?: unknown }).vorm === 'fem-plaat/1';
   return {
     ok: true,
     uitkomst: v.uitkomst,
     datum: v.datum,
     ...(v.herkomst.versie ? { versie: v.herkomst.versie } : {}),
     ...(v.herkomst.schema ? { schema: v.herkomst.schema } : {}),
+    ...(fem ? { verzoek: v.verzoek as unknown as FemRekenmodel } : {}),
   };
 }
 

@@ -15,6 +15,7 @@ import {
 } from "@codemirror/autocomplete";
 import { tags as t } from "@lezer/highlight";
 import type { Extension } from "@codemirror/state";
+import { LAST_START_RE, lastNamen, leesLastKop } from "@ifc-calc/core";
 import i18next from "../../i18n/config";
 
 // ── Block folding ──────────────────────────────────────────────────────
@@ -27,6 +28,9 @@ type FoldRule = { open: RegExp; close: RegExp };
 const FOLD_RULES: FoldRule[] = [
   { open: /^\s*@svg\b/, close: /^\s*@end\b/ },
   { open: /^\s*@3d\b/, close: /^\s*@end\b/ },
+  { open: /^\s*@fem\b/, close: /^\s*@end\b/ },
+  { open: /^\s*@kern\b/, close: /^\s*@end\b/ },
+  { open: /^\s*@last\b/, close: /^\s*@end\b/ },
   { open: /^\s*@js\b/, close: /^\s*@end\s*$/ },
   { open: /^\s*@select\b/, close: /^\s*@end\b/ },
   { open: /^\s*#if\b/, close: /^\s*#end\s+if\b/ },
@@ -230,7 +234,7 @@ const parser: StreamParser<{ inPlot: boolean; inJs: boolean; inJsCommentaar: boo
     }
 
     // Block markers
-    if (stream.match(/^@(svg|3d|end|select|gef|img|iframe|ifcx)\b/)) {
+    if (stream.match(/^@(svg|3d|fem|last|end|select|gef|img|iframe|ifcx)\b/)) {
       // For @img(), @iframe and @ifcx also consume the rest
       if (/^@(img|iframe|ifcx)$/.test(stream.current())) {
         stream.eatWhile(/[^\n]/);
@@ -340,6 +344,18 @@ const STATIC_COMPLETIONS: Aanvulling[] = [
   // Blocks
   { label: "@svg", type: "namespace", sleutel: "tekenblok", apply: "@svg\n\n@end" },
   { label: "@3d", type: "namespace", sleutel: "drieDBlok", apply: "@3d\neenheid mm\ncamera iso\n\n@end" },
+  {
+    label: "@fem", type: "namespace", sleutel: "femBlok",
+    apply: "@fem vloer\n  materiaal 33 GPa; 0.2\n  maas 0.5 m\n  plaat 0; 0; 10 m; 10 m; 250 mm\n  veren 0; 0; 3; 3; 5 m; 5 m; 200 MN/m; 400 mm\n  geval G\n    eigengewicht 25 kN/m^3\n  geval Q\n    vlaklast 5 kN/m^2\n  combinatie UGT = 1.2*G + 1.5*Q\n@end",
+  },
+  {
+    label: "@kern", type: "namespace", sleutel: "kernBlok",
+    apply: "@kern drie = solve_native_fem\n  inputs.kind = \"threeLayer\"\n  inputs.input.forces = {nx: 0, ny: 0, nxy: 0, mx: 50, my: 0, mxy: 0, vx: 0, vy: 0}\n  inputs.input.thicknessMm = 250 mm\n  inputs.input.topSkinMm = 80 mm\n  inputs.input.bottomSkinMm = 84 mm\n  inputs.input.topReinforcement = {asX: 524, asY: 524}\n  inputs.input.bottomReinforcement = {asX: 754, asY: 754}\n  inputs.input.fcdMpa = 20 N/mm^2\n  inputs.input.fydMpa = 435 N/mm^2\n  inputs.input.nuPrime = 0.88\n  inputs.input.compressionModel = \"ec2AnnexF\"\n@end",
+  },
+  {
+    label: "@last", type: "namespace", sleutel: "lastBlok",
+    apply: "@last q_L1 \"Ligger L1\" lijn\n  4.5 kN/m^2; 3.6 m; \"vloer\"\n  Q: 1.75 kN/m^2; 3.6 m; \"veranderlijk\"\n@end",
+  },
   { label: "@iframe", type: "namespace", sleutel: "iframeBlok", apply: "@iframe https:// hoogte=120mm" },
   { label: "@js", type: "namespace", sleutel: "jsBlok", apply: "@js hoogte=80mm titel=\"\"\n\n@end" },
   { label: "@select", type: "namespace", sleutel: "keuzelijst", apply: '@select var "label"\n  optie = 1\n@end' },
@@ -401,6 +417,17 @@ function dynamicCompletions(source: string): Completion[] {
 
   for (const raw of lines) {
     const line = raw.trim();
+    // Een `@last`-blok maakt drie namen: de som en het blijvende en veranderlijke deel.
+    if (LAST_START_RE.test(line)) {
+      const kop = leesLastKop(line);
+      if (kop.fouten.length) continue;
+      for (const naam of Object.values(lastNamen(kop.symbool))) {
+        if (seen.has(naam)) continue;
+        seen.add(naam);
+        out.push({ label: naam, type: "variable", detail: omschrijving("lastUitkomst") });
+      }
+      continue;
+    }
     if (!line || line.startsWith("'") || line.startsWith("//") || line.startsWith("#") || line.startsWith("@") || line.startsWith("$") || line.startsWith('"')) continue;
 
     // Function def: f(x) = ... or g(a,b) = ...
