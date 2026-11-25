@@ -528,5 +528,63 @@
       "uc": "Lemiamas UC",
       "oordeel": "Išvada"
     }
+  },
+  "poerDetail": {
+    "titel": "Strypų žiniaraštis ir armavimo detalė",
+    "staaflijst": "Strypų žiniaraštis",
+    "merk": "Žymė",
+    "aantal": "Kiek.",
+    "diameter": "Ø",
+    "vorm": "Forma",
+    "zijden": "Kraštinių ilgiai (ašimis)",
+    "lengte": "Ilgis",
+    "totaal": "Iš viso (m)",
+    "massa": "Masė (kg)",
+    "totaalMassa": "Iš viso",
+    "verlopend": "kintamas",
+    "maten": "Matmenys mm; kraštinių ilgiai tarp lenkimo taškų strypo ašyje, ilgis išilgai ašies.",
+    "bovenaanzicht": "Planas",
+    "doorsnede": "Pjūvis",
+    "soorten": {
+      "trekband": "tempiamoji juosta",
+      "beugel": "apkaba",
+      "zijstaaf": "šoninis strypas",
+      "bovenstaaf": "viršutinis strypas",
+      "haarspeld": "U formos strypas",
+      "dwarsstaaf": "skersinis strypas",
+      "band": "tempiamoji juosta",
+      "net": "apatinis tinklas",
+      "randbeugel": "kraštinė apkaba"
+    },
+    "ontwerp": "Projektinė schema",
+    "vrijgegeven": "Patvirtinta statybai",
+    "nietVrij": "negalima patvirtinti: lape nenurodyta, kad rostverkas tinkamas",
+    "vrijgeven": "Patvirtinta statybai",
+    "uitleg": "Iš tų pačių strypų kaip brėžinys ir patikros. Formos kodas 00 tiesus, 21 U formos, 51 uždara apkaba su dviem 135° kabliais, 99 kita forma. Lenkimo spindulys: tempiamajai juostai įvestas kaištis, kitur mažiausias kaištis pagal 8.1N lentelę. Patvirtinti galima tik tada, kai lape nurodyta, kad rostverkas tinkamas.",
+    "bewaarDxf": "Išsaugoti detalę kaip DXF",
+    "bewaarIfcx": "Išsaugoti rostverką su armatūra kaip IFCX",
+    "detailKop": "Armavimo detalė",
+    "dxfFilter": "DXF brėžinys",
+    "ifcxFilter": "IFCX",
+    "alleBestanden": "Visi failai",
+    "model": {
+      "driepaalspoer": "Rostverkas ant trijų polių",
+      "vierpaalspoer": "Rostverkas ant keturių polių",
+      "hartOpHart": "polių ašys",
+      "poer": "Rostverkas",
+      "paal": "Polis",
+      "kolom": "Kolona",
+      "korf": "Armatūros karkasas",
+      "alleenAanzet": "Nubraižyta tik išleidžiamoji dalis; ilgis už šio lapo ribų.",
+      "project": "Projektas",
+      "terrein": "Sklypas",
+      "gebouw": "Pastatas",
+      "verdieping": "Aukštas",
+      "soorten": {
+        "band": "Tempiamosios juostos strypas",
+        "net": "Tinklo strypas",
+        "randbeugel": "Kraštinė apkaba"
+      }
+    }
   }
 }
