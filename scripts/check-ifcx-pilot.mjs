@@ -47,7 +47,9 @@ const meld = (ok, wat, detail = "") => {
 const MAP = new URL("./fixtures/ifcx-pilot/", import.meta.url);
 const BESTAND = new URL("funderingsbalk.ifccalculation", MAP);
 const GEWIJZIGD = new URL("funderingsbalk-gewijzigd.ifccalculation", MAP);
-const BRON = readFileSync(new URL("funderingsbalk-buiging.cpd", MAP), "utf8");
+/** Met LF, ook in een werkkopie met CRLF (de Windows-job in ci.yml). */
+const lees = (url) => readFileSync(url, "utf8").replace(/\r\n/g, "\n");
+const BRON = lees(new URL("funderingsbalk-buiging.cpd", MAP));
 const TIJD = "2026-11-25T00:00:00.000Z";
 
 /** De balk uit het referentiemodel van de IFCX Explorer: zijn pad is zijn identiteit. */
@@ -112,7 +114,7 @@ if (process.argv.includes("--schrijf")) {
 
 // ── De fixture ───────────────────────────────────────────────────────────────
 console.log("De fixture:");
-const ruw = readFileSync(BESTAND, "utf8");
+const ruw = lees(BESTAND);
 const bron = JSON.parse(ruw);
 {
   const blad = bladKnoop(bron);
@@ -179,7 +181,7 @@ const nieuw = JSON.parse(nieuwTekst);
   const toets = balkNa?.attributes["ocss::element"]?.toetsingen?.[0];
   meld(toets?.ref === bladNa?.path && toets?.status === "voldoet_niet" && toets?.uc === u?.uc, "de balk verwijst naar dezelfde toetsing, met de nieuwe uitkomst", JSON.stringify(toets));
 
-  const verwacht = readFileSync(GEWIJZIGD, "utf8");
+  const verwacht = lees(GEWIJZIGD);
   meld(isDeepStrictEqual(zonderTijd(nieuw), zonderTijd(JSON.parse(verwacht))), "gelijk aan funderingsbalk-gewijzigd.ifccalculation (de invoer van de Explorer-test)");
 
   const opnieuw = leesProjectBestand(nieuwTekst, "funderingsbalk");
