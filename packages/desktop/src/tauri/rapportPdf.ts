@@ -57,3 +57,27 @@ export async function meldRapportPdfFout(pad: string, fout: unknown): Promise<vo
   await message(i18next.t("werkruimte:pdf.schrijvenMislukt", { pad, fout: String(fout) }), { kind: "warning" })
     .catch((err) => console.warn("Melding niet getoond:", err));
 }
+
+/**
+ * Het rapport als PDF, vanuit het lint (knop Rapport) of vanuit Bestand › Exporteren.
+ * In de app op Windows vraagt het om een bestandsnaam en schrijft het zonder
+ * printdialoog; anders, of als er iets misgaat bij het kiezen, neemt de printdialoog
+ * het over ("Opslaan als PDF"). Een geannuleerde bestandskeuze doet niets.
+ */
+export async function rapportAlsPdf(): Promise<void> {
+  const { usePrintStore } = await import("../store/printStore");
+  const { useProjectStore } = await import("../store/projectStore");
+  const { afdrukken, rapportNaarPdf } = usePrintStore.getState();
+  try {
+    if (await kanRapportPdfSchrijven()) {
+      const { projectNaam, bestandspad } = useProjectStore.getState();
+      const pad = await kiesRapportPdf(projectNaam, bestandspad);
+      if (pad) rapportNaarPdf(pad);
+      return;
+    }
+  } catch (err) {
+    console.warn("Geen bestandsnaam gekozen; de printdialoog neemt het over:", err);
+  }
+  // Het hele project is het rapport: voorblad, hoofdstukken en bijlage A.
+  afdrukken(null, "rapport");
+}
