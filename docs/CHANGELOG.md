@@ -7,7 +7,45 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- De verborgen Linux-app kan een rapport met een ingevoegd PDF-blad naar PDF schrijven.
+- Bij Weergave kun je de lettertypen van de interface en de code afzonderlijk instellen.
+- Bij PDF-export via MCP vermeldt de app hoe het volledige rapport zonder dialoog kan worden opgeslagen en wanneer afdrukken andere opdrachten blokkeert.
+- De rekenkern rekent met precies 1000 lbf per kip, ook bij lijnlasten.
 - Nieuwe module: poer op drie of vier palen (gewapend beton, NEN-EN 1992-1-1 met de NB), naast de tweepaalspoer. Vier palen in een rechthoek onder een rechthoekige poer, of drie palen in een gelijkzijdige driehoek onder een driehoekige poer met afgeschuinde hoeken. De kolom draagt een normaalkracht en momenten om beide assen; de paalreacties volgen daaruit, met de paalafwijking. Het blad rekent een ruimtelijk staafwerk met trekbanden over de palen en toetst de banden, de minimum- en maximumwapening, de knopen onder de kolom en boven de paal, de dwarskracht (bovengrens en V<sub>Rd,c</sub> met β), de pons langs kolom en paal, de verankering en ombuiging, de scheurwijdte, de huidwapening, de dekking en de detaillering. Met een plattegrond, een 3D-beeld van de korf, de uitvoer in het Engels, en de toetsset in docs/meerpaalspoer-toetsing.md
+
+## v2026.47.3 — 2026-11-21
+
+- Bij Projectgegevens toont het 3D-projectmodel de berekende elementen, veldlengten, doorsneden en toegerekende vloerstroken op schaal. De zichtbaarheid, plaatsing en gekoppelde rekenbladmaten worden in het project bewaard.
+
+## v2026.47.2 — 2026-11-20
+
+- Op Linux schrijft de rapport-API met WebKitGTK rechtstreeks een PDF. Op een server kan de headless app op een virtueel scherm draaien.
+
+## v2026.47.1 — 2026-11-20
+
+- De voorgespannen paal toont bij transport en hijsen gevulde momenten- en dwarskrachtenlijnen met tekens. Een normaalkrachtenlijn toont de trek in het voorspanstaal en de druk in de betonschacht.
+
+## v2026.47.0 — 2026-11-19
+
+- De betonbibliotheek bevat een conceptmodule voor voorgespannen prefab palen met momentenlijnen, een trektoets en ruimtelijke wapeningsdetails.
+- De API hergebruikt de laatst ingelezen bladtekst bij het opvragen van invoervelden en rekenresultaten.
+- Met `--headless` draait de desktop-app zonder zichtbaar venster voor lokale berekeningen en rapportexport via de API.
+
+- Het welkomstpaneel onderin verschijnt alleen de eerste keer dat je de app opent. Via Help › Aan de slag haal je het terug
+- Rapport als PDF: in een inhoudsopgave is de hele regel een link naar zijn kop (het nummer, de titel en het paginanummer), en een verwijzing in de tekst van het rapport of van een rekenblad, zoals "zie 5.2", "hoofdstuk 4" of "bijlage A.3", springt naar die paragraaf of dat blad. De PDF heeft bladwijzers: de hoofdstukken, paragrafen, bladen en bijlagen uit de inhoudsopgave voorin, met de paragrafen ingeklapt onder hun hoofdstuk
+- Rapport, hoofdstuk Berekeningen: met het vinkje *Bladen in bijlage A ook als paragraaf in dit hoofdstuk* uit staan bladen met hun uitwerking in bijlage A alleen nog in die bijlage. Ze hebben dan geen paragraaf met een verwijzing in het hoofdstuk en tellen niet mee in de nummering; de bladen in het hoofdstuk nummeren door. Standaard staat het aan, zoals het was
+- Op papier is alle tekst in een rekenblad even groot: een toelichting achter een formule en een eigen `<p>` of lijst in een tekstregel hebben dezelfde maat als een gewone tekstregel
+- Rapport: onder de tekst van een paragraaf in hoofdstuk 1 t/m 3 kunnen afbeeldingen staan (PNG of JPEG), elk met een bijschrift en een breedte, bijvoorbeeld een overzichtstekening bij 2.1 Projectomschrijving. Ook aan het begin van hoofdstuk Berekeningen kan een afbeelding staan, zoals het 3D-model van de constructie (`beelden.berekeningen`). In het rapportpaneel voeg je ze toe met *+ Afbeelding*; ze gaan mee in het projectbestand
+- API (MCP en REST): `report_set` met pad `beelden.<paragraaf>` zet de afbeeldingen van een paragraaf, uit een bestand (`path`) of als data-URL (`data`); `report_get` geeft per afbeelding het bijschrift, de breedte en de grootte
+- Het lastblok (`@last`) staat als tabel met een raster en een gekleurde kop: het symbool, b, l, p_rep, G en Q per regel, en eronder de som van G en Q met de eenheid. Een regel zonder omschrijving heeft een witte cel, en de getallen in een kolom staan met hun decimaalteken onder elkaar. Het invulscherm van een lastblok heeft dezelfde tabel: je vult de cellen omschrijving, b, l en p_rep in en zet met een stip of de regel onder G of Q telt
+- Op papier in het Nederlands staan de getallen van een rekenblad met een komma als decimaalteken: in formules, tabellen en tekeningen. De rekentaal en het scherm houden de punt, en lopende tekst blijft zoals hij getypt is
+
+- Rapport, 5.5 Blijvende belastingen als canvas: elke opbouw (vloer, dak, wand of gevel) is een blok op een rastervlak, met zijn naam, zijn lagen en de som. Een klik opent het blok om het te bewerken, met het plusje komt er een laag bij, ook uit de gewichtenbibliotheek, en je sleept een blok naar de plek waar je het wilt hebben. Elk blok en elke belastingklasse uit 5.4 heeft een symbool (`g_v1`, `g_w1`, `q_k1`) dat je kunt wijzigen: onder dat symbool bestaat de belasting in elk rekenblad, en het staat achter de naam in het rapport. Het projectbestand bewaart de blokken met hun symbool en plek, en heeft per belasting een eigen object (`ocss::belasting`)
+- Canvasblad: met *+ Lastblok* maak je een blok dat een lijnlast (kN/m) of puntlast (kN) opbouwt uit de belastingen van hoofdstuk 5. Per regel kies je de belasting uit een lijst en geef je de belastingbreedte, het oppervlak of de lengte; een regel mag ook een eigen waarde zijn. Het blok staat als tabel op het blad en op papier, gescheiden in blijvend en veranderlijk, en het blad rekent verder met `q_L1`, `q_L1,G` en `q_L1,Q`. Wijzigt de opbouw in hoofdstuk 5, dan rekent het blok mee. In de rekentaal is het `@last symbool "naam" lijn … @end`, in elk blad te gebruiken
+- API (MCP en REST): `report_export_pdf` schrijft het hele rapport, met hoofdstukken, bladen en tekeningen, naar een opgegeven PDF-bestand, zonder dialoog. Alleen in de desktop-app op Windows
+- API (MCP en REST): `sheet_add` met `templateId` `canvas` maakt een canvas-blad, met `units` (tekst en plek in mm) om de eenheden meteen te plaatsen
+- Rapport, belastingklassen: categorie E (opslagruimtes) is erbij, en bij elke klasse zijn q_k en Q_k zelf in te vullen. Een leeg veld is de waarde uit de tabel; bij categorie E is er geen tabelwaarde en vul je beide zelf in
+- Een dev-build (`npm run build:dev-exe`) draait naast de geïnstalleerde app: hij heeft een eigen identifier, en daarmee eigen voorkeuren, een eigen token en standaard MCP-poort 3880
 
 ## v2026.46.1 — 2026-11-12
 

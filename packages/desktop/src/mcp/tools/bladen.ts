@@ -12,6 +12,7 @@ import { isGraafBlad } from "../../store/graafBlad.ts";
 import { isTekenBlad } from "../../store/tekenBlad.ts";
 import { isJupyterBlad } from "../../store/jupyterBlad.ts";
 import { isMarimoBlad } from "../../store/marimoBlad.ts";
+import { CANVAS_BLAD, klemOpVel, leesEenheden, opRaster, schrijfEenheden } from "../../store/canvasBlad.ts";
 import { codeVan } from "../../components/ribbon/formules.ts";
 import { alleFormules } from "../../store/library.ts";
 import { jsonGetal, regels, rekenDoor, ucWaarden, type Doorrekening } from "../rekenen.ts";
@@ -118,12 +119,22 @@ export const BLADTOOLS: McpToolDef[] = [
     name: "sheet_add",
     kind: "mutate",
     description:
-      "Add a calculation sheet to the project and open it. Either pass templateId (from modules_list) to insert that module, or omit it to add an empty sheet, optionally with your own calculation text in source. " +
+      "Add a calculation sheet to the project and open it. Either pass templateId (from modules_list) to insert that module, templateId \"canvas\" for a canvas sheet (formulas as free-standing units, see units), or omit it to add an empty sheet, optionally with your own calculation text in source. " +
       "name sets the sheet name (default: the module name with a number). Returns the new sheet id and its input fields.",
     inputSchema: objectSchema({
       templateId: { type: "string", minLength: 1, description: "Module to insert (see modules_list). Omit for an empty sheet." },
       name: { type: "string", minLength: 1, description: "Name of the new sheet." },
-      source: { type: "string", description: "Calculation text of an empty sheet. Not allowed together with templateId." },
+      source: { type: "string", description: "Calculation text of an empty sheet. Not allowed together with templateId, except with templateId \"canvas\"." },
+      units: {
+        type: "array",
+        description:
+          "Only with templateId \"canvas\": the units to place on the canvas sheet. Each unit is a piece of calculation text at a position in millimetres from the top-left corner of the sheet (snapped to a 5 mm grid). Units are calculated by position: top to bottom, then left to right; a variable exists for everything placed lower.",
+        items: objectSchema({
+          x: { type: "number", description: "Millimetres from the left edge." },
+          y: { type: "number", description: "Millimetres from the top; a new page starts every 245 mm (the first after 220 mm)." },
+          text: { type: "string", minLength: 1, description: "Calculation text of this unit." },
+        }, ["x", "y", "text"]),
+      },
     }),
     annotations: NIEUW,
     rest: [{ method: "POST", path: "/sheets", status: 201 }],
@@ -133,7 +144,20 @@ export const BLADTOOLS: McpToolDef[] = [
       let bron: string;
       let basis: string;
       let tid: string;
-      if (templateId !== null && templateId !== LEEG_BLAD) {
+      const eenheden = Array.isArray(args.units) ? (args.units as { x: number; y: number; text: string }[]) : null;
+      if (eenheden && templateId !== CANVAS_BLAD) return fout("VALIDATION", 'units is only allowed with templateId "canvas".');
+      if (templateId === CANVAS_BLAD) {
+        // Een canvas-blad: gewone rekentekst met per eenheid een merkteken voor de plek (store/canvasBlad.ts).
+        if (eenheden && typeof args.source === "string") return fout("VALIDATION", "Pass either units or source, not both.");
+        bron = eenheden
+          ? schrijfEenheden(eenheden.map((e, i) => {
+            const plek = klemOpVel(opRaster(e.x), opRaster(e.y));
+            return { id: `e${i + 1}`, x: plek.x, y: plek.y, tekst: e.text };
+          }))
+          : typeof args.source === "string" ? args.source : "";
+        basis = "Canvas";
+        tid = CANVAS_BLAD;
+      } else if (templateId !== null && templateId !== LEEG_BLAD) {
         if (typeof args.source === "string") return fout("VALIDATION", "Pass either templateId or source, not both. Use sheet_set_source afterwards to change the text.");
         const sjabloon = ctx.omgeving.sjabloon(templateId);
         if (sjabloon === undefined) {
@@ -158,6 +182,7 @@ export const BLADTOOLS: McpToolDef[] = [
         id,
         name: blad?.naam ?? naam,
         templateId: tid,
+        ...(tid === CANVAS_BLAD ? { units: leesEenheden(bron).map((e) => ({ id: e.id, x: e.x, y: e.y, text: e.tekst })) } : {}),
         inputs: velden.map((v) => invoerJson(v, blad?.waarden ?? {})),
         ...(leesfout ? { parseError: leesfout } : {}),
       });
