@@ -494,6 +494,17 @@
       "wanden": "WANDEN"
     }
   },
+  "documentExport": {
+    "momentopname": "Momentopname van {{project}}, revisie {{revisie}}, gemaakt op {{moment}} met Open CalcSheet Studio. Getallen, formules en toetsingen in dit document rekenen niet mee: wat hier verandert, wordt niet opnieuw doorgerekend en komt niet terug in de berekening.",
+    "voet": "{{project}} · revisie {{revisie}} · momentopname {{moment}}",
+    "zonderRevisie": "zonder revisie",
+    "pdfNietOpgenomen_one": "Bijlage: {{bestand}} ({{count}} pagina), niet opgenomen in dit document.",
+    "pdfNietOpgenomen_other": "Bijlage: {{bestand}} ({{count}} pagina's), niet opgenomen in dit document.",
+    "iframeNietOpgenomen": "Externe pagina {{adres}}: niet opgenomen in dit document.",
+    "jsNietOpgenomen": "Uitvoer van een script: niet opgenomen in dit document.",
+    "ingebedNietOpgenomen": "Ingebed onderdeel ({{soort}}): niet opgenomen in dit document.",
+    "beeldNietOpgenomen": "[Afbeelding niet opgenomen]"
+  },
   "koppeling": {
     "lezen": "De bron wordt gelezen…",
     "ontbreekt": "Bron niet gevonden ({{bestand}}). Dit is de bewaarde kopie, laatst gelezen op {{datum}}.",

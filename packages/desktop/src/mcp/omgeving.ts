@@ -107,6 +107,7 @@ export const liveOmgeving: McpOmgeving = {
       activeId: s.activeId,
       dirty: s.dirty,
       verborgen: s.verborgen,
+      vreemd: s.vreemd,
       rapport: s.rapport,
       stappenTerug: s.verleden.length,
       stappenVooruit: s.toekomst.length,

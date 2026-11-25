@@ -6,6 +6,8 @@ import { lengteWaarden } from "./projectModel3D";
 
 export interface ModelInvoer {
   bladen: { id: string; ref?: string; source: string; waarden: Record<string, string> }[];
+  /** De spreadsheet-bladen, voor een invoerveld dat een cel neemt (rekenen/verwijzingen.ts). */
+  bronnen?: { ref?: string; templateId?: string; source: string; waarden: Record<string, string>; xlsx?: { data: string } }[];
   scope: Record<string, unknown>;
   opties: EvalOpties;
   hoekmodus: AngleMode;
@@ -17,7 +19,7 @@ self.onmessage = ({ data }: MessageEvent<ModelInvoer>) => {
   const uit: Record<string, Record<string, number>> = {};
   for (const blad of data.bladen) {
     try {
-      const refs = verwezenBladen(blad.source, blad.waarden, data.bladen);
+      const refs = verwezenBladen(blad.source, blad.waarden, [...data.bladen, ...(data.bronnen ?? [])]);
       const basis = scopeMetVerwijzingen(blad.source, blad.waarden, data.scope, refs, lezen, data.opties);
       const ast = heeftEenheden(blad.source)
         ? leesEenheden(blad.source).flatMap(e => parse(e.tekst, lezen))

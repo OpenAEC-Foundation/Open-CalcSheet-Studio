@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { zetProjectEenheden, zetProjectTekst, type ElementRef, type VastgelegdeToets } from "@ifc-calc/core";
+import { zetProjectEenheden, zetProjectTekst, type ElementRef, type IfcxVreemd, type VastgelegdeToets } from "@ifc-calc/core";
 import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
 import { projectTekstVan } from "./projectBlad";
@@ -161,6 +161,8 @@ interface Persisted {
   rapport?: Rapport;
   /** Ontbreekt als niets verborgen is. */
   verborgen?: Verborgen;
+  /** Gegevens van een ander programma uit het geopende bestand (core: ifcx/vreemd.ts). */
+  vreemd?: IfcxVreemd;
 }
 
 interface ProjectState {
@@ -174,6 +176,11 @@ interface ProjectState {
   activeId: string;
   /** Uit de projectboom gehaald (projectgegevens, rapport). */
   verborgen: Verborgen;
+  /**
+   * Wat een ander programma in het geopende bestand zette. De app wijzigt het niet;
+   * het gaat bij opslaan ongewijzigd terug (projectBestand.ts).
+   */
+  vreemd?: IfcxVreemd;
   dirty: boolean;
   /** Stapels voor ongedaan maken; niet opgeslagen, alleen voor deze sessie. */
   verleden: Momentopname[];
@@ -937,6 +944,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     wisSessie();
     set({
       verborgen: {},
+      vreemd: undefined,
       projectNaam: nieuweProjectNaam(),
       bestandspad: null,
       // Het eenhedenstelsel uit Instellingen, tab Units; daarna hoort het bij het project.
@@ -955,6 +963,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     wisSessie();
     set({
       verborgen: p.verborgen ?? {},
+      vreemd: p.vreemd,
       projectNaam: p.projectNaam ?? nieuweProjectNaam(),
       bestandspad: p.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(p.gegevens ?? {}) },
@@ -1074,6 +1083,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       rapport: rapportUit(saved.rapport),
       activeId: saved.activeId ?? PROJECT_ID,
       verborgen: saved.verborgen ?? {},
+      vreemd: saved.vreemd,
       dirty: false,
     });
     volgTaalVanApp();
@@ -1089,6 +1099,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       rapport: s.rapport,
       activeId: s.activeId,
       verborgen: s.verborgen,
+      vreemd: s.vreemd,
     }),
   );
 });

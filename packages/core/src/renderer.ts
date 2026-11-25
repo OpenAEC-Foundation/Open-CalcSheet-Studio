@@ -397,6 +397,7 @@ function renderInputPrompt(node: {
   currentValue: string;
   standaard?: string;
   toonEenheid?: string;
+  koppeling?: { bron: string; waarde?: string; fout?: string };
 }): string {
   // Een leeggemaakt veld rekent met de standaardwaarde (`?{5000}`, anders 0)
   // en toont hem grijs als placeholder.
@@ -421,8 +422,22 @@ function renderInputPrompt(node: {
     class="calc-input-value"
     data-prompt="${escapeHtml(node.name)}"
     value="${escapeHtml(node.currentValue)}"${placeholder}${eenheden} />
-  ${unitSuffix}
+  ${unitSuffix}${koppelingTekst(node.koppeling)}
 </div>`;
+}
+
+/**
+ * Achter een veld dat aan een spreadsheetcel gekoppeld is: de waarde waarmee het rekent,
+ * of in rood waarom het niet rekent. Ook op papier: de verwijzing in het veld alleen zegt
+ * niet welk getal er gebruikt is.
+ */
+function koppelingTekst(k: { bron: string; waarde?: string; fout?: string } | undefined): string {
+  if (!k) return '';
+  if (k.fout !== undefined) return `
+  <span class="calc-error-msg calc-koppeling-fout">${escapeHtml(k.fout)}</span>`;
+  const { numStr, unitStr } = splitResult(k.waarde ?? '');
+  return `
+  <span class="calc-formula calc-koppeling">${renderLatex(`= ${resultToLatex(numStr, unitStr)}`, true)}</span>`;
 }
 
 function renderSelect(node: {

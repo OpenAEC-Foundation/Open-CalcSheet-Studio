@@ -104,7 +104,7 @@
    velden onder elkaar op één lijn staan. */
 .ip-rij {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) 92px 50px;
+  grid-template-columns: 58px minmax(0, 1fr) 92px 50px 18px;
   align-items: center;
   column-gap: var(--oa-space-sm);
   min-height: var(--oa-row);
@@ -172,6 +172,110 @@
   white-space: nowrap;
   font-size: var(--oa-size-label);
   color: var(--oa-text-muted);
+}
+
+/* De knop om een veld aan een spreadsheetcel te koppelen; alleen als het project een
+   spreadsheet-blad heeft. */
+.ip-koppel {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: var(--oa-radius-small);
+  background: transparent;
+  color: var(--oa-text-muted);
+  cursor: pointer;
+}
+.ip-koppel:hover,
+.ip-koppel-aan {
+  color: var(--oa-accent);
+}
+.ip-koppel:focus-visible {
+  outline: 2px solid var(--oa-focus);
+}
+
+/* Onder een gekoppeld veld: de bron, de waarde of de melding, en loskoppelen. */
+.ip-koppeling {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--oa-space-sm);
+  padding: 2px 0 var(--oa-space-xs) 66px;
+  border-bottom: 1px solid var(--oa-border-subtle);
+  font-size: var(--oa-size-label);
+  color: var(--oa-text-secondary);
+}
+.ip-koppeling-bron {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ip-koppeling-waarde {
+  font-family: var(--oa-font-numbers);
+  color: var(--oa-text);
+}
+.ip-koppeling-fout {
+  color: var(--oa-error);
+}
+.ip-koppeling-los {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--oa-accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* De kiezer van een cel: blad, werkblad, cel en eenheid onder elkaar. */
+.ip-kiezer {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--oa-space-xs) var(--oa-space-sm);
+  margin: var(--oa-space-xs) 0 var(--oa-space-sm) 66px;
+  padding: var(--oa-space-sm);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-small);
+  background: var(--oa-panel);
+}
+.ip-kiezer-kop {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  color: var(--oa-text);
+}
+.ip-kiezer-naam {
+  color: var(--oa-text-secondary);
+}
+.ip-kiezer .ip-veld {
+  max-width: 120px;
+  text-align: left;
+}
+.ip-kiezer .themed-select {
+  min-width: 0;
+}
+.ip-kiezer .themed-select-trigger {
+  min-height: 22px;
+}
+.ip-kiezer-uitleg,
+.ip-kiezer-waarde {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--oa-size-label);
+  color: var(--oa-text-muted);
+}
+.ip-kiezer-waarde {
+  color: var(--oa-text);
+}
+.ip-kiezer-waarde.ip-koppeling-fout {
+  color: var(--oa-error);
+}
+.ip-kiezer-knoppen {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--oa-space-sm);
 }
 
 /* Een keuzelijst: het label over de kolommen van naam en toelichting, de lijst over die

@@ -19,6 +19,7 @@ import { invoerSchermVoor } from "./components/calc/invoer/invoerScherm";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
 import { klaargezetteKoppen, vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { maakRapportDocument } from "./tauri/rapportDocument";
 import { schrijfRapportPdf } from "./tauri/rapportPdf";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
@@ -199,6 +200,16 @@ export default function App() {
       .then(() => wachtOpVellen())
       .then(async (vellen) => {
         if (afgebroken) return;
+        // Een bewerkbaar document (DOCX, ODT) leest de afdruk zelf uit; geen kopie van de vellen.
+        const { documentFormaat } = usePrintStore.getState();
+        if (documentFormaat) {
+          try {
+            await maakRapportDocument(documentFormaat);
+          } finally {
+            printKlaar();
+          }
+          return;
+        }
         const opruimen = zetDrukvellenKlaar(vellen);
         try {
           await wachtOpDrukbeelden();
