@@ -10,6 +10,9 @@ zijn in deze taal geschreven.
 - **Formules met eenheden:** `mm`, `kN`, `N/mm²`, `mm⁴`, … via de eenheden van mathjs.
 - **Eenheden vereenvoudigen vanzelf:** `b*h` geeft direct `mm²`, zonder `to`.
 - **Wiskundige opmaak:** KaTeX, met echte breuken, superscripts, subscripts en Griekse letters.
+- **Lange regels breken af**, op het scherm en op papier: liefst na een `=`, anders na een `+`,
+  `−` of `·` op het hoogste niveau. De vervolgregels springen in, de uitkomst blijft aan het
+  eind. Een breuk of matrix breekt niet binnen zichzelf.
 - **Live:** de editor is CodeMirror 6, de uitkomst volgt terwijl je typt.
 - **Meerdere bladen:** dezelfde module kan er meerdere keren in, elk met eigen invoer; de
   projectgegevens gelden voor alle bladen.
