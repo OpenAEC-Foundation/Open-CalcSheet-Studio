@@ -116,6 +116,8 @@ plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent he
 
 - `"Title`, `'tekst`, `// commentaar`
 - `#if … #else if … #else … #end if`, `#hide / #show / #pre / #post`
+- `and(…)`, `or(…)` en `xor(…)` met twee of meer delen, gelijk aan `And(…)`, `Or(…)` en `Xor(…)`:
+  `#if and(a ≡ 1; b ≡ 2; c ≠ 4)` is onwaar zodra één deel onwaar is, op welke plaats ook
 - `#repeat n … #end repeat` en `#for var = lo : hi … #loop`, ook genest
 - `#def name(p1; p2; …) … #end def` voor macro's, `#def Name$ = literal` voor constanten
 - `#include filename.cpd` voor externe macro's en SVG-tekeningen

@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- `and(…)`, `or(…)` en `xor(…)` met drie of meer delen nemen alle delen mee. `and(a ≡ 1; b ≡ 2; c ≠ 4)` gaf waar, ook als het derde deel onwaar was; nu geven ze dezelfde uitkomst als `And(…)`, `Or(…)` en `Xor(…)`, ook binnen `#if`.
+
 ## v2026.48.0 — 2026-11-26
 
 - Bestand › Exporteren zet het rapport ook in een bewerkbaar document: DOCX of ODT. Tekst, koppen en tabellen blijven bewerkbaar, formules worden vergelijkingen, tekeningen gaan als afbeelding mee. Het is een momentopname met project, revisie en exportmoment; wat niet mee kan, zoals de pagina's van een PDF-blad, noemt de app vooraf

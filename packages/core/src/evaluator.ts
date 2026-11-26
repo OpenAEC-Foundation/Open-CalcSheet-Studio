@@ -90,6 +90,23 @@ math.import({
   ln: (v: unknown) => math.log(v as number),
 }, { override: true });
 
+// `and(a; b; c)`, `or(…)` en `xor(…)` met drie of meer delen. mathjs kent ze
+// alleen met twee argumenten en las bij meer delen alleen de eerste twee, zodat
+// `and(waar; waar; onwaar)` waar gaf. Hier vouwen we alle delen van links naar
+// rechts met mathjs' eigen functie: twee delen (ook de operator `a and b`) en
+// het elementsgewijze rekenen met matrices blijven ongewijzigd.
+const nativeAnd = math.and, nativeOr = math.or, nativeXor = math.xor;
+type Logisch = (a: unknown, b: unknown) => unknown;
+const vouw = (f: Logisch, naam: string) => (...args: unknown[]): unknown => {
+  if (args.length < 2) throw new Error(`${naam}() vraagt minstens twee delen`);
+  return args.slice(1).reduce((acc, a) => f(acc, a), args[0]);
+};
+math.import({
+  and: vouw(nativeAnd as unknown as Logisch, 'and'),
+  or: vouw(nativeOr as unknown as Logisch, 'or'),
+  xor: vouw(nativeXor as unknown as Logisch, 'xor'),
+}, { override: true });
+
 // Helper functions that mathjs doesn't ship with.
 
 // mathjs returns Matrix objects from `[…]` literals — Array.isArray(M) is
