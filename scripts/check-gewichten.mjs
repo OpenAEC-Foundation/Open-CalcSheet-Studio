@@ -15,6 +15,8 @@
  *
  * Draaien:  node scripts/check-gewichten.mjs
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import { TALEN } from "./lib/talen.mjs";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -376,23 +378,25 @@ kop("De regels uit gewichten.ts");
 {
   const eigen = REGELS.filter((r) => r.id.startsWith("eigen-"));
   meld(eigen.every((r) => r.bron.titel === "eigen gewichtenoverzicht"), "met als bron 'eigen gewichtenoverzicht'");
-  const lagen = [...new Map(LAAGGROEPEN.flatMap((g) => g.lagen).map((l) => [l.naam, l])).values()];
+  // De namen in gewichten.ts zijn meertalig; de bibliotheek kent ze onder hun Nederlandse naam.
+  const nl = (x) => inTaal(x.naam, "nl");
+  const lagen = [...new Map(LAAGGROEPEN.flatMap((g) => g.lagen).map((l) => [nl(l), l])).values()];
   const mis = [];
   for (const l of lagen) {
-    const r = eigen.find((x) => x.naam.nl === l.naam);
-    if (!r) { mis.push(`${l.naam}: ontbreekt`); continue; }
-    if (r.p !== l.p) mis.push(`${l.naam}: p ${r.p} en ${l.p}`);
+    const r = eigen.find((x) => x.naam.nl === nl(l));
+    if (!r) { mis.push(`${nl(l)}: ontbreekt`); continue; }
+    if (r.p !== l.p) mis.push(`${nl(l)}: p ${r.p} en ${l.p}`);
     // Een regel met een vullingsgraad heeft in de bibliotheek alleen zijn p: die is geen d × ρ.
     const vulling = l.p !== undefined && l.d !== undefined && l.rho !== undefined && Math.abs(l.p - l.d * l.rho) > 1e-9;
-    if (!vulling && (r.d !== l.d || r.rho !== l.rho)) mis.push(`${l.naam}: d ${r.d} en ${l.d}, ρ ${r.rho} en ${l.rho}`);
+    if (!vulling && (r.d !== l.d || r.rho !== l.rho)) mis.push(`${nl(l)}: d ${r.d} en ${l.d}, ρ ${r.rho} en ${l.rho}`);
   }
   gelijk(`alle ${lagen.length} lagen, met dezelfde getallen`, mis, []);
   const samengesteld = OPBOUWEN.filter((o) => o.lagen.length > 1);
   const misO = samengesteld.filter((o) => {
-    const r = eigen.find((x) => x.naam.nl === o.naam);
+    const r = eigen.find((x) => x.naam.nl === nl(o));
     return !r || Math.abs(r.p - somVan(o)) > 0.00051;
   });
-  gelijk(`de ${samengesteld.length} opbouwen met meer lagen, met hun som als p`, misO.map((o) => o.naam), []);
+  gelijk(`de ${samengesteld.length} opbouwen met meer lagen, met hun som als p`, misO.map(nl), []);
 }
 
 // ── 8. Steekproef met de hand ───────────────────────────────────────────────
@@ -491,8 +495,9 @@ kop("Laden en teksten");
   const velden = ["regel", "id", "categorie", "naam", "d", "rho", "p", "waarde", "toestand", "leverancier", "regio", "opmerking", "bron", "bron_titel", "bron_url", "bron_datum"];
   gelijk("elk veld heeft een naam in een foutmelding", velden.filter((v) => !alle.has(`veldNaam.${v}`)), []);
   gelijk("elk veld heeft een melding in het formulier", velden.filter((v) => v !== "regel" && !alle.has(`formulierFout.${v}`)), []);
-  const config = readFileSync(join(DESKTOP, "i18n/config.ts"), "utf8");
-  meld(/"gewichten"/.test(config) && /enGewichten/.test(config) && /nlGewichten/.test(config), "de teksten zijn aangemeld in i18n/config.ts");
+  // De app vindt de bestanden zelf (i18n/bundels.ts): ze moeten er in elke taal zijn.
+  const zonder = TALEN.filter((t) => !existsSync(join(DESKTOP, `i18n/locales/${t.code}/gewichten.json`))).map((t) => t.code);
+  gelijk("de teksten staan in elke taal (i18n/locales/<taal>/gewichten.json)", zonder, []);
 }
 
 console.log(fouten === 0 ? "\nGewichtenbibliotheek in orde." : `\n${fouten} fout(en) in de gewichtenbibliotheek.`);

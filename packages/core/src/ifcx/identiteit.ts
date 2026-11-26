@@ -4,7 +4,9 @@
  * Een knoop in IFCX heet naar een UUID en een object in STEP naar een GlobalId:
  * twee schrijfwijzen van hetzelfde getal van 128 bits. Elke knoop krijgt hier
  * een vaste UUID, afgeleid van zijn plek in het project, zodat twee keer
- * opslaan dezelfde paden geeft. De GlobalId in de STEP is daarvan de korte
+ * opslaan dezelfde paden geeft. Die plek begint bij de identiteit van het
+ * project: een eigen UUID die met het projectbestand meegaat, los van naam en
+ * nummer (zie `afgeleideProjectId` voor bestanden van vóór die id). De GlobalId in de STEP is daarvan de korte
  * vorm: wie beide bestanden naast elkaar legt, kan de objecten aan elkaar
  * koppelen.
  */
@@ -101,6 +103,33 @@ export function isUuid(tekst: string): boolean {
   return UUID_VORM.test(tekst);
 }
 
+/**
+ * De identiteit van een project zonder eigen id: afgeleid uit projectnummer en
+ * -naam, zoals de wortel van het IFCX werd gemaakt voordat een project een eigen
+ * id had.
+ * Een ouder bestand krijgt zo dezelfde paden en GlobalId's als in zijn eerdere
+ * exports; daarna blijft die id staan, ook als naam of nummer veranderen.
+ */
+export function afgeleideProjectId(naam: string, nummer: string | undefined): string {
+  return uuidVan(`project/${nummer ?? ''}/${naam}`);
+}
+
+/** Een nieuwe, willekeurige projectidentiteit (UUID versie 4), voor een nieuw project. */
+export function nieuweProjectId(): string {
+  const b = new Uint8Array(16);
+  const c = (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } }).crypto;
+  if (!c?.getRandomValues) throw new Error('Geen bron van willekeurige getallen voor een nieuwe projectidentiteit.');
+  c.getRandomValues(b);
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  return bytesUuid(b);
+}
+
+/** De id als hij een UUID is, of `undefined` als het geen UUID is. */
+export function leesProjectId(id: unknown): string | undefined {
+  return typeof id === 'string' && isUuid(id) ? id : undefined;
+}
+
 export function isIfcGuid(tekst: string): boolean {
   return GUID_VORM.test(tekst);
 }
@@ -136,12 +165,13 @@ export function uuidUitIfcGuid(guid: string): string {
 /**
  * Het IFCX-pad van een element in een bronmodel. Een GlobalId wordt zijn UUID,
  * want zo heet hetzelfde element in de IFCX van dat model; een UUID of ander
- * bruikbaar pad blijft staan. Bij het samenstellen met het bronmodel komen de
- * attributen zo op het echte element terecht.
+ * bruikbaar pad blijft staan, ook een pad met `/` zoals `/elements/0900…`: dat
+ * patroon staat in de specificatie (`ifcx.tsp`). Bij het samenstellen met het
+ * bronmodel komen de attributen zo op het echte element terecht.
  */
 export function padVanElement(id: string): string {
   const t = id.trim();
   if (isIfcGuid(t)) return uuidUitIfcGuid(t);
-  if (/^[A-Za-z0-9_.:-]+$/.test(t)) return t;
+  if (/^[A-Za-z0-9_.:/-]+$/.test(t)) return t;
   return uuidVan(`element/${t}`);
 }

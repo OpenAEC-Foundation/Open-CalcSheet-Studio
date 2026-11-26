@@ -32,6 +32,12 @@ De instellingen staan in `preferences.json` in de app-gegevensmap
 (`%APPDATA%\studio.openstructuralcalculation.app\` op Windows) onder
 `mcpAan`, `mcpPoort`, `mcpToken` en `mcpAlleenLezen`.
 
+Een dev-build (`npm run build:dev-exe`, `src-tauri/tauri.dev.conf.json`) heeft de
+identifier `studio.openstructuralcalculation.dev`. Hij leest en schrijft daardoor
+zijn eigen `preferences.json` (`%APPDATA%\studio.openstructuralcalculation.dev\`),
+met een eigen token, en luistert standaard op poort 3880. Zo draait hij naast de
+geïnstalleerde app, die op 3879 blijft.
+
 ## Verbinden
 
 Op de tab staan beide regels kant-en-klaar, met het juiste token en de juiste
@@ -76,7 +82,7 @@ De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 | Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_set_pdf`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_insert_formula` |
 | Rekenen | `calc_evaluate` |
 | Formules | `formulas_list`, `formula_get` |
-| Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `print` |
+| Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `report_export_pdf`, `print` |
 | Weergave en instellingen | `view_get`, `view_set`, `settings_get`, `settings_set` |
 
 `id` is een blad-id uit `project_get` of `sheets_list`. Elke wijziging van het
@@ -97,6 +103,17 @@ Een fout komt terug als toolresultaat met `isError: true` en een code:
 `NOT_AVAILABLE` of `INTERNAL`. Een PDF schrijven naar een pad kan alleen met de
 rapportengine; anders opent `print` de printdialoog (zie
 [api.md](api.md#wat-er-niet-helemaal-kan)).
+
+## In de app werken, niet eromheen
+
+De server geeft de assistent bij het verbinden instructies mee (`MCP_INSTRUCTIES` in
+`mcp/dispatcher.ts`). Daarin staat dat hij in het geopende project werkt, via de tools:
+een nieuw blad met `sheet_add`, de tekst met `sheet_set_source`, de invoer met
+`sheet_set_input` en een bestaand blad aanpassen in plaats van kopiëren. Hij schrijft
+zelf geen `.ifccalculation`- of `.cpd`-bestanden en bouwt geen project met een eigen
+script: dan opent de gebruiker een nieuw bestand en raakt hij de open stand, de
+geschiedenis en de vastgelegde antwoorden van Open FEM Studio kwijt. Ontbreekt er een
+tool, dan zegt hij dat in plaats van om de app heen te werken.
 
 ## Hoe het werkt
 
@@ -151,3 +168,28 @@ Herkomst: de Rust-brug en de opzet van de TS-laag komen uit Open Planner Studio
   Op Windows start een Tauri-testbinary zonder common-controls-manifest niet
   (`STATUS_ENTRYPOINT_NOT_FOUND`); zet dan een extern manifest met
   `Microsoft.Windows.Common-Controls` 6.0 naast een kopie van de testbinary.
+
+## In de werkplek van de OpenAEC SuperCloud
+
+In de werkplek van een SuperCloud-omgeving draait de platformbouw van de app
+(`npm run build:platform`, uitvoer in `packages/desktop/dist-platform/`) in een
+afgeschermd frame; zie [supercloud-werkplek.md](supercloud-werkplek.md). De assistent van
+de SuperCloud krijgt daar dezelfde tools als deze MCP-server, via
+`window.__OPDS_APP__` (`src/mcp/werkplek.ts`): `tools()`, `definitions()` en
+`run(naam, argumenten)`, door dezelfde `voerToolUit`.
+
+- De tools die bestanden schrijven (soort `file`) staan er niet bij: openen en
+  opslaan doet de gebruiker zelf, via Docs. `project_open` en `recent_files`
+  ook niet: die werken met paden op deze computer. Een aanroep van een tool die
+  er niet bij staat, geeft `niet_in_browser: <naam>`.
+- Een tool die het project wijzigt (soort `mutate`) heeft `bevestigen: true`:
+  de SuperCloud vraagt de gebruiker eerst om toestemming.
+- De definities staan ook als bestand naast de bundel, `mcp-tools.json`
+  (`packages/desktop/public/`). `node scripts/werkplek-tools.mjs` schrijft het;
+  `check-werkplek-tools.mjs` in `check-alles` controleert dat het bijgewerkt is.
+
+Openen, Opslaan en Opslaan als gaan in de werkplek naar Docs, via het
+hostcontract `window.openaecHost` (`src/tauri/fileOps.ts`, paden `docs:<id>`).
+De taal komt van de SuperCloud. Wat de platformbouw verder anders doet, staat
+in [supercloud-werkplek.md](supercloud-werkplek.md). Het contract staat in de
+OpenAEC Blueprint, `docs/supercloud-koppeling.md`.

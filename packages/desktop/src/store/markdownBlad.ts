@@ -9,9 +9,14 @@
  * een eigen veld (`md`) en niet in `source`: die is van de rekentekst, en de
  * rekenkern, de rekenversie en *Bladen bijwerken* lezen hem.
  *
- * Puur en zonder imports: projectBestand.ts gebruikt dit bestand, en de
- * controlescripts laden dat rechtstreeks in Node.
+ * Een Markdown-blad kan aan een bestand buiten het project gekoppeld zijn (een
+ * RTF-bestand of een bereik uit een werkmap): dan is de tekst de kopie van de
+ * laatste lezing en werkt de app hem vanzelf bij. Zie store/koppeling.ts.
+ *
+ * Puur: projectBestand.ts gebruikt dit bestand, en de controlescripts laden dat
+ * rechtstreeks in Node.
  */
+import { leesKoppeling, type BronKoppeling } from "./koppeling.ts";
 
 /** `templateId` van een Markdown-blad. Geen module: er is geen sjabloon met deze naam. */
 export const MARKDOWN_BLAD = "markdown";
@@ -29,6 +34,8 @@ export interface MarkdownBestand {
   beelden?: Record<string, string>;
   /** De koppen uit de tekst blijven uit de inhoudsopgave van het rapport. */
   koppenUit?: boolean;
+  /** Gekoppeld aan een bestand buiten het project: de tekst is de laatst gelezen kopie. */
+  koppeling?: BronKoppeling;
 }
 
 /** Is dit blad een Markdown-blad? Ook als de tekst ontbreekt. */
@@ -57,13 +64,15 @@ export function leesMarkdownBestand(x: unknown): MarkdownBestand | undefined {
     if (beelden.length > 0) uit.beelden = Object.fromEntries(beelden);
   }
   if (m.koppenUit === true) uit.koppenUit = true;
+  const koppeling = leesKoppeling(m.koppeling);
+  if (koppeling) uit.koppeling = koppeling;
   return uit;
 }
 
 /** De bestandsnaam zonder map en zonder extensie: de naam van een nieuw blad. */
 export function bladnaamVoorMarkdown(bestandsnaam: string): string {
   const los = bestandsnaam.split(/[\\/]/).pop() ?? bestandsnaam;
-  return los.replace(/\.(md|markdown|txt)$/i, "").trim() || "Markdown";
+  return los.replace(/\.(md|markdown|txt|rtf)$/i, "").trim() || "Markdown";
 }
 
 /**
