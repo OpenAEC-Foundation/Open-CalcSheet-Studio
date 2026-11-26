@@ -11,6 +11,8 @@
  *     een gewoon rekenblad met dezelfde uitkomsten;
  *   • opslaan en heropenen geeft hetzelfde, oude bestanden blijven leesbaar;
  *   • de verdeling over de vellen: een eenheid valt nooit over de vouw;
+ *   • een gewoon rekenblad op het canvas: in eenheden bij de koppen, nooit
+ *     binnen een blok, onder elkaar zonder overlap, met dezelfde uitkomsten;
  *   • zoomen met Ctrl en scrollen: de richting, heen en terug, en de grenzen.
  *
  * Draaien:  node scripts/check-canvas.mjs
@@ -21,11 +23,13 @@ import {
   CANVAS_BLAD, EERSTE_VEL, EENHEID_MERK, INVOER_BREEDTE, RASTER_MM, VEL_BREEDTE, VEL_HOOGTE,
   isCanvasBlad, heeftEenheden, leesEenheden, schrijfEenheden, zetEenheid, verwijderEenheid,
   nieuwId, maxBreedte, opRaster, klemOpVel, velVan, velBegin, naastDeVouw, legOpVellen,
-  ZOOM_MIN, ZOOM_MAX, zoomNaWiel,
+  ZOOM_MIN, ZOOM_MAX, zoomNaWiel, splitsOpKoppen, stapelOnderElkaar, STAPEL_RUIMTE,
 } from "../packages/desktop/src/store/canvasBlad.ts";
 import { rekenEenhedenDoor, rekenUitwerking } from "../packages/desktop/src/components/calc/canvasRekenen.ts";
 import { bronVoorUitvoer } from "../packages/desktop/src/templates/vertalingen.ts";
 import { liggerEn } from "../packages/desktop/src/templates/ligger.en.ts";
+import { rekentaalDemo } from "../packages/desktop/src/templates/rekentaal-demo.ts";
+import { tweepaalspoer } from "../packages/desktop/src/templates/tweepaalspoer.ts";
 import { rekenDoor } from "../packages/desktop/src/mcp/rekenen.ts";
 import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE, normaliseerExemplaar } from "../packages/desktop/src/store/projectBestand.ts";
 import { bladenVoorIfc, projectIfcx } from "../packages/desktop/src/store/projectIfcx.ts";
@@ -291,6 +295,59 @@ console.log("\nHet raster en de vellen");
   meld(tebreed[0].x === 0, "breder dan het vel: tegen de linkerrand");
   const hoog = legOpVellen([maat(0, 10, 40, VEL_HOOGTE + 100)]);
   meld(hoog[0].vel === 0 && hoog[0].y === 10, "hoger dan een vel: blijft staan, verschuiven helpt niet");
+}
+
+console.log("\nEen gewoon rekenblad op het canvas");
+{
+  const teksten = (bron) => splitsOpKoppen(bron).map((e) => e.tekst);
+  const drie = splitsOpKoppen("a = 1\n# 2. Belasting\nb = 2\n## 2.1 Wind\nc = 3");
+  meld(drie.length === 3 && drie[0].tekst === "a = 1" && drie[2].tekst.startsWith("## 2.1"), "een nieuwe eenheid bij elke kop, ook een lagere");
+  meld(drie.map((e) => e.id).join() === "e1,e2,e3" && new Set(drie.map((e) => e.y)).size === 3, "met een eigen id en op volgorde");
+  meld(teksten("# 1. Invoer\na = 1").length === 1, "een kop bovenaan geeft geen lege eenheid ervoor");
+  meld(teksten("#if a > 0\n# In de voorwaarde\nb = 1\n#end if\n# Daarna\nc = 2").length === 2, "binnen een #if blijft de kop bij de eenheid erboven");
+  meld(teksten("#for i = 1 : 3\n# Lus\n#loop\n# Daarna").length === 2, "zo ook binnen een lus");
+  meld(teksten("@svg\n# geen kop\n@end\n# Daarna").length === 2, "en binnen een @svg-blok");
+  meld(teksten("#hide\n# Verborgen\n#show\n# Zichtbaar").length === 2, "en tussen #hide en #show");
+  meld(teksten("#def kader(x)\n# In de macro\n#end def\n# Daarna").length === 2, "en binnen een macro van meer regels");
+  meld(teksten("#def f(x) = x^2\ny = f(2)\n# Daarna\nz = 1").length === 2, "een macro van één regel opent niets");
+  meld(teksten("#if a > 0\nb = 1\n#else\nb = 2\n#end if\n# Daarna").length === 2, "na #end if splitst de volgende kop weer");
+  // Macro's, constanten en eigen eenheden gelden bij het inlezen: alleen binnen hun eenheid.
+  const macro = teksten("#def kwadraat(x) = x^2\n# Twee\na = 1\n# Drie\ny = kwadraat(3)\n# Vier\nz = 1");
+  meld(macro.length === 2 && macro[0].includes("kwadraat(3)") && macro[1] === "# Vier\nz = 1", "een macro blijft bij elkaar tot zijn laatste gebruik");
+  meld(teksten("#def stijl$ = rood\n# B\n'stijl$\n# C\nc = 1").length === 2, "zo ook een constante");
+  meld(teksten(".kN2 = 1 kN\n# B\nF = 3 kN2\n# C\nc = 1").length === 2, "en een eigen eenheid");
+  meld(teksten("#include hulp.cpd\n# B\nb = 1\n# C\nc = 1").length === 1, "na een #include splitst niets meer");
+  meld(teksten("#def f(x) = x\n# B\nf_x = 1\n# C\nc = 1").length === 3, "een naam die er alleen op lijkt, houdt niets bij elkaar");
+  const keten = teksten("#def a1(x) = x\n# B\n#def b1(x) = a1(x)\n# C\nc = 1\n# D\nd = b1(2)\n# E\ne = 1");
+  meld(keten.length === 2 && keten[1] === "# E\ne = 1", "een macro die een eerdere gebruikt: de hele keten blijft bij elkaar");
+  const macroBron = "#def dubbel(x) = 2*x\n# Twee\na = dubbel(3)\n# Drie\nb = a + 1";
+  const macroUit = rekenEenhedenDoor(schrijfEenheden(splitsOpKoppen(macroBron)), {}, {}).flatMap((u) => u.nodes);
+  meld(dichtbij(waarde({ nodes: macroUit }, "b"), 7), "en rekent dan: a = 2·3 = 6, b = 7");
+
+  // Dezelfde uitkomsten: een rekentekst in eenheden of in één stuk. De demo heeft
+  // koppen buiten en binnen blokken, voorwaarden, lussen, tekeningen en een @3d.
+  const rekenend = (nodes) => nodes.filter((n) => n.type !== "text" && n.type !== "heading");
+  const kort = (nodes) => rekenend(nodes).map((n) => `${n.type}:${n.name ?? ""}=${n.result ?? ""}`).join("|");
+  for (const [naam, bron, minstens] of [["de demo", rekentaalDemo, 20], ["de tweepaalspoer", tweepaalspoer, 2]]) {
+    const delen = splitsOpKoppen(bron);
+    const geheel = evaluate(parse(bron), {}, {});
+    const perEenheid = rekenEenhedenDoor(schrijfEenheden(delen), {}, {}).flatMap((u) => u.nodes);
+    meld(delen.length >= minstens && kort(geheel) === kort(perEenheid), `${naam}: ${delen.length} eenheden, dezelfde ${rekenend(geheel).length} uitkomsten als in één stuk`);
+  }
+
+  // Onder elkaar: niets op elkaar, niets over de vouw, alles op het raster.
+  const hoog = { e1: 30, e2: 200, e3: 12 };
+  const reeks = ["e1", "e2", "e3", "e4"].map((id, i) => E(id, 50, i, "a = 1\nb = 2"));
+  const gestapeld = stapelOnderElkaar(reeks, (e) => hoog[e.id]);
+  const h = (e) => hoog[e.id] ?? 10;
+  meld(gestapeld.every((e) => e.x === 0 && e.y % RASTER_MM === 0), "tegen de linkerrand en op het raster");
+  meld(gestapeld.every((e, i) => i === 0 || e.y >= gestapeld[i - 1].y + h(gestapeld[i - 1]) + STAPEL_RUIMTE), "niets op de eenheid erboven");
+  meld(gestapeld.every((e) => velVan(e.y) === velVan(e.y + h(e) - 1e-9)), "niets over de vouw");
+  // e1 staat op 0 en is 30 hoog; e2 (200 hoog) past daaronder niet meer op het eerste vel.
+  meld(gestapeld[1].y === EERSTE_VEL, `wat niet meer past, begint het volgende vel (op ${EERSTE_VEL} mm)`);
+  meld(gestapeld.map((e) => e.tekst).join() === reeks.map((e) => e.tekst).join(), "de tekst blijft zoals hij was");
+  const geschat = stapelOnderElkaar([E("a", 0, 0, "x\ny\nz"), E("b", 0, 1, "w")], () => undefined);
+  meld(geschat[1].y >= 15 + STAPEL_RUIMTE, "zolang er niets gemeten is: een schatting naar het aantal regels");
 }
 
 console.log("\nZoomen met Ctrl en scrollen");
