@@ -15,14 +15,18 @@ import { meetWater } from "../../kaart/overpass.ts";
 import { KAARTEN, situatieActueel, situatieBijPunt, stelselSleutel, waterTekst, type Kaartbeeld, type Water } from "../../rapport/situatie.ts";
 import { useBeeldEenheden } from "./useBeeldEenheden";
 import type { BeeldEenheden } from "./beeldEenheden";
+import { IN_WERKPLEK, nietInWerkplek } from "../../werkplek/werkplek";
+import speldBeeld from "leaflet/dist/images/marker-icon.png";
+import speldBeeld2x from "leaflet/dist/images/marker-icon-2x.png";
+import schaduwBeeld from "leaflet/dist/images/marker-shadow.png";
 import "./LocatieKiezer.css";
 
-// Dezelfde speld als op de windkaart (de standaardafbeeldingen van Leaflet
-// vinden onder een bundler hun pad niet).
+// Dezelfde speld als op de windkaart. De standaardafbeeldingen van Leaflet
+// vinden onder een bundler hun pad niet; daarom zelf ingevoerd, in de bundel.
 const speld = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconUrl: speldBeeld,
+  iconRetinaUrl: speldBeeld2x,
+  shadowUrl: schaduwBeeld,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   shadowSize: [41, 41],
@@ -155,6 +159,11 @@ export default function LocatieKiezer() {
    */
   const maakKaarten = useCallback(
     async (p: Punt) => {
+      // De kaartbeelden komen van de tegels van OpenStreetMap: geen netwerk in de werkplek.
+      if (IN_WERKPLEK) {
+        setKaartenMelding(nietInWerkplek(t("gegevens.situatie.kaartenMaken")));
+        return;
+      }
       const nummer = ++kaartNummer.current;
       setKaartenMelding(null);
       setWaterMelding(null);
@@ -211,6 +220,10 @@ export default function LocatieKiezer() {
    */
   const meetAfstand = useCallback(
     async (p: Punt) => {
+      if (IN_WERKPLEK) {
+        setWaterMelding(nietInWerkplek(t("gegevens.situatie.waterMeten")));
+        return;
+      }
       const nummer = ++waterNummer.current;
       const kaartMoment = kaartNummer.current;
       setWaterMelding(null);
@@ -278,7 +291,8 @@ export default function LocatieKiezer() {
   useEffect(() => {
     let weg = false;
     setErpBeschikbaar(false);
-    if (!projectNummer) return;
+    // De koppeling met ERPNext heeft een eigen sleutel en netwerk: niet in de werkplek.
+    if (!projectNummer || IN_WERKPLEK) return;
     void (async () => {
       try {
         const w = await leesErpnextInstellingen();
@@ -299,6 +313,7 @@ export default function LocatieKiezer() {
    * Daarna worden de kaarten opnieuw gemaakt.
    */
   const neemOverUitErp = useCallback(async () => {
+    if (IN_WERKPLEK) return;
     const nummer = ++erpNummer.current;
     const project = projectNummer;
     // Het punt zoals het was bij de klik: is het veranderd als het antwoord komt, dan telt het niet.
@@ -356,7 +371,7 @@ export default function LocatieKiezer() {
       const waarden: Record<string, string> = { locatie_punt: puntJson(p) };
       if (opties?.naam && !huidig.trim()) waarden.locatie = opties.naam;
       zetGegevens(waarden);
-      if (opties?.bevestig || !useProjectStore.getState().rapport.situatie) void maakKaarten(p);
+      if (!IN_WERKPLEK && (opties?.bevestig || !useProjectStore.getState().rapport.situatie)) void maakKaarten(p);
     },
     [zetGegevens, maakKaarten, stopErp],
   );
@@ -374,6 +389,11 @@ export default function LocatieKiezer() {
       inzoomen.current = true;
       zetPunt(coord, { bevestig: true });
       setBezig(false);
+      return;
+    }
+    // Een adres opzoeken gaat via internet: niet in de werkplek. Coördinaten wel (hierboven).
+    if (IN_WERKPLEK) {
+      setMelding(nietInWerkplek(t("gegevens.situatie.zoeken")));
       return;
     }
     setBezig(true);
@@ -405,7 +425,7 @@ export default function LocatieKiezer() {
   return (
     <div className="lk">
       <span className="pg-label">{t("gegevens.situatie.titel")}</span>
-      <span className="pg-hint">{t("gegevens.situatie.hint")}</span>
+      <span className="pg-hint">{IN_WERKPLEK ? t("werkplek.kaartZonderNet") : t("gegevens.situatie.hint")}</span>
       <div className="lk-zoek">
         <input
           type="text"
@@ -451,10 +471,13 @@ export default function LocatieKiezer() {
           scrollWheelZoom={false}
           worldCopyJump
         >
-          <TileLayer
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
+          {/* In de werkplek geen tegels: geen netwerk buiten de bundel. Klikken en slepen werken wel. */}
+          {!IN_WERKPLEK && (
+            <TileLayer
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+          )}
           {punt && (
             <Marker
               position={[punt.lat, punt.lon]}
@@ -472,7 +495,7 @@ export default function LocatieKiezer() {
           <KlikOpKaart onKlik={(p) => zetPunt(p)} />
         </MapContainer>
       </div>
-      {punt && (
+      {punt && !IN_WERKPLEK && (
         <div className="lk-kaarten">
           <button type="button" className="lk-knop" onClick={() => void maakKaarten(punt)} disabled={kaartenBezig}>
             {kaartenBezig
@@ -487,7 +510,7 @@ export default function LocatieKiezer() {
         </div>
       )}
       {kaartenMelding && <div className="lk-melding" role="status">{kaartenMelding}</div>}
-      {punt && situatie && stand === "actueel" && (
+      {punt && situatie && stand === "actueel" && !IN_WERKPLEK && (
         <div className="lk-kaarten">
           <button type="button" className="lk-knop" onClick={() => void meetAfstand(punt)} disabled={waterBezig || kaartenBezig}>
             {waterBezig ? t("gegevens.situatie.waterBezig") : t("gegevens.situatie.waterMeten")}

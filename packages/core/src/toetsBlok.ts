@@ -1,5 +1,5 @@
 import { math } from './eenheden.js';
-import type { EvaluatedToets, ToetsAntwoord, ToetsNode, ToetsRij, ToetsUitkomst, VastgelegdeToets } from './types.js';
+import type { EvaluatedToets, FemRekenmodel, FemStaafRekenmodel, ToetsAntwoord, ToetsNode, ToetsRij, ToetsUitkomst, VastgelegdeToets } from './types.js';
 
 /**
  * Een normtoets door Open FEM Studio: het blok `@toets`.
@@ -30,14 +30,46 @@ import type { EvaluatedToets, ToetsAntwoord, ToetsNode, ToetsRij, ToetsUitkomst,
 export const TOETS_START_RE = /^@toets\s+([\p{L}_][\p{L}\p{N}_]*)\s*=\s*([a-z][a-z0-9_]*)\s*$/iu;
 const VELD_RE = /^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/;
 
-/** De reken- en opzoektools; dezelfde lijst als de Rust-kant (fem-brug, toegestaan). */
+/**
+ * Wat een blad niet mag aanroepen; dezelfde lijst als de Rust-kant (fem-brug,
+ * UITGESLOTEN_VOORVOEGSELS en UITGESLOTEN_NAMEN). Uitgesloten zijn de tools die de app
+ * van FEM Studio sturen (`gui_*`, `app_*`, `extensions_*`), die het project of het model
+ * in de app bijhouden (`project_*`, `model3d_*`) en die bestanden lezen of schrijven
+ * (`load_*`, `generate_*` en de drie IFC-tools). Al het andere uit `tools/list` is een
+ * rekentool en mag, ook een die er later bij komt.
+ */
+export const TOETS_UITGESLOTEN = {
+  voorvoegsels: ['gui_', 'app_', 'project_', 'model3d_', 'extensions_', 'load_', 'generate_'],
+  namen: ['open_fem_3d_ifc_importeren', 'fem_resultaten_ifc_schrijven', 'fem_resultaten_ifc_lezen'],
+} as const;
+
+/** Mag een blad deze tool van FEM Studio gebruiken? Alle rekentools, zie TOETS_UITGESLOTEN. */
 export function toetsToolToegestaan(tool: string): boolean {
-  return /^(check_|list_|compute_|concrete_)/.test(tool) || ['validate_fem_model', 'solve_fem_model', 'portaal_maken', 'fem_solver_status'].includes(tool);
+  return /^[a-z][a-z0-9_]*$/.test(tool)
+    && !TOETS_UITGESLOTEN.voorvoegsels.some((v) => tool.startsWith(v))
+    && !(TOETS_UITGESLOTEN.namen as readonly string[]).includes(tool);
 }
 
 // ── Lezen ────────────────────────────────────────────────────────────────────
 
-/** De regels tussen `@toets naam = tool` en `@end`. Fouten worden meldingen. */
+/** Hoeveel haken een stuk tekst meer opent dan sluit, buiten aanhalingstekens. */
+function openHaken(tekst: string): number {
+  let diepte = 0;
+  let tekenreeks = false;
+  for (const c of tekst) {
+    if (c === '"') tekenreeks = !tekenreeks;
+    else if (tekenreeks) continue;
+    else if ('([{'.includes(c)) diepte++;
+    else if (')]}'.includes(c)) diepte--;
+  }
+  return diepte;
+}
+
+/**
+ * De regels tussen `@toets naam = tool` en `@end`. Fouten worden meldingen. Een veld
+ * loopt door op de volgende regels zolang er een haak openstaat: zo past een lijst van
+ * staven (`inputs = [{ … }]`) met één veld per regel in het blok.
+ */
 export function leesToetsBlok(
   naam: string,
   tool: string,
@@ -47,17 +79,34 @@ export function leesToetsBlok(
   const velden: ToetsNode['velden'] = [];
   const fouten: string[] = [];
   if (!toetsToolToegestaan(tool)) fouten.push(`de tool "${tool}" van FEM Studio is in een rekenblad niet toegestaan`);
+  let open: { veld: string; delen: string[]; regel: number; diepte: number } | null = null;
+  const sluit = (v: { veld: string; delen: string[]; regel: number }) => {
+    if (velden.some((x) => x.veld === v.veld)) fouten.push(`regel ${v.regel}: het veld ${v.veld} staat er al`);
+    else velden.push({ veld: v.veld, expr: normaliseer(v.delen.join(' ')), regel: v.regel });
+  };
   regels.forEach((r, i) => {
     const t = r.trim();
     if (!t || t.startsWith('//')) return;
+    if (open) {
+      open.delen.push(t);
+      open.diepte += openHaken(t);
+      if (open.diepte <= 0) {
+        sluit(open);
+        open = null;
+      }
+      return;
+    }
     const m = t.match(VELD_RE);
     if (!m) {
       fouten.push(`regel ${i + 1}: schrijf veld = uitdrukking`);
       return;
     }
-    if (velden.some((v) => v.veld === m[1])) fouten.push(`regel ${i + 1}: het veld ${m[1]} staat er al`);
-    else velden.push({ veld: m[1], expr: normaliseer(m[2]), regel: i + 1 });
+    const veld = { veld: m[1], delen: [m[2]], regel: i + 1, diepte: openHaken(m[2]) };
+    if (veld.diepte > 0) open = veld;
+    else sluit(veld);
   });
+  const nogOpen = open as { veld: string; regel: number } | null;
+  if (nogOpen) fouten.push(`regel ${nogOpen.regel}: in het veld ${nogOpen.veld} sluit een haak niet`);
   return { naam, tool, velden, fouten };
 }
 
@@ -77,9 +126,31 @@ const ACHTERVOEGSELS: readonly (readonly [string, string])[] = [
   ['_m', 'm'],
 ];
 
+/**
+ * Hetzelfde voor een naam in camelCase, zoals de rekenkernen van `solve_native_fem` ze
+ * schrijven (`thicknessMm`, `fcdMpa`, `vRdcKnPerM`); de langste eerst. Het achtervoegsel
+ * begint met een hoofdletter en er staat een naam vóór: `M` alleen is geen lengte.
+ */
+const ACHTERVOEGSELS_CAMEL: readonly (readonly [string, string])[] = [
+  ['Mm2PerM2', 'mm^2/m^2'],
+  ['Mm2PerM', 'mm^2/m'],
+  ['KnPerM2', 'kN/m^2'],
+  ['KnPerM', 'kN/m'],
+  ['KnM2', 'kN/m^2'],
+  ['Mm2', 'mm^2'],
+  ['Mm4', 'mm^4'],
+  ['Mpa', 'MPa'],
+  ['Knm', 'kN m'],
+  ['Mm', 'mm'],
+  ['Kn', 'kN'],
+  ['M', 'm'],
+];
+
 export function eenheidVanVeld(veld: string): string | null {
   const v = veld.toLowerCase();
-  return ACHTERVOEGSELS.find(([achter]) => v.endsWith(achter))?.[1] ?? null;
+  const metStreepje = ACHTERVOEGSELS.find(([achter]) => v.endsWith(achter))?.[1];
+  if (metStreepje) return metStreepje;
+  return ACHTERVOEGSELS_CAMEL.find(([achter]) => veld.length > achter.length && veld.endsWith(achter) && /[a-z0-9]/i.test(veld[veld.length - achter.length - 1]))?.[1] ?? null;
 }
 
 /** De kolommen van `forces_envelope` als matrix: per rij één station. */
@@ -115,8 +186,28 @@ function getal(w: unknown, pad: string, eenheid: string | null): number | string
   throw new Error(`${pad}: geen getal, tekst of ja/nee`);
 }
 
+/** `forces_envelope` als matrix, met per rij één station: de objecten van het schema, of null als het geen matrix is. */
+function krachtenMatrix(waarde: unknown, pad: string): unknown[] | null {
+  const rijen = math.isMatrix(waarde) ? (waarde as { toArray(): unknown[] }).toArray() : waarde;
+  if (!Array.isArray(rijen) || !rijen.length || !rijen.every((r) => Array.isArray(r))) return null;
+  return (rijen as unknown[][]).map((rij, i) => {
+    if (rij.length !== KRACHT_KOLOMMEN.length) {
+      throw new Error(`${pad}, rij ${i + 1}: ${KRACHT_KOLOMMEN.length} kolommen (combinatie, x, N, V_y, V_z, M_t, M_y, M_z), niet ${rij.length}`);
+    }
+    const waarden = KRACHT_KOLOMMEN.map(([naam, eenheid], k) => getal(rij[k], `${pad}, rij ${i + 1}, ${naam}`, eenheid));
+    const [combination_id, position_mm, n_ed, vy_ed, vz_ed, mt_ed, my_ed, mz_ed] = waarden;
+    return { combination_id, position_mm, forces: { n_ed, vy_ed, vz_ed, mt_ed, my_ed, mz_ed } };
+  });
+}
+
 /** Een waarde zoals FEM Studio hem verwacht: getallen in de eenheid van elk veld. */
 function zuiver(veld: string, w: unknown, pad: string): unknown {
+  // Ook in een staaf van `inputs` (check_timber_beams en de andere lijsten) mag
+  // `forces_envelope` een matrix zijn, zoals fem_krachten hem geeft.
+  if (veld === 'forces_envelope') {
+    const krachten = krachtenMatrix(w, pad);
+    if (krachten) return krachten;
+  }
   if (math.isMatrix(w)) return zuiver(veld, (w as { toArray(): unknown[] }).toArray(), pad);
   if (Array.isArray(w)) return w.map((x, i) => zuiver(veld, x, `${pad}[${i + 1}]`));
   if (w !== null && typeof w === 'object' && !isUnit(w) && !math.isFraction(w) && !math.isBigNumber(w)) {
@@ -130,22 +221,10 @@ function zuiver(veld: string, w: unknown, pad: string): unknown {
 /**
  * Een veld omgerekend naar het schema van FEM Studio. `forces_envelope` mag een
  * matrix zijn met per rij [combination_id, position_mm, n_ed, vy_ed, vz_ed, mt_ed,
- * my_ed, mz_ed]. Werpt bij een waarde die niet past.
+ * my_ed, mz_ed], ook in een staaf van een lijst (`inputs = [{…, forces_envelope: …}]`).
+ * Werpt bij een waarde die niet past.
  */
 export function naarSchema(veld: string, waarde: unknown): unknown {
-  if (veld === 'forces_envelope') {
-    const rijen = math.isMatrix(waarde) ? (waarde as { toArray(): unknown[] }).toArray() : waarde;
-    if (Array.isArray(rijen) && rijen.length && rijen.every((r) => Array.isArray(r))) {
-      return (rijen as unknown[][]).map((rij, i) => {
-        if (rij.length !== KRACHT_KOLOMMEN.length) {
-          throw new Error(`forces_envelope, rij ${i + 1}: ${KRACHT_KOLOMMEN.length} kolommen (combinatie, x, N, V_y, V_z, M_t, M_y, M_z), niet ${rij.length}`);
-        }
-        const waarden = KRACHT_KOLOMMEN.map(([naam, eenheid], k) => getal(rij[k], `forces_envelope, rij ${i + 1}, ${naam}`, eenheid));
-        const [combination_id, position_mm, n_ed, vy_ed, vz_ed, mt_ed, my_ed, mz_ed] = waarden;
-        return { combination_id, position_mm, forces: { n_ed, vy_ed, vz_ed, mt_ed, my_ed, mz_ed } };
-      });
-    }
-  }
   return zuiver(veld, waarde, veld);
 }
 
@@ -204,14 +283,21 @@ export function schemaHash(schema: unknown): string {
 
 // ── Vastleggen ───────────────────────────────────────────────────────────────
 
-/** Een vastgelegd antwoord zoals het blok het opzoekt (`EvalOpties.toetsingen`). */
+/**
+ * Een vastgelegd antwoord zoals het blok het opzoekt (`EvalOpties.toetsingen`). Bij een
+ * `@fem`-blok gaat het bewaarde verzoek mee: daarin staat het raster of het staafwerk van
+ * het antwoord.
+ */
 export function alsAntwoord(v: VastgelegdeToets): ToetsAntwoord {
+  const vorm = (v.verzoek as { vorm?: unknown }).vorm;
+  const fem = vorm === 'fem-plaat/1' || vorm === 'fem-staven/1';
   return {
     ok: true,
     uitkomst: v.uitkomst,
     datum: v.datum,
     ...(v.herkomst.versie ? { versie: v.herkomst.versie } : {}),
     ...(v.herkomst.schema ? { schema: v.herkomst.schema } : {}),
+    ...(fem ? { verzoek: v.verzoek as unknown as FemRekenmodel | FemStaafRekenmodel } : {}),
   };
 }
 
