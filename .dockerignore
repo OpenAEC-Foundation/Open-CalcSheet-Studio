@@ -1,0 +1,16 @@
+# Wat niet in de bouwcontext van docker/*.Dockerfile hoort: wat de bouw zelf maakt of
+# ophaalt, en wat voor het bouwen niet nodig is.
+**/node_modules
+**/dist
+**/dist-platform
+**/dist-rekendienst
+packages/desktop/src-tauri/target
+packages/desktop/src-tauri/fem-studio/openaec-mcp-server*
+packages/desktop/src-tauri/fem-studio/THIRD-PARTY-NOTICES.txt
+packages/desktop/src-tauri/fem-studio/SOURCE.txt
+packages/desktop/src-tauri/jupyter-omgeving/omgeving.*
+.git
+.claude
+.worktrees
+docs/images
+*.log
