@@ -12,6 +12,11 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 - Een project heeft een eigen, blijvende identiteit, die met het projectbestand meegaat. De IFCX- en IFC-export hangen daaraan in plaats van aan projectnaam en -nummer: hernoemen of een ander projectnummer verandert geen GlobalId meer, en twee los gemaakte projecten met dezelfde naam en hetzelfde nummer zijn verschillende projecten. Een ouder bestand houdt bij het openen zijn identificaties. Nieuw project geeft een nieuwe identiteit, Opslaan als houdt hem (docs/ifc-export.md).
 
 - De pakketgegevens van de app noemen nu overal dezelfde licentie als het licentiebestand en de README: LGPL-3.0. De meegeleverde FEM-server houdt zijn eigen AGPL-3.0.
+- `and(…)`, `or(…)` en `xor(…)` met drie of meer delen nemen alle delen mee. `and(a ≡ 1; b ≡ 2; c ≠ 4)` gaf waar, ook als het derde deel onwaar was; nu geven ze dezelfde uitkomst als `And(…)`, `Or(…)` en `Xor(…)`, ook binnen `#if`.
+- Een procentteken in een naam hoort bij de naam. `F_1%50` en `F_1_50` waren stil dezelfde variabele, zodat de tweede de eerste overschreef; nu zijn het er twee, en in de uitwerking staat het procent. `50%` en `n % 5` rekenen zoals eerst.
+- Het muiswiel scrolt de uitwerking ook als de muis boven een formule staat. Een formule met een breuk of een index werd zelf een onzichtbaar scrollvak dat het wiel opving en een paar pixels verschoof.
+- Een formuleregel die breder is dan het blad breekt af, op het scherm en in de afdruk: liefst na een `=`, anders na een `+`, `−` of `·`, met de vervolgregels ingesprongen en de uitkomst aan het eind. Wat niet paste, viel eerder rechts weg.
+- `#include lib/constants.cpd` voegt ook een `.cpd`-bestand van schijf in, relatief tot het projectbestand of met een absoluut pad, ook genest. Het project bewaart een kopie van de laatst gelezen tekst en opent en rekent daarmee ook zonder het bestand; de `#include` zelf blijft een verwijzing. Een ontbrekend bestand, een kring van includes, de webversie of een nog niet opgeslagen project geeft een melding in het blad, ook op papier.
 
 ## v2026.48.0 — 2026-11-26
 

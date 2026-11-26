@@ -7,6 +7,8 @@
  * directives.
  */
 
+import type { IncludeMelding } from './include.js';
+
 export interface HeadingNode {
   type: 'heading';
   level: number;
@@ -33,6 +35,8 @@ export interface TextNode {
   /** Toelichting die op dezelfde bronregel achter een rekendeel stond; de
    *  renderer zet hem naast de formule in plaats van eronder. */
   inline?: boolean;
+  /** Een melding bij een `#include` (include.ts); de rekenkern zet de tekst in de taal van de uitvoer. */
+  includeMelding?: IncludeMelding;
 }
 
 export interface AssignmentNode {
@@ -517,6 +521,8 @@ export interface EvaluatedText {
   waarden?: Array<[number, number]>;
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
+  /** Zie TextNode.includeMelding; `text` is de melding in de taal van de uitvoer. */
+  includeMelding?: IncludeMelding;
 }
 
 /**

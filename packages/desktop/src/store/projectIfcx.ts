@@ -38,6 +38,7 @@ import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
 import type { JupyterWerkmap } from "./jupyterBlad.ts";
 import type { MarimoNotebook } from "./marimoBlad.ts";
 import type { Varianten } from "./varianten.ts";
+import type { IncludeKopie } from "./includes.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 import { gebruikteToetsingen, toetsVersie } from "../rekenen/toetsCache.ts";
 import { variantToetsHashes } from "../rekenen/varianten.ts";
@@ -65,6 +66,7 @@ export interface BladVoorIfc {
   marimo?: MarimoNotebook;
   toetsingen?: Record<string, VastgelegdeToets>;
   varianten?: Varianten;
+  includes?: IncludeKopie[];
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -112,6 +114,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>, alle: re
     jupyter: ex.jupyter,
     marimo: ex.marimo,
     ...(ex.varianten ? { varianten: ex.varianten } : {}),
+    ...(ex.includes?.length ? { includes: ex.includes } : {}),
     nodes: [],
   };
   if (!isLosBlad(ex)) {

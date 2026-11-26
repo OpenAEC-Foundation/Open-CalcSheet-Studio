@@ -18,7 +18,7 @@
  * zodra de cel verandert.
  */
 import {
-  celVerwijzingenIn, evaluateMetScope, parse, verwijzingNaam, verwijzingenIn,
+  celVerwijzingenIn, evaluateMetScope, naamInScope, parse, verwijzingNaam, verwijzingenIn,
   type CelVerwijzing, type CelWaarde, type EvalOpties, type ParseOptions,
 } from "@ifc-calc/core";
 import { isSpreadsheetBlad } from "../store/spreadsheetBlad.ts";
@@ -136,7 +136,7 @@ export function scopeMetVerwijzingen(
       } catch (err) {
         if (doorgeven && err instanceof Kring) throw err;
       }
-      const waarde = s?.[v.naam.replace(/,/g, "_")];
+      const waarde = s?.[naamInScope(v.naam)];
       if (waarde !== undefined) uit[verwijzingNaam(v.ref, v.naam)] = waarde;
     }
     return uit;
