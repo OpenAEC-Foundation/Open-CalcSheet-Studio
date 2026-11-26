@@ -17,6 +17,7 @@ self.onmessage = (e: MessageEvent<VariantVerzoek>) => {
     const evalOpties = v.evalOpties ?? {};
     const parseOpties = {
       includes: new Map(v.includes),
+      includeStaat: new Map(v.includeStaat ?? []),
       imageUrls: new Map(v.imageUrls),
       eenheden: (evalOpties.eigenEenheden ?? []).map((x) => x.naam),
     };

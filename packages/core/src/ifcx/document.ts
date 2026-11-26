@@ -102,6 +102,8 @@ export interface IfcxGelezenBlad {
   toetsingen?: Record<string, VastgelegdeToets>;
   /** Zoals ze in het bestand staan; de app leest ze na (store/varianten.ts). */
   varianten?: VariantenGegevens;
+  /** `#include`-bestanden met hun bewaarde kopie; de app leest ze na (store/includes.ts). */
+  includes?: unknown[];
 }
 
 export interface IfcxGelezenProject {
@@ -375,6 +377,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     }
     if (blad.toetsingen && Object.keys(blad.toetsingen).length > 0) attributes[ATTR.toetsing] = toetsingAttribuut(blad.toetsingen);
     if (blad.varianten) attributes[ATTR.varianten] = variantenAttribuut(blad.varianten);
+    if (blad.includes && blad.includes.length > 0) attributes[ATTR.includes] = blad.includes;
     attributes[ATTR.uitkomst] = uitkomst;
 
     // Figuren: de tekeningen en 3D-beelden staan ook in de rekentekst; hier zijn ze als zodanig te vinden.
@@ -741,6 +744,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     if (toetsingen) blad.toetsingen = toetsingen;
     const varianten = variantenUitAttribuut(a[ATTR.varianten]);
     if (varianten) blad.varianten = varianten;
+    if (Array.isArray(a[ATTR.includes])) blad.includes = a[ATTR.includes] as unknown[];
     return blad;
   });
 
