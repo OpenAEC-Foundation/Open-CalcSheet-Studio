@@ -6,6 +6,7 @@ import { maakPoer } from "./poerDefinitie";
 import { tekenPoer, TEKENING_MIN_BREEDTE, type TekeningTeksten } from "./poerTekening";
 import PoerModel from "./PoerModel";
 import PoerStaaflijst from "./PoerStaaflijst";
+import PoerKoppeling from "./PoerKoppeling";
 import { tweepaalVorm } from "./poerDxf";
 import { useActiefExemplaar, useAlleenLezen } from "../../store/actiefBlad";
 import { bewaarAls } from "../../store/ifcInhoud";
@@ -258,6 +259,7 @@ export default function TweepaalspoerDesigner() {
           <summary style={{ padding: "6px 16px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>{t("poerDetail.titel")}</summary>
           <PoerStaaflijst vorm={tweepaalVorm(poer)} titel={exemplaar?.naam ?? MARKER} bestand={exemplaar?.naam ?? MARKER}
             d={d} set={set} uitkomst={uitkomst} alleenLezen={false} />
+          <PoerKoppeling templateId="tweepaalspoer" vorm={tweepaalVorm(poer)} />
         </details>
       )}
 

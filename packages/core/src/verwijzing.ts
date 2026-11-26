@@ -13,20 +13,22 @@
  */
 
 import { rekendelen } from './parser.js';
+import { naamInScope } from './naam.js';
 
 /**
- * `#ref.naam`: ref is letters, cijfers en `_`; naam als een variabelenaam, met komma-index.
+ * `#ref.naam`: ref is letters, cijfers en `_`; naam als een variabelenaam, met komma-index
+ * en procent (`#1.F_1%50`).
  * Niet de eerste helft van een celverwijzing (`#3.Blad1!B4`, zie onder): na de naam mag
  * geen `!` met een kolomletter komen. (`#1.n!` als faculteit blijft een verwijzing.)
  */
-export const VERWIJZING_RE = /#([A-Za-z0-9_]+)\.([\p{L}_][\p{L}\p{N}_]*(?:,[\p{L}\p{N}_]+)*)(?![\p{L}\p{N}_]*!\$?[A-Za-z])/gu;
+export const VERWIJZING_RE = /#([A-Za-z0-9_]+)\.([\p{L}_][\p{L}\p{N}_]*(?:[,%][\p{L}\p{N}_]+)*)(?![\p{L}\p{N}_]*!\$?[A-Za-z])/gu;
 
-const HELE_VERWIJZING_RE = /^\s*#([A-Za-z0-9_]+)\.([\p{L}_][\p{L}\p{N}_]*(?:,[\p{L}\p{N}_]+)*)\s*$/u;
+const HELE_VERWIJZING_RE = /^\s*#([A-Za-z0-9_]+)\.([\p{L}_][\p{L}\p{N}_]*(?:[,%][\p{L}\p{N}_]+)*)\s*$/u;
 const NAAM_RE = /^ref__([A-Za-z0-9]+(?:_[A-Za-z0-9]+)*?)__(.+)$/;
 
 /** De naam waaronder een verwijzing in de scope staat: `#1.V_Ed,0` → `ref__1__V_Ed_0`. */
 export function verwijzingNaam(ref: string, naam: string): string {
-  return `ref__${ref}__${naam.replace(/,/g, '_')}`;
+  return `ref__${ref}__${naamInScope(naam)}`;
 }
 
 /**

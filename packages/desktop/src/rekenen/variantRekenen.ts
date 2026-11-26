@@ -14,14 +14,14 @@
  */
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import i18next from "i18next";
-import type { EvalOpties } from "@ifc-calc/core";
+import type { EvalOpties, IncludeStaat } from "@ifc-calc/core";
 import { useProjectStore, type Exemplaar } from "../store/projectStore";
 import { evalOptiesVan } from "../store/projectEenheden";
 import { projectTekstVan } from "../store/projectBlad";
 import type { Belastingen } from "../rapport/model";
 import { projectScope, type ProjectGegevens } from "../store/projectGegevens";
 import { variantInvoer } from "../store/varianten";
-import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
+import { abonneerOpIncludes, rekentaalIncludes, rekentaalIncludeStaat, rekentaalIncludeVersie, rekentaalImageUrls } from "../templates/rekentaal-includes";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { verwezenBladen, type VerwijsBlad } from "./verwijzingen";
 import { HEEFT_FEM_BLOK, metToetsingen, toetsingenNu, toetsVersie } from "./toetsCache";
@@ -39,6 +39,8 @@ export interface VariantVerzoek {
   /** Met de antwoorden van FEM Studio erin: de worker heeft geen eigen cache. */
   evalOpties?: EvalOpties;
   includes: [string, string][];
+  /** Waarom een `#include`-bestand er niet (vers) is, per sleutel (core: include.ts). */
+  includeStaat?: [string, IncludeStaat][];
   imageUrls: [string, string][];
   verwijzingen?: VerwijsBlad[];
 }
@@ -176,6 +178,8 @@ function verzoekVoor(ex: Exemplaar, waarden: Record<string, string>, omg: Omgevi
   const sleutel = [
     hoek, omg.taal, JSON.stringify(basis), toets, ex.naam, JSON.stringify(scope),
     JSON.stringify(waarden), ex.source, verwijzingen.length ? JSON.stringify(verwijzingen) : "",
+    // De `#include`-bestanden van het project (templates/rekentaal-includes.ts).
+    `i${rekentaalIncludeVersie()}`,
   ].join("\u0000");
   return {
     sleutel,
@@ -186,6 +190,7 @@ function verzoekVoor(ex: Exemplaar, waarden: Record<string, string>, omg: Omgevi
     hoekmodus: hoek,
     evalOpties: metToetsingen(basis, "vragen", omg.taal),
     includes: [...rekentaalIncludes],
+    includeStaat: [...rekentaalIncludeStaat],
     imageUrls: [...rekentaalImageUrls],
     ...(verwijzingen.length ? { verwijzingen } : {}),
   };
@@ -209,6 +214,7 @@ export function useVariantUitkomsten(ex: Exemplaar): VariantenUitkomst {
   const belastingen = useProjectStore((s) => s.rapport.belastingen);
   const rapportTaal = useProjectStore((s) => s.rapport.taal);
   const toetsV = useToetsVersie();
+  const includeV = useSyncExternalStore(abonneerOpIncludes, rekentaalIncludeVersie);
   const taal = i18next.language ?? "";
   const stil = useDebouncedValue(ex, 250);
   const vorige = useRef(new Map<string, VariantAntwoord>());
@@ -224,7 +230,7 @@ export function useVariantUitkomsten(ex: Exemplaar): VariantenUitkomst {
     ];
     // toetsV: een nieuw antwoord van FEM Studio; welke kolom opnieuw rekent, beslist toetsDeel.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stil, gegevens, exemplaren, taal, toetsV, belastingen, rapportTaal]);
+  }, [stil, gegevens, exemplaren, taal, toetsV, belastingen, rapportTaal, includeV]);
   useEffect(() => {
     if (stil.source.trim()) vraagVoorTabel(stil.id, verzoeken.map((x) => x.v));
   }, [verzoeken, stil]);

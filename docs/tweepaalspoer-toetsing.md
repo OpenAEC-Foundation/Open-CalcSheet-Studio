@@ -230,7 +230,7 @@ Het blad is met de hand en met willekeurige invoer nagerekend en doorzocht op ee
 | 1 | Tweepaalspoer en poer op drie of vier palen: berekening, parametrische plattegrond en doorsneden, PDF via de afdruk, SVG-detail | er (dit blad en [meerpaalspoer-toetsing.md](meerpaalspoer-toetsing.md)) |
 | 2 | Staaflijst met merken, vormen en lengtes; DXF-detail; ontwerpschema of vrijgegeven voor uitvoering | er, zie §9 |
 | 3 | IFC van het beton en elke staaf als IfcReinforcingBar met geometrie, merk en diameter | er, zie §8 en §9 |
-| 4 | Koppeling met andere apps en revisiebeheer van gekoppelde tekeningen | nog niet, zie §10 |
+| 4 | Koppeling met andere apps en revisiebeheer van gekoppelde tekeningen | er, zie §10 |
 
 ## 8. Het 3D-studiemodel
 
@@ -284,20 +284,70 @@ dat elke staaf binnen de dekking ligt, dat het DXF geldig is en de wapening binn
 van elk aanzicht staat, en dat elke staaf in de IFCX een IfcReinforcingBar met geometrie,
 merk en diameter is.
 
-## 10. Fase 4: wat er nog voor nodig is
+## 10. Fase 4: palenplan, vaste ids en revisies
 
-De koppeling met andere apps (een palenplan of een tekenprogramma) en het bijwerken van
-gekoppelde tekeningen staan niet in deze module. Daarvoor is nodig:
+Beide poerbladen (twee palen, drie of vier palen) hebben op het scherm, onder de staaflijst,
+het onderdeel *Palenplan en revisie* (`components/calc/PoerKoppeling.tsx`). Op papier staat
+alleen de revisie, achter de status in de kop van de staaflijst.
 
-- **Vaste sleutels**: elke poer, staaf en merk een identiteit die bij een nieuwe
-  berekening gelijk blijft. De IFCX heeft al vaste paden uit het blad; een merk dat
-  verschuift als er een staafsoort bijkomt, moet dan een eigen vaste sleutel krijgen.
-- **Revisies**: een revisienummer en datum per vrijgave, in het blad bewaard en in de titel
-  van de tekening, met een lijst van wat er sinds de vorige revisie veranderde (maten,
-  staven, merken).
-- **Invoer van buiten**: paalposities, paalmaten en paalreacties overnemen uit een
-  palenplan, met een melding als die daar veranderen.
-- **Handwerk bewaren**: tekst, maten of verplaatste aanzichten die iemand in de gekoppelde
-  tekening toevoegt, op een eigen laag of als eigen object, zodat een nieuwe uitvoer ze niet
-  overschrijft; en een zichtbaar conflict als de berekening iets verandert waar handwerk aan
-  vastzit.
+**Een palenplan inlezen.** Een palenplan is een IFCX met poeren (`IfcFooting`) en palen
+(`IfcPile`), van een tekenprogramma of een ander blad. De lezer (`components/calc/palenplan.ts`,
+op `leesIfcx` van de kern) zoekt per poer de palen waarvan het hart binnen het grondvlak van
+de poer ligt, en een kolom (`IfcColumn`) erop. Daaruit volgen het blad en zijn invoer:
+
+| Uit het plan | Wordt in het blad |
+|---|---|
+| twee palen | tweepaalspoer: `a_hoh`, `l_poer`, `b_poer` langs en dwars op de paallijn |
+| vier palen | poer op vier palen: `a_x`, `a_y`, `l_poer`, `b_poer` in de assen van het grondvlak |
+| drie palen | poer op drie palen: `a_3` (gemiddelde onderlinge afstand), `r_rand` (kleinste afstand paalhart tot rand) |
+| hoogte van de poer | `h_poer` |
+| paalmaat, rond of rechthoekig | `paalvorm`, `p_x`, `p_y`, gemeten in de assen van de poer; rond als de doorsnede twaalf of meer hoeken heeft (de omgeschreven cirkel) |
+| bovenkant paal min onderkant poer | `t_in` |
+| kolom | `kolomvorm`, `c_x`, `c_y` |
+| `ocss::poer::N_Ed`, `N_fr` (kN), `M_Edx`, `M_Edy` (kNm) op de poer, als ze er zijn | de kolomlasten (`F_Ed`, `F_fr` bij twee palen) |
+
+De wapening, het beton, de dekking en de lasten zonder attribuut blijven de invoer van het
+blad. Lasten uit een ander blad van het project gaan zoals altijd met een verwijzing in het
+invoerveld (`#ref.naam`, [projectmodel.md](projectmodel.md)). Het blad legt de palen
+symmetrisch om de kolom in zijn eigen assen; wat in het plan anders staat (de palen niet in
+een rechthoek of gelijkzijdige driehoek, de kolom niet in het midden, ongelijke palen, een
+ander aantal palen) is een melding bij die poer. Een poer gaat met *In dit blad* in het open
+blad, of met *Als nieuw blad* in een nieuw blad van de goede soort.
+
+**Vaste ids.** Een poer houdt de id uit het plan (`ocss::poer::id`, anders zijn naam, anders
+zijn pad), elke paal de zijne (`ocss::paal::id`), in de volgorde van de poerdefinitie. Ze
+staan als waarden in het blad (`poer_id`, `paal_ids`), met de plaats en de draaiing in het
+plan (`plan_x`, `plan_y`, `plan_z`, `plan_hoek`) en wat het blad overnam (`plan_inhoud`).
+De IFCX van de poer, ook in het projectbestand en de STEP, draagt de ids en staat op zijn
+plaats in het plan ([ifc-export.md](ifc-export.md)). Een staafgroep heeft een vaste sleutel
+uit de definitie (`band/x`, `beugel/1`, `randbeugel`), los van het merk, dat opschuift als
+er een staafsoort bijkomt.
+
+**Wijzigingen in het plan.** Wie het plan opnieuw inleest, ziet bij een gekoppeld blad
+per veld waar het blad en het plan verschillen, en of dat in het plan veranderde sinds het
+overnemen of in het blad zelf; *Uit het palenplan overnemen* zet de waarden van het plan in
+het blad.
+
+**Revisies** (`components/calc/poerRevisie.ts`). Een revisie hangt aan de inhoud van het
+detail: de maten van poer, palen en kolom, en per staafgroep de regel uit de staaflijst
+(aantal, diameter, vorm, zijlengtes, lengte) met de hoogte van de staven, op de millimeter.
+Zolang die gelijk is aan de vastgelegde revisie, geldt dat nummer; verandert er iets, ook
+door een wijziging uit het palenplan, dan staat meteen het volgende nummer in de titel van
+het detail, het DXF en de staaflijst, en `ocss::revisie` in de IFCX. Het scherm toont wat
+er sinds de vorige revisie veranderde. Vastleggen gebeurt bij het opslaan van het DXF-detail
+of de IFCX, of met de knop *Revisie vastleggen*: het nummer, de datum, de inhoud en die van
+de vorige revisie gaan als waarden in het blad (`poer_rev`, `poer_rev_datum`,
+`poer_rev_inhoud`, `poer_rev_vorig`) en met het project mee. Wie terugzet naar de
+vastgelegde inhoud, krijgt het oude nummer terug.
+
+**Handwerk wordt niet bewaard.** Het wapeningsdetail, het DXF en de IFCX komen altijd uit
+de definitie van het blad (de invoer via `poerDefinitie.ts` of `meerpaalDefinitie.ts`).
+Tekst, maten of verplaatste aanzichten die iemand in een getekend DXF toevoegt, staan in
+een nieuwe uitvoer niet meer; zet handwerk daarom in een eigen tekening die het detail als
+onderlegger gebruikt.
+
+`scripts/check-poer-koppeling.mjs` controleert dit met een klein verzonnen palenplan
+(`scripts/fixtures/palenplan-proef.ifcx`, gemaakt door `scripts/lib/palenplan-proef.mjs`)
+met een poer op vier en een op drie palen, met de handberekening in de kop: de overgenomen
+invoer, het doorrekenen, de palen teruggezet op het plan met hun ids, de revisies na een
+wijziging van de wapening en van het plan, het projectbestand en de STEP, en wat niet past.

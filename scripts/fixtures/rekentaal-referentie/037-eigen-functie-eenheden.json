@@ -1,0 +1,10 @@
+{
+  "onderdeel": "functies",
+  "omschrijving": "W(b; h) = b·h²/6 met eenheden: 100·200²/6 = 666 667 mm³, op vier cijfers 666 700.",
+  "uitkomst": {
+    "W_1": "666700 mm^3"
+  },
+  "getallen": {
+    "W_1": 666666.6666666666
+  }
+}

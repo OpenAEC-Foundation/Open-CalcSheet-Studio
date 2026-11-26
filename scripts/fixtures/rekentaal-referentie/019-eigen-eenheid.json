@@ -1,0 +1,7 @@
+{
+  "onderdeel": "eenheden",
+  "omschrijving": "Een eigen basiseenheid: .EUR = 1, dan 12 EUR · 3 = 36 EUR.",
+  "uitkomst": {
+    "prijs": "36 EUR"
+  }
+}

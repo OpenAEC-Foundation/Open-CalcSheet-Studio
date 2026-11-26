@@ -268,7 +268,7 @@ export const BLADTOOLS: McpToolDef[] = [
       };
       if (leesfout) data.parseError = leesfout;
       if (args.evaluate !== false) {
-        const uitkomst = rekenBlad(blad, stand.gegevens);
+        const uitkomst = rekenBlad(blad, stand.gegevens, stand.exemplaren);
         data.result = uitkomst.ok
           ? { ...resultaatJson(uitkomst.d.resultaat), ucValues: ucWaarden(uitkomst.d.getallen) }
           : { error: uitkomst.fout };
@@ -511,7 +511,7 @@ export const BLADTOOLS: McpToolDef[] = [
       const { blad, stand } = gevonden;
       const pdf = geenPdfBlad(blad);
       if (pdf) return pdf;
-      const uitkomst = rekenBlad(blad, stand.gegevens);
+      const uitkomst = rekenBlad(blad, stand.gegevens, stand.exemplaren);
       if (!uitkomst.ok) return fout("CALC_ERROR", `Sheet "${blad.naam}" could not be computed: ${uitkomst.fout}`, { id: blad.id });
       const { resultaat, getallen } = uitkomst.d;
       const data: Record<string, unknown> = { id: blad.id, name: blad.naam, ...resultaatJson(resultaat), ucValues: ucWaarden(getallen) };
@@ -629,8 +629,8 @@ export function lijstVan(ctx: McpContext, nuRekenen: boolean): Record<string, un
   return stand.exemplaren.map((b) => {
     const module = ctx.omgeving.moduleNaam(b.templateId);
     if (isLosBlad(b)) return bladRegel(b, stand.activeId, module, null);
-    if (!nuRekenen) return bladRegel(b, stand.activeId, module, bekendeUitkomst(b, stand.gegevens));
-    const uitkomst = rekenBlad(b, stand.gegevens);
+    if (!nuRekenen) return bladRegel(b, stand.activeId, module, bekendeUitkomst(b, stand.gegevens, stand.exemplaren));
+    const uitkomst = rekenBlad(b, stand.gegevens, stand.exemplaren);
     return uitkomst.ok ? bladRegel(b, stand.activeId, module, uitkomst.d.resultaat) : bladRegel(b, stand.activeId, module, null, uitkomst.fout);
   });
 }

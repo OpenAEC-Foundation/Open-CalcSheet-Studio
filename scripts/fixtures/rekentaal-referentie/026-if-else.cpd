@@ -1,0 +1,6 @@
+w = 3
+#if w > 5
+c = 1
+#else
+c = 3
+#end if

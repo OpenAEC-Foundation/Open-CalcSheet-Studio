@@ -736,5 +736,208 @@ const kwaad = leesGrafBestand(JSON.stringify({ Nodes: [{ NodeType: "StringInputN
 const kwaadSvg = graafSvg(kwaad.graaf, rekenGraaf(kwaad.graaf), { naamVan: (n) => n.naam ?? n.soort, poort: (_n, p) => p, melding: (x) => x.code, meer: (n) => `+${n}` }).svg;
 meld(kwaad.graaf.nodes[0].soort === "tekst" && !kwaadSvg.includes("<script") && !kwaadSvg.includes("<img"), "tekst uit een bestand blijft tekst op papier");
 
+// ── Versie 2: groepen, teksten, kiezen, kopiëren, uitschakelen ──────────────
+console.log("\nModel versie 2");
+{
+  const M = await import("../packages/desktop/src/graaf/model.ts");
+  const W = await import("../packages/desktop/src/graaf/waarde.ts");
+  const K = await import("../packages/desktop/src/graaf/klembord.ts").catch(() => ({}));
+  /** Een test die een ontbrekende functie meldt in plaats van het script te laten vallen. */
+  const proef = (naam, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      meld(false, `${naam}: ${e.message}`);
+    }
+  };
+  const json = (x) => JSON.stringify(x);
+  /** getal(5 kN/m) → codeblok M = q*6^2/8 → bekijken, met nette plekken. */
+  const keten = () => {
+    const r = bouw(
+      [["q", "getal", { waarde: "5", eenheid: "kN/m" }], ["c", "codeblok", { code: "M = q*6^2/8" }], ["v", "bekijken"]],
+      ["q.waarde -> c.q", "c.M -> v.waarde"],
+    );
+    let g = r.g;
+    g = M.verplaatsNode(g, r.ids.q, 0, 0);
+    g = M.verplaatsNode(g, r.ids.c, 300, 40);
+    g = M.verplaatsNode(g, r.ids.v, 600, 80);
+    return { g, ids: r.ids };
+  };
+
+  proef("versie1_onveranderd", () => {
+    const { g, ids } = keten();
+    const v1 = JSON.parse(json({ ...g, versie: 1 }));
+    const gelezen = leesGraaf(v1);
+    meld(
+      gelezen.groepen === undefined && gelezen.teksten === undefined && json(gelezen.nodes) === json(g.nodes) && json(gelezen.verbindingen) === json(g.verbindingen),
+      "versie1_onveranderd: nodes en verbindingen gelijk, geen groepen of teksten",
+    );
+    const voor = rekenGraaf(g);
+    const na = rekenGraaf(gelezen);
+    meld(waardeTekst(na.nodes[ids.v].waarden.waarde) === waardeTekst(voor.nodes[ids.v].waarden.waarde), "versie1_onveranderd: rekent hetzelfde (22,5 kNm)");
+    const opId = (id) => gelezen.nodes.find((n) => n.id === id);
+    meld(M.uitkomstVerborgen(opId(ids.q)) === true && M.uitkomstVerborgen(opId(ids.c)) === false && M.uitkomstVerborgen(opId(ids.v)) === false,
+      "versie1_onveranderd: oogje standaard dicht bij getal, open bij codeblok en bekijken");
+  });
+
+  /** Een graaf met alles van versie 2 erin. */
+  const volledig = () => {
+    const { g: g0, ids } = keten();
+    let g = M.groepeer(g0, [ids.q, ids.c], "Belasting").graaf;
+    const t1 = M.voegTekstToe(g, 0, 300);
+    g = M.zetTekst(t1.graaf, t1.id, { titel: "Aanname", tekst: "Twee steunpunten" });
+    const t2 = M.voegTekstToe(g, 600, 300);
+    g = M.groepeer(t2.graaf, [ids.v, t2.id], "Uitkomst").graaf;
+    g = M.zetVerborgen(g, [ids.c], true);
+    g = M.zetUit(g, [ids.v], true);
+    g = M.wisselLabel(g, ids.v, "waarde");
+    g = M.zetSchuif(g, ids.q, true);
+    return { g, ids, t1: t1.id, t2: t2.id };
+  };
+
+  proef("lezen_v2", () => {
+    const { g, ids, t1 } = volledig();
+    meld(g.versie === 2 && g.groepen.length === 2 && g.teksten.length === 2, "lezen_v2: versie 2 met twee groepen en twee teksten");
+    meld(g.teksten.find((t) => t.id === t1).titel === "Aanname" && g.teksten[0].breedte === 240, "lezen_v2: een tekst met titel, standaardbreedte 240");
+    const opnieuw = leesGraaf(JSON.parse(json(g)));
+    meld(json(opnieuw) === json(g), "lezen_v2: opslaan en heropenen geeft dezelfde graaf", json(opnieuw));
+    const n = (id) => opnieuw.nodes.find((x) => x.id === id);
+    meld(n(ids.c).verborgen === true && n(ids.v).uit === true && n(ids.q).schuif === true && opnieuw.verbindingen.find((v) => v.naarNode === ids.v).label === true,
+      "lezen_v2: verborgen, uit, schuif en label komen terug");
+    const schoon = leesGraaf({
+      versie: 2,
+      nodes: [{ id: "n1", soort: "som", x: 0, y: 0 }, { id: "n2", soort: "som", x: 0, y: 0 }],
+      verbindingen: [],
+      teksten: [{ id: "t1", x: 0, y: 0, breedte: 200, tekst: "a" }, { id: "t1", x: 0, y: 0, breedte: 200, tekst: "dubbel" }, { x: 1 }],
+      groepen: [
+        { id: "g1", naam: "A", leden: ["n1", "n9"] },
+        { id: "g2", naam: "B", leden: ["n9"] },
+        { id: "g3", naam: "C", leden: ["n1", "n2", "t1"] },
+        { naam: "zonder id", leden: ["n2"] },
+      ],
+    });
+    meld(json(schoon.groepen) === json([{ id: "g1", naam: "A", leden: ["n1"] }, { id: "g3", naam: "C", leden: ["n2", "t1"] }]),
+      "lezen_v2: onbekende leden weg, lege groep weg, een node in twee groepen alleen in de eerste", json(schoon.groepen));
+    meld(schoon.teksten.length === 1 && schoon.teksten[0].tekst === "a", "lezen_v2: dubbele en kapotte teksten vallen weg");
+  });
+
+  proef("verwijder_leden_groep", () => {
+    const r = bouw([["a", "getal"], ["b", "som"], ["c", "som"]], ["a.waarde -> b.lijst"]);
+    const t = M.voegTekstToe(r.g, 0, 0);
+    let g = M.groepeer(t.graaf, [r.ids.a, r.ids.b, t.id], "G").graaf;
+    g = M.verwijderKeuze(g, [r.ids.a]);
+    meld(json(g.groepen[0].leden) === json([r.ids.b, t.id]) && g.verbindingen.length === 0 && !g.nodes.some((n) => n.id === r.ids.a),
+      "verwijder_leden_groep: één lid weg, de groep houdt de rest, de verbinding is weg");
+    g = M.verwijderKeuze(g, [r.ids.b, t.id]);
+    meld((g.groepen ?? []).length === 0 && (g.teksten ?? []).length === 0 && g.nodes.length === 1, "verwijder_leden_groep: alle leden weg, de groep ook");
+  });
+
+  const rij = () => bouw([["a", "getal"], ["b", "codeblok", { code: "y = x * 2" }], ["c", "bekijken"]], ["a.waarde -> b.x", "b.y -> c.waarde"]);
+
+  proef("kopieer_intern", () => {
+    const { g, ids } = rij();
+    const stuk = M.kopieerKeuze(g, [ids.a, ids.b]);
+    meld(stuk.nodes.length === 2 && stuk.verbindingen.length === 1 && stuk.verbindingen[0].vanNode === ids.a && stuk.verbindingen[0].naarNode === ids.b,
+      "kopieer_intern: alleen de verbinding binnen de keuze gaat mee");
+  });
+
+  proef("plak_nieuwe_ids", () => {
+    const { g: g0, ids } = rij();
+    let g = M.verplaatsNode(M.verplaatsNode(g0, ids.a, 100, 50), ids.b, 400, 80);
+    g = M.groepeer(g, [ids.a, ids.b], "Paar").graaf;
+    const stuk = M.kopieerKeuze(g, [ids.a, ids.b]);
+    meld(stuk.groepen.length === 1, "plak_nieuwe_ids: een groep met al zijn leden gaat mee");
+    const een = M.plak(g, stuk, 500, 300);
+    const twee = M.plak(een.graaf, stuk, 900, 300);
+    const alle = twee.graaf.nodes.map((n) => n.id);
+    meld(new Set(alle).size === alle.length && json(een.ids.filter((i) => i.startsWith("n"))) === json(["n4", "n5"]) && twee.ids.includes("n6"),
+      "plak_nieuwe_ids: nieuwe, unieke ids", json(alle));
+    const nieuw = een.graaf.nodes.filter((n) => een.ids.includes(n.id));
+    meld(Math.min(...nieuw.map((n) => n.x)) === 500 && Math.min(...nieuw.map((n) => n.y)) === 300, "plak_nieuwe_ids: linksboven van het stuk op de muis");
+    meld(een.graaf.verbindingen.some((v) => v.vanNode === "n4" && v.naarNode === "n5"), "plak_nieuwe_ids: de verbinding loopt tussen de nieuwe nodes");
+    const groep = een.graaf.groepen.find((x) => x.leden.includes("n4"));
+    meld(groep && groep.id !== g.groepen[0].id && json(groep.leden) === json(["n4", "n5"]), "plak_nieuwe_ids: de groep komt mee met de nieuwe leden");
+  });
+
+  proef("plak_vreemd_klembord", () => {
+    const vreemd = ["hallo", "{}", '{"nodes":[]}', '{"ocss-graafstuk":1,"nodes":"x"}', "null", "[1,2]"];
+    meld(vreemd.every((t) => K.leesStuk(t) === null), "plak_vreemd_klembord: wat geen stuk graaf is, geeft null");
+    const { g, ids } = rij();
+    const stuk = M.kopieerKeuze(g, [ids.a, ids.b]);
+    meld(json(K.leesStuk(K.stukAlsTekst(stuk))) === json(stuk), "plak_vreemd_klembord: een stuk komt via tekst gelijk terug");
+  });
+
+  proef("dupliceer_verschuift", () => {
+    const { g: g0, ids } = rij();
+    const g = M.verplaatsNode(g0, ids.a, 10, 30);
+    const d = M.dupliceer(g, [ids.a]);
+    const kopie = d.graaf.nodes.find((n) => n.id === d.ids[0]);
+    meld(d.ids.length === 1 && kopie.x === 30 && kopie.y === 50 && kopie.soort === "getal", "dupliceer_verschuift: 20 px rechts en 20 px lager");
+  });
+
+  proef("groepeer_haalt_uit_oude", () => {
+    const { g: g0, ids } = rij();
+    const een = M.groepeer(g0, [ids.a, ids.b], "Een");
+    const twee = M.groepeer(een.graaf, [ids.b, ids.c], "Twee");
+    meld(M.groepVan(twee.graaf, ids.b).id === twee.id && json(twee.graaf.groepen.find((x) => x.id === een.id).leden) === json([ids.a]),
+      "groepeer_haalt_uit_oude: b zit alleen nog in de tweede groep");
+    let g = M.zetGroepNaam(twee.graaf, twee.id, "Nieuw");
+    g = M.wisselIngeklapt(g, twee.id);
+    meld(g.groepen.find((x) => x.id === twee.id).naam === "Nieuw" && g.groepen.find((x) => x.id === twee.id).ingeklapt === true, "groep: hernoemen en inklappen");
+    g = M.wisselIngeklapt(g, twee.id);
+    meld(!("ingeklapt" in g.groepen.find((x) => x.id === twee.id)), "groep: uitklappen haalt het veld weg");
+    g = M.hefGroepOp(g, twee.id);
+    meld(!g.groepen.some((x) => x.id === twee.id) && g.nodes.length === 3, "groep: opheffen laat de nodes staan");
+  });
+
+  proef("verplaats_keuze", () => {
+    const { g: g0, ids } = rij();
+    const t = M.voegTekstToe(g0, 5, 5);
+    const g = M.verplaatsKeuze(t.graaf, [ids.a, t.id], 10, -5);
+    const a0 = g0.nodes.find((n) => n.id === ids.a);
+    const a = g.nodes.find((n) => n.id === ids.a);
+    const b = g.nodes.find((n) => n.id === ids.b);
+    meld(a.x === a0.x + 10 && a.y === a0.y - 5 && b.x === g0.nodes.find((n) => n.id === ids.b).x && g.teksten[0].x === 15 && g.teksten[0].y === 0,
+      "verplaats_keuze: nodes en teksten in de keuze schuiven, de rest niet");
+  });
+
+  proef("uit_rekent_niet", () => {
+    const { g, ids } = rij();
+    const m1 = rekenGraaf(M.zetUit(g, [ids.b], true));
+    meld(Object.keys(m1.nodes[ids.b].waarden).length === 0 && m1.nodes[ids.b].meldingen.some((x) => x.code === "uitgeschakeld") && m1.nodes[ids.b].fouten.length === 0,
+      "uit_rekent_niet: een uitgeschakelde node rekent niet en meldt dat");
+    meld(code(m1, ids.c).includes("ingangZonderWaarde"), "uit_rekent_niet: de node erachter heeft een ingang zonder waarde");
+    const m2 = rekenGraaf(M.zetUit(g, [ids.a], true));
+    meld(code(m2, ids.b).includes("ingangZonderWaarde"), "uit_rekent_niet: met het getal uit mist het codeblok zijn ingang");
+    const m3 = rekenGraaf(M.zetUit(M.zetUit(g, [ids.b], true), [ids.b], false));
+    meld(dichtbij(m3.nodes[ids.c].waarden.waarde, 2), "uit_rekent_niet: weer aan rekent hij gewoon (2)");
+  });
+
+  proef("waardesoort", () => {
+    const s = W.waardeSoort;
+    meld(
+      s(rekenWaarde("5 kN")) === "grootheid" && s(5) === "grootheid" && s([1, 2]) === "lijst" && s({ geometrie: "punt", p: [0, 0, 0] }) === "geometrie" &&
+        s("a") === "tekst" && s(true) === "waarOnwaar" && s(undefined) === null,
+      "waardesoort: grootheid, lijst, geometrie, tekst, waar/onwaar, niets",
+    );
+  });
+
+  proef("projectbestand_v2", () => {
+    const { g } = volledig();
+    const project = {
+      versie: PROJECT_FORMAAT_VERSIE,
+      naam: "Proef",
+      gegevens: legeGegevens(),
+      rapport: undefined,
+      exemplaren: [{ id: "ex-graaf", naam: "Momenten", templateId: GRAAF_BLAD, source: "", waarden: {}, elementen: [], graaf: g }],
+    };
+    const bladen = bladenVoorIfc(project);
+    const terug = leesProjectBestand(bouwProjectBestand(project, bladen), "proef");
+    meld(json(terug.exemplaren[0].graaf) === json(g), "projectbestand_v2: groepen, teksten en de nieuwe velden komen terug", json(terug.exemplaren[0].graaf));
+    const schema = projectIfcx(project, bladen).schemas["ocss::blad::graaf"];
+    meld(json(schema).includes('"groepen"') && json(schema).includes('"teksten"') && json(schema).includes('"label"'), "projectbestand_v2: het schema noemt de nieuwe velden");
+  });
+}
+
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

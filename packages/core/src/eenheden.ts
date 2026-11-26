@@ -27,6 +27,11 @@ const AMERIKAANS: [string, string][] = [
 
 for (const [naam, definitie] of AMERIKAANS) math.createUnit(naam, definitie);
 
+// Toerental: omwentelingen per minuut, als frequentie. 1500 rpm is 25 Hz. Een hoeksnelheid
+// schrijf je als 2·π·n in 1/s: `rad` heeft in de rekenbibliotheek een eigen dimensie, en
+// M·ω in kN·m·rad/s laat zich dan niet meer naar kW omrekenen.
+math.createUnit('rpm', '1/min');
+
 /** De eenheden die de rekenkern zelf kent, vóór eigen eenheden van een blad of project. */
 const INGEBOUWD: ReadonlySet<string> = new Set(Object.keys((math.Unit as unknown as { UNITS: object }).UNITS));
 

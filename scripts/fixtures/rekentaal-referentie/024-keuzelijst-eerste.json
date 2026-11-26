@@ -1,0 +1,7 @@
+{
+  "onderdeel": "invoer",
+  "omschrijving": "Een keuzelijst zonder keuze neemt de eerste regel.",
+  "uitkomst": {
+    "f_y": "235 N / mm^2"
+  }
+}

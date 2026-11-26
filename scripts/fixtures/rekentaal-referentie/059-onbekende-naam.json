@@ -1,0 +1,10 @@
+{
+  "onderdeel": "fouten",
+  "omschrijving": "Een onbekende naam geeft een fout op die regel; de rest rekent door.",
+  "fout": {
+    "a": "Undefined symbol onbekend"
+  },
+  "uitkomst": {
+    "b": "2"
+  }
+}

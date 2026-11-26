@@ -1,0 +1,10 @@
+{
+  "onderdeel": "verwijzingen",
+  "omschrijving": "#2.R_paal neemt een waarde uit blad 2 (in de scope als ref__2__R_paal): 1,1·100 = 110.",
+  "scope": {
+    "ref__2__R_paal": 100
+  },
+  "uitkomst": {
+    "V_Ed": "110"
+  }
+}

@@ -99,6 +99,45 @@ een tijdelijke map en controleert:
 
 Met `--bundel <map>` controleert het script een bestaande bouw.
 
+## De Linux-app als container
+
+Naast de platformbouw in een frame is er een tweede route: de grafische Linux-app zelf in
+een eigen container, gestreamd naar de browser. Bij elke release komt het image
+`ghcr.io/openaec-foundation/open-calcsheet-studio:<JJJJ.W.N>` en `latest` (linux/amd64),
+gebouwd uit de `.deb` van die release, zonder aparte bouw van de app
+(`docker/app.Dockerfile`, `.github/workflows/docker-images.yml`).
+
+- **Eén app, geen bureaublad.** Xvfb als scherm, `matchbox-window-manager` zet de app
+  schermvullend zonder titelbalk, x11vnc en websockify maken er een stroom van, en
+  `docker/app/poort.mjs` biedt die met noVNC aan op poort 3000. Sluit de gebruiker de app,
+  dan start hij opnieuw (`docker/app/start.sh`).
+- **Mappen.** `/openaec` voor de bestanden van de gebruiker, van buiten gekoppeld; de
+  dialogen beginnen daar. `/config` voor de instellingen (een volume; daarin staan de
+  XDG-mappen van de app en `preferences.json`).
+- **Zonder root,** zonder `--privileged`, FUSE of GPU: WebKitGTK tekent in software.
+- **Instellingen uit de omgeving:** `OCSS_TAAL`, `OCSS_THEMA`, `OCSS_BESTAND` (een bestand
+  dat bij de start opent), `OCSS_SCHERM` en `OCSS_MCP_TOKEN`; zie README.md › Docker.
+  `docker/app/voorkeuren.mjs` zet ze bij elke start in `preferences.json`.
+- **Gezondheid:** `GET /gezond` en de `HEALTHCHECK` zijn alleen OK als het proces van de
+  app leeft, zijn venster zichtbaar op het scherm staat en de stroom luistert.
+- **MCP:** de MCP-server en REST-API van de app luisteren in de container op
+  127.0.0.1:3879; `socat` zet ze door naar poort 3001, voor het interne netwerk. Publiceer
+  die poort niet.
+- **Netwerk:** de app heeft geen update-check (een update is een nieuw image); welke
+  verbindingen hij wel maakt, staat in README.md › Docker.
+- **Ondertekend en getest:** de workflow controleert de OpenPGP-handtekening van de
+  `.deb`, bouwt het image, start het, wacht tot het gezond is, controleert dat het proces
+  draait, kijkt in headless Chromium naar de stroom en bewaart een schermafbeelding
+  (`scripts/rooktest-app-image.mjs`). Pas dan gaat het naar GHCR, ondertekend met cosign
+  (zonder sleutel), met een SBOM en een build-attestatie, en komt het geheugengebruik in
+  rust in de release-tekst.
+
+## Rekenen zonder werkplek
+
+Rekenbladen doorrekenen als dienst, zonder werkplek en zonder ingelogde gebruiker, doet
+de rekendienst: [rekendienst.md](rekendienst.md), image
+`ghcr.io/openaec-foundation/open-calcsheet-studio-api`.
+
 ## Een versie vastpinnen
 
 De SuperCloud bouwt de bundel zelf uit een vaste commit

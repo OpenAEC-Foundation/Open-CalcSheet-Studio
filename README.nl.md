@@ -122,9 +122,31 @@ Elk blad staat met tekst, invoer en uitkomsten in het IFCX-bestand. Tekeningen d
 
 De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: projecten openen en opslaan, bladen toevoegen, invoer zetten, doorrekenen, exporteren en afdrukken. Hij luistert alleen op je eigen computer (`127.0.0.1`), achter een token. Je kunt hem uitzetten, op alleen lezen zetten of pauzeren onder **Settings › API and AI assistant**. Zie [de MCP-documentatie](docs/mcp.md) en [de REST-API](docs/api.md).
 
+Voor servers is er ook een rekendienst zonder venster: dezelfde REST-routes en MCP-tools over HTTP of stdio, met API-sleutels, de uitkomsten als JSON en het rapport als PDF. Elke release publiceert hem als het image `ghcr.io/openaec-foundation/open-calcsheet-studio-api`. Zie [de rekendienst](docs/rekendienst.md).
+
+## Docker
+
+Elke release publiceert de Linux-app ook als container-image, voor een werkplek die programma's naar de browser streamt: de app zelf, schermvullend, zonder bureaublad, op één HTTP-poort.
+
+```sh
+docker run -p 3000:3000 -v <map>:/openaec ghcr.io/openaec-foundation/open-calcsheet-studio:latest
+```
+
+Open `http://localhost:3000`. Je bestanden staan in `/openaec`, waar de dialogen beginnen; de instellingen in het volume `/config`.
+
+| Variabele | Betekenis |
+|---|---|
+| `OCSS_TAAL` | Taal van de app: `en`, `nl`, `lt` of `auto`. |
+| `OCSS_THEMA` | Thema: `light`, `dark`, `high-contrast-dark`, … |
+| `OCSS_BESTAND` | Een projectbestand dat bij de start opent, zoals `/openaec/hal.ifccalculation`. |
+| `OCSS_SCHERM` | Schermgrootte, standaard `1600x900`. |
+| `OCSS_MCP_TOKEN` | Token (64 hextekens) van de MCP-server en REST-API van de app, op poort `3001`, alleen voor het interne netwerk; publiceer die poort niet. Zonder maakt de app er zelf een. |
+
+`GET /gezond` en de healthcheck van het image zijn alleen OK als de app draait met zijn venster op het scherm. De container heeft geen root, geen `--privileged`, geen FUSE en geen GPU nodig. De app maakt alleen verbinding naar buiten voor de voorbeelden van de Library en de modulebibliotheek (`raw.githubusercontent.com`), de kaarten, het zoeken van een adres en het meten van water (`tile.openstreetmap.org`, `nominatim.openstreetmap.org`, `overpass-api.de`), feedback die de gebruiker stuurt (`open-feedback-studio.pages.dev`) en een koppeling met ERPNext die de gebruiker instelt. Er is geen update-check: een update is een nieuw image. De images zijn ondertekend met cosign (zonder sleutel) en hebben een SBOM en een build-attestatie. Voor een server zonder scherm is er de rekendienst, image `ghcr.io/openaec-foundation/open-calcsheet-studio-api` ([docs/rekendienst.md](docs/rekendienst.md)).
+
 ## Testen en betrouwbaarheid
 
-- **92 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **104 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.

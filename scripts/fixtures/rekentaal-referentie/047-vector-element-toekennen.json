@@ -1,0 +1,7 @@
+{
+  "onderdeel": "matrices",
+  "omschrijving": "v.(2) = 9 verandert één element: 5 + 9 + 7 = 21.",
+  "uitkomst": {
+    "som": "21"
+  }
+}
