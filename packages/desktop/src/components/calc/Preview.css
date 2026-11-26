@@ -38,8 +38,13 @@
   max-width: 100%;
 }
 
+/* 'clip' en niet 'hidden': bij 'hidden' wordt overflow-y vanzelf 'auto', en een
+   formule die een paar pixels hoger is dan haar vak (een breuk, een index) werd
+   een scrollvak dat het muiswiel ving. Een lange regel breekt af (renderer.ts),
+   dus hier valt normaal niets weg. */
 .calc-preview-content .katex-display {
-  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .calc-preview-content::-webkit-scrollbar {
@@ -64,8 +69,13 @@
   max-width: 100%;
 }
 
+/* 'clip' en niet 'hidden': bij 'hidden' wordt overflow-y vanzelf 'auto', en een
+   formule die een paar pixels hoger is dan haar vak (een breuk, een index) werd
+   een scrollvak dat het muiswiel ving. Een lange regel breekt af (renderer.ts),
+   dus hier valt normaal niets weg. */
 .calc-preview-content .katex-display {
-  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .calc-preview-content .ifc-calc {

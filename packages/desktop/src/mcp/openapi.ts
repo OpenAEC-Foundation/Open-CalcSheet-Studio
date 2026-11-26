@@ -46,7 +46,20 @@ function zonder(schema: JsonSchema, namen: string[]): JsonSchema {
   return { ...schema, properties, ...(required.length ? { required } : { required: undefined }) };
 }
 
-export function bouwOpenApi(tools: McpToolDef[], server: { naam: string; versie: string; poort: number }): Record<string, unknown> {
+/**
+ * Wat een andere server dan de desktop-app anders beschrijft: de rekendienst zonder
+ * venster (packages/headless/) heeft dezelfde routes, maar een eigen titel, adres en een
+ * route voor zijn gezondheid.
+ */
+export interface OpenApiOpties {
+  titel?: string;
+  beschrijving?: string;
+  servers?: { url: string }[];
+  /** Extra paden, al in de vorm van OpenAPI (`{"/v1/health": {"get": {…}}}`). */
+  paden?: Record<string, Record<string, unknown>>;
+}
+
+export function bouwOpenApi(tools: McpToolDef[], server: { naam: string; versie: string; poort: number }, opties: OpenApiOpties = {}): Record<string, unknown> {
   const paths: Record<string, Record<string, unknown>> = {};
   const voeg = (pad: string, methode: string, operatie: Record<string, unknown>) => {
     paths[pad] = { ...(paths[pad] ?? {}), [methode.toLowerCase()]: operatie };
@@ -129,16 +142,19 @@ export function bouwOpenApi(tools: McpToolDef[], server: { naam: string; versie:
     responses: { "200": { description: "The OpenAPI document.", content: { "application/json": { schema: { type: "object" } } } }, ...foutAntwoorden(["403"]) },
   });
 
+  for (const [pad, operaties] of Object.entries(opties.paden ?? {})) paths[pad] = { ...(paths[pad] ?? {}), ...operaties };
+
   return {
     openapi: "3.1.0",
     info: {
-      title: "Open CalcSheet Studio API",
+      title: opties.titel ?? "Open CalcSheet Studio API",
       version: server.versie,
       description:
+        opties.beschrijving ??
         "Local REST API of the desktop app, on the same bridge as the MCP server (POST /mcp). Only on 127.0.0.1; every route except this document needs " +
         "'Authorization: Bearer <token>' (Settings > API and AI assistant); requests with an Origin header are refused. Each route runs the MCP tool named in x-mcp-tool.",
     },
-    servers: [{ url: `http://127.0.0.1:${server.poort}` }],
+    servers: opties.servers ?? [{ url: `http://127.0.0.1:${server.poort}` }],
     security: [{ bearer: [] }],
     components: {
       securitySchemes: { bearer: { type: "http", scheme: "bearer" } },

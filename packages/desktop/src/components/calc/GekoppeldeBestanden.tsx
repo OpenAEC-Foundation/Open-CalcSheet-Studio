@@ -10,6 +10,7 @@ import {
   type GelezenBereik, type StandaardBij, type Voorstel, type WerkmapSjabloon,
 } from "../../store/werkmapBereik";
 import { usePapier } from "./afdrukTaal";
+import { includeBewaakSleutel, werkIncludeTabelBij } from "./includeBestanden";
 import {
   bewaarSjabloon, bladVoorBereik, controleerVoorAfdruk, isTauri, leesOpnieuw, meldingenTekst, schrijfSjabloon, useKoppelVenster,
   voegBereikenToe, wachter, WACHT_MS, type GekozenWerkmap,
@@ -24,7 +25,7 @@ import "./GekoppeldeBestanden.css";
 
 /** Wat bepaalt welke bronnen er te bewaken zijn: het projectbestand en de koppelingen. */
 function bewaakSleutel(s: { bestandspad: string | null; exemplaren: Exemplaar[] }): string {
-  return [s.bestandspad ?? "", ...s.exemplaren.filter((e) => isGekoppeld(e.md)).map((e) => `${e.id}|${e.md?.koppeling?.pad}|${e.md?.koppeling?.verwijzing ?? ""}`)].join("\n");
+  return [s.bestandspad ?? "", includeBewaakSleutel(s.exemplaren), ...s.exemplaren.filter((e) => isGekoppeld(e.md)).map((e) => `${e.id}|${e.md?.koppeling?.pad}|${e.md?.koppeling?.verwijzing ?? ""}`)].join("\n");
 }
 
 /**
@@ -33,6 +34,12 @@ function bewaakSleutel(s: { bestandspad: string | null; exemplaren: Exemplaar[] 
  */
 export default function GekoppeldeBestanden() {
   useEffect(() => {
+    // De tabel voor #include volgt de bladen meteen: een geopend project rekent zo al
+    // met zijn bewaarde kopieën, vóór de eerste lezing (includeBestanden.ts).
+    werkIncludeTabelBij();
+    const tabel = useProjectStore.subscribe((s, vorige) => {
+      if (s.exemplaren !== vorige.exemplaren) werkIncludeTabelBij(s.exemplaren);
+    });
     void wachter.nu();
     let sleutel = bewaakSleutel(useProjectStore.getState());
     const project = useProjectStore.subscribe((s) => {
@@ -49,6 +56,7 @@ export default function GekoppeldeBestanden() {
     window.addEventListener("focus", focus);
     if (isTauri()) wachter.start(WACHT_MS);
     return () => {
+      tabel();
       project();
       afdruk();
       window.removeEventListener("focus", focus);

@@ -48,6 +48,7 @@ export const ATTR = {
   marimo: 'ocss::blad::marimo',
   toetsing: 'ocss::blad::toetsing',
   varianten: 'ocss::blad::varianten',
+  includes: 'ocss::blad::includes',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -308,6 +309,18 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
         gezocht: opt(lijst(TEKST)),
       })),
     }),
+  },
+  // De bestanden op schijf die het blad met `#include` invoegt (include.ts): de sleutel
+  // zoals in de rekentekst (relatief tot het projectbestand, of absoluut), het pad waar
+  // het bestand laatst gelezen is, en een kopie van de tekst van die lezing.
+  [ATTR.includes]: {
+    value: lijst(object({
+      sleutel: TEKST,
+      pad: TEKST,
+      tekst: TEKST,
+      gelezenOp: TEKST,
+      hash: TEKST,
+    })),
   },
   [ATTR.markdown]: {
     value: object({

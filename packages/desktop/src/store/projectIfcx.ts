@@ -38,6 +38,7 @@ import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
 import type { JupyterWerkmap } from "./jupyterBlad.ts";
 import type { MarimoNotebook } from "./marimoBlad.ts";
 import type { Varianten } from "./varianten.ts";
+import type { IncludeKopie } from "./includes.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 import { gebruikteToetsingen, toetsVersie } from "../rekenen/toetsCache.ts";
 import { variantToetsHashes } from "../rekenen/varianten.ts";
@@ -46,6 +47,13 @@ import { maakPoer } from "../components/calc/poerDefinitie.ts";
 import { poerIfcxKnopen } from "../components/calc/poerIfcx.ts";
 import { maakMeerpaalPoer } from "../components/calc/meerpaalDefinitie.ts";
 import { meerpaalIfcxKnopen } from "../components/calc/meerpaalIfcx.ts";
+import { meerpaalVorm, tweepaalVorm, type PoerVorm } from "../components/calc/poerDxf.ts";
+import { huidigeRevisie, leesRevisie, revisieInhoud } from "../components/calc/poerRevisie.ts";
+import { koppelingVoorIfcx } from "../components/calc/palenplan.ts";
+
+/** De id, de palen, de plaats in het palenplan en het revisienummer van een poerblad. */
+const poerKoppeling = (waarden: Record<string, string>, vorm: PoerVorm) =>
+  koppelingVoorIfcx(waarden, huidigeRevisie(leesRevisie(waarden), revisieInhoud(vorm)).nr);
 
 /** Wat dit bestand van een blad nodig heeft; een uittreksel van `Exemplaar`. */
 export interface BladVoorIfc {
@@ -65,6 +73,7 @@ export interface BladVoorIfc {
   marimo?: MarimoNotebook;
   toetsingen?: Record<string, VastgelegdeToets>;
   varianten?: Varianten;
+  includes?: IncludeKopie[];
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -112,6 +121,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>, alle: re
     jupyter: ex.jupyter,
     marimo: ex.marimo,
     ...(ex.varianten ? { varianten: ex.varianten } : {}),
+    ...(ex.includes?.length ? { includes: ex.includes } : {}),
     nodes: [],
   };
   if (!isLosBlad(ex)) {
@@ -132,7 +142,8 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>, alle: re
           const n = parseFloat(String(ex.waarden[naam] ?? "").replace(",", "."));
           return Number.isFinite(n) ? n : 0;
         };
-        blad.geometrie = poerIfcxKnopen(maakPoer(lees), ex.id) ?? undefined;
+        const p = maakPoer(lees);
+        blad.geometrie = poerIfcxKnopen(p, ex.id, undefined, poerKoppeling(ex.waarden, tweepaalVorm(p))) ?? undefined;
       }
       // Een poer op drie of vier palen: de invoer, en waar die leeg is de beginwaarde uit
       // de bladtekst (?{…}); via dezelfde definitie als de staaflijst en het DXF-detail.
@@ -151,7 +162,8 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>, alle: re
             return 0;
           }
         };
-        blad.geometrie = meerpaalIfcxKnopen(maakMeerpaalPoer(lees), ex.id) ?? undefined;
+        const m = maakMeerpaalPoer(lees);
+        blad.geometrie = meerpaalIfcxKnopen(m, ex.id, undefined, poerKoppeling(ex.waarden, meerpaalVorm(m))) ?? undefined;
       }
     } catch (err) {
       blad.fout = (err as Error).message;
