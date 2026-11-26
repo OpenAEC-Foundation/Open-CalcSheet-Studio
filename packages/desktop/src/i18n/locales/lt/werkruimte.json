@@ -798,6 +798,7 @@
       "cirkel": "Šis mazgas yra ciklo dalis: jo rezultatas priklauso nuo jo paties.",
       "ingangOntbreekt": "Trūksta įvesties {{naam}}.",
       "ingangZonderWaarde": "Įvestis {{naam}} neturi reikšmės: ankstesnis mazgas neskaičiuoja.",
+      "uitgeschakeld": "Išjungtas: šis mazgas neskaičiuoja.",
       "uitgangZonderWaarde": "Išvestis {{naam}} neturi reikšmės.",
       "veld": "{{naam}}: {{tekst}}",
       "reken": "{{tekst}}",
