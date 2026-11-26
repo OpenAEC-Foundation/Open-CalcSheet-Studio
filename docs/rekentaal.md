@@ -58,6 +58,23 @@ in de omschrijving de handberekening.
   eenheid van de bladtekst.
 - **Temperatuur** rekent niet om naar een ander stelsel: in een blad is het bijna altijd
   een verschil. Voet-en-inch met breuken (5'-6 ½") komt later.
+  - `20 degC to K` is 293,15 K, `68 degF to degC` is 20 °C, en `20 degC + 10 K` is 30 °C.
+  - In een product geldt een temperatuur als verschil: `α_T*(30 degC - 10 degC)` met
+    `α_T = 1.2e-5/K` is 2,4·10⁻⁴, met α in 1/K of in 1/degC.
+  - Let op: `30 degC - 10 degC` blijft 20 °C, en `to K` maakt daar 293,15 K van, een
+    absolute temperatuur. Schrijf een verschil daarom in K (`ΔT = 20 K`).
+- **Toerental:** `rpm` is een frequentie, omwentelingen per minuut: `1500 rpm to Hz` is
+  25 Hz. Een hoeksnelheid schrijf je als `ω = 2*pi*n to 1/s` (157,1 1/s), zonder `rad`:
+  dat heeft in de rekenbibliotheek een eigen dimensie, en dan rekent `M*ω` niet meer naar
+  kW (0,5 kNm · 157,1 1/s = 78,54 kW).
+- **Elektrisch:** `V`, `A`, `W`, `VA`, `ohm` (met voorvoegsels: `kohm`), `C` en `kWh`, ook met
+  voorvoegsels als `mA` en `kV`. Het teken Ω kan niet als eenheid: schrijf `ohm`. Pas op met
+  een variabele die zo heet: een variabele gaat voor een eenheid met dezelfde naam, dus na
+  `A = 300 mm^2` is `10 A` geen stroom meer.
+- **Nul:** `0 kN` blijft een kracht en rekent overal mee (`0 kN to N`, `0 kN/(2 m)`); een
+  deling door nul geeft ∞ en `0/0` geeft NaN, geen fout.
+- **Controle:** `scripts/check-eenheden-randgevallen.mjs` (nul, temperatuur, toerental,
+  elektrisch, met de handberekeningen bovenin).
 - **Eenhedenstelsel:** `evaluate(nodes, waarden, scope, { stelsel })` toont elke waarde in de
   eenheid van zijn grootheid (`STELSELS` in `eenheidstelsel.ts`: SI (mm), SI (m) en US
   customary). Alleen de weergave verandert: `result`, `unit` en `waarde` blijven in de
