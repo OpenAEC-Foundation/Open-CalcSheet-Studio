@@ -14,7 +14,7 @@ function spritesInline() {
   return {
     name: "openaec-sprites-inline",
     transformIndexHtml(html: string) {
-      const sprites = ["standard", "calculations", "spreadsheet", "pdf"]
+      const sprites = ["standard", "calculations", "spreadsheet", "pdf", "graaf"]
         .map((naam) => readFileSync(new URL(`./public/icons/${naam}.svg`, import.meta.url), "utf8").replace(/<\?xml[^>]*>\s*/, ""))
         .join("");
       return html.replace("<body>", `<body>${sprites}`);

@@ -580,6 +580,7 @@
     "toevoegenUitleg": "Een leeg canvas als blad aan het project toevoegen: formules als losse eenheden vrij op een vel. Doorgerekend wordt van boven naar beneden, en bij gelijke hoogte van links naar rechts.",
     "nieuweNaam": "Canvas",
     "tab": "Canvas",
+    "rekenbladUitleg": "Dit blad op het canvas: de delen tussen de koppen als blokken onder elkaar. Verplaats of bewerk je een blok, dan komen de plekken in de rekentekst; de uitkomsten blijven gelijk zolang de volgorde gelijk blijft.",
     "paneel": "Canvas",
     "rij": "Canvas-blad: formules vrij op een vel",
     "uitleg": "Klik op een lege plek om een formule neer te zetten.",
@@ -635,7 +636,7 @@
     "paneel": "Grafblad",
     "rij": "Grafblad — rekent vanzelf door",
     "info": "{{nodes}} nodes · {{verbindingen}} verbindingen",
-    "hint": "Dubbelklik: node toevoegen · Slepen op een lege plek: kiezen (Shift: erbij) · Ctrl+klik: node erbij · Alt+slepen: 3D draaien · Rechts of midden slepen: vlak schuiven · Scrollen: zoomen · Ctrl+C/V/D: kopiëren, plakken, dupliceren · Delete: weghalen",
+    "hint": "Dubbelklik: node toevoegen · Rechtsklik: menu · Slepen op een lege plek: kiezen (Shift: erbij) · Ctrl+klik: node erbij · Alt+slepen: 3D draaien · Rechts of midden slepen: vlak schuiven · Scrollen: zoomen · Ctrl+C/V/D: kopiëren, plakken, dupliceren · Ctrl+G: groeperen · T: tekst · Delete: weghalen",
     "draaien": "3D draaien",
     "draaienUitleg": "Aan: slepen op een lege plek draait het 3D-voorbeeld. Uit: slepen trekt een kader om nodes te kiezen; draaien gaat dan met Alt+slepen.",
     "leeg": "Dubbelklik op het vlak om een node toe te voegen, en sleep van een uitgang naar een ingang om te verbinden.",
@@ -660,8 +661,62 @@
       "eenheid": "eenheid",
       "min": "min",
       "max": "max",
-      "stap": "stap"
+      "stap": "stap",
+      "schuif": "Schuif en grenzen tonen of verbergen"
     },
+    "menu": {
+      "keuze_one": "{{count}} node",
+      "keuze_other": "{{count}} nodes",
+      "hernoemen": "Hernoemen",
+      "uitkomstTonen": "Uitkomst tonen",
+      "uitkomstVerbergen": "Uitkomst verbergen",
+      "uitschakelen": "Uitschakelen",
+      "inschakelen": "Inschakelen",
+      "dupliceren": "Dupliceren",
+      "uitleg": "Uitleg bij deze node",
+      "verwijderen": "Verwijderen",
+      "labelTonen": "Waarde op de lijn tonen",
+      "labelVerbergen": "Waarde op de lijn verbergen",
+      "ertussen": "Node ertussen",
+      "lijnWeg": "Verbinding verwijderen",
+      "nodeToevoegen": "Node toevoegen",
+      "plakken": "Plakken",
+      "allesKiezen": "Alles kiezen",
+      "passend": "Passend in beeld",
+      "groeperen": "Groeperen",
+      "tekstHier": "Tekst hier",
+      "opheffen": "Groep opheffen",
+      "metInhoudWeg": "Verwijderen met inhoud",
+      "tekstBewerken": "Bewerken"
+    },
+    "groep": {
+      "nieuw": "Groep",
+      "inklappen": "Inklappen",
+      "uitklappen": "Uitklappen",
+      "leden_one": "{{count}} onderdeel",
+      "leden_other": "{{count}} onderdelen"
+    },
+    "tekstblok": {
+      "titel": "Titel",
+      "tekst": "Tekst, bijvoorbeeld een aanname",
+      "breedte": "Sleep om de breedte te wijzigen"
+    },
+    "catalogus": {
+      "titel": "Catalogus van nodes",
+      "wissel": "Catalogus tonen of verbergen (Ctrl+F zoekt)",
+      "recent": "Recent",
+      "alle": "Alle nodes",
+      "groep": {
+        "invoer": "Invoer",
+        "reken": "Rekenen",
+        "logica": "Logica",
+        "lijst": "Lijsten",
+        "tekst": "Tekst",
+        "geometrie": "Geometrie"
+      }
+    },
+    "uitkomstTonen": "Uitkomst tonen (H)",
+    "uitkomstVerbergen": "Uitkomst verbergen (H)",
     "soort": {
       "getal": "Getal",
       "tekst": "Tekst",

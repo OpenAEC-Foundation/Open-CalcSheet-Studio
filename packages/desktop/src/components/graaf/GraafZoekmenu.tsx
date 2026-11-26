@@ -1,15 +1,13 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NODE_SOORTEN, nodeDef } from "../../graaf/nodes";
 import type { NodeSoort } from "../../graaf/model";
+import { zoekNodes } from "../../graaf/zoeken";
 
 /*
  * Het zoekmenu voor een nieuwe node: opent bij dubbelklik op het vlak, of als je
- * een verbinding loslaat op een lege plek. Zoekt op de naam, de uitleg en de naam
- * in de andere taal; Enter kiest de bovenste, de pijltjes bewegen.
+ * een verbinding loslaat op een lege plek. Zoekt zoals de catalogus (zoeken.ts);
+ * Enter kiest de bovenste, de pijltjes bewegen.
  */
-
-const GROEPEN = ["invoer", "reken", "logica", "lijst", "tekst", "geometrie"] as const;
 
 export function GraafZoekmenu({ x, y, onKies, onSluit }: {
   /** De plek in het vlak, in px vanaf de linkerbovenhoek. */
@@ -23,13 +21,8 @@ export function GraafZoekmenu({ x, y, onKies, onSluit }: {
   const [actief, setActief] = useState(0);
 
   const treffers = useMemo(() => {
-    const woorden = zoek.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const anders = i18n.getFixedT(i18n.language?.startsWith("en") ? "nl" : "en", "werkruimte");
-    const volgorde = GROEPEN.flatMap((g) => NODE_SOORTEN.filter((s) => nodeDef(s)?.groep === g));
-    return volgorde.filter((s) => {
-      const hooi = [s, t(`graaf.soort.${s}`), t(`graaf.uitleg.${s}`), anders(`graaf.soort.${s}`)].join(" ").toLowerCase();
-      return woorden.every((w) => hooi.includes(w));
-    });
+    return zoekNodes(zoek, (k) => t(k), (k) => anders(k));
   }, [zoek, t, i18n]);
 
   return (
