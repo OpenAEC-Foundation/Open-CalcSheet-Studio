@@ -143,6 +143,7 @@
     "totaalMassa": "Total",
     "verlopend": "varying",
     "maten": "Dimensions in mm; leg lengths between bend points on the bar centre line, length along the centre line.",
+    "kruisend": "Ties in three layers: at the bottom the tie between the lower piles, on top of it the left inclined tie, above that the right inclined tie. The inclined ties cross above the upper pile.",
     "bovenaanzicht": "Plan",
     "doorsnede": "Section",
     "soorten": {
@@ -185,6 +186,64 @@
         "net": "Mesh bar",
         "randbeugel": "Edge link"
       }
+    }
+  },
+  "poerKoppeling": {
+    "kop": "Pile plan and revision",
+    "revisieTitel": "revision {{nr}}",
+    "revisieVast": "Revision {{nr}}, recorded on {{datum}}.",
+    "revisieNieuw": "Revision {{nr}}, not yet recorded. Saving as DXF or IFCX records it.",
+    "vastleggen": "Record revision",
+    "sinds": "Changed since revision {{nr}}:",
+    "inRevisie": "Changed compared with revision {{nr}}:",
+    "meer": "… {{n}} more",
+    "nieuw": "new",
+    "vervallen": "removed",
+    "poerId": "Cap id: {{id}}",
+    "bron": "(from {{bestand}})",
+    "poerIdLos": "Not linked to a pile plan; the IFC output keeps the fixed paths of this sheet.",
+    "inlezen": "Read pile plan (IFCX)…",
+    "gelezen": "{{bestand}}: caps {{n}}",
+    "fout": "This file is not a readable IFCX: {{fout}}",
+    "nietInPlan": "Cap {{id}} is not in this pile plan.",
+    "gelijk": "The sheet matches the pile plan.",
+    "verschillen": "Differs from the pile plan:",
+    "inPlanVeranderd": "changed in the plan",
+    "inBladVeranderd": "different in the sheet",
+    "overnemen": "Take over from the pile plan",
+    "palen": "piles: {{n}}",
+    "inDitBlad": "Into this sheet",
+    "alsNieuwBlad": "As a new sheet",
+    "geenBlad": "fits no pile cap sheet",
+    "uitleg": "The reinforcement detail, the DXF and the IFCX always come from the input of this sheet. Whatever you change by hand in a drawn detail is not kept with a new output. The revision number goes up as soon as the dimensions or the bars change, also through a change from the pile plan; the list shows what is different. The cap id and the pile ids stay the same and are in the IFCX.",
+    "sleutels": {
+      "poer": "Cap",
+      "palen": "Piles",
+      "paal": "Pile",
+      "kolom": "Column",
+      "staaf": "Bars",
+      "hoogte": "Level"
+    },
+    "velden": {
+      "poer_id": "cap id",
+      "paal_ids": "piles",
+      "plan_x": "position x",
+      "plan_y": "position y",
+      "plan_z": "underside",
+      "plan_hoek": "rotation"
+    },
+    "meldingen": {
+      "geenPoeren": "No pile caps (IfcFooting) in this file.",
+      "lossePalen": "Piles under no cap: {{n}}.",
+      "dubbeleId": "The id {{id}} occurs more than once.",
+      "aantalPalen": "Piles: {{n}}. A pile cap sheet knows two, three or four piles.",
+      "nietSymmetrisch": "The cap is not symmetric about the piles; the sheet places it so.",
+      "geenRechthoek": "The plan outline is not a rectangle; the sheet uses the enclosing rectangle.",
+      "palenRechthoek": "The piles are not in a rectangle; the sheet places them so.",
+      "palenDriehoek": "The piles are not in an equilateral triangle; the sheet places them so.",
+      "vormDriehoek": "The plan outline is not a triangle with chamfered corners at equal distance from the piles; the sheet uses the smallest distance.",
+      "ongelijkePalen": "The piles are not the same size; the sheet uses the largest.",
+      "kolomMidden": "The column is not at the centre of the piles; the sheet places it there."
     }
   },
   "doorsnede": {

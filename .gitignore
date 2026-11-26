@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-platform/
+dist-rekendienst/
 .vite/
 *.tsbuildinfo
 PROMPTS.md
@@ -35,3 +36,6 @@ packages/desktop/src-tauri/fem-studio/SOURCE.txt
 
 # Lokale rapportsjablonen, bureauhuisstijl en verificatievoorbeelden
 /lokale-rapportsjablonen/
+
+# Het pakket van een release voor het image van de app (docker/app.Dockerfile)
+docker/app/pakket/
