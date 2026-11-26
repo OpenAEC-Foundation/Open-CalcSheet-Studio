@@ -1,11 +1,12 @@
 import i18next from "i18next";
 import { defaultStyles, type EvalOpties } from "@ifc-calc/core";
 import type { Exemplaar } from "../../store/projectStore";
-import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal-includes";
+import { rekentaalIncludes, rekentaalIncludeStaat, rekentaalImageUrls } from "../../templates/rekentaal-includes";
 import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { bladSoortVan } from "./bladSoorten";
 import { rekenUitwerking, type CanvasUitwerking } from "./canvasRekenen";
+import { leesNbKeuzes } from "./nbKeuzes";
 import { isJupyterBlad } from "../../store/jupyterBlad";
 import { werkmapHtml } from "./jupyterPapier";
 import { papier } from "./pdfBlad";
@@ -78,13 +79,16 @@ export function rekenBladDoor(
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
   try {
     // De eigen eenheden van het project gelden al bij het lezen (ParseOptions.eenheden).
-    const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls, eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam) };
+    const opties = { includes: rekentaalIncludes, includeStaat: rekentaalIncludeStaat, imageUrls: rekentaalImageUrls, eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam) };
     const uitvoer = bronVoorUitvoer(ex.source, taal);
     const metRefs = scopeMetVerwijzingen(ex.source, ex.waarden, scope, verwezenBladen(ex.source, ex.waarden, alle), opties, evalOpties);
     const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, metRefs, opties, uitvoer.namen, evalOpties);
     html = uitwerking.html;
     eenheden = uitwerking.eenheden;
     resultaat = leesResultaat(uitwerking.nodes, ex.naam);
+    // De gemerkte keuzes uit de nationale bijlage, voor de tabel onder het blad (nbKeuzes.ts).
+    const nb = leesNbKeuzes(ex.source, uitwerking.nodes, uitwerking.scope);
+    if (nb.length) resultaat.nb = nb;
   } catch (err) {
     html = `<p class="calc-text" style="color:#b91c1c">${i18next.t("beelden:afdruk.nietDoorgerekend", { lng: taal })} ${
       (err as Error).message

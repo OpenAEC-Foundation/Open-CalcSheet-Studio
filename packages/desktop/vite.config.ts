@@ -47,15 +47,24 @@ function libraryInBundel() {
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
+/**
+ * De pagina's voor het rapport van de rekendienst zonder venster (`--mode rekendienst`,
+ * scripts/bouw-rekendienst.mjs, docs/rekendienst.md): de gewone app, met de Library in de
+ * bundel en de haak `window.__ocs` (main.tsx), waarmee headless Chromium het project laadt
+ * en het rapport afdrukt.
+ */
+const plugins = (mode: string) =>
+  mode === "platform" ? [react(), spritesInline(), libraryInBundel()] : mode === "rekendienst" ? [react(), libraryInBundel()] : [react()];
+
 // https://vite.dev/config/
 export default defineConfig(async ({ command, mode }) => ({
-  plugins: mode === "platform" ? [react(), spritesInline(), libraryInBundel()] : [react()],
+  plugins: plugins(mode),
 
   define: {
     // De Library zit niet in de app; in de dev-server komt hij uit de map library/,
     // in de platformbouw uit de bundel zelf.
     __LIBRARY_DEV__: JSON.stringify(
-      mode === "platform" ? "./library" : command === "serve" ? `/@fs${new URL("../../library", import.meta.url).pathname}` : "",
+      mode === "platform" || mode === "rekendienst" ? "./library" : command === "serve" ? `/@fs${new URL("../../library", import.meta.url).pathname}` : "",
     ),
     // De werkplek van de SuperCloud (src/werkplek/werkplek.ts).
     __WERKPLEK__: JSON.stringify(mode === "platform"),

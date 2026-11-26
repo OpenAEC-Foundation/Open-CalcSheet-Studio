@@ -1,0 +1,7 @@
+{
+  "onderdeel": "opzoeken",
+  "omschrijving": "hlookup zoekt in een rij en geeft de waarde uit een andere rij.",
+  "uitkomst": {
+    "h": "2"
+  }
+}

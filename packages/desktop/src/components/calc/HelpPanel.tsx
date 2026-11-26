@@ -56,6 +56,7 @@ const SECTIONS: Section[] = [
     items: [
       { label: vt("item.eenvoudig"), insert: "b = 300 mm", description: vt("omschrijving.eenvoudig") },
       { label: vt("item.subscript"), insert: "V_b,0 = 27 m/s", description: vt("omschrijving.subscript") },
+      { label: vt("item.procentInNaam"), insert: "F_1%50 = 2", description: vt("omschrijving.procentInNaam") },
       { label: vt("item.griekseLetter"), insert: "γ_Q = 1.5", description: "γ, σ, ψ, μ, π …" },
     ],
   },
@@ -111,7 +112,7 @@ const SECTIONS: Section[] = [
     items: [
       { label: "#def name(args) … #end def", insert: "#def line$(x1$; y1$; x2$; y2$)\n\t'<line x1=\"'x1$'\" y1=\"'y1$'\" .../>\n#end def" },
       { label: vt("item.defConstante"), insert: "#def style1$ = \"stroke:black\"" },
-      { label: vt("item.include"), insert: vt("invoeg.include") },
+      { label: vt("item.include"), insert: vt("invoeg.include"), description: vt("omschrijving.include") },
     ],
   },
   {

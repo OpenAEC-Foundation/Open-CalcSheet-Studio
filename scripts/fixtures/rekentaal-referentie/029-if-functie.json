@@ -1,0 +1,9 @@
+{
+  "onderdeel": "voorwaarden",
+  "omschrijving": "if(voorwaarde; dan; anders) in een formule.",
+  "uitkomst": {
+    "r": "10",
+    "eq": "1",
+    "kl": "0"
+  }
+}

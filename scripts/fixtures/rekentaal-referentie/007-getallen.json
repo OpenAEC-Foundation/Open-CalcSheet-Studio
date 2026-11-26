@@ -1,0 +1,10 @@
+{
+  "onderdeel": "rekenen",
+  "omschrijving": "Rekenen zonder eenheden: 2,5·4 = 10, 7/2 = 3,5, 2¹⁰ = 1024.",
+  "uitkomst": {
+    "a": "3",
+    "b": "10",
+    "c": "3.5",
+    "d": "1024"
+  }
+}

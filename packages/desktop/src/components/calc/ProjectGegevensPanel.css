@@ -339,3 +339,49 @@
   font-size: 11px;
   color: var(--oa-error, #b91c1c);
 }
+
+/* ── Normen en nationale bijlagen (NormenEditor) ─────────────────── */
+
+.pg-normen-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5mm 0 2mm;
+}
+
+.pg-normen-tabel th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--oa-text-secondary);
+  padding: 0 1.5mm 1mm 0;
+}
+
+.pg-normen-tabel td {
+  padding: 0 1.5mm 1.2mm 0;
+  vertical-align: middle;
+}
+
+.pg-normen-tabel input,
+.pg-normen-tabel select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pg-normen-tabel td:first-child {
+  width: 24%;
+}
+
+.pg-normen-tabel td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.pg-normen-knoppen {
+  display: flex;
+  gap: 2mm;
+  flex-wrap: wrap;
+}
+
+.pg-normen-leeg {
+  font-style: italic;
+}

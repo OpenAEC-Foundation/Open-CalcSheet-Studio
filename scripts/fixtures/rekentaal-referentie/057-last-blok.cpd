@@ -1,0 +1,5 @@
+@last q_L1 "Ligger" lijn
+  3 kN/m^2; 2 m
+  Q: 2 kN/m^2; 2 m; "vloer"
+@end
+q_Ed = 1.2*q_L1,G + 1.5*q_L1,Q

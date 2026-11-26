@@ -19,8 +19,10 @@ import "./App.css";
 // Dat script stuurt een headless browser aan en moet dezelfde stores raken als
 // de app. Zelf importeren via een URL gaat mis zodra Vite een module heeft
 // vernieuwd: de app laadt dan `…/projectStore.ts?t=…`, een losse kopie met een
-// eigen store. In een productiebouw valt dit blok weg.
-if (import.meta.env.DEV) {
+// eigen store. Ook in de pagina's van de rekendienst (`--mode rekendienst`,
+// packages/headless/pdf.mjs), die het rapport zo afdrukt. In een gewone
+// productiebouw valt dit blok weg.
+if (import.meta.env.DEV || import.meta.env.MODE === "rekendienst") {
   window.__ocs = { useProjectStore, usePrintStore, useBureauStore, leesProjectBestand, wachtOpVellen, zetDrukvellenKlaar, wachtOpDrukbeelden };
 }
 

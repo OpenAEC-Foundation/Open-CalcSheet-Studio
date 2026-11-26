@@ -14,16 +14,75 @@ import { renderJsBlok } from './jsBlok.js';
 
 function renderLatex(latex: string, displayMode = false): string {
   try {
-    return katex.renderToString(latex, {
+    const html = katex.renderToString(latex, {
       displayMode,
       fleqn: true,
       throwOnError: false,
       trust: true,
       strict: false,
     });
+    return displayMode ? metAfbreekDelen(html) : html;
   } catch {
     return `<span class="calc-error-inline">${escapeHtml(latex)}</span>`;
   }
+}
+
+const KATEX_HTML = '<span class="katex-html" aria-hidden="true">';
+/** Een stuk dat eindigt op een betrekking (`=`, `≤`, …) met de ruimte erna. */
+const EINDIGT_OP_BETREKKING = /<span class="mrel[^"]*">[^<]*<\/span>(?:<span class="mspace"[^>]*><\/span>)?<\/span>$/;
+
+/**
+ * Een te lange formuleregel breekt af, liefst bij een `=`.
+ *
+ * KaTeX zet de bovenste laag van een formule al in stukken (`span.base`), elk
+ * eindigend op een betrekking of een bewerking (`=`, `+`, `−`, `·`). Binnen een
+ * regel mag de browser alleen tussen die stukken afbreken. In de display-vorm
+ * verbiedt KaTeX dat (white-space: nowrap), en wat niet paste viel weg.
+ *
+ * Hier gaan de stukken per `=` in een eigen groep (`span.calc-deel`). De groepen
+ * staan in een flex-rij die afbreekt (zie defaultStyles): past een groep niet
+ * meer achter de vorige, dan gaat hij als geheel naar de volgende regel. Is één
+ * groep breder dan het blad, dan breekt hij binnen zichzelf bij een `+`, `−` of
+ * `·`. Vervolgregels springen in. Een korte regel ziet er hetzelfde uit als
+ * voorheen. De MathML voor de toegankelijkheid en de export blijft ongewijzigd.
+ */
+function metAfbreekDelen(html: string): string {
+  const start = html.indexOf(KATEX_HTML);
+  if (start < 0) return html;
+  const begin = start + KATEX_HTML.length;
+  // De directe kinderen van katex-html, tot de sluitende span.
+  const stukken: string[] = [];
+  let diepte = 0;
+  let stukBegin = begin;
+  let i = begin;
+  for (;;) {
+    const open = html.indexOf('<span', i);
+    const sluit = html.indexOf('</span>', i);
+    if (sluit < 0) return html;
+    if (open >= 0 && open < sluit) {
+      if (diepte === 0) stukBegin = open;
+      diepte++;
+      i = open + 5;
+    } else {
+      if (diepte === 0) break; // het einde van katex-html
+      diepte--;
+      i = sluit + 7;
+      if (diepte === 0) stukken.push(html.slice(stukBegin, i));
+    }
+  }
+  const einde = i;
+  // Alleen gewone stukken; een vergelijkingsnummer (span.tag) laten we staan.
+  if (stukken.length < 2 || !stukken.every((s) => s.startsWith('<span class="base"'))) return html;
+  const groepen: string[][] = [[]];
+  for (const s of stukken) {
+    groepen[groepen.length - 1].push(s);
+    if (EINDIGT_OP_BETREKKING.test(s)) groepen.push([]);
+  }
+  const binnen = groepen
+    .filter((g) => g.length > 0)
+    .map((g) => `<span class="calc-deel">${g.join('')}</span>`)
+    .join('');
+  return html.slice(0, begin) + binnen + html.slice(einde);
 }
 
 function escapeHtml(str: string): string {
@@ -291,6 +350,11 @@ function renderNode(node: EvaluatedNode): string {
       return `<h${node.level}>${escapeHtml(node.text)}</h${node.level}>`;
 
     case 'text':
+      // Een melding bij een `#include` (include.ts): een kopie is een waarschuwing, de rest een fout.
+      if (node.includeMelding) {
+        const soort = node.includeMelding.soort === 'kopie' || node.includeMelding.soort === 'lezen' ? 'waarschuwing' : 'fout';
+        return `<p class="calc-text calc-include-melding calc-include-${soort}" data-include="${escapeHtml(node.includeMelding.pad)}">${escapeHtml(node.text)}</p>`;
+      }
       // prose lines (`'…`) come through with `html: true` and may contain
       // inline tags like <i>, <b>, <hr/>, <sub>. Pass them through unescaped.
       return node.html
@@ -613,6 +677,19 @@ export const defaultStyles = `
   column-gap: 0.1em;
 }
 
+/* Een melding bij een #include (include.ts), op het scherm en op papier. */
+.calc-include-melding {
+  border-left: 3px solid #b45309;
+  background: #fffbeb;
+  color: #78350f;
+  padding: 0.2em 0.6em;
+}
+.calc-include-fout {
+  border-left-color: #dc2626;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
 .calc-comment {
   color: #4b5563;
   font-size: 0.92em;
@@ -630,6 +707,38 @@ export const defaultStyles = `
 .calc-line .katex {
   font-size: 1.1em;
   text-align: left;
+}
+
+/* Een te lange regel breekt af (metAfbreekDelen): de groepen per '=' staan in
+   een rij die afbreekt, een groep breder dan het blad breekt binnen zichzelf
+   bij '+', '−' of '·'. Vervolgregels springen 2em in. min-width: 0 laat het
+   formuleblok in de flex-rij van .calc-line smaller worden dan zijn formule. */
+.calc-line .calc-formula,
+.calc-line .katex-display {
+  min-width: 0;
+  max-width: 100%;
+}
+.calc-line .katex-display {
+  /* Geen 'hidden' of 'auto': dan wordt het blok een scrollvak dat het muiswiel
+     vangt (een breuk is een paar pixels hoger dan haar vak). */
+  overflow: visible;
+}
+.calc-line .katex-display > .katex > .katex-html {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding-left: 2em;
+}
+.calc-line .katex-html > .calc-deel {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: normal;
+}
+/* De eerste groep ('naam =') begint aan de kantlijn, elke volgende regel 2em
+   verder: ook de regels waarin één groep binnen zichzelf afbreekt, want die
+   groep staat dan alleen op zijn regel. */
+.calc-line .katex-html > .calc-deel:first-child {
+  margin-left: -2em;
 }
 
 .calc-error {

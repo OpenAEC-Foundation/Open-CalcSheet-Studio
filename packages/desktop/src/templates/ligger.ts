@@ -186,6 +186,8 @@ hout = bool(materiaal ≡ 1)
     G_st = 81000 N/mm^2
     γ_M0 = 1.0
     γ_M1 = 1.0
+    //@nb γ_M0 6.1(1)
+    //@nb γ_M1 6.1(1)
     ε = sqrt(235 N/mm^2/f_y)
     k_def = 0
     k_mod(d) = 1

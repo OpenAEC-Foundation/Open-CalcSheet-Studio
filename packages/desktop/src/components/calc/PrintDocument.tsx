@@ -4,6 +4,7 @@ import { landcode } from "../../i18n/talen";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { projectScope, projectWaarde } from "../../store/projectGegevens";
 import { evalOptiesVan } from "../../store/projectEenheden";
+import { vastgelegdeNormen, type ProjectNorm } from "../../store/projectNormen";
 import { usePrintStore } from "../../store/printStore";
 import { ucTekst } from "./bladResultaat";
 import { rekenBladDoor, zorgVoorKernstijlen, type DoorgerekendBlad } from "./bladDoorrekenen";
@@ -30,6 +31,8 @@ export interface Uitdraai {
   onderdeel: string | undefined;
   projectNummer: string | undefined;
   constructeur: string | undefined;
+  /** De normen met editie en nationale bijlage uit de projectgegevens (projectNormen.ts). */
+  normen: ProjectNorm[];
 }
 
 /**
@@ -92,6 +95,7 @@ export function useUitdraai(): Uitdraai {
     onderdeel: gegevens.onderdeel,
     projectNummer: gegevens.project_nummer,
     constructeur: gegevens.constructeur,
+    normen: vastgelegdeNormen(gegevens),
   };
 }
 
@@ -144,7 +148,43 @@ function Resultaten({ uitdraai }: { uitdraai: Uitdraai }) {
   );
 }
 
-/** Het voorblad: projectgegevens plus de inhoud met de resultaten. */
+/**
+ * De normen van het project op het voorblad: aanduiding, editie en nationale bijlage, zoals
+ * ze in de projectgegevens zijn vastgelegd. Zonder vastlegging staat dat er, zodat een
+ * lezer weet dat de editie niet uit dit stuk blijkt.
+ */
+function VoorbladNormen({ normen }: { normen: ProjectNorm[] }) {
+  const leeg = <i>{op("nietVastgelegd")}</i>;
+  return (
+    <>
+      <p className="print-sectiekop">{op("normenKop")}</p>
+      {normen.length === 0 ? (
+        <p className="print-normen-leeg">{op("normenNiet")}</p>
+      ) : (
+        <table className="print-gegevens print-normen">
+          <thead>
+            <tr>
+              <th>{op("normKolom")}</th>
+              <th>{op("editieKolom")}</th>
+              <th>{op("nbKolom")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {normen.map((n, i) => (
+              <tr key={i}>
+                <td>{n.norm}</td>
+                <td>{n.editie.trim() || leeg}</td>
+                <td>{n.nb.trim() || leeg}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
+}
+
+/** Het voorblad: projectgegevens, de normen, en de inhoud met de resultaten. */
 export function PrintVoorblad({ uitdraai }: { uitdraai: Uitdraai }) {
   const { projectNaam, kopregels, datum, onderdeel, projectNummer, constructeur } = uitdraai;
   return (
@@ -165,6 +205,7 @@ export function PrintVoorblad({ uitdraai }: { uitdraai: Uitdraai }) {
           </tbody>
         </table>
       )}
+      <VoorbladNormen normen={uitdraai.normen} />
       <Resultaten uitdraai={uitdraai} />
       <div className="print-voorblad-voet">
         <span>{projectNummer ? op("project", { nummer: projectNummer }) : ""}</span>

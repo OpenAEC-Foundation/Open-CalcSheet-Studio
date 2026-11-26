@@ -1,6 +1,7 @@
 import type { MathNode } from 'mathjs';
 import { math, isEenheidNaam } from './eenheden.js';
 import { verwijzingVanNaam } from './verwijzing.js';
+import { naamMetProcent } from './naam.js';
 
 const parse = (expr: string): MathNode => math.parse(expr);
 import type { MatrixUitkomst } from './types.js';
@@ -104,14 +105,15 @@ function symbolToLatex(codeNaam: string): string {
   // Een waarde uit een ander blad (verwijzing.ts): `ref__1__R_paal` staat er als #1.R_paal.
   const ref = verwijzingVanNaam(codeNaam);
   if (ref) return `\\#\\text{${escapeText(ref.ref)}.}${symbolToLatex(ref.naam)}`;
-  const name = weergaveNaam(codeNaam);
+  // Een procent in de naam staat in de scope als een eigen letter (naam.ts).
+  const name = naamMetProcent(weergaveNaam(codeNaam));
   const underscoreIdx = name.indexOf('_');
   if (underscoreIdx > 0) {
     const base = name.substring(0, underscoreIdx);
     // Elk volgend liggend streepje is een gevouwen komma: `F_v,Rd` wordt bij
     // het inlezen `F_v_Rd`. In beeld hoort de notatie van de norm, F_{v,Rd}.
     const sub = name.substring(underscoreIdx + 1).replace(/_/g, ',');
-    const baseLatex = GREEK[base] || base;
+    const baseLatex = GREEK[base] || (base.includes('%') ? `\\text{${escapeText(base)}}` : base);
     // Een Griekse letter in het subscript (n_ξ, f_δ) staat in wiskundemodus:
     // in \text{} heeft KaTeX er geen tekenmaten voor en valt hij terug op een
     // noodletter, met een waarschuwing in de console.

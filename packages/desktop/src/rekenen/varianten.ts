@@ -14,7 +14,7 @@
  * Zuiver, zonder React of stores: scripts/check-varianten.mjs laadt dit in Node.
  */
 import { evaluate, parse, type EvalOpties, type EvaluatedNode, type ParseOptions, type ToetsAntwoord, type ToetsVerzoek } from "@ifc-calc/core";
-import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
+import { rekentaalIncludes, rekentaalIncludeStaat, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
 import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../components/calc/bladLezen.ts";
 import type { Invoerveld } from "../components/calc/bladVersie.ts";
 import { rekenEenhedenDoor } from "../components/calc/canvasRekenen.ts";
@@ -84,7 +84,7 @@ export function rekenVariant(
   naam: string,
   opties: VariantOpties = {},
 ): VariantUitkomst {
-  const parseOpties = opties.parseOpties ?? { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls };
+  const parseOpties = opties.parseOpties ?? { includes: rekentaalIncludes, includeStaat: rekentaalIncludeStaat, imageUrls: rekentaalImageUrls };
   // Opties met een toetsmodus hebben hun antwoorden al bij zich: zo rekent de worker, die
   // geen eigen cache heeft (variantRekenen.ts). Anders de antwoorden van deze cache.
   const evalOpties = opties.evalOpties?.toetsModus
