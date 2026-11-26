@@ -12,7 +12,7 @@
 
 import { IN_WERKPLEK } from "../../werkplek/werkplek";
 
-export type Sprite = "standard" | "calculations" | "spreadsheet" | "pdf";
+export type Sprite = "standard" | "calculations" | "spreadsheet" | "pdf" | "graaf";
 
 // In de werkplek van de OpenAEC SuperCloud (`vite build --mode platform`) draait
 // de app in een frame met een opaque origin; een <use> naar een los SVG-bestand

@@ -939,5 +939,212 @@ console.log("\nModel versie 2");
   });
 }
 
+// ── Iconen en het beeld van een node ────────────────────────────────────────
+console.log("\nIconen en het beeld van een node");
+{
+  const N = await import("../packages/desktop/src/graaf/nodes.ts");
+  const M = await import("../packages/desktop/src/graaf/model.ts");
+  const hier = dirname(fileURLToPath(import.meta.url));
+  const sprite = readFileSync(join(hier, "../packages/desktop/public/icons/graaf.svg"), "utf8");
+  const BEDIENING = ["object.show", "object.hide", "selection.box", "list.group-by", "draw.note", "view.search", "view.orbit", "edit.delete", "edit.copy", "ui.more", "status.warning"];
+  const proef = (naam, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      meld(false, `${naam}: ${e.message}`);
+    }
+  };
+  proef("iconen", () => {
+    const ids = new Set([...Object.values(N.GROEP_ICOON), ...NODE_SOORTEN.map((s) => N.nodeIcoon(s)), N.nodeIcoon("bestaatNiet"), ...BEDIENING]);
+    const mist = [...ids].filter((id) => !sprite.includes(`id="i16-${id}"`) || !sprite.includes(`id="i24-${id}"`));
+    meld(Object.keys(N.GROEP_ICOON).length === 6 && mist.length === 0, `iconen: elke groep, node en knop heeft zijn icoon in graaf.svg (16 en 24 px)${mist.length ? `: mist ${mist}` : ""}`);
+    meld(N.nodeIcoon("codeblok") === "category.code" && N.nodeIcoon("som") === N.GROEP_ICOON.lijst && N.nodeIcoon("bestaatNiet") === "status.warning",
+      "iconen: een eigen icoon, anders dat van de groep, onbekend een waarschuwing");
+  });
+  const t = { naamVan: (n) => n.naam ?? n.soort, poort: (_n, p) => p, melding: (x) => x.code, meer: (n) => `+${n}` };
+  proef("kop_hoogte", () => {
+    const { g, ids } = bouw([["c", "codeblok", { code: "y = x * 2" }]]);
+    const n = g.nodes.find((x) => x.id === ids.c);
+    const p = poortPlek(n, poortenVan(n), "in", "x");
+    meld(N.KOP_HOOGTE === 34 && p.y === n.y + 34 + 13, "kop_hoogte: de eerste poort op 34 + 13 px onder de bovenkant", JSON.stringify(p));
+  });
+  proef("papier_verborgen", () => {
+    const { g: g0, ids } = bouw([["a", "getal", { waarde: "3" }], ["c", "codeblok", { code: "y = x * 2" }]], ["a.waarde -> c.x"]);
+    const zichtbaar = graafSvg(g0, rekenGraaf(g0), t).svg;
+    const g = M.zetVerborgen(g0, [ids.c], true);
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(zichtbaar.includes(">6<") && !svg.includes(">6<") && svg.includes("codeblok"), "papier_verborgen: een verborgen uitkomst staat niet op papier, de node wel");
+  });
+  proef("papier_getal_compact", () => {
+    const { g } = bouw([["q", "getal", { waarde: "5", eenheid: "kN/m", min: "0", max: "20", stap: "0.5" }]]);
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes("5 kN/m") && !/\bmin\b|\bmax\b|\bstap\b/.test(svg), "papier_getal_compact: een getal toont op papier alleen zijn waarde", svg.slice(0, 300));
+  });
+}
+
+// ── De catalogus: zoeken en recent gebruikt ─────────────────────────────────
+console.log("\nCatalogus");
+{
+  const Z = await import("../packages/desktop/src/graaf/zoeken.ts").catch(() => ({}));
+  const R = await import("../packages/desktop/src/graaf/recent.ts").catch(() => ({}));
+  const hier = dirname(fileURLToPath(import.meta.url));
+  /** Een vertaler zoals i18next voor de namespace werkruimte, uit het JSON-bestand. */
+  const vertaler = (taal) => {
+    const data = JSON.parse(readFileSync(join(hier, `../packages/desktop/src/i18n/locales/${taal}/werkruimte.json`), "utf8"));
+    return (sleutel) => sleutel.split(".").reduce((o, k) => (o && typeof o === "object" ? o[k] : undefined), data) ?? sleutel;
+  };
+  const tNl = vertaler("nl");
+  const tEn = vertaler("en");
+  const proef = (naam, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      meld(false, `${naam}: ${e.message}`);
+    }
+  };
+  proef("zoek_som", () => meld(Z.zoekNodes("som", tNl, tEn).includes("som"), "zoek_som: zoeken op de naam"));
+  proef("zoek_twee_woorden", () => {
+    const r = Z.zoekNodes("tekst lengte", tNl, tEn);
+    meld(r.includes("tekstLengte") && !r.includes("som"), "zoek_twee_woorden: alle woorden moeten passen", JSON.stringify(r));
+  });
+  proef("zoek_andere_taal", () => meld(Z.zoekNodes("sum", tNl, tEn).includes("som"), "zoek_andere_taal: de Engelse naam vindt de node ook in het Nederlands"));
+  proef("zoek_leeg_alles", () => {
+    const r = Z.zoekNodes("", tNl, tEn);
+    meld(r.length === NODE_SOORTEN.length && new Set(r).size === r.length, "zoek_leeg_alles: zonder zoekwoord alle soorten, in groepsvolgorde");
+  });
+  proef("recent", () => {
+    const opslag = new Map();
+    const oud = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: { getItem: (k) => opslag.get(k) ?? null, setItem: (k, v) => opslag.set(k, String(v)), removeItem: (k) => opslag.delete(k) },
+    });
+    try {
+      R.voegRecentToe("a");
+      R.voegRecentToe("b");
+      R.voegRecentToe("a");
+      for (const s of ["c", "d", "e", "f"]) R.voegRecentToe(s);
+      const lijst = R.leesRecent();
+      meld(lijst[0] === "f" && lijst.length === 5 && new Set(lijst).size === 5 && !lijst.includes("b"), "recent: nieuwste eerst, hooguit 5, zonder dubbele", JSON.stringify(lijst));
+      Object.defineProperty(globalThis, "localStorage", { configurable: true, get: () => { throw new Error("geen opslag"); } });
+      let goed = true;
+      try {
+        R.voegRecentToe("x");
+        goed = Array.isArray(R.leesRecent()) && R.leesRecent().length === 0;
+      } catch {
+        goed = false;
+      }
+      meld(goed, "recent: zonder localStorage geen fout, een lege lijst");
+    } finally {
+      if (oud) Object.defineProperty(globalThis, "localStorage", oud);
+      else delete globalThis.localStorage;
+    }
+  });
+}
+
+// ── De waarde op een verbinding en uitschakelen ─────────────────────────────
+console.log("\nDe waarde op een verbinding en uitschakelen");
+{
+  const N = await import("../packages/desktop/src/graaf/nodes.ts");
+  const M = await import("../packages/desktop/src/graaf/model.ts");
+  const t = { naamVan: (n) => n.naam ?? n.soort, poort: (_n, p) => p, melding: (x) => x.code, meer: (n) => `+${n}` };
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const proef = (naam, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      meld(false, `${naam}: ${e.message}`);
+    }
+  };
+  proef("midden_recht", () => {
+    const m = N.verbindingMidden({ x: 0, y: 0 }, { x: 100, y: 0 });
+    meld(dichtbij(m.x, 50) && dichtbij(m.y, 0), "midden_recht: het midden van een rechte lijn", JSON.stringify(m));
+  });
+  proef("midden_s", () => {
+    const m = N.verbindingMidden({ x: 0, y: 0 }, { x: 100, y: 40 });
+    meld(dichtbij(m.x, 50) && dichtbij(m.y, 20), "midden_s: het midden van een S-curve (t = 0,5)", JSON.stringify(m));
+  });
+  proef("papier_label", () => {
+    const { g: g0, ids } = bouw([["q", "getal", { waarde: "5", eenheid: "kN/m" }], ["c", "codeblok", { code: "y = x * 2" }]], ["q.waarde -> c.x"]);
+    const tekst = esc(waardeTekst(rekenGraaf(g0).nodes[ids.q].waarden.waarde));
+    const telZonder = graafSvg(g0, rekenGraaf(g0), t).svg.split(tekst).length - 1;
+    const g = M.wisselLabel(g0, ids.c, "x");
+    const telMet = graafSvg(g, rekenGraaf(g), t).svg.split(tekst).length - 1;
+    meld(telMet === telZonder + 1, `papier_label: met label staat "${tekst}" één keer extra op papier, op de lijn`, `${telZonder} → ${telMet}`);
+  });
+  proef("papier_uit", () => {
+    const { g: g0, ids } = bouw([["q", "getal", { waarde: "5" }], ["c", "codeblok", { code: "y = x * 2" }]], ["q.waarde -> c.x"]);
+    const g = M.zetUit(g0, [ids.c], true);
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes("uitgeschakeld") && svg.includes('opacity="0.5"'), "papier_uit: een uitgeschakelde node staat grijs op papier, met de melding");
+  });
+}
+
+// ── Groepen en losse tekst ──────────────────────────────────────────────────
+console.log("\nGroepen en losse tekst");
+{
+  const G = await import("../packages/desktop/src/graaf/groepen.ts").catch(() => ({}));
+  const M = await import("../packages/desktop/src/graaf/model.ts");
+  const t = { naamVan: (n) => n.naam ?? n.soort, poort: (_n, p) => p, melding: (x) => x.code, meer: (n) => `+${n}` };
+  const proef = (naam, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      meld(false, `${naam}: ${e.message}`);
+    }
+  };
+  proef("kader_om_leden", () => {
+    const maten = new Map([["a", { x: 0, y: 0, b: 100, h: 50 }], ["b", { x: 200, y: 100, b: 100, h: 50 }]]);
+    const k = G.groepKader({ id: "g1", naam: "G", leden: ["a", "b"] }, maten);
+    meld(JSON.stringify(k) === JSON.stringify({ x: -16, y: -46, b: 332, h: 212 }), "kader_om_leden: om de leden, 16 px marge, 30 px voor de titel", JSON.stringify(k));
+  });
+  proef("kader_leeg", () => {
+    meld(G.groepKader({ id: "g1", naam: "G", leden: ["x"] }, new Map()) === null, "kader_leeg: zonder maten van de leden geen kader");
+  });
+  proef("ingeklapt_lijnen_naar_kaart", () => {
+    const { g: g0, ids } = bouw([["a", "getal", { waarde: "2" }], ["b", "codeblok", { code: "y = x * 2" }]], ["a.waarde -> b.x"]);
+    let g = M.verplaatsNode(M.verplaatsNode(g0, ids.a, 0, 0), ids.b, 400, 100);
+    const gr = M.groepeer(g, [ids.b], "Moment");
+    g = M.wisselIngeklapt(gr.graaf, gr.id);
+    const b = g.nodes.find((n) => n.id === ids.b);
+    const maten = new Map([[ids.a, { x: 0, y: 0, b: 220, h: 60 }], [ids.b, { x: 400, y: 100, b: 280, h: 120 }]]);
+    const kaart = G.ingeklaptKaart(g.groepen[0], maten);
+    const p = G.zichtbarePoortPlek(g, b, poortenVan(b), "in", "x", maten);
+    meld(kaart.x === 384 && kaart.y === 54 && p.x === kaart.x && p.y === kaart.y + kaart.h / 2, "ingeklapt_lijnen_naar_kaart: de ingang ligt op de linkerrand van de kaart", JSON.stringify({ kaart, p }));
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes("Moment") && !svg.includes(">codeblok<") && svg.includes(`${kaart.x} ${kaart.y + kaart.h / 2}"`),
+      "ingeklapt_lijnen_naar_kaart: op papier de kaart met de naam, niet de node, en de lijn naar de rand");
+  });
+  proef("papier_groep_tekst", () => {
+    const { g: g0, ids } = bouw([["a", "getal", { waarde: "2" }], ["b", "codeblok", { code: "y = x * 2" }]], ["a.waarde -> b.x"]);
+    let g = M.verplaatsNode(g0, ids.b, 300, 0);
+    g = M.groepeer(g, [ids.a, ids.b], "Belasting").graaf;
+    const tk = M.voegTekstToe(g, 0, 200);
+    g = M.zetTekst(tk.graaf, tk.id, { titel: "Aanname", tekst: "Twee steunpunten" });
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes(">Belasting<") && svg.includes('stroke-dasharray') && svg.includes('font-weight="600">Aanname<') && svg.includes(">Twee steunpunten<") && svg.includes(">codeblok<"),
+      "papier_groep_tekst: het kader met de naam, de titel van de tekst vet, de tekst en de nodes");
+  });
+  proef("ingeklapt_tekst_niet_op_papier", () => {
+    const { g: g0, ids } = bouw([["a", "getal", { waarde: "2" }]]);
+    const tk = M.voegTekstToe(g0, 0, 200);
+    let g = M.zetTekst(tk.graaf, tk.id, { titel: "Verborgen titel", tekst: "verborgen tekst" });
+    const gr = M.groepeer(g, [ids.a, tk.id], "Dicht");
+    g = M.wisselIngeklapt(gr.graaf, gr.id);
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes(">Dicht<") && !svg.includes("Verborgen titel") && !svg.includes("verborgen tekst"),
+      "ingeklapt_tekst_niet_op_papier: een tekst in een ingeklapte groep staat niet op papier, de kaart wel");
+  });
+  proef("papier_lange_tekst", () => {
+    const zin = "Ligger op twee steunpunten met een overspanning van zes meter en een gelijkmatig verdeelde belasting slotwoord";
+    const tk = M.voegTekstToe(legeGraaf(), 0, 0);
+    const g = M.zetTekst(tk.graaf, tk.id, { tekst: zin });
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    const regels = [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
+    meld(regels.length >= 3 && !svg.includes("…") && regels.join(" ").replace(/\s+/g, " ").trim() === zin,
+      "papier_lange_tekst: een lange zin loopt op papier over meer regels door, zonder afkapping", JSON.stringify(regels));
+  });
+}
+
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

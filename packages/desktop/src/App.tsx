@@ -122,6 +122,8 @@ export default function App() {
   const [splitMode, setSplitMode] = useState<"cv" | "cu" | "vu">("vu");
   // Een canvas-blad opent op het canvas; zijn rekentekst is de tab ernaast.
   const [canvasCode, setCanvasCode] = useState(false);
+  // Een gewoon rekenblad (ook een module) kan ook op het canvas: de tab Canvas.
+  const [canvasGekozen, setCanvasGekozen] = useState(false);
   // De tab Varianten van een rekenblad (docs/varianten.md); een ander blad opent weer in zijn gewone weergave.
   const [variantenOpen, setVariantenOpen] = useState(false);
   // De tab Controle van een blad (toetsregistratie, store/controle.ts); net als Varianten.
@@ -292,10 +294,13 @@ export default function App() {
   const markdownBlad = actief !== null && isMarkdownBlad(actief);
   // Een canvas-blad heeft gewone rekentekst: de weergaven van een blad, met het canvas ervoor.
   const canvasBlad = actief !== null && isCanvasBlad(actief);
-  const toontCanvas = canvasBlad && !canvasCode;
-  useEffect(() => setCanvasCode(false), [activeId]);
-  useEffect(() => setVariantenOpen(false), [activeId]);
-  useEffect(() => setControleOpen(false), [activeId]);
+  const toontCanvas = canvasBlad ? !canvasCode : canvasGekozen;
+  useEffect(() => {
+    setCanvasCode(false);
+    setCanvasGekozen(false);
+    setVariantenOpen(false);
+    setControleOpen(false);
+  }, [activeId]);
   // Idem een grafblad: alleen zijn vlak.
   const graafBlad = actief !== null && isGraafBlad(actief);
   // En een tekenblad: alleen zijn vel.
@@ -338,6 +343,7 @@ export default function App() {
     sluitVoorbeeld();
     kiesSplitMode(m);
     setCanvasCode(true);
+    setCanvasGekozen(false);
     setVariantenOpen(false);
     setControleOpen(false);
   };
@@ -356,6 +362,7 @@ export default function App() {
     sluitVoorbeeld();
     setSplitMode((m) => (m === "vu" ? "cv" : m));
     setCanvasCode(true);
+    setCanvasGekozen(false);
     setVariantenOpen(false);
     setControleOpen(false);
   }, [codeVerzoek, sluitVoorbeeld]);
@@ -367,6 +374,7 @@ export default function App() {
   ) : actief && !toontProjectGegevens ? (
     <>
       <div className="split-tabs">
+        {/* Canvas: bij een canvas-blad de eerste tab, bij elk ander rekenblad ook te kiezen. */}
         {canvasBlad && (
           <button
             className={`split-tab${!printVoorbeeld && !toontVarianten && !toontControle && toontCanvas ? " active" : ""}`}
@@ -386,6 +394,20 @@ export default function App() {
         <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontControle && !toontCanvas && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
         {hasDesigner && (
           <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontControle && !toontCanvas && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
+        )}
+        {!canvasBlad && (
+          <button
+            className={`split-tab${!printVoorbeeld && !toontVarianten && !toontControle && toontCanvas ? " active" : ""}`}
+            title={t("canvas.rekenbladUitleg")}
+            onClick={() => {
+              sluitVoorbeeld();
+              setCanvasGekozen(true);
+              setVariantenOpen(false);
+              setControleOpen(false);
+            }}
+          >
+            {t("canvas.tab")}
+          </button>
         )}
         <button
           className={`split-tab${toontVarianten ? " active" : ""}`}
