@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Een AI-assistent die via MCP verbindt, krijgt de instructie in het geopende project te werken: bladen toevoegen en aanpassen met de tools, geen eigen projectbestanden of scripts eromheen
+- Een werkmapsjabloon kan per onderdeel zeggen wanneer het standaard aan staat: bij een projecttype, zoals woning of utiliteit, of als de projectomschrijving een trefwoord noemt, zoals kelder of staal. Dat vul je in bij Sjabloon bewaren. Pas je het sjabloon toe, dan staat de voorgestelde selectie aangevinkt met per onderdeel waarom, en vink je zelf aan of uit wat je wilt. Sjablonen zonder zo'n regel werken als voorheen.
 - Een project heeft een eigen, blijvende identiteit, die met het projectbestand meegaat. De IFCX- en IFC-export hangen daaraan in plaats van aan projectnaam en -nummer: hernoemen of een ander projectnummer verandert geen GlobalId meer, en twee los gemaakte projecten met dezelfde naam en hetzelfde nummer zijn verschillende projecten. Een ouder bestand houdt bij het openen zijn identificaties. Nieuw project geeft een nieuwe identiteit, Opslaan als houdt hem (docs/ifc-export.md).
 
 - De pakketgegevens van de app noemen nu overal dezelfde licentie als het licentiebestand en de README: LGPL-3.0. De meegeleverde FEM-server houdt zijn eigen AGPL-3.0.
