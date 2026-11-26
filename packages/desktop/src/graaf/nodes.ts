@@ -678,6 +678,15 @@ export function poortPlek(node: GraafNode, poorten: Poorten, kant: "in" | "uit",
   };
 }
 
+/**
+ * Het midden van een verbinding (t = 0,5 op de S-curve hieronder): daar staat het
+ * label met de waarde. De twee hulppunten liggen op de hoogte van hun eigen poort
+ * en even ver naar binnen, dus het midden is precies het gemiddelde van de poorten.
+ */
+export function verbindingMidden(a: { x: number; y: number }, b: { x: number; y: number }): { x: number; y: number } {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
 /** Een S-curve tussen twee poorten. */
 export function verbindingPad(a: { x: number; y: number }, b: { x: number; y: number }): string {
   const d = Math.max(40, Math.abs(b.x - a.x) * 0.5);

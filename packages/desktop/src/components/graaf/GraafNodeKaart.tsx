@@ -1,4 +1,4 @@
-import { memo, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { uitkomstVerborgen, type GraafNode } from "../../graaf/model";
 import { KOP_HOOGTE, MAX_LIJST_INGANGEN, RIJ_HOOGTE, nodeBreedte, nodeDef, nodeIcoon, veldSleutel, type PoortDef } from "../../graaf/nodes";
@@ -31,6 +31,8 @@ export interface NodeActies {
   zetVerborgen: (ids: string[], verborgen: boolean) => void;
   /** Getal: de schuif en min/max/stap open of dicht. */
   zetSchuif: (id: string, open: boolean) => void;
+  /** Hernoemen beginnen (dubbelklik, F2, het menu) of stoppen (null). */
+  hernoem: (id: string | null) => void;
 }
 
 /** Hier begint geen slepen: bediening, en het voorbeeld, waar je tekst uit kunt selecteren. */
@@ -143,7 +145,7 @@ function Ingang({ node, poort, verbonden, poortKleur, acties }: {
   );
 }
 
-export const GraafNodeKaart = memo(function GraafNodeKaart({ node, x, y, naam, uitkomst, verbonden, gekozen, acties }: {
+export const GraafNodeKaart = memo(function GraafNodeKaart({ node, x, y, naam, uitkomst, verbonden, gekozen, hernoemt, acties }: {
   node: GraafNode;
   /** De plek op het vlak, ook tijdens het slepen. */
   x: number;
@@ -156,10 +158,11 @@ export const GraafNodeKaart = memo(function GraafNodeKaart({ node, x, y, naam, u
    */
   verbonden: string;
   gekozen: boolean;
+  /** De naam staat in bewerking. */
+  hernoemt: boolean;
   acties: NodeActies;
 }) {
   const { t } = useTranslation("werkruimte");
-  const [hernoemt, setHernoemt] = useState(false);
   const poorten = uitkomst?.poorten ?? { ingangen: [], uitgangen: [] };
   const opIngang = new Map((verbonden ? verbonden.split("\n") : []).map((r) => r.split("\t") as [string, string | undefined]));
   const rijen = Math.max(poorten.ingangen.length, poorten.uitgangen.length);
@@ -175,7 +178,7 @@ export const GraafNodeKaart = memo(function GraafNodeKaart({ node, x, y, naam, u
 
   return (
     <div
-      className={`graaf-node graaf-soort-${node.soort}${gekozen ? " gekozen" : ""}${fouten.length > 0 ? " fout" : ""}`}
+      className={`graaf-node graaf-soort-${node.soort}${gekozen ? " gekozen" : ""}${fouten.length > 0 ? " fout" : ""}${node.uit ? " uit" : ""}`}
       style={{ left: x, top: y, width: nodeBreedte(node), ...kleur("--groep", def ? groepKleur(def.groep) : undefined) }}
       data-graaf-node={node.id}
       onPointerDown={(e) => {
@@ -194,15 +197,15 @@ export const GraafNodeKaart = memo(function GraafNodeKaart({ node, x, y, naam, u
             placeholder={naam}
             onBlur={(e) => {
               acties.zetNaam(node.id, e.target.value);
-              setHernoemt(false);
+              acties.hernoem(null);
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter") e.currentTarget.blur();
-              if (e.key === "Escape") setHernoemt(false);
+              if (e.key === "Escape") acties.hernoem(null);
             }}
           />
         ) : (
-          <span className="graaf-node-namen" title={t("graaf.hernoemen")} onDoubleClick={() => setHernoemt(true)}>
+          <span className="graaf-node-namen" title={t("graaf.hernoemen")} onDoubleClick={() => acties.hernoem(node.id)}>
             <span className="graaf-node-titel">{naam}</span>
             {naam !== soortNaam && <span className="graaf-node-soort">{soortNaam}</span>}
           </span>
