@@ -572,7 +572,7 @@
     "paneel": "Grafo lapas",
     "rij": "Grafo lapas – perskaičiuojamas savaime",
     "info": "Mazgų: {{nodes}} · jungčių: {{verbindingen}}",
-    "hint": "Dukart spustelėti: pridėti mazgą · Vilkti tuščioje vietoje: pažymėti (Shift: pridėti) · Ctrl+spustelėti: pridėti mazgą · Alt+vilkti: sukti 3D · Vilkti dešiniuoju ar viduriniu mygtuku: slinkti · Ratukas: mastelis · Ctrl+C/V/D: kopijuoti, įklijuoti, dubliuoti · Delete: pašalinti",
+    "hint": "Dukart spustelėti: pridėti mazgą · Dešinysis spustelėjimas: meniu · Vilkti tuščioje vietoje: pažymėti (Shift: pridėti) · Ctrl+spustelėti: pridėti mazgą · Alt+vilkti: sukti 3D · Vilkti dešiniuoju ar viduriniu mygtuku: slinkti · Ratukas: mastelis · Ctrl+C/V/D: kopijuoti, įklijuoti, dubliuoti · Delete: pašalinti",
     "draaien": "Sukti 3D",
     "draaienUitleg": "Įjungta: vilkimas tuščioje vietoje suka 3D peržiūrą. Išjungta: vilkimas brėžia rėmelį mazgams pažymėti; tada sukama su Alt+vilkimu.",
     "leeg": "Dukart spustelėkite drobę, kad pridėtumėte mazgą, ir vilkite nuo išvesties prie įvesties, kad sujungtumėte.",
