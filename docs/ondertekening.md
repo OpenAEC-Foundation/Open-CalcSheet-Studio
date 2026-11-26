@@ -19,6 +19,16 @@ beide `package.json`-bestanden, `tauri.conf.json`, `Cargo.toml`, de app-regel in
 ze uit elkaar lopen. De versies van afhankelijkheden, rekenbladen, modules en het
 projectbestand hebben hun eigen levensloop en staan er bewust niet in.
 
+## Licentie
+
+Alle eigen pakketten noemen dezelfde licentie als `LICENSE` in de root en de README's:
+`LGPL-3.0-only`. Dat staat in de drie `package.json`-bestanden, de drie
+werkruimteregels in `package-lock.json` en in de `Cargo.toml` van `src-tauri` en
+`fem-brug`. `node scripts/versie.mjs controleer` en `check-versie.mjs` zakken als een
+van die velden ontbreekt of iets anders zegt. De meegeleverde FEM-server in
+`src-tauri/fem-studio` valt onder de AGPL-3.0 en staat daar bewust buiten (zie
+[ontwikkelen](ontwikkelen.md)).
+
 Op Windows wordt alleen NSIS gebouwd. Een MSI accepteert als hoofdversie maximaal
 255, dus `2026.x` past daar niet in; `check-uitlevering.mjs` zakt als `msi` in
 `bundle.targets` komt.

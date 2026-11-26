@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- De pakketgegevens van de app noemen nu overal dezelfde licentie als het licentiebestand en de README: LGPL-3.0. De meegeleverde FEM-server houdt zijn eigen AGPL-3.0.
+
 ## v2026.48.0 — 2026-11-26
 
 - Bestand › Exporteren zet het rapport ook in een bewerkbaar document: DOCX of ODT. Tekst, koppen en tabellen blijven bewerkbaar, formules worden vergelijkingen, tekeningen gaan als afbeelding mee. Het is een momentopname met project, revisie en exportmoment; wat niet mee kan, zoals de pagina's van een PDF-blad, noemt de app vooraf
