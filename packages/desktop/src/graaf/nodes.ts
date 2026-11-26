@@ -45,10 +45,22 @@ export interface NodeDef {
   groep: "invoer" | "lijst" | "reken" | "logica" | "tekst" | "geometrie";
   /** Breedte op het vlak, in px. */
   breedte: number;
+  /** Een eigen icoon (een id uit de Blueprint, in public/icons/graaf.svg); anders dat van de groep. */
+  icoon?: string;
   ingangen: PoortDef[];
   uitgangen: string[];
   reken: (w: Record<string, Waarde>, c: RekenContext) => Record<string, Waarde>;
 }
+
+/** Het icoon van elke groep: ids uit de OpenAEC Blueprint, in public/icons/graaf.svg. */
+export const GROEP_ICOON: Record<NodeDef["groep"], string> = {
+  invoer: "form.field-group",
+  lijst: "view.list",
+  reken: "budget.add-formula",
+  logica: "field.checkbox",
+  tekst: "draw.text",
+  geometrie: "draw.polyline",
+};
 
 /** Eén lijst van meer elementen is bijna altijd een vergissing in de stap, en houdt de app op. */
 export const MAX_ELEMENTEN = 10000;
@@ -382,6 +394,7 @@ const DEFS: Record<NodeSoort, NodeDef> = {
     soort: "codeblok",
     groep: "reken",
     breedte: 280,
+    icoon: "category.code",
     ingangen: [],
     uitgangen: [],
     reken: rekenCodeblok,
@@ -491,6 +504,7 @@ const DEFS: Record<NodeSoort, NodeDef> = {
     soort: "lijn",
     groep: "geometrie",
     breedte: 170,
+    icoon: "draw.line",
     ingangen: [{ naam: "van", geenVeld: true }, { naam: "naar", geenVeld: true }],
     uitgangen: ["lijn"],
     reken: (w) => ({ lijn: { geometrie: "lijn", ...lijnVan(w) } satisfies Geometrie }),
@@ -590,6 +604,12 @@ export function nodeDef(soort: string): NodeDef | undefined {
   return Object.prototype.hasOwnProperty.call(DEFS, soort) ? DEFS[soort as NodeSoort] : undefined;
 }
 
+/** Het icoon van een soort: zijn eigen, anders dat van zijn groep; een onbekende soort krijgt een waarschuwing. */
+export function nodeIcoon(soort: string): string {
+  const def = nodeDef(soort);
+  return def ? (def.icoon ?? GROEP_ICOON[def.groep]) : "status.warning";
+}
+
 export interface Poorten {
   ingangen: PoortDef[];
   uitgangen: string[];
@@ -641,8 +661,8 @@ export function poortenVan(node: GraafNode): Poorten {
 
 // ── De maten op het vlak ──────────────────────────────────────────────────────
 
-/** Hoogte van de kop van een node, in px op het vlak. */
-export const KOP_HOOGTE = 28;
+/** Hoogte van de kop van een node, in px op het vlak: icoon, naam en daaronder de soort. */
+export const KOP_HOOGTE = 34;
 /** Hoogte van één rij poorten. De poorten staan vast bovenaan: de verbindingen hoeven niets te meten. */
 export const RIJ_HOOGTE = 26;
 
@@ -656,6 +676,15 @@ export function poortPlek(node: GraafNode, poorten: Poorten, kant: "in" | "uit",
     x: kant === "in" ? node.x : node.x + nodeBreedte(node),
     y: node.y + KOP_HOOGTE + RIJ_HOOGTE * (i + 0.5),
   };
+}
+
+/**
+ * Het midden van een verbinding (t = 0,5 op de S-curve hieronder): daar staat het
+ * label met de waarde. De twee hulppunten liggen op de hoogte van hun eigen poort
+ * en even ver naar binnen, dus het midden is precies het gemiddelde van de poorten.
+ */
+export function verbindingMidden(a: { x: number; y: number }, b: { x: number; y: number }): { x: number; y: number } {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 
 /** Een S-curve tussen twee poorten. */
