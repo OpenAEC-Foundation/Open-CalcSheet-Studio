@@ -3,10 +3,152 @@
  * GraafAfdruk.tsx): het vlak met nodes, en de graaf op papier.
  */
 
+/* ─── Het blad: de catalogus en het vlak naast elkaar ─────────── */
+
+.graaf-blad {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ─── De catalogus ────────────────────────────────────────────── */
+
+.graaf-catalogus {
+  flex: 0 0 250px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  border-right: 1px solid var(--theme-border);
+  background: var(--theme-surface);
+  font-size: var(--oa-size-label);
+  color: var(--theme-text);
+}
+
+.graaf-cat-zoek {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px;
+  padding: 0 8px;
+  height: 28px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-medium, 6px);
+  background: var(--theme-bg-lighter, var(--theme-surface));
+  color: var(--theme-text-muted);
+}
+
+.graaf-cat-zoek:focus-within {
+  border-color: var(--theme-accent);
+}
+
+.graaf-cat-zoek input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.graaf-cat-lijst {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 6px 8px;
+}
+
+.graaf-cat-kop {
+  margin: 10px 4px 4px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+}
+
+.graaf-cat-groepkop,
+.graaf-cat-regel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--oa-radius-small, 4px);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.graaf-cat-groepkop {
+  font-weight: 600;
+}
+
+.graaf-cat-regel {
+  padding-left: 22px;
+  cursor: grab;
+}
+
+.graaf-cat-groepkop:hover,
+.graaf-cat-regel:hover {
+  background: var(--theme-hover);
+}
+
+.graaf-cat-regel.aangewezen {
+  background: var(--theme-accent-soft, var(--theme-hover));
+}
+
+.graaf-cat-pijl {
+  width: 10px;
+  color: var(--theme-text-muted);
+}
+
+.graaf-cat-icoon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--oa-radius-small, 4px);
+  background: var(--groep, var(--graaf-kleur-leeg));
+  color: var(--oa-text-on-accent);
+}
+
+.graaf-cat-naam {
+  flex: 1;
+  min-width: 0;
+}
+
+.graaf-cat-aantal {
+  font-weight: 400;
+  color: var(--theme-text-muted);
+}
+
+.graaf-cat-uitleg {
+  flex-basis: 100%;
+  padding-left: 28px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--theme-text-muted);
+}
+
+.graaf-cat-leeg {
+  padding: 8px;
+  color: var(--theme-text-muted);
+}
+
 /* ─── Het vlak ────────────────────────────────────────────────── */
 
 .graaf-vlak {
   position: relative;
+  flex: 1;
+  min-width: 0;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -150,7 +292,7 @@
 /* ─── Een node ────────────────────────────────────────────────── */
 
 /* De groepen in de categoriekleuren van de Blueprint; 7 en 8 blijven vrij (FEM Studio, Python). */
-.graaf-vlak {
+.graaf-blad {
   --graaf-kleur-invoer: var(--oa-category-1);
   --graaf-kleur-lijst: var(--oa-category-2);
   --graaf-kleur-reken: var(--oa-category-3);

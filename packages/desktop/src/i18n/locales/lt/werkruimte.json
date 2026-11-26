@@ -635,6 +635,20 @@
       "stap": "žingsnis",
       "schuif": "Rodyti arba slėpti slankiklį ir ribas"
     },
+    "catalogus": {
+      "titel": "Mazgų katalogas",
+      "wissel": "Rodyti arba slėpti katalogą (Ctrl+F ieško)",
+      "recent": "Naujausi",
+      "alle": "Visi mazgai",
+      "groep": {
+        "invoer": "Įvestis",
+        "reken": "Skaičiavimas",
+        "logica": "Logika",
+        "lijst": "Sąrašai",
+        "tekst": "Tekstas",
+        "geometrie": "Geometrija"
+      }
+    },
     "uitkomstTonen": "Rodyti rezultatą (H)",
     "uitkomstVerbergen": "Slėpti rezultatą (H)",
     "soort": {
