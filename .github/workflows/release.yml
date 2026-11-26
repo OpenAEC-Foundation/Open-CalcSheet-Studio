@@ -167,13 +167,14 @@ jobs:
             --jq '"Gepubliceerd: " + .html_url'
 
   # De Docker-images, pas als de release openbaar is en dus na alle andere controles:
-  # bouwen, in een container testen, en dan met het versienummer en latest naar GHCR
-  # (docker-images.yml, docs/rekendienst.md).
+  # bouwen, in een container testen, en dan met het versienummer en latest naar GHCR,
+  # met daarna hun geheugengebruik in de release-tekst (docker-images.yml,
+  # docs/rekendienst.md, README.md › Docker).
   images:
     name: Docker-images
     needs: [voorbereiden, publiceren]
     permissions:
-      contents: read
+      contents: write
       packages: write
       id-token: write
       attestations: write

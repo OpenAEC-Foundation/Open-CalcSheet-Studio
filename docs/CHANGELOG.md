@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Elke release publiceert de Linux-app ook als container-image, `ghcr.io/openaec-foundation/open-calcsheet-studio`, voor een werkplek die programma's naar de browser streamt: de app schermvullend op poort 3000, met de bestanden in `/openaec` en de instellingen in `/config`, zonder root, met `GET /gezond`, ondertekend met cosign en getest in de release-workflow vóór het publiceren. Zie README › Docker.
 - Een rekendienst zonder venster, voor servers en de OpenAEC SuperCloud: rekenbladen en hele projecten doorrekenen via dezelfde REST-routes en MCP-tools als de app, over HTTP of stdio, met API-sleutels, een grens aan grootte, gelijktijdigheid en tijd, en zonder paden op de server. Hij rekent met dezelfde regels als de app (projectgegevens, belastingen uit hoofdstuk 5, verwijzingen tussen bladen en spreadsheetcellen), stuurt `@toets`-, `@fem`- en `@kern`-blokken naar de meegeleverde FEM Studio en geeft het rapport als PDF. Elke release publiceert hem als image `ghcr.io/openaec-foundation/open-calcsheet-studio-api` (docs/rekendienst.md).
 - `sheet_evaluate` en `project_get` van de MCP-server en de REST-API rekenen een blad dat naar een ander blad of een spreadsheetcel verwijst (`#1.R_paal`) met de waarde daaruit, net als het scherm, het rapport en de IFCX-export.
 

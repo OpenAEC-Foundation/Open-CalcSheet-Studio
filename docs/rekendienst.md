@@ -180,6 +180,9 @@ Met dezelfde kern en dezelfde regels als de app:
   afbeelding of script van buiten haalt niets op. Eén Chromium, per rapport een eigen
   browsercontext.
 
+Zie ook de Linux-app als container ([supercloud-werkplek.md](supercloud-werkplek.md#de-linux-app-als-container)):
+dat is de grafische app, gestreamd naar de browser; deze dienst heeft geen venster.
+
 ## Licenties in het image
 
 De app valt onder de LGPL-3.0 (`/opt/rekendienst/LICENSE`); de npm-pakketten in de dienst
