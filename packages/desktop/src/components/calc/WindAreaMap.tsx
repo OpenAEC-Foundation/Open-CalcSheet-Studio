@@ -14,6 +14,10 @@ import {
   type WindGebied,
   type WindLocatie,
 } from "../../templates/nl-windgebieden";
+import { IN_WERKPLEK, nietInWerkplek } from "../../werkplek/werkplek";
+import speldBeeld from "leaflet/dist/images/marker-icon.png";
+import speldBeeld2x from "leaflet/dist/images/marker-icon-2x.png";
+import schaduwBeeld from "leaflet/dist/images/marker-shadow.png";
 import "./WindAreaMap.css";
 
 const ROMEINS: Record<WindGebied, string> = { 1: "I", 2: "II", 3: "III" };
@@ -29,12 +33,12 @@ const komma = (v: number, dec: number) => (i18next.language?.startsWith("nl") ? 
 const SELECTIE_HALO: L.PathOptions = { weight: 6, fill: false, lineJoin: "round" };
 const SELECTIE_RAND: L.PathOptions = { weight: 2.5, fillOpacity: 0.16, lineJoin: "round" };
 
-// Leaflet default-icon images don't resolve under bundlers without a hack —
-// pin the marker icon to a public CDN-shipped PNG.
+// De standaardafbeeldingen van Leaflet vinden onder een bundler hun pad niet;
+// daarom zelf ingevoerd, in de bundel.
 const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconUrl: speldBeeld,
+  iconRetinaUrl: speldBeeld2x,
+  shadowUrl: schaduwBeeld,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -118,6 +122,11 @@ export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }:
 
   const handleSearch = useCallback(async () => {
     if (!address.trim()) return;
+    // Een adres opzoeken gaat via internet: niet in de werkplek. Klikken op de kaart wel.
+    if (IN_WERKPLEK) {
+      setError(nietInWerkplek(t("windkaart.zoek")));
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -227,10 +236,13 @@ export default function WindAreaMap({ initialAddress = "", onWindGebiedChange }:
           van de selectie) volgt daarom het lichte thema, net als het rekenblad. */}
       <div className="wind-area-mapwrap" data-oa-theme="light">
         <MapContainer center={center} zoom={7} className="wind-area-leaflet">
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
-          />
+          {/* In de werkplek geen tegels: geen netwerk buiten de bundel. De gebieden staan in de bundel. */}
+          {!IN_WERKPLEK && (
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
+            />
+          )}
           {/* De tooltips worden één keer gebonden; bij een andere taal een nieuwe laag. */}
           <GeoJSON
             key={i18n.language}

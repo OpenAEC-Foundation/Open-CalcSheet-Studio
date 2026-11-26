@@ -17,7 +17,7 @@
  * Zonder React en zonder stores: scripts/check-rapporttemplate.mjs laadt dit bestand rechtstreeks
  * in Node. Een template uit een bestand is onbetrouwbare invoer: leesTemplate controleert elk veld.
  */
-import { alleenInTaal, inTaal, inTaalGezet, leesMeertalig, type Meertalig } from "./meertalig.ts";
+import { alleenInTaal, alleTalen, inTaal, inTaalGezet, leesMeertalig, mt, type Meertalig } from "./meertalig.ts";
 import {
   leesHuisstijl, leesLand, standaardRapport, type Huisstijl, type Opmaak, type Rapport,
 } from "./model.ts";
@@ -68,8 +68,11 @@ const object = (x: unknown) => (x !== null && typeof x === "object" && !Array.is
 
 const NIEUWSTE_OPMAAK: Opmaak = { constructieprincipe: true, subkoppen: true, bladenInInhoud: true };
 
+/** De teksten van dit bestand staan in rapportteksten.json onder template.<sleutel>. */
+const tt = (sleutel: string): Meertalig => mt(`template.${sleutel}`);
+
 /** De naam van het ingebouwde template. */
-export const INGEBOUWD_NAAM: Meertalig = { en: "Standard report", nl: "Standaardrapport" };
+export const INGEBOUWD_NAAM: Meertalig = tt("ingebouwdNaam");
 
 /** Het ingebouwde template, als losse kopie: wat je ermee doet, raakt het origineel niet. */
 export function ingebouwdTemplate(): Template {
@@ -95,7 +98,7 @@ function leesObject(o: Record<string, unknown>, terugnaam: string): TemplateUits
   let naam = leesMeertalig(o.naam);
   if (!naam) {
     if (!terugnaam) meldingen.push({ soort: "geenNaam" });
-    naam = terugnaam ? { en: terugnaam } : { en: "Report template", nl: "Rapporttemplate" };
+    naam = terugnaam ? { en: terugnaam } : { ...tt("zonderNaam") };
   }
 
   // Alleen van onderdelen die er zijn: een id uit het bestand wordt nooit zomaar een sleutel.
@@ -165,7 +168,7 @@ export function schrijfTemplate(t: Template): string {
 /** Komt deze tekst overeen met een van deze varianten, in welke taal dan ook? */
 function isVariant(tekst: string, varianten: readonly Tekstvariant[]): boolean {
   const t = normaal(tekst);
-  return t !== "" && varianten.some((v) => Object.values(v.tekst).some((w) => normaal(w) === t));
+  return t !== "" && varianten.some((v) => alleTalen(v.tekst).some((w) => normaal(w) === t));
 }
 
 /**
@@ -320,16 +323,16 @@ export function templateUitRapport(r: Rapport, naam: Meertalig, huisstijl?: Huis
 }
 
 /** Het label van een tekst die uit het rapport komt en niet uit een lijst varianten. */
-const EIGEN_LABEL: Meertalig = { en: "Template text", nl: "Tekst uit het template" };
+const EIGEN_LABEL: Meertalig = tt("eigenLabel");
 
 // ── De opzet bewerken ───────────────────────────────────────────────────────
 
 /** De titel van een nieuw onderdeel per niveau, tot de gebruiker er een typt. */
 const NIEUWE_TITEL: Record<Knoop["niveau"], Meertalig> = {
-  1: { en: "New chapter", nl: "Nieuw hoofdstuk" },
-  2: { en: "New section", nl: "Nieuwe paragraaf" },
-  3: { en: "New text block", nl: "Nieuw tekstblok" },
-  4: { en: "New text block", nl: "Nieuw tekstblok" },
+  1: tt("nieuwHoofdstuk"),
+  2: tt("nieuweParagraaf"),
+  3: tt("nieuwTekstblok"),
+  4: tt("nieuwTekstblok"),
 };
 
 /**

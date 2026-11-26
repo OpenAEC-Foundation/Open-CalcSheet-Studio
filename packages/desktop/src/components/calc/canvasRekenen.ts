@@ -15,7 +15,7 @@
  * Laadt zonder React of stores: de rekenworker en de controles gebruiken dit.
  */
 import { parse, evaluate, extractScope, render } from "@ifc-calc/core";
-import type { AstNode, EvaluatedNode, ParseOptions } from "@ifc-calc/core";
+import type { AstNode, EvalOpties, EvaluatedNode, ParseOptions } from "@ifc-calc/core";
 import { heeftEenheden, leesEenheden, type Eenheid } from "../../store/canvasBlad.ts";
 
 /** Een eenheid met wat hij oplevert. */
@@ -45,6 +45,7 @@ function inEenKeer(
   delen: (AstNode | null)[],
   waarden: Record<string, string>,
   scope: Record<string, unknown>,
+  evalOpties: EvalOpties = {},
 ): EvaluatedNode[][] {
   const ast: AstNode[] = delen.flatMap((deel, i): AstNode[] => {
     const grens: AstNode = { type: "text", text: `${GRENS}${i}` };
@@ -52,7 +53,7 @@ function inEenKeer(
   });
   const per: EvaluatedNode[][] = delen.map(() => []);
   let huidig = per[0];
-  for (const n of evaluate(ast, waarden, scope)) {
+  for (const n of evaluate(ast, waarden, scope, evalOpties)) {
     if (n.type === "text" && n.text.startsWith(GRENS)) huidig = per[Number(n.text.slice(GRENS.length))];
     else huidig.push(n);
   }
@@ -67,13 +68,14 @@ function eenVoorEen(
   delen: (AstNode | null)[],
   waarden: Record<string, string>,
   scope: Record<string, unknown>,
+  evalOpties: EvalOpties = {},
 ): EvaluatedNode[][] {
   let stand = scope;
   return delen.map((deel) => {
     if (!deel) return [];
     try {
-      const nodes = evaluate([deel], waarden, stand);
-      stand = extractScope([deel], waarden, stand);
+      const nodes = evaluate([deel], waarden, stand, evalOpties);
+      stand = extractScope([deel], waarden, stand, evalOpties);
       return nodes;
     } catch (err) {
       return [foutKnoop(err)];
@@ -87,6 +89,7 @@ export function rekenEenhedenDoor(
   waarden: Record<string, string>,
   scope: Record<string, unknown>,
   opties: ParseOptions = {},
+  evalOpties: EvalOpties = {},
 ): EenheidUitkomst[] {
   const eenheden = leesEenheden(bron);
   const leesfout = new Map<number, EvaluatedNode>();
@@ -100,9 +103,9 @@ export function rekenEenhedenDoor(
   });
   let per: EvaluatedNode[][];
   try {
-    per = inEenKeer(delen, waarden, scope);
+    per = inEenKeer(delen, waarden, scope, evalOpties);
   } catch {
-    per = eenVoorEen(delen, waarden, scope);
+    per = eenVoorEen(delen, waarden, scope, evalOpties);
   }
   return eenheden.map((eenheid, i) => {
     const fout = leesfout.get(i);
@@ -141,12 +144,13 @@ export function rekenUitwerking(
   scope: Record<string, unknown>,
   opties: ParseOptions,
   namen?: Record<string, string>,
+  evalOpties: EvalOpties = {},
 ): RekenUitwerking {
   if (!heeftEenheden(bron)) {
-    const nodes = evaluate(parse(bron, opties), waarden, scope);
+    const nodes = evaluate(parse(bron, opties), waarden, scope, evalOpties);
     return { nodes, html: render(nodes, { namen }) };
   }
-  const uit = rekenEenhedenDoor(bron, waarden, scope, opties);
+  const uit = rekenEenhedenDoor(bron, waarden, scope, opties, evalOpties);
   const nodes = uit.flatMap((u) => u.nodes);
   const eenheden = eenhedenMetHtml(uit, namen);
   // Onder elkaar, als één uitwerking: voor de tab met de code ernaast.

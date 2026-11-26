@@ -34,6 +34,7 @@ export const ATTR = {
 
   project: 'ocss::project',
   rapport: 'ocss::rapport',
+  belasting: 'ocss::belasting',
   blad: 'ocss::blad',
   rekentekst: 'ocss::blad::rekentekst',
   invoer: 'ocss::blad::invoer',
@@ -45,6 +46,8 @@ export const ATTR = {
   tekenvel: 'ocss::blad::tekenvel',
   jupyter: 'ocss::blad::jupyter',
   marimo: 'ocss::blad::marimo',
+  toetsing: 'ocss::blad::toetsing',
+  varianten: 'ocss::blad::varianten',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -84,6 +87,9 @@ export function isGeimporteerd(attribuut: string): boolean {
   return UIT_IFC.has(attribuut) || UIT_PROP.has(attribuut) || UIT_USD.has(attribuut) || UIT_MAT.has(attribuut);
 }
 
+/** Alle imports die de app zelf kan schrijven; de rest van de lijst komt van een ander (vreemd.ts). */
+export const EIGEN_IMPORTS: ReadonlySet<string> = new Set([IFC_URI, PROP_URI, USD_URI, MAT_URI]);
+
 /** De imports bij deze attributen: ifc en prop altijd, usd en ifc-mat alleen als ze gebruikt worden. */
 export function importsVoor(attributen: Iterable<string>): IfcxImport[] {
   const lijst = [...attributen];
@@ -121,6 +127,16 @@ function velden(namen: string[], type: IfcxWaarde = TEKST): Record<string, IfcxW
 export const UITKOMST_STATUS = ['voldoet', 'voldoet_niet', 'geen_oordeel', 'niet_doorgerekend'] as const;
 
 /** Het constructierapport (rapport/model.ts in de app), veld voor veld. */
+/** Een opbouw uit 5.5: een blok met een symbool voor de rekenbladen en een plek op het canvas. */
+const OPBOUW = object({
+  soort: opt(keuze('vlak', 'gevel')),
+  naam: opt(TEKST),
+  symbool: opt(TEKST),
+  x: opt(GETAL),
+  y: opt(GETAL),
+  lagen: opt(lijst(object(velden(['naam', 'd', 'rho', 'p', 'h', 'vulling'])))),
+});
+
 const RAPPORT = object({
   versie: opt(GEHEEL),
   taal: opt(TEKST),
@@ -152,23 +168,16 @@ const RAPPORT = object({
       ...velden(['gebouwhoogte', 'cscd']),
       coefficienten: opt(lijst(object(velden(['omschrijving', 'c'])))),
     })),
-    klassen: opt(lijst(object(velden(['categorie', 'lichteScheidingswanden', 'dakhelling', 'qlast'])))),
-    vloerenDaken: opt(lijst(object({
-      soort: opt(keuze('vlak', 'gevel')),
-      naam: opt(TEKST),
-      lagen: opt(lijst(object(velden(['naam', 'd', 'rho', 'p', 'h', 'vulling'])))),
-    }))),
-    wanden: opt(lijst(object({
-      soort: opt(keuze('vlak', 'gevel')),
-      naam: opt(TEKST),
-      lagen: opt(lijst(object(velden(['naam', 'd', 'rho', 'p', 'h', 'vulling'])))),
-    }))),
+    klassen: opt(lijst(object(velden(['categorie', 'lichteScheidingswanden', 'dakhelling', 'qlast', 'symbool'])))),
+    vloerenDaken: opt(lijst(OPBOUW)),
+    wanden: opt(lijst(OPBOUW)),
   })),
+  beelden: opt(VRIJ),
   toelichting: opt(VRIJ),
   inHoofdstuk: opt(VRIJ),
   bijlagen: opt(lijst(TEKST)),
   nieuwePagina: opt(VRIJ),
-  opmaak: opt(object(velden(['constructieprincipe', 'subkoppen', 'bladenInInhoud'], JANEE))),
+  opmaak: opt(object(velden(['constructieprincipe', 'subkoppen', 'bladenInInhoud', 'bijlageParagrafen'], JANEE))),
   bureau: opt(object({
     ...velden(['naam', 'adres', 'postcode', 'plaats', 'telefoon', 'email', 'logo', 'voetafbeelding']),
     logoInKop: opt(JANEE),
@@ -194,6 +203,15 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
     }),
   },
   [ATTR.rapport]: { value: RAPPORT },
+  // Afgeleid uit hoofdstuk 5 van het rapport: één belasting als eigen object, voor andere lezers.
+  [ATTR.belasting]: {
+    value: object({
+      symbool: TEKST,
+      soort: keuze('G', 'Q'),
+      waarde: GETAL,
+      eenheid: keuze('kN/m2', 'kN/m'),
+    }),
+  },
   [ATTR.blad]: {
     value: object({
       id: TEKST,
@@ -202,6 +220,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown', 'graaf', 'tekenblad', 'jupyter', 'marimo'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
+      ref: opt(TEKST),
     }),
   },
   [ATTR.rekentekst]: { value: TEKST },
@@ -267,6 +286,36 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       uitvoer: TEKST,
     }),
   },
+  // De antwoorden van Open FEM Studio op de @toets-blokken, per hash van de invoer op het
+  // blad. Het verzoek en het antwoord staan als JSON-tekst: hun vorm is die van de tool.
+  [ATTR.toetsing]: {
+    value: lijst(object({
+      hash: TEKST,
+      tool: TEKST,
+      datum: TEKST,
+      versie: opt(TEKST),
+      sha256: opt(TEKST),
+      schema: opt(TEKST),
+      verzoek: TEKST,
+      uitkomst: TEKST,
+    })),
+  },
+  // Varianten van het blad: andere invoer naast die van het blad. Per variant alleen de
+  // eigen waarden, in paren zoals de invoer; de uitkomsten rekent de app opnieuw uit.
+  [ATTR.varianten]: {
+    value: object({
+      velden: lijst(TEKST),
+      uitkomsten: lijst(TEKST),
+      opPapier: opt(JANEE),
+      zoek: opt(VRIJ),
+      lijst: lijst(object({
+        id: TEKST,
+        naam: TEKST,
+        invoer: lijst(PAAR),
+        gezocht: opt(lijst(TEKST)),
+      })),
+    }),
+  },
   [ATTR.markdown]: {
     value: object({
       bestandsnaam: TEKST,
@@ -278,6 +327,16 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       beelden: opt(VRIJ),
       // De koppen uit de tekst blijven uit de inhoudsopgave van het rapport.
       koppenUit: opt(JANEE),
+      // Gekoppeld aan een bestand buiten het project (een RTF-bestand of een werkmapbereik):
+      // de tekst is de kopie van de laatste lezing; de app leest de bron opnieuw.
+      koppeling: opt(object({
+        soort: keuze('rtf', 'werkmapbereik'),
+        pad: TEKST,
+        relatief: opt(TEKST),
+        verwijzing: opt(TEKST),
+        gelezenOp: TEKST,
+        hash: TEKST,
+      })),
     }),
   },
   [ATTR.graaf]: {

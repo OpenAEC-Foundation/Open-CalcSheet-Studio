@@ -14,6 +14,7 @@ import {
   fmt,
   getal,
   klasse,
+  klasseWaarden,
   sneeuwPlatDak,
   windLabel,
   windQp,
@@ -21,8 +22,9 @@ import {
 import { useProjectStore } from "../../../store/projectStore";
 import { useNormkeuze } from "../../../store/actiefBlad";
 import { getalTekst, verplaatst } from "./hulp";
+import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
+import BelastingCanvas from "./BelastingCanvas";
 import { LokaleKlassenInvoer, LokaleSneeuwInvoer, LokaleWindInvoer } from "./LokaalVelden";
-import OpbouwEditor from "./OpbouwEditor";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
 import { Afgeleid, Kop, Sectie, Veld, useRapport } from "./velden";
@@ -71,11 +73,21 @@ export default function BelastingenSectie({ knoop, titel, children }: { knoop: K
   );
 }
 
+/** Getallen in de notatie van het rapport en in het eenhedenstelsel van het project. */
+function useNotatie() {
+  const taal = useRapport().taal;
+  const f = (v: number, dec: number, trim = false) => fmt(v, dec, trim, taal);
+  // In het eenhedenstelsel van het project: het getal, en het getal met zijn eenheid.
+  const e = useBeeldEenheden();
+  const fe = (v: number, bron: string, dec: number, trim = false) => fmt(e.waarde(v, bron), e.decimalen(dec, bron), trim, taal);
+  const me = (v: number, bron: string, dec: number, trim = false) => `${fe(v, bron, dec, trim)} ${e.eenheid(bron)}`;
+  return { taal, f, e, fe, me };
+}
+
 function SneeuwInvoer() {
   const { t } = useTranslation("rapport");
-  const taal = useRapport().taal;
   const k = useNormkeuze();
-  const f = (v: number, dec: number) => fmt(v, dec, false, taal);
+  const { f, e, fe, me } = useNotatie();
   return (
     <>
       <Kop id="sneeuw" />
@@ -87,8 +99,8 @@ function SneeuwInvoer() {
             waarde: (
               <>
                 s = μ<sub>1</sub>·C<sub>e</sub>·C<sub>t</sub>·s<sub>k</sub> = {f(SNEEUW.mu1, 1)} ×{" "}
-                {f(SNEEUW.ce, 1)} × {f(SNEEUW.ct, 1)} × {f(SNEEUW.sk, 1)} ={" "}
-                {f(sneeuwPlatDak(), 2)} kN/m²
+                {f(SNEEUW.ce, 1)} × {f(SNEEUW.ct, 1)} × {e.doel("kN/m²") ? fe(SNEEUW.sk, "kN/m²", 2) : f(SNEEUW.sk, 1)} ={" "}
+                {me(sneeuwPlatDak(), "kN/m²", 2)}
               </>
             ),
             bron: "NEN-EN 1991-1-3 (5.1)",
@@ -114,10 +126,8 @@ function WindInvoer() {
 
 function NederlandseWindInvoer() {
   const { t } = useTranslation("rapport");
-  const rapport = useRapport();
-  const b = rapport.belastingen;
-  const taal = rapport.taal;
-  const f = (v: number, dec: number, trim = false) => fmt(v, dec, trim, taal);
+  const b = useRapport().belastingen;
+  const { taal, f, e, me } = useNotatie();
   const gegevens = useProjectStore((s) => s.gegevens);
 
   const wg = klasse(gegevens.windgebied, 2);
@@ -166,16 +176,16 @@ function NederlandseWindInvoer() {
       </div>
       <Afgeleid
         regels={[
-          { label: <>z<sub>0</sub></>, waarde: `${f(wind.z0, 3, true)} m` },
-          { label: <>z<sub>min</sub></>, waarde: `${f(wind.zmin, 0)} m` },
+          { label: <>z<sub>0</sub></>, waarde: me(wind.z0, "m", 3, true) },
+          { label: <>z<sub>min</sub></>, waarde: me(wind.zmin, "m", 0) },
           {
             label: <>z<sub>e</sub></>,
-            waarde: hoogteBekend ? `${f(wind.ze, 2, true)} m` : "—",
+            waarde: hoogteBekend ? me(wind.ze, "m", 2, true) : "—",
             bron: t("belastingen.zeBron"),
           },
           {
             label: <>q<sub>p</sub>(z<sub>e</sub>)</>,
-            waarde: hoogteBekend ? `${f(qp, 2)} kN/m²` : t("belastingen.hoogteInvullen"),
+            waarde: hoogteBekend ? me(qp, "kN/m²", 2) : t("belastingen.hoogteInvullen"),
             bron: "(4.8)",
           },
           { label: PSI, waarde: psiTekst(PSI_WIND, taal), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
@@ -190,9 +200,9 @@ function NederlandseWindInvoer() {
         toevoegen={t("belastingen.coefficientToevoegen")}
         extra={[
           {
-            kop: <>P<sub>rep</sub> [kN/m²]</>,
+            kop: <>P<sub>rep</sub> [{e.eenheid("kN/m²")}]</>,
             breedte: "8em",
-            waarde: (rij) => getalTekst(getal(rij.c) * qp, 2, false, taal),
+            waarde: (rij) => getalTekst(e.waarde(getal(rij.c) * qp, "kN/m²"), e.decimalen(2, "kN/m²"), false, taal),
           },
         ]}
       />
@@ -237,12 +247,10 @@ function VeranderlijkInvoer() {
 }
 
 function BlijvendInvoer() {
-  const { t } = useTranslation("rapport");
   return (
     <>
       <Kop id="blijvend" />
-      <OpbouwEditor groep="vloerenDaken" titel={t("belastingen.vloerenDaken")} />
-      <OpbouwEditor groep="wanden" titel={t("belastingen.wanden")} />
+      <BelastingCanvas />
     </>
   );
 }
@@ -267,10 +275,15 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
 }) {
   const { t, i18n } = useTranslation("rapport");
   const taal = useRapport().taal;
-  const f = (v: number, dec: number) => fmt(v, dec, false, taal);
+  const e = useBeeldEenheden();
+  // Een normwaarde met zijn eenheid, in het eenhedenstelsel van het project.
+  const me = (v: number, bron: string, dec: number) => `${fmt(e.waarde(v, bron), e.decimalen(dec, bron), false, taal)} ${e.eenheid(bron)}`;
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const pad = `belastingen.klassen.${index}`;
   const cat = categorie(regel.categorie);
+  const kw = klasseWaarden(regel);
+  // Een waarde die er niet is (categorie E zonder invoer): een streepje met de vraag om hem in te vullen.
+  const of = (v: number | null | undefined, bron: string, dec: number) => (v === null || v === undefined ? t("belastingen.zelfInvullen") : me(v, bron, dec));
   const ls = getal(regel.lichteScheidingswanden);
   const alfa = getal(regel.dakhelling);
 
@@ -301,6 +314,9 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
             ))}
           </optgroup>
         </select>
+        {regel.symbool && (
+          <code className="bc-symbool" title={t("blokken.inBladen", { symbool: regel.symbool })}>{regel.symbool}</code>
+        )}
         <button
           type="button"
           className="rapport-icoon"
@@ -341,18 +357,34 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
             placeholder={t("belastingen.leegIsGeen")}
             hint={t("belastingen.lsHint")}
           />
+          <div className="rapport-rij">
+            <Veld
+              label={<>q<sub>k</sub></>}
+              pad={`${pad}.qk`}
+              waarde={regel.qk ?? ""}
+              eenheid="kN/m²"
+              placeholder={cat.qk === null ? t("belastingen.verplicht") : t("belastingen.leegIsTabel")}
+            />
+            <Veld
+              label={<>Q<sub>k</sub></>}
+              pad={`${pad}.Qk`}
+              waarde={regel.Qk ?? ""}
+              eenheid="kN"
+              placeholder={cat.Qk === null ? t("belastingen.verplicht") : t("belastingen.leegIsTabel")}
+            />
+          </div>
           <Afgeleid
             regels={[
               {
                 label: <>q<sub>k</sub></>,
-                waarde: `${f(cat.qk, 2)} kN/m²`,
-                bron: t("algemeen.tabel", { nummer: "NB.1–6.2" }),
+                waarde: of(kw?.qk, "kN/m²", 2),
+                bron: kw?.eigen.qk ? t("belastingen.eigenWaarde") : cat.qk === null ? undefined : t("algemeen.tabel", { nummer: "NB.1–6.2" }),
               },
               {
                 label: <>q<sub>k</sub> + L.S.</>,
-                waarde: `${f(cat.qk + (Number.isFinite(ls) ? ls : 0), 2)} kN/m²`,
+                waarde: kw && kw.qk !== null ? me(kw.qk + (Number.isFinite(ls) ? ls : 0), "kN/m²", 2) : t("belastingen.zelfInvullen"),
               },
-              { label: <>Q<sub>k</sub></>, waarde: `${f(cat.Qk, 1)} kN` },
+              { label: <>Q<sub>k</sub></>, waarde: of(kw?.Qk, "kN", 1), bron: kw?.eigen.Qk ? t("belastingen.eigenWaarde") : undefined },
               { label: PSI, waarde: psiTekst(cat.psi, taal), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
             ]}
           />
@@ -369,16 +401,16 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
             regels={[
               {
                 label: <>q<sub>k</sub> {t("belastingen.platDakKlein")}</>,
-                waarde: `${f(cat.qk, 2)} kN/m²`,
+                waarde: me(cat.qk ?? 0, "kN/m²", 2),
                 bron: t("algemeen.tabel", { nummer: "NB.4–6.10" }),
               },
               {
                 label: <>q<sub>k</sub> {t("belastingen.bijAlfa")}</>,
-                waarde: Number.isFinite(alfa) ? `${f(dakQk(alfa), 2)} kN/m²` : t("belastingen.dakhellingInvullen"),
+                waarde: Number.isFinite(alfa) ? me(dakQk(alfa), "kN/m²", 2) : t("belastingen.dakhellingInvullen"),
               },
               {
                 label: <>Q<sub>k</sub></>,
-                waarde: t("belastingen.qkDirect", { qk: f(cat.Qk, 1), direct: f(DAK_QK_DIRECT, 1) }),
+                waarde: t("belastingen.qkDirect", { qk: me(cat.Qk ?? 0, "kN", 1), direct: me(DAK_QK_DIRECT, "kN", 1) }),
               },
               { label: PSI, waarde: psiTekst(cat.psi, taal), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
             ]}

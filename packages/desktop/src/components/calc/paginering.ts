@@ -120,10 +120,11 @@ const OVERSLAAN = ["rpa-voet"];
 
 /**
  * Regels die zich als kop gedragen zonder een `<h*>` te zijn: het kopblok van
- * een rekenblad, de sectiekop op het voorblad en de kopregel van een tabel in
- * het rapport. Geen van alle hoort los onderaan een vel te staan.
+ * een rekenblad, de sectiekop op het voorblad, de kopregel van de inhoud daaronder
+ * en de kopregel van een tabel in het rapport. Geen van alle hoort los onderaan
+ * een vel te staan.
  */
-const KOPKLASSEN = ["print-blad-kop", "print-sectiekop", "rpa-houd"];
+const KOPKLASSEN = ["print-blad-kop", "print-sectiekop", "print-inhoud-kop", "rpa-houd"];
 
 /** Hoort dit blok bij het blok eronder: een kop (h1–h6) of een regel die zich zo gedraagt. */
 export function houdtBijVolgende(el: Pick<Element, "tagName" | "classList">): boolean {
@@ -133,10 +134,11 @@ export function houdtBijVolgende(el: Pick<Element, "tagName" | "classList">): bo
 /**
  * Wikkels die alleen groeperen: `.ifc-calc` om de uitwerking van een blad,
  * `.rpa-vlak` om de regels van het rapport, `.md-citaat` om een citaat in een
- * Markdown-tekst en `.print-canvas` om de vellen van een canvas-blad. Wat erin zit,
- * wordt los verdeeld.
+ * Markdown-tekst, `.print-canvas` om de vellen van een canvas-blad,
+ * `.print-inhoud` om de regels van de inhoud op het voorblad en `.print-varianten`
+ * om de tabellen met varianten onder een blad. Wat erin zit, wordt los verdeeld.
  */
-const WIKKELS = ["ifc-calc", "rpa-vlak", "md-citaat", "print-canvas"];
+const WIKKELS = ["ifc-calc", "rpa-vlak", "md-citaat", "print-canvas", "print-inhoud", "print-varianten"];
 
 /**
  * Haalt de wikkels weg en levert de regels die erin zitten.
@@ -242,6 +244,43 @@ export function paginaVanAnkers(paginas: Blok[][]): Map<string, number> {
     }
   });
   return uit;
+}
+
+/**
+ * Staan dezelfde blokken op dezelfde vellen, in dezelfde volgorde?
+ *
+ * Dan zijn de vellen van de vorige keer nog goed, op de blokken na waarvan de
+ * inhoud veranderde: die kunnen los worden vervangen (AfdrukVoorbeeld.tsx). Een
+ * hoogte die verandert zonder dat er een blok verschuift, maakt niets uit; elk
+ * vel heeft een vaste maat.
+ */
+export function zelfdeIndeling(a: readonly Blok[][], b: readonly Blok[][]): boolean {
+  return a.length === b.length && a.every((vel, i) => vel.length === b[i].length && vel.every((blok, j) => blok.el === b[i][j].el));
+}
+
+/** Genoeg van een DOM-knoop om de ouders langs te lopen; los te toetsen. */
+export interface Knoop {
+  parentNode: Knoop | null;
+}
+
+/**
+ * De blokken die een verandering raakt: per knoop het blok waar hij in zit.
+ *
+ * Een knoop die in geen enkel blok zit, staat in `buiten`: een wikkel of sectie
+ * die verandert (er komt een blok bij of er gaat er een af), of een knoop die
+ * niet meer in de uitdraai staat. Zo'n verandering is met losse blokken niet
+ * bij te houden.
+ */
+export function veranderdeBlokken(knopen: Iterable<Knoop>, blokken: ReadonlySet<Knoop>, wortel: Knoop): { veranderd: Set<Knoop>; buiten: Knoop[] } {
+  const veranderd = new Set<Knoop>();
+  const buiten: Knoop[] = [];
+  for (const k of knopen) {
+    let n: Knoop | null = k;
+    while (n && n !== wortel && !blokken.has(n)) n = n.parentNode;
+    if (n && n !== wortel) veranderd.add(n);
+    else buiten.push(k);
+  }
+  return { veranderd, buiten };
 }
 
 /**

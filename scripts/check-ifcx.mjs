@@ -18,8 +18,15 @@
  *                  plek, met zijn uitkomst; een herkend of gekoppeld element
  *                  krijgt een klasse en verwijst naar zijn toetsing
  *   geometrie      `geometrie` op een blad komt onder de bouwlaag en in de STEP
+ *   toetsingen     de antwoorden van FEM Studio bij een blad (`ocss::blad::toetsing`)
+ *                  voldoen aan hun schema en komen terug zoals ze waren
  *   STEP           de ruimtelijke boom, de relaties, GlobalId's, maattypen en
  *                  eenheden, tekens; en dezelfde bladen en waarden als het IFCX
+ *   identiteit     de eigen id van het project is de wortel: hernoemen of een ander
+ *                  nummer geeft dezelfde paden en GlobalId's; een ouder bestand houdt
+ *                  zijn paden; een nieuw project krijgt een andere id; losse en hele
+ *                  export, heen en terug en vreemde gegevens blijven kloppen; in de
+ *                  app: nieuw, hernoemen, opslaan als, openen
  *
  * Deze controle gaat tegen de vorm van de specificatie, zonder netwerk. De
  * validatie met de lezer van buildingSMART zelf en met IfcOpenShell staat in
@@ -28,10 +35,25 @@
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  * Draaien:  node scripts/check-ifcx.mjs
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./lib/talen.mjs";
 import { readFileSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
 import { laadTemplate } from "./lib/refcheck.mjs";
-import { parse, evaluate, bouwProjectStep, ifcGuid, isProjectIfcx, leesProjectIfcx, OCSS_SCHEMAS, uuidUitIfcGuid } from "../packages/core/dist/index.js";
+import {
+  afgeleideProjectId,
+  bouwProjectStep,
+  evaluate,
+  ifcGuid,
+  isProjectIfcx,
+  leesProjectId,
+  leesProjectIfcx,
+  nieuweProjectId,
+  OCSS_SCHEMAS,
+  parse,
+  platteKnopen,
+  uuidUitIfcGuid,
+} from "../packages/core/dist/index.js";
 import {
   bouwProjectBestand,
   leesProjectBestand,
@@ -349,7 +371,7 @@ const eerste = leesProjectBestand(tekst1, "x");
   const export_ = JSON.parse(JSON.stringify(stil(() => projectIfcx(VOLLEDIG))));
   delete opgeslagen.header.timestamp;
   delete export_.header.timestamp;
-  meld(verschillen(opgeslagen, export_).length === 0, "het bestand en de export naar .ifcx zijn hetzelfde");
+  meld(verschillen(opgeslagen, export_).length === 0, "het bestand en de export naar .ifcx zijn hetzelfde", verschillen(opgeslagen, export_).slice(0, 4).join(" | "));
 
   // Een leeg project en een project zonder naam.
   const leeg = { versie: 2, naam: "", gegevens: {}, exemplaren: [] };
@@ -723,6 +745,148 @@ const ents = leesStep(stepTekst);
   meld(bevatGeo.rest.includes(vs("IFCELEMENTASSEMBLY")[0].id) && !bevatGeo.rest.includes(`${vs("IFCBEAM")[0].id},`), "alleen de samenstelling zit rechtstreeks in de bouwlaag");
   meld(vs("IFCMATERIAL").length === 1 && vs("IFCRELASSOCIATESMATERIAL").length === 1, "het materiaal gaat mee, ook via inherits");
   meld(vs("IFCSHAPEREPRESENTATION").length === 2 && vs("IFCGEOMETRICREPRESENTATIONSUBCONTEXT").length === 1, "vorm in de deelcontext Body");
+}
+
+// ── 8. Antwoorden van FEM Studio ─────────────────────────────────────────────
+console.log("Antwoorden van FEM Studio:");
+{
+  const bron = ["# Kolom", "h = ?{4}m", "@toets kolom = check_steel_beam", '  profile_name = "HEA200"', "  length_m = h", "@end", "UC_max = kolom.uc_max"].join("\n");
+  const hash = evaluate(parse(bron), {}, {}, { toetsModus: "vragen" }).find((n) => n.type === "toets")?.hash;
+  const vast = {
+    tool: "check_steel_beam",
+    verzoek: { profile_name: "HEA200", length_m: 4, lijst: [1, 2.5, { a: "é" }] },
+    uitkomst: { beam_id: 1, uc_max: 0.42, status: "Ok", checks: [], tekst: 'met "aanhalingstekens" en\nregels' },
+    datum: "2026-11-07T10:15:00.000Z",
+    herkomst: { versie: "2026.44.2", sha256: "0".repeat(64), schema: "s0123456789abcdef" },
+  };
+  const project = {
+    versie: PROJECT_FORMAAT_VERSIE,
+    naam: "Toets",
+    gegevens: legeGegevens(),
+    exemplaren: [{ id: "ex-toets", naam: "Kolom", templateId: "", source: bron, waarden: {}, elementen: [], toetsingen: { [hash]: vast } }],
+  };
+  const doc = JSON.parse(stil(() => opslaan(project)));
+  specOk(doc, "een blad met antwoorden is geldig IFCX");
+  const attr = doc.data.find((k) => k.attributes?.["ocss::blad"]?.id === "ex-toets")?.attributes["ocss::blad::toetsing"];
+  meld(Array.isArray(attr) && attr.length === 1 && attr[0].hash === hash && attr[0].versie === "2026.44.2" && typeof attr[0].uitkomst === "string", "per hash: tool, datum, herkomst, en verzoek en antwoord als JSON-tekst");
+  const terug = leesProjectBestand(JSON.stringify(doc), "x").exemplaren[0];
+  meld(isDeepStrictEqual(terug.toetsingen, { [hash]: vast }), "ze komen terug zoals ze waren", verschillen(terug.toetsingen, { [hash]: vast }).slice(0, 3).join(" | "));
+  const zonder = JSON.parse(stil(() => opslaan({ ...project, exemplaren: [{ ...project.exemplaren[0], toetsingen: undefined }] })));
+  meld(!zonder.data.some((k) => k.attributes?.["ocss::blad::toetsing"]), "een blad zonder antwoorden krijgt geen leeg attribuut");
+}
+
+// ── 9. De identiteit van het project ─────────────────────────────────────────
+console.log("De identiteit van het project:");
+{
+  /** De paden van een document, gesorteerd; en de GlobalId's van zijn STEP. */
+  const paden = (doc) => doc.data.map((k) => k.path).sort();
+  const guids = (step) => [...step.matchAll(/^#\d+=IFC\w+\('([0-9A-Za-z_$]{22})'/gm)].map((m) => m[1]).sort();
+  const bladPad = (doc, id) => doc.data.find((k) => k.attributes?.["ocss::blad"]?.id === id)?.path;
+  const ID = "6f1c2a4e-8b3d-4c5a-9e7f-0a1b2c3d4e5f";
+  const metId = { ...VOLLEDIG, id: ID };
+  const anders = { ...metId, naam: "Ander project", gegevens: { ...metId.gegevens, project_nummer: "P-99" } };
+
+  const a = JSON.parse(stil(() => opslaan(metId)));
+  const b = JSON.parse(stil(() => opslaan(anders)));
+  specOk(a, "een project met eigen id is geldig IFCX");
+  meld(a.data[0].path === ID && a.header.id === `ocss:project:${ID}`, "de id is het pad van de wortel en staat in de kop", a.data[0].path);
+  meld(isDeepStrictEqual(paden(a), paden(b)), "hernoemen en een ander projectnummer: dezelfde paden", verschillen(paden(a), paden(b)).slice(0, 2).join(" | "));
+  const stepA = stil(() => projectStep(metId));
+  const stepB = stil(() => projectStep(anders));
+  meld(guids(stepA).length > 10 && isDeepStrictEqual(guids(stepA), guids(stepB)), "en dezelfde GlobalId's in de STEP", `${guids(stepA).length} tegen ${guids(stepB).length}`);
+  meld(!isDeepStrictEqual(paden(doc1), paden(a)), "zonder id hingen de paden aan nummer en naam; met id niet meer");
+
+  // Heen en terug: de id gaat mee in het bestand.
+  const terug = leesProjectBestand(JSON.stringify(a), "x");
+  meld(terug.projectId === ID, "openen geeft de id uit het bestand", terug.projectId);
+  const weer = stil(() => opslaan({ ...payloadUit(terug), id: terug.projectId }));
+  meld(verschillen(zonderTijd(JSON.stringify(a)), zonderTijd(weer)).length === 0, "opslaan, openen, opslaan: geen verlies, dezelfde id", verschillen(zonderTijd(JSON.stringify(a)), zonderTijd(weer)).slice(0, 3).join(" | "));
+  const hernoemdTerug = leesProjectBestand(JSON.stringify(b), "x");
+  meld(hernoemdTerug.projectId === ID && hernoemdTerug.projectNaam === "Ander project", "een hernoemd project opent met dezelfde id");
+
+  // Een ouder bestand zonder eigen id: de afgeleide wortel wordt de id, met dezelfde paden.
+  const oud = leesProjectBestand(tekst1, "x");
+  const afgeleid = afgeleideProjectId(VOLLEDIG.naam, VOLLEDIG.gegevens.project_nummer);
+  meld(oud.projectId === doc1.data[0].path && oud.projectId === afgeleid, "een ouder bestand krijgt de afgeleide wortel als id", `${oud.projectId} / ${doc1.data[0].path}`);
+  const oudOpnieuw = JSON.parse(stil(() => opslaan({ ...payloadUit(oud), id: oud.projectId })));
+  meld(isDeepStrictEqual(paden(oudOpnieuw), paden(doc1)), "en houdt bij opnieuw opslaan dezelfde paden", verschillen(paden(oudOpnieuw), paden(doc1)).slice(0, 2).join(" | "));
+  meld(isDeepStrictEqual(guids(bouwProjectStep(oudOpnieuw)), guids(bouwProjectStep(doc1))), "en dezelfde GlobalId's");
+  const oudHernoemd = JSON.parse(stil(() => opslaan({ ...payloadUit(oud), id: oud.projectId, naam: "Nieuwe naam", gegevens: { ...oud.gegevens, project_nummer: "P-2" } })));
+  meld(isDeepStrictEqual(paden(oudHernoemd), paden(doc1)), "ook na hernoemen en een ander nummer");
+  meld(leesProjectBestand(tekst1, "x").projectId === oud.projectId, "reproduceerbaar: twee keer openen, dezelfde id");
+  // Het voorbeeldproject: een bestand van versie 1, uit een eerdere versie van de app.
+  const fixture = readFileSync(new URL("./fixtures/rapport-voorbeeld.ifccalculation", import.meta.url), "utf8");
+  const fx = JSON.parse(fixture).project;
+  const gfx = leesProjectBestand(fixture, "voorbeeld");
+  const fxVoorheen = JSON.parse(stil(() => opslaan(payloadUit(gfx))));
+  const fxOpnieuw = JSON.parse(stil(() => opslaan({ ...payloadUit(gfx), id: gfx.projectId, naam: "Hernoemd" })));
+  const fxBladen = (doc) => doc.data.filter((k) => k.attributes?.["ocss::blad"]).map((k) => k.path).sort();
+  meld(gfx.projectId === afgeleideProjectId(fx.naam, fx.gegevens?.project_nummer) && gfx.projectId === fxVoorheen.data[0].path, "het voorbeeldproject krijgt de wortel die zijn export voorheen had", gfx.projectId);
+  meld(fxBladen(fxOpnieuw).length === 2 && isDeepStrictEqual(paden(fxOpnieuw), paden(fxVoorheen)), "en houdt al zijn paden, ook hernoemd");
+  // Versie 1 en een los blad hebben geen wortel: de id volgt uit nummer en naam, elke keer dezelfde.
+  const v1 = JSON.stringify({ project: { versie: 1, naam: "Oud", gegevens: { project_nummer: "7" }, exemplaren: [{ id: "e", naam: "e", source: "x = 1\n" }] } });
+  meld(leesProjectBestand(v1, "b").projectId === afgeleideProjectId("Oud", "7"), "versie 1: de id uit nummer en naam, zoals zijn export");
+  meld(leesProjectBestand("x = 1\n", "los").projectId === leesProjectBestand("x = 1\n", "los").projectId, "een los blad: reproduceerbaar");
+
+  // Nieuwe projecten: elk een eigen id, ook met dezelfde naam en hetzelfde nummer.
+  const n1 = nieuweProjectId();
+  const n2 = nieuweProjectId();
+  meld(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(n1) && n1 !== n2, "een nieuwe id is een willekeurige UUID, elke keer een andere", `${n1} ${n2}`);
+  const p1 = JSON.parse(stil(() => opslaan({ ...VOLLEDIG, id: n1 })));
+  const p2 = JSON.parse(stil(() => opslaan({ ...VOLLEDIG, id: n2 })));
+  meld(p1.data[0].path !== p2.data[0].path && bladPad(p1, "ex-balk") !== bladPad(p2, "ex-balk"), "twee los gemaakte projecten met gelijke gegevens: andere identiteiten");
+  meld(leesProjectId("geen-uuid") === undefined && !paden(JSON.parse(stil(() => opslaan({ ...VOLLEDIG, id: "geen-uuid" })))).includes("geen-uuid"), "een id die geen UUID is, telt niet");
+
+  // Losse en gezamenlijke export: hetzelfde blad, hetzelfde pad en dezelfde GlobalId.
+  const los = stil(() => projectIfcx({ ...metId, exemplaren: [metId.exemplaren[0]], rapport: undefined }));
+  const heel = stil(() => projectIfcx(metId));
+  meld(bladPad(los, "ex-balk") === bladPad(heel, "ex-balk") && !!bladPad(heel, "ex-balk"), "één blad los en in het hele project: hetzelfde pad");
+  const losStep = guids(bouwProjectStep(los));
+  meld(losStep.every((g) => guids(bouwProjectStep(heel)).includes(g)), "en elke GlobalId van de losse STEP staat in die van het hele project");
+
+  // Vreemde gegevens die aan een pad van de app hangen, blijven na hernoemen op hun plek.
+  const metVreemd = JSON.parse(JSON.stringify(a));
+  const kruipPad = bladPad(metVreemd, "ex-kruip");
+  const element = metVreemd.data.find((k) => k.attributes?.["ocss::element"]?.bron === "herkend");
+  metVreemd.data.push({ path: kruipPad, attributes: { "ander::opmerking": "nagekeken" } });
+  metVreemd.data.push({ path: element.path, attributes: { "ander::categorie": "Ligger" } });
+  metVreemd.data.push({ path: metVreemd.data[0].path, children: { Bijlage: "ander-bijlage" } }, { path: "ander-bijlage", attributes: { "ander::bijlage": "tekening" } });
+  metVreemd.schemas["ander::opmerking"] = { value: { dataType: "String" } };
+  metVreemd.schemas["ander::categorie"] = { value: { dataType: "String" } };
+  metVreemd.schemas["ander::bijlage"] = { value: { dataType: "String" } };
+  const gv = leesProjectBestand(JSON.stringify(metVreemd), "x");
+  meld(gv.vreemd?.knopen.length === 4, "de vreemde gegevens gaan apart mee", String(gv.vreemd?.knopen.length));
+  const hernoemd = JSON.parse(stil(() => opslaan({ ...payloadUit(gv), id: gv.projectId, vreemd: gv.vreemd, naam: "Weer anders", gegevens: { ...gv.gegevens, project_nummer: "P-3" } })));
+  const kn = platteKnopen(hernoemd.data);
+  meld(kn.get(kruipPad)?.attributes["ander::opmerking"] === "nagekeken" && !!kn.get(kruipPad)?.attributes["ocss::blad"], "na hernoemen: het vreemde attribuut zit nog op hetzelfde blad");
+  meld(kn.get(element.path)?.attributes["ander::categorie"] === "Ligger" && !!kn.get(element.path)?.attributes["ocss::element"], "en op hetzelfde element");
+  meld(kn.get(hernoemd.data[0].path)?.children?.Bijlage === "ander-bijlage" && kn.has("ander-bijlage") && hernoemd.data[0].path === ID, "en het vreemde kind onder het project");
+  meld(isDeepStrictEqual(paden(hernoemd).filter((p) => !p.startsWith("ander")), paden(a)), "zonder dat er paden bij komen of weggaan");
+}
+
+console.log("De identiteit in de app:");
+{
+  const { laadRapportAfdruk } = await import("./lib/rapport-html.mjs");
+  const m = await laadRapportAfdruk();
+  const store = m.useProjectStore;
+  const id = () => store.getState().projectId;
+  const begin = id();
+  meld(leesProjectId(begin) === begin, "de app start met een id", begin);
+  store.getState().nieuwProject();
+  const eerste = id();
+  meld(leesProjectId(eerste) === eerste && eerste !== begin, "Nieuw project: een nieuwe id", eerste);
+  store.getState().zetProjectNaam("Hernoemd");
+  store.getState().zetGegeven("project_nummer", "P-42");
+  meld(id() === eerste, "hernoemen en een ander nummer: dezelfde id");
+  store.getState().markeerOpgeslagen("C:/proef/kopie.ifccalculation");
+  meld(id() === eerste, "opslaan en opslaan als: dezelfde id");
+  store.getState().nieuwProject();
+  meld(id() !== eerste, "nog een nieuw project, met dezelfde naam: weer een andere id");
+  store.getState().laadProject(leesProjectBestand(tekst1, "x"));
+  meld(id() === doc1.data[0].path, "openen van een ouder bestand: de wortel uit het bestand", id());
+  store.getState().laadProject({ projectNaam: "Uit oude opslag", gegevens: { project_nummer: "9" }, exemplaren: [] });
+  meld(id() === afgeleideProjectId("Uit oude opslag", "9"), "een stand zonder id: de id uit nummer en naam");
+  store.getState().nieuwProject();
 }
 
 console.log(`\n${aantal - fouten} van de ${aantal} controles in orde.`);

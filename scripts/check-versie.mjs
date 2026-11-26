@@ -1,12 +1,24 @@
 /**
  * Het versienummer: staat het overal gelijk, en doet scripts/versie.mjs wat het
  * belooft? De proef voor het zetten draait op een kopie in een tijdelijke map.
+ * Daarna de licentie: elk eigen pakket noemt dezelfde als LICENSE en de README's.
  */
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { controleerVelden, isoWeek, leesVelden, leesVersie, VERSIEVELDEN, volgendeVersie, zetVersie } from "./versie.mjs";
+import {
+  controleerLicenties,
+  controleerVelden,
+  isoWeek,
+  leesVelden,
+  leesVersie,
+  LICENTIE,
+  LICENTIEVELDEN,
+  VERSIEVELDEN,
+  volgendeVersie,
+  zetVersie,
+} from "./versie.mjs";
 
 const repoMap = fileURLToPath(new URL("..", import.meta.url));
 let fouten = 0;
@@ -119,8 +131,59 @@ try {
   rmSync(kopie, { recursive: true, force: true });
 }
 
+console.log("De licentie");
+klopt(`alle ${LICENTIEVELDEN.length} licentievelden, LICENSE en de README's noemen ${LICENTIE}`, (() => {
+  try {
+    return controleerLicenties() === LICENTIE;
+  } catch (fout) {
+    console.log(fout.message);
+    return false;
+  }
+})());
+klopt(
+  "de FEM-server houdt zijn eigen AGPL-3.0",
+  readFileSync(join(repoMap, "packages/desktop/src-tauri/fem-studio/LICENSE-AGPL-3.0.txt"), "utf8").includes("GNU AFFERO GENERAL PUBLIC LICENSE"),
+);
+const licentieKopie = mkdtempSync(join(tmpdir(), "licentie-"));
+try {
+  const paden = new Set([...LICENTIEVELDEN.map((v) => v.pad), "LICENSE", "README.md", "README.nl.md"]);
+  for (const pad of paden) {
+    mkdirSync(dirname(join(licentieKopie, pad)), { recursive: true });
+    copyFileSync(join(repoMap, pad), join(licentieKopie, pad));
+  }
+  const lees = (pad) => readFileSync(join(licentieKopie, pad), "utf8");
+  klopt("de kopie klopt", controleerLicenties(licentieKopie) === LICENTIE);
+  const zetTerug = (pad, actie) => {
+    const heel = lees(pad);
+    try {
+      actie(heel);
+    } finally {
+      writeFileSync(join(licentieKopie, pad), heel);
+    }
+  };
+  for (const v of LICENTIEVELDEN) {
+    const naam = v.veld ? `${v.pad} (${v.veld})` : v.pad;
+    zetTerug(v.pad, (heel) => {
+      writeFileSync(join(licentieKopie, v.pad), heel.replace(v.patroon, (_, voor, _oud, na) => `${voor}LGPL-3.0-or-later${na}`));
+      faalt(`andere licentie in ${naam} wordt gezien`, () => controleerLicenties(licentieKopie), naam);
+      writeFileSync(join(licentieKopie, v.pad), heel.replace(v.patroon, ""));
+      faalt(`ontbrekend licentieveld in ${naam} wordt gezien`, () => controleerLicenties(licentieKopie), naam);
+    });
+  }
+  zetTerug("LICENSE", () => {
+    writeFileSync(join(licentieKopie, "LICENSE"), "MIT License\n");
+    faalt("andere LICENSE wordt gezien", () => controleerLicenties(licentieKopie), "LICENSE");
+  });
+  zetTerug("README.md", (heel) => {
+    writeFileSync(join(licentieKopie, "README.md"), heel.replace(/^LGPL-3\.0\. /m, "LGPL-3.0-or-later. "));
+    faalt("README met een andere licentie wordt gezien", () => controleerLicenties(licentieKopie), "README.md");
+  });
+} finally {
+  rmSync(licentieKopie, { recursive: true, force: true });
+}
+
 if (fouten > 0) {
   console.error(`\n${fouten} controle(s) gezakt.`);
   process.exit(1);
 }
-console.log("\nHet versienummer klopt.");
+console.log("\nHet versienummer en de licentie kloppen.");

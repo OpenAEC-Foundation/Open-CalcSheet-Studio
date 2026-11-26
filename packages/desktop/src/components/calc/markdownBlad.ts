@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from "react";
 import i18next from "../../i18n/config";
 import { grootteTekst, PDF_GROOT_BYTES } from "../../store/pdfBijlage";
 import { bladnaamVoorMarkdown, tekstUitBytes, type MarkdownBestand } from "../../store/markdownBlad";
@@ -124,28 +123,4 @@ export async function exporteerMarkdown(naam: string, md: MarkdownBestand): Prom
   a.download = bestand;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
-
-// ── Afbeeldingen op papier ────────────────────────────────────────────────────
-
-let versie = 0;
-const luisteraars = new Set<() => void>();
-
-/** Een afbeelding op papier is geladen: het afdrukvoorbeeld verdeelt dan opnieuw. */
-export function meldBeeldGeladen() {
-  versie += 1;
-  for (const l of luisteraars) l();
-}
-
-/** Verandert bij elke geladen afbeelding; voor het opnieuw verdelen van het afdrukvoorbeeld. */
-export function useMarkdownVersie(): number {
-  return useSyncExternalStore(
-    (l) => {
-      luisteraars.add(l);
-      return () => {
-        luisteraars.delete(l);
-      };
-    },
-    () => versie,
-  );
 }

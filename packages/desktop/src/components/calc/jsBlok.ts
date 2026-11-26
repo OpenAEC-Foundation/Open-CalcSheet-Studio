@@ -30,6 +30,8 @@ import { useLayoutEffect, useSyncExternalStore, type RefObject } from "react";
 import { useProjectStore } from "../../store/projectStore";
 import looptijd from "./jsLooptijd.js?raw";
 import { geldigeHost, jsAttributen, jsSrcdoc, leesBericht } from "./jsRegels";
+import { IN_WERKPLEK, nietInWerkplek } from "../../werkplek/werkplek";
+import i18next from "i18next";
 
 /** Zolang wacht een afdruk op het script. Daarna komt het kader op papier. */
 const MAX_AFDRUK_MS = 20000;
@@ -62,7 +64,9 @@ export function useJsVersie(): number {
 }
 
 function magUitvoeren(blad: string | undefined, netwerk: readonly string[]): boolean {
-  if (!blad) return false;
+  // In de werkplek van de SuperCloud staat de CSP geen inline script toe, ook niet in
+  // de srcdoc van het venster: daar draait een script in een blad niet.
+  if (!blad || IN_WERKPLEK) return false;
   const hosts = bevestigd.get(blad);
   return !!hosts && netwerk.every((h) => hosts.has(h));
 }
@@ -409,6 +413,14 @@ export class JsBeelden {
     const kader = blok.querySelector<HTMLElement>(".calc-iframe-kader");
     const blad = this.blad;
     if (!kader || !blad || kader.querySelector(".calc-iframe-laden")) return;
+    if (IN_WERKPLEK) {
+      if (kader.querySelector(".calc-iframe-uitleg")) return;
+      const melding = document.createElement("span");
+      melding.className = "calc-iframe-uitleg";
+      melding.textContent = nietInWerkplek(i18next.t("werkruimte:werkplek.script"));
+      kader.append(melding);
+      return;
+    }
     const t = this.teksten();
     const uitleg = document.createElement("span");
     uitleg.className = "calc-iframe-uitleg";

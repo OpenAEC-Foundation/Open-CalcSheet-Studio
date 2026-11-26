@@ -16,6 +16,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { JSDOM } from "jsdom";
+import { talenPlugin } from "./talen.mjs";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const WORTEL = join(hier, "../..");
@@ -125,7 +126,7 @@ export async function laadRapportAfdruk() {
       conditions: ["browser", "import", "default"],
       jsx: "automatic",
       logLevel: "error",
-      plugins: [viteAchtervoegsels],
+      plugins: [viteAchtervoegsels, talenPlugin],
       loader: {
         ".css": "empty", ".png": "dataurl", ".svg": "text", ".webp": "dataurl", ".woff": "empty", ".woff2": "empty", ".ttf": "empty",
         ".wasm": "empty", ".geojson": "text",

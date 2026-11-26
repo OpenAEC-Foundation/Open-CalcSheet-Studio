@@ -539,6 +539,20 @@ html.rapportdruk .rpa-drukvellen .av-pagina {
   page-break-after: always;
 }
 
+/* Een paginanummer in de inhoudsopgave is in de PDF een link (linkInhoud in
+   drukvellen.ts); op papier ziet het eruit als het nummer. */
+.rpa-drukvellen .inhoud-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Een verwijzing in de tekst: klikbaar in de PDF, op papier gewone tekst. */
+.rpa-drukvellen .tekst-link {
+  color: inherit;
+  text-decoration: none;
+}
+
 html.rapportdruk .rpa-drukvellen .av-pagina:last-child {
   break-after: auto;
   page-break-after: auto;
@@ -554,4 +568,75 @@ html.rapportdruk .rpa-drukvellen .av-pagina:last-child {
   @bottom-right {
     content: none;
   }
+}
+
+/* ─── Situatie: de kaarten van de plek ───────────────────────── */
+
+.rpa-wortel .rpa-sit-waarschuwing {
+  margin: 0 var(--rpa-cel) 4pt;
+  padding: 2pt 4pt;
+  border: 0.5pt solid #000;
+  font-size: 8pt;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.rpa-wortel .rpa-sit-beelden {
+  padding: 0 var(--rpa-cel);
+}
+
+/* Een afbeelding onder de tekst van een paragraaf (rapport.beelden). */
+.rpa-wortel .rpa-beeld {
+  margin: 2mm 0 3mm;
+  padding: 0 var(--rpa-cel);
+  box-sizing: border-box;
+  break-inside: avoid;
+}
+
+.rpa-wortel .rpa-beeld img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 200mm;
+  object-fit: contain;
+  object-position: left top;
+}
+
+.rpa-wortel .rpa-beeld figcaption {
+  padding: 1mm 0 0;
+  font-size: 8pt;
+  line-height: 1.3;
+}
+
+.rpa-wortel .rpa-sit-kaart {
+  margin: 0;
+}
+
+.rpa-wortel .rpa-sit-kaart img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 0.25pt solid #000;
+}
+
+.rpa-wortel .rpa-sit-kaart figcaption {
+  padding: 1mm 0 0;
+  font-size: 8pt;
+  line-height: 1.3;
+}
+
+.rpa-wortel .rpa-sit-paar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4mm;
+  margin-top: 4mm;
+}
+
+/* Het symbool van een belasting achter zijn naam (5.4 en 5.5): daarmee verwijst een rekenblad ernaar. */
+.rpa-wortel .rpa-symbool {
+  margin-left: 0.6em;
+  font-family: var(--oa-font-mono, "Cascadia Mono", Consolas, monospace);
+  font-size: 0.85em;
+  font-weight: 400;
+  opacity: 0.75;
 }

@@ -6,6 +6,7 @@ import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal
 import { useActiefExemplaar, useAlleenLezen, useProjectScope } from "../../store/actiefBlad";
 import { leesGetallen, leesResultaat, metRefNamen, ucTekst, type BladUitkomst, type Resultaat } from "./bladLezen";
 import { useDoorrekening } from "../../rekenen/doorrekening";
+import { metToetsingen } from "../../rekenen/toetsCache";
 
 export { ucTekst, leesResultaat, leesGetallen, metRefNamen } from "./bladLezen";
 export type { Resultaat, BladUitkomst } from "./bladLezen";
@@ -29,7 +30,8 @@ export function rekenBladDoor(
 ): BladUitkomst | null {
   try {
     const ast = typeof blad === "string" ? leesBlad(blad) : blad;
-    const nodes = evaluate(ast, waarden, scope);
+    // Een @toets-blok leest zijn vastgelegde antwoord; hier gaat niets naar FEM Studio.
+    const nodes = evaluate(ast, waarden, scope, metToetsingen({}, "lezen"));
     const getallen = leesGetallen(nodes);
     return {
       resultaat: leesResultaat(nodes, naam),

@@ -410,8 +410,13 @@ function MaatLijn({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number; y2: 
  * lijn. De getallen tekent de plattegrond alleen met `getallen`: op het scherm zet
  * de designer er klikbare maten neer.
  */
-export function RaveelPlattegrond(props: RaveelInvoer & { W: number; H: number; getallen?: boolean }) {
+export function RaveelPlattegrond(props: RaveelInvoer & {
+  W: number; H: number; getallen?: boolean;
+  /** Een maat in mm zoals hij op de maatlijn staat; zonder: het getal in mm (het eenhedenstelsel, beeldEenheden.ts). */
+  maat?: (mm: number) => string;
+}) {
   const { W, H, bSparing, lStaart, label, getallen } = props;
+  const maat = props.maat ?? ((mm: number) => nl(mm, 0));
   const { t } = useTranslation("beelden");
   const m = raveelMaten(W, H, props);
   const { x0, x1, xR, xR2, yI1, yI2, yBoven, yOnder, yDoor1, yDoor2, wisB, balkB, stap, nStaart, xStrook, xStrook2, twee, heel, s } = m;
@@ -533,7 +538,7 @@ export function RaveelPlattegrond(props: RaveelInvoer & { W: number; H: number; 
       <MaatLijn x1={m.xMaatB} y1={yI1} x2={m.xMaatB} y2={yI2} />
       {/* de strook boven de tekening: l_staart/2 tot de as van de raveelbalk */}
       <MaatLijn x1={xStrook} y1={m.yMaatStrook} x2={xR} y2={m.yMaatStrook} />
-      <Label x={(xStrook + xR) / 2} y={m.yMaatStrook - 4} kleur={MAAT_TEKST}>{nl(lStaart / 2, 0)}</Label>
+      <Label x={(xStrook + xR) / 2} y={m.yMaatStrook - 4} kleur={MAAT_TEKST}>{maat(lStaart / 2)}</Label>
       {/* de staart, en bij twee raveelbalken de sparing en de andere staart */}
       <line x1={x0} y1={yOnder + 3} x2={x0} y2={m.yMaat1 + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
       <line x1={xR} y1={yOnder + 3} x2={xR} y2={m.yMaat1 + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
@@ -544,7 +549,7 @@ export function RaveelPlattegrond(props: RaveelInvoer & { W: number; H: number; 
           <line x1={x1} y1={yOnder + 3} x2={x1} y2={m.yMaat1 + 4} stroke={MAAT_KLEUR} strokeWidth={1} />
           <MaatLijn x1={xR} y1={m.yMaat1} x2={xR2} y2={m.yMaat1} />
           <MaatLijn x1={xR2} y1={m.yMaat1} x2={x1} y2={m.yMaat1} />
-          <Label x={(xR2 + x1) / 2} y={m.yMaat1 - 5} kleur={MAAT_TEKST}>{nl((x1 - xR2) / s, 0)}</Label>
+          <Label x={(xR2 + x1) / 2} y={m.yMaat1 - 5} kleur={MAAT_TEKST}>{maat((x1 - xR2) / s)}</Label>
         </>
       )}
       {/* de hele overspanning van de wisselbalk */}
@@ -557,10 +562,10 @@ export function RaveelPlattegrond(props: RaveelInvoer & { W: number; H: number; 
       )}
       {getallen && (
         <>
-          <Label x={m.xMaatB - 4} y={(yI1 + yI2) / 2 + 4} kleur={MAAT_TEKST} anker="end">{nl(bSparing, 0)}</Label>
-          <Label x={(x0 + xR) / 2} y={m.yMaat1 - 5} kleur={MAAT_TEKST}>{nl(lStaart, 0)}</Label>
-          {twee && <Label x={(xR + xR2) / 2} y={m.yMaat1 - 5} kleur={MAAT_TEKST}>{nl(props.lSparing as number, 0)}</Label>}
-          {heel && <Label x={m.xm} y={m.yMaat2 - 5} kleur={MAAT_TEKST}>{nl(props.lW as number, 0)}</Label>}
+          <Label x={m.xMaatB - 4} y={(yI1 + yI2) / 2 + 4} kleur={MAAT_TEKST} anker="end">{maat(bSparing)}</Label>
+          <Label x={(x0 + xR) / 2} y={m.yMaat1 - 5} kleur={MAAT_TEKST}>{maat(lStaart)}</Label>
+          {twee && <Label x={(xR + xR2) / 2} y={m.yMaat1 - 5} kleur={MAAT_TEKST}>{maat(props.lSparing as number)}</Label>}
+          {heel && <Label x={m.xm} y={m.yMaat2 - 5} kleur={MAAT_TEKST}>{maat(props.lW as number)}</Label>}
         </>
       )}
     </g>

@@ -120,7 +120,12 @@
     "gewoneTekst_one": "stays plain text.",
     "gewoneTekst_other": "stay plain text.",
     "subkoppenAanzetten": "Turn on subheadings for this report",
-    "naarProjectgegevens": "Edit in Project data →"
+    "naarProjectgegevens": "Edit in Project data →",
+    "situatieTonen": "Site location page",
+    "situatieHint": "A page with maps of the project site, right after the cover.",
+    "situatieVerouderd": "The maps belong to a different point, language or units than the project now has. Refresh them in the project data; a warning is printed on the page.",
+    "situatieGeenLocatie": "The site location page only appears in the report when the project has a location. The maps are kept and return when you choose a point again.",
+    "situatieBeeld": "Site map, {{naam}}"
   },
   "rijen": {
     "toevoegen": "Add row",
@@ -176,6 +181,15 @@
     "toevoegen": "Add revision",
     "leeg": "No revisions yet: the cover page then leaves date and status blank.",
     "rapportstatus": "Report status:"
+  },
+  "beelden": {
+    "afbeelding": "Image",
+    "toevoegen": "+ Image",
+    "bijschrift": "Caption",
+    "breedte": "Width (%)",
+    "verwijder": "Remove",
+    "teGroot": "{{naam}} is larger than 8 MB; reduce the image first.",
+    "geenBeeld": "{{naam}} is not a PNG or JPEG."
   },
   "teksten": {
     "intro": "One text per part. Standard text ▾ picks a built-in or custom variant. An optional block left empty is omitted from the report.",
@@ -262,7 +276,7 @@
     "vorigeNaam": "This text mentions the program's previous name ({{naam}}). Standard text ▾ has the text with the current name, Open CalcSheet Studio."
   },
   "belastingen": {
-    "intro": "Grey values follow from the project data and the standard. The build-ups of the permanent loads only appear in the report; they are not (yet) used in the sheets.",
+    "intro": "Grey values follow from the project data and the standard. The load classes and the blocks of the permanent loads have a symbol: under it their value exists in every sheet.",
     "platDak": "Flat roof",
     "platDakKlein": "flat roof",
     "sneeuwHint": "Text below the snow load.",
@@ -300,7 +314,11 @@
     "qlast": "Roof q-load",
     "bijAlfa": "at α",
     "dakhellingInvullen": "— (enter the roof pitch)",
-    "qkDirect": "{{qk}} kN; directly below the roof decking {{direct}} kN"
+    "qkDirect": "{{qk}}; directly below the roof decking {{direct}}",
+    "zelfInvullen": "— (enter a value)",
+    "verplicht": "enter a value",
+    "leegIsTabel": "empty = table",
+    "eigenWaarde": "own value"
   },
   "opbouw": {
     "geen": "No build-ups in this group yet.",
@@ -314,8 +332,8 @@
     "naamLabel": "Build-up name",
     "naamVlak": "Name, e.g. Ground floor",
     "naamGevel": "Name, e.g. Front facade",
-    "soortVlak": "area build-up · kN/m²",
-    "soortGevel": "facade build-up · kN/m¹",
+    "soortVlak": "area build-up · {{eenheid}}",
+    "soortGevel": "facade build-up · {{eenheid}}",
     "verwijderen": "Remove build-up",
     "zonderNaam": "untitled",
     "verwijderVraag": "Remove build-up \"{{naam}}\" with all its layers?",
@@ -325,7 +343,28 @@
     "berekend": "calculated",
     "totaal": "Total",
     "aantalLagen_one": "{{count}} layer",
-    "aantalLagen_other": "{{count}} layers"
+    "aantalLagen_other": "{{count}} layers",
+    "symboolLabel": "Symbol in the sheets",
+    "symboolUitleg": "Under this symbol the total of this block exists in every sheet, for example g_v1",
+    "symboolOngeldig": "Not a valid symbol: start with a letter, at least two characters, at most one part after an underscore (g_v1).",
+    "symboolBestaat": "The symbol {{symbool}} already belongs to another load.",
+    "symboolDubbel": "The symbol {{symbool}} occurs twice: the sheets use the first. Give this block its own symbol.",
+    "klaar": "Done"
+  },
+  "blokken": {
+    "uitleg": "Each block is a load with a name and layers. Click a block to edit it, drag it to move it, the plus adds a layer. Under its symbol (such as g_v1) the total exists in every sheet, and a load block in a sheet picks it from a list.",
+    "vloerDak": "Floor or roof",
+    "wand": "Wall",
+    "gevel": "Facade",
+    "uitBibliotheek": "From library",
+    "zoekVloerDak": "Search, as floor or roof…",
+    "zoekWand": "Search, as wall…",
+    "zoekUitleg": "a row from the weights library as a new block",
+    "rangschik": "Arrange",
+    "rangschikUitleg": "Put all blocks neatly below each other again; their own positions are dropped",
+    "leeg": "No loads yet. Add one with the buttons above.",
+    "blokUitleg": "Click to edit, drag to move",
+    "inBladen": "In the sheets: {{symbool}}"
   },
   "berekeningen": {
     "intro": "Each sheet in the project gets a section with a summary and your own notes. The full output goes in appendix A, unless you include it in the chapter itself.",
@@ -338,6 +377,8 @@
     "staatInHoofdstuk": "The full output appears directly below the notes.",
     "staatInBijlage": "The full output is in appendix {{letter}}.",
     "koppenInInhoud": "Headings from the text in the table of contents",
+    "bijlageParagrafen": "Sheets in appendix A also as a section in this chapter",
+    "bijlageParagrafenUitleg": "Every sheet with its calculation in appendix A then has a section in this chapter, with the reference to the appendix. When off, those sheets are only in appendix A and do not count in the numbering of this chapter.",
     "bladenInInhoud": "Sheets in the table of contents",
     "bladenInInhoudUitleg": "The table of contents at the front then also lists every sheet with its page: under this chapter or under appendix A. When off, the sheets are only listed in the table of contents of this chapter."
   },
@@ -352,7 +393,9 @@
   },
   "markdownBlad": {
     "soort": "Markdown",
-    "ontbreekt": "The text of this sheet is missing."
+    "ontbreekt": "The text of this sheet is missing.",
+    "soortRtf": "RTF file",
+    "soortBereik": "Workbook range"
   },
   "spreadsheetBlad": {
     "soort": "Spreadsheet",
@@ -448,6 +491,30 @@
       "titel": "Contents",
       "inhoudsopgave": "Table of contents",
       "bijlage": "Appendix"
+    },
+    "situatie": {
+      "titel": "Site location",
+      "verouderd": "Note: these maps belong to an earlier location, a different language or different units. Refresh them in the project data.",
+      "onderschrift": "{{kaart}} · about {{afstand}}",
+      "kaarten": {
+        "gebied": "Area",
+        "omgeving": "Surroundings",
+        "locatie": "Location"
+      },
+      "adres": "Address",
+      "coordinaten": "Coordinates",
+      "terreincategorie": "Terrain category",
+      "terrein": {
+        "1": "0 (sea or coastal area)",
+        "2": "II (undeveloped area)",
+        "3": "III (built-up area)"
+      },
+      "keuze": "(chosen by the structural engineer)",
+      "water": "Distance to open water",
+      "geenWater": "no open water within {{straal}}",
+      "kust": "coast",
+      "kaart": "Map",
+      "bron": "© OpenStreetMap contributors, {{datum}}"
     },
     "bijlageKop": "Appendix {{letter}} {{titel}}",
     "zieBijlage": "See appendix {{nummer}}.",
@@ -567,5 +634,33 @@
     "levensduur": "{{jaren}} years",
     "veiligheidHint": "The class from the standard that applies here ({{land}}), for instance a risk or importance category. Empty: not shown in the report.",
     "alleenVerwijzing": "Here ({{land}}) the app only has references to the standards, and not everything could be confirmed. See the project data."
+  },
+  "documentExport": {
+    "momentopname": "Snapshot of {{project}}, revision {{revisie}}, made on {{moment}} with Open CalcSheet Studio. Numbers, formulas and checks in this document do not recalculate: changes made here are not recalculated and do not return to the calculation.",
+    "voet": "{{project}} · revision {{revisie}} · snapshot {{moment}}",
+    "zonderRevisie": "no revision",
+    "pdfNietOpgenomen_one": "Appendix: {{bestand}} ({{count}} page), not included in this document.",
+    "pdfNietOpgenomen_other": "Appendix: {{bestand}} ({{count}} pages), not included in this document.",
+    "iframeNietOpgenomen": "External page {{adres}}: not included in this document.",
+    "jsNietOpgenomen": "Output of a script: not included in this document.",
+    "ingebedNietOpgenomen": "Embedded content ({{soort}}): not included in this document.",
+    "beeldNietOpgenomen": "[Image not included]"
+  },
+  "koppeling": {
+    "lezen": "Reading the source…",
+    "ontbreekt": "Source not found ({{bestand}}). This is the saved copy, last read on {{datum}}.",
+    "fout": "Source cannot be updated ({{bestand}}): {{reden}}. This is the saved copy, last read on {{datum}}.",
+    "geenToegang": "Source cannot be read without file access ({{bestand}}). This is the saved copy, last read on {{datum}}.",
+    "reden": {
+      "ongeldig": "the reference \"{{detail}}\" is not a range name or a sheet with cells",
+      "naamOntbreekt": "the range name \"{{detail}}\" is not in the workbook",
+      "naamKapot": "the range name points to cells that no longer exist ({{detail}})",
+      "meerdereGebieden": "the range name consists of more than one area ({{detail}})",
+      "bladOntbreekt": "the sheet \"{{detail}}\" is not in the workbook",
+      "teGroot": "the range {{detail}} is too large for one table",
+      "leesFout": "the file cannot be read",
+      "geenRtf": "the file is not an RTF file",
+      "geenWerkmap": "the file is not a workbook (.xlsx)"
+    }
   }
 }

@@ -1,0 +1,60 @@
+/* ─── Tab ERPNext (ErpnextTab.tsx) ──────────────────────────
+   Bouwt op de settings-section/settings-row-klassen van
+   SettingsDialog.css; hier alleen de veldkolom en het geheim
+   met zijn knop.
+   ─────────────────────────────────────────────────────────── */
+
+.erpnext-tab {
+  --erpnext-veld: min(300px, 58%);
+}
+
+.erpnext-intro {
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.erpnext-waarschuwing {
+  margin: -6px 0 12px 0;
+  color: var(--theme-danger-color);
+}
+
+.settings-input.erpnext-invoer {
+  width: var(--erpnext-veld);
+}
+
+/* Toelichting onder een veld, uitgelijnd met de veldkolom */
+.erpnext-hint {
+  width: var(--erpnext-veld);
+  margin: -4px 0 8px auto;
+  line-height: 1.4;
+}
+
+/* Het geheim plus de knop Wissen */
+.erpnext-rechts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: var(--erpnext-veld);
+}
+
+.settings-input.erpnext-geheim {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+/* Kleinere knop dan de voetknoppen van het venster */
+.settings-btn.erpnext-knop {
+  padding: 3px 10px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.settings-btn.erpnext-knop:disabled {
+  opacity: 0.5;
+}
+
+.settings-btn.erpnext-knop:disabled:hover {
+  background: var(--theme-btn-secondary-bg);
+  border-color: var(--theme-dialog-input-border);
+}

@@ -1,0 +1,615 @@
+{
+  "koppen": {
+    "inleiding": "Inleiding",
+    "projectgegevens": "Projectgegevens",
+    "projectomschrijving": "Projectomschrijving",
+    "rol": "Rol binnen het project en bereik rapport",
+    "constructie": "Constructie",
+    "toelichting": "Toelichting constructie",
+    "bestaand": "Bestaande situatie",
+    "bestaand-verticaal": "Verticale belastingafdracht",
+    "bestaand-stabiliteit": "Stabiliteit",
+    "bestaand-fundatie": "Fundatie",
+    "bestaand-beoordeling": "Beoordeling bestaande constructie",
+    "wijziging": "Wijziging",
+    "wijzigingNieuwbouw": "Constructieprincipe",
+    "belendingen": "Belendingen",
+    "uitvoering": "Aandachtspunten bij uitvoering",
+    "uitvoering-bestaand": "Bestaande situatie",
+    "uitvoering-verbouw": "Verbouw, renovatie",
+    "uitvoering-nieuwbouw": "Nieuwbouw",
+    "uitgangspunten": "Uitgangspunten",
+    "bouwwerk": "Constructieve uitgangspunten bouwwerk",
+    "brand": "Bouwconstructies bij brand",
+    "materialen": "Toegepaste materialen",
+    "conservering": "Conservering staalconstructie",
+    "factoren": "Belastingfactoren en belastingcombinaties",
+    "bestaand-situatie": "Bestaande situatie",
+    "trillingen": "Trillingen",
+    "vervormingen": "Vervormingen en horizontale verplaatsingen",
+    "montage": "Montage en bouwfase",
+    "rekenprogrammatuur": "Toegepaste rekenprogrammatuur",
+    "temperatuur": "Temperatuursinvloeden",
+    "aardbeving": "Aardbevingen",
+    "belastingen": "Belastingen",
+    "sneeuw": "Sneeuwbelastingen(Q)",
+    "wind": "Windbelastingen(Q)",
+    "regenwater": "Regenwateraccumulatie(Q)",
+    "veranderlijk": "Overige veranderlijke belastingen(Q)",
+    "blijvend": "Blijvende belastingen(G)",
+    "berekeningen": "Berekeningen",
+    "bijlageA": "Uitgebreide uitwerking berekeningen"
+  },
+  "standaard": {
+    "titels": [
+      "Constructieadvies & berekeningen",
+      "Constructieve berekening",
+      "Constructief advies",
+      "Constructieve berekeningen en tekeningen",
+      "Beoordeling bestaande constructie"
+    ],
+    "rollen": [
+      "Hoofdconstructeur",
+      "Constructeur",
+      "Constructief adviseur",
+      "Controlerend constructeur"
+    ],
+    "soortenBouwwerk": [
+      "Woning",
+      "Eengezinswoning",
+      "Appartementencomplex",
+      "Villa",
+      "Kantoor",
+      "Bedrijfshal",
+      "Bijgebouw",
+      "Schuur"
+    ],
+    "normen": "NEN-EN 1990 t/m 1997",
+    "eersteUitgave": "Eerste uitgave",
+    "nietVanToepassing": "n.v.t.",
+    "materiaalType": [
+      "TPG Beton",
+      "Hout",
+      "Plaatmateriaal",
+      "Wapeningsstaal",
+      "Staal",
+      "Ondervoeging staal"
+    ],
+    "materiaalOpmerking": [
+      "(voor milieuklassen zie berekening betononderdelen en tekening)"
+    ],
+    "materialenNoot": "(tenzij anders aangegeven)",
+    "bevestiging": [
+      "Bouten",
+      "Houtdraaibout",
+      "Chemische Ankers"
+    ],
+    "conserveringOnderdeel": [
+      "Buitenconstructies",
+      "Constructies in spouw",
+      "Staal binnen"
+    ],
+    "conserveringSysteem": [
+      "Duplex of thermisch verzinkt",
+      "Thermisch verzinkt",
+      "Verf systeem"
+    ],
+    "conserveringSlot": "Conservering wordt toegepast op nieuw te plaatsen constructieonderdelen.",
+    "vervormingOnderdeel": [
+      "Verticale doorbuiging van daken",
+      "Verticale doorbuiging van vloeren",
+      "Vloer met steenachtige wanden",
+      "Horizontale verplaatsing bouwwerk",
+      "Horizontale verplaatsing afscheiding"
+    ]
+  },
+  "teksten": {
+    "inleiding": [
+      {
+        "label": "Hoofdberekening",
+        "tekst": "Ten behoeve van het genoemde project brengt {adviseur} op verzoek van de opdrachtgever in dit rapport een constructieadvies uit.\n\nHet advies is gebaseerd op de verstrekte gegevens.\n\nDit rapport omvat de hoofdberekening van de constructie.\nVoor de detailengineering dienen nog aanvullende berekeningen door derden te worden uitgevoerd, die door {adviseur} worden gecontroleerd:\n-Tekeningen en berekeningen systeemvloeren;\n-Tekeningen en berekeningen staalconstructie;\n-Sondering en funderingsadvies;"
+      },
+      {
+        "label": "Alleen uitgangspunten",
+        "tekst": "Ten behoeve van het genoemde project brengt {adviseur} op verzoek van de opdrachtgever in dit rapport een constructieadvies uit.\n\nHet advies is gebaseerd op de verstrekte gegevens.\n\nDit rapport omvat de uitgangspunten van de constructie."
+      }
+    ],
+    "projectomschrijving": [
+      {
+        "label": "Aanbouw",
+        "tekst": "Het project omvat het realiseren van een aanbouw."
+      },
+      {
+        "label": "Dakopbouw",
+        "tekst": "Het project omvat het realiseren van een dakopbouw."
+      },
+      {
+        "label": "Nieuwbouw woning",
+        "tekst": "Het project omvat het realiseren van een woonhuis."
+      },
+      {
+        "label": "Verbouwing",
+        "tekst": "Het project omvat de verbouwing van een bestaand pand."
+      }
+    ],
+    "rol": [
+      {
+        "label": "Opdracht constructieadvies",
+        "tekst": "{adviseur} heeft opdracht voor het constructieadvies voor dit project."
+      },
+      {
+        "label": "Opdracht toetsing",
+        "tekst": "{adviseur} heeft opdracht voor het toetsen van de constructie van dit project."
+      }
+    ],
+    "bestaand-verticaal": [
+      {
+        "label": "Houten balklagen op metselwerk",
+        "tekst": "De vloeren bestaan uit houten balklagen. Deze dragen via de gemetselde bouwmuren af naar de fundering."
+      },
+      {
+        "label": "Gordingenkap en houten balklagen",
+        "tekst": "Het dak bestaat uit een gordingenkap. De vloeren bestaan uit houten balklagen.\nDeze dragen via de gemetselde bouwmuren en een dragende tussenwand af naar de fundering."
+      },
+      {
+        "label": "Betonvloeren op dragende wanden",
+        "tekst": "De vloeren bestaan uit betonvloeren. Deze dragen via de dragende wanden af naar de fundering."
+      }
+    ],
+    "bestaand-stabiliteit": [
+      {
+        "label": "Gemetselde bouwmuren",
+        "tekst": "De stabiliteit wordt verzorgd door de gemetselde bouwmuren."
+      },
+      {
+        "label": "Stabiliteitswanden en schijfwerking",
+        "tekst": "De stabiliteit wordt verzorgd door de stabiliteitswanden, in combinatie met de schijfwerking van de vloeren."
+      }
+    ],
+    "bestaand-fundatie": [
+      {
+        "label": "Onbekend, vermoedelijk op staal",
+        "tekst": "Er zijn geen archiefgegevens bekend. Vermoedelijk is het gebouw op staal gefundeerd."
+      },
+      {
+        "label": "Op staal",
+        "tekst": "Het gebouw is volgens de archiefgegevens op staal gefundeerd."
+      },
+      {
+        "label": "Op palen",
+        "tekst": "Het gebouw is volgens de archiefgegevens op palen gefundeerd."
+      }
+    ],
+    "bestaand-beoordeling": [
+      {
+        "label": "Geen aanleiding tot twijfel",
+        "tekst": "Er is geen aanleiding om te twijfelen aan de bouwkwaliteit van de bestaande constructie."
+      },
+      {
+        "label": "Beoordelen in het werk",
+        "tekst": "De staat van de bestaande constructie is niet bekend. Deze wordt voor aanvang van de werkzaamheden in het werk beoordeeld."
+      }
+    ],
+    "wijziging": [
+      {
+        "label": "Doorbraak in dragende wand",
+        "tekst": "Er wordt een doorbraak gemaakt in een dragende wand met een stalen portaal.\nDe stabiliteit wordt verzorgd door het resterende deel van de wand.\nDe verticale belastingafdracht naar de fundering gaat via de kolommen en de onderligger naar de bestaande fundering."
+      },
+      {
+        "label": "Aanbouw met houten balklaag",
+        "tekst": "De aanbouw wordt gerealiseerd met een houten balklaag als dak, die via dragende wanden afdraagt naar een nieuwe fundering op staal."
+      }
+    ],
+    "belendingen": [
+      {
+        "label": "Niet beschouwd",
+        "tekst": "De constructieve invloed van belendingen is in deze berekening niet beschouwd."
+      }
+    ],
+    "uitvoering-bestaand": [
+      {
+        "label": "Maatvoering controleren",
+        "tekst": "-Maatvoering is gebaseerd op archiefstukken en/of de tekening van de architect.\n-Maatvoering moet in het werk worden gecontroleerd."
+      }
+    ],
+    "uitvoering-verbouw": [
+      {
+        "label": "Stempelen bij nieuwe openingen",
+        "tekst": "-Bij het maken van nieuwe openingen in bestaand metselwerk de wand en de omliggende constructie voldoende stempelen."
+      },
+      {
+        "label": "Volgorde van slopen",
+        "tekst": "-Dragende onderdelen pas verwijderen als de nieuwe constructie is aangebracht of de belasting tijdelijk is opgevangen."
+      }
+    ],
+    "uitvoering-nieuwbouw": [
+      {
+        "label": "Fundering op staal",
+        "tekst": "-Fundering op staal: de draagkrachtige laag vaststellen tijdens het ontgraven.\n-Wapening voor het storten laten controleren."
+      },
+      {
+        "label": "Paalfundering",
+        "tekst": "-Kalenderstaten en paalafwijkingen naar de constructeur sturen.\n-Wapeningscontroles van de fundering en van alle vloerstorts."
+      }
+    ],
+    "trillingen": [
+      {
+        "label": "Trillingen bij vloeren",
+        "tekst": "Bij vloerconstructies worden trillingsberekeningen uitgevoerd.\nVoor overige onderdelen worden trillingen verder niet beschouwd."
+      },
+      {
+        "label": "Niet beschouwd",
+        "tekst": "Trillingen worden in deze berekening niet beschouwd."
+      }
+    ],
+    "vervormingen": [
+      {
+        "label": "Standaard",
+        "tekst": "De onderstaande vervormingseisen worden gehanteerd voor dit project."
+      }
+    ],
+    "montage": [
+      {
+        "label": "Eindfase",
+        "tekst": "Deze berekening gaat uit van de constructie in de eindfase. Het berekenen van de verschillende bouwfasen, zoals onderstempeling, is niet meegenomen."
+      }
+    ],
+    "rekenprogrammatuur": [
+      {
+        "label": "Open CalcSheet Studio",
+        "tekst": "De berekeningen in dit rapport zijn opgesteld met Open CalcSheet Studio."
+      },
+      {
+        "label": "Open CalcSheet Studio met bijlagen",
+        "tekst": "De berekeningen in dit rapport zijn opgesteld met Open CalcSheet Studio.\nBerekeningen met andere rekenprogrammatuur staan in de bijlagen; daarin is de gebruikte versie benoemd."
+      }
+    ],
+    "temperatuur": [
+      {
+        "label": "Niet aan de orde",
+        "tekst": "Bij dit project zijn geen bijzondere temperatuursinvloeden aan de orde."
+      },
+      {
+        "label": "Per onderdeel",
+        "tekst": "Temperatuursinvloeden worden bij de desbetreffende onderdelen beschouwd."
+      }
+    ],
+    "aardbeving": [
+      {
+        "label": "Niet voorgeschreven",
+        "tekst": "Er is geen aardbevingsontwerpsituatie voorgeschreven."
+      },
+      {
+        "label": "Volgens de locatie",
+        "tekst": "De aardbevingsbelasting volgt uit de norm die op de locatie geldt."
+      }
+    ],
+    "sneeuw": [
+      {
+        "label": "Standaard",
+        "tekst": "Sneeuwophoping en sneeuwbelasting op hellende daken worden bij de desbetreffende onderdelen berekend, indien van toepassing."
+      }
+    ],
+    "regenwater": [
+      {
+        "label": "Niet van toepassing",
+        "tekst": "Niet van toepassing"
+      },
+      {
+        "label": "Per dakonderdeel",
+        "tekst": "Wateraccumulatie op platte daken wordt bij de desbetreffende dakonderdelen berekend."
+      }
+    ]
+  },
+  "normwaarden": {
+    "categorie": {
+      "A-vloer": "Categorie A: woon- en verblijfsruimtes",
+      "A-trap": "Categorie A: trappen",
+      "A-balkon": "Categorie A: balkons",
+      "A-gemeenschappelijk": "Categorie A: gemeenschappelijke ruimtes",
+      "B": "Categorie B: kantoorruimtes",
+      "B-verkeer": "Categorie B: omsloten verkeersruimte",
+      "C-verkeer": "Categorie C: omsloten verkeersruimte",
+      "C1": "Categorie C1: ruimtes met tafels",
+      "C2": "Categorie C2: ruimtes met vaste zitplaatsen",
+      "C3": "Categorie C3: ruimtes zonder obstakels",
+      "C4": "Categorie C4: ruimtes voor lichamelijke activiteiten",
+      "C5": "Categorie C5: ruimtes voor grote menigten",
+      "D-verkeer": "Categorie D: omsloten verkeersruimte",
+      "D1": "Categorie D1: detailhandel",
+      "D2": "Categorie D2: warenhuizen",
+      "E": "Categorie E: opslagruimtes",
+      "H-dak": "Categorie H: daken"
+    },
+    "combinatie": {
+      "buitengewoon": "Buitengewoon",
+      "karakteristiek": "Karakteristiek",
+      "frequent": "Frequent",
+      "quasi": "Quasi-Blijvend",
+      "nietGebruikt": "niet gebruikt"
+    },
+    "terrein": {
+      "1": "kust",
+      "2": "onbebouwd",
+      "3": "bebouwd"
+    }
+  },
+  "gewichten": {
+    "groepen": {
+      "vloerelementen": "Vloerelementen",
+      "bestaand": "Bestaande vloer- en dakplaten",
+      "dakelementen": "Dakelementen",
+      "daktuin": "Daktuin",
+      "hsb": "Houtskeletbouw",
+      "glas": "Glazen puien en daken",
+      "steenachtig": "Steenachtige materialen",
+      "metalen": "Metalen",
+      "afwerking": "Afwerking"
+    },
+    "lagen": {
+      "kanaalplaat": "kanaalplaatvloer {h} mm",
+      "kanaalplaatVerzwaard": "kanaalplaatvloer verzwaard {h} mm",
+      "kernactivering": "kanaalplaatvloer met betonkernactivering {h} mm",
+      "combinatievloer": "combinatievloer, beton met EPS-vulelementen",
+      "ribcassette": "ribcassettevloer",
+      "gipsvezel": "gipsvezel vloerelement 2×12,5 mm + houtwol",
+      "renovatieDroog": "renovatievloer met EPS-elementen, droge afwerking",
+      "renovatieHalfdroog": "renovatievloer met EPS-elementen, halfdroge afwerking",
+      "renovatieStandaard": "renovatievloer met EPS-elementen, standaard afwerking",
+      "houtvezelcement": "houtvezelcement dakplaten 100 mm",
+      "bims": "bimsbetonplaten",
+      "dakpaneel": "geïsoleerd stalen dakpaneel, grote overspanning",
+      "zonnepanelenHellend": "zonnepanelen op hellend dak",
+      "zonnepanelenPlat": "zonnepanelen op plat dak, met ballast",
+      "sedum": "mos-sedumvegetatie",
+      "substraat": "substraat",
+      "granulaat": "mineraal granulaat",
+      "zand": "zand",
+      "gipsplaat": "gipsplaat",
+      "osb": "OSB/3",
+      "hpl": "wandpaneel natte ruimte (HPL)",
+      "stijlwerk": "HSB-stijlwerk, vulling 9%",
+      "isolatie": "isolatie",
+      "glasPakket": "glas, totale glasdikte 25 mm",
+      "glasStijlen": "stijlen 67×120 mm, 4 m¹ per m²",
+      "betonInSitu": "beton, ter plaatse gestort",
+      "betonPrefab": "beton, prefab",
+      "kalkzandsteen": "kalkzandsteen",
+      "metselwerk": "metselwerk",
+      "gipsblokken": "gipsblokken",
+      "kleiblokken": "poreuze kleiblokken",
+      "grind": "grind",
+      "staal": "staal",
+      "aluminium": "aluminium",
+      "gipskarton": "gipskartonplaat",
+      "gips": "gips",
+      "cementdekvloer": "cementdekvloer",
+      "glas": "glas"
+    },
+    "opmerkingen": {
+      "woningscheidend": "woningscheidend",
+      "afschot": "dak met afschot",
+      "beplanting": "voor beplanting",
+      "drainage": "drainagelaag",
+      "stijlwerk": "0,100 m × 5,0 kN/m³ × 9%",
+      "glasStijlen": "0,067 × 0,120 m × 4,0 kN/m³ × 4 m¹/m²"
+    },
+    "opbouwen": {
+      "glazenDak": "Glazen dak",
+      "hsbGipsplaat": "HSB-binnenwand met gipsplaat",
+      "hsbNatteRuimte": "HSB-binnenwand natte ruimte",
+      "glazenPui": "Glazen pui"
+    },
+    "dikteInvullen": "dikte invullen"
+  },
+  "template": {
+    "ingebouwdNaam": "Standaardrapport",
+    "zonderNaam": "Rapporttemplate",
+    "eigenLabel": "Tekst uit het template",
+    "nieuwHoofdstuk": "Nieuw hoofdstuk",
+    "nieuweParagraaf": "Nieuwe paragraaf",
+    "nieuwTekstblok": "Nieuw tekstblok"
+  },
+  "normen": {
+    "grootheden": {
+      "vb0": "Fundamentele waarde van de basiswindsnelheid",
+      "sk": "Karakteristieke sneeuwbelasting op de grond",
+      "agr": "Referentie-piekgrondversnelling"
+    },
+    "TWEEDE_GENERATIE_TEKST": "Tweede generatie Eurocodes (EN 1990:2023 e.v.)",
+    "landen": {
+      "NL": {
+        "naam": "Nederland",
+        "normenTekst": "NEN-EN 1990 t/m 1997",
+        "tekst": "Het Bbl verwijst naar de normen; de edities staan in bijlage II van de Omgevingsregeling, en die tellen juridisch.",
+        "opmerking": "Het Bbl wijst NEN-EN 1998 niet aan. NPR 9998 is beperkt tot Noordoost-Nederland.",
+        "opmerking2": "Het Bbl wijst geen aardbevingsnorm aan; voor Noordoost-Nederland zie NPR 9998."
+      },
+      "EUROCODE": {
+        "naam": "Eurocode zonder nationale bijlage",
+        "normenTekst": "EN 1990 t/m EN 1998",
+        "tekst": "Geen nationale keuzes. De aanbevolen waarden gelden; veel waarden, zoals wind en sneeuw, staan alleen in een nationale bijlage en moet je invullen."
+      },
+      "AT": {
+        "naam": "Oostenrijk",
+        "normenTekst": "ÖNORM EN 1990 t/m 1998 met ÖNORM B",
+        "tekst": "OIB-Richtlinie 1 verwijst naar ÖNORM EN 1990 met ÖNORM B 1990-1 en is bindend via de deelstaten.",
+        "qb0": "Basisstuwdruk"
+      },
+      "AU": {
+        "naam": "Australië",
+        "normenTekst": "NCC 2025, AS/NZS 1170",
+        "tekst": "De ABCB geeft NCC 2025 uit, die wettelijke kracht krijgt via wetgeving per staat of territorium; de data verschillen per staat.",
+        "regio": "Windregio",
+        "VR": "Regionale windsnelheid",
+        "sg": "Sneeuwbelasting op de grond",
+        "Z": "Gevarenfactor"
+      },
+      "BE": {
+        "naam": "België",
+        "normenTekst": "NBN EN 1990 t/m 1998 met ANB",
+        "tekst": "NBN stelt dat een berekening zonder ANB juridisch niet geldig is; een Belgisch bouwbesluit is niet gevonden."
+      },
+      "CA": {
+        "naam": "Canada",
+        "normenTekst": "NBC 2025",
+        "tekst": "NRC geeft NBC 2025 uit (16e editie), een modelcode die pas wettelijk geldt als een provincie of territorium hem vaststelt.",
+        "q": "Referentiestuwdruk, 1/500",
+        "Ss": "Sneeuwbelasting op de grond, 1/1000",
+        "Sr": "Bijbehorende regenbelasting, 1/1000",
+        "PGA": "Piekgrondversnelling",
+        "PGV": "Piekgrondsnelheid",
+        "SaT": "Spectrale versnelling"
+      },
+      "CH": {
+        "naam": "Zwitserland",
+        "normenTekst": "SIA 260:2013, SIA 261:2020",
+        "tekst": "SIA geeft de constructienormen uit; de juridische status is niet vastgesteld. BAFU vraagt om te bouwen volgens de geldende normen.",
+        "qp0": "Referentiewaarde van de stuwdruk",
+        "h0": "Referentiehoogte",
+        "zone": "Aardbevingszone (Z1a t/m Z3b)",
+        "agd": "Rekenwaarde grondversnelling",
+        "baugrund": "Grondklasse"
+      },
+      "DE": {
+        "naam": "Duitsland",
+        "normenTekst": "DIN EN 1990 t/m 1998 met /NA, MVV TB 2025/1",
+        "tekst": "MVV TB 2025/1 is een model van DIBt dat pas geldt als een deelstaat het bekendmaakt. MVV TB is de editie die daar staat; DIN is de nieuwste in de DIN-catalogus.",
+        "opmerking": "DIN noemt ook DIN EN 1990/NA/A1:2024-05.",
+        "tekst2": "MVV TB 2025/1 noemt alleen DIN 4149:2005-04.",
+        "windzone": "Windzone",
+        "qb0": "Basisstuwdruk",
+        "schneelastzone": "Sneeuwbelastingzone",
+        "erdbebenzone": "Aardbevingszone",
+        "untergrund": "Geologische ondergrondklasse"
+      },
+      "DK": {
+        "naam": "Denemarken",
+        "normenTekst": "DS/EN 1990 t/m 1998 met DK NA",
+        "tekst": "BR18, hoofdstuk 15, is wettelijk en verwijst naar de Eurocodes met DK NA, alleen de eerste generatie.",
+        "ag": "Rekenwaarde grondversnelling"
+      },
+      "ES": {
+        "naam": "Spanje",
+        "normenTekst": "CTE DB SE, NCSE-02, Código Estructural",
+        "tekst": "Wettelijk gelden CTE, NCSE-02 en de Código Estructural; die laatste staat de Eurocodes toe met een nationale bijlage van het ministerie.",
+        "qb": "Basiswaarde van de stuwdruk",
+        "vb": "Basiswindsnelheid",
+        "ab": "Basisversnelling",
+        "K": "Bijdragecoëfficiënt"
+      },
+      "FI": {
+        "naam": "Finland",
+        "normenTekst": "SFS-EN 1990 t/m 1997 met nationale keuzes",
+        "tekst": "Besluit 477/2014: de Eurocodes met de nationale keuzes van het milieuministerie voldoen; andere methoden mogen als ze aan dezelfde eisen voldoen.",
+        "opmerking": "Geen nationale bijlage.",
+        "opmerking2": "Aardbevingsontwerp alleen op verzoek van de opdrachtgever, volgens de betonrichtlijn van het ministerie."
+      },
+      "FR": {
+        "naam": "Frankrijk",
+        "normenTekst": "NF EN 1990 t/m 1998 met nationale bijlagen",
+        "tekst": "AFNOR noemt de Eurocodes vrijwillig; alleen aardbeving is wettelijk aangewezen (arrêté van 22-10-2010, dat NF EN 1998-1/NA 2007-12 noemt).",
+        "zone": "Seismische zone (1 t/m 5)",
+        "agr": "Referentie-piekgrondversnelling"
+      },
+      "GB": {
+        "naam": "Verenigd Koninkrijk",
+        "normenTekst": "BS EN 1990 t/m 1998 met Britse nationale bijlagen",
+        "tekst": "Approved Document A (Engeland) noemt BS EN met UK NA als praktische richtlijn en laat andere wegen toe. Schotland, Wales en Noord-Ierland zijn niet nagekeken.",
+        "vbmap": "Kaartwindsnelheid",
+        "PGA": "Piekgrondversnelling (kaarten in PD 6698)"
+      },
+      "IE": {
+        "naam": "Ierland",
+        "normenTekst": "I.S. EN 1990 t/m 1997 met Ierse nationale bijlagen",
+        "tekst": "Technical Guidance Document A (2012) noemt de Eurocodes met de Ierse NA als praktische richtlijn voor Part A.",
+        "opmerking": "Geen nationale bijlage gevonden.",
+        "vbmap": "Fundamentele basiswindsnelheid",
+        "opmerking2": "NSAI rekent heel Ierland tot zeer lage seismiciteit (voorwoord bij I.S. EN 1998-5)."
+      },
+      "IN": {
+        "naam": "India",
+        "normenTekst": "IS 875, IS 1893, IS 456, IS 800",
+        "tekst": "BIS noemt de National Building Code een modelcode voor overheden en lokale besturen; hoe bindend die is, hangt af van lokale verordeningen. De opvolger is SP 7:2026, waarvan de verwijzingen niet zijn gelezen.",
+        "tekst2": "De lijst van BIS toont 2016, terwijl een ander BIS-record een editie 2025 met dezelfde titel heeft; welke geldt, is nog te bevestigen.",
+        "Vb": "Basiswindsnelheid",
+        "s0": "Karakteristieke sneeuwbelasting op de grond",
+        "Z": "Zonefactor van de seismische zone"
+      },
+      "IT": {
+        "naam": "Italië",
+        "normenTekst": "NTC 2018 (DM 17-01-2018)",
+        "tekst": "Wettelijk gelden NTC 2018 en Circolare n. 7/2019; de Eurocodes met Appendici Nazionali gelden alleen als documenten van aangetoonde waarde (hoofdstuk 1 en 12).",
+        "vb0": "Basisreferentiesnelheid op zeeniveau",
+        "qsk": "Referentiewaarde sneeuwbelasting op de grond",
+        "ag": "Maximale horizontale versnelling",
+        "Fo": "Spectrumfactor",
+        "TC": "Referentieperiode"
+      },
+      "NO": {
+        "naam": "Noorwegen",
+        "normenTekst": "NS-EN 1990 t/m 1998 met NA",
+        "tekst": "TEK17 § 10-2 is wettelijk: de Eurocodes met NA voldoen, alternatieven moeten gelijkwaardig zijn aangetoond."
+      },
+      "NZ": {
+        "naam": "Nieuw-Zeeland",
+        "normenTekst": "B1/VM1 (2e editie), AS/NZS 1170, NZS 1170.5",
+        "tekst": "MBIE beheert de wettelijke Building Code; B1/VM1, tweede editie (28-07-2025), is één manier om naleving aan te tonen. TS 1170.5:2025 is een alternatieve weg, NZS 1170.5:2004 blijft de aangewezen norm.",
+        "regio": "Windregio",
+        "VR": "Regionale windsnelheid",
+        "sg": "Sneeuwbelasting op de grond",
+        "Z": "Gevarenfactor"
+      },
+      "PL": {
+        "naam": "Polen",
+        "normenTekst": "PN-EN 1990 t/m 1997 met NA",
+        "tekst": "§ 204 van de Warunki techniczne is wettelijk: de veiligheid geldt als vervuld bij voldoen aan de Poolse normen voor ontwerp. De laatste consolidatie is niet nagekeken.",
+        "opmerking": "Oorspronkelijke taalversie; geen nationale bijlage in de lijst van PKN.",
+        "opmerking2": "PKN meldt geen vertaling wegens de aseismische ligging van Polen."
+      },
+      "SE": {
+        "naam": "Zweden",
+        "normenTekst": "BFS 2024:6, SS-EN 1990 t/m 1997",
+        "tekst": "Wettelijk geldt BFS 2024:6 (sinds 01-07-2025, in plaats van EKS); de Eurocodes met de Zweedse NA zijn een erkende route via de algemene adviezen daarin. De waarden van Boverket gaan voor.",
+        "opmerking": "Bestaat, maar staat niet in de lijst van BFS 2024:6.",
+        "vb": "Referentiewindsnelheid",
+        "S0": "Karakteristieke sneeuwbelasting op de grond",
+        "opmerking2": "BFS 2024:6 noemt geen grootheid voor aardbeving; de status van Eurocode 8 in Zweden is niet vastgesteld."
+      },
+      "US": {
+        "naam": "Verenigde Staten",
+        "normenTekst": "IBC 2024, ASCE/SEI 7-22",
+        "tekst": "ICC geeft de IBC 2024 uit, die pas geldt als een staat of gemeente hem vaststelt. Edities verschillen per staat, en sommige staten hebben geen IBC voor de hele staat.",
+        "V": "Basiswindsnelheid",
+        "pg": "Sneeuwbelasting op de grond",
+        "SS": "Kaartversnelling, korte periode",
+        "S1": "Kaartversnelling, 1 s",
+        "SDS": "Rekenversnelling, korte periode",
+        "SD1": "Rekenversnelling, 1 s"
+      }
+    },
+    "en1990": {
+      "factoren": {
+        "1": "Buitengewoon(6.11a/b)",
+        "2": "Karakteristiek(6.14b)",
+        "3": "Quasi-Blijvend(6.16b)"
+      },
+      "psi": {
+        "1": "Categorie A: woon- en verblijfsruimtes",
+        "2": "Categorie B: kantoorruimtes",
+        "3": "Categorie C: bijeenkomstruimtes",
+        "4": "Categorie D: winkelruimtes",
+        "5": "Categorie E: opslagruimtes",
+        "6": "Categorie F: verkeer, voertuig tot 30 kN",
+        "7": "Categorie G: verkeer, voertuig 30 tot 160 kN",
+        "8": "Categorie H: daken",
+        "9": "Sneeuw: Finland, IJsland, Noorwegen, Zweden",
+        "10": "Sneeuw: elders, H boven 1000 m",
+        "11": "Sneeuw: elders, H tot 1000 m",
+        "12": "Wind",
+        "13": "Temperatuur (geen brand)"
+      }
+    },
+    "locatiewaarde": "Locatiewaarde (zie de norm)"
+  }
+}

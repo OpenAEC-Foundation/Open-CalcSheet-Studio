@@ -1,5 +1,5 @@
 import i18next from "i18next";
-import { defaultStyles } from "@ifc-calc/core";
+import { defaultStyles, type EvalOpties } from "@ifc-calc/core";
 import type { Exemplaar } from "../../store/projectStore";
 import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal-includes";
 import { bronVoorUitvoer } from "../../templates/vertalingen";
@@ -9,6 +9,7 @@ import { rekenUitwerking, type CanvasUitwerking } from "./canvasRekenen";
 import { isJupyterBlad } from "../../store/jupyterBlad";
 import { werkmapHtml } from "./jupyterPapier";
 import { papier } from "./pdfBlad";
+import { scopeMetVerwijzingen, verwezenBladen } from "../../rekenen/verwijzingen";
 
 /*
  * Een rekenblad doorrekenen voor op papier.
@@ -46,12 +47,19 @@ export interface DoorgerekendBlad {
  * Een blad dat niet doorrekent houdt de rest van de uitdraai niet tegen: het
  * krijgt een rode regel met de fout, en de andere bladen komen gewoon op papier.
  */
-export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>, taal: string = i18next.language): DoorgerekendBlad {
+export function rekenBladDoor(
+  ex: Exemplaar,
+  scope: Record<string, unknown>,
+  taal: string = i18next.language,
+  evalOpties: EvalOpties = {},
+  /** Alle bladen van het project, voor waarden uit een ander blad (#1.R_paal). */
+  alle: readonly Exemplaar[] = [],
+): DoorgerekendBlad {
   // Een aangemelde soort rekent niets: geen uitwerking, geen UC. De naam van de soort
   // staat in de kolom grondslag van het overzicht; de inhoud tekent de soort zelf.
   const soort = bladSoortVan(ex);
   if (soort) {
-    return { html: "", resultaat: { titel: ex.naam, norm: soort.soortTekst(taal), uc: null, voldoet: null } };
+    return { html: "", resultaat: { titel: ex.naam, norm: soort.soortTekst(taal, ex), uc: null, voldoet: null } };
   }
   // Een Jupyter-blad rekent hier ook niets: de uitwerking komt uit de opgeslagen uitvoer.
   if (isJupyterBlad(ex)) {
@@ -69,9 +77,11 @@ export function rekenBladDoor(ex: Exemplaar, scope: Record<string, unknown>, taa
   let eenheden: CanvasUitwerking[] | undefined;
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
   try {
-    const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls };
+    // De eigen eenheden van het project gelden al bij het lezen (ParseOptions.eenheden).
+    const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls, eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam) };
     const uitvoer = bronVoorUitvoer(ex.source, taal);
-    const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, scope, opties, uitvoer.namen);
+    const metRefs = scopeMetVerwijzingen(ex.source, ex.waarden, scope, verwezenBladen(ex.source, ex.waarden, alle), opties, evalOpties);
+    const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, metRefs, opties, uitvoer.namen, evalOpties);
     html = uitwerking.html;
     eenheden = uitwerking.eenheden;
     resultaat = leesResultaat(uitwerking.nodes, ex.naam);

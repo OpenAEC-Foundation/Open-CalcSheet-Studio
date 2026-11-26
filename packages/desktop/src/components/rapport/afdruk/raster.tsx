@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react";
+import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
 import { tekstRegels, vulIn, type Invulwaarden } from "../../../rapport/invullen";
 
 /*
@@ -99,8 +100,13 @@ export function Index({ t }: { t: string }) {
 
 type Eenheidnaam = "kN/m2" | "kN/m1" | "kN/m3" | "kN" | "m" | "min";
 
-/** Een eenheid tussen haken, met de macht als echte exponent: [kN/m²]. */
+/**
+ * Een eenheid tussen haken, met de macht als echte exponent: [kN/m²]. In het eenhedenstelsel
+ * van het project de eenheid van het stelsel ([psf]); de waarde ernaast rekent mee om (`fe`, `ne`).
+ */
 export function Eenheid({ e }: { e: Eenheidnaam }) {
+  const eenheden = useBeeldEenheden();
+  if (eenheden.doel(e)) return <>[{eenheden.eenheid(e)}]</>;
   const [basis, macht] = e.split(/(?=\d$)/);
   return (
     <>

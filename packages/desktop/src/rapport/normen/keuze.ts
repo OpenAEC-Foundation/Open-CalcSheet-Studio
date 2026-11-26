@@ -11,7 +11,7 @@
  * (`nlTabellen`). Daarbuiten komt geen getal uit normwaarden.ts op papier, ook niet als
  * standaardwaarde: wat niet is ingevuld, blijft leeg.
  */
-import { inTaal } from "../meertalig.ts";
+import { inTaal, mt } from "../meertalig.ts";
 import {
   inNotatie, leesLand, MEEGELEVERD, standaardBevestiging, standaardMaterialen, standaardVervormingen, standaardWindcoefficienten,
   type LokaleInvoer, type Rapport,
@@ -117,7 +117,7 @@ export function groothedenVan(land: Land, onderwerp: LocatieOnderwerp): readonly
   return [{
     id: "vrij",
     symbool: "",
-    naam: { en: "Location value (see the standard)", nl: "Locatiewaarde (zie de norm)" },
+    naam: mt("normen.locatiewaarde"),
     eenheid: "",
     url: land.normen[onderwerp].url,
     bevestigd: false,

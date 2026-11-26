@@ -17,7 +17,7 @@
  * Elke regel moet op papier passen (ook dat bewaakt de controle): de aanduiding en de editie
  * staan samen op één regel van zeven kolommen.
  */
-import type { Meertalig } from "../meertalig.ts";
+import { mt, type Meertalig } from "../meertalig.ts";
 
 export type Onderwerp = "belastingen" | "wind" | "sneeuw" | "aardbeving" | "beton" | "staal" | "hout" | "metselwerk" | "funderingen";
 
@@ -78,8 +78,8 @@ const n = (aanduiding: string, uitgever: string, editie: string | null, url: str
   aanduiding, uitgever, editie, url, ...(opmerking ? { opmerking } : {}),
 });
 
-const g = (id: string, symbool: string, en: string, nl: string, eenheid: string, url: string, bevestigd = true): Grootheid => ({
-  id, symbool, naam: { en, nl }, eenheid, url, bevestigd,
+const g = (id: string, symbool: string, naam: Meertalig, eenheid: string, url: string, bevestigd = true): Grootheid => ({
+  id, symbool, naam, eenheid, url, bevestigd,
 });
 
 // ── Eurocode: de grootheden zoals de EN ze noemt ────────────────────────────
@@ -89,12 +89,12 @@ const JRC_WIND = "https://eurocodes.jrc.ec.europa.eu/sites/default/files/2022-06
 const JRC_SNEEUW = "https://eurocodes.jrc.ec.europa.eu/sites/default/files/2021-12/handbook3.pdf";
 const JRC_AARDBEVING = "https://eurocodes.jrc.ec.europa.eu/sites/default/files/2022-06/EN1998_1_Carvalho.pdf";
 
-const VB0 = { en: "Fundamental value of the basic wind velocity", nl: "Fundamentele waarde van de basiswindsnelheid" };
-const SK = { en: "Characteristic ground snow load", nl: "Karakteristieke sneeuwbelasting op de grond" };
-const AGR = { en: "Reference peak ground acceleration", nl: "Referentie-piekgrondversnelling" };
-const vb0 = (url: string, bevestigd = true) => g("v_b0", "v_b,0", VB0.en, VB0.nl, "m/s", url, bevestigd);
-const sk = (url: string, bevestigd = true) => g("s_k", "s_k", SK.en, SK.nl, "kN/m²", url, bevestigd);
-const agr = (url: string, bevestigd = true) => g("a_gR", "a_gR", AGR.en, AGR.nl, "m/s²", url, bevestigd);
+const VB0 = mt("normen.grootheden.vb0");
+const SK = mt("normen.grootheden.sk");
+const AGR = mt("normen.grootheden.agr");
+const vb0 = (url: string, bevestigd = true) => g("v_b0", "v_b,0", VB0, "m/s", url, bevestigd);
+const sk = (url: string, bevestigd = true) => g("s_k", "s_k", SK, "kN/m²", url, bevestigd);
+const agr = (url: string, bevestigd = true) => g("a_gR", "a_gR", AGR, "m/s²", url, bevestigd);
 
 export const GEEN_BIJLAGE = "EUROCODE";
 
@@ -123,10 +123,7 @@ export const TWEEDE_GENERATIE: Readonly<Record<Onderwerp, Norm>> = {
 };
 
 /** Op het voorblad bij de tweede generatie; de nationale bijlagen moeten daar nog bij. */
-export const TWEEDE_GENERATIE_TEKST: Meertalig = {
-  en: "Second-generation Eurocodes (EN 1990:2023 and further)",
-  nl: "Tweede generatie Eurocodes (EN 1990:2023 e.v.)",
-};
+export const TWEEDE_GENERATIE_TEKST: Meertalig = mt("normen.TWEEDE_GENERATIE_TEKST");
 
 // ── De landen ───────────────────────────────────────────────────────────────
 
@@ -161,24 +158,18 @@ const bis = (commissie: string) => `https://www.services.bis.gov.in/php/BIS_2.0/
 export const LANDEN: readonly Land[] = [
   {
     code: "NL",
-    naam: { en: "Netherlands", nl: "Nederland" },
+    naam: mt("normen.landen.NL.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "NEN-EN 1990 to 1997", nl: "NEN-EN 1990 t/m 1997" },
+    normenTekst: mt("normen.landen.NL.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "The Bbl refers to the standards; the editions are in Annex II of the Omgevingsregeling, and those count legally.",
-        nl: "Het Bbl verwijst naar de normen; de edities staan in bijlage II van de Omgevingsregeling, en die tellen juridisch.",
-      },
+      tekst: mt("normen.landen.NL.tekst"),
       url: OMGEVINGSREGELING,
     },
     normen: {
       belastingen: n("NEN-EN 1990; NEN-EN 1991-1-1", "NEN", "2019 + A1:2019 C2:2019 + NB:2019; 2019 + C1:2019 + NB:2019", OMGEVINGSREGELING),
       wind: n("NEN-EN 1991-1-4", "NEN", "2019 + A1 + C2:2011 + NB:2019", OMGEVINGSREGELING),
       sneeuw: n("NEN-EN 1991-1-3", "NEN", "2019 + C1:2019 + A1:2019 + NB:2019", OMGEVINGSREGELING),
-      aardbeving: n("NPR 9998", "NEN", "2020", "https://www.nen.nl/bouw/constructieve-veiligheid/aardbevingsbestendig-bouwen", {
-        en: "The Bbl does not designate NEN-EN 1998. NPR 9998 is limited to the north-east of the Netherlands.",
-        nl: "Het Bbl wijst NEN-EN 1998 niet aan. NPR 9998 is beperkt tot Noordoost-Nederland.",
-      }),
+      aardbeving: n("NPR 9998", "NEN", "2020", "https://www.nen.nl/bouw/constructieve-veiligheid/aardbevingsbestendig-bouwen", mt("normen.landen.NL.opmerking")),
       beton: n("NEN-EN 1992-1-1", "NEN", "2011 + C2:2011 + A1:2015 + NB:2016 + A1:2020", OMGEVINGSREGELING),
       staal: n("NEN-EN 1993-1-1", "NEN", "2006 + C2 + A1:2016 + NB:2016", OMGEVINGSREGELING),
       hout: n("NEN-EN 1995-1-1", "NEN", "2005 + C1 + A1:2011 + C1:2012 + A2:2014 + NB:2013", OMGEVINGSREGELING),
@@ -191,23 +182,17 @@ export const LANDEN: readonly Land[] = [
       aardbeving: {
         grootheden: [],
         geenGrootheid: true,
-        opmerking: {
-          en: "No seismic standard is designated by the Bbl; for the north-east of the Netherlands see NPR 9998.",
-          nl: "Het Bbl wijst geen aardbevingsnorm aan; voor Noordoost-Nederland zie NPR 9998.",
-        },
+        opmerking: mt("normen.landen.NL.opmerking2"),
       },
     },
   },
   {
     code: GEEN_BIJLAGE,
-    naam: { en: "Eurocode without national annex", nl: "Eurocode zonder nationale bijlage" },
+    naam: mt("normen.landen.EUROCODE.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "EN 1990 to EN 1998", nl: "EN 1990 t/m EN 1998" },
+    normenTekst: mt("normen.landen.EUROCODE.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "No national choices. The recommended values apply; many values, such as wind and snow, only exist in a national annex and have to be entered.",
-        nl: "Geen nationale keuzes. De aanbevolen waarden gelden; veel waarden, zoals wind en sneeuw, staan alleen in een nationale bijlage en moet je invullen.",
-      },
+      tekst: mt("normen.landen.EUROCODE.tekst"),
       url: `${JRC}/eurocode-basis-structural-design`,
     },
     normen: {
@@ -229,14 +214,11 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "AT",
-    naam: { en: "Austria", nl: "Oostenrijk" },
+    naam: mt("normen.landen.AT.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "ÖNORM EN 1990 to 1998 with ÖNORM B", nl: "ÖNORM EN 1990 t/m 1998 met ÖNORM B" },
+    normenTekst: mt("normen.landen.AT.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "OIB-Richtlinie 1 refers to ÖNORM EN 1990 with ÖNORM B 1990-1 and is binding through the federal states.",
-        nl: "OIB-Richtlinie 1 verwijst naar ÖNORM EN 1990 met ÖNORM B 1990-1 en is bindend via de deelstaten.",
-      },
+      tekst: mt("normen.landen.AT.tekst"),
       url: "https://www.oib.or.at/kernaufgaben/oib-richtlinien/",
     },
     normen: {
@@ -255,7 +237,7 @@ export const LANDEN: readonly Land[] = [
       wind: {
         grootheden: [
           vb0("https://ulb-dok.uibk.ac.at/download/pdf/6011482.pdf", false),
-          g("q_b0", "q_b,0", "Basic velocity pressure", "Basisstuwdruk", "kN/m²", "https://ulb-dok.uibk.ac.at/download/pdf/6011482.pdf", false),
+          g("q_b0", "q_b,0", mt("normen.landen.AT.qb0"), "kN/m²", "https://ulb-dok.uibk.ac.at/download/pdf/6011482.pdf", false),
         ],
       },
       sneeuw: { grootheden: [sk("https://www.wko.at/oe/gewerbe-handwerk/dachdecker/grundregelndachdeckerhandwerkeendfassung2013.pdf")] },
@@ -265,14 +247,11 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "AU",
-    naam: { en: "Australia", nl: "Australië" },
+    naam: mt("normen.landen.AU.naam"),
     stelsel: "eigen",
-    normenTekst: { en: "NCC 2025, AS/NZS 1170", nl: "NCC 2025, AS/NZS 1170" },
+    normenTekst: mt("normen.landen.AU.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "The ABCB publishes NCC 2025, which takes legal effect through state and territory legislation; dates differ per state.",
-        nl: "De ABCB geeft NCC 2025 uit, die wettelijke kracht krijgt via wetgeving per staat of territorium; de data verschillen per staat.",
-      },
+      tekst: mt("normen.landen.AU.tekst"),
       url: "https://ncc.abcb.gov.au/ncc-2025/ncc-2025-state-and-territory-adoption-information",
     },
     normen: {
@@ -289,25 +268,22 @@ export const LANDEN: readonly Land[] = [
     locatie: {
       wind: {
         grootheden: [
-          g("regio", "", "Wind region", "Windregio", "", "https://ncc.abcb.gov.au/editions/ncc-2022/adopted/housing-provisions/11-western-australia/23-changes-asnzs-117022021-and-40552021"),
-          g("V_R", "V_R", "Regional wind speed", "Regionale windsnelheid", "m/s", "https://ncc.abcb.gov.au/editions/ncc-2022/adopted/housing-provisions/11-western-australia/23-changes-asnzs-117022021-and-40552021"),
+          g("regio", "", mt("normen.landen.AU.regio"), "", "https://ncc.abcb.gov.au/editions/ncc-2022/adopted/housing-provisions/11-western-australia/23-changes-asnzs-117022021-and-40552021"),
+          g("V_R", "V_R", mt("normen.landen.AU.VR"), "m/s", "https://ncc.abcb.gov.au/editions/ncc-2022/adopted/housing-provisions/11-western-australia/23-changes-asnzs-117022021-and-40552021"),
         ],
       },
       // Alleen bevestigd via de Nieuw-Zeelandse toezichthouder, bij dezelfde gezamenlijke norm.
-      sneeuw: { grootheden: [g("s_g", "s_g", "Ground snow load", "Sneeuwbelasting op de grond", "kPa", "https://www.building.govt.nz/building-code-compliance/b-stability/b1-structure/minimum-ground-snow-loads-clarified", false)] },
-      aardbeving: { grootheden: [g("Z", "Z", "Hazard factor", "Gevarenfactor", "g", "https://aees.org.au/wp-content/uploads/2025/11/53.-Trevor-Allen.pdf")] },
+      sneeuw: { grootheden: [g("s_g", "s_g", mt("normen.landen.AU.sg"), "kPa", "https://www.building.govt.nz/building-code-compliance/b-stability/b1-structure/minimum-ground-snow-loads-clarified", false)] },
+      aardbeving: { grootheden: [g("Z", "Z", mt("normen.landen.AU.Z"), "g", "https://aees.org.au/wp-content/uploads/2025/11/53.-Trevor-Allen.pdf")] },
     },
   },
   {
     code: "BE",
-    naam: { en: "Belgium", nl: "België" },
+    naam: mt("normen.landen.BE.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "NBN EN 1990 to 1998 with ANB", nl: "NBN EN 1990 t/m 1998 met ANB" },
+    normenTekst: mt("normen.landen.BE.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "NBN states that a calculation without the ANB is not legally valid; no Belgian building decree was found.",
-        nl: "NBN stelt dat een berekening zonder ANB juridisch niet geldig is; een Belgisch bouwbesluit is niet gevonden.",
-      },
+      tekst: mt("normen.landen.BE.tekst"),
       url: NBN,
     },
     normen: {
@@ -331,14 +307,11 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "CA",
-    naam: { en: "Canada", nl: "Canada" },
+    naam: mt("normen.landen.CA.naam"),
     stelsel: "eigen",
-    normenTekst: { en: "NBC 2025", nl: "NBC 2025" },
+    normenTekst: mt("normen.landen.CA.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "NRC publishes NBC 2025 (16th edition), a model code that only applies by law once a province or territory adopts it.",
-        nl: "NRC geeft NBC 2025 uit (16e editie), een modelcode die pas wettelijk geldt als een provincie of territorium hem vaststelt.",
-      },
+      tekst: mt("normen.landen.CA.tekst"),
       url: "https://nrc-publications.canada.ca/eng/view/object/?id=adf1ad94-7ea8-4b08-a19f-653ebb7f45f6",
     },
     normen: {
@@ -353,19 +326,19 @@ export const LANDEN: readonly Land[] = [
       funderingen: n("NBC Div. B, Section 4.2", "NRC", "2025", CA_NBC),
     },
     locatie: {
-      wind: { grootheden: [g("q", "q", "Reference velocity pressure, 1/500", "Referentiestuwdruk, 1/500", "kPa", CA_NBC)], waardenUrl: CA_NBC },
+      wind: { grootheden: [g("q", "q", mt("normen.landen.CA.q"), "kPa", CA_NBC)], waardenUrl: CA_NBC },
       sneeuw: {
         grootheden: [
-          g("S_s", "S_s", "Ground snow load, 1/1000", "Sneeuwbelasting op de grond, 1/1000", "kPa", CA_NBC),
-          g("S_r", "S_r", "Associated rain load, 1/1000", "Bijbehorende regenbelasting, 1/1000", "kPa", CA_NBC),
+          g("S_s", "S_s", mt("normen.landen.CA.Ss"), "kPa", CA_NBC),
+          g("S_r", "S_r", mt("normen.landen.CA.Sr"), "kPa", CA_NBC),
         ],
         waardenUrl: CA_NBC,
       },
       aardbeving: {
         grootheden: [
-          g("PGA", "PGA", "Peak ground acceleration", "Piekgrondversnelling", "g", CA_NBC),
-          g("PGV", "PGV", "Peak ground velocity", "Piekgrondsnelheid", "m/s", CA_NBC),
-          g("S_aT", "S_a(T)", "Spectral acceleration", "Spectrale versnelling", "g", CA_NBC),
+          g("PGA", "PGA", mt("normen.landen.CA.PGA"), "g", CA_NBC),
+          g("PGV", "PGV", mt("normen.landen.CA.PGV"), "m/s", CA_NBC),
+          g("S_aT", "S_a(T)", mt("normen.landen.CA.SaT"), "g", CA_NBC),
         ],
         waardenUrl: "https://doi.org/10.23687/b1bd3cf0-0672-47f4-8bfa-290ae75fde9b",
       },
@@ -373,14 +346,11 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "CH",
-    naam: { en: "Switzerland", nl: "Zwitserland" },
+    naam: mt("normen.landen.CH.naam"),
     stelsel: "eigen",
-    normenTekst: { en: "SIA 260:2013, SIA 261:2020", nl: "SIA 260:2013, SIA 261:2020" },
+    normenTekst: mt("normen.landen.CH.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "SIA publishes the structural standards; their legal status has not been established. BAFU asks for building according to the applicable standards.",
-        nl: "SIA geeft de constructienormen uit; de juridische status is niet vastgesteld. BAFU vraagt om te bouwen volgens de geldende normen.",
-      },
+      tekst: mt("normen.landen.CH.tekst"),
       url: "https://www.bafu.admin.ch/de/neubauten",
     },
     normen: {
@@ -395,18 +365,18 @@ export const LANDEN: readonly Land[] = [
       funderingen: n("SIA 267", "SIA", "2013", CH_SIA),
     },
     locatie: {
-      wind: { grootheden: [g("q_p0", "q_p0", "Reference value of the velocity pressure", "Referentiewaarde van de stuwdruk", "kN/m²", "https://www.bafu.admin.ch/dam/it/sd-web/0yizpSKcDtf1/duktile-erdbebenbemessung-von-holzbauwerken-kurzfassung.pdf")] },
+      wind: { grootheden: [g("q_p0", "q_p0", mt("normen.landen.CH.qp0"), "kN/m²", "https://www.bafu.admin.ch/dam/it/sd-web/0yizpSKcDtf1/duktile-erdbebenbemessung-von-holzbauwerken-kurzfassung.pdf")] },
       sneeuw: {
         grootheden: [
-          g("h_0", "h_0", "Reference height", "Referentiehoogte", "m", "https://www.schutz-vor-naturgefahren.ch/spezialist/naturgefahren/schnee.html"),
+          g("h_0", "h_0", mt("normen.landen.CH.h0"), "m", "https://www.schutz-vor-naturgefahren.ch/spezialist/naturgefahren/schnee.html"),
           sk("https://www.schutz-vor-naturgefahren.ch/spezialist/naturgefahren/schnee.html"),
         ],
       },
       aardbeving: {
         grootheden: [
-          g("zone", "", "Seismic zone (Z1a to Z3b)", "Aardbevingszone (Z1a t/m Z3b)", "", "https://www.esti.admin.ch/inhalte/pdf/Weisungen/Deutsch/ESTI_248_1220_d.pdf"),
-          g("a_gd", "a_gd", "Design ground acceleration", "Rekenwaarde grondversnelling", "m/s²", "https://www.esti.admin.ch/inhalte/pdf/Weisungen/Deutsch/ESTI_248_1220_d.pdf"),
-          g("baugrund", "", "Ground class", "Grondklasse", "", "https://www.esti.admin.ch/inhalte/pdf/Weisungen/Deutsch/ESTI_248_1220_d.pdf"),
+          g("zone", "", mt("normen.landen.CH.zone"), "", "https://www.esti.admin.ch/inhalte/pdf/Weisungen/Deutsch/ESTI_248_1220_d.pdf"),
+          g("a_gd", "a_gd", mt("normen.landen.CH.agd"), "m/s²", "https://www.esti.admin.ch/inhalte/pdf/Weisungen/Deutsch/ESTI_248_1220_d.pdf"),
+          g("baugrund", "", mt("normen.landen.CH.baugrund"), "", "https://www.esti.admin.ch/inhalte/pdf/Weisungen/Deutsch/ESTI_248_1220_d.pdf"),
         ],
         waardenUrl: "https://data.geo.admin.ch/browser/index.html#/collections/ch.bafu.gefahren-gefaehrdungszonen/items/gefahren-gefaehrdungszonen",
       },
@@ -414,27 +384,18 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "DE",
-    naam: { en: "Germany", nl: "Duitsland" },
+    naam: mt("normen.landen.DE.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "DIN EN 1990 to 1998 with /NA, MVV TB 2025/1", nl: "DIN EN 1990 t/m 1998 met /NA, MVV TB 2025/1" },
+    normenTekst: mt("normen.landen.DE.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "MVV TB 2025/1 is a model by DIBt that only applies once a federal state announces it. MVV TB means the edition listed there; DIN means the latest in the DIN catalogue.",
-        nl: "MVV TB 2025/1 is een model van DIBt dat pas geldt als een deelstaat het bekendmaakt. MVV TB is de editie die daar staat; DIN is de nieuwste in de DIN-catalogus.",
-      },
+      tekst: mt("normen.landen.DE.tekst"),
       url: DIBT,
     },
     normen: {
-      belastingen: n("DIN EN 1990/NA; DIN EN 1991-1-1/NA", "DIN", "2010-12; 2010-12 + A1:2015-05", "https://www.dinmedia.de/en/standard/din-en-1990-na-a1/373503452", {
-        en: "DIN also lists DIN EN 1990/NA/A1:2024-05.",
-        nl: "DIN noemt ook DIN EN 1990/NA/A1:2024-05.",
-      }),
+      belastingen: n("DIN EN 1990/NA; DIN EN 1991-1-1/NA", "DIN", "2010-12; 2010-12 + A1:2015-05", "https://www.dinmedia.de/en/standard/din-en-1990-na-a1/373503452", mt("normen.landen.DE.opmerking")),
       wind: n("DIN EN 1991-1-4/NA", "DIN", "2010-12 (MVV TB); 2024-08 (DIN)", "https://www.dinmedia.de/en/standard/din-en-1991-1-4-na/379080426"),
       sneeuw: n("DIN EN 1991-1-3/NA", "DIN", "2019-04", "https://www.dinmedia.de/en/standard/din-en-1991-1-3-na/301647243"),
-      aardbeving: n("DIN 4149 (MVV TB); DIN EN 1998-1/NA", "DIN", "2005-04; 2023-11", "https://www.dinmedia.de/de/norm/din-en-1998-1-na/368322990", {
-        en: "MVV TB 2025/1 only lists DIN 4149:2005-04.",
-        nl: "MVV TB 2025/1 noemt alleen DIN 4149:2005-04.",
-      }),
+      aardbeving: n("DIN 4149 (MVV TB); DIN EN 1998-1/NA", "DIN", "2005-04; 2023-11", "https://www.dinmedia.de/de/norm/din-en-1998-1-na/368322990", mt("normen.landen.DE.tekst2")),
       beton: n("DIN EN 1992-1-1/NA", "DIN", "2013-04 + A1:2015-12", "https://www.dinmedia.de/en/standard/din-en-1992-1-1-na/171217477"),
       staal: n("DIN EN 1993-1-1/NA", "DIN", "2018-12 (MVV TB); 2026-04 (DIN)", "https://www.dinmedia.de/en/standard/din-en-1993-1-1-na/356983440"),
       hout: n("DIN EN 1995-1-1/NA", "DIN", "2013-08", "https://www.dinmedia.de/en/standard/din-en-1995-1-1-na/188145635"),
@@ -444,22 +405,22 @@ export const LANDEN: readonly Land[] = [
     locatie: {
       wind: {
         grootheden: [
-          g("windzone", "", "Wind zone", "Windzone", "", "https://www.dibt.de/pdf_storage/2025/Z-38.5-337(1.38.5-16!25).pdf"),
-          g("q_b0", "q_b,0", "Basic velocity pressure", "Basisstuwdruk", "kN/m²", "https://www.dibt.de/pdf_storage/2025/Z-38.5-337(1.38.5-16!25).pdf"),
+          g("windzone", "", mt("normen.landen.DE.windzone"), "", "https://www.dibt.de/pdf_storage/2025/Z-38.5-337(1.38.5-16!25).pdf"),
+          g("q_b0", "q_b,0", mt("normen.landen.DE.qb0"), "kN/m²", "https://www.dibt.de/pdf_storage/2025/Z-38.5-337(1.38.5-16!25).pdf"),
         ],
         waardenUrl: `${DIBT_LIJST}/Windzonen_nach_Verwaltungsgrenzen.xlsx`,
       },
       sneeuw: {
         grootheden: [
-          g("schneelastzone", "", "Snow load zone", "Sneeuwbelastingzone", "", "https://www.dibt.de/pdf_storage/2025/Z-38.5-337(1.38.5-16!25).pdf"),
+          g("schneelastzone", "", mt("normen.landen.DE.schneelastzone"), "", "https://www.dibt.de/pdf_storage/2025/Z-38.5-337(1.38.5-16!25).pdf"),
           sk("https://www.dibt.de/pdf_storage/2025/Z-38.5-337(1.38.5-16!25).pdf"),
         ],
         waardenUrl: `${DIBT_LIJST}/Schneelastzonen_nach_Verwaltungsgrenzen.xlsx`,
       },
       aardbeving: {
         grootheden: [
-          g("erdbebenzone", "", "Seismic zone", "Aardbevingszone", "", `${DIBT_LIJST}/MVVTB_2025-1.pdf`),
-          g("untergrund", "", "Geological subsoil class", "Geologische ondergrondklasse", "", `${DIBT_LIJST}/MVVTB_2025-1.pdf`),
+          g("erdbebenzone", "", mt("normen.landen.DE.erdbebenzone"), "", `${DIBT_LIJST}/MVVTB_2025-1.pdf`),
+          g("untergrund", "", mt("normen.landen.DE.untergrund"), "", `${DIBT_LIJST}/MVVTB_2025-1.pdf`),
         ],
         waardenUrl: `${DIBT_LIJST}/Erdbebenzonen_Formular_Untergrundklassen.xlsx`,
       },
@@ -467,14 +428,11 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "DK",
-    naam: { en: "Denmark", nl: "Denemarken" },
+    naam: mt("normen.landen.DK.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "DS/EN 1990 to 1998 with DK NA", nl: "DS/EN 1990 t/m 1998 met DK NA" },
+    normenTekst: mt("normen.landen.DK.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "BR18, chapter 15, is legally binding and refers to the Eurocodes with DK NA, first generation only.",
-        nl: "BR18, hoofdstuk 15, is wettelijk en verwijst naar de Eurocodes met DK NA, alleen de eerste generatie.",
-      },
+      tekst: mt("normen.landen.DK.tekst"),
       url: DK_BRON,
     },
     normen: {
@@ -494,20 +452,17 @@ export const LANDEN: readonly Land[] = [
         waardenUrl: DK_BRON,
       },
       sneeuw: { grootheden: [sk(DK_BRON)], waardenUrl: DK_BRON },
-      aardbeving: { grootheden: [g("a_g", "a_g", "Design ground acceleration", "Rekenwaarde grondversnelling", "m/s²", DK_BRON)], waardenUrl: DK_BRON },
+      aardbeving: { grootheden: [g("a_g", "a_g", mt("normen.landen.DK.ag"), "m/s²", DK_BRON)], waardenUrl: DK_BRON },
     },
   },
   {
     code: "ES",
-    naam: { en: "Spain", nl: "Spanje" },
+    naam: mt("normen.landen.ES.naam"),
     // Wettelijk gelden CTE, NCSE-02 en Código Estructural; de Eurocodes met AN zijn toegestaan.
     stelsel: "eigen",
-    normenTekst: { en: "CTE DB SE, NCSE-02, Código Estructural", nl: "CTE DB SE, NCSE-02, Código Estructural" },
+    normenTekst: mt("normen.landen.ES.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "By law CTE, NCSE-02 and the Código Estructural apply; the Código Estructural allows the Eurocodes with a national annex published by the ministry.",
-        nl: "Wettelijk gelden CTE, NCSE-02 en de Código Estructural; die laatste staat de Eurocodes toe met een nationale bijlage van het ministerie.",
-      },
+      tekst: mt("normen.landen.ES.tekst"),
       url: "https://www.boe.es/buscar/doc.php?id=BOE-A-2021-13681",
     },
     normen: {
@@ -524,15 +479,15 @@ export const LANDEN: readonly Land[] = [
     locatie: {
       wind: {
         grootheden: [
-          g("q_b", "q_b", "Basic value of the dynamic pressure", "Basiswaarde van de stuwdruk", "kN/m²", ES_DB),
-          g("v_b", "v_b", "Basic wind velocity", "Basiswindsnelheid", "m/s", ES_DB),
+          g("q_b", "q_b", mt("normen.landen.ES.qb"), "kN/m²", ES_DB),
+          g("v_b", "v_b", mt("normen.landen.ES.vb"), "m/s", ES_DB),
         ],
       },
       sneeuw: { grootheden: [sk(ES_DB)] },
       aardbeving: {
         grootheden: [
-          g("a_b", "a_b", "Basic seismic acceleration", "Basisversnelling", "g", ES_NCSE),
-          g("K", "K", "Contribution coefficient", "Bijdragecoëfficiënt", "", ES_NCSE),
+          g("a_b", "a_b", mt("normen.landen.ES.ab"), "g", ES_NCSE),
+          g("K", "K", mt("normen.landen.ES.K"), "", ES_NCSE),
         ],
         waardenUrl: "https://www.ign.es/web/ign/portal/sis-peligrosidad-sismica",
       },
@@ -540,24 +495,18 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "FI",
-    naam: { en: "Finland", nl: "Finland" },
+    naam: mt("normen.landen.FI.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "SFS-EN 1990 to 1997 with national choices", nl: "SFS-EN 1990 t/m 1997 met nationale keuzes" },
+    normenTekst: mt("normen.landen.FI.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "Decree 477/2014: the Eurocodes with the national choices of the ministry of the environment comply; other methods may be used if they meet the same requirements.",
-        nl: "Besluit 477/2014: de Eurocodes met de nationale keuzes van het milieuministerie voldoen; andere methoden mogen als ze aan dezelfde eisen voldoen.",
-      },
+      tekst: mt("normen.landen.FI.tekst"),
       url: FI_BRON,
     },
     normen: {
       belastingen: n("SFS-EN 1990 (3/16); SFS-EN 1991-1-1 (4/16)", "Ympäristöministeriö", "2016; 2016", FI_BRON),
       wind: n("SFS-EN 1991-1-4 (7/16)", "Ympäristöministeriö", "2016", FI_BRON),
       sneeuw: n("SFS-EN 1991-1-3 (6/16)", "Ympäristöministeriö", "2016", FI_BRON),
-      aardbeving: n("SFS-EN 1998-1", "SFS", null, "https://www.eurocodes.fi/maanjaristysmitoitus/", {
-        en: "No national annex.",
-        nl: "Geen nationale bijlage.",
-      }),
+      aardbeving: n("SFS-EN 1998-1", "SFS", null, "https://www.eurocodes.fi/maanjaristysmitoitus/", mt("normen.landen.FI.opmerking")),
       beton: n("SFS-EN 1992-1-1", "Ympäristöministeriö", "2016", FI_BRON),
       staal: n("SFS-EN 1993-1-1", "Ympäristöministeriö", "2019", FI_BRON),
       hout: n("SFS-EN 1995-1-1", "Ympäristöministeriö", "2016", FI_BRON),
@@ -570,23 +519,17 @@ export const LANDEN: readonly Land[] = [
       aardbeving: {
         grootheden: [],
         geenGrootheid: true,
-        opmerking: {
-          en: "Seismic design only at the request of the client, according to the concrete guidance of the ministry.",
-          nl: "Aardbevingsontwerp alleen op verzoek van de opdrachtgever, volgens de betonrichtlijn van het ministerie.",
-        },
+        opmerking: mt("normen.landen.FI.opmerking2"),
       },
     },
   },
   {
     code: "FR",
-    naam: { en: "France", nl: "Frankrijk" },
+    naam: mt("normen.landen.FR.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "NF EN 1990 to 1998 with national annexes", nl: "NF EN 1990 t/m 1998 met nationale bijlagen" },
+    normenTekst: mt("normen.landen.FR.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "AFNOR describes the Eurocodes as voluntary; only the seismic part is designated by law (arrêté of 22-10-2010, which names NF EN 1998-1/NA 2007-12).",
-        nl: "AFNOR noemt de Eurocodes vrijwillig; alleen aardbeving is wettelijk aangewezen (arrêté van 22-10-2010, dat NF EN 1998-1/NA 2007-12 noemt).",
-      },
+      tekst: mt("normen.landen.FR.tekst"),
       url: "https://normalisation.afnor.org/thematiques/eurocodes/",
     },
     normen: {
@@ -606,8 +549,8 @@ export const LANDEN: readonly Land[] = [
       sneeuw: { grootheden: [sk("https://celene.univ-orleans.fr/pluginfile.php/534595/mod_resource/content/1/EC1_Neige.pdf", false)] },
       aardbeving: {
         grootheden: [
-          g("zone", "", "Seismicity zone (1 to 5)", "Seismische zone (1 t/m 5)", "", "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000029492692/2014-09-24"),
-          g("a_gr", "a_gr", "Reference peak ground acceleration", "Referentie-piekgrondversnelling", "m/s²", "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000029492692/2014-09-24"),
+          g("zone", "", mt("normen.landen.FR.zone"), "", "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000029492692/2014-09-24"),
+          g("a_gr", "a_gr", mt("normen.landen.FR.agr"), "m/s²", "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000029492692/2014-09-24"),
         ],
         waardenUrl: "https://www.georisques.gouv.fr",
       },
@@ -615,14 +558,11 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "GB",
-    naam: { en: "United Kingdom", nl: "Verenigd Koninkrijk" },
+    naam: mt("normen.landen.GB.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "BS EN 1990 to 1998 with UK National Annexes", nl: "BS EN 1990 t/m 1998 met Britse nationale bijlagen" },
+    normenTekst: mt("normen.landen.GB.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "Approved Document A (England) names BS EN with the UK NA as practical guidance and allows other routes. Scotland, Wales and Northern Ireland have not been checked.",
-        nl: "Approved Document A (Engeland) noemt BS EN met UK NA als praktische richtlijn en laat andere wegen toe. Schotland, Wales en Noord-Ierland zijn niet nagekeken.",
-      },
+      tekst: mt("normen.landen.GB.tekst"),
       url: "https://www.gov.uk/government/publications/structure-approved-document-a",
     },
     normen: {
@@ -637,36 +577,30 @@ export const LANDEN: readonly Land[] = [
       funderingen: n("NA+A2:2022 to BS EN 1997-1:2004+A1:2013", "BSI", "2022-02", `${BSI}/uk-national-annex-to-eurocode-7-geotechnical-design-general-rules-1`),
     },
     locatie: {
-      wind: { grootheden: [g("v_bmap", "v_b,map", "Map wind speed", "Kaartwindsnelheid", "m/s", "https://steelconstruction.info/upload/Wiki-Files/e/e7/SCI_P394.pdf")] },
+      wind: { grootheden: [g("v_bmap", "v_b,map", mt("normen.landen.GB.vbmap"), "m/s", "https://steelconstruction.info/upload/Wiki-Files/e/e7/SCI_P394.pdf")] },
       // De naam is bevestigd, het symbool en de eenheid niet.
       sneeuw: { grootheden: [sk("https://steelconstruction.info/images/6/6a/SCI_P362.pdf", false)] },
       // De kaarten in PD 6698 zijn niet ingezien.
       aardbeving: {
-        grootheden: [g("PGA", "PGA", "Peak ground acceleration (maps in PD 6698)", "Piekgrondversnelling (kaarten in PD 6698)", "", "https://nora.nerc.ac.uk/id/eprint/508595/1/CR-07-125v3.pdf", false)],
+        grootheden: [g("PGA", "PGA", mt("normen.landen.GB.PGA"), "", "https://nora.nerc.ac.uk/id/eprint/508595/1/CR-07-125v3.pdf", false)],
         waardenUrl: "https://www.earthquakes.bgs.ac.uk/hazard/UKhazard2026.html",
       },
     },
   },
   {
     code: "IE",
-    naam: { en: "Ireland", nl: "Ierland" },
+    naam: mt("normen.landen.IE.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "I.S. EN 1990 to 1997 with Irish National Annexes", nl: "I.S. EN 1990 t/m 1997 met Ierse nationale bijlagen" },
+    normenTekst: mt("normen.landen.IE.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "Technical Guidance Document A (2012) names the Eurocodes with the Irish NA as practical guidance for Part A.",
-        nl: "Technical Guidance Document A (2012) noemt de Eurocodes met de Ierse NA als praktische richtlijn voor Part A.",
-      },
+      tekst: mt("normen.landen.IE.tekst"),
       url: "https://assets.gov.ie/static/documents/technical-guidance-document-a-structure-2012-23-mb.pdf",
     },
     normen: {
       belastingen: n("I.S. EN 1990 NA:2002; I.S. EN 1991-1-1:2002/NA:2013", "NSAI", "2010; 2013", `${IE_SHOP}/i-s-en-1990-national-annex-2002-858018_saig_nsai_nsai_2041130`),
       wind: n("I.S. EN 1991-1-4:2005/NA:2013", "NSAI", "2013", "https://shop.standards.ie/preview/98705226958.pdf?sku=857848_SAIG_NSAI_NSAI_2040731"),
       sneeuw: n("NA+A2:2020 to I.S. EN 1991-1-3:2003&A1:2015", "NSAI", "2020", "https://www.nsai.ie/images/uploads/standards/New_Standards_20201210.pdf"),
-      aardbeving: n("I.S. EN 1998-1", "NSAI", "2005", `${IE_SHOP}/i-s-en-1998-1-2005-883908_saig_nsai_nsai_2099732/`, {
-        en: "No national annex found.",
-        nl: "Geen nationale bijlage gevonden.",
-      }),
+      aardbeving: n("I.S. EN 1998-1", "NSAI", "2005", `${IE_SHOP}/i-s-en-1998-1-2005-883908_saig_nsai_nsai_2099732/`, mt("normen.landen.IE.opmerking")),
       beton: n("NA to I.S. EN 1992-1-1:2004+A1:2014", "NSAI", null, IE_TII),
       staal: n("I.S. EN 1993-1-1:2005/NA:2007+A1:2015", "NSAI", "2007 + A1:2015", "https://shop.standards.ie/preview/98702737526.pdf?sku=866887_SAIG_NSAI_NSAI_2061774"),
       hout: n("NA+A1:2013 to I.S. EN 1995-1-1:2004", "NSAI", "2013", IE_TII),
@@ -675,39 +609,30 @@ export const LANDEN: readonly Land[] = [
     },
     locatie: {
       // Alleen uit een artikel in een universitair archief.
-      wind: { grootheden: [g("v_bmap", "v_b,map", "Fundamental basic wind velocity", "Fundamentele basiswindsnelheid", "m/s", "https://researchrepository.ucd.ie/rest/bitstreams/53141/retrieve", false)] },
+      wind: { grootheden: [g("v_bmap", "v_b,map", mt("normen.landen.IE.vbmap"), "m/s", "https://researchrepository.ucd.ie/rest/bitstreams/53141/retrieve", false)] },
       // De naam van de grootheid is in geen Ierse bron gezien.
       sneeuw: { grootheden: [sk("https://www.nsai.ie/about/news/structural-designers-warning/", false)] },
       aardbeving: {
         grootheden: [],
         geenGrootheid: true,
-        opmerking: {
-          en: "NSAI classifies all of Ireland as very low seismicity (foreword to I.S. EN 1998-5).",
-          nl: "NSAI rekent heel Ierland tot zeer lage seismiciteit (voorwoord bij I.S. EN 1998-5).",
-        },
+        opmerking: mt("normen.landen.IE.opmerking2"),
       },
     },
   },
   {
     code: "IN",
-    naam: { en: "India", nl: "India" },
+    naam: mt("normen.landen.IN.naam"),
     stelsel: "eigen",
-    normenTekst: { en: "IS 875, IS 1893, IS 456, IS 800", nl: "IS 875, IS 1893, IS 456, IS 800" },
+    normenTekst: mt("normen.landen.IN.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "BIS calls the National Building Code a model code for governments and local bodies; how binding it is depends on local bye-laws. Its successor is SP 7:2026, whose references have not been read.",
-        nl: "BIS noemt de National Building Code een modelcode voor overheden en lokale besturen; hoe bindend die is, hangt af van lokale verordeningen. De opvolger is SP 7:2026, waarvan de verwijzingen niet zijn gelezen.",
-      },
+      tekst: mt("normen.landen.IN.tekst"),
       url: "https://www.bis.gov.in/others/national-building-code/",
     },
     normen: {
       belastingen: n("IS 875 (Parts 1, 2, 5)", "BIS", "2026; 1987; 1987", bis("MjA4")),
       wind: n("IS 875 (Part 3)", "BIS", "2015", bis("MjA4")),
       sneeuw: n("IS 875 (Part 4)", "BIS", "2021", bis("MjA4")),
-      aardbeving: n("IS 1893 (Part 1)", "BIS", null, bis("MjEw"), {
-        en: "The BIS list shows 2016, while another BIS record has a 2025 edition with the same title; which one applies is to be confirmed.",
-        nl: "De lijst van BIS toont 2016, terwijl een ander BIS-record een editie 2025 met dezelfde titel heeft; welke geldt, is nog te bevestigen.",
-      }),
+      aardbeving: n("IS 1893 (Part 1)", "BIS", null, bis("MjEw"), mt("normen.landen.IN.tekst2")),
       beton: n("IS 456", "BIS", "2000", bis("MTkw")),
       staal: n("IS 800", "BIS", "2007", bis("MTk1")),
       hout: n("IS 883", "BIS", "2016", bis("MTk5")),
@@ -715,26 +640,23 @@ export const LANDEN: readonly Land[] = [
       funderingen: n("IS 1904; IS 6403; IS 2911 series", "BIS", "2021; 1981; several", bis("MjEy")),
     },
     locatie: {
-      wind: { grootheden: [g("V_b", "V_b", "Basic wind speed", "Basiswindsnelheid", "m/s", "https://www.bmtpc.org/DataFiles/CMS/file/VAI2019/background.pdf")], waardenUrl: "https://www.bmtpc.org/DataFiles/CMS/file/VAI2019/background.pdf" },
+      wind: { grootheden: [g("V_b", "V_b", mt("normen.landen.IN.Vb"), "m/s", "https://www.bmtpc.org/DataFiles/CMS/file/VAI2019/background.pdf")], waardenUrl: "https://www.bmtpc.org/DataFiles/CMS/file/VAI2019/background.pdf" },
       // Het symbool en de eenheid zijn niet officieel bevestigd.
-      sneeuw: { grootheden: [g("s_0", "s_0", "Characteristic ground snow load", "Karakteristieke sneeuwbelasting op de grond", "kN/m²", "https://drdo.gov.in/drdo/hi/node/2691", false)] },
+      sneeuw: { grootheden: [g("s_0", "s_0", mt("normen.landen.IN.s0"), "kN/m²", "https://drdo.gov.in/drdo/hi/node/2691", false)] },
       aardbeving: {
-        grootheden: [g("Z", "Z", "Zone factor of the seismic zone", "Zonefactor van de seismische zone", "", "https://www.iitk.ac.in/nicee/IITGN-WB/EQ03.pdf")],
+        grootheden: [g("Z", "Z", mt("normen.landen.IN.Z"), "", "https://www.iitk.ac.in/nicee/IITGN-WB/EQ03.pdf")],
         waardenUrl: "https://www.bmtpc.org/DataFiles/CMS/file/VAI2019/background.pdf",
       },
     },
   },
   {
     code: "IT",
-    naam: { en: "Italy", nl: "Italië" },
+    naam: mt("normen.landen.IT.naam"),
     // Wettelijk gelden NTC 2018 en de Circolare; de Eurocodes zijn een erkende aanvulling.
     stelsel: "eigen",
-    normenTekst: { en: "NTC 2018 (DM 17-01-2018)", nl: "NTC 2018 (DM 17-01-2018)" },
+    normenTekst: mt("normen.landen.IT.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "By law NTC 2018 and Circolare n. 7/2019 apply; the Eurocodes with Appendici Nazionali only count as documents of proven validity (chapters 1 and 12).",
-        nl: "Wettelijk gelden NTC 2018 en Circolare n. 7/2019; de Eurocodes met Appendici Nazionali gelden alleen als documenten van aangetoonde waarde (hoofdstuk 1 en 12).",
-      },
+      tekst: mt("normen.landen.IT.tekst"),
       url: IT_NTC,
     },
     normen: {
@@ -749,13 +671,13 @@ export const LANDEN: readonly Land[] = [
       funderingen: n("NTC 2018, chapter 6", "MIT", "DM 17-01-2018", IT_NTC),
     },
     locatie: {
-      wind: { grootheden: [g("v_b0", "v_b,0", "Basic reference velocity at sea level", "Basisreferentiesnelheid op zeeniveau", "m/s", IT_NTC)] },
-      sneeuw: { grootheden: [g("q_sk", "q_sk", "Reference value of the ground snow load", "Referentiewaarde sneeuwbelasting op de grond", "kN/m²", IT_NTC)] },
+      wind: { grootheden: [g("v_b0", "v_b,0", mt("normen.landen.IT.vb0"), "m/s", IT_NTC)] },
+      sneeuw: { grootheden: [g("q_sk", "q_sk", mt("normen.landen.IT.qsk"), "kN/m²", IT_NTC)] },
       aardbeving: {
         grootheden: [
-          g("a_g", "a_g", "Maximum horizontal acceleration", "Maximale horizontale versnelling", "", IT_NTC),
-          g("F_o", "F_o", "Spectrum factor", "Spectrumfactor", "", IT_NTC),
-          g("T_C", "T_C*", "Reference period", "Referentieperiode", "", IT_NTC),
+          g("a_g", "a_g", mt("normen.landen.IT.ag"), "", IT_NTC),
+          g("F_o", "F_o", mt("normen.landen.IT.Fo"), "", IT_NTC),
+          g("T_C", "T_C*", mt("normen.landen.IT.TC"), "", IT_NTC),
         ],
         waardenUrl: "https://dati.mit.gov.it/catalog/dataset/parametri-spettrali",
       },
@@ -763,14 +685,11 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "NO",
-    naam: { en: "Norway", nl: "Noorwegen" },
+    naam: mt("normen.landen.NO.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "NS-EN 1990 to 1998 with NA", nl: "NS-EN 1990 t/m 1998 met NA" },
+    normenTekst: mt("normen.landen.NO.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "TEK17 § 10-2 is legally binding: the Eurocodes with NA comply, alternatives must be shown to be equivalent.",
-        nl: "TEK17 § 10-2 is wettelijk: de Eurocodes met NA voldoen, alternatieven moeten gelijkwaardig zijn aangetoond.",
-      },
+      tekst: mt("normen.landen.NO.tekst"),
       url: "https://www.dibk.no/regelverk/byggteknisk-forskrift-tek17/10/10-2",
     },
     normen: {
@@ -793,14 +712,11 @@ export const LANDEN: readonly Land[] = [
   },
   {
     code: "NZ",
-    naam: { en: "New Zealand", nl: "Nieuw-Zeeland" },
+    naam: mt("normen.landen.NZ.naam"),
     stelsel: "eigen",
-    normenTekst: { en: "B1/VM1 (2nd edition), AS/NZS 1170, NZS 1170.5", nl: "B1/VM1 (2e editie), AS/NZS 1170, NZS 1170.5" },
+    normenTekst: mt("normen.landen.NZ.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "MBIE manages the statutory Building Code; B1/VM1, second edition (28-07-2025), is one way to show compliance. TS 1170.5:2025 is an alternative route, NZS 1170.5:2004 stays the cited standard.",
-        nl: "MBIE beheert de wettelijke Building Code; B1/VM1, tweede editie (28-07-2025), is één manier om naleving aan te tonen. TS 1170.5:2025 is een alternatieve weg, NZS 1170.5:2004 blijft de aangewezen norm.",
-      },
+      tekst: mt("normen.landen.NZ.tekst"),
       url: NZ_VM1,
     },
     normen: {
@@ -818,34 +734,28 @@ export const LANDEN: readonly Land[] = [
       // V_R staat niet in B1/VM1 zelf.
       wind: {
         grootheden: [
-          g("regio", "", "Wind region", "Windregio", "", "https://www.building.govt.nz/building-code-compliance/b-stability/b1-structure/practice-advisory-9", false),
-          g("V_R", "V_R", "Regional wind speed", "Regionale windsnelheid", "m/s", "https://www.building.govt.nz/building-code-compliance/b-stability/b1-structure/practice-advisory-9", false),
+          g("regio", "", mt("normen.landen.NZ.regio"), "", "https://www.building.govt.nz/building-code-compliance/b-stability/b1-structure/practice-advisory-9", false),
+          g("V_R", "V_R", mt("normen.landen.NZ.VR"), "m/s", "https://www.building.govt.nz/building-code-compliance/b-stability/b1-structure/practice-advisory-9", false),
         ],
       },
-      sneeuw: { grootheden: [g("s_g", "s_g", "Ground snow load", "Sneeuwbelasting op de grond", "kPa", NZ_VM1)] },
-      aardbeving: { grootheden: [g("Z", "Z", "Hazard factor", "Gevarenfactor", "", NZ_VM1)] },
+      sneeuw: { grootheden: [g("s_g", "s_g", mt("normen.landen.NZ.sg"), "kPa", NZ_VM1)] },
+      aardbeving: { grootheden: [g("Z", "Z", mt("normen.landen.NZ.Z"), "", NZ_VM1)] },
     },
   },
   {
     code: "PL",
-    naam: { en: "Poland", nl: "Polen" },
+    naam: mt("normen.landen.PL.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "PN-EN 1990 to 1997 with NA", nl: "PN-EN 1990 t/m 1997 met NA" },
+    normenTekst: mt("normen.landen.PL.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "§ 204 of the Warunki techniczne is legally binding: safety counts as met when the Polish Standards for design are met. The latest consolidation has not been checked.",
-        nl: "§ 204 van de Warunki techniczne is wettelijk: de veiligheid geldt als vervuld bij voldoen aan de Poolse normen voor ontwerp. De laatste consolidatie is niet nagekeken.",
-      },
+      tekst: mt("normen.landen.PL.tekst"),
       url: "https://api.sejm.gov.pl/eli/acts/DU/2022/1225/text.html",
     },
     normen: {
       belastingen: n("PN-EN 1990:2004/NA; PN-EN 1991-1-1:2004/NA", "PKN", "2010; 2010", PL_PKN),
       wind: n("PN-EN 1991-1-4:2008/NA", "PKN", "2010", PL_PKN),
       sneeuw: n("PN-EN 1991-1-3:2005/NA", "PKN", "2010", PL_PKN),
-      aardbeving: n("PN-EN 1998-1", "PKN", "2005", PL_PKN, {
-        en: "Original language version; no national annex in the list of PKN.",
-        nl: "Oorspronkelijke taalversie; geen nationale bijlage in de lijst van PKN.",
-      }),
+      aardbeving: n("PN-EN 1998-1", "PKN", "2005", PL_PKN, mt("normen.landen.PL.opmerking")),
       beton: n("PN-EN 1992-1-1:2008/NA", "PKN", "2018-11", PL_PKN),
       staal: n("PN-EN 1993-1-1:2006/NA", "PKN", "2010", PL_PKN),
       hout: n("PN-EN 1995-1-1:2010/NA", "PKN", "2010", PL_PKN),
@@ -859,33 +769,24 @@ export const LANDEN: readonly Land[] = [
       aardbeving: {
         grootheden: [],
         geenGrootheid: true,
-        opmerking: {
-          en: "PKN reports no translation because of the aseismic location of Poland.",
-          nl: "PKN meldt geen vertaling wegens de aseismische ligging van Polen.",
-        },
+        opmerking: mt("normen.landen.PL.opmerking2"),
       },
     },
   },
   {
     code: "SE",
-    naam: { en: "Sweden", nl: "Zweden" },
+    naam: mt("normen.landen.SE.naam"),
     stelsel: "eurocode",
-    normenTekst: { en: "BFS 2024:6, SS-EN 1990 to 1997", nl: "BFS 2024:6, SS-EN 1990 t/m 1997" },
+    normenTekst: mt("normen.landen.SE.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "By law BFS 2024:6 applies (since 01-07-2025, replacing EKS); the Eurocodes with the Swedish NA are a recognised route through its general advice. Boverket's own values come first.",
-        nl: "Wettelijk geldt BFS 2024:6 (sinds 01-07-2025, in plaats van EKS); de Eurocodes met de Zweedse NA zijn een erkende route via de algemene adviezen daarin. De waarden van Boverket gaan voor.",
-      },
+      tekst: mt("normen.landen.SE.tekst"),
       url: SE_BRON,
     },
     normen: {
       belastingen: n("SS-EN 1990:2002; SS-EN 1991-1-1:2002", "SIS", null, SE_BRON),
       wind: n("SS-EN 1991-1-4:2005", "SIS", null, SE_BRON),
       sneeuw: n("SS-EN 1991-1-3:2003", "SIS", null, SE_BRON),
-      aardbeving: n("SS-EN 1998-1", "SIS", null, "https://www.sis.se/konstruktionochtillverkning/eurokoder/frgorsvar/ssen1998jordbvningsresistentakonstruktioner/", {
-        en: "Exists, but is not in the list of BFS 2024:6.",
-        nl: "Bestaat, maar staat niet in de lijst van BFS 2024:6.",
-      }),
+      aardbeving: n("SS-EN 1998-1", "SIS", null, "https://www.sis.se/konstruktionochtillverkning/eurokoder/frgorsvar/ssen1998jordbvningsresistentakonstruktioner/", mt("normen.landen.SE.opmerking")),
       beton: n("SS-EN 1992-1-1:2005", "SIS", null, SE_BRON),
       staal: n("SS-EN 1993-1-1:2005", "SIS", null, SE_BRON),
       hout: n("SS-EN 1995-1-1:2004", "SIS", null, SE_BRON),
@@ -893,27 +794,21 @@ export const LANDEN: readonly Land[] = [
       funderingen: n("SS-EN 1997-1:2005", "SIS", null, SE_BRON),
     },
     locatie: {
-      wind: { grootheden: [g("v_b", "v_b", "Reference wind speed", "Referentiewindsnelheid", "m/s", SE_BRON)], waardenUrl: SE_BRON },
-      sneeuw: { grootheden: [g("S_0", "S_0", "Characteristic ground snow load", "Karakteristieke sneeuwbelasting op de grond", "kN/m²", SE_BRON)], waardenUrl: SE_BRON },
+      wind: { grootheden: [g("v_b", "v_b", mt("normen.landen.SE.vb"), "m/s", SE_BRON)], waardenUrl: SE_BRON },
+      sneeuw: { grootheden: [g("S_0", "S_0", mt("normen.landen.SE.S0"), "kN/m²", SE_BRON)], waardenUrl: SE_BRON },
       aardbeving: {
         grootheden: [],
-        opmerking: {
-          en: "BFS 2024:6 names no quantity for seismic actions; the status of Eurocode 8 in Sweden has not been established.",
-          nl: "BFS 2024:6 noemt geen grootheid voor aardbeving; de status van Eurocode 8 in Zweden is niet vastgesteld.",
-        },
+        opmerking: mt("normen.landen.SE.opmerking2"),
       },
     },
   },
   {
     code: "US",
-    naam: { en: "United States", nl: "Verenigde Staten" },
+    naam: mt("normen.landen.US.naam"),
     stelsel: "eigen",
-    normenTekst: { en: "IBC 2024, ASCE/SEI 7-22", nl: "IBC 2024, ASCE/SEI 7-22" },
+    normenTekst: mt("normen.landen.US.normenTekst"),
     aanwijzing: {
-      tekst: {
-        en: "ICC publishes the IBC 2024, which only applies once a state or municipality adopts it. Editions differ per state, and some states have no statewide IBC.",
-        nl: "ICC geeft de IBC 2024 uit, die pas geldt als een staat of gemeente hem vaststelt. Edities verschillen per staat, en sommige staten hebben geen IBC voor de hele staat.",
-      },
+      tekst: mt("normen.landen.US.tekst"),
       url: "https://www.fema.gov/sites/default/files/documents/fema_fy25-bcat-region-7-report.pdf",
     },
     normen: {
@@ -928,14 +823,14 @@ export const LANDEN: readonly Land[] = [
       funderingen: n("IBC, chapter 18", "ICC", "2024", "https://codes.iccsafe.org/content/IBC2024P1"),
     },
     locatie: {
-      wind: { grootheden: [g("V", "V", "Basic wind speed", "Basiswindsnelheid", "mph", US_VOORBEELD)] },
-      sneeuw: { grootheden: [g("p_g", "p_g", "Ground snow load", "Sneeuwbelasting op de grond", "psf", US_LASTEN)] },
+      wind: { grootheden: [g("V", "V", mt("normen.landen.US.V"), "mph", US_VOORBEELD)] },
+      sneeuw: { grootheden: [g("p_g", "p_g", mt("normen.landen.US.pg"), "psf", US_LASTEN)] },
       aardbeving: {
         grootheden: [
-          g("S_S", "S_S", "Mapped acceleration, short period", "Kaartversnelling, korte periode", "g", US_VOORBEELD),
-          g("S_1", "S_1", "Mapped acceleration, 1 s", "Kaartversnelling, 1 s", "g", US_VOORBEELD),
-          g("S_DS", "S_DS", "Design acceleration, short period", "Rekenversnelling, korte periode", "g", US_VOORBEELD),
-          g("S_D1", "S_D1", "Design acceleration, 1 s", "Rekenversnelling, 1 s", "g", US_VOORBEELD),
+          g("S_S", "S_S", mt("normen.landen.US.SS"), "g", US_VOORBEELD),
+          g("S_1", "S_1", mt("normen.landen.US.S1"), "g", US_VOORBEELD),
+          g("S_DS", "S_DS", mt("normen.landen.US.SDS"), "g", US_VOORBEELD),
+          g("S_D1", "S_D1", mt("normen.landen.US.SD1"), "g", US_VOORBEELD),
         ],
         waardenUrl: "https://earthquake.usgs.gov/ws/building-codes/asce7-22",
       },

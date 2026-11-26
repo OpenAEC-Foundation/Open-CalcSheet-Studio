@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { openBuiten } from "./uitwerkingOpschonen";
+import { openBuiten } from "../../werkplek/werkplek";
 
 /**
  * Een link naar een officiële bron: in de app opent hij in de systeembrowser, want het venster

@@ -1,0 +1,615 @@
+{
+  "koppen": {
+    "inleiding": "Įvadas",
+    "projectgegevens": "Projekto duomenys",
+    "projectomschrijving": "Projekto aprašymas",
+    "rol": "Vaidmuo projekte ir ataskaitos apimtis",
+    "constructie": "Konstrukcija",
+    "toelichting": "Konstrukcijos aprašymas",
+    "bestaand": "Esama padėtis",
+    "bestaand-verticaal": "Vertikaliųjų apkrovų perdavimas",
+    "bestaand-stabiliteit": "Pastovumas",
+    "bestaand-fundatie": "Pamatai",
+    "bestaand-beoordeling": "Esamos konstrukcijos įvertinimas",
+    "wijziging": "Pakeitimas",
+    "wijzigingNieuwbouw": "Konstrukcinė schema",
+    "belendingen": "Gretimi pastatai",
+    "uitvoering": "Pastabos statybai",
+    "uitvoering-bestaand": "Esama padėtis",
+    "uitvoering-verbouw": "Pakeitimas, rekonstrukcija",
+    "uitvoering-nieuwbouw": "Nauja statyba",
+    "uitgangspunten": "Projektavimo prielaidos",
+    "bouwwerk": "Konstrukcijų projektavimo prielaidos",
+    "brand": "Konstrukcijų projektavimas gaisrui",
+    "materialen": "Medžiagos",
+    "conservering": "Plieninių konstrukcijų antikorozinė apsauga",
+    "factoren": "Daliniai koeficientai ir apkrovų deriniai",
+    "bestaand-situatie": "Esama padėtis",
+    "trillingen": "Virpesiai",
+    "vervormingen": "Deformacijos ir horizontalieji poslinkiai",
+    "montage": "Montavimas ir statybos etapai",
+    "rekenprogrammatuur": "Skaičiavimo programinė įranga",
+    "temperatuur": "Temperatūriniai poveikiai",
+    "aardbeving": "Seisminiai poveikiai",
+    "belastingen": "Apkrovos",
+    "sneeuw": "Sniego apkrovos(Q)",
+    "wind": "Vėjo apkrovos(Q)",
+    "regenwater": "Lietaus vandens sankaupos(Q)",
+    "veranderlijk": "Kitos kintamosios apkrovos(Q)",
+    "blijvend": "Nuolatinės apkrovos(G)",
+    "berekeningen": "Skaičiavimai",
+    "bijlageA": "Išsamūs skaičiavimai"
+  },
+  "standaard": {
+    "titels": [
+      "Konstrukcijų konsultacija ir skaičiavimai",
+      "Konstrukcijų skaičiavimas",
+      "Konstrukcijų konsultacija",
+      "Konstrukcijų skaičiavimai ir brėžiniai",
+      "Esamos konstrukcijos įvertinimas"
+    ],
+    "rollen": [
+      "Vyriausiasis konstruktorius",
+      "Konstruktorius",
+      "Konstrukcijų konsultantas",
+      "Tikrinantis konstruktorius"
+    ],
+    "soortenBouwwerk": [
+      "Būstas",
+      "Vienbutis namas",
+      "Daugiabutis namas",
+      "Vila",
+      "Biuras",
+      "Pramoninis pastatas",
+      "Ūkinis pastatas",
+      "Pašiūrė"
+    ],
+    "normen": "LST EN 1990–1997",
+    "eersteUitgave": "Pirmasis leidimas",
+    "nietVanToepassing": "netaikoma",
+    "materiaalType": [
+      "Monolitinis betonas",
+      "Mediena",
+      "Medienos plokštės",
+      "Armatūrinis plienas",
+      "Plienas",
+      "Skiedinys po plienu"
+    ],
+    "materiaalOpmerking": [
+      "(aplinkos poveikio klases žr. betono skaičiavimuose ir brėžinyje)"
+    ],
+    "materialenNoot": "(jei nenurodyta kitaip)",
+    "bevestiging": [
+      "Varžtai",
+      "Medvaržčiai",
+      "Cheminiai inkarai"
+    ],
+    "conserveringOnderdeel": [
+      "Išorės konstrukcijos",
+      "Sienų ertmėse",
+      "Vidaus plienas"
+    ],
+    "conserveringSysteem": [
+      "Dupleksas arba karštasis cinkavimas",
+      "Karštasis cinkavimas",
+      "Dažų sistema"
+    ],
+    "conserveringSlot": "Antikorozinė apsauga taikoma naujai montuojamiems konstrukciniams elementams.",
+    "vervormingOnderdeel": [
+      "Vertikalusis stogų įlinkis",
+      "Vertikalusis perdangų įlinkis",
+      "Perdangos su mūrinėmis sienomis",
+      "Horizontalusis poslinkis, pastatas",
+      "Horizontalusis poslinkis, pertvara"
+    ]
+  },
+  "teksten": {
+    "inleiding": [
+      {
+        "label": "Pagrindinis skaičiavimas",
+        "tekst": "Užsakovo prašymu {adviseur} šioje ataskaitoje pateikia aukščiau nurodyto projekto konstrukcijų konsultaciją.\n\nKonsultacija parengta remiantis pateikta informacija.\n\nŠioje ataskaitoje pateiktas pagrindinis konstrukcijos skaičiavimas.\nDetaliajam projektavimui kiti dar turi atlikti papildomus skaičiavimus, kuriuos patikrins {adviseur}:\n-Gamyklinių perdangų sistemų brėžiniai ir skaičiavimai;\n-Plieninės konstrukcijos brėžiniai ir skaičiavimai;\n-Statinio zondavimo bandymai ir pamatų konsultacija;"
+      },
+      {
+        "label": "Tik projektavimo prielaidos",
+        "tekst": "Užsakovo prašymu {adviseur} šioje ataskaitoje pateikia aukščiau nurodyto projekto konstrukcijų konsultaciją.\n\nKonsultacija parengta remiantis pateikta informacija.\n\nŠioje ataskaitoje pateiktos konstrukcijos projektavimo prielaidos."
+      }
+    ],
+    "projectomschrijving": [
+      {
+        "label": "Priestatas",
+        "tekst": "Projekte numatyta pastatyti priestatą."
+      },
+      {
+        "label": "Antstatas ant stogo",
+        "tekst": "Projekte numatyta įrengti antstatą ant stogo."
+      },
+      {
+        "label": "Naujas namas",
+        "tekst": "Projekte numatyta pastatyti naują namą."
+      },
+      {
+        "label": "Rekonstrukcija",
+        "tekst": "Projekte numatyta rekonstruoti esamą pastatą."
+      }
+    ],
+    "rol": [
+      {
+        "label": "Užsakymas: konstrukcijų konsultacija",
+        "tekst": "{adviseur} pavesta parengti šio projekto konstrukcijų konsultaciją."
+      },
+      {
+        "label": "Užsakymas: nepriklausomas patikrinimas",
+        "tekst": "{adviseur} pavesta patikrinti šio projekto konstrukciją."
+      }
+    ],
+    "bestaand-verticaal": [
+      {
+        "label": "Medinės sijos ant mūro",
+        "tekst": "Perdangas sudaro medinės sijos. Jos apkrovas per mūrines sienas perduoda pamatams."
+      },
+      {
+        "label": "Stogas ant progonų ir medinės sijos",
+        "tekst": "Stogas įrengtas ant progonų. Perdangas sudaro medinės sijos.\nJos apkrovas per mūrines sienas ir laikančiąją vidinę sieną perduoda pamatams."
+      },
+      {
+        "label": "Betoninės perdangos ant laikančiųjų sienų",
+        "tekst": "Perdangos yra betoninės. Jos apkrovas per laikančiąsias sienas perduoda pamatams."
+      }
+    ],
+    "bestaand-stabiliteit": [
+      {
+        "label": "Mūrinės sienos",
+        "tekst": "Pastovumą užtikrina mūrinės sienos."
+      },
+      {
+        "label": "Standumo sienos ir diafragmos veikimas",
+        "tekst": "Pastovumą užtikrina standumo sienos kartu su perdangų diafragmos veikimu."
+      }
+    ],
+    "bestaand-fundatie": [
+      {
+        "label": "Nežinoma, tikriausiai negilieji",
+        "tekst": "Archyvinės informacijos nėra. Pastatas tikriausiai turi negiliuosius pamatus."
+      },
+      {
+        "label": "Negilieji pamatai",
+        "tekst": "Pagal archyvinę informaciją pastatas turi negiliuosius pamatus."
+      },
+      {
+        "label": "Poliniai pamatai",
+        "tekst": "Pagal archyvinę informaciją pastatas turi polinius pamatus."
+      }
+    ],
+    "bestaand-beoordeling": [
+      {
+        "label": "Nėra priežasčių abejoti",
+        "tekst": "Nėra priežasčių abejoti esamos konstrukcijos statybos kokybe."
+      },
+      {
+        "label": "Įvertinti vietoje",
+        "tekst": "Esamos konstrukcijos būklė nežinoma. Ji bus įvertinta vietoje prieš pradedant darbus."
+      }
+    ],
+    "wijziging": [
+      {
+        "label": "Anga laikančiojoje sienoje",
+        "tekst": "Laikančiojoje sienoje įrengiama anga su plieniniu portaliniu rėmu.\nPastovumą užtikrina likusi sienos dalis.\nVertikaliosios apkrovos per kolonas ir apatinę siją perduodamos esamiems pamatams."
+      },
+      {
+        "label": "Priestatas su medinėmis sijomis",
+        "tekst": "Priestato stogas iš medinių sijų, kurios apkrovas per laikančiąsias sienas perduoda naujiems negiliesiems pamatams."
+      }
+    ],
+    "belendingen": [
+      {
+        "label": "Nevertinama",
+        "tekst": "Gretimų pastatų konstrukcinė įtaka šiame skaičiavime nevertinama."
+      }
+    ],
+    "uitvoering-bestaand": [
+      {
+        "label": "Patikrinti matmenis",
+        "tekst": "-Matmenys nustatyti pagal archyvinius dokumentus ir (arba) architekto brėžinį.\n-Matmenis būtina patikrinti vietoje."
+      }
+    ],
+    "uitvoering-verbouw": [
+      {
+        "label": "Laikinos atramos prie naujų angų",
+        "tekst": "-Darant naujas angas esamame mūre, tinkamai laikinai paremti sieną ir aplinkines konstrukcijas."
+      },
+      {
+        "label": "Ardymo seka",
+        "tekst": "-Laikančiuosius elementus šalinti tik įrengus naują konstrukciją arba laikinai perėmus apkrovą."
+      }
+    ],
+    "uitvoering-nieuwbouw": [
+      {
+        "label": "Negilieji pamatai",
+        "tekst": "-Negilieji pamatai: kasant nustatyti laikantįjį grunto sluoksnį.\n-Prieš betonuojant pateikti armatūrą patikrinti."
+      },
+      {
+        "label": "Poliniai pamatai",
+        "tekst": "-Polių įrengimo žurnalus ir polių nuokrypius pateikti konstruktoriui.\n-Patikrinti pamatų ir visų perdangų betonavimo armatūrą."
+      }
+    ],
+    "trillingen": [
+      {
+        "label": "Perdangų virpesiai",
+        "tekst": "Perdangų konstrukcijoms atliekami virpesių skaičiavimai.\nKitiems elementams virpesiai toliau nevertinami."
+      },
+      {
+        "label": "Nevertinama",
+        "tekst": "Šiame skaičiavime virpesiai nevertinami."
+      }
+    ],
+    "vervormingen": [
+      {
+        "label": "Standartinis",
+        "tekst": "Šiam projektui taikomos toliau nurodytos deformacijų ribos."
+      }
+    ],
+    "montage": [
+      {
+        "label": "Galutinis etapas",
+        "tekst": "Šiame skaičiavime konstrukcija vertinama galutiniame etape. Įvairūs statybos etapai, pavyzdžiui, laikinos atramos, neįtraukti."
+      }
+    ],
+    "rekenprogrammatuur": [
+      {
+        "label": "Open CalcSheet Studio",
+        "tekst": "Šios ataskaitos skaičiavimai parengti su Open CalcSheet Studio."
+      },
+      {
+        "label": "Open CalcSheet Studio su priedais",
+        "tekst": "Šios ataskaitos skaičiavimai parengti su Open CalcSheet Studio.\nKita programine įranga atlikti skaičiavimai pateikti prieduose, kuriuose nurodyta naudota versija."
+      }
+    ],
+    "temperatuur": [
+      {
+        "label": "Netaikoma",
+        "tekst": "Šiam projektui ypatingi temperatūriniai poveikiai netaikomi."
+      },
+      {
+        "label": "Pagal elementą",
+        "tekst": "Temperatūriniai poveikiai vertinami atitinkamiems elementams."
+      }
+    ],
+    "aardbeving": [
+      {
+        "label": "Nereikalinga",
+        "tekst": "Seisminė projektinė situacija nereikalinga."
+      },
+      {
+        "label": "Pagal vietą",
+        "tekst": "Seisminiai poveikiai nustatomi pagal vietoje galiojantį standartą."
+      }
+    ],
+    "sneeuw": [
+      {
+        "label": "Standartinis",
+        "tekst": "Sniego pusnys ir sniego apkrovos ant šlaitinių stogų, kur taikoma, apskaičiuojamos atitinkamiems elementams."
+      }
+    ],
+    "regenwater": [
+      {
+        "label": "Netaikoma",
+        "tekst": "Netaikoma"
+      },
+      {
+        "label": "Pagal stogo elementą",
+        "tekst": "Vandens sankaupos ant plokščiųjų stogų apskaičiuojamos atitinkamiems stogo elementams."
+      }
+    ]
+  },
+  "normwaarden": {
+    "categorie": {
+      "A-vloer": "Kategorija A: buitinės ir gyvenamosios patalpos",
+      "A-trap": "Kategorija A: laiptai",
+      "A-balkon": "Kategorija A: balkonai",
+      "A-gemeenschappelijk": "Kategorija A: bendrojo naudojimo patalpos",
+      "B": "Kategorija B: biurų patalpos",
+      "B-verkeer": "Kategorija B: uždaros judėjimo zonos",
+      "C-verkeer": "Kategorija C: uždaros judėjimo zonos",
+      "C1": "Kategorija C1: zonos su stalais",
+      "C2": "Kategorija C2: zonos su stacionariomis sėdimomis vietomis",
+      "C3": "Kategorija C3: zonos be kliūčių",
+      "C4": "Kategorija C4: fizinės veiklos zonos",
+      "C5": "Kategorija C5: didelių minių zonos",
+      "D-verkeer": "Kategorija D: uždaros judėjimo zonos",
+      "D1": "Kategorija D1: bendrosios mažmeninės prekybos zonos",
+      "D2": "Kategorija D2: universalinės parduotuvės",
+      "E": "Kategorija E: sandėliavimo zonos",
+      "H-dak": "Kategorija H: stogai"
+    },
+    "combinatie": {
+      "buitengewoon": "Ypatingasis",
+      "karakteristiek": "Charakteristinis",
+      "frequent": "Dažnasis",
+      "quasi": "Kvazinuol.",
+      "nietGebruikt": "nenaudojamas"
+    },
+    "terrein": {
+      "1": "pakrantė",
+      "2": "kaimo vietovė",
+      "3": "užstatyta vietovė"
+    }
+  },
+  "gewichten": {
+    "groepen": {
+      "vloerelementen": "Perdangų elementai",
+      "bestaand": "Esamos perdangų ir stogų plokštės",
+      "dakelementen": "Stogo elementai",
+      "daktuin": "Apželdintas stogas",
+      "hsb": "Medinio karkaso konstrukcijos",
+      "glas": "Stiklinti fasadai ir stogai",
+      "steenachtig": "Mineralinės medžiagos",
+      "metalen": "Metalai",
+      "afwerking": "Apdaila"
+    },
+    "lagen": {
+      "kanaalplaat": "tuštymėtoji plokštė {h} mm",
+      "kanaalplaatVerzwaard": "sunkioji tuštymėtoji plokštė {h} mm",
+      "kernactivering": "tuštymėtoji plokštė su betono šerdies aktyvavimu {h} mm",
+      "combinatievloer": "kombinuota perdanga, betonas su EPS užpildo blokeliais",
+      "ribcassette": "briaunuotųjų kasečių perdanga",
+      "gipsvezel": "gipso pluošto perdangos elementas 2×12,5 mm + medžio vata",
+      "renovatieDroog": "renovacinė perdanga su EPS elementais, sausa apdaila",
+      "renovatieHalfdroog": "renovacinė perdanga su EPS elementais, pusiau sausa apdaila",
+      "renovatieStandaard": "renovacinė perdanga su EPS elementais, standartinė apdaila",
+      "houtvezelcement": "medžio pluošto cemento stogo plokštės 100 mm",
+      "bims": "pemzos betono plokštės",
+      "dakpaneel": "apšiltinta plieninė stogo plokštė, didelio tarpatramio",
+      "zonnepanelenHellend": "saulės moduliai ant šlaitinio stogo",
+      "zonnepanelenPlat": "saulės moduliai ant plokščiojo stogo su balastu",
+      "sedum": "samanų ir sedumų augmenija",
+      "substraat": "substratas",
+      "granulaat": "mineralinis granuliatas",
+      "zand": "smėlis",
+      "gipsplaat": "gipso plokštė",
+      "osb": "OSB/3",
+      "hpl": "drėgnų patalpų sienų plokštė (HPL)",
+      "stijlwerk": "medinio karkaso statramsčiai, užpildymas 9%",
+      "isolatie": "termoizoliacija",
+      "glasPakket": "stiklas, bendras stiklo storis 25 mm",
+      "glasStijlen": "statramsčiai 67×120 mm, 4 m¹ į m²",
+      "betonInSitu": "betonas, monolitinis",
+      "betonPrefab": "betonas, surenkamasis",
+      "kalkzandsteen": "silikatinių plytų mūras",
+      "metselwerk": "mūras",
+      "gipsblokken": "gipso blokeliai",
+      "kleiblokken": "akytosios keramikos blokeliai",
+      "grind": "žvyras",
+      "staal": "plienas",
+      "aluminium": "aliuminis",
+      "gipskarton": "gipso kartono plokštė",
+      "gips": "gipso tinkas",
+      "cementdekvloer": "cementinis išlyginamasis sluoksnis",
+      "glas": "stiklas"
+    },
+    "opmerkingen": {
+      "woningscheidend": "tarpbutinė perdanga",
+      "afschot": "stogas su nuolydžiu",
+      "beplanting": "augalams",
+      "drainage": "drenažo sluoksnis",
+      "stijlwerk": "0,100 m × 5,0 kN/m³ × 9%",
+      "glasStijlen": "0,067 × 0,120 m × 4,0 kN/m³ × 4 m¹/m²"
+    },
+    "opbouwen": {
+      "glazenDak": "Stiklinis stogas",
+      "hsbGipsplaat": "Medinio karkaso vidinė siena su gipso plokštėmis",
+      "hsbNatteRuimte": "Medinio karkaso vidinė siena, drėgna patalpa",
+      "glazenPui": "Stiklinis fasadas"
+    },
+    "dikteInvullen": "įveskite storį"
+  },
+  "template": {
+    "ingebouwdNaam": "Standartinė ataskaita",
+    "zonderNaam": "Ataskaitos šablonas",
+    "eigenLabel": "Šablono tekstas",
+    "nieuwHoofdstuk": "Naujas skyrius",
+    "nieuweParagraaf": "Naujas poskyris",
+    "nieuwTekstblok": "Naujas teksto blokas"
+  },
+  "normen": {
+    "grootheden": {
+      "vb0": "Pagrindinio vėjo greičio fundamentinė reikšmė",
+      "sk": "Charakteristinė sniego apkrova ant žemės",
+      "agr": "Etaloninis didžiausias grunto pagreitis"
+    },
+    "TWEEDE_GENERATIE_TEKST": "Antrosios kartos Eurokodai (EN 1990:2023 ir vėlesni)",
+    "landen": {
+      "NL": {
+        "naam": "Nyderlandai",
+        "normenTekst": "NEN-EN 1990–1997",
+        "tekst": "Bbl nurodo standartus; jų leidimai pateikti Omgevingsregeling II priede, ir teisiškai galioja būtent jie.",
+        "opmerking": "Bbl nenurodo NEN-EN 1998. NPR 9998 taikomas tik šiaurės rytų Nyderlanduose.",
+        "opmerking2": "Bbl nenurodo jokio seisminio standarto; šiaurės rytų Nyderlandams žr. NPR 9998."
+      },
+      "EUROCODE": {
+        "naam": "Eurokodas be nacionalinio priedo",
+        "normenTekst": "EN 1990–EN 1998",
+        "tekst": "Nacionalinių pasirinkimų nėra. Taikomos rekomenduojamos reikšmės; daugelis reikšmių, pavyzdžiui, vėjo ir sniego, pateikiamos tik nacionaliniame priede, todėl jas reikia įvesti."
+      },
+      "AT": {
+        "naam": "Austrija",
+        "normenTekst": "ÖNORM EN 1990–1998 su ÖNORM B",
+        "tekst": "OIB-Richtlinie 1 nurodo ÖNORM EN 1990 su ÖNORM B 1990-1 ir yra privaloma per federalines žemes.",
+        "qb0": "Bazinis vėjo greičio slėgis"
+      },
+      "AU": {
+        "naam": "Australija",
+        "normenTekst": "NCC 2025, AS/NZS 1170",
+        "tekst": "ABCB leidžia NCC 2025, kuris įgyja teisinę galią per valstijų ir teritorijų teisės aktus; datos kiekvienoje valstijoje skiriasi.",
+        "regio": "Vėjo regionas",
+        "VR": "Regioninis vėjo greitis",
+        "sg": "Sniego apkrova ant žemės",
+        "Z": "Pavojaus koeficientas"
+      },
+      "BE": {
+        "naam": "Belgija",
+        "normenTekst": "NBN EN 1990–1998 su ANB",
+        "tekst": "NBN teigia, kad skaičiavimas be ANB teisiškai negalioja; Belgijos statybos reglamento nerasta."
+      },
+      "CA": {
+        "naam": "Kanada",
+        "normenTekst": "NBC 2025",
+        "tekst": "NRC leidžia NBC 2025 (16-asis leidimas) – pavyzdinį kodeksą, kuris teisiškai galioja tik provincijai ar teritorijai jį priėmus.",
+        "q": "Etaloninis vėjo greičio slėgis, 1/500",
+        "Ss": "Sniego apkrova ant žemės, 1/1000",
+        "Sr": "Kartu veikianti lietaus apkrova, 1/1000",
+        "PGA": "Didžiausias grunto pagreitis",
+        "PGV": "Didžiausias grunto greitis",
+        "SaT": "Spektrinis pagreitis"
+      },
+      "CH": {
+        "naam": "Šveicarija",
+        "normenTekst": "SIA 260:2013, SIA 261:2020",
+        "tekst": "SIA leidžia konstrukcijų standartus; jų teisinis statusas nenustatytas. BAFU prašo statyti pagal galiojančius standartus.",
+        "qp0": "Vėjo greičio slėgio etaloninė reikšmė",
+        "h0": "Etaloninis aukštis",
+        "zone": "Seisminė zona (Z1a–Z3b)",
+        "agd": "Skaičiuotinis grunto pagreitis",
+        "baugrund": "Grunto klasė"
+      },
+      "DE": {
+        "naam": "Vokietija",
+        "normenTekst": "DIN EN 1990–1998 su /NA, MVV TB 2025/1",
+        "tekst": "MVV TB 2025/1 yra DIBt pavyzdys, kuris galioja tik federalinei žemei jį paskelbus. MVV TB reiškia ten nurodytą leidimą; DIN – naujausią DIN kataloge.",
+        "opmerking": "DIN taip pat nurodo DIN EN 1990/NA/A1:2024-05.",
+        "tekst2": "MVV TB 2025/1 nurodo tik DIN 4149:2005-04.",
+        "windzone": "Vėjo zona",
+        "qb0": "Bazinis vėjo greičio slėgis",
+        "schneelastzone": "Sniego apkrovos zona",
+        "erdbebenzone": "Seisminė zona",
+        "untergrund": "Geologinio pagrindo klasė"
+      },
+      "DK": {
+        "naam": "Danija",
+        "normenTekst": "DS/EN 1990–1998 su DK NA",
+        "tekst": "BR18 15 skyrius yra teisiškai privalomas ir nurodo Eurokodus su DK NA, tik pirmosios kartos.",
+        "ag": "Skaičiuotinis grunto pagreitis"
+      },
+      "ES": {
+        "naam": "Ispanija",
+        "normenTekst": "CTE DB SE, NCSE-02, Código Estructural",
+        "tekst": "Pagal įstatymą galioja CTE, NCSE-02 ir Código Estructural; Código Estructural leidžia taikyti Eurokodus su ministerijos paskelbtu nacionaliniu priedu.",
+        "qb": "Dinaminio slėgio bazinė reikšmė",
+        "vb": "Bazinis vėjo greitis",
+        "ab": "Bazinis seisminis pagreitis",
+        "K": "Įtakos koeficientas"
+      },
+      "FI": {
+        "naam": "Suomija",
+        "normenTekst": "SFS-EN 1990–1997 su nacionaliniais pasirinkimais",
+        "tekst": "Nutarimas 477/2014: Eurokodai su Aplinkos ministerijos nacionaliniais pasirinkimais atitinka reikalavimus; kiti metodai leidžiami, jei atitinka tuos pačius reikalavimus.",
+        "opmerking": "Nacionalinio priedo nėra.",
+        "opmerking2": "Seisminis projektavimas atliekamas tik užsakovo prašymu, pagal ministerijos betono gaires."
+      },
+      "FR": {
+        "naam": "Prancūzija",
+        "normenTekst": "NF EN 1990–1998 su nacionaliniais priedais",
+        "tekst": "AFNOR Eurokodus laiko savanoriškais; teisės aktu nurodyta tik seisminė dalis (2010-10-22 arrêté, kuriame minimas NF EN 1998-1/NA 2007-12).",
+        "zone": "Seismiškumo zona (1–5)",
+        "agr": "Etaloninis didžiausias grunto pagreitis"
+      },
+      "GB": {
+        "naam": "Jungtinė Karalystė",
+        "normenTekst": "BS EN 1990–1998 su JK nacionaliniais priedais",
+        "tekst": "Approved Document A (Anglija) BS EN su JK NA nurodo kaip praktines gaires ir leidžia kitus būdus. Škotija, Velsas ir Šiaurės Airija netikrinti.",
+        "vbmap": "Žemėlapio vėjo greitis",
+        "PGA": "Didžiausias grunto pagreitis (žemėlapiai PD 6698)"
+      },
+      "IE": {
+        "naam": "Airija",
+        "normenTekst": "I.S. EN 1990–1997 su Airijos nacionaliniais priedais",
+        "tekst": "Technical Guidance Document A (2012) Eurokodus su Airijos NA nurodo kaip praktines gaires A daliai.",
+        "opmerking": "Nacionalinio priedo nerasta.",
+        "vbmap": "Fundamentinis bazinis vėjo greitis",
+        "opmerking2": "NSAI visą Airiją priskiria labai mažo seismiškumo zonai (I.S. EN 1998-5 pratarmė)."
+      },
+      "IN": {
+        "naam": "Indija",
+        "normenTekst": "IS 875, IS 1893, IS 456, IS 800",
+        "tekst": "BIS Nacionalinį statybos kodeksą vadina pavyzdiniu kodeksu vyriausybėms ir vietos valdžiai; jo privalomumas priklauso nuo vietos taisyklių. Jo įpėdinis yra SP 7:2026, kurio nuorodos neperskaitytos.",
+        "tekst2": "BIS sąraše nurodyti 2016 m., o kitame BIS įraše yra 2025 m. leidimas tuo pačiu pavadinimu; kuris galioja, dar reikia patvirtinti.",
+        "Vb": "Bazinis vėjo greitis",
+        "s0": "Charakteristinė sniego apkrova ant žemės",
+        "Z": "Seisminės zonos koeficientas"
+      },
+      "IT": {
+        "naam": "Italija",
+        "normenTekst": "NTC 2018 (DM 17-01-2018)",
+        "tekst": "Pagal įstatymą galioja NTC 2018 ir Circolare n. 7/2019; Eurokodai su Appendici Nazionali laikomi tik įrodytos vertės dokumentais (1 ir 12 skyriai).",
+        "vb0": "Bazinis etaloninis greitis jūros lygyje",
+        "qsk": "Sniego apkrovos ant žemės etaloninė reikšmė",
+        "ag": "Didžiausias horizontalusis pagreitis",
+        "Fo": "Spektro koeficientas",
+        "TC": "Etaloninis periodas"
+      },
+      "NO": {
+        "naam": "Norvegija",
+        "normenTekst": "NS-EN 1990–1998 su NA",
+        "tekst": "TEK17 § 10-2 yra teisiškai privalomas: Eurokodai su NA atitinka reikalavimus, alternatyvų lygiavertiškumas turi būti įrodytas."
+      },
+      "NZ": {
+        "naam": "Naujoji Zelandija",
+        "normenTekst": "B1/VM1 (2-asis leidimas), AS/NZS 1170, NZS 1170.5",
+        "tekst": "MBIE administruoja privalomą Statybos kodeksą; B1/VM1 antrasis leidimas (2025-07-28) yra vienas iš būdų įrodyti atitiktį. TS 1170.5:2025 yra alternatyvus kelias, NZS 1170.5:2004 lieka nurodytu standartu.",
+        "regio": "Vėjo regionas",
+        "VR": "Regioninis vėjo greitis",
+        "sg": "Sniego apkrova ant žemės",
+        "Z": "Pavojaus koeficientas"
+      },
+      "PL": {
+        "naam": "Lenkija",
+        "normenTekst": "PN-EN 1990–1997 su NA",
+        "tekst": "Warunki techniczne § 204 yra teisiškai privalomas: saugos reikalavimas laikomas įvykdytu, kai laikomasi Lenkijos projektavimo standartų. Naujausia suvestinė redakcija netikrinta.",
+        "opmerking": "Originalo kalbos versija; PKN sąraše nacionalinio priedo nėra.",
+        "opmerking2": "PKN nurodo, kad vertimo nėra, nes Lenkija yra aseisminėje zonoje."
+      },
+      "SE": {
+        "naam": "Švedija",
+        "normenTekst": "BFS 2024:6, SS-EN 1990–1997",
+        "tekst": "Pagal įstatymą galioja BFS 2024:6 (nuo 2025-07-01, vietoj EKS); Eurokodai su Švedijos NA yra pripažintas kelias per jame pateiktus bendruosius patarimus. Pirmenybė teikiama Boverket reikšmėms.",
+        "opmerking": "Egzistuoja, bet nėra BFS 2024:6 sąraše.",
+        "vb": "Etaloninis vėjo greitis",
+        "S0": "Charakteristinė sniego apkrova ant žemės",
+        "opmerking2": "BFS 2024:6 nenurodo jokio seisminio dydžio; Eurokodo 8 statusas Švedijoje nenustatytas."
+      },
+      "US": {
+        "naam": "Jungtinės Valstijos",
+        "normenTekst": "IBC 2024, ASCE/SEI 7-22",
+        "tekst": "ICC leidžia IBC 2024, kuris galioja tik valstijai ar savivaldybei jį priėmus. Leidimai skirtingose valstijose skiriasi, o kai kuriose valstijose bendro IBC visai valstijai nėra.",
+        "V": "Bazinis vėjo greitis",
+        "pg": "Sniego apkrova ant žemės",
+        "SS": "Žemėlapio pagreitis, trumpas periodas",
+        "S1": "Žemėlapio pagreitis, 1 s",
+        "SDS": "Skaičiuotinis pagreitis, trumpas periodas",
+        "SD1": "Skaičiuotinis pagreitis, 1 s"
+      }
+    },
+    "en1990": {
+      "factoren": {
+        "1": "Ypatingasis(6.11a/b)",
+        "2": "Charakteristinis(6.14b)",
+        "3": "Kvazinuol.(6.16b)"
+      },
+      "psi": {
+        "1": "Kategorija A: buitinės ir gyvenamosios patalpos",
+        "2": "Kategorija B: biurų patalpos",
+        "3": "Kategorija C: susirinkimų zonos",
+        "4": "Kategorija D: prekybos zonos",
+        "5": "Kategorija E: sandėliavimo zonos",
+        "6": "Kategorija F: eismas, transporto priemonė iki 30 kN",
+        "7": "Kategorija G: eismas, transporto priemonė nuo 30 iki 160 kN",
+        "8": "Kategorija H: stogai",
+        "9": "Sniegas: Suomija, Islandija, Norvegija, Švedija",
+        "10": "Sniegas: kitur, H daugiau kaip 1000 m",
+        "11": "Sniegas: kitur, H iki 1000 m",
+        "12": "Vėjas",
+        "13": "Temperatūra (ne gaisro)"
+      }
+    },
+    "locatiewaarde": "Vietos reikšmė (žr. standartą)"
+  }
+}

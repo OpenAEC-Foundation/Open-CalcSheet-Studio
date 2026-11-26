@@ -39,7 +39,7 @@
     "beweeglijk": "beweeglijk: te weinig steunpunten of een scharnier te veel",
     "klik": "Klik op een blauwe maat of een last om die te wijzigen — stroomt direct terug in het rekenblad.",
     "inBlad": "De combinaties, de omhullende en de toetsen staan in het rekenblad.",
-    "lengte": "lengte {{l}} m",
+    "lengte": "lengte {{l}}",
     "lasten_one": "{{count}} last",
     "lasten_other": "{{count}} lasten",
     "scharnieren_one": "{{count}} scharnier",
@@ -71,6 +71,7 @@
     "dekkingOnder": "Onder tot beugel",
     "dekkingZij": "dekking zij en boven",
     "staafwerk": "Oranje: getoetst staafwerk. Maten in mm.",
+    "staafwerkKort": "Oranje: getoetst staafwerk.",
     "koppen": {
       "geometrie": "Palen en kolom",
       "overig": "Zijstaven en haarspelden",
@@ -126,6 +127,64 @@
       "terrein": "Terrein",
       "gebouw": "Gebouw",
       "verdieping": "Verdieping"
+    }
+  },
+  "poerDetail": {
+    "titel": "Staaflijst en wapeningsdetail",
+    "staaflijst": "Staaflijst",
+    "merk": "Merk",
+    "aantal": "Aantal",
+    "diameter": "Ø",
+    "vorm": "Vorm",
+    "zijden": "Zijlengtes (hart)",
+    "lengte": "Lengte",
+    "totaal": "Totaal (m)",
+    "massa": "Massa (kg)",
+    "totaalMassa": "Totaal",
+    "verlopend": "verlopend",
+    "maten": "Maten in mm; zijlengtes hart op hart van de knikken, lengte langs de hartlijn.",
+    "bovenaanzicht": "Bovenaanzicht",
+    "doorsnede": "Doorsnede",
+    "soorten": {
+      "trekband": "trekband",
+      "beugel": "beugel",
+      "zijstaaf": "zijstaaf",
+      "bovenstaaf": "bovenstaaf",
+      "haarspeld": "haarspeld",
+      "dwarsstaaf": "dwarsstaaf",
+      "band": "band",
+      "net": "ondernet",
+      "randbeugel": "randbeugel"
+    },
+    "ontwerp": "Ontwerpschema",
+    "vrijgegeven": "Vrijgegeven voor uitvoering",
+    "nietVrij": "niet vrij te geven: het blad zegt niet dat de poer voldoet",
+    "vrijgeven": "Vrijgegeven voor uitvoering",
+    "uitleg": "Uit dezelfde staven als de tekening en de toets. Vormcode 00 recht, 21 U-vorm, 51 gesloten beugel met twee haken van 135°, 99 bijzondere vorm. Buigstraal: de ingevoerde doorn bij de trekband, anders de kleinste doorn uit tabel 8.1N. Vrijgeven kan alleen als het blad zegt dat de poer voldoet.",
+    "bewaarDxf": "Detail als DXF opslaan",
+    "bewaarIfcx": "Poer met wapening als IFCX opslaan",
+    "detailKop": "Wapeningsdetail",
+    "dxfFilter": "DXF-tekening",
+    "ifcxFilter": "IFCX",
+    "alleBestanden": "Alle bestanden",
+    "model": {
+      "driepaalspoer": "Poer op drie palen",
+      "vierpaalspoer": "Poer op vier palen",
+      "hartOpHart": "palen h.o.h.",
+      "poer": "Poer",
+      "paal": "Paal",
+      "kolom": "Kolom",
+      "korf": "Wapeningskorf",
+      "alleenAanzet": "Alleen de aanzet is getekend; de lengte valt buiten dit blad.",
+      "project": "Project",
+      "terrein": "Terrein",
+      "gebouw": "Gebouw",
+      "verdieping": "Verdieping",
+      "soorten": {
+        "band": "Bandstaaf",
+        "net": "Netstaaf",
+        "randbeugel": "Randbeugel"
+      }
     }
   },
   "doorsnede": {
@@ -353,7 +412,7 @@
     "demping": "ζ — demping",
     "plattegrond": "Plattegrond van de sparing",
     "doorsnedeOnderslag": "Doorsnede van de onderslag",
-    "belasteBreedteMaat": "belaste breedte {{b}} m",
+    "belasteBreedteMaat": "belaste breedte {{b}}",
     "doorsnede": "Doorsnede",
     "schemaKop": "Statisch schema — karakteristieke lasten per balk",
     "veranderlijk": "veranderlijk",
@@ -382,7 +441,7 @@
       "trilling": "trilling",
       "nietAangetoond": "niet aangetoond",
       "trillingNvt": "trilling n.v.t.",
-      "trekOplegging": "trek oplegging {{kn}} kN",
+      "trekOplegging": "trek oplegging {{kn}}",
       "plaat": "plaat",
       "lijmnaad": "lijmnaad",
       "flensbreedte": "flensbreedte",
@@ -414,6 +473,55 @@
     "sparing": "sparing",
     "staart": "staart",
     "wisselbalkEnkel": "wisselbalk"
+  },
+  "invoer": {
+    "wacht": "Nog niet verstuurd…",
+    "rekent": "Rekent…",
+    "fem": "Open FEM Studio rekent…",
+    "eerst": "De invoervelden verschijnen zodra het blad is doorgerekend.",
+    "geenVelden": "Dit blad toont nu geen invoervelden.",
+    "uitleg": "Rekent door als je een veld verlaat, op Enter drukt of even wacht.",
+    "verbergBeeld": "Tekening verbergen",
+    "toonBeeld": "Tekening tonen",
+    "koppeling": {
+      "knop": "Koppel aan een spreadsheetcel",
+      "titel": "Waarde uit een spreadsheetcel",
+      "spreadsheet": "Spreadsheet-blad",
+      "werkblad": "Werkblad",
+      "cel": "Cel",
+      "eenheid": "Eenheid in de cel",
+      "metVeldEenheid": "Leeg: het getal krijgt de eenheid van het veld ({{eenheid}}).",
+      "zonderEenheid": "Leeg: een getal zonder eenheid.",
+      "celOngeldig": "Typ een cel als B4.",
+      "inDeCel": "In de cel: {{waarde}}",
+      "koppel": "Koppelen",
+      "annuleer": "Annuleren",
+      "bron": "Uit {{blad}}, {{cel}}",
+      "onbekendBlad": "blad #{{ref}}",
+      "verwijder": "Koppeling verwijderen",
+      "verwijderUitleg": "Het veld houdt de laatste waarde uit de cel.",
+      "geenSpreadsheet": "Dit project heeft nog geen spreadsheet-blad.",
+      "fout": {
+        "bron": "Het blad bestaat niet (meer).",
+        "geen-spreadsheet": "Dit blad is geen spreadsheet-blad.",
+        "werkmap": "De werkmap is niet te lezen.",
+        "werkblad": "Dit werkblad bestaat niet (meer).",
+        "leeg": "De cel is leeg.",
+        "tekst": "De cel bevat geen getal: {{detail}}",
+        "formulefout": "De formule geeft {{detail}}.",
+        "geen-waarde": "De formule heeft nog geen uitkomst; open het spreadsheet-blad."
+      }
+    }
+  },
+  "vloerOpPalen": {
+    "plattegrond": "Plattegrond",
+    "doorsnede": "Doorsnede bij een paal",
+    "strook": "strook",
+    "kop": "ponskop",
+    "paal": "paal",
+    "klik": "Klik op een blauwe maat om hem te wijzigen.",
+    "oudeMaten": "De tekening toont de laatste geldige maten: een paalafstand en de vloerdikte moeten groter zijn dan nul.",
+    "geenModel": "Vul een paalafstand en een vloerdikte groter dan nul in om de tekening te zien."
   },
   "afdruk": {
     "titel": "Afdrukvoorbeeld",
@@ -450,6 +558,7 @@
     "inhoudResultaten": "Inhoud en resultaten",
     "grondslag": "Grondslag",
     "oordeel": "Oordeel",
+    "paginaKolom": "Pag.",
     "alleVoldoen": "Alle getoetste onderdelen voldoen.",
     "nietGetoetstEen": "{{n}} van de {{totaal}} onderdelen is niet getoetst; zie het betreffende blad.",
     "nietGetoetstMeer": "{{n}} van de {{totaal}} onderdelen zijn niet getoetst; zie de betreffende bladen.",
@@ -461,6 +570,13 @@
     "project": "Project {{nummer}}",
     "opgesteldDoor": "Opgesteld door {{naam}}",
     "paginaWoord": "Pagina",
-    "vanWoord": "van"
+    "vanWoord": "van",
+    "varianten": {
+      "kop": "Varianten",
+      "uitleg": "{{naam}} met andere invoer; niet genoemde invoer is gelijk aan het blad hierboven.",
+      "blad": "Blad",
+      "uc": "Maatgevende UC",
+      "oordeel": "Oordeel"
+    }
   }
 }

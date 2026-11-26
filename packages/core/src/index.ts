@@ -1,9 +1,39 @@
 export { parse, type ParseOptions } from './parser.js';
-export { evaluate, extractScope, setAngleMode } from './evaluator.js';
+export { evaluate, evaluateMetScope, extractScope, setAngleMode, zetProjectEenheden, projectEenheidFouten, zetProjectTekst, type EvalOpties } from './evaluator.js';
+export { geldigeEenheidNaam } from './eenheden.js';
+export { verwijzingNaam, vervangVerwijzingen, leesVerwijzing, verwijzingenIn, verwijzingVanNaam, verwijzingenInMelding, leesCelVerwijzing, celVerwijzingTekst, celNaam, celVerwijzingenIn, isVerwijzingInvoer } from './verwijzing.js';
+export type { CelVerwijzing, CelFout, CelWaarde } from './verwijzing.js';
+export { STELSELS, grootheidVan, decimalenNa, doelInStelsel, toonInvoer, invoerNaarBron, omrekenen, eenheidUitBeeld, eenheidInBeeld, type Grootheid, type Stelsel } from './eenheidstelsel.js';
 export { rekenUitdrukking, uitkomstTekst } from './evaluator.js';
 export { analyseerRekenblok, rekenRekenblok, rekenWaarde, type RekenblokAnalyse, type RekenblokUitkomst } from './rekenblok.js';
 export type { SelectValues, AngleMode, Scope } from './evaluator.js';
 export { render, defaultStyles, type RenderOpties } from './renderer.js';
+export { metDecimaalKomma, taalMetKomma } from './decimaalteken.js';
+export {
+  TOETS_START_RE, leesToetsBlok, naarSchema, canoniek, toetsHash, leesAntwoord, bouwToets, renderToets,
+  eenheidVanVeld, toetsToolToegestaan, TOETS_UITGESLOTEN, schemaHash, alsAntwoord, leesVastgelegdeToetsingen, type ToetsRekenaar,
+} from './toetsBlok.js';
+export { FEM_START_RE, FEM_TOOL, FEM_ENGELS, leesFemBlok, bouwFem, renderFem, femVerzoekArgumenten, femBewaar, type FemRekenaar } from './femBlok.js';
+export { KERN_START_RE, leesKernBlok, bouwKern, renderKern, naarKernSchema, kernAanroepen, kernVerzoekBewaard, type KernRekenaar } from './kernBlok.js';
+export { LAST_START_RE, leesLastKop, leesLastBlok, schrijfLastBlok, lastNamen, bouwLast, renderLast, type LastKop, type LastRekenaar } from './lastBlok.js';
+export {
+  maakFemNet, femRekenmodel, femArgumenten, femBewaar as femPlaatBewaar, femParen, femSteunknopen, femSomLast, FEM_MAX_KNOPEN,
+  type FemInvoer, type FemNet, type FemPlaat, type FemVeer, type FemLijn, type FemLast, type FemGeval,
+} from './femNet.js';
+export {
+  FemModel, femWaarde, femStrook, femSvg, femModelSvg, femVlak3D, femKleurschaal, femGrootheid, FEM_GROOTHEDEN, FEM_EENHEID,
+  type FemGrootheid, type FemSet,
+} from './femResultaat.js';
+export {
+  FEM_STAVEN_TOOL, FEM_STAVEN_MAX_KNOPEN, FEM_UIT_HET_VLAK, maakFemStaafModel, femStaafArgumenten, femStaafBewaar, femStaafSomLast, femStaafAssen,
+  staafAssen, type FemStaafInvoer, type FemStaafInvoerLast,
+} from './femStaven.js';
+export {
+  FemStaafModel, femStaafWaarde, femStaafKnoop, femStaafKrachten, femStaafSvg, femStaafModelSvg, femStaaf3D, femStaafGrootheid, femStaafEenheid,
+  type FemStaafGrootheid, type FemStaafSet, type FemSnedekracht,
+} from './femStaafResultaat.js';
+export { FEM_STAAF_WOORDEN, FEM_GEVAL_ZONDER_NAAM, isFemStaafwerk, renderFemStaven } from './femStaafBlok.js';
+export { I_TABEL, staafProfiel, STAAF_PROFIELEN, type IRegel, type StaafProfiel } from './profielTabel.js';
 export { exprToLatex, nameToLatex } from './latex.js';
 export {
   drieDVlakken, drieDBeeldvlak, drieDGrenzen, drieDGrootte, drieDSvg, DRIE_D_KLEUREN, type DrieDVlak,
@@ -42,6 +72,7 @@ export {
   type IfcGenerationResult,
   type IfcxDocument,
   type GraafGegevens,
+  type VariantenGegevens,
 } from './ifc-generator.js';
 export type {
   IfcxBestand,
@@ -59,13 +90,16 @@ export {
   isProjectIfcx,
   leesProjectIfcx,
   platteKnopen,
+  projectIdVan,
   type IfcxGelezenBlad,
+  type IfcxBelasting,
   type IfcxGelezenProject,
   type IfcxProjectInvoer,
 } from './ifcx/document.js';
+export { metVreemdeGegevens, vreemdeGegevens, type IfcxVreemd } from './ifcx/vreemd.js';
 export { bouwProjectStep, type StepOpties } from './ifcx/step.js';
 export { ATTR as IFCX_ATTR, OCSS_SCHEMAS, ifcKlasse } from './ifcx/namespace.js';
-export { ifcGuid, uuidUitIfcGuid, uuidVan } from './ifcx/identiteit.js';
+export { afgeleideProjectId, ifcGuid, leesProjectId, nieuweProjectId, padVanElement, uuidUitIfcGuid, uuidVan } from './ifcx/identiteit.js';
 export type {
   BladFiguur,
   BladOordeel,

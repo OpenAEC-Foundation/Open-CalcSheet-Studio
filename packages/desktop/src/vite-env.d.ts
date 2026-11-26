@@ -8,6 +8,9 @@ declare module "*.geojson?raw" {
 /** De map library/ in de dev-server; in een productiebouw leeg (vite.config.ts). */
 declare const __LIBRARY_DEV__: string;
 
+/** De platformbouw voor de werkplek van de SuperCloud (vite.config.ts, src/werkplek/werkplek.ts). */
+declare const __WERKPLEK__: boolean;
+
 /**
  * Ontwikkelhaak uit main.tsx, alleen bij `import.meta.env.DEV`: de stores en
  * de bestandslezer voor scripts/rapport-pdf.mjs. In een productiebouw bestaat

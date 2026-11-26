@@ -150,6 +150,29 @@ let liggerId;
   meld(ond.status === 200 && ond.data.undone === true && app.s.rapport.revisies.length === 1, "POST /undo draait de laatste stap terug", kort(ond));
   const opn = await api("POST", "/api/v1/redo");
   meld(opn.status === 200 && opn.data.redone === true && app.s.rapport.revisies.length === 2, "POST /redo zet hem terug");
+  // Een situatie met kaartbeelden: in het antwoord alleen de grootte, in het rapport zelf de JPEG.
+  const jpeg = "QUJDREVGR0hJ";
+  app.s.rapport.situatie = { tonen: true, punt: { lat: 52.0907, lon: 5.1214 }, datum: "2026-11-06", kaarten: [{ id: "omgeving", zoom: 15, jpeg }] };
+  const metSit = await api("GET", "/api/v1/report");
+  const sitTekst = JSON.stringify(metSit.data);
+  meld(metSit.status === 200 && !sitTekst.includes(jpeg) && !sitTekst.includes('"jpeg"') &&
+    JSON.stringify(metSit.data.report.situatie.kaarten) === JSON.stringify([{ id: "omgeving", zoom: 15, bytes: 9 }]),
+    "GET /report: situatie met id, zoom en bytes, zonder jpeg", sitTekst.slice(0, 300));
+  const sitDeel = await api("GET", "/api/v1/report?path=situatie");
+  meld(sitDeel.status === 200 && !JSON.stringify(sitDeel.data).includes(jpeg) && sitDeel.data.value.kaarten[0].bytes === 9, "GET /report?path=situatie: ook zonder jpeg", kort(sitDeel));
+  const sitZet = await api("PATCH", "/api/v1/report", { path: "situatie.tonen", value: false });
+  meld(sitZet.status === 200 && app.s.rapport.situatie.kaarten[0].jpeg === jpeg, "PATCH /report: het opgeslagen rapport houdt de jpeg", kort(sitZet));
+  const sitVervang = await api("PATCH", "/api/v1/report", { path: "situatie", value: app.s.rapport.situatie });
+  meld(sitVervang.status === 200 && !JSON.stringify(sitVervang.data).includes(jpeg) && sitVervang.data.set.situatie.kaarten[0].bytes === 9, "PATCH /report: het antwoord heeft bytes, geen jpeg", kort(sitVervang));
+  // Lezen en terugschrijven (zonder jpeg, met bytes) houdt de kaarten.
+  const teruggelezen = (await api("GET", "/api/v1/report?path=situatie")).data.value;
+  const terug = await api("PATCH", "/api/v1/report", { path: "situatie", value: teruggelezen });
+  meld(terug.status === 200 && app.s.rapport.situatie?.kaarten.length === 1 && app.s.rapport.situatie.kaarten[0].jpeg === jpeg,
+    "PATCH /report: get en weer terug laat de kaarten staan", kort(terug));
+  const terugVol = await api("PATCH", "/api/v1/report", { values: { "situatie.kaarten": [{ id: "omgeving", zoom: 15, bytes: 9 }, { id: "gebied", zoom: 12, bytes: 3 }] } });
+  meld(terugVol.status === 200 && app.s.rapport.situatie?.kaarten.length === 1 && app.s.rapport.situatie.kaarten[0].id === "omgeving" && app.s.rapport.situatie.kaarten[0].jpeg === jpeg,
+    "PATCH /report: een kaart zonder bestaande tegenhanger valt weg", kort(terugVol));
+  delete app.s.rapport.situatie;
 
   const conflict = await api("POST", "/api/v1/project/new");
   meld(conflict.status === 409 && conflict.data.error.code === "CONFLICT", "POST /project/new met niet opgeslagen werk: 409");
@@ -291,6 +314,9 @@ console.log("Export en app:");
 
   const s1 = await api("PATCH", "/api/v1/settings", { theme: "dark", units: { angleMode: "deg" } });
   meld(s1.status === 200 && s1.data.theme === "dark" && s1.data.units.angleMode === "deg" && s1.data.units.defaultLength === "mm", "PATCH /settings: thema en één eenheid, de rest blijft", kort(s1));
+  const s3 = await api("PATCH", "/api/v1/settings", { units: { stelsel: "us" } });
+  meld(s3.status === 200 && s3.data.units.stelsel === "us" && s3.data.units.angleMode === "deg", "PATCH /settings: het eenhedenstelsel voor een nieuw project, de rest blijft", kort(s3));
+  meld((await api("PATCH", "/api/v1/settings", { units: { stelsel: "imperial" } })).status === 400, "PATCH /settings: onbekend eenhedenstelsel 400");
   meld((await api("PATCH", "/api/v1/settings", { theme: "roze" })).status === 400, "PATCH /settings: onbekend thema 400");
   meld((await api("PATCH", "/api/v1/settings", {})).status === 400, "PATCH /settings: leeg 400");
   const s2 = await api("GET", "/api/v1/settings");

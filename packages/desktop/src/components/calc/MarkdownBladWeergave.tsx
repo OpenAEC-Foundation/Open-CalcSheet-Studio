@@ -8,10 +8,11 @@ import { useZoom } from "../../hooks/useZoom";
 import { usePapier } from "./afdrukTaal";
 import type { Maten } from "./paginering";
 import { IframeBeelden } from "./iframeBlok";
-import { exporteerMarkdown, kiesMarkdown, meldBeeldGeladen } from "./markdownBlad";
+import { exporteerMarkdown, kiesMarkdown } from "./markdownBlad";
 import { markdownVoorPapier, markdownVoorScherm } from "./markdownRegels";
 import { schoonUitwerking } from "./uitwerkingOpschonen";
 import { UitwerkingHtml } from "./UitwerkingHtml";
+import { KoppelingInfo, KoppelingMelding } from "./GekoppeldeBestanden";
 import "./Editor.css";
 import "./PdfBladWeergave.css";
 import "./MarkdownBladWeergave.css";
@@ -20,6 +21,10 @@ import "./MarkdownBladWeergave.css";
  * Een Markdown-blad in beeld en op papier (zie store/markdownBlad.ts). In de
  * werkruimte de bron naast de opgemaakte tekst; op papier de tekst in de opmaak
  * van het rapport, in blokken die de verdeling over de vellen kan verplaatsen.
+ *
+ * Een gekoppeld blad (een RTF-bestand of werkmapbereik, store/koppeling.ts) is
+ * alleen te lezen: de tekst komt uit de bron. Boven de tekst staat, op het scherm
+ * en op papier, een melding als de bron ontbreekt of niet bij te werken is.
  */
 
 const BASE_FONT_PX = 13;
@@ -30,11 +35,14 @@ export function MarkdownBron({ ex }: { ex: Exemplaar }) {
   const { t } = useTranslation("werkruimte");
   const zetMarkdown = useProjectStore((s) => s.zetMarkdown);
   const { ref, zoom } = useZoom();
+  const gekoppeld = !!ex.md?.koppeling;
   return (
     <div className="calc-editor" ref={ref} style={{ ["--cm-font-size" as string]: `${BASE_FONT_PX * zoom}px` }}>
       <CodeMirror
         value={ex.md?.tekst ?? ""}
         extensions={INVOEGSELS}
+        readOnly={gekoppeld}
+        editable={!gekoppeld}
         placeholder={t("markdown.leeg")}
         onChange={(tekst) => zetMarkdown(ex.id, { ...(ex.md ?? { bestandsnaam: "" }), tekst })}
         basicSetup={{
@@ -81,6 +89,7 @@ export function MarkdownWeergave({ ex }: { ex: Exemplaar }) {
   }, [inhoud]);
   return (
     <div className="calc-preview-content md-weergave">
+      <KoppelingMelding ex={ex} />
       <div ref={wortel} className="md-tekst" dangerouslySetInnerHTML={inhoud} />
     </div>
   );
@@ -101,6 +110,7 @@ export function MarkdownBladInfo({ ex }: { ex: Exemplaar }) {
       alert(t("markdown.lezenMislukt", { fout: (err as Error)?.message ?? String(err) }));
     }
   };
+  if (ex.md?.koppeling) return <KoppelingInfo ex={ex} />;
   const schrijf = async () => {
     try {
       if (ex.md) await exporteerMarkdown(ex.naam, ex.md);
@@ -156,18 +166,19 @@ export function MarkdownPapier({ ex }: { ex: Exemplaar; maten: Maten }) {
     for (const img of wortel.current?.querySelectorAll("img") ?? []) {
       if (img.complete) continue;
       img.setAttribute("data-afdruk-laadt", "");
-      const klaar = () => {
-        img.removeAttribute("data-afdruk-laadt");
-        meldBeeldGeladen();
-      };
+      // Het afdrukvoorbeeld ziet het merkteken verdwijnen en zet het beeld op zijn vel.
+      const klaar = () => img.removeAttribute("data-afdruk-laadt");
       img.addEventListener("load", klaar, { once: true });
       img.addEventListener("error", klaar, { once: true });
     }
   }, [html]);
   if (!ex.md) return <p className="print-pdf-melding">{t("markdownBlad.ontbreekt")}</p>;
   return (
-    <div ref={wortel} className="rpa-vlak md-papier">
-      <UitwerkingHtml html={html} bladId={ex.id} />
-    </div>
+    <>
+      <KoppelingMelding ex={ex} opPapier />
+      <div ref={wortel} className="rpa-vlak md-papier">
+        <UitwerkingHtml html={html} bladId={ex.id} />
+      </div>
+    </>
   );
 }

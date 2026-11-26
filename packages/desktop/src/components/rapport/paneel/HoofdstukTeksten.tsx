@@ -6,6 +6,7 @@ import { opzetVan, type Inhoud, type Knoop } from "../../../rapport/opzet";
 import { noemtVorigeProductnaam, VORIGE_PRODUCTNAAM } from "../../../rapport/standaardteksten";
 import { BELASTING_BLOKKEN } from "./BelastingenSectie";
 import { vindKnoop } from "./hulp";
+import BeeldenInvoer from "./BeeldenInvoer";
 import TekstVeld, { Invulvelden } from "./TekstVeld";
 import { UITGANGSPUNT_BLOKKEN } from "./UitgangspuntenSectie";
 import { Kop, Sectie, Veld, Vink, useRapport } from "./velden";
@@ -68,6 +69,7 @@ function TekstInvoer({ knoop }: { knoop: Knoop }) {
             : undefined
         }
       />
+      <BeeldenInvoer id={knoop.id} />
       {knoop.titelNieuwbouw && <KopNieuwbouw knoop={knoop} titelNieuwbouw={knoop.titelNieuwbouw} />}
     </>
   );

@@ -20,6 +20,7 @@
  * Draaien:  node scripts/check-rapporttemplate.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
+import "./lib/talen.mjs";
 import { normaliseerRapport, RAPPORT_VERSIE, standaardRapport, STANDAARD_HUISSTIJL } from "../packages/desktop/src/rapport/model.ts";
 import {
   beschrijftBestaand, bijlageAnker, bijlageBladAnker, bijlageRegels, bijlagen, bladenInBijlage, bouwOpzet, heeftBerekeningen, inhoudsopgave,
@@ -43,13 +44,13 @@ function toets(naam, ok, detail) {
   if (!ok) fouten++;
   console.log(`  ${ok ? "OK    " : "FOUT  "} ${naam}${ok || detail === undefined ? "" : `\n         ${typeof detail === "string" ? detail : JSON.stringify(detail)}`}`);
 }
-/** Diepe vergelijking; de volgorde van sleutels telt niet. */
+/** Diepe vergelijking; de volgorde van sleutels telt niet, een sleutel zonder waarde telt als afwezig (zoals in JSON). */
 function zelfde(a, b) {
   if (Object.is(a, b)) return true;
   if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
   if (Array.isArray(a) !== Array.isArray(b)) return false;
-  const ka = Object.keys(a);
-  const kb = Object.keys(b);
+  const ka = Object.keys(a).filter((k) => a[k] !== undefined);
+  const kb = Object.keys(b).filter((k) => b[k] !== undefined);
   return ka.length === kb.length && ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && zelfde(a[k], b[k]));
 }
 const gelijk = (naam, kreeg, verwacht) => toets(naam, zelfde(kreeg, verwacht), `kreeg ${JSON.stringify(kreeg)}, verwacht ${JSON.stringify(verwacht)}`);
@@ -297,9 +298,9 @@ kop("3. De opzet bewerken");
 
   // Hernoemen: de taal van het rapport.
   const en = hernoemKnoop(r0, "inleiding", "Summary");
-  gelijk("een Engels rapport: de Engelse kop", en.opzet[0].titel, { en: "Summary", nl: "Inleiding" });
+  gelijk("een Engels rapport: de Engelse kop", en.opzet[0].titel, { en: "Summary", nl: "Inleiding", lt: "Įvadas" });
   const nl = hernoemKnoop(nieuw("nl"), "inleiding", "Samenvatting");
-  gelijk("een Nederlands rapport: de Nederlandse kop, Engels blijft", nl.opzet[0].titel, { en: "Introduction", nl: "Samenvatting" });
+  gelijk("een Nederlands rapport: de Nederlandse kop, Engels blijft", nl.opzet[0].titel, { en: "Introduction", nl: "Samenvatting", lt: "Įvadas" });
   gelijk("op papier in de taal van het rapport", regels(nl)[0], "1 Samenvatting");
   gelijk("na wisselen van taal de andere kop", regels(wisselTaal(nl, "en"))[0], "1 Introduction");
   gelijk("OPZET zelf blijft", OPZET[0].titel.nl, "Inleiding");

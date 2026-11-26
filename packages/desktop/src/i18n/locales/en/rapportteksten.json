@@ -1,0 +1,615 @@
+{
+  "koppen": {
+    "inleiding": "Introduction",
+    "projectgegevens": "Project details",
+    "projectomschrijving": "Project description",
+    "rol": "Role in the project and scope of this report",
+    "constructie": "Structure",
+    "toelichting": "Description of the structure",
+    "bestaand": "Existing situation",
+    "bestaand-verticaal": "Vertical load path",
+    "bestaand-stabiliteit": "Stability",
+    "bestaand-fundatie": "Foundation",
+    "bestaand-beoordeling": "Assessment of the existing structure",
+    "wijziging": "Alteration",
+    "wijzigingNieuwbouw": "Structural concept",
+    "belendingen": "Adjoining buildings",
+    "uitvoering": "Notes for construction",
+    "uitvoering-bestaand": "Existing situation",
+    "uitvoering-verbouw": "Alteration, renovation",
+    "uitvoering-nieuwbouw": "New construction",
+    "uitgangspunten": "Design basis",
+    "bouwwerk": "Structural design basis",
+    "brand": "Structural fire design",
+    "materialen": "Materials",
+    "conservering": "Corrosion protection of steelwork",
+    "factoren": "Partial factors and combinations of actions",
+    "bestaand-situatie": "Existing situation",
+    "trillingen": "Vibrations",
+    "vervormingen": "Deformations and horizontal displacements",
+    "montage": "Erection and construction stages",
+    "rekenprogrammatuur": "Calculation software",
+    "temperatuur": "Thermal actions",
+    "aardbeving": "Seismic actions",
+    "belastingen": "Loads",
+    "sneeuw": "Snow loads(Q)",
+    "wind": "Wind loads(Q)",
+    "regenwater": "Rainwater ponding(Q)",
+    "veranderlijk": "Other variable loads(Q)",
+    "blijvend": "Permanent loads(G)",
+    "berekeningen": "Calculations",
+    "bijlageA": "Detailed calculations"
+  },
+  "standaard": {
+    "titels": [
+      "Structural advice & calculations",
+      "Structural calculation",
+      "Structural advice",
+      "Structural calculations and drawings",
+      "Assessment of the existing structure"
+    ],
+    "rollen": [
+      "Lead structural engineer",
+      "Structural engineer",
+      "Structural consultant",
+      "Checking engineer"
+    ],
+    "soortenBouwwerk": [
+      "Dwelling",
+      "Single-family house",
+      "Apartment building",
+      "Villa",
+      "Office",
+      "Industrial hall",
+      "Outbuilding",
+      "Shed"
+    ],
+    "normen": "NEN-EN 1990 to 1997",
+    "eersteUitgave": "First issue",
+    "nietVanToepassing": "n/a",
+    "materiaalType": [
+      "In-situ concrete",
+      "Timber",
+      "Wood-based panels",
+      "Reinforcing steel",
+      "Steel",
+      "Grout under steel"
+    ],
+    "materiaalOpmerking": [
+      "(for exposure classes see concrete calculations and drawing)"
+    ],
+    "materialenNoot": "(unless stated otherwise)",
+    "bevestiging": [
+      "Bolts",
+      "Coach screws",
+      "Chemical anchors"
+    ],
+    "conserveringOnderdeel": [
+      "External structures",
+      "In cavity walls",
+      "Internal steelwork"
+    ],
+    "conserveringSysteem": [
+      "Duplex or hot-dip galvanised",
+      "Hot-dip galvanised",
+      "Paint system"
+    ],
+    "conserveringSlot": "Corrosion protection applies to newly installed structural elements.",
+    "vervormingOnderdeel": [
+      "Vertical deflection of roofs",
+      "Vertical deflection of floors",
+      "Floors with masonry walls",
+      "Horizontal displacement, building",
+      "Horizontal displacement, partition"
+    ]
+  },
+  "teksten": {
+    "inleiding": [
+      {
+        "label": "Main calculation",
+        "tekst": "At the request of the client, {adviseur} presents structural advice for the above project in this report.\n\nThe advice is based on the information provided.\n\nThis report contains the main calculation of the structure.\nFor the detailed engineering, additional calculations are still to be carried out by others and reviewed by {adviseur}:\n-Drawings and calculations of proprietary floor systems;\n-Drawings and calculations of the steel structure;\n-Cone penetration tests and foundation advice;"
+      },
+      {
+        "label": "Design basis only",
+        "tekst": "At the request of the client, {adviseur} presents structural advice for the above project in this report.\n\nThe advice is based on the information provided.\n\nThis report sets out the design basis of the structure."
+      }
+    ],
+    "projectomschrijving": [
+      {
+        "label": "Extension",
+        "tekst": "The project comprises the construction of an extension."
+      },
+      {
+        "label": "Roof extension",
+        "tekst": "The project comprises the construction of a roof extension."
+      },
+      {
+        "label": "New house",
+        "tekst": "The project comprises the construction of a new house."
+      },
+      {
+        "label": "Alteration",
+        "tekst": "The project comprises the alteration of an existing building."
+      }
+    ],
+    "rol": [
+      {
+        "label": "Commission: structural advice",
+        "tekst": "{adviseur} has been commissioned to provide the structural advice for this project."
+      },
+      {
+        "label": "Commission: independent check",
+        "tekst": "{adviseur} has been commissioned to check the structure of this project."
+      }
+    ],
+    "bestaand-verticaal": [
+      {
+        "label": "Timber joists on masonry",
+        "tekst": "The floors consist of timber joists. These transfer the loads through the masonry walls to the foundation."
+      },
+      {
+        "label": "Purlin roof and timber joists",
+        "tekst": "The roof is a purlin roof. The floors consist of timber joists.\nThese transfer the loads through the masonry walls and a loadbearing internal wall to the foundation."
+      },
+      {
+        "label": "Concrete floors on loadbearing walls",
+        "tekst": "The floors are concrete floors. These transfer the loads through the loadbearing walls to the foundation."
+      }
+    ],
+    "bestaand-stabiliteit": [
+      {
+        "label": "Masonry walls",
+        "tekst": "Stability is provided by the masonry walls."
+      },
+      {
+        "label": "Shear walls and diaphragm action",
+        "tekst": "Stability is provided by the shear walls, in combination with the diaphragm action of the floors."
+      }
+    ],
+    "bestaand-fundatie": [
+      {
+        "label": "Unknown, presumably shallow",
+        "tekst": "No archive information is available. The building presumably has a shallow foundation."
+      },
+      {
+        "label": "Shallow foundation",
+        "tekst": "According to the archive information, the building has a shallow foundation."
+      },
+      {
+        "label": "Piled foundation",
+        "tekst": "According to the archive information, the building has a piled foundation."
+      }
+    ],
+    "bestaand-beoordeling": [
+      {
+        "label": "No reason for doubt",
+        "tekst": "There is no reason to doubt the quality of construction of the existing structure."
+      },
+      {
+        "label": "Assess on site",
+        "tekst": "The condition of the existing structure is not known. It will be assessed on site before the works start."
+      }
+    ],
+    "wijziging": [
+      {
+        "label": "Opening in a loadbearing wall",
+        "tekst": "An opening is made in a loadbearing wall, with a steel portal frame.\nStability is provided by the remaining part of the wall.\nVertical loads are transferred to the existing foundation through the columns and the lower beam."
+      },
+      {
+        "label": "Extension with timber joists",
+        "tekst": "The extension has a timber joist roof, which transfers the loads through loadbearing walls to a new shallow foundation."
+      }
+    ],
+    "belendingen": [
+      {
+        "label": "Not considered",
+        "tekst": "The structural influence of adjoining buildings is not considered in this calculation."
+      }
+    ],
+    "uitvoering-bestaand": [
+      {
+        "label": "Check dimensions",
+        "tekst": "-Dimensions are based on archive documents and/or the architect's drawing.\n-Dimensions must be verified on site."
+      }
+    ],
+    "uitvoering-verbouw": [
+      {
+        "label": "Propping at new openings",
+        "tekst": "-When making new openings in existing masonry, provide adequate propping to the wall and the surrounding structure."
+      },
+      {
+        "label": "Demolition sequence",
+        "tekst": "-Remove loadbearing elements only after the new structure is in place or the load has been temporarily supported."
+      }
+    ],
+    "uitvoering-nieuwbouw": [
+      {
+        "label": "Shallow foundation",
+        "tekst": "-Shallow foundation: establish the bearing stratum during excavation.\n-Have the reinforcement inspected before casting."
+      },
+      {
+        "label": "Piled foundation",
+        "tekst": "-Send the piling records and pile deviations to the structural engineer.\n-Inspect the reinforcement of the foundation and of all floor pours."
+      }
+    ],
+    "trillingen": [
+      {
+        "label": "Floor vibrations",
+        "tekst": "Vibration calculations are carried out for floor structures.\nVibrations are not considered further for other elements."
+      },
+      {
+        "label": "Not considered",
+        "tekst": "Vibrations are not considered in this calculation."
+      }
+    ],
+    "vervormingen": [
+      {
+        "label": "Standard",
+        "tekst": "The deformation limits below apply to this project."
+      }
+    ],
+    "montage": [
+      {
+        "label": "Final stage",
+        "tekst": "This calculation considers the structure in its final stage. The various construction stages, such as propping, are not included."
+      }
+    ],
+    "rekenprogrammatuur": [
+      {
+        "label": "Open CalcSheet Studio",
+        "tekst": "The calculations in this report were prepared with Open CalcSheet Studio."
+      },
+      {
+        "label": "Open CalcSheet Studio with appendices",
+        "tekst": "The calculations in this report were prepared with Open CalcSheet Studio.\nCalculations made with other software are in the appendices, which state the version used."
+      }
+    ],
+    "temperatuur": [
+      {
+        "label": "Not applicable",
+        "tekst": "No particular thermal actions apply to this project."
+      },
+      {
+        "label": "Per element",
+        "tekst": "Thermal actions are considered for the elements concerned."
+      }
+    ],
+    "aardbeving": [
+      {
+        "label": "Not required",
+        "tekst": "No seismic design situation is required."
+      },
+      {
+        "label": "According to the location",
+        "tekst": "Seismic actions follow from the standard that applies at the location."
+      }
+    ],
+    "sneeuw": [
+      {
+        "label": "Standard",
+        "tekst": "Snow drift and snow loads on pitched roofs are calculated for the elements concerned, where applicable."
+      }
+    ],
+    "regenwater": [
+      {
+        "label": "Not applicable",
+        "tekst": "Not applicable"
+      },
+      {
+        "label": "Per roof element",
+        "tekst": "Water ponding on flat roofs is calculated for the roof elements concerned."
+      }
+    ]
+  },
+  "normwaarden": {
+    "categorie": {
+      "A-vloer": "Category A: domestic and residential areas",
+      "A-trap": "Category A: stairs",
+      "A-balkon": "Category A: balconies",
+      "A-gemeenschappelijk": "Category A: communal areas",
+      "B": "Category B: office areas",
+      "B-verkeer": "Category B: enclosed circulation areas",
+      "C-verkeer": "Category C: enclosed circulation areas",
+      "C1": "Category C1: areas with tables",
+      "C2": "Category C2: areas with fixed seats",
+      "C3": "Category C3: areas without obstacles",
+      "C4": "Category C4: areas for physical activities",
+      "C5": "Category C5: areas for large crowds",
+      "D-verkeer": "Category D: enclosed circulation areas",
+      "D1": "Category D1: general retail",
+      "D2": "Category D2: department stores",
+      "E": "Category E: storage areas",
+      "H-dak": "Category H: roofs"
+    },
+    "combinatie": {
+      "buitengewoon": "Accidental",
+      "karakteristiek": "Characteristic",
+      "frequent": "Frequent",
+      "quasi": "Quasi-perm.",
+      "nietGebruikt": "not used"
+    },
+    "terrein": {
+      "1": "coastal",
+      "2": "rural",
+      "3": "built-up"
+    }
+  },
+  "gewichten": {
+    "groepen": {
+      "vloerelementen": "Floor elements",
+      "bestaand": "Existing floor and roof slabs",
+      "dakelementen": "Roof elements",
+      "daktuin": "Roof garden",
+      "hsb": "Timber frame construction",
+      "glas": "Glazed facades and roofs",
+      "steenachtig": "Mineral materials",
+      "metalen": "Metals",
+      "afwerking": "Finishes"
+    },
+    "lagen": {
+      "kanaalplaat": "hollow-core slab {h} mm",
+      "kanaalplaatVerzwaard": "heavy hollow-core slab {h} mm",
+      "kernactivering": "hollow-core slab with concrete core activation {h} mm",
+      "combinatievloer": "composite floor, concrete with EPS infill blocks",
+      "ribcassette": "ribbed cassette floor",
+      "gipsvezel": "gypsum fibre floor element 2×12.5 mm + wood wool",
+      "renovatieDroog": "renovation floor with EPS elements, dry finish",
+      "renovatieHalfdroog": "renovation floor with EPS elements, semi-dry finish",
+      "renovatieStandaard": "renovation floor with EPS elements, standard finish",
+      "houtvezelcement": "wood-fibre cement roof slabs 100 mm",
+      "bims": "pumice concrete slabs",
+      "dakpaneel": "insulated steel roof panel, long span",
+      "zonnepanelenHellend": "solar panels on a pitched roof",
+      "zonnepanelenPlat": "solar panels on a flat roof, with ballast",
+      "sedum": "moss-sedum vegetation",
+      "substraat": "substrate",
+      "granulaat": "mineral granulate",
+      "zand": "sand",
+      "gipsplaat": "plasterboard",
+      "osb": "OSB/3",
+      "hpl": "wet room wall panel (HPL)",
+      "stijlwerk": "timber frame studs, 9% fill",
+      "isolatie": "insulation",
+      "glasPakket": "glass, total glass thickness 25 mm",
+      "glasStijlen": "mullions 67×120 mm, 4 m¹ per m²",
+      "betonInSitu": "concrete, cast in situ",
+      "betonPrefab": "concrete, precast",
+      "kalkzandsteen": "calcium silicate masonry",
+      "metselwerk": "masonry",
+      "gipsblokken": "gypsum blocks",
+      "kleiblokken": "porous clay blocks",
+      "grind": "gravel",
+      "staal": "steel",
+      "aluminium": "aluminium",
+      "gipskarton": "gypsum plasterboard",
+      "gips": "gypsum plaster",
+      "cementdekvloer": "cement screed",
+      "glas": "glass"
+    },
+    "opmerkingen": {
+      "woningscheidend": "separating floor between dwellings",
+      "afschot": "roof with a fall",
+      "beplanting": "for planting",
+      "drainage": "drainage layer",
+      "stijlwerk": "0.100 m × 5.0 kN/m³ × 9%",
+      "glasStijlen": "0.067 × 0.120 m × 4.0 kN/m³ × 4 m¹/m²"
+    },
+    "opbouwen": {
+      "glazenDak": "Glazed roof",
+      "hsbGipsplaat": "Timber frame internal wall with plasterboard",
+      "hsbNatteRuimte": "Timber frame internal wall, wet room",
+      "glazenPui": "Glazed facade"
+    },
+    "dikteInvullen": "enter thickness"
+  },
+  "template": {
+    "ingebouwdNaam": "Standard report",
+    "zonderNaam": "Report template",
+    "eigenLabel": "Template text",
+    "nieuwHoofdstuk": "New chapter",
+    "nieuweParagraaf": "New section",
+    "nieuwTekstblok": "New text block"
+  },
+  "normen": {
+    "grootheden": {
+      "vb0": "Fundamental value of the basic wind velocity",
+      "sk": "Characteristic ground snow load",
+      "agr": "Reference peak ground acceleration"
+    },
+    "TWEEDE_GENERATIE_TEKST": "Second-generation Eurocodes (EN 1990:2023 and further)",
+    "landen": {
+      "NL": {
+        "naam": "Netherlands",
+        "normenTekst": "NEN-EN 1990 to 1997",
+        "tekst": "The Bbl refers to the standards; the editions are in Annex II of the Omgevingsregeling, and those count legally.",
+        "opmerking": "The Bbl does not designate NEN-EN 1998. NPR 9998 is limited to the north-east of the Netherlands.",
+        "opmerking2": "No seismic standard is designated by the Bbl; for the north-east of the Netherlands see NPR 9998."
+      },
+      "EUROCODE": {
+        "naam": "Eurocode without national annex",
+        "normenTekst": "EN 1990 to EN 1998",
+        "tekst": "No national choices. The recommended values apply; many values, such as wind and snow, only exist in a national annex and have to be entered."
+      },
+      "AT": {
+        "naam": "Austria",
+        "normenTekst": "ÖNORM EN 1990 to 1998 with ÖNORM B",
+        "tekst": "OIB-Richtlinie 1 refers to ÖNORM EN 1990 with ÖNORM B 1990-1 and is binding through the federal states.",
+        "qb0": "Basic velocity pressure"
+      },
+      "AU": {
+        "naam": "Australia",
+        "normenTekst": "NCC 2025, AS/NZS 1170",
+        "tekst": "The ABCB publishes NCC 2025, which takes legal effect through state and territory legislation; dates differ per state.",
+        "regio": "Wind region",
+        "VR": "Regional wind speed",
+        "sg": "Ground snow load",
+        "Z": "Hazard factor"
+      },
+      "BE": {
+        "naam": "Belgium",
+        "normenTekst": "NBN EN 1990 to 1998 with ANB",
+        "tekst": "NBN states that a calculation without the ANB is not legally valid; no Belgian building decree was found."
+      },
+      "CA": {
+        "naam": "Canada",
+        "normenTekst": "NBC 2025",
+        "tekst": "NRC publishes NBC 2025 (16th edition), a model code that only applies by law once a province or territory adopts it.",
+        "q": "Reference velocity pressure, 1/500",
+        "Ss": "Ground snow load, 1/1000",
+        "Sr": "Associated rain load, 1/1000",
+        "PGA": "Peak ground acceleration",
+        "PGV": "Peak ground velocity",
+        "SaT": "Spectral acceleration"
+      },
+      "CH": {
+        "naam": "Switzerland",
+        "normenTekst": "SIA 260:2013, SIA 261:2020",
+        "tekst": "SIA publishes the structural standards; their legal status has not been established. BAFU asks for building according to the applicable standards.",
+        "qp0": "Reference value of the velocity pressure",
+        "h0": "Reference height",
+        "zone": "Seismic zone (Z1a to Z3b)",
+        "agd": "Design ground acceleration",
+        "baugrund": "Ground class"
+      },
+      "DE": {
+        "naam": "Germany",
+        "normenTekst": "DIN EN 1990 to 1998 with /NA, MVV TB 2025/1",
+        "tekst": "MVV TB 2025/1 is a model by DIBt that only applies once a federal state announces it. MVV TB means the edition listed there; DIN means the latest in the DIN catalogue.",
+        "opmerking": "DIN also lists DIN EN 1990/NA/A1:2024-05.",
+        "tekst2": "MVV TB 2025/1 only lists DIN 4149:2005-04.",
+        "windzone": "Wind zone",
+        "qb0": "Basic velocity pressure",
+        "schneelastzone": "Snow load zone",
+        "erdbebenzone": "Seismic zone",
+        "untergrund": "Geological subsoil class"
+      },
+      "DK": {
+        "naam": "Denmark",
+        "normenTekst": "DS/EN 1990 to 1998 with DK NA",
+        "tekst": "BR18, chapter 15, is legally binding and refers to the Eurocodes with DK NA, first generation only.",
+        "ag": "Design ground acceleration"
+      },
+      "ES": {
+        "naam": "Spain",
+        "normenTekst": "CTE DB SE, NCSE-02, Código Estructural",
+        "tekst": "By law CTE, NCSE-02 and the Código Estructural apply; the Código Estructural allows the Eurocodes with a national annex published by the ministry.",
+        "qb": "Basic value of the dynamic pressure",
+        "vb": "Basic wind velocity",
+        "ab": "Basic seismic acceleration",
+        "K": "Contribution coefficient"
+      },
+      "FI": {
+        "naam": "Finland",
+        "normenTekst": "SFS-EN 1990 to 1997 with national choices",
+        "tekst": "Decree 477/2014: the Eurocodes with the national choices of the ministry of the environment comply; other methods may be used if they meet the same requirements.",
+        "opmerking": "No national annex.",
+        "opmerking2": "Seismic design only at the request of the client, according to the concrete guidance of the ministry."
+      },
+      "FR": {
+        "naam": "France",
+        "normenTekst": "NF EN 1990 to 1998 with national annexes",
+        "tekst": "AFNOR describes the Eurocodes as voluntary; only the seismic part is designated by law (arrêté of 22-10-2010, which names NF EN 1998-1/NA 2007-12).",
+        "zone": "Seismicity zone (1 to 5)",
+        "agr": "Reference peak ground acceleration"
+      },
+      "GB": {
+        "naam": "United Kingdom",
+        "normenTekst": "BS EN 1990 to 1998 with UK National Annexes",
+        "tekst": "Approved Document A (England) names BS EN with the UK NA as practical guidance and allows other routes. Scotland, Wales and Northern Ireland have not been checked.",
+        "vbmap": "Map wind speed",
+        "PGA": "Peak ground acceleration (maps in PD 6698)"
+      },
+      "IE": {
+        "naam": "Ireland",
+        "normenTekst": "I.S. EN 1990 to 1997 with Irish National Annexes",
+        "tekst": "Technical Guidance Document A (2012) names the Eurocodes with the Irish NA as practical guidance for Part A.",
+        "opmerking": "No national annex found.",
+        "vbmap": "Fundamental basic wind velocity",
+        "opmerking2": "NSAI classifies all of Ireland as very low seismicity (foreword to I.S. EN 1998-5)."
+      },
+      "IN": {
+        "naam": "India",
+        "normenTekst": "IS 875, IS 1893, IS 456, IS 800",
+        "tekst": "BIS calls the National Building Code a model code for governments and local bodies; how binding it is depends on local bye-laws. Its successor is SP 7:2026, whose references have not been read.",
+        "tekst2": "The BIS list shows 2016, while another BIS record has a 2025 edition with the same title; which one applies is to be confirmed.",
+        "Vb": "Basic wind speed",
+        "s0": "Characteristic ground snow load",
+        "Z": "Zone factor of the seismic zone"
+      },
+      "IT": {
+        "naam": "Italy",
+        "normenTekst": "NTC 2018 (DM 17-01-2018)",
+        "tekst": "By law NTC 2018 and Circolare n. 7/2019 apply; the Eurocodes with Appendici Nazionali only count as documents of proven validity (chapters 1 and 12).",
+        "vb0": "Basic reference velocity at sea level",
+        "qsk": "Reference value of the ground snow load",
+        "ag": "Maximum horizontal acceleration",
+        "Fo": "Spectrum factor",
+        "TC": "Reference period"
+      },
+      "NO": {
+        "naam": "Norway",
+        "normenTekst": "NS-EN 1990 to 1998 with NA",
+        "tekst": "TEK17 § 10-2 is legally binding: the Eurocodes with NA comply, alternatives must be shown to be equivalent."
+      },
+      "NZ": {
+        "naam": "New Zealand",
+        "normenTekst": "B1/VM1 (2nd edition), AS/NZS 1170, NZS 1170.5",
+        "tekst": "MBIE manages the statutory Building Code; B1/VM1, second edition (28-07-2025), is one way to show compliance. TS 1170.5:2025 is an alternative route, NZS 1170.5:2004 stays the cited standard.",
+        "regio": "Wind region",
+        "VR": "Regional wind speed",
+        "sg": "Ground snow load",
+        "Z": "Hazard factor"
+      },
+      "PL": {
+        "naam": "Poland",
+        "normenTekst": "PN-EN 1990 to 1997 with NA",
+        "tekst": "§ 204 of the Warunki techniczne is legally binding: safety is ensured by complying with the Polish Standards for design. The latest consolidation has not been checked.",
+        "opmerking": "Original language version; no national annex in the list of PKN.",
+        "opmerking2": "PKN reports no translation because of the aseismic location of Poland."
+      },
+      "SE": {
+        "naam": "Sweden",
+        "normenTekst": "BFS 2024:6, SS-EN 1990 to 1997",
+        "tekst": "By law BFS 2024:6 applies (since 01-07-2025, replacing EKS); the Eurocodes with the Swedish NA are a recognised route through its general advice. Boverket's own values come first.",
+        "opmerking": "Exists, but is not in the list of BFS 2024:6.",
+        "vb": "Reference wind speed",
+        "S0": "Characteristic ground snow load",
+        "opmerking2": "BFS 2024:6 names no quantity for seismic actions; the status of Eurocode 8 in Sweden has not been established."
+      },
+      "US": {
+        "naam": "United States",
+        "normenTekst": "IBC 2024, ASCE/SEI 7-22",
+        "tekst": "ICC publishes the IBC 2024, which only applies once a state or municipality adopts it. Editions differ per state, and some states have no statewide IBC.",
+        "V": "Basic wind speed",
+        "pg": "Ground snow load",
+        "SS": "Mapped acceleration, short period",
+        "S1": "Mapped acceleration, 1 s",
+        "SDS": "Design acceleration, short period",
+        "SD1": "Design acceleration, 1 s"
+      }
+    },
+    "en1990": {
+      "factoren": {
+        "1": "Accidental(6.11a/b)",
+        "2": "Characteristic(6.14b)",
+        "3": "Quasi-perm.(6.16b)"
+      },
+      "psi": {
+        "1": "Category A: domestic, residential areas",
+        "2": "Category B: office areas",
+        "3": "Category C: congregation areas",
+        "4": "Category D: shopping areas",
+        "5": "Category E: storage areas",
+        "6": "Category F: traffic, vehicle up to 30 kN",
+        "7": "Category G: traffic, vehicle 30 to 160 kN",
+        "8": "Category H: roofs",
+        "9": "Snow: Finland, Iceland, Norway, Sweden",
+        "10": "Snow: elsewhere, H above 1000 m",
+        "11": "Snow: elsewhere, H up to 1000 m",
+        "12": "Wind",
+        "13": "Temperature (non-fire)"
+      }
+    },
+    "locatiewaarde": "Location value (see the standard)"
+  }
+}

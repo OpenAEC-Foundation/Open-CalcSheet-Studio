@@ -6,6 +6,8 @@ import { dekkingVan } from "../../../rapport/normen/keuze";
 import { useNormkeuze } from "../../../store/actiefBlad";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { useProjectStore } from "../../../store/projectStore";
+import { leesPunt } from "../../../kaart/punt";
+import { situatieActueel, stelselSleutel } from "../../../rapport/situatie";
 import { Afgeleid, Keuze, Sectie, TekstVak, Veld, useRapport, type Optie } from "./velden";
 
 /**
@@ -18,6 +20,10 @@ export default function DocumentSectie() {
   const gegevens = useProjectStore((s) => s.gegevens);
   const k = useNormkeuze();
   const profiel = useBureauStore((s) => s.profiel);
+  const werkBij = useProjectStore((s) => s.werkRapportBij);
+  const situatie = rapport.situatie;
+  const projectPunt = leesPunt(gegevens.locatie_punt);
+  const verouderd = situatieActueel(situatie, projectPunt, rapport.taal, stelselSleutel(gegevens)) === "verouderd";
 
   // Zelfde bureau als op papier: het vastgelegde, of zolang dat leeg is het profiel.
   const bureau = rapport.bureau.naam ? rapport.bureau : profiel;
@@ -91,6 +97,30 @@ export default function DocumentSectie() {
         />
         <span className="rapport-hint">{t("document.adresHint")}</span>
       </label>
+      {situatie && (
+        <div className="rapport-veld">
+          <label className="rapport-vink rapport-vink-sterk">
+            <input
+              type="checkbox"
+              checked={situatie.tonen}
+              onChange={(e) => werkBij((r) => (r.situatie ? { ...r, situatie: { ...r.situatie, tonen: e.target.checked } } : r))}
+            />
+            {t("velden.situatieTonen")}
+          </label>
+          <span className="rapport-hint">{t("velden.situatieHint")}</span>
+          <div className="rapport-situatie-beelden">
+            {situatie.kaarten.map((k) => (
+              <img
+                key={k.id}
+                src={`data:image/jpeg;base64,${k.jpeg}`}
+                alt={t("velden.situatieBeeld", { naam: t(`afdruk.situatie.kaarten.${k.id}`) })}
+              />
+            ))}
+          </div>
+          {!projectPunt && <span className="rapport-hint">{t("velden.situatieGeenLocatie")}</span>}
+          {verouderd && <span className="rapport-hint">{t("velden.situatieVerouderd")}</span>}
+        </div>
+      )}
       <Afgeleid
         uitProjectgegevens
         regels={[

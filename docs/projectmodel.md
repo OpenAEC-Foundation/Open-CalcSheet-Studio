@@ -18,6 +18,7 @@ een project voorkomen als je wilt. Elke invoeging maakt een **exemplaar**
 ```ts
 interface Exemplaar {
   id: string;
+  ref?: string;                        // kenmerk voor #ref.naam uit een ander blad
   naam: string;                        // "Balklaag 1", te hernoemen
   templateId: string;                  // herkomst, alleen ter informatie
   source: string;                      // eigen kopie van de rekentekst
@@ -128,17 +129,20 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 
 | wat | waar in het bestand | |
 |---|---|---|
+| Identiteit van het project (UUID) | het pad van het project, ook in `header.id` | bron |
 | Projectnaam | `bsi::ifc::prop::Name` op het project | bron |
 | Projectgegevens, verborgen onderdelen | `ocss::project` | bron |
 | Constructierapport | `ocss::rapport` | bron |
 | Naam van een blad | `bsi::ifc::prop::Name` op het blad | bron |
-| Id, volgorde, `templateId`, `bronVersie` | `ocss::blad` | bron |
+| Id, volgorde, `templateId`, `bronVersie`, `ref` | `ocss::blad` | bron |
 | Rekentekst | `ocss::blad::rekentekst` | bron |
 | Invoer | `ocss::blad::invoer` | bron |
 | Elementen uit een bronmodel | `ocss::blad::elementen` | bron |
 | PDF | `ocss::blad::pdf` | bron |
 | Werkmap | `ocss::blad::xlsx` | bron |
 | Markdown-tekst, met de afbeeldingen die naast het bestand stonden | `ocss::blad::markdown` | bron |
+| Antwoorden van Open FEM Studio op `@toets`-blokken, met verzoek, datum en herkomst | `ocss::blad::toetsing` | bron |
+| Varianten: andere invoer naast die van het blad ([varianten.md](varianten.md)) | `ocss::blad::varianten` | bron |
 | Uitkomsten, oordeel, unity checks | `ocss::blad::uitkomst` | afgeleid |
 | Tekeningen en 3D-beelden | `ocss::figuur` op een kind van het blad | afgeleid |
 | Elementen in de ruimtelijke boom | `ocss::element` | afgeleid |
@@ -189,6 +193,62 @@ aan je project te veranderen, ook geen standaardwaarden aan te vullen.
 Dat gaat bewust via de browser en niet via de Rust-rapportengine — zie
 `docs/backlog.md`. De engine slaat tekeningen over, en zonder de
 `openaec-reports`-repo is de app niet eens te bouwen.
+
+## Eenheden
+
+Het eenhedenstelsel hoort bij het project en staat in de projectgegevens, zodat opslaan,
+het herstelbestand, IFCX en ongedaan maken vanzelf meewerken (`store/projectEenheden.ts`):
+
+| Sleutel | Inhoud |
+| --- | --- |
+| `eenheden` | `blad` (zoals in het blad, de standaard), `si-mm`, `si-m`, `us` of `eigen`; een keuzeveld in `PROJECT_VELDEN`, maar geen variabele in de bladen |
+| `eenheden_eigen` | bij `eigen`: de eenheid per grootheid, als JSON (`{"kracht":"N"}`) |
+| `eenheden_lijst` | de eigen eenheden van het project, als JSON (`[{"naam":"kipf","uitdrukking":"1000 lbf"}]`) |
+
+Het stelsel raakt alleen de weergave, overal waar een waarde in beeld komt:
+
+- **De uitwerking en het afdrukvoorbeeld:** `ex.waarden` blijven in de eenheid van de
+  bladtekst. Een invoerveld toont de waarde in het stelsel en rekent terug wat je typt.
+- **De parametrische beelden:** ze rekenen in de eenheden van het blad en tonen maten, lasten
+  en spanningen in het stelsel (`components/calc/beeldEenheden.ts`). Wat je in een beeld
+  typt, gaat terug in de eenheid van het blad.
+- **Het rapport:** het slaat zijn invoer op in zijn eigen eenheid (m, kN/m², kN/m³), op zes
+  cijfers en met de decimale komma van zijn taal (`rapport/paneel/EenheidInvoer.tsx`).
+  Op papier staan de waarden in het stelsel (`fe` en `ne` in `useRapportWeergave.ts`).
+- **De IFCX-export** blijft in de eenheden van het blad.
+
+Een nieuw project krijgt het stelsel uit Instellingen, tab Units. Dat is `units.stelsel` in
+de instellingen, ook via `settings_set`. Het stelsel van het open project is het
+projectgegeven `eenheden`, ook via `project_data_set`. Zie
+[het ontwerp](superpowers/specs/2026-11-06-eenheden-design.md).
+
+## Locatie
+
+De plek van het project voor de situatiekaart staat in de projectgegevens onder de sleutel
+`locatie_punt`, als JSON `{"lat":52.0907,"lon":5.1214}` met 6 decimalen (`kaart/punt.ts`).
+De LocatieKiezer onder het veld Locatie schrijft hem (`components/calc/LocatieKiezer.tsx`).
+Ontbreekt de sleutel of is de waarde ongeldig (geen JSON, lat buiten ±90, lon buiten ±180),
+dan heeft het project geen locatie.
+
+De kaarten van die plek staan in het rapport, als `rapport.situatie`: vaste kaartbeelden
+(`gebied`, `omgeving`, `locatie`) als JPEG met zoomniveau, het punt en de datum waarvoor ze zijn
+gemaakt, het vinkje `tonen` en het gemeten `water`. Ze worden bewaard in het
+project en veranderen niet meer tot de gebruiker ze vernieuwt. Op papier verschijnt de pagina
+alleen als het project een geldige locatie heeft. `water` is `{afstand, naam, punt}` (afstand in meters, `punt` het dichtstbijzijnde punt van het
+water). Ontbreekt `water`, dan is er niet gemeten en staat er op papier "—". Is `water` `null`, dan
+is er gemeten en ligt er geen open water binnen 10 km. Is het dichtstbijzijnde water de kustlijn, dan staat `soort: "kust"` in `water` (de kust heeft zelden een naam) en volgt "(kust)" op papier. Beperking: een rivier die in OpenStreetMap alleen als lijn (`waterway=river`, zonder vlak) staat, telt niet mee. De omgevingskaart toont bij een meting de
+lijn naar het water. Een nieuwe meting is een handeling van de gebruiker (de knop bij de locatie);
+bij het vernieuwen van de kaarten blijft `water` alleen staan als het punt gelijk is gebleven.
+`report_get` en `report_set` geven per kaart
+alleen `{id, zoom, bytes}` terug, niet de JPEG.
+
+Bij de locatie staat de knop "Overnemen uit ERPNext", als de ERPNext-instellingen (adres, API-sleutel,
+veldnaam) gevuld zijn, er een API-geheim is voor dat adres en `project_nummer` gevuld is. De knop leest dat
+veld bij het project met die naam in ERPNext (standaard `custom_location`). Coördinaten gaan direct,
+een adres gaat via de zoekdienst; het punt vervangt `locatie_punt` pas als het gevonden is, en de kaarten
+worden daarna opnieuw gemaakt. Het geheim staat in de sleutelbos van het besturingssysteem, per
+herkomst (schema, host en poort) van het adres, en komt nooit in het project. Het veld bestaat niet standaard
+in ERPNext: een beheerder maakt een Custom Field `custom_location` (Data) op Project. De tekst die de laatste keer uit ERPNext kwam staat als `locatie_erp` in de projectgegevens; alleen een leeg veld Locatie, of een gelijk aan `locatie_erp`, wordt door een nieuwe tekst vervangen.
 
 ## Taal van het rapport
 

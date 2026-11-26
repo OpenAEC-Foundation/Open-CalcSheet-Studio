@@ -9,10 +9,10 @@
  * uitgangspuntendocument) valt Berekeningen zelf weg. Paneel, inhoudsopgave en afdruk lezen
  * allemaal deze uitkomst, zodat ze het nooit oneens zijn over wat "4.6" is.
  *
- * De titels zijn meertalig; bouwOpzet() geeft ze in rapport.taal. De ids en de ankers
+ * De titels zijn meertalig (rapportteksten.json, koppen); bouwOpzet() geeft ze in rapport.taal. De ids en de ankers
  * (`data-inhoud`) veranderen niet met de taal.
  */
-import { inTaal, leesMeertalig, type Meertalig } from "./meertalig.ts";
+import { inTaal, leesMeertalig, mt, type Meertalig } from "./meertalig.ts";
 import type { Rapport } from "./model.ts";
 
 export type Inhoud =
@@ -44,9 +44,12 @@ export interface Knoop {
   kinderen?: Knoop[];
 }
 
+/** De kop met deze sleutel uit rapportteksten.json (koppen.<id>). */
+const kop = (id: string): Meertalig => mt(`koppen.${id}`);
+
 /** Een tekstonderdeel: kop plus tekst uit rapport.teksten, optioneel. */
-function tekst(id: string, titel: Meertalig, niveau: 3 | 4): Knoop {
-  return { id, titel, niveau, inhoud: "tekst", optioneel: true };
+function tekst(id: string, niveau: 3 | 4): Knoop {
+  return { id, titel: kop(id), niveau, inhoud: "tekst", optioneel: true };
 }
 
 /** Maakt een waarde onveranderlijk, tot op de bodem. */
@@ -60,83 +63,83 @@ function diepVast<T>(x: T): T {
 
 /** Het ingebouwde template. Vast: wie iets wil veranderen, werkt in een kopie (template.ts). */
 export const OPZET: readonly Knoop[] = diepVast<Knoop[]>([
-  { id: "inleiding", titel: { en: "Introduction", nl: "Inleiding" }, niveau: 1, inhoud: "tekst", nieuwePagina: true },
+  { id: "inleiding", titel: kop("inleiding"), niveau: 1, inhoud: "tekst", nieuwePagina: true },
   {
     // Sinds versie 2 van de rapportopbouw op een nieuwe pagina; oudere rapporten houden hun opmaak (model.ts).
-    id: "projectgegevens", titel: { en: "Project details", nl: "Projectgegevens" }, niveau: 1, nieuwePagina: true,
+    id: "projectgegevens", titel: kop("projectgegevens"), niveau: 1, nieuwePagina: true,
     kinderen: [
-      { id: "projectomschrijving", titel: { en: "Project description", nl: "Projectomschrijving" }, niveau: 2, inhoud: "tekst" },
-      { id: "rol", titel: { en: "Role in the project and scope of this report", nl: "Rol binnen het project en bereik rapport" }, niveau: 2, inhoud: "rol" },
+      { id: "projectomschrijving", titel: kop("projectomschrijving"), niveau: 2, inhoud: "tekst" },
+      { id: "rol", titel: kop("rol"), niveau: 2, inhoud: "rol" },
     ],
   },
   {
-    id: "constructie", titel: { en: "Structure", nl: "Constructie" }, niveau: 1, nieuwePagina: true,
+    id: "constructie", titel: kop("constructie"), niveau: 1, nieuwePagina: true,
     kinderen: [
       {
-        id: "toelichting", titel: { en: "Description of the structure", nl: "Toelichting constructie" }, niveau: 2,
+        id: "toelichting", titel: kop("toelichting"), niveau: 2,
         kinderen: [
           {
-            id: "bestaand", titel: { en: "Existing situation", nl: "Bestaande situatie" }, niveau: 3, optioneel: true,
+            id: "bestaand", titel: kop("bestaand"), niveau: 3, optioneel: true,
             kinderen: [
-              tekst("bestaand-verticaal", { en: "Vertical load path", nl: "Verticale belastingafdracht" }, 4),
-              tekst("bestaand-stabiliteit", { en: "Stability", nl: "Stabiliteit" }, 4),
-              tekst("bestaand-fundatie", { en: "Foundation", nl: "Fundatie" }, 4),
-              tekst("bestaand-beoordeling", { en: "Assessment of the existing structure", nl: "Beoordeling bestaande constructie" }, 4),
+              tekst("bestaand-verticaal", 4),
+              tekst("bestaand-stabiliteit", 4),
+              tekst("bestaand-fundatie", 4),
+              tekst("bestaand-beoordeling", 4),
             ],
           },
           // Bij nieuwbouw is er niets om te wijzigen: dan beschrijft dit blok het constructieprincipe.
           // Sinds versie 3 van de rapportopbouw; oudere rapporten houden Wijziging (model.ts).
           {
-            ...tekst("wijziging", { en: "Alteration", nl: "Wijziging" }, 3),
-            titelNieuwbouw: { en: "Structural concept", nl: "Constructieprincipe" },
+            ...tekst("wijziging", 3),
+            titelNieuwbouw: kop("wijzigingNieuwbouw"),
           },
-          tekst("belendingen", { en: "Adjoining buildings", nl: "Belendingen" }, 3),
+          tekst("belendingen", 3),
         ],
       },
       {
-        id: "uitvoering", titel: { en: "Notes for construction", nl: "Aandachtspunten bij uitvoering" }, niveau: 2, nieuwePagina: true,
+        id: "uitvoering", titel: kop("uitvoering"), niveau: 2, nieuwePagina: true,
         kinderen: [
-          tekst("uitvoering-bestaand", { en: "Existing situation", nl: "Bestaande situatie" }, 3),
-          tekst("uitvoering-verbouw", { en: "Alteration, renovation", nl: "Verbouw, renovatie" }, 3),
-          tekst("uitvoering-nieuwbouw", { en: "New construction", nl: "Nieuwbouw" }, 3),
+          tekst("uitvoering-bestaand", 3),
+          tekst("uitvoering-verbouw", 3),
+          tekst("uitvoering-nieuwbouw", 3),
         ],
       },
     ],
   },
   {
-    id: "uitgangspunten", titel: { en: "Design basis", nl: "Uitgangspunten" }, niveau: 1, nieuwePagina: true, inspringen: 1,
+    id: "uitgangspunten", titel: kop("uitgangspunten"), niveau: 1, nieuwePagina: true, inspringen: 1,
     kinderen: [
-      { id: "bouwwerk", titel: { en: "Structural design basis", nl: "Constructieve uitgangspunten bouwwerk" }, niveau: 2, inhoud: "bouwwerk" },
-      { id: "brand", titel: { en: "Structural fire design", nl: "Bouwconstructies bij brand" }, niveau: 2, inhoud: "brand" },
-      { id: "materialen", titel: { en: "Materials", nl: "Toegepaste materialen" }, niveau: 2, inhoud: "materialen" },
-      { id: "conservering", titel: { en: "Corrosion protection of steelwork", nl: "Conservering staalconstructie" }, niveau: 2, inhoud: "conservering" },
-      { id: "factoren", titel: { en: "Partial factors and combinations of actions", nl: "Belastingfactoren en belastingcombinaties" }, niveau: 2, inhoud: "factoren" },
+      { id: "bouwwerk", titel: kop("bouwwerk"), niveau: 2, inhoud: "bouwwerk" },
+      { id: "brand", titel: kop("brand"), niveau: 2, inhoud: "brand" },
+      { id: "materialen", titel: kop("materialen"), niveau: 2, inhoud: "materialen" },
+      { id: "conservering", titel: kop("conservering"), niveau: 2, inhoud: "conservering" },
+      { id: "factoren", titel: kop("factoren"), niveau: 2, inhoud: "factoren" },
       // Valt weg als uitgangspunten.bestaand.opnemen false is (nieuwbouw).
-      { id: "bestaand-situatie", titel: { en: "Existing situation", nl: "Bestaande situatie" }, niveau: 2, inhoud: "bestaand", optioneel: true },
-      { id: "trillingen", titel: { en: "Vibrations", nl: "Trillingen" }, niveau: 2, inhoud: "tekst" },
+      { id: "bestaand-situatie", titel: kop("bestaand-situatie"), niveau: 2, inhoud: "bestaand", optioneel: true },
+      { id: "trillingen", titel: kop("trillingen"), niveau: 2, inhoud: "tekst" },
       // De tekst `vervormingen` is de inleidende zin boven de tabel.
-      { id: "vervormingen", titel: { en: "Deformations and horizontal displacements", nl: "Vervormingen en horizontale verplaatsingen" }, niveau: 2, inhoud: "vervormingen" },
-      { id: "montage", titel: { en: "Erection and construction stages", nl: "Montage en bouwfase" }, niveau: 2, inhoud: "tekst" },
-      { id: "rekenprogrammatuur", titel: { en: "Calculation software", nl: "Toegepaste rekenprogrammatuur" }, niveau: 2, inhoud: "tekst" },
-      { id: "temperatuur", titel: { en: "Thermal actions", nl: "Temperatuursinvloeden" }, niveau: 2, inhoud: "tekst" },
+      { id: "vervormingen", titel: kop("vervormingen"), niveau: 2, inhoud: "vervormingen" },
+      { id: "montage", titel: kop("montage"), niveau: 2, inhoud: "tekst" },
+      { id: "rekenprogrammatuur", titel: kop("rekenprogrammatuur"), niveau: 2, inhoud: "tekst" },
+      { id: "temperatuur", titel: kop("temperatuur"), niveau: 2, inhoud: "tekst" },
       // De tekst `aardbeving`, en buiten de Nederlandse tabellen de grootheden van het land eronder.
-      { id: "aardbeving", titel: { en: "Seismic actions", nl: "Aardbevingen" }, niveau: 2, inhoud: "aardbeving" },
+      { id: "aardbeving", titel: kop("aardbeving"), niveau: 2, inhoud: "aardbeving" },
     ],
   },
   {
-    id: "belastingen", titel: { en: "Loads", nl: "Belastingen" }, niveau: 1, nieuwePagina: true, inspringen: 1,
+    id: "belastingen", titel: kop("belastingen"), niveau: 1, nieuwePagina: true, inspringen: 1,
     kinderen: [
       // De tekst `sneeuw` staat onder de berekening van s.
-      { id: "sneeuw", titel: { en: "Snow loads(Q)", nl: "Sneeuwbelastingen(Q)" }, niveau: 2, inhoud: "sneeuw" },
-      { id: "wind", titel: { en: "Wind loads(Q)", nl: "Windbelastingen(Q)" }, niveau: 2, inhoud: "wind" },
-      { id: "regenwater", titel: { en: "Rainwater ponding(Q)", nl: "Regenwateraccumulatie(Q)" }, niveau: 2, inhoud: "tekst" },
-      { id: "veranderlijk", titel: { en: "Other variable loads(Q)", nl: "Overige veranderlijke belastingen(Q)" }, niveau: 2, inhoud: "veranderlijk" },
+      { id: "sneeuw", titel: kop("sneeuw"), niveau: 2, inhoud: "sneeuw" },
+      { id: "wind", titel: kop("wind"), niveau: 2, inhoud: "wind" },
+      { id: "regenwater", titel: kop("regenwater"), niveau: 2, inhoud: "tekst" },
+      { id: "veranderlijk", titel: kop("veranderlijk"), niveau: 2, inhoud: "veranderlijk" },
       // Valt weg zonder opbouwen.
-      { id: "blijvend", titel: { en: "Permanent loads(G)", nl: "Blijvende belastingen(G)" }, niveau: 2, inhoud: "blijvend", optioneel: true },
+      { id: "blijvend", titel: kop("blijvend"), niveau: 2, inhoud: "blijvend", optioneel: true },
     ],
   },
   // Valt weg zonder rekenbladen.
-  { id: "berekeningen", titel: { en: "Calculations", nl: "Berekeningen" }, niveau: 1, inhoud: "berekeningen", optioneel: true, nieuwePagina: true },
+  { id: "berekeningen", titel: kop("berekeningen"), niveau: 1, inhoud: "berekeningen", optioneel: true, nieuwePagina: true },
 ]);
 
 /** De opzet die voor dit rapport geldt: zijn eigen kopie, of anders het ingebouwde template. */
@@ -391,14 +394,19 @@ export function heeftSleutel(o: object, k: string): boolean {
   return Object.prototype.hasOwnProperty.call(o, k);
 }
 
-/** Zijn twee waarden inhoudelijk gelijk? De volgorde van de sleutels telt niet. */
+/**
+ * Zijn twee waarden inhoudelijk gelijk? De volgorde van de sleutels telt niet, en een sleutel
+ * zonder waarde telt als afwezig, zoals in het projectbestand: een meegeleverde titel (mt) heeft
+ * een sleutel voor elke taal, ook als er in die taal (nog) geen tekst is.
+ */
 export function zelfdeWaarde(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
   if (a === null || b === null || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
   const x = a as Record<string, unknown>;
   const y = b as Record<string, unknown>;
-  const sleutels = Object.keys(x);
-  return sleutels.length === Object.keys(y).length && sleutels.every((k) => heeftSleutel(y, k) && zelfdeWaarde(x[k], y[k]));
+  const met = (o: Record<string, unknown>) => Object.keys(o).filter((k) => o[k] !== undefined);
+  const sleutels = met(x);
+  return sleutels.length === met(y).length && sleutels.every((k) => heeftSleutel(y, k) && zelfdeWaarde(x[k], y[k]));
 }
 
 /** Een knoop zoals hij in dit rapport voorkomt: met nummer, zijn kop in rapport.taal, en zonder wat wegvalt. */
@@ -407,7 +415,11 @@ export interface Rapportknoop extends Omit<Knoop, "titel" | "titelNieuwbouw" | "
   nummer: string;
   nieuwePagina: boolean;
   kinderen: Rapportknoop[];
-  blad?: { id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[] };
+  /**
+   * `zonderParagraaf`: het blad staat alleen in bijlage A (opmaak.bijlageParagrafen uit).
+   * De knoop blijft bestaan, zodat de bijlage hem vindt, maar het hoofdstuk toont hem niet.
+   */
+  blad?: { id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[]; zonderParagraaf?: true };
 }
 
 /** Waar de uitwerking van een blad staat. */
@@ -516,21 +528,29 @@ function nieuwePaginaVoor(id: string, standaard: boolean | undefined, r: Rapport
  * uitwerking in het hoofdstuk zelf krijgt bijlage "".
  */
 function bladKnopen(nummer: string, r: Rapport, bladen: Blad[]): Rapportknoop[] {
-  const inBijlage = new Map(bladenInBijlage(r, bladen).map((b) => [b.blad.id, b.nummer]));
-  return bladen.map((b, i): Rapportknoop => ({
-    id: b.id,
-    titel: b.naam,
-    niveau: 2,
-    nummer: `${nummer}.${i + 1}`,
-    nieuwePagina: nieuwePaginaVoor(b.id, false, r),
-    kinderen: [],
-    blad: {
+  const zonderBijlage = r.opmaak.bijlageParagrafen === false;
+  let inBijlage = 0;
+  let paragraaf = 0;
+  return bladen.map((b): Rapportknoop => {
+    const inHoofdstuk = staatInHoofdstuk(r, b);
+    // Zonder paragraaf telt het blad niet mee: de bladen in het hoofdstuk lopen door.
+    const zonderParagraaf = zonderBijlage && !inHoofdstuk;
+    return {
       id: b.id,
-      naam: b.naam,
-      bijlage: inBijlage.get(b.id) ?? "",
-      ...(b.koppen?.length ? { koppen: b.koppen } : {}),
-    },
-  }));
+      titel: b.naam,
+      niveau: 2,
+      nummer: zonderParagraaf ? "" : `${nummer}.${++paragraaf}`,
+      nieuwePagina: nieuwePaginaVoor(b.id, false, r),
+      kinderen: [],
+      blad: {
+        id: b.id,
+        naam: b.naam,
+        bijlage: inHoofdstuk ? "" : `A.${++inBijlage}`,
+        ...(b.koppen?.length ? { koppen: b.koppen } : {}),
+        ...(zonderParagraaf ? { zonderParagraaf: true as const } : {}),
+      },
+    };
+  });
 }
 
 function bouwKnoop(k: Knoop, nummer: string, r: Rapport, bladen: Blad[]): Rapportknoop {
@@ -642,7 +662,7 @@ export function inhoudVoorPaneel(r: Rapport, bladen: Blad[]): PaneelRegel[] {
 export interface Bijlage { letter: string; titel: string }
 
 /** Titel van bijlage A. */
-export const BIJLAGE_A: Meertalig = { en: "Detailed calculations", nl: "Uitgebreide uitwerking berekeningen" };
+export const BIJLAGE_A: Meertalig = kop("bijlageA");
 
 /** 0 → A, 1 → B, … 25 → Z, 26 → AA. */
 function bijlageLetter(index: number): string {

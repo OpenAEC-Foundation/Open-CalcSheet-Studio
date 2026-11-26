@@ -20,6 +20,7 @@
  * Draaien:  node scripts/check-normen.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
+import "./lib/talen.mjs";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -142,8 +143,8 @@ kop("1. Het gegevensbestand");
 
   const bron = lees("../packages/desktop/src/rapport/normen/landen.ts") + lees("../packages/desktop/src/rapport/normen/en1990.ts") + lees("../packages/desktop/src/rapport/normen/keuze.ts");
   toets("geen markering † meer uit het vooronderzoek", !bron.includes("†"));
-  // Het bestand met de gegevens is pure data: geen imports met waarden.
-  toets("landen.ts importeert alleen typen", [...lees("../packages/desktop/src/rapport/normen/landen.ts").matchAll(/^import (?!type)/gm)].length === 0);
+  // Het bestand met de gegevens is pure data: geen imports met waarden, behalve mt voor de teksten (rapportteksten.json).
+  toets("landen.ts importeert alleen typen en mt", [...lees("../packages/desktop/src/rapport/normen/landen.ts").matchAll(/^import (?!type)(?!\{ mt, type Meertalig \} from "\.\.\/meertalig\.ts";)/gm)].length === 0);
 
   gelijk("tweede generatie: alle onderwerpen", Object.keys(TWEEDE_GENERATIE).sort(), [...ONDERWERPEN].sort());
   gelijk("tweede generatie: wat CEN aantoonbaar heeft uitgegeven", [TWEEDE_GENERATIE.belastingen.editie, TWEEDE_GENERATIE.beton.editie, TWEEDE_GENERATIE.staal.editie, TWEEDE_GENERATIE.funderingen.editie], ["2023; 2025", "2023", "2022", "2024"]);
