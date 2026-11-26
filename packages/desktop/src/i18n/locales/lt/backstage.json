@@ -1,0 +1,63 @@
+{
+  "file": "Failas",
+  "new": "Naujas",
+  "open": "Atidaryti",
+  "save": "Išsaugoti",
+  "saveAs": "Išsaugoti kaip...",
+  "print": "Spausdinti",
+  "import": "Importuoti",
+  "export": "Eksportuoti",
+  "preferences": "Nuostatos",
+  "about": "Apie",
+  "exit": "Išeiti",
+  "aboutPanel": {
+    "title": "Apie",
+    "appName": "OpenAEC Desktop",
+    "version": "Versija",
+    "tagline": "Kurk laisvai. Kurk kartu.",
+    "description": "Atvirojo kodo darbalaukio programa statybų sektoriui, sukurta su Tauri, React ir TypeScript. OpenAEC Foundation dalis: nemokami įrankiai architektūrai, inžinerijai ir statybai.",
+    "companyName": "OpenAEC Foundation",
+    "companyDescription": "Užstatyta aplinka priklauso visiems. OpenAEC Foundation kuria ir prižiūri nemokamą atvirojo kodo programinę įrangą architektūrai, inžinerijai ir statybai, kad žinios ir įrankiai būtų dalijami, o ne užrakinami. Mūsų pagrindinės vertybės: Atvirumas pagal nutylėjimą · Kuriame kartu · Valdyk savo įrankius · Išleisk.",
+    "website": "open-aec.com",
+    "github": "GitHub",
+    "license": "Licencija",
+    "stichting": "Stichting OpenAEC Foundation (NL)",
+    "copyright": "© 2026 OpenAEC Foundation. Kodas: MIT. Turinys: CC BY-SA 4.0."
+  },
+  "openPanel": {
+    "browse": "Naršyti…",
+    "browseDesc": "Atidaryti .cpd arba .ifc-calculation failą iš disko",
+    "title": "Naujausi failai",
+    "noRecent": "Naujausių failų nėra",
+    "clearAll": "Išvalyti viską",
+    "justNow": "Ką tik",
+    "remove": "Pašalinti"
+  },
+  "importPanel": {
+    "title": "Importuoti",
+    "fromFile": "Importuoti iš failo",
+    "fromFileDesc": "Importuoti duomenis iš palaikomų failų formatų",
+    "fromTemplate": "Importuoti iš šablono",
+    "fromTemplateDesc": "Įkelti paruoštą šabloną kaip pradinį tašką"
+  },
+  "extensions": "Plėtiniai",
+  "extInstalled": "Įdiegti",
+  "extBrowse": "Naršyti katalogą",
+  "extSearchPlaceholder": "Ieškoti plėtinių...",
+  "extInstallFile": "Įdiegti iš failo",
+  "extInstalledBadge": "Įdiegta",
+  "extInstallBtn": "Įdiegti",
+  "exportPanel": {
+    "title": "Eksportuoti",
+    "asPdf": "Eksportuoti kaip PDF",
+    "asPdfDesc": "Išsaugoti dabartinį dokumentą kaip PDF failą",
+    "asImage": "Eksportuoti kaip paveikslėlį",
+    "asImageDesc": "Išsaugoti kaip PNG arba JPEG paveikslėlio failus",
+    "asHtml": "Eksportuoti kaip HTML",
+    "asHtmlDesc": "Eksportuoti dokumentą kaip HTML failą",
+    "asDocx": "Eksportuoti kaip Word dokumentą (.docx)",
+    "asDocxDesc": "Ataskaita kaip redaguojamas dokumentas, formulės kaip lygtys. Momentinė kopija: niekas neperskaičiuojama",
+    "asOdt": "Eksportuoti kaip OpenDocument (.odt)",
+    "asOdtDesc": "Ataskaita kaip redaguojamas OpenDocument tekstas, formulės kaip formulių objektai. Momentinė kopija: niekas neperskaičiuojama"
+  }
+}

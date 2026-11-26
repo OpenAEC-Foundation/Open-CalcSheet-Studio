@@ -27,11 +27,11 @@
  * opnieuw maken. Uitkomsten, figuren en elementen zijn wel afgeleid: de app rekent ze
  * opnieuw uit bij het openen en opslaan.
  */
-import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions } from '../ifc-generator.js';
+import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions, VariantenGegevens } from '../ifc-generator.js';
 import type { VastgelegdeToets } from '../types.js';
 import { leesVastgelegdeToetsingen } from '../toetsBlok.js';
 import type { IfcxBestand, IfcxKnoop, IfcxSchema } from './typen.js';
-import { padVanElement, uuidVan } from './identiteit.js';
+import { afgeleideProjectId, isUuid, leesProjectId, padVanElement, uuidVan } from './identiteit.js';
 import { ATTR, IFCX_VERSIE, OCSS_SCHEMAS, beschrijfWaarde, ifcKlasse, importsVoor, isGeimporteerd } from './namespace.js';
 import { herken, type ElementSoort, type HerkendElement, type Herkenning } from './herkenning.js';
 import { leesFiguren, leesUitkomst, type UitkomstStatus } from './uitkomst.js';
@@ -48,7 +48,22 @@ const JUPYTER_SOORT = 'jupyter';
 const MARIMO_SOORT = 'marimo';
 const ZIP_MEDIATYPE = 'application/zip';
 
+/** Eén belasting uit hoofdstuk 5: blijvend (G) of veranderlijk (Q), in kN/m² of kN/m. */
+export interface IfcxBelasting {
+  symbool: string;
+  naam: string;
+  soort: 'G' | 'Q';
+  waarde: number;
+  eenheid: 'kN/m2' | 'kN/m';
+}
+
 export interface IfcxProjectInvoer {
+  /**
+   * De blijvende identiteit van het project (een UUID): het pad van de wortel, waar
+   * alle andere paden van afhangen. Ontbreekt hij, dan volgt hij uit nummer en naam
+   * (`afgeleideProjectId`), zoals bij een bestand van vóór deze id.
+   */
+  id?: string;
   naam: string;
   /** De formaatversie van het projectbestand; komt in `header.dataVersion`. */
   formaatversie?: number;
@@ -56,6 +71,11 @@ export interface IfcxProjectInvoer {
   bladen: IfcCalcSheet[];
   /** Het constructierapport; komt ongewijzigd in `ocss::rapport`. */
   rapport?: unknown;
+  /**
+   * De belastingen uit hoofdstuk 5 van het rapport, elk als eigen object onder het rapport
+   * (`ocss::belasting`): afgeleid, voor andere lezers. Bij het openen telt alleen het rapport.
+   */
+  belastingen?: IfcxBelasting[];
   verborgen?: { gegevens?: boolean; rapport?: boolean };
 }
 
@@ -73,15 +93,20 @@ export interface IfcxGelezenBlad {
   /** `aantekeningen` en `opPapier` beheert de app (store/pdfAantekeningen.ts); hier gaan ze ongezien door. */
   pdf?: { bestandsnaam: string; data: string; aantekeningen?: unknown[]; opPapier?: boolean };
   xlsx?: { bestandsnaam: string; data: string };
-  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
+  /** `koppeling` beheert de app (store/koppeling.ts); hier gaat hij ongezien door. */
+  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean; koppeling?: unknown };
   graaf?: GraafGegevens;
   tekenvel?: Record<string, unknown>;
   jupyter?: { bestandsnaam: string; data: string; metCode: boolean; automatisch?: boolean };
   marimo?: { bestandsnaam: string; code: string; metCode: boolean; uitvoer: string[] };
   toetsingen?: Record<string, VastgelegdeToets>;
+  /** Zoals ze in het bestand staan; de app leest ze na (store/varianten.ts). */
+  varianten?: VariantenGegevens;
 }
 
 export interface IfcxGelezenProject {
+  /** Het pad van de wortel als dat een UUID is; anders afgeleid uit nummer en naam. */
+  id: string;
   formaatversie: number;
   naam: string;
   gegevens: Record<string, string>;
@@ -114,6 +139,31 @@ function pdfBytes(data: string): number {
 
 const paren = (r: Record<string, string> | undefined) =>
   Object.entries(r ?? {}).map(([naam, waarde]) => ({ naam, waarde: String(waarde) }));
+
+/** De varianten als attribuut: de eigen waarden van een variant als paren, zoals de invoer. */
+function variantenAttribuut(v: VariantenGegevens) {
+  return {
+    velden: v.velden,
+    uitkomsten: v.uitkomsten,
+    ...(v.opPapier ? { opPapier: true } : {}),
+    ...(v.zoek !== undefined ? { zoek: v.zoek } : {}),
+    lijst: v.lijst.map(({ waarden, gezocht, ...r }) => ({ ...r, invoer: paren(waarden), ...(gezocht?.length ? { gezocht } : {}) })),
+  };
+}
+
+/** De varianten uit een attribuut, met de paren weer als waarden; de app leest ze daarna na. */
+function variantenUitAttribuut(x: unknown): VariantenGegevens | undefined {
+  const v = x as { lijst?: unknown } | undefined;
+  if (!v || typeof v !== 'object' || !Array.isArray(v.lijst)) return undefined;
+  return {
+    ...(v as VariantenGegevens),
+    lijst: v.lijst.map((r) => {
+      if (!r || typeof r !== 'object') return r;
+      const { invoer, ...rest } = r as { invoer?: unknown };
+      return { ...rest, waarden: uitParen(invoer) };
+    }) as VariantenGegevens['lijst'],
+  };
+}
 
 /** De graaf als attribuut: de velden van een node als paren, zoals de invoer van een rekenblad. */
 function graafAttribuut(g: GraafGegevens) {
@@ -190,10 +240,18 @@ interface ElementInBouw {
   toetsingen: Array<{ ref: string; blad: string; status: UitkomstStatus; uc?: number }>;
 }
 
-/** Het project als IFCX-document. Twee keer bouwen geeft dezelfde paden. */
+/** De identiteit waar het document van uitgaat: de eigen id, of afgeleid bij een project zonder. */
+export function projectIdVan(invoer: Pick<IfcxProjectInvoer, 'id' | 'naam' | 'gegevens'>): string {
+  return leesProjectId(invoer.id) ?? afgeleideProjectId(invoer.naam, invoer.gegevens?.project_nummer);
+}
+
+/**
+ * Het project als IFCX-document. Twee keer bouwen geeft dezelfde paden, en met
+ * dezelfde `id` ook na een andere projectnaam of een ander nummer.
+ */
 export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGenerationOptions = {}): IfcxBestand {
   const gegevens = invoer.gegevens ?? {};
-  const wortel = uuidVan(`project/${gegevens.project_nummer ?? ''}/${invoer.naam}`);
+  const wortel = projectIdVan(invoer);
   const onder = (deel: string) => uuidVan(`${wortel}/${deel}`);
 
   const bladen = invoer.bladen;
@@ -292,6 +350,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         tekst: blad.md.tekst,
         ...(blad.md.beelden ? { beelden: blad.md.beelden } : {}),
         ...(blad.md.koppenUit ? { koppenUit: true } : {}),
+        ...(blad.md.koppeling ? { koppeling: blad.md.koppeling } : {}),
       };
     }
     if (blad.graaf) attributes[ATTR.graaf] = graafAttribuut(blad.graaf);
@@ -315,6 +374,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
       };
     }
     if (blad.toetsingen && Object.keys(blad.toetsingen).length > 0) attributes[ATTR.toetsing] = toetsingAttribuut(blad.toetsingen);
+    if (blad.varianten) attributes[ATTR.varianten] = variantenAttribuut(blad.varianten);
     attributes[ATTR.uitkomst] = uitkomst;
 
     // Figuren: de tekeningen en 3D-beelden staan ook in de rekentekst; hier zijn ze als zodanig te vinden.
@@ -474,13 +534,31 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
 
   if (heeftRapport) {
     const titel = (invoer.rapport as { titel?: unknown }).titel;
-    data.push({
+    // De belastingen uit hoofdstuk 5 als eigen objecten onder het rapport.
+    const lasten = (invoer.belastingen ?? []).filter((b) => b.symbool && Number.isFinite(b.waarde));
+    const lastNamen = new Set<string>();
+    const lastKinderen: Record<string, string> = {};
+    const lastKnopen: IfcxKnoop[] = lasten.map((b) => {
+      const path = uuidVan(`${rapportP}/belasting/${b.symbool}`);
+      lastKinderen[kindNaam(b.symbool, lastNamen)] = path;
+      return {
+        path,
+        attributes: {
+          [ATTR.naam]: b.naam || b.symbool,
+          [ATTR.belasting]: { symbool: b.symbool, soort: b.soort, waarde: b.waarde, eenheid: b.eenheid },
+        },
+      };
+    });
+    const rapportKnoop: IfcxKnoop = {
       path: rapportP,
       attributes: {
         [ATTR.naam]: typeof titel === 'string' && titel ? titel : 'Constructierapport',
         [ATTR.rapport]: invoer.rapport,
       },
-    });
+    };
+    const lk = metInhoud(lastKinderen);
+    if (lk) rapportKnoop.children = lk;
+    data.push(rapportKnoop, ...lastKnopen);
   }
 
   // ── Schema's: de eigen, plus een beschrijving voor wat van buiten komt ────
@@ -606,7 +684,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown; ref?: unknown };
     const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown; aantekeningen?: unknown; opPapier?: unknown } | undefined;
     const xlsx = a[ATTR.xlsx] as { bestandsnaam?: unknown; data?: unknown } | undefined;
-    const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown } | undefined;
+    const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown; koppeling?: unknown } | undefined;
     const graaf = graafUitAttribuut(a[ATTR.graaf]);
     const tekenvel = a[ATTR.tekenvel];
     const jupyter = a[ATTR.jupyter] as { bestandsnaam?: unknown; data?: unknown; metCode?: unknown; automatisch?: unknown } | undefined;
@@ -636,6 +714,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
         tekst: md.tekst,
         ...(md.beelden && typeof md.beelden === 'object' ? { beelden: md.beelden as Record<string, string> } : {}),
         ...(md.koppenUit === true ? { koppenUit: true } : {}),
+        ...(md.koppeling && typeof md.koppeling === 'object' && !Array.isArray(md.koppeling) ? { koppeling: md.koppeling } : {}),
       };
     }
     if (graaf) blad.graaf = graaf;
@@ -660,14 +739,21 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     }
     const toetsingen = toetsingUitAttribuut(a[ATTR.toetsing]);
     if (toetsingen) blad.toetsingen = toetsingen;
+    const varianten = variantenUitAttribuut(a[ATTR.varianten]);
+    if (varianten) blad.varianten = varianten;
     return blad;
   });
 
   const rapportKnoop = knopen.find((k) => k.attributes?.[ATTR.rapport]);
+  const naam = tekstVan(wortel.attributes![ATTR.naam]);
+  const gegevens = uitParen(project.gegevens);
   const uit: IfcxGelezenProject = {
+    // Het pad van de wortel is de identiteit. Een bestand van vóór de eigen id heeft
+    // daar de afgeleide wortel staan: die wordt zo zijn id, met dezelfde paden.
+    id: isUuid(wortel.path) ? wortel.path : afgeleideProjectId(naam, gegevens.project_nummer),
     formaatversie: typeof project.formaatversie === 'number' ? project.formaatversie : 2,
-    naam: tekstVan(wortel.attributes![ATTR.naam]),
-    gegevens: uitParen(project.gegevens),
+    naam,
+    gegevens,
     exemplaren,
   };
   if (rapportKnoop) uit.rapport = rapportKnoop.attributes![ATTR.rapport];

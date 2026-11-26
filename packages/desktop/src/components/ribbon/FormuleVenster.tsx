@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Modal from "../Modal";
+import { isNederlands } from "../../i18n/talen";
 import { FORMULES, FORMULE_GROEPEN, codeVan, type Formule, type Tekst } from "./formules";
 import { voegFormuleIn } from "./formuleInvoegen";
 import { formuleBeeld } from "./formuleBeeld";
@@ -28,8 +29,8 @@ const BRON_EN: [RegExp, string][] = [
 export default function FormuleVenster({ open, onSluit }: { open: boolean; onSluit: () => void }) {
   const { t, i18n } = useTranslation("rekentaal");
   const { t: tc } = useTranslation();
-  const taal = (w: Tekst) => (i18n.language?.startsWith("en") ? w.en : w.nl) || w.nl;
-  const bronTekst = (b: string) => (i18n.language?.startsWith("en") ? BRON_EN.reduce((s, [nl, en]) => s.replace(nl, en), b) : b);
+  const taal = (w: Tekst) => (isNederlands(i18n.language) ? w.nl : w.en) || w.nl;
+  const bronTekst = (b: string) => (!isNederlands(i18n.language) ? BRON_EN.reduce((s, [nl, en]) => s.replace(nl, en), b) : b);
   const [groep, setGroep] = useState<string | null>(null);
   const [zoek, setZoek] = useState("");
   const [gekozen, setGekozen] = useState<Formule | null>(null);

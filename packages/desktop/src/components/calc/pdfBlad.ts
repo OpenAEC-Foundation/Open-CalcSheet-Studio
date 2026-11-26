@@ -165,7 +165,10 @@ async function tekenPagina(doc: PDFDocumentProxy, nummer: number): Promise<strin
   canvas.height = Math.max(1, Math.ceil(viewport.height));
   try {
     // Wit papier: een pagina zonder eigen achtergrond is anders doorzichtig.
-    await pagina.render({ canvas, viewport, background: "#ffffff" }).promise;
+    // Een verborgen webview krijgt geen animatieframes. De afdrukmodus van
+    // pdf.js tekent ook door als het hoofdvenster nooit zichtbaar wordt.
+    const intent = document.hidden ? "print" : "display";
+    await pagina.render({ canvas, viewport, background: "#ffffff", intent }).promise;
     const blob = await new Promise<Blob>((ok, mis) =>
       canvas.toBlob((b) => (b ? ok(b) : mis(new Error("canvas.toBlob gaf niets terug"))), "image/png"),
     );

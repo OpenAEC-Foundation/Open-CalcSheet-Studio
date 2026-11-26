@@ -79,7 +79,7 @@ export interface IfcCalcSheet {
   /** Bij een spreadsheet-blad: de werkmap, als base64. */
   xlsx?: { bestandsnaam: string; data: string };
   /** Bij een Markdown-blad: de tekst, met de afbeeldingen die erbij horen. */
-  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean };
+  md?: { bestandsnaam: string; tekst: string; beelden?: Record<string, string>; koppenUit?: boolean; koppeling?: unknown };
   /** Bij een grafblad: de graaf. */
   graaf?: GraafGegevens;
   /** Alleen bij een tekenblad: het vel met zijn views (ocss::blad::tekenvel). */
@@ -90,10 +90,25 @@ export interface IfcCalcSheet {
   marimo?: { bestandsnaam: string; code: string; metCode: boolean; uitvoer: string[] };
   /** De antwoorden van Open FEM Studio op de @toets-blokken, per hash van de invoer. */
   toetsingen?: Record<string, VastgelegdeToets>;
+  /** Varianten van het blad: andere invoer naast het blad, met per variant alleen de eigen waarden. */
+  varianten?: VariantenGegevens;
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */
   fout?: string;
+}
+
+/**
+ * De varianten van een blad, zoals ze in een project staan (`ocss::blad::varianten`).
+ * De app leest ze na (store/varianten.ts); de uitkomsten staan er niet in, die rekent de
+ * app opnieuw uit de tekst en de invoer.
+ */
+export interface VariantenGegevens {
+  velden: string[];
+  uitkomsten: string[];
+  opPapier?: boolean;
+  zoek?: unknown;
+  lijst: { id: string; naam: string; waarden: Record<string, string>; gezocht?: string[] }[];
 }
 
 /** De graaf van een grafblad, zoals hij in een project staat: nodes en verbindingen, geen uitkomsten. */

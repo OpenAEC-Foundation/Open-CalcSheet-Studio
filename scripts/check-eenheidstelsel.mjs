@@ -209,6 +209,9 @@ zetProjectEenheden([]);
 meld((uitkomst("F = 2 kipf", "F") ?? "").startsWith("Error:"), "zonder projecteenheden is kipf weer onbekend");
 
 console.log("\nVoor de beelden: omrekenen en de schrijfwijze in beeld");
+// Handberekening: 1 kip = 1000 × 4,4482216152605 N = 4448,2216152605 N.
+meld(Math.abs(omrekenen(1, "kip", "lbf") - 1000) < 1e-12, "1 kip = 1000 lbf");
+meld(Math.abs(omrekenen(1, "klf", "plf") - 1000) < 1e-12, "1 klf = 1000 plf");
 meld(Math.abs(omrekenen(4500, "mm", "in") - 177.16535) < 1e-4, "4500 mm = 177,165 in", String(omrekenen(4500, "mm", "in")));
 meld(Math.abs(omrekenen(12, "kN m", "kip ft") - 8.8507) < 1e-3, "12 kNm = 8,851 kip·ft", String(omrekenen(12, "kN m", "kip ft")));
 for (const [in_, uit] of [["kN/m²", "kN/m^2"], ["kNm", "kN m"], ["kN/m¹", "kN/m"], ["kN/m1", "kN/m"], ["kN/m2", "kN/m^2"], ["kN/m3", "kN/m^3"], ["N/mm²", "N/mm^2"], ["kN·m", "kN m"], ["kN.m", "kN m"], ["mm", "mm"], ["mm⁴", "mm^4"], ["kNm/m", "kNm/m"], ["kNm²", "kN m^2"]]) {

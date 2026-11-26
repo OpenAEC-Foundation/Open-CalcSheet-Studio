@@ -1,16 +1,19 @@
 {
   "name": "@openaec/calcsheet-studio",
   "private": true,
-  "version": "2026.45.2",
+  "version": "2026.48.0",
+  "license": "LGPL-3.0-only",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:platform": "tsc && vite build --mode platform --base ./ --outDir dist-platform",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "build:exe": "tauri build --no-bundle"
+    "build:exe": "tauri build --no-bundle",
+    "build:dev-exe": "tauri build --debug --no-bundle --config src-tauri/tauri.dev.conf.json"
   },
   "dependencies": {
     "@betteroffice/xlsx": "0.5.1",
