@@ -238,6 +238,10 @@ async function controleer(pad) {
   meld(anders.length === 0, "op elke pagina staat de tekst van dat vel", `anders op ${anders.join(", ")}`);
   const overloop = vellen.flatMap((v, i) => (v.loopt > 1 ? [`${i + 1}: ${v.loopt} px`] : []));
   meld(overloop.length === 0, "op geen vel loopt iets over de rand", overloop.join("; "));
+  // Het rekenblad heeft een regel die breder is dan de bladspiegel; die breekt af.
+  const teBreed = vellen.flatMap((v, i) => (v.breed > 1 ? [`${i + 1}: ${v.breed} px`] : []));
+  meld(vellen.some((v) => v.breed !== undefined) && teBreed.length === 0,
+    "op geen vel steekt een formule rechts buiten de bladspiegel", teBreed.join("; "));
 
   console.log("\nDe knop Rapport (PDF)");
   const knop = JSON.parse(readFileSync(knopPad, "utf8"));

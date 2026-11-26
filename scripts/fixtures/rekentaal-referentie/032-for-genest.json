@@ -1,0 +1,7 @@
+{
+  "onderdeel": "herhalingen",
+  "omschrijving": "Twee lussen in elkaar: Σ i·j over i = 1..3, j = 1..2 = 6·3 = 18.",
+  "uitkomst": {
+    "s": "18"
+  }
+}

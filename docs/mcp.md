@@ -169,6 +169,13 @@ Herkomst: de Rust-brug en de opzet van de TS-laag komen uit Open Planner Studio
   (`STATUS_ENTRYPOINT_NOT_FOUND`); zet dan een extern manifest met
   `Microsoft.Windows.Common-Controls` 6.0 naast een kopie van de testbinary.
 
+## Zonder app: de rekendienst
+
+Dezelfde tools, voor zover ze zonder venster en zonder bestanden op paden zinnig zijn,
+biedt ook de rekendienst zonder venster aan, over HTTP (`POST /mcp`, met sessies) of
+stdio, met API-sleutels: zie [rekendienst.md](rekendienst.md). Elke sessie heeft daar
+een eigen project in het geheugen.
+
 ## In de werkplek van de OpenAEC SuperCloud
 
 In de werkplek van een SuperCloud-omgeving draait de platformbouw van de app

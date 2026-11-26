@@ -1,0 +1,157 @@
+/* De tab Controle (ControlePaneel.tsx): de toetsregistratie van een blad. Volgt het thema,
+   net als de tab Varianten. */
+
+.controle-paneel {
+  height: 100%;
+  overflow: auto;
+  padding: 14px 18px 24px;
+  box-sizing: border-box;
+  background: var(--theme-content-bg);
+  color: var(--theme-text);
+  font-size: 12.5px;
+}
+
+.controle-kop h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.controle-uitleg {
+  margin: 0 0 8px;
+  color: var(--theme-text-secondary);
+  max-width: 80ch;
+}
+
+.controle-stand {
+  margin: 8px 0 4px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--theme-border);
+  background: var(--theme-surface);
+  font-weight: 600;
+}
+.controle-stand.goed { border-left-color: #047857; color: #047857; }
+.controle-stand.fout { border-left-color: #b91c1c; color: #b91c1c; }
+.controle-stand.let-op { border-left-color: #b45309; color: #b45309; }
+
+.controle-hash {
+  margin: 0 0 12px;
+  color: var(--theme-text-secondary);
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 11.5px;
+}
+
+.controle-vak {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 6px;
+  background: var(--theme-surface);
+}
+
+.controle-vak h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--theme-accent);
+}
+
+.controle-velden {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.controle-velden label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.controle-velden label > span {
+  font-size: 11px;
+  color: var(--theme-text-secondary);
+}
+
+.controle-velden .controle-breed {
+  grid-column: 1 / -1;
+}
+
+.controle-velden .controle-vink {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.controle-velden .controle-vink > span {
+  font-size: 12.5px;
+  color: var(--theme-text);
+}
+
+.controle-knoppen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.controle-knoppen .controle-hoofd {
+  background: var(--theme-accent);
+  border-color: var(--theme-accent);
+  color: var(--theme-accent-text);
+  font-weight: 600;
+}
+
+.controle-melding {
+  color: var(--theme-text-secondary);
+}
+
+.controle-leeg {
+  margin: 0;
+  font-style: italic;
+  color: var(--theme-text-secondary);
+}
+
+.controle-tabel {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.controle-tabel th,
+.controle-tabel td {
+  padding: 3px 10px 3px 0;
+  border-bottom: 1px solid var(--theme-border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.controle-tabel th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--theme-text-secondary);
+}
+
+.controle-opm {
+  white-space: pre-wrap;
+  max-width: 40ch;
+}
+
+.controle-zelfde {
+  color: #047857;
+}
+
+/* Het label in de tabbalk van een blad. */
+.controle-label {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  font-size: 11px;
+  white-space: nowrap;
+  align-self: center;
+}
+.controle-label.goed { background: rgba(4, 120, 87, 0.12); color: #047857; }
+.controle-label.fout { background: rgba(185, 28, 28, 0.12); color: #b91c1c; }
+.controle-label.let-op { background: rgba(180, 83, 9, 0.12); color: #b45309; }

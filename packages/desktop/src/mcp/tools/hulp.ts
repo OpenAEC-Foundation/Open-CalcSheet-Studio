@@ -14,6 +14,9 @@ import { isTekenBlad } from "../../store/tekenBlad.ts";
 import { isJupyterBlad } from "../../store/jupyterBlad.ts";
 import { isMarimoBlad } from "../../store/marimoBlad.ts";
 import { jsonGetal, leesBron, rekenDoor, type Doorrekening } from "../rekenen.ts";
+import { scopeMetVerwijzingen, verwezenBladen, type VerwijsBlad } from "../../rekenen/verwijzingen.ts";
+import { metToetsingen } from "../../rekenen/toetsCache.ts";
+import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal-includes.ts";
 
 // ── Resultaten ──────────────────────────────────────────────────────────────
 
@@ -149,18 +152,29 @@ export function kiesKeuze(v: Invoerveld, invoer: string): string | null {
  */
 const bekend = new Map<string, { sleutel: string; resultaat: Resultaat }>();
 
-function sleutelVan(b: McpBlad, scope: Record<string, unknown>): string {
-  return JSON.stringify([b.naam, b.waarden, scope, b.source]);
+function sleutelVan(b: McpBlad, scope: Record<string, unknown>, verwezen: readonly VerwijsBlad[]): string {
+  return JSON.stringify([b.naam, b.waarden, scope, b.source, verwezen]);
 }
 
+/**
+ * Rekent een blad door met de projectgegevens als scope, en met de waarden uit de
+ * bladen en spreadsheetcellen waarnaar het verwijst (`#1.R_paal`, `#3.Blad1!B4`), net
+ * als de werkruimte, de afdruk en de IFCX-export (store/projectIfcx.ts). `alle` zijn de
+ * bladen van het project; zonder alle bladen rekent een verwijzing niet.
+ */
 export function rekenBlad(
   b: McpBlad,
   gegevens: Record<string, string>,
+  alle: readonly McpBlad[] = [],
 ): { ok: true; d: Doorrekening } | { ok: false; fout: string } {
-  const scope = projectScope(gegevens);
+  const basis = projectScope(gegevens);
   try {
+    const verwezen = verwezenBladen(b.source, b.waarden, alle);
+    const scope = verwezen.length
+      ? scopeMetVerwijzingen(b.source, b.waarden, basis, verwezen, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }, metToetsingen({}, "lezen"))
+      : basis;
     const d = rekenDoor(b.source, b.waarden, scope, b.naam);
-    bekend.set(b.id, { sleutel: sleutelVan(b, scope), resultaat: d.resultaat });
+    bekend.set(b.id, { sleutel: sleutelVan(b, basis, verwezen), resultaat: d.resultaat });
     return { ok: true, d };
   } catch (e) {
     bekend.delete(b.id);
@@ -168,10 +182,17 @@ export function rekenBlad(
   }
 }
 
-/** De bekende uitkomst van een blad, als de invoer sindsdien niet veranderde. */
-export function bekendeUitkomst(b: McpBlad, gegevens: Record<string, string>): Resultaat | null {
+/** De bekende uitkomst van een blad, als de invoer (ook die van de bladen waarnaar het verwijst) sindsdien niet veranderde. */
+export function bekendeUitkomst(b: McpBlad, gegevens: Record<string, string>, alle: readonly McpBlad[] = []): Resultaat | null {
   const k = bekend.get(b.id);
-  return k && k.sleutel === sleutelVan(b, projectScope(gegevens)) ? k.resultaat : null;
+  if (!k) return null;
+  let verwezen: VerwijsBlad[];
+  try {
+    verwezen = verwezenBladen(b.source, b.waarden, alle);
+  } catch {
+    return null;
+  }
+  return k.sleutel === sleutelVan(b, projectScope(gegevens), verwezen) ? k.resultaat : null;
 }
 
 export function vergeetBlad(id: string): void {

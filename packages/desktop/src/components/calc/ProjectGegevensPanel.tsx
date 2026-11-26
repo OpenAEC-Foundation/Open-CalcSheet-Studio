@@ -12,6 +12,7 @@ import NormenOverzicht from "./NormenOverzicht";
 import WindAreaMap from "./WindAreaMap";
 import LocatieKiezer from "./LocatieKiezer";
 import EenhedenEditor from "./EenhedenEditor";
+import NormenEditor from "./NormenEditor";
 import { CanvasVlak } from "./CanvasBladWeergave";
 import "./ProjectGegevensPanel.css";
 
@@ -249,6 +250,11 @@ export default function ProjectGegevensPanel() {
           />
         </section>
       )}
+
+      <section className="pg-vak">
+        <h2>{t("gegevens.normen.kop")}</h2>
+        <NormenEditor />
+      </section>
 
       <div className="pg-naast">
         <section className="pg-vak">

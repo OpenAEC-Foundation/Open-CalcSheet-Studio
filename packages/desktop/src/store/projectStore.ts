@@ -38,6 +38,8 @@ import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
 import { MARIMO_BLAD, type MarimoNotebook } from "./marimoBlad";
 import { metBladRefs } from "./bladRefs";
 import { variantInvoer, type Varianten } from "./varianten";
+import type { Controle, Registratie } from "./controle";
+import type { IncludeKopie } from "./includes";
 
 const STORE_KEY = "projectState";
 
@@ -151,6 +153,16 @@ export interface Exemplaar {
    * (store/varianten.ts). Ontbreekt bij een blad zonder varianten.
    */
   varianten?: Varianten;
+  /**
+   * De toetsregistratie van dit blad (vier ogen, store/controle.ts): elke controle met de
+   * hash van de gecontroleerde stand. Ontbreekt bij een blad dat niet is gecontroleerd.
+   */
+  controle?: Controle;
+  /**
+   * De bestanden op schijf die dit blad met `#include` invoegt, met een kopie van de
+   * laatst gelezen tekst (store/includes.ts). Ontbreekt bij een blad zonder.
+   */
+  includes?: IncludeKopie[];
 }
 
 /**
@@ -241,6 +253,11 @@ interface ProjectState {
    * project is gewijzigd; zonder alleen het pad, en dat gaat mee bij het volgende opslaan.
    */
   werkKoppelingBij: (id: string, md: MarkdownBestand, inhoud: boolean) => void;
+  /**
+   * De gelezen `#include`-bestanden van een blad (store/includes.ts). Geen stap in de
+   * geschiedenis; `inhoud`: een tekst veranderde, dus het project is gewijzigd.
+   */
+  zetIncludes: (id: string, includes: IncludeKopie[], inhoud: boolean) => void;
   /** Een leeg canvas-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
   voegCanvasToe: (naam: string) => string;
   /** Een leeg grafblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
@@ -269,6 +286,11 @@ interface ProjectState {
 
   zetBron: (id: string, source: string) => void;
   zetWaarde: (id: string, naam: string, waarde: string) => void;
+  /**
+   * Meerdere waarden van één blad tegelijk, in één stap van de geschiedenis: een poer uit
+   * een palenplan, of een vastgelegde revisie (components/calc/PoerKoppeling.tsx).
+   */
+  zetWaarden: (id: string, waarden: Record<string, string>) => void;
   /** Vult ontbrekende waarden aan; bestaande blijven staan. */
   seedWaarden: (id: string, defaults: Record<string, string>) => void;
   /**
@@ -294,6 +316,8 @@ interface ProjectState {
    * ongedaan maken; met `sleutel` (een cel) is doortypen in dezelfde cel één stap.
    */
   zetVarianten: (id: string, varianten: Varianten | undefined, sleutel?: string) => void;
+  /** Een controle (vier ogen) erbij voor een blad; de eerdere blijven staan. Eén stap ongedaan maken. */
+  registreerControle: (id: string, registratie: Registratie) => void;
   /** De invoer van een variant wordt de invoer van het blad. Eén stap ongedaan maken. */
   neemVariantOver: (id: string, variantId: string) => void;
   /**
@@ -625,6 +649,19 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       };
     }),
 
+  zetIncludes: (id, includes, inhoud) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        exemplaren: s.exemplaren.map((e) => {
+          if (e.id !== id) return e;
+          const { includes: _oud, ...rest } = e;
+          return includes.length > 0 ? { ...rest, includes } : rest;
+        }),
+        ...(inhoud ? { dirty: true } : {}),
+      };
+    }),
+
   voegCanvasToe: (naam) => {
     const id = nieuweId();
     set((s) => ({
@@ -737,8 +774,9 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
   dupliceer: (id) => {
     const gevonden = get().exemplaren.find((e) => e.id === id);
     if (!gevonden) return null;
-    // Zonder het kenmerk van het origineel: de kopie krijgt een eigen (metBladRefs).
-    const { ref: _ref, ...bron } = gevonden;
+    // Zonder het kenmerk van het origineel: de kopie krijgt een eigen (metBladRefs). Ook
+    // zonder de controle: een vrijgave hoort bij het blad dat gecontroleerd is.
+    const { ref: _ref, controle: _controle, ...bron } = gevonden;
     const nieuw: Exemplaar = {
       ...bron,
       id: nieuweId(),
@@ -804,6 +842,16 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       };
     }),
 
+  zetWaarden: (id, waarden) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id) || Object.keys(waarden).length === 0) return s;
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, waarden: { ...e.waarden, ...waarden } } : e)),
+        dirty: true,
+      };
+    }),
+
   seedWaarden: (id, defaults) =>
     set((s) => {
       const ex = s.exemplaren.find((e) => e.id === id);
@@ -866,6 +914,18 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       };
     }),
 
+  registreerControle: (id, registratie) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: s.exemplaren.map((e) =>
+          e.id === id ? { ...e, controle: { registraties: [...(e.controle?.registraties ?? []), registratie] } } : e,
+        ),
+        dirty: true,
+      };
+    }),
+
   neemVariantOver: (id, variantId) =>
     set((s) => {
       const ex = s.exemplaren.find((e) => e.id === id);
@@ -884,7 +944,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     const v = bron?.varianten?.lijst.find((x) => x.id === variantId);
     if (!bron || !v) return null;
     // Een eigen blad: een eigen kenmerk (metBladRefs), en zonder de varianten van het blad.
-    const { varianten, ref: _ref, ...rest } = bron;
+    const { varianten, ref: _ref, controle: _controle, ...rest } = bron;
     const nieuw: Exemplaar = {
       ...rest,
       id: nieuweId(),

@@ -1,0 +1,12 @@
+{
+  "onderdeel": "voorwaarden",
+  "omschrijving": "#else if: de eerste tak die waar is.",
+  "uitkomst": {
+    "c": "2"
+  },
+  "reeks": {
+    "c": [
+      "2"
+    ]
+  }
+}

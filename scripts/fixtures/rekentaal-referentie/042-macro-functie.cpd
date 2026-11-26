@@ -1,0 +1,2 @@
+#def kwadraat$(x$) = x$^2
+c = kwadraat$(3)

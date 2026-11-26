@@ -27,6 +27,19 @@ export function isGrootheid(w: Waarde): w is { isUnit: true; toNumber: (eenheid:
   return !!w && typeof w === "object" && (w as { isUnit?: unknown }).isUnit === true;
 }
 
+/** De soort van een waarde, voor de kleur van een poort en een verbinding. */
+export type WaardeSoort = "grootheid" | "lijst" | "geometrie" | "tekst" | "waarOnwaar";
+
+export function waardeSoort(w: Waarde): WaardeSoort | null {
+  if (w === undefined || w === null) return null;
+  if (isLijst(w)) return "lijst";
+  if (isGeometrie(w)) return "geometrie";
+  if (typeof w === "string") return "tekst";
+  if (typeof w === "boolean") return "waarOnwaar";
+  if (typeof w === "number" || isGrootheid(w)) return "grootheid";
+  return null;
+}
+
 /** Een vector of matrix uit de rekenkern wordt een gewone lijst, ook genest. */
 export function alsLijstWaarde(w: Waarde): Waarde {
   if (Array.isArray(w)) return w.map(alsLijstWaarde);

@@ -495,6 +495,9 @@ async function hoofd() {
           tekst: inhoud?.textContent ?? "",
           formules: inhoud?.querySelector(".katex") !== null,
           loopt: inhoud ? inhoud.scrollHeight - inhoud.clientHeight : 0,
+          // Hoeveel px een formule rechts buiten de bladspiegel steekt (0: niets).
+          breed: inhoud ? Math.max(0, ...[...inhoud.querySelectorAll(".katex-html .base")]
+            .map((b) => Math.round(b.getBoundingClientRect().right - inhoud.getBoundingClientRect().right))) : 0,
         };
       })`, "de vellen lezen");
       writeFileSync(resolve(o.vellen), JSON.stringify(vellen));

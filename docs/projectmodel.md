@@ -131,7 +131,7 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 |---|---|---|
 | Identiteit van het project (UUID) | het pad van het project, ook in `header.id` | bron |
 | Projectnaam | `bsi::ifc::prop::Name` op het project | bron |
-| Projectgegevens, verborgen onderdelen | `ocss::project` | bron |
+| Projectgegevens (ook de normen met editie en NB), verborgen onderdelen | `ocss::project` | bron |
 | Constructierapport | `ocss::rapport` | bron |
 | Naam van een blad | `bsi::ifc::prop::Name` op het blad | bron |
 | Id, volgorde, `templateId`, `bronVersie`, `ref` | `ocss::blad` | bron |
@@ -143,6 +143,8 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 | Markdown-tekst, met de afbeeldingen die naast het bestand stonden | `ocss::blad::markdown` | bron |
 | Antwoorden van Open FEM Studio op `@toets`-blokken, met verzoek, datum en herkomst | `ocss::blad::toetsing` | bron |
 | Varianten: andere invoer naast die van het blad ([varianten.md](varianten.md)) | `ocss::blad::varianten` | bron |
+| Toetsregistratie (vier ogen): controleur, datum, uitkomst, opmerkingen, vrijgave met sha256 | `ocss::blad::controle` | bron |
+| Bestanden op schijf die het blad met `#include` invoegt: sleutel, pad en een kopie van de laatst gelezen tekst ([rekentaal.md](rekentaal.md#include-van-een-bestand-op-schijf)) | `ocss::blad::includes` | bron |
 | Uitkomsten, oordeel, unity checks | `ocss::blad::uitkomst` | afgeleid |
 | Tekeningen en 3D-beelden | `ocss::figuur` op een kind van het blad | afgeleid |
 | Elementen in de ruimtelijke boom | `ocss::element` | afgeleid |
@@ -193,6 +195,86 @@ aan je project te veranderen, ook geen standaardwaarden aan te vullen.
 Dat gaat bewust via de browser en niet via de Rust-rapportengine — zie
 `docs/backlog.md`. De engine slaat tekeningen over, en zonder de
 `openaec-reports`-repo is de app niet eens te bouwen.
+
+## Twee versies vergelijken
+
+De knop **Vergelijken** (tab Start, groep Uitvoer) zet het project dat openstaat naast een
+gekozen bestand: een ander projectbestand (`.ifccalculation`, `.ifcx`), een oudere versie
+van hetzelfde project, of een los blad (`.cpd`). Het bestand wordt alleen gelezen en
+doorgerekend, nooit geopend of veranderd.
+
+- **De bladen** worden gekoppeld op id (een opgeslagen versie van hetzelfde project), dan op
+  kenmerk (`#4`), dan op naam. Per blad staat erbij of het gelijk is, gewijzigd, of alleen
+  aan één kant staat.
+- **Per blad** het oordeel (UC en voldoet/voldoet niet), de rekentekst regel voor regel naast
+  elkaar (een minimaal verschil, met de gewijzigde regels tegenover elkaar), de invoer en de
+  uitkomsten per naam. Standaard alleen de verschillen, met twee regels eromheen; met een
+  vinkje de hele tekst en alle namen. Bij twee getallen met dezelfde eenheid staat het
+  relatieve verschil erbij.
+- **De projectgegevens** die verschillen, staan bovenaan.
+- **Elke kant rekent met zijn eigen project:** de uitkomsten van het bestand komen uit de
+  projectgegevens, de belastingen en de bladen van dat bestand. Zo is een andere gevolgklasse
+  in de uitkomsten te zien, ook als de rekentekst gelijk is.
+- **Waar:** `store/vergelijken.ts` (koppelen, regelverschil, tabellen; zonder React) en
+  `components/calc/VergelijkVenster.tsx`. Controle: `scripts/check-vergelijken.mjs`.
+- **Nog niet:** twee bladen binnen hetzelfde project naast elkaar zetten, of een versie uit
+  de geschiedenis van ongedaan maken; vergelijken gaat altijd tegen een bestand.
+
+## Toetsregistratie (vier ogen)
+
+Elk blad met rekentekst heeft een tab **Controle**. Een tweede constructeur legt daar een
+controle vast: controleur, datum, uitkomst (*akkoord*, *akkoord met opmerkingen* of
+*afgekeurd*) en opmerkingen, en of het blad daarmee is **vrijgegeven**. Een afgekeurd blad
+wordt nooit vrijgegeven. Eerdere controles blijven staan; de laatste telt.
+
+- **De hash:** elke controle bewaart de sha256 van de rekentekst (met `\n` als regeleinde),
+  de invoer (op naam gesorteerd), de uitkomst (de UC, het oordeel en elk getal van de
+  uitwerking op 12 significante cijfers) en van die drie samen (`store/controle.ts`). De app
+  rekent het blad daarvoor door zoals de uitwerking, met de projectgegevens, de belastingen
+  van het rapport, de bladen waarnaar het verwijst en de vastgelegde antwoorden van FEM
+  Studio, altijd op de bron (de Nederlandse rekentekst): in elke taal dezelfde hash.
+- **Vergrendelen** gebeurt met die hash, niet door het blad dicht te zetten. Verandert na
+  een vrijgave de rekentekst, de invoer of de uitkomst (ook door een andere gevolgklasse in
+  de projectgegevens), dan zegt de tab Controle, het label in de tabbalk en de kop op
+  papier dat de vrijgave niet meer geldt, en wat er veranderd is. Het label in de tabbalk
+  vergelijkt alleen rekentekst en invoer (snel, bij elke toetsaanslag); de tab en de kop op
+  papier rekenen ook de uitkomst na.
+- **Op papier:** in de kop van het blad wie het controleerde, wanneer, en of de vrijgave
+  nog geldt, met de eerste 12 tekens van de hash. Alleen bij een blad met een controle.
+- **Exporteren:** de tab Controle exporteert alle controles van het project als CSV
+  (puntkomma, UTF-8 met BOM) of JSON, met per blad of de vrijgave nog geldt.
+- **In het bestand:** `ocss::blad::controle`. Een kopie van een blad (dupliceren, een
+  variant als blad) neemt de controle niet mee.
+- **Controle:** `scripts/check-controle.mjs` (ook de sha256 tegen `node:crypto`).
+
+## Normen en nationale bijlagen
+
+Welke editie van een norm en welke nationale bijlage in een project gelden, staat in de
+projectgegevens onder de sleutel `normen_editie`, als JSON-lijst
+`[{"onderwerp":"hout","norm":"NEN-EN 1995-1-1","editie":"…","nb":"…"}]`
+(`store/projectNormen.ts`, ingevuld in het vak *Normen en nationale bijlagen* van de
+projectgegevens). Zo gaat de vastlegging mee in het bestand (`ocss::project`), het
+herstelbestand, ongedaan maken en `project_data_set`. Het is geen variabele in de bladen.
+
+- **Op papier:** het voorblad van de losse bladen heeft een tabel met norm, editie en
+  nationale bijlage, of de zin dat ze niet zijn vastgelegd. In de kop van elk blad (ook in
+  bijlage A van het rapport) staan de editie en de bijlage van elke Eurocode die het blad
+  noemt; een norm die het project niet vastlegt, staat er als niet vastgelegd. Legt het
+  project niets vast, dan blijft de kop zoals hij was.
+- **Welke normen een blad noemt:** elke `EN 199x(-y-z)` in de rekentekst, en EN 1990 als
+  het blad `K_FI` gebruikt. Een regel `NEN-EN 1991` dekt alle delen van EN 1991.
+- **Uit de bladen:** de knop zet de Eurocodes die de bladen noemen in de lijst, zonder
+  editie en bijlage. De app vult zelf nooit een editie in.
+- **Samenhang met de landenkeuze (pull request #30):** de onderwerpen zijn dezelfde sleutels
+  als `Onderwerp` in `rapport/normen/landen.ts` van #30, en het lezen van de normen van een
+  blad is dat van `bladNormUit` daar. #30 kiest een land en noemt de normen met hun editie
+  per land; deze vastlegging legt vast wat in dít project geldt. Na samenvoegen kan de lijst
+  uit de normen van het gekozen land worden gevuld, en blijft deze lijst de bron voor de
+  afdruk. De velden van #30 (`land`, `eurocode_generatie`) en deze sleutel zitten elkaar niet
+  in de weg.
+- **Nog niet:** het voorblad van het rapport houdt zijn eigen tekstveld *Toegepaste normen*;
+  de vastlegging staat daar (nog) niet in, wel in de kop van elk blad in bijlage A.
+- **Controle:** `scripts/check-projectnormen.mjs`.
 
 ## Eenheden
 
