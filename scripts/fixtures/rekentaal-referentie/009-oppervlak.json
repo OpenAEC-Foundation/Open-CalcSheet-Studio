@@ -1,0 +1,10 @@
+{
+  "onderdeel": "eenheden",
+  "omschrijving": "mm maal mm geeft mm²: 300·500 = 150 000 mm².",
+  "uitkomst": {
+    "A": "150000 mm^2"
+  },
+  "eenheid": {
+    "A": "mm^2"
+  }
+}

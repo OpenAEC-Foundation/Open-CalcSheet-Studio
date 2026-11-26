@@ -1,0 +1,7 @@
+{
+  "onderdeel": "eenheden",
+  "omschrijving": "Meters plus kilonewtons geeft een fout, nooit een getal.",
+  "fout": {
+    "a": "Units do not match"
+  }
+}

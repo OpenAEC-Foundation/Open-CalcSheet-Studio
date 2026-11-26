@@ -1,0 +1,13 @@
+{
+  "onderdeel": "tekst",
+  "omschrijving": "Een regel met // is commentaar: hij rekent niet en komt niet in beeld.",
+  "uitkomst": {
+    "y": "2"
+  },
+  "ontbreekt": [
+    "x"
+  ],
+  "geenHtml": [
+    "x = 5"
+  ]
+}

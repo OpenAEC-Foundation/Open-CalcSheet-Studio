@@ -1,0 +1,45 @@
+/* De gekozen waarden uit de nationale bijlage onder een blad (NbKeuzesTabel in BladNormen.tsx),
+   op het scherm en op papier. Klein en kaal, zoals de rest van de uitdraai. */
+
+.nb-keuzes {
+  margin: 14px 0 6px;
+  padding-top: 6px;
+  border-top: 1px solid #d6d3d1;
+  font-size: 0.86em;
+  break-inside: avoid;
+}
+
+.nb-keuzes-kop {
+  margin: 0 0 2px;
+  font-weight: 600;
+}
+
+.nb-keuzes-bijlage {
+  margin: 0 0 4px;
+  color: #57534e;
+}
+
+.nb-keuzes table {
+  border-collapse: collapse;
+}
+
+.nb-keuzes th,
+.nb-keuzes td {
+  padding: 1px 12px 1px 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.nb-keuzes th {
+  font-weight: 600;
+  color: #57534e;
+  border-bottom: 1px solid #d6d3d1;
+}
+
+.nb-keuzes-bron {
+  color: #78716c;
+}
+
+.nb-keuzes-papier {
+  font-size: 8.5pt;
+}

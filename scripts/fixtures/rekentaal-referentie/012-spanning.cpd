@@ -1,0 +1,3 @@
+N_Ed = 150 kN
+A = 100 mm*150 mm
+σ = N_Ed/A to N/mm^2

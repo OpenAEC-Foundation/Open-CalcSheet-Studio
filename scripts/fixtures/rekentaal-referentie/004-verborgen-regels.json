@@ -1,0 +1,11 @@
+{
+  "onderdeel": "tekst",
+  "omschrijving": "#hide … #show: de regel rekent wel (zicht = 2·12 = 24), maar komt niet in de uitwerking.",
+  "uitkomst": {
+    "zicht": "24"
+  },
+  "ontbreekt": [
+    "geheim"
+  ],
+  "regels": 1
+}

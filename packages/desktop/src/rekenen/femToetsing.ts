@@ -51,7 +51,7 @@ import { scopeMetVerwijzingen, verwezenBladen } from "./verwijzingen";
 import { useProjectStore } from "../store/projectStore";
 import { projectScope } from "../store/projectGegevens";
 import { rekenDoor } from "../mcp/rekenen";
-import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
+import { rekentaalIncludes, rekentaalIncludeStaat, rekentaalImageUrls } from "../templates/rekentaal-includes";
 import { variantInvoer } from "../store/varianten";
 
 interface FemNu {
@@ -213,7 +213,7 @@ export async function werkToetsingenBij(ids: readonly string[] | null, maxMs = 1
           // anders geeft een veld dat er een gebruikt een fout, en gaat er geen verzoek uit.
           const metRefs = scopeMetVerwijzingen(
             ex.source, waarden, scope, verwezenBladen(ex.source, waarden, exemplaren),
-            { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }, metToetsingen({}, "lezen"),
+            { includes: rekentaalIncludes, includeStaat: rekentaalIncludeStaat, imageUrls: rekentaalImageUrls }, metToetsingen({}, "lezen"),
           );
           const { nodes } = rekenDoor(ex.source, waarden, metRefs, ex.naam, "vragen");
           legToetsingenVast(ex.id, toetsHashes(nodes));

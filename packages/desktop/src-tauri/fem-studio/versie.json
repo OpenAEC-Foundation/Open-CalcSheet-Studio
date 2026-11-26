@@ -1,32 +1,32 @@
 {
-  "versie": "2026.46.1",
+  "versie": "2026.46.3",
   "repo": "OpenAEC-Foundation/Open-CalcSheet-Studio",
-  "tag": "fem-server-2026.46.1",
+  "tag": "fem-server-2026.46.3",
   "herkomst": {
     "repo": "OpenAEC-Foundation/open-fem-studio",
-    "tag": "v2026.46.1"
+    "tag": "v2026.46.3"
   },
   "bestanden": {
     "windows-x64": {
-      "naam": "openaec-mcp-server_2026.46.1_windows-x64.exe",
-      "sha256": "5de627dde7c6eedc6e29d22e5bbd248d492a4bb9a87b7df33f5cca8ae391e047"
+      "naam": "openaec-mcp-server_2026.46.3_windows-x64.exe",
+      "sha256": "12693eb516d3948bd208d94d2fdfdefd4e48d427643fbe76f84cd8f29e29c03c"
     },
     "macos-universal": {
-      "naam": "openaec-mcp-server_2026.46.1_macos-universal",
-      "sha256": "adfb283282137733042e9ae77316d3ba6145a688177371137e4243620af40612"
+      "naam": "openaec-mcp-server_2026.46.3_macos-universal",
+      "sha256": "e98cb5e43ddc98c043ba0dbd2316335edcf6b7db61770aa6a288edd603e01a5c"
     },
     "linux-x64": {
-      "naam": "openaec-mcp-server_2026.46.1_linux-x64",
-      "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938"
+      "naam": "openaec-mcp-server_2026.46.3_linux-x64",
+      "sha256": "f2624a1136c3175a84007338d6b15d5a8d0f4c183c2eba8c68ebdc7447e8b2fc"
     }
   },
   "bron": {
-    "naam": "openaec-mcp-server_2026.46.1_source.tar.gz",
-    "sha256": "1b353b5a0814ebc416f5d49c29a00e6f28314f70f83b0826825cfb84c43562e2",
-    "url": "https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/download/fem-server-2026.46.1/openaec-mcp-server_2026.46.1_source.tar.gz"
+    "naam": "openaec-mcp-server_2026.46.3_source.tar.gz",
+    "sha256": "2a19138767ca0172c4227417b973eb704c1d1aa331ed0da8008da2ee3909fc59",
+    "url": "https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/download/fem-server-2026.46.3/openaec-mcp-server_2026.46.3_source.tar.gz"
   },
   "vermeldingen": {
-    "naam": "openaec-mcp-server_2026.46.1_THIRD-PARTY-NOTICES.txt",
-    "sha256": "c4cb07ceb9ccae61a9066f88e72df50f60f3994c4b3a6e092aac92205a19b18c"
+    "naam": "openaec-mcp-server_2026.46.3_THIRD-PARTY-NOTICES.txt",
+    "sha256": "73652ff01350feb2f5e293f9e805ebfd8064ef572521aeab7002ca420fd2bc25"
   }
 }

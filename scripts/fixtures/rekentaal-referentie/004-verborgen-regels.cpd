@@ -1,0 +1,4 @@
+#hide
+geheim = 12
+#show
+zicht = geheim*2
