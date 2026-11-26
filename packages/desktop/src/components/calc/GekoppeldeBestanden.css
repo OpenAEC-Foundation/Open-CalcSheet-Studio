@@ -77,7 +77,7 @@
   color: var(--theme-text-muted);
 }
 
-.koppel-onderdelen tr.ontbreekt td:last-child {
+.koppel-onderdelen tr.ontbreekt td.koppel-reden {
   color: var(--theme-danger-color);
 }
 
@@ -103,4 +103,31 @@
   border-left: 2pt solid #b42318;
   padding-left: 4pt;
   color: #b42318;
+}
+
+.koppel-voorstel {
+  color: var(--theme-text);
+}
+
+.koppel-regels input {
+  width: 100%;
+  min-width: 120px;
+  height: 22px;
+  font: inherit;
+  color: var(--theme-text);
+  background: var(--theme-bg-lighter);
+  border: 1px solid var(--theme-border);
+  border-radius: 3px;
+  padding: 0 6px;
+  box-sizing: border-box;
+}
+
+.koppel-regels td:nth-child(3),
+.koppel-regels td:nth-child(4) {
+  width: 32%;
+}
+
+.koppel-onderdelen td.koppel-voorstel-cel {
+  white-space: normal;
+  min-width: 140px;
 }

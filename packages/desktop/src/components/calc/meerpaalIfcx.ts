@@ -4,7 +4,7 @@ import {
 } from "@ifc-calc/core";
 import beelden from "../../i18n/locales/nl/beelden.json" with { type: "json" };
 import { stavenMeerpaal, type MeerpaalDefinitie, type P2 } from "./meerpaalDefinitie.ts";
-import { POER_IFCX_SCHEMAS } from "./poerIfcx.ts";
+import { POER_IFCX_SCHEMAS, koppelAttributen, paalIdAttribuut, poerIdAttribuut, type PoerKoppelingIfcx } from "./poerIfcx.ts";
 import { POER_KLEUREN } from "./poerTekening.ts";
 import { afgerondPad, maakStaaflijst, staafLengte, type P3, type Staaf } from "./poerStaven.ts";
 
@@ -147,7 +147,7 @@ function cilinder(diameter: number, z0: number, z1: number) {
  * De poer van één blad als IFCX-knopen. De eerste knoop is de wortel (IfcElementAssembly);
  * de paden zijn vaste UUID's, afgeleid van `bladId`. Null als de poer geen volume heeft.
  */
-export function meerpaalIfcxKnopen(m: MeerpaalDefinitie, bladId: string, t: MeerpaalModelTeksten = NEDERLANDS): IfcxKnoop[] | null {
+export function meerpaalIfcxKnopen(m: MeerpaalDefinitie, bladId: string, t: MeerpaalModelTeksten = NEDERLANDS, koppeling: PoerKoppelingIfcx = {}): IfcxKnoop[] | null {
   if (!(m.h > 0) || m.omtrek.length < 3 || !m.omtrek.every((p) => p.every(Number.isFinite))) return null;
   const pad = (naam: string) => uuidVan(`${bladId}/meerpaalspoer/${naam}`);
   const knopen: IfcxKnoop[] = [];
@@ -178,6 +178,7 @@ export function meerpaalIfcxKnopen(m: MeerpaalDefinitie, bladId: string, t: Meer
       [ATTR.lengte]: naarM(Math.max(...xs) - Math.min(...xs)),
       [ATTR.breedte]: naarM(Math.max(...ys) - Math.min(...ys)),
       [ATTR.hoogte]: naarM(m.h),
+      ...poerIdAttribuut(koppeling),
     },
   });
   kinderen.Poer = poerPad;
@@ -200,6 +201,7 @@ export function meerpaalIfcxKnopen(m: MeerpaalDefinitie, bladId: string, t: Meer
           [ATTR.dikte]: naarM(m.paal.y),
           [ATTR.opmerking]: t.alleenAanzet,
           [ATTR.plaatsing]: verplaatsing(x, y, 0),
+          ...paalIdAttribuut(koppeling, i),
         },
       });
       kinderen[`Paal_${i + 1}`] = q;
@@ -269,16 +271,17 @@ export function meerpaalIfcxKnopen(m: MeerpaalDefinitie, bladId: string, t: Meer
       [ATTR.omschrijving]: m.n === 4
         ? `${titel} ${getal(m.maten.l)}×${getal(m.maten.b)}×${getal(m.h)}, ${t.hartOpHart} ${getal(m.maten.a_x)}×${getal(m.maten.a_y)}`
         : `${titel}, ${t.hartOpHart} ${getal(m.maten.a_3)}, h = ${getal(m.h)}`,
+      ...koppelAttributen(koppeling),
     },
   };
   return [wortel, ...knopen];
 }
 
 /** De poer als compleet IFCX-bestand, met een vast tijdstip: gelijke invoer geeft een gelijk document. */
-export function meerpaalIfcxDocument(m: MeerpaalDefinitie, opties: { bladId?: string; teksten?: MeerpaalModelTeksten } = {}): IfcxBestand | null {
+export function meerpaalIfcxDocument(m: MeerpaalDefinitie, opties: { bladId?: string; teksten?: MeerpaalModelTeksten; koppeling?: PoerKoppelingIfcx } = {}): IfcxBestand | null {
   const bladId = opties.bladId ?? "meerpaalspoer";
   const t = opties.teksten ?? NEDERLANDS;
-  const knopen = meerpaalIfcxKnopen(m, bladId, t);
+  const knopen = meerpaalIfcxKnopen(m, bladId, t, opties.koppeling);
   if (!knopen) return null;
   const pad = (naam: string) => uuidVan(`${bladId}/meerpaalspoer/ruimte/${naam}`);
   const laag = (naam: string, klasse: string, titel: string, kinderen: Record<string, string>): IfcxKnoop => ({

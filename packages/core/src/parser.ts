@@ -4,6 +4,8 @@ const { Unit } = math;
 import type { AstNode, ConditionalNode, OpdrachtNode, PlotNode, TextNode } from './types.js';
 import { DRIE_D_START_RE, leesDrieD } from './drieD.js';
 import { vervangVerwijzingen } from './verwijzing.js';
+import { PROCENT_IN_NAAM, naamMetProcent } from './naam.js';
+import { voegIncludesIn, type IncludeMelding, type IncludeStaat } from './include.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';
 import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
 import { TOETS_START_RE, leesToetsBlok } from './toetsBlok.js';
@@ -170,6 +172,8 @@ interface ParserState {
   scherm: boolean;
   /** De code van de `@js`-blokken; in de bron staat alleen hun nummer (jsBlok.ts). */
   jsBlokken: JsCode[];
+  /** De meldingen bij `#include`; in de bron staat `#include-melding n` (include.ts). */
+  includeMeldingen: IncludeMelding[];
 }
 
 /**
@@ -575,12 +579,14 @@ function applyMacro(macro: { params: string[]; body: string[]; oneLine: string |
 /**
  * The language allows `.` and `%` inside identifier names (e.g. `Cs.Cd`,
  * `F_0.9G50%TotalWeight`). mathjs treats `.` as member access and `%` as
- * modulo, so these names blow up. Fold them to `_` when the surrounding
+ * modulo, so these names blow up. Fold them when the surrounding
  * tokens form an identifier-like cluster: a leading letter/underscore,
- * followed by one or more `.`/`%`-separated word groups.
+ * followed by one or more `.`/`%`-separated word groups. Een punt wordt `_`,
+ * een procent de letter PROCENT_IN_NAAM (naam.ts): anders waren `F_1%50` en
+ * `F_1_50` stil dezelfde variabele.
  *
  *   `Cs.Cd`                  →  `Cs_Cd`
- *   `F_0.9G50%TotalWeight`   →  `F_0_9G50_TotalWeight`
+ *   `F_0.9G50%TotalWeight`   →  `F_0_9G50ǂTotalWeight`
  *   `0.5`                    →  unchanged (leading digit excluded)
  *   `q * 0.9`                →  unchanged
  */
@@ -620,7 +626,7 @@ function foldIdentifierDots(source: string): string {
     // catches what the one above now leaves alone (`t.o.v` → `t_o_v`).
     out = out.replace(
       /(?<![\p{L}\p{N}_])([\p{L}_][\p{L}\p{N}_]*(?:[.%][\p{L}\p{N}_]+)+)(?![\p{L}\p{N}_.])/gu,
-      (match) => match.replace(/[.%]/g, '_'),
+      (match) => match.replace(/\./g, '_').replace(/%/g, PROCENT_IN_NAAM),
     );
     return out;
   };
@@ -818,20 +824,6 @@ function leesElementToekenning(regel: string): { naam: string; index: string; wa
 }
 
 /**
- * Inline `#include filename` directives by looking up each filename in the
- * resolver map. Missing files become a comment line. Runs once before macro
- * expansion so included macros (`#def …`) participate in expansion.
- */
-function inlineIncludes(source: string, includes: ReadonlyMap<string, string>): string {
-  return source.replace(/^[ \t]*#include\s+(\S+)\s*$/gmu, (match, name: string) => {
-    const key = name.trim().replace(/^["']|["']$/g, '');
-    const content = includes.get(key);
-    if (content === undefined) return `// (include not found: ${key})`;
-    return content;
-  });
-}
-
-/**
  * Inline `@img(file.svg)` directives whose target is an SVG file in the
  * include resolver — replace the line with an `@svg … @end` block so the
  * actual SVG markup is rendered inline (not as `<img src="file.svg">`).
@@ -857,8 +849,14 @@ function inlineSvgImages(source: string, includes: ReadonlyMap<string, string>):
 }
 
 export interface ParseOptions {
-  /** Map of filename → contents for `#include filename` resolution. */
+  /**
+   * Sleutel → tekst voor `#include` (include.ts). Zonder deze tabel blijft een
+   * `#include` zonder gevolg; met een tabel geeft een bestand dat er niet in staat
+   * een melding in het blad.
+   */
   includes?: ReadonlyMap<string, string>;
+  /** Waarom een bestand er niet (vers) is, per sleutel: komt als melding in het blad (include.ts). */
+  includeStaat?: ReadonlyMap<string, IncludeStaat>;
   /**
    * Map of filename → URL for rewriting `<img src="...">` references inside
    * prose. Lookup is by basename (case-insensitive), so the source can write
@@ -925,8 +923,9 @@ function parseBron(source: string, options: ParseOptions): AstNode[] {
   // en nog een keer na het invoegen, voor een blok uit een `#include`.
   const jsBlokken: JsCode[] = [];
   source = haalJsBlokkenUit(source, jsBlokken);
-  if (options.includes && options.includes.size > 0) {
-    source = inlineIncludes(source, options.includes);
+  const includeMeldingen: IncludeMelding[] = [];
+  if (options.includes) {
+    source = voegIncludesIn(source, options.includes, options.includeStaat, includeMeldingen);
     source = inlineSvgImages(source, options.includes);
     source = haalJsBlokkenUit(source, jsBlokken);
   }
@@ -1043,7 +1042,7 @@ function parseBron(source: string, options: ParseOptions): AstNode[] {
     spoel();
   }
 
-  const state: ParserState = { hidden: false, scherm: false, jsBlokken };
+  const state: ParserState = { hidden: false, scherm: false, jsBlokken, includeMeldingen };
   return parseLines(lines, 0, lines.length, state).nodes;
 }
 
@@ -1182,6 +1181,15 @@ function parseLines(
     if (roundMatch) {
       const n = roundMatch[1].match(/^\d+/);
       nodes.push({ type: 'opdracht', opdracht: 'round', decimalen: n ? Math.min(15, parseInt(n[0], 10)) : null });
+      i++;
+      continue;
+    }
+
+    // Een melding bij een `#include` (include.ts): een tekstregel die de rekenkern invult.
+    const includeMeldingMatch = trimmed.match(/^#include-melding (\d+)$/);
+    if (includeMeldingMatch) {
+      const melding = state.includeMeldingen[Number(includeMeldingMatch[1])];
+      if (melding) nodes.push(markHidden({ type: 'text', text: '', includeMelding: melding }, state));
       i++;
       continue;
     }
@@ -1474,7 +1482,7 @@ function parseLines(
         markHidden({
           type: 'input-prompt',
           name: promptMatch[1],
-          label: promptMatch[1],
+          label: naamMetProcent(promptMatch[1]),
           defaultValue,
           unit,
         }, state),

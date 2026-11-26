@@ -1,5 +1,7 @@
 import {
+  afgeleideProjectId,
   bouwProjectIfcx,
+  leesProjectId,
   isIfcxBestand,
   isProjectIfcx,
   leesProjectIfcx,
@@ -28,6 +30,7 @@ import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
 import { isJupyterBlad, leesJupyterWerkmap } from "./jupyterBlad.ts";
 import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
 import { leesVarianten } from "./varianten.ts";
+import { leesIncludeKopieen } from "./includes.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -78,6 +81,12 @@ import { leesVarianten } from "./varianten.ts";
  * Gegevens van een ander programma in het bestand (een eigen knoop, of een eigen
  * attribuut op een knoop van deze app) gaan bij het openen mee als `vreemd` en
  * komen bij het opslaan ongewijzigd terug: zie packages/core/src/ifcx/vreemd.ts.
+ *
+ * Het project heeft een blijvende identiteit, een UUID: het pad van de wortel van
+ * het IFCX. Alle andere paden en GlobalId's hangen daaraan, niet aan projectnaam of
+ * -nummer. Een nieuw project krijgt een willekeurige id (store/projectStore.ts); een
+ * bestand van vóór de id heeft als wortel de UUID uit nummer en naam staan, en die
+ * wordt bij het openen zijn id. Het beleid staat in docs/ifc-export.md.
  */
 
 export const PROJECT_FORMAAT_VERSIE = 2;
@@ -94,6 +103,11 @@ function leesVerborgen(v: unknown): Verborgen | undefined {
 
 export interface ProjectPayload {
   versie: number;
+  /**
+   * De blijvende identiteit van het project (een UUID): de wortel van het IFCX, waar
+   * alle paden en GlobalId's van afhangen. Zonder volgt hij uit nummer en naam.
+   */
+  id?: string;
   naam: string;
   gegevens: ProjectGegevens;
   exemplaren: Exemplaar[];
@@ -106,6 +120,11 @@ export interface ProjectPayload {
 }
 
 export interface GelezenProject {
+  /**
+   * De identiteit uit het bestand. Een bestand zonder (een ouder formaat, een los blad)
+   * krijgt de id die uit zijn nummer en naam volgt: dezelfde wortel als voorheen.
+   */
+  projectId: string;
   projectNaam: string;
   gegevens: ProjectGegevens;
   exemplaren: Exemplaar[];
@@ -130,6 +149,7 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
 function eigenDocument(payload: ProjectPayload, bladen: IfcCalcSheet[] | null): IfcxBestand {
   const uitkomsten = new Map((bladen ?? []).map((b) => [b.id, b]));
   return bouwProjectIfcx({
+    id: payload.id,
     naam: payload.naam,
     formaatversie: PROJECT_FORMAAT_VERSIE,
     gegevens: payload.gegevens,
@@ -155,6 +175,7 @@ function eigenDocument(payload: ProjectPayload, bladen: IfcCalcSheet[] | null): 
       // Doorgerekend: zoals het blad ze nog gebruikt, met die van zijn varianten (projectIfcx.ts).
       toetsingen: uitkomsten.has(ex.id) ? uitkomsten.get(ex.id)!.toetsingen : gebruikteToetsingen(ex.toetsingen, undefined),
       ...(ex.varianten ? { varianten: ex.varianten } : {}),
+      ...(ex.includes?.length ? { includes: ex.includes } : {}),
     })),
   });
 }
@@ -167,6 +188,8 @@ function eigenDocument(payload: ProjectPayload, bladen: IfcCalcSheet[] | null): 
 function vreemdUit(bron: IfcxBestand, p: GelezenProject): IfcxVreemd | undefined {
   const payload: ProjectPayload = {
     versie: PROJECT_FORMAAT_VERSIE,
+    // Met de id uit het bestand: anders vallen de paden anders uit en lijkt alles vreemd.
+    id: p.projectId,
     naam: p.projectNaam,
     gegevens: p.gegevens,
     exemplaren: p.exemplaren,
@@ -217,12 +240,16 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
   }
 
   if (parsed) {
-    const p: { naam?: unknown; gegevens?: unknown; exemplaren?: unknown; rapport?: unknown; verborgen?: unknown } | undefined =
+    const p: { id?: unknown; naam?: unknown; gegevens?: unknown; exemplaren?: unknown; rapport?: unknown; verborgen?: unknown } | undefined =
       isProjectIfcx(parsed) ? leesProjectIfcx(parsed) : parsed.project;
     if (p && Array.isArray(p.exemplaren)) {
+      const projectNaam = (typeof p.naam === "string" && p.naam) || bestandsnaam;
+      const gegevens: ProjectGegevens = { ...legeGegevens(), ...((p.gegevens as ProjectGegevens | undefined) ?? {}) };
       const gelezen: GelezenProject = {
-        projectNaam: (typeof p.naam === "string" && p.naam) || bestandsnaam,
-        gegevens: { ...legeGegevens(), ...((p.gegevens as ProjectGegevens | undefined) ?? {}) },
+        // Uit het IFCX: het pad van de wortel. Versie 1 heeft geen id: afgeleid, zoals zijn export.
+        projectId: leesProjectId(p.id) ?? afgeleideProjectId(projectNaam, gegevens.project_nummer),
+        projectNaam,
+        gegevens,
         exemplaren: normaliseerExemplaren(p.exemplaren, bestandsnaam),
         // Per veld gecontroleerd: het bestand kan van een andere versie van
         // de app komen of met de hand zijn aangepast. Onbekende velden
@@ -295,6 +322,9 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   // Varianten van het blad (store/varianten.ts); alleen een rekenblad rekent ze door.
   const varianten = leesVarianten(e.varianten);
   if (varianten) ex.varianten = varianten;
+  // De `#include`-bestanden met hun kopie (store/includes.ts).
+  const includes = leesIncludeKopieen(e.includes);
+  if (includes) ex.includes = includes;
   return ex;
 }
 
@@ -320,9 +350,12 @@ function leesWaarden(x: unknown): Record<string, string> {
 }
 
 function losBlad(source: string, bestandsnaam: string): GelezenProject {
+  const gegevens = legeGegevens();
   return {
+    // Reproduceerbaar: hetzelfde bestand opent steeds met dezelfde identiteit.
+    projectId: afgeleideProjectId(bestandsnaam, gegevens.project_nummer),
     projectNaam: bestandsnaam,
-    gegevens: legeGegevens(),
+    gegevens,
     exemplaren: [
       { id: losseId(), naam: bestandsnaam, templateId: "", source, waarden: {}, elementen: [] },
     ],

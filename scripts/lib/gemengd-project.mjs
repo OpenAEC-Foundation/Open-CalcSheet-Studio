@@ -307,7 +307,10 @@ export async function bouwGemengdProject() {
   const exemplaren = [
     {
       ...b.rekenblad, templateId: "", waarden: {}, elementen: [],
-      source: "\"Kolom K1\n'Eenvoudige toets van de normaalkracht\nF = ?{120}*(kN)\nA = 6000*mm^2\nfy = 235*N/mm^2\nN_Rd = A*fy\nUC = F/N_Rd\n",
+      source: "\"Kolom K1\n'Eenvoudige toets van de normaalkracht\nF = ?{120}*(kN)\nA = 6000*mm^2\nfy = 235*N/mm^2\nN_Rd = A*fy\nUC = F/N_Rd\n" +
+        // Een regel die breder is dan het blad: hij moet afbreken (check-rapport-pdf, `breed`).
+        "a_lange_naam_een = 12.345\nb_lange_naam_twee = 23.456\nc_lange_naam_drie = 34.567\nd_lange_naam_vier = 45.678\n" +
+        "resultaat = a_lange_naam_een*b_lange_naam_twee + c_lange_naam_drie*d_lange_naam_vier + a_lange_naam_een*c_lange_naam_drie + b_lange_naam_twee*d_lange_naam_vier + a_lange_naam_een*d_lange_naam_vier\n",
       varianten: {
         velden: ["F"],
         uitkomsten: ["N_Rd"],
