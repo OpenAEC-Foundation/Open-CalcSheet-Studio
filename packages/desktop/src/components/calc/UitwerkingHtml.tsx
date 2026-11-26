@@ -6,6 +6,9 @@ import { useJsAfdruk } from "./jsBlok";
 import { metDecimaalKomma, taalMetKomma } from "@ifc-calc/core";
 import { schoonUitwerking } from "./uitwerkingOpschonen";
 import { useAfdrukTaal } from "./afdrukTaal";
+import { useTranslation } from "react-i18next";
+import { useProjectStore } from "../../store/projectStore";
+import { bladenUitSleutel, bladNamenSleutel, bronnenInvullen, bronTeksten } from "./bronnen";
 
 /**
  * De uitwerking van een blad op papier. Een 3D-blok (`@3d`, `@ifcx`) wordt hier een
@@ -25,6 +28,12 @@ export function UitwerkingHtml({ html, bladId }: { html: string; bladId?: string
   // Op papier in een taal met een komma staan de getallen met een komma; de rekentaal en
   // het scherm houden de punt.
   const komma = taalMetKomma(useAfdrukTaal());
-  const inhoud = useMemo(() => ({ __html: komma ? metDecimaalKomma(schoonUitwerking(html)) : schoonUitwerking(html) }), [html, komma]);
+  // Een verwijzing met `@bron` krijgt op papier de bron erbij: het PDF-blad of het bestand en de pagina (bronnen.ts).
+  const { t } = useTranslation("beelden");
+  const bladNamen = useProjectStore((s) => bladNamenSleutel(s.exemplaren));
+  const inhoud = useMemo(() => {
+    const schoon = bronnenInvullen(schoonUitwerking(html), bronTeksten(t), bladenUitSleutel(bladNamen));
+    return { __html: komma ? metDecimaalKomma(schoon) : schoon };
+  }, [html, komma, t, bladNamen]);
   return <div ref={ref} className="ifc-calc" dangerouslySetInnerHTML={inhoud} />;
 }

@@ -1,0 +1,7 @@
+{
+  "onderdeel": "invoer",
+  "omschrijving": "Een invoerveld met standaardwaarde rekent daarmee zolang er niets is ingevuld: 2·5 m = 10 m.",
+  "uitkomst": {
+    "M": "10 m"
+  }
+}

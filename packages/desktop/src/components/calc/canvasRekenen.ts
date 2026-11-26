@@ -14,8 +14,8 @@
  *
  * Laadt zonder React of stores: de rekenworker en de controles gebruiken dit.
  */
-import { parse, evaluate, extractScope, render } from "@ifc-calc/core";
-import type { AstNode, EvalOpties, EvaluatedNode, ParseOptions } from "@ifc-calc/core";
+import { parse, evaluate, evaluateMetScope, extractScope, render } from "@ifc-calc/core";
+import type { AstNode, EvalOpties, EvaluatedNode, ParseOptions, Scope } from "@ifc-calc/core";
 import { heeftEenheden, leesEenheden, type Eenheid } from "../../store/canvasBlad.ts";
 
 /** Een eenheid met wat hij oplevert. */
@@ -131,6 +131,8 @@ export interface RekenUitwerking {
   nodes: EvaluatedNode[];
   html: string;
   eenheden?: CanvasUitwerking[];
+  /** De scope na de laatste regel, ook met wat verborgen is (#hide); niet bij een canvas-blad. */
+  scope?: Scope;
 }
 
 /**
@@ -147,8 +149,8 @@ export function rekenUitwerking(
   evalOpties: EvalOpties = {},
 ): RekenUitwerking {
   if (!heeftEenheden(bron)) {
-    const nodes = evaluate(parse(bron, opties), waarden, scope, evalOpties);
-    return { nodes, html: render(nodes, { namen }) };
+    const uit = evaluateMetScope(parse(bron, opties), waarden, scope, evalOpties);
+    return { nodes: uit.nodes, html: render(uit.nodes, { namen }), scope: uit.scope };
   }
   const uit = rekenEenhedenDoor(bron, waarden, scope, opties, evalOpties);
   const nodes = uit.flatMap((u) => u.nodes);

@@ -34,8 +34,25 @@ const INGANG = `
   import { useModuleKiezer } from "./store/moduleKiezer";
   import { useEditorViewStore } from "./store/editorViewStore";
   import Editor from "./components/calc/Editor";
+  import { UitdraaiInhoud, useUitdraai } from "./components/calc/PrintDocument";
 
   export { i18next, useProjectStore, useBureauStore, useModuleKiezer };
+  export { bladHashNu, bladUitkomsten } from "./components/calc/controleHash";
+  export { openBron, bronnenInvullen, bronSoort } from "./components/calc/bronnen";
+
+  /** De losse uitdraai van de bladen (voorblad en bladen), zoals het afdrukvoorbeeld hem toont. */
+  function Uitdraai() {
+    return createElement(UitdraaiInhoud, { uitdraai: useUitdraai() });
+  }
+
+  export function tekenUitdraai() {
+    const plek = document.createElement("div");
+    const wortel = createRoot(plek);
+    flushSync(() => wortel.render(createElement(Uitdraai)));
+    const html = plek.innerHTML;
+    wortel.unmount();
+    return html;
+  }
 
   /** De echte tab Code: wat erin staat, en typen of weghalen aan het eind van een regel. */
   export function tekenEditor() {
@@ -70,7 +87,7 @@ const INGANG = `
 
 /**
  * De bundel, geladen in jsdom. Geeft `teken()` (de html van het rapport dat in de store
- * staat), de store en i18next.
+ * staat), `tekenUitdraai()` (de losse uitdraai van de bladen), de store en i18next.
  */
 export async function laadRapportAfdruk() {
   const map = mkdtempSync(join(tmpdir(), "rapport-html-"));

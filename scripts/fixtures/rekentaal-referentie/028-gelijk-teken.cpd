@@ -1,0 +1,8 @@
+CC = 2
+#if CC ≡ 1
+K = 0.9
+#else if CC ≡ 2
+K = 1.0
+#else
+K = 1.1
+#end if

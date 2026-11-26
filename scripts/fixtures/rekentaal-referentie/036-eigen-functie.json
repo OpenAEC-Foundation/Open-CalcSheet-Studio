@@ -1,0 +1,7 @@
+{
+  "onderdeel": "functies",
+  "omschrijving": "f(t) = t² + 1, f(3) = 10.",
+  "uitkomst": {
+    "y": "10"
+  }
+}

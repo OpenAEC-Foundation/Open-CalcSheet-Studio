@@ -1,0 +1,10 @@
+{
+  "onderdeel": "tekst",
+  "omschrijving": "Een waarde tussen apostrofs in een tekstregel, ook in SVG.",
+  "uitkomst": {
+    "b": "40"
+  },
+  "html": [
+    "<svg><rect width=\"40\"/></svg>"
+  ]
+}

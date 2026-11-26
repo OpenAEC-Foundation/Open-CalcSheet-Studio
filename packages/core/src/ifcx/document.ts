@@ -27,7 +27,7 @@
  * opnieuw maken. Uitkomsten, figuren en elementen zijn wel afgeleid: de app rekent ze
  * opnieuw uit bij het openen en opslaan.
  */
-import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions, VariantenGegevens } from '../ifc-generator.js';
+import type { ControleGegevens, ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions, VariantenGegevens } from '../ifc-generator.js';
 import type { VastgelegdeToets } from '../types.js';
 import { leesVastgelegdeToetsingen } from '../toetsBlok.js';
 import type { IfcxBestand, IfcxKnoop, IfcxSchema } from './typen.js';
@@ -102,6 +102,8 @@ export interface IfcxGelezenBlad {
   toetsingen?: Record<string, VastgelegdeToets>;
   /** Zoals ze in het bestand staan; de app leest ze na (store/varianten.ts). */
   varianten?: VariantenGegevens;
+  /** Zoals ze in het bestand staat; de app leest haar na (store/controle.ts). */
+  controle?: ControleGegevens;
   /** `#include`-bestanden met hun bewaarde kopie; de app leest ze na (store/includes.ts). */
   includes?: unknown[];
 }
@@ -381,6 +383,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     }
     if (blad.toetsingen && Object.keys(blad.toetsingen).length > 0) attributes[ATTR.toetsing] = toetsingAttribuut(blad.toetsingen);
     if (blad.varianten) attributes[ATTR.varianten] = variantenAttribuut(blad.varianten);
+    if (blad.controle && blad.controle.registraties.length > 0) attributes[ATTR.controle] = blad.controle;
     if (blad.includes && blad.includes.length > 0) attributes[ATTR.includes] = blad.includes;
     attributes[ATTR.uitkomst] = uitkomst;
 
@@ -748,6 +751,8 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     if (toetsingen) blad.toetsingen = toetsingen;
     const varianten = variantenUitAttribuut(a[ATTR.varianten]);
     if (varianten) blad.varianten = varianten;
+    const controle = a[ATTR.controle] as { registraties?: unknown } | undefined;
+    if (controle && typeof controle === 'object' && Array.isArray(controle.registraties)) blad.controle = controle as ControleGegevens;
     if (Array.isArray(a[ATTR.includes])) blad.includes = a[ATTR.includes] as unknown[];
     return blad;
   });
