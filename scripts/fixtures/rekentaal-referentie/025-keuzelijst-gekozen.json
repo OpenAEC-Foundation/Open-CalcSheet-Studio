@@ -1,0 +1,10 @@
+{
+  "onderdeel": "invoer",
+  "omschrijving": "De gekozen regel van een keuzelijst.",
+  "invoer": {
+    "staal": "355"
+  },
+  "uitkomst": {
+    "f_y": "355 N / mm^2"
+  }
+}

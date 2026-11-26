@@ -1,0 +1,10 @@
+{
+  "onderdeel": "tekst",
+  "omschrijving": "Tekst tussen apostrofs achter een formule komt ernaast.",
+  "uitkomst": {
+    "a": "2 m"
+  },
+  "html": [
+    "<span class=\"calc-comment\">, toelichting</span>"
+  ]
+}

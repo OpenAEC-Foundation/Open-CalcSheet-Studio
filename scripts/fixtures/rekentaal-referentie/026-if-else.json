@@ -1,0 +1,12 @@
+{
+  "onderdeel": "voorwaarden",
+  "omschrijving": "#if … #else … #end if.",
+  "uitkomst": {
+    "c": "3"
+  },
+  "reeks": {
+    "c": [
+      "3"
+    ]
+  }
+}

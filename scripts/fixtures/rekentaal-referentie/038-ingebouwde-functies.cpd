@@ -1,0 +1,6 @@
+a = min(3; 5)
+b = max(3; 5)
+c = abs(-2)
+d = ceil(2.1)
+e_1 = floor(2.9)
+r = round(2.345678; 2)

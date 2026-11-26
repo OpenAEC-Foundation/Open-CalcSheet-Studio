@@ -1,0 +1,10 @@
+{
+  "onderdeel": "opmaak",
+  "omschrijving": "x:F2 toont twee decimalen; de uitkomst zelf blijft vier cijfers.",
+  "uitkomst": {
+    "z": "3.142"
+  },
+  "latex": {
+    "z": "3.14"
+  }
+}

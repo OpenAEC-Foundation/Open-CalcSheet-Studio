@@ -1,0 +1,7 @@
+{
+  "onderdeel": "opzoeken",
+  "omschrijving": "take(2; v) geeft het tweede element.",
+  "uitkomst": {
+    "t": "6"
+  }
+}

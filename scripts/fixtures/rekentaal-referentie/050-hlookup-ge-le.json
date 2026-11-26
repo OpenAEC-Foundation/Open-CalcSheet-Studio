@@ -1,0 +1,8 @@
+{
+  "onderdeel": "opzoeken",
+  "omschrijving": "hlookup_ge neemt de eerste kolom ≥ de waarde, hlookup_le de laatste ≤.",
+  "uitkomst": {
+    "h_ge": "30",
+    "h_le": "20"
+  }
+}

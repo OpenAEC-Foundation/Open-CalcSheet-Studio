@@ -5,6 +5,32 @@ kern (`packages/core`) rekent de regels van boven naar beneden door en toont bij
 uitkomst `naam = formule = ingevulde waarden = resultaat`. Bestanden met de extensie `.cpd`
 zijn in deze taal geschreven.
 
+## Referentieversie
+
+Referentieversie: **1.0** (26-11-2026, kern 2026.48.0).
+
+Wat de rekentaal doet, ligt vast in een openbare set gevallen:
+`scripts/fixtures/rekentaal-referentie/`. Elk geval is een `.cpd` met de rekentekst en een
+`.json` met de verwachte uitkomst: de uitkomst als tekst (`"22.5 kN m"`), de eenheid, het
+onafgeronde getal, een foutmelding, of wat er in de uitwerking staat. Versie 1.0 heeft 59
+gevallen over tekst en koppen, rekenen, eenheden, invoervelden en keuzelijsten,
+voorwaarden, herhalingen, functies, macro's en `#include`, matrices, opzoeken, namen,
+opmaak, verwijzingen naar een ander blad, `@last`, grafieken en fouten. Bij elk geval staat
+in de omschrijving de handberekening.
+
+- **Controle:** `scripts/check-rekentaal-referentie.mjs` draait alle gevallen, bij elke
+  wijziging (onderdeel van `check-alles` en dus van CI). Een ander programma dat deze
+  rekentaal leest, kan dezelfde gevallen gebruiken.
+- **De versie:** `referentie.json` in de map houdt de versies bij, elk met de sha256 van
+  de gevallen. Verandert er een geval of komt er een bij, dan zakt de controle tot er een
+  nieuwe versie in `referentie.json` staat, met dezelfde versie hierboven. Een verwachting
+  wijzigen betekent dat de taal anders rekent: een nieuwe referentieversie, met in
+  `wijziging` wat er anders is. `--hash` geeft de hash van de gevallen zoals ze nu zijn.
+- **Wat de set vastlegt dat je misschien niet verwacht:** een uitkomst staat op vier
+  significante cijfers (`666700 mm^3`), `:F2` verandert alleen de weergave, een
+  variabele gaat voor een eenheid met dezelfde naam (met `m = 2` is `10 m` gelijk aan 20),
+  een regel binnen `#hide` komt niet in de uitwerking, en `1/0` is `∞` en geen fout.
+
 ## Rekenen
 
 - **Formules met eenheden:** `mm`, `kN`, `N/mm²`, `mm⁴`, … via de eenheden van mathjs.
