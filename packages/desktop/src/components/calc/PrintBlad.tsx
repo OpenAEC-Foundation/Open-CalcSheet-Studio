@@ -16,6 +16,7 @@ import "./JupyterBlad.css";
 import { MATEN, type Maten } from "./paginering";
 import { UitwerkingHtml } from "./UitwerkingHtml";
 import VariantenAfdruk from "./varianten/VariantenAfdruk";
+import { BladNormenRegel } from "./BladNormen";
 import "./PrintDocument.css";
 
 /*
@@ -142,6 +143,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
         <span className="print-blad-titel">
           <span className="print-blad-naam">{ex.naam}</span>
           {onderkop && <span className="print-blad-norm">{onderkop}</span>}
+          <BladNormenRegel source={ex.source} />
         </span>
         <span className="print-blad-uitkomst">
           {resultaat.uc !== null && <span className="print-blad-uc">UC {ucTekst(resultaat.uc, i18n.language)}</span>}

@@ -527,7 +527,19 @@
       "blad": "Lapas",
       "uc": "Lemiamas UC",
       "oordeel": "Išvada"
-    }
+    },
+    "normenKop": "Standartai ir nacionaliniai priedai",
+    "normenNiet": "Standartų leidimai ir nacionaliniai priedai projekto duomenyse neužfiksuoti.",
+    "normKolom": "Standartas",
+    "editieKolom": "Leidimas",
+    "nbKolom": "Nacionalinis priedas",
+    "nietVastgelegd": "neužfiksuota",
+    "normenKort": "Standartai:",
+    "normEditie": "leidimas {{editie}}",
+    "normNb": "nacionalinis priedas {{nb}}",
+    "editieOnbekend": "leidimas neužfiksuotas",
+    "nbOnbekend": "nacionalinis priedas neužfiksuotas",
+    "nietInProject": "{{deel}} projekte neužfiksuotas"
   },
   "poerDetail": {
     "titel": "Strypų žiniaraštis ir armavimo detalė",

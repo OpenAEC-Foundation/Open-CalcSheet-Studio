@@ -577,6 +577,18 @@
       "blad": "Sheet",
       "uc": "Governing UC",
       "oordeel": "Verdict"
-    }
+    },
+    "normenKop": "Standards and national annexes",
+    "normenNiet": "The editions of the standards and the national annexes are not recorded in the project data.",
+    "normKolom": "Standard",
+    "editieKolom": "Edition",
+    "nbKolom": "National annex",
+    "nietVastgelegd": "not recorded",
+    "normenKort": "Standards:",
+    "normEditie": "edition {{editie}}",
+    "normNb": "national annex {{nb}}",
+    "editieOnbekend": "edition not recorded",
+    "nbOnbekend": "national annex not recorded",
+    "nietInProject": "{{deel}} not recorded in the project"
   }
 }

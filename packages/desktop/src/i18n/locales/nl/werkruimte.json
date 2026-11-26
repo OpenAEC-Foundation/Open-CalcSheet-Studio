@@ -361,6 +361,35 @@
       "erpLeeg": "Het veld {{veld}} van dit project in ERPNext is leeg of bestaat niet. De huidige locatie blijft staan.",
       "erpNietGevonden": "De locatie uit ERPNext is niet gevonden. De huidige locatie blijft staan.",
       "erpMislukt": "Overnemen uit ERPNext is mislukt: {{fout}}. De huidige locatie blijft staan."
+    },
+    "normen": {
+      "kop": "Normen en nationale bijlagen",
+      "uitleg": "Leg vast welke editie van elke norm en welke nationale bijlage in dit project gelden. Ze staan op het voorblad en in de kop van elk blad dat de norm noemt. De app vult zelf geen editie in.",
+      "onderwerp": "Onderwerp",
+      "norm": "Norm",
+      "editie": "Editie",
+      "nb": "Nationale bijlage",
+      "normVoorbeeld": "bijv. NEN-EN 1995-1-1",
+      "editieVoorbeeld": "bijv. 2005+C1:2006+A1:2008",
+      "nbVoorbeeld": "bijv. NB:2013",
+      "verwijder": "Verwijderen",
+      "erbij": "Norm toevoegen",
+      "uitBladen_one": "Uit de bladen (1 norm)",
+      "uitBladen_other": "Uit de bladen ({{count}} normen)",
+      "uitBladenGeen": "Elke Eurocode die de bladen noemen, staat al in de lijst",
+      "leeg": "Nog geen normen vastgelegd. Op de afdruk staat dan dat edities en nationale bijlagen niet zijn vastgelegd.",
+      "onderwerpen": {
+        "belastingen": "Grondslagen en belastingen",
+        "wind": "Wind",
+        "sneeuw": "Sneeuw",
+        "aardbeving": "Aardbeving",
+        "beton": "Beton",
+        "staal": "Staal",
+        "hout": "Hout",
+        "metselwerk": "Metselwerk",
+        "funderingen": "Funderingen",
+        "overig": "Overig"
+      }
     }
   },
   "windkaart": {

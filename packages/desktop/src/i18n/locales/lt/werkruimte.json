@@ -363,6 +363,37 @@
       "erpLeeg": "Šio projekto laukas {{veld}} ERPNext sistemoje tuščias arba neegzistuoja. Dabartinė vieta lieka.",
       "erpNietGevonden": "Nepavyko rasti vietos iš ERPNext. Dabartinė vieta lieka.",
       "erpMislukt": "Perimti iš ERPNext nepavyko: {{fout}}. Dabartinė vieta lieka."
+    },
+    "normen": {
+      "kop": "Standartai ir nacionaliniai priedai",
+      "uitleg": "Užfiksuokite, kuris kiekvieno standarto leidimas ir kuris nacionalinis priedas galioja šiam projektui. Jie rodomi tituliniame lape ir kiekvieno lapo, kuriame minimas standartas, antraštėje. Programa pati jokio leidimo neįrašo.",
+      "onderwerp": "Sritis",
+      "norm": "Standartas",
+      "editie": "Leidimas",
+      "nb": "Nacionalinis priedas",
+      "normVoorbeeld": "pvz., LST EN 1995-1-1",
+      "editieVoorbeeld": "pvz., 2005+C1:2006+A1:2008",
+      "nbVoorbeeld": "pvz., NA:2013",
+      "verwijder": "Pašalinti",
+      "erbij": "Pridėti standartą",
+      "uitBladen_one": "Iš lapų ({{count}} standartas)",
+      "uitBladen_few": "Iš lapų ({{count}} standartai)",
+      "uitBladen_many": "Iš lapų ({{count}} standarto)",
+      "uitBladen_other": "Iš lapų ({{count}} standartų)",
+      "uitBladenGeen": "Kiekvienas lapuose minimas Eurokodas jau yra sąraše",
+      "leeg": "Standartų dar neužfiksuota. Spaudinyje tada nurodoma, kad leidimai ir nacionaliniai priedai neužfiksuoti.",
+      "onderwerpen": {
+        "belastingen": "Pagrindai ir poveikiai",
+        "wind": "Vėjas",
+        "sneeuw": "Sniegas",
+        "aardbeving": "Žemės drebėjimas",
+        "beton": "Betonas",
+        "staal": "Plienas",
+        "hout": "Mediena",
+        "metselwerk": "Mūras",
+        "funderingen": "Pamatai",
+        "overig": "Kita"
+      }
     }
   },
   "windkaart": {

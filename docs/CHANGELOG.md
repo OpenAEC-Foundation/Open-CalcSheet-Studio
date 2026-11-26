@@ -9,6 +9,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 - Rekentaal: een vastgelegde referentieversie (1.0) met 59 openbare gevallen, elk een `.cpd` met de verwachte uitkomst, in `scripts/fixtures/rekentaal-referentie/`. De controle draait ze bij elke wijziging; een verandering in wat de taal uitrekent, vraagt een nieuwe referentieversie (docs/rekentaal.md)
 - Eenheden: `rpm` voor een toerental (1500 rpm = 25 Hz). Nieuwe openbare controles voor nulwaarden, temperatuur (°C, K, °F en verschillen), toerental en elektrische eenheden (V, A, W, VA, ohm, C, kWh), met de valkuilen in docs/rekentaal.md: een verschil van twee temperaturen in °C wordt met `to K` een absolute temperatuur, en een variabele gaat voor een eenheid met dezelfde naam
+- Projectgegevens: een vak Normen en nationale bijlagen legt per project vast welke editie van elke norm en welke nationale bijlage gelden. Het voorblad van de bladen toont ze in een tabel (of dat ze niet zijn vastgelegd), en de kop van elk blad, ook in bijlage A van het rapport, noemt de editie en de bijlage van de Eurocodes die het blad gebruikt. "Uit de bladen" zet die normen in de lijst; de editie vult de constructeur zelf in
 
 ## v2026.48.0 — 2026-11-26
 

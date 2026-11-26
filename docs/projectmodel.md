@@ -101,7 +101,7 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 | wat | waar in het bestand | |
 |---|---|---|
 | Projectnaam | `bsi::ifc::prop::Name` op het project | bron |
-| Projectgegevens, verborgen onderdelen | `ocss::project` | bron |
+| Projectgegevens (ook de normen met editie en NB), verborgen onderdelen | `ocss::project` | bron |
 | Constructierapport | `ocss::rapport` | bron |
 | Naam van een blad | `bsi::ifc::prop::Name` op het blad | bron |
 | Id, volgorde, `templateId`, `bronVersie`, `ref` | `ocss::blad` | bron |
@@ -163,6 +163,35 @@ aan je project te veranderen, ook geen standaardwaarden aan te vullen.
 Dat gaat bewust via de browser en niet via de Rust-rapportengine — zie
 `docs/backlog.md`. De engine slaat tekeningen over, en zonder de
 `openaec-reports`-repo is de app niet eens te bouwen.
+
+## Normen en nationale bijlagen
+
+Welke editie van een norm en welke nationale bijlage in een project gelden, staat in de
+projectgegevens onder de sleutel `normen_editie`, als JSON-lijst
+`[{"onderwerp":"hout","norm":"NEN-EN 1995-1-1","editie":"…","nb":"…"}]`
+(`store/projectNormen.ts`, ingevuld in het vak *Normen en nationale bijlagen* van de
+projectgegevens). Zo gaat de vastlegging mee in het bestand (`ocss::project`), het
+herstelbestand, ongedaan maken en `project_data_set`. Het is geen variabele in de bladen.
+
+- **Op papier:** het voorblad van de losse bladen heeft een tabel met norm, editie en
+  nationale bijlage, of de zin dat ze niet zijn vastgelegd. In de kop van elk blad (ook in
+  bijlage A van het rapport) staan de editie en de bijlage van elke Eurocode die het blad
+  noemt; een norm die het project niet vastlegt, staat er als niet vastgelegd. Legt het
+  project niets vast, dan blijft de kop zoals hij was.
+- **Welke normen een blad noemt:** elke `EN 199x(-y-z)` in de rekentekst, en EN 1990 als
+  het blad `K_FI` gebruikt. Een regel `NEN-EN 1991` dekt alle delen van EN 1991.
+- **Uit de bladen:** de knop zet de Eurocodes die de bladen noemen in de lijst, zonder
+  editie en bijlage. De app vult zelf nooit een editie in.
+- **Samenhang met de landenkeuze (pull request #30):** de onderwerpen zijn dezelfde sleutels
+  als `Onderwerp` in `rapport/normen/landen.ts` van #30, en het lezen van de normen van een
+  blad is dat van `bladNormUit` daar. #30 kiest een land en noemt de normen met hun editie
+  per land; deze vastlegging legt vast wat in dít project geldt. Na samenvoegen kan de lijst
+  uit de normen van het gekozen land worden gevuld, en blijft deze lijst de bron voor de
+  afdruk. De velden van #30 (`land`, `eurocode_generatie`) en deze sleutel zitten elkaar niet
+  in de weg.
+- **Nog niet:** het voorblad van het rapport houdt zijn eigen tekstveld *Toegepaste normen*;
+  de vastlegging staat daar (nog) niet in, wel in de kop van elk blad in bijlage A.
+- **Controle:** `scripts/check-projectnormen.mjs`.
 
 ## Eenheden
 

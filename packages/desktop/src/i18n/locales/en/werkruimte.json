@@ -361,6 +361,35 @@
       "erpLeeg": "The field {{veld}} of this project in ERPNext is empty or does not exist. The current location stays in place.",
       "erpNietGevonden": "The location from ERPNext could not be found. The current location stays in place.",
       "erpMislukt": "Taking over from ERPNext failed: {{fout}}. The current location stays in place."
+    },
+    "normen": {
+      "kop": "Standards and national annexes",
+      "uitleg": "Record which edition of each standard and which national annex apply to this project. They appear on the cover page and in the heading of every sheet that cites the standard. The app fills in no edition itself.",
+      "onderwerp": "Subject",
+      "norm": "Standard",
+      "editie": "Edition",
+      "nb": "National annex",
+      "normVoorbeeld": "e.g. NEN-EN 1995-1-1",
+      "editieVoorbeeld": "e.g. 2005+C1:2006+A1:2008",
+      "nbVoorbeeld": "e.g. NB:2013",
+      "verwijder": "Remove",
+      "erbij": "Add standard",
+      "uitBladen_one": "From the sheets (1 standard)",
+      "uitBladen_other": "From the sheets ({{count}} standards)",
+      "uitBladenGeen": "Every Eurocode the sheets cite is already in the list",
+      "leeg": "No standards recorded yet. The printout then states that editions and national annexes are not recorded.",
+      "onderwerpen": {
+        "belastingen": "Basis and actions",
+        "wind": "Wind",
+        "sneeuw": "Snow",
+        "aardbeving": "Earthquake",
+        "beton": "Concrete",
+        "staal": "Steel",
+        "hout": "Timber",
+        "metselwerk": "Masonry",
+        "funderingen": "Foundations",
+        "overig": "Other"
+      }
     }
   },
   "windkaart": {
