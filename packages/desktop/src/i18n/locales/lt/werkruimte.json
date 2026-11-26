@@ -1292,5 +1292,17 @@
     "labelVervallen": "Patvirtinimas nebegalioja",
     "labelGecontroleerd": "Patikrinta",
     "labelUitleg": "Šio lapo patikra: žr. skirtuką „Patikra“"
+  },
+  "bron": {
+    "venster": "Šaltinis: {{naam}}",
+    "vorige": "Ankstesnis",
+    "volgende": "Kitas",
+    "paginaVan": "Puslapis {{pagina}} iš {{aantal}}",
+    "laden": "Įkeliama…",
+    "leesFout": "Nepavyko perskaityti {{pad}}: {{fout}}",
+    "pdfFout": "Nepavyko parodyti PDF: {{fout}}",
+    "geenBlad": "Šiame projekte nėra lapo {{doel}}.",
+    "geenPdf": "{{doel}} nėra PDF.",
+    "alleenApp": "{{doel}} yra failas diske; jį galima atidaryti tik kompiuterio programoje."
   }
 }

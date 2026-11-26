@@ -1262,5 +1262,17 @@
     "labelVervallen": "Vrijgave vervallen",
     "labelGecontroleerd": "Gecontroleerd",
     "labelUitleg": "Controle van dit blad: zie de tab Controle"
+  },
+  "bron": {
+    "venster": "Bron: {{naam}}",
+    "vorige": "Vorige",
+    "volgende": "Volgende",
+    "paginaVan": "Pagina {{pagina}} van {{aantal}}",
+    "laden": "Laden…",
+    "leesFout": "{{pad}} kon niet worden gelezen: {{fout}}",
+    "pdfFout": "De PDF kon niet worden getoond: {{fout}}",
+    "geenBlad": "Er is geen blad {{doel}} in dit project.",
+    "geenPdf": "{{doel}} is geen PDF.",
+    "alleenApp": "{{doel}} is een bestand op schijf; dat opent alleen in de app op de computer."
   }
 }

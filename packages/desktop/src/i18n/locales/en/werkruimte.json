@@ -1262,5 +1262,17 @@
     "labelVervallen": "Release no longer applies",
     "labelGecontroleerd": "Checked",
     "labelUitleg": "Check of this sheet: see the Check tab"
+  },
+  "bron": {
+    "venster": "Source: {{naam}}",
+    "vorige": "Previous",
+    "volgende": "Next",
+    "paginaVan": "Page {{pagina}} of {{aantal}}",
+    "laden": "Loading…",
+    "leesFout": "{{pad}} could not be read: {{fout}}",
+    "pdfFout": "The PDF could not be displayed: {{fout}}",
+    "geenBlad": "There is no sheet {{doel}} in this project.",
+    "geenPdf": "{{doel}} is not a PDF.",
+    "alleenApp": "{{doel}} is a file on disk; it can only be opened in the desktop app."
   }
 }

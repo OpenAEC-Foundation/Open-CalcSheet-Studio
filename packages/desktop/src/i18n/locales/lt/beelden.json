@@ -547,7 +547,11 @@
     "nbWaarde": "Vertė",
     "nbArtikel": "Straipsnis (nacionalinis priedas)",
     "nbNietBerekend": "neapskaičiuota",
-    "nbUitProject": "projekto duomenys"
+    "nbUitProject": "projekto duomenys",
+    "bronLabel": "Šaltinis:",
+    "bronBlad": "lapas {{ref}} {{naam}}",
+    "bronBladOnbekend": "lapas {{ref}}, šiame projekte nėra",
+    "bronPagina": "p. {{n}}"
   },
   "poerDetail": {
     "titel": "Strypų žiniaraštis ir armavimo detalė",

@@ -896,3 +896,9 @@
   font-style: italic;
   color: var(--pr-zacht);
 }
+
+/* Een verwijzing met `@bron` op papier: gewone tekst, de bron in grijs erachter. */
+.print-opmaak .calc-bron-link {
+  color: inherit;
+  text-decoration: none;
+}

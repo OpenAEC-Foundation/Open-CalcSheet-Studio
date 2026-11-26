@@ -597,6 +597,10 @@
     "nbWaarde": "Value",
     "nbArtikel": "Clause (national annex)",
     "nbNietBerekend": "not calculated",
-    "nbUitProject": "project data"
+    "nbUitProject": "project data",
+    "bronLabel": "Source:",
+    "bronBlad": "sheet {{ref}} {{naam}}",
+    "bronBladOnbekend": "sheet {{ref}}, not in this project",
+    "bronPagina": "p. {{n}}"
   }
 }

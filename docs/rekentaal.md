@@ -167,6 +167,39 @@ plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent he
 - Opmaak (`:F2`), namen met punt of procent (`Cs.Cd`, `F_0.9G50%TotalWeight`)
 - `take`, `hlookup`, `hlookup_ge`, `hlookup_le`, `vlookup`, `get`, ook op matrices
 - `@select var "Label" … @end` voor een keuzelijst, bijvoorbeeld een materiaal
+- `@bron #4 p. 57 "NEN-EN 1995-1-1, 6.1.7"` voor een verwijzing naar een pagina in een eigen PDF
+
+## Een normartikel in een eigen PDF: `@bron`
+
+Een regel koppelt een normartikel aan de pagina in een PDF van de gebruiker:
+
+```text
+@bron #4 p. 57 "NEN-EN 1995-1-1, 6.1.7(2)"
+@bron "D:\Normen\NEN-EN 1993-1-1.pdf" p. 41 "NEN-EN 1993-1-1, 6.2.5"
+@bron https://voorbeeld.nl/norm.pdf p. 3 "Norm"
+```
+
+- **Het doel:** het kenmerk van een PDF-blad in het project (`#4`), een pad op schijf of een
+  adres (http of https). Een pad met spaties staat tussen dubbele aanhalingstekens. Daarna
+  de pagina (`p. 57`, `p.57`, `pagina 57`, `page 57`) en tussen aanhalingstekens de norm en
+  het artikel. Pagina en omschrijving mogen weg. Alleen nummers en een eigen omschrijving:
+  geen normtekst in het blad.
+- **Op het scherm** staat *Bron:* met de omschrijving als link, en erachter het PDF-blad met
+  zijn naam (of de bestandsnaam) en de pagina. Een klik op een PDF-blad opent dat blad op
+  die pagina; een adres opent in de browser met `#page=`; een pad op schijf opent in de
+  app in een venster op die pagina (alleen een `.pdf`, en alleen in de app op de computer:
+  de browser kan geen pad lezen). Een blad dat er niet is of geen PDF is, geeft een melding.
+- **Op papier** staat dezelfde regel als bronvermelding, zonder link:
+  *Bron: NEN-EN 1995-1-1, 6.1.7(2) (blad #4 Normtekst hout, p. 57)*.
+- **Rekenen** verandert er niet door; binnen `#hide` staat de regel er niet. Het pad of adres
+  blijft letterlijk (de kern leest er geen namen of verwijzingen in).
+- **Samenhang met de normbestanden:** het tabblad *Normbestanden* bewaart PDF's alleen op
+  deze computer; een PDF-blad gaat mee in het projectbestand. Voor een verwijzing die bij
+  een collega ook werkt: een PDF-blad (let op het auteursrecht van de norm), of een pad op
+  een gedeelde schijf.
+- **Waar:** `packages/core/src/bronBlok.ts` (lezen en de html), in de app
+  `components/calc/bronnen.ts` (invullen en openen) en `BronVenster.tsx`. Controle:
+  `scripts/check-bronnen.mjs`.
 
 ## Keuzes uit de nationale bijlage: `//@nb`
 

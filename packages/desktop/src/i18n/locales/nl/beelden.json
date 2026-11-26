@@ -597,6 +597,10 @@
     "nbWaarde": "Waarde",
     "nbArtikel": "Artikel (nationale bijlage)",
     "nbNietBerekend": "niet berekend",
-    "nbUitProject": "projectgegevens"
+    "nbUitProject": "projectgegevens",
+    "bronLabel": "Bron:",
+    "bronBlad": "blad {{ref}} {{naam}}",
+    "bronBladOnbekend": "blad {{ref}}, niet in dit project",
+    "bronPagina": "p. {{n}}"
   }
 }

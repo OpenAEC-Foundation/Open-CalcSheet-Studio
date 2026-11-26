@@ -36,6 +36,7 @@ import { IN_WERKPLEK } from "./werkplek/werkplek";
 import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
 import VariantenPaneel from "./components/calc/varianten/VariantenPaneel";
 import ControlePaneel, { ControleLabel } from "./components/calc/ControlePaneel";
+import BronVenster from "./components/calc/BronVenster";
 import { isPdfBlad } from "./store/pdfBijlage";
 import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
 import { isMarkdownBlad } from "./store/markdownBlad";
@@ -635,6 +636,7 @@ export default function App() {
       <ModuleKiezer />
       <BladBijwerken />
       <TekenEditor />
+      <BronVenster />
     </>
   );
 }
