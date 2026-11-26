@@ -38,6 +38,7 @@ import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
 import type { JupyterWerkmap } from "./jupyterBlad.ts";
 import type { MarimoNotebook } from "./marimoBlad.ts";
 import type { Varianten } from "./varianten.ts";
+import type { IncludeKopie } from "./includes.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 import { gebruikteToetsingen, toetsVersie } from "../rekenen/toetsCache.ts";
 import { variantToetsHashes } from "../rekenen/varianten.ts";
@@ -72,11 +73,14 @@ export interface BladVoorIfc {
   marimo?: MarimoNotebook;
   toetsingen?: Record<string, VastgelegdeToets>;
   varianten?: Varianten;
+  includes?: IncludeKopie[];
 }
 
 /** Wat dit bestand van een project nodig heeft. */
 export interface ProjectVoorIfc {
   versie: number;
+  /** De blijvende identiteit van het project; zonder volgt hij uit nummer en naam (core: ifcx/identiteit.ts). */
+  id?: string;
   naam: string;
   gegevens: Record<string, string>;
   exemplaren: BladVoorIfc[];
@@ -117,6 +121,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>, alle: re
     jupyter: ex.jupyter,
     marimo: ex.marimo,
     ...(ex.varianten ? { varianten: ex.varianten } : {}),
+    ...(ex.includes?.length ? { includes: ex.includes } : {}),
     nodes: [],
   };
   if (!isLosBlad(ex)) {
@@ -179,6 +184,7 @@ export function bladenVoorIfc(project: Pick<ProjectVoorIfc, "exemplaren" | "gege
 /** Het project als IFCX-document. `bladen` zijn de doorgerekende bladen; zonder rekent dit ze door. */
 export function projectIfcx(project: ProjectVoorIfc, bladen?: IfcCalcSheet[]): IfcxBestand {
   return metVreemdeGegevens(bouwProjectIfcx({
+    id: project.id,
     naam: project.naam,
     formaatversie: project.versie,
     gegevens: project.gegevens,

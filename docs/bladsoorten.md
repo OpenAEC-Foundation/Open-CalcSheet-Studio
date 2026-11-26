@@ -168,8 +168,26 @@ kolom met alleen getallen staat rechts.
 
 **Werkmapsjabloon**: een JSON-bestand met per onderdeel de naam, de verwijzing, de plek en
 het blad ervoor (`maakSjabloon`). Toepassen op een andere werkmap toont per onderdeel wat
-gevonden is en wat ontbreekt, met aan- en uitvinken. Een voorstel op basis van het
-projecttype of de projectomschrijving zit er nog niet in.
+gevonden is en wat ontbreekt, met aan- en uitvinken.
+
+Een onderdeel kan een regel hebben wanneer het standaard aan staat:
+
+```json
+{ "naam": "Kelderwanden", "verwijzing": "Kelder", "plek": 3,
+  "standaardBij": { "projecttype": ["woning", "utiliteit"], "trefwoorden": ["kelder"] } }
+```
+
+`stelVoor` toetst de regel aan het project: `projecttype` aan de soort bouwwerk uit het
+rapport (`uitgangspunten.soortBouwwerk`, paragraaf 4.1), `trefwoorden` aan de
+projectomschrijving (`teksten.projectomschrijving`). Eén passend woord is genoeg.
+Hoofdletters en accenten tellen niet, en een woord past ook als deel van een langer woord
+("woning" past bij "Eengezinswoning", "staal" bij "staalconstructie"). Bij het toepassen
+staan de voorgestelde onderdelen aangevinkt, met per onderdeel waarom ("projecttype
+woning", "omschrijving noemt kelder") of dat het niet voorgesteld wordt; de gebruiker vinkt
+daarna aan of uit, en "Terug naar het voorstel" zet de vinkjes terug. Een onderdeel zonder
+regel staat aan zodra de werkmap het heeft, net als in sjablonen van vóór de regel. Bij
+"Sjabloon bewaren…" vul je de regel per onderdeel in, woorden gescheiden door komma's; laat
+je beide velden leeg, dan krijgt het onderdeel geen regel.
 
 ## PDF
 

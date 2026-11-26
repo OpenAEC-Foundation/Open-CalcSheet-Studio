@@ -127,11 +127,50 @@ meer schrijft (een verwijderd blad), vervalt; vreemde attributen op een pad dat 
 app niet meer schrijft (een ontkoppelde balk), blijven als eigen knoop staan.
 Meerdere knopen met hetzelfde pad komen samengesteld terug in één knoop.
 
-Grenzen: de vergelijking is met wat deze versie van de app schrijft, en de paden
-van de app volgen uit de projectnaam en het projectnummer. Wie die wijzigt, krijgt
-nieuwe paden; vreemde attributen op de oude paden van de app blijven dan op die
-oude paden staan. Op een gekoppeld element, waarvan het pad uit het bronmodel komt,
-speelt dat niet.
+Grenzen: de vergelijking is met wat deze versie van de app schrijft. De paden van
+de app hangen aan de identiteit van het project (hieronder), niet aan naam of
+nummer: na hernoemen zitten vreemde attributen nog op hetzelfde blad en hetzelfde
+element. Op een gekoppeld element komt het pad uit het bronmodel.
+
+### De identiteit van het project
+
+Elk project heeft een eigen, blijvende id: een UUID. Die id is het pad van de
+wortel (het `IfcProject`) en staat in de kop als `ocss:project:<id>`. Alle andere
+paden worden ervan afgeleid (`uuidVan` in `packages/core/src/ifcx/identiteit.ts`),
+en elke GlobalId in de STEP is de korte vorm van zo'n pad. Een blad hangt daaronder
+aan zijn eigen id, niet aan zijn plaats in de lijst. Dus:
+
+- Een andere projectnaam of een ander projectnummer verandert geen pad en geen
+  GlobalId.
+- Twee projecten die los van elkaar zijn gemaakt, met dezelfde naam en hetzelfde
+  nummer, hebben elk een andere id.
+- Eén blad los exporteren (via MCP of de API) geeft dat blad hetzelfde pad en
+  dezelfde GlobalId als in de export van het hele project.
+
+Wanneer de id blijft en wanneer er een nieuwe komt:
+
+| Handeling | Id |
+|---|---|
+| Nieuw project | nieuw, willekeurig (UUID versie 4) |
+| Opslaan, openen, opnieuw opslaan | blijft: hij staat in het bestand |
+| Opslaan als | blijft: het is hetzelfde project, op een andere plek |
+| Hernoemen, ander projectnummer | blijft |
+| Een bestand buiten de app kopiëren | blijft: de kopie is voor IFC hetzelfde project. Wil je er een ander project van maken, begin dan een nieuw project en zet de bladen erin |
+| Een blad dupliceren | het project houdt zijn id; het nieuwe blad krijgt een eigen blad-id en dus eigen paden |
+| Een ouder bestand openen | de wortel die al in het bestand staat (zie hieronder) |
+
+Een **ouder bestand** heeft geen eigen id: daar is de wortel afgeleid uit nummer en
+naam, als `uuidVan("project/<nummer>/<naam>")` (`afgeleideProjectId`). Bij het
+openen wordt die wortel de id van het project. Zo houdt het zijn paden en
+GlobalId's, en kloppen eerdere exports en de vreemde gegevens van een andere Studio
+nog. Vanaf dat moment hangt de id niet meer aan naam en nummer. Een bestand van
+versie 1, een los blad en een `.cpd` hebben geen wortel: daar wordt de id op
+dezelfde manier uit nummer en naam bij het openen gemaakt, dus reproduceerbaar en
+gelijk aan wat hun export voorheen gaf. De bewaarde stand van de app (waar de app
+opent waar je hem achterliet) krijgt zonder id op dezelfde manier een id uit zijn
+huidige nummer en naam. Alleen een export die een eerdere versie van de app maakte
+nadat het project hernoemd was, maar voordat het zo werd opgeslagen, heeft andere
+paden; die moet opnieuw gekoppeld worden.
 
 ### De namespace `ocss::`
 
@@ -308,8 +347,11 @@ ingekort; de export bevat alles.
 
 `scripts/check-ifcx.mjs` loopt mee in de controles en werkt zonder netwerk: de
 vorm volgens de specificatie, elk attribuut tegen zijn schema, heen en terug, oude
-bestanden en de STEP tegen het IFCX. `scripts/check-ifcx-pilot.mjs` controleert de
-proef met de funderingsbalk en de gegevens van een andere Studio.
+bestanden, de STEP tegen het IFCX en de identiteit van het project: hernoemen en
+een ander nummer geven dezelfde paden en GlobalId's, een ouder bestand houdt de
+zijne, een nieuw project krijgt een andere id. `scripts/check-ifcx-pilot.mjs`
+controleert de proef met de funderingsbalk en de gegevens van een andere Studio,
+ook na hernoemen.
 
 Daarnaast, met de hand en lokaal, want er komt software van buiten bij kijken:
 

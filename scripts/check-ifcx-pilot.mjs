@@ -22,6 +22,8 @@
  *   niet getoetst  een invoer waarbij het blad geen oordeel geeft, staat er als
  *                  `geen_oordeel`, nooit als `voldoet`
  *   blad weg       zonder het blad vervallen de eigen knopen; de vreemde blijven
+ *   hernoemen      een andere projectnaam en een ander nummer: dezelfde paden, en
+ *                  de vreemde gegevens blijven aan hetzelfde blad en dezelfde balk
  *
  * Opnieuw maken van de twee fixtures (alleen na een bewuste wijziging):
  *   node scripts/check-ifcx-pilot.mjs --schrijf
@@ -78,6 +80,7 @@ const metTijd = (tekst) => JSON.stringify({ ...JSON.parse(tekst), header: { ...J
 function opslaan(p) {
   const payload = {
     versie: PROJECT_FORMAAT_VERSIE,
+    id: p.projectId,
     naam: p.projectNaam,
     gegevens: p.gegevens,
     exemplaren: p.exemplaren,
@@ -210,6 +213,24 @@ console.log("Zonder het blad:");
   const balk = knopen.get(BALK);
   meld(isDeepStrictEqual(balk?.attributes, VREEMD_OP_BALK), "op de balk blijven alleen de vreemde attributen", JSON.stringify(balk?.attributes));
   meld(Object.keys(VREEMDE_SCHEMAS).every((a) => doc.schemas[a]) && doc.imports.some((i) => i.uri === VREEMDE_IMPORT.uri), "met hun schema's en import");
+}
+
+// ── Hernoemen ───────────────────────────────────────────────────────────────
+console.log("Hernoemen en een ander projectnummer:");
+{
+  meld(gelezen.projectId === bron.data.find((k) => k.attributes?.["ocss::project"])?.path, "het project opent met de wortel uit het bestand als id", gelezen.projectId);
+  // Een andere Studio zet ook iets op het blad, waarvan het pad aan de projectwortel hangt.
+  const metOpmerking = JSON.parse(ruw);
+  const bladPad = bladKnoop(metOpmerking).path;
+  metOpmerking.data.push({ path: bladPad, attributes: { "openaec::reference::category": "Nagekeken" } });
+  const g = leesProjectBestand(JSON.stringify(metOpmerking), "funderingsbalk");
+  const hernoemd = { ...g, projectNaam: "Andere naam", gegevens: { ...g.gegevens, project_nummer: "2026-099" } };
+  const doc = JSON.parse(opslaan(hernoemd));
+  const na = knopenVan(doc);
+  meld(isDeepStrictEqual([...na.keys()].sort(), [...knopenVan(metOpmerking).keys()].sort()), "dezelfde paden, geen erbij en geen weg");
+  meld(bladKnoop(doc)?.path === bladPad && na.get(bladPad)?.attributes["openaec::reference::category"] === "Nagekeken", "het vreemde attribuut zit nog op hetzelfde blad");
+  meld(Object.entries(VREEMD_OP_BALK).every(([a, w]) => isDeepStrictEqual(na.get(BALK)?.attributes[a], w)) && na.get(BALK)?.attributes["ocss::element"]?.toetsingen?.[0]?.ref === bladPad, "de balk houdt zijn vreemde attributen en zijn toetsing");
+  meld(doc.data[0].attributes["bsi::ifc::prop::Name"] === "Andere naam", "met de nieuwe naam");
 }
 
 console.log(`\n${aantal - fouten} van ${aantal} controles goed.`);

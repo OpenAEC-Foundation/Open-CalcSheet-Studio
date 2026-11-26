@@ -104,6 +104,17 @@ Een fout komt terug als toolresultaat met `isError: true` en een code:
 rapportengine; anders opent `print` de printdialoog (zie
 [api.md](api.md#wat-er-niet-helemaal-kan)).
 
+## In de app werken, niet eromheen
+
+De server geeft de assistent bij het verbinden instructies mee (`MCP_INSTRUCTIES` in
+`mcp/dispatcher.ts`). Daarin staat dat hij in het geopende project werkt, via de tools:
+een nieuw blad met `sheet_add`, de tekst met `sheet_set_source`, de invoer met
+`sheet_set_input` en een bestaand blad aanpassen in plaats van kopiëren. Hij schrijft
+zelf geen `.ifccalculation`- of `.cpd`-bestanden en bouwt geen project met een eigen
+script: dan opent de gebruiker een nieuw bestand en raakt hij de open stand, de
+geschiedenis en de vastgelegde antwoorden van Open FEM Studio kwijt. Ontbreekt er een
+tool, dan zegt hij dat in plaats van om de app heen te werken.
+
 ## Hoe het werkt
 
 ```

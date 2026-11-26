@@ -28,9 +28,9 @@ const melding = (sleutel: string, fout?: unknown) =>
  * Wat een ander programma in het geopende bestand zette, gaat ongewijzigd mee.
  */
 export function projectInhoud(): string {
-  const { projectNaam, gegevens, exemplaren, rapport, verborgen, vreemd } = useProjectStore.getState();
+  const { projectId, projectNaam, gegevens, exemplaren, rapport, verborgen, vreemd } = useProjectStore.getState();
   return bouwProjectBestand(
-    { versie: PROJECT_FORMAAT_VERSIE, naam: projectNaam, gegevens, exemplaren, rapport, verborgen: Object.keys(verborgen).length ? verborgen : undefined, vreemd },
+    { versie: PROJECT_FORMAAT_VERSIE, id: projectId, naam: projectNaam, gegevens, exemplaren, rapport, verborgen: Object.keys(verborgen).length ? verborgen : undefined, vreemd },
     bladenVoorIfc({ exemplaren, gegevens }),
   );
 }

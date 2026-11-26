@@ -18,7 +18,7 @@
 import { parse, evaluate } from "@ifc-calc/core";
 import { metToetsingen } from "../rekenen/toetsCache.ts";
 import type { AstNode, EvaluatedNode } from "@ifc-calc/core";
-import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
+import { rekentaalIncludes, rekentaalIncludeStaat, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
 import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../components/calc/bladLezen.ts";
 import { rekenEenhedenDoor } from "../components/calc/canvasRekenen.ts";
 import { heeftEenheden } from "../store/canvasBlad.ts";
@@ -29,7 +29,7 @@ let laatstGelezen: { source: string; ast: AstNode[] } | undefined;
 /** Leest een rekentekst in, met dezelfde includes en afbeeldingen als de uitwerking. */
 export function leesBron(source: string): AstNode[] {
   if (laatstGelezen?.source === source) return laatstGelezen.ast;
-  const ast = parse(source, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls });
+  const ast = parse(source, { includes: rekentaalIncludes, includeStaat: rekentaalIncludeStaat, imageUrls: rekentaalImageUrls });
   laatstGelezen = { source, ast };
   return ast;
 }
@@ -58,7 +58,7 @@ export function rekenDoor(
   const evalOpties = metToetsingen({}, toetsModus);
   // Een canvas-blad langs dezelfde route als op het scherm: een fout blijft bij zijn eenheid.
   const nodes = heeftEenheden(source)
-    ? rekenEenhedenDoor(source, waarden, scope, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }, evalOpties).flatMap((u) => u.nodes)
+    ? rekenEenhedenDoor(source, waarden, scope, { includes: rekentaalIncludes, includeStaat: rekentaalIncludeStaat, imageUrls: rekentaalImageUrls }, evalOpties).flatMap((u) => u.nodes)
     : evaluate(leesBron(source), waarden, scope, evalOpties);
   return {
     nodes,

@@ -1,5 +1,14 @@
 import { create } from "zustand";
-import { zetProjectEenheden, zetProjectTekst, type ElementRef, type IfcxVreemd, type VastgelegdeToets } from "@ifc-calc/core";
+import {
+  afgeleideProjectId,
+  leesProjectId,
+  nieuweProjectId,
+  zetProjectEenheden,
+  zetProjectTekst,
+  type ElementRef,
+  type IfcxVreemd,
+  type VastgelegdeToets,
+} from "@ifc-calc/core";
 import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
 import { projectTekstVan } from "./projectBlad";
@@ -26,6 +35,7 @@ import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
 import { MARIMO_BLAD, type MarimoNotebook } from "./marimoBlad";
 import { metBladRefs } from "./bladRefs";
 import { variantInvoer, type Varianten } from "./varianten";
+import type { IncludeKopie } from "./includes";
 
 const STORE_KEY = "projectState";
 
@@ -139,6 +149,11 @@ export interface Exemplaar {
    * (store/varianten.ts). Ontbreekt bij een blad zonder varianten.
    */
   varianten?: Varianten;
+  /**
+   * De bestanden op schijf die dit blad met `#include` invoegt, met een kopie van de
+   * laatst gelezen tekst (store/includes.ts). Ontbreekt bij een blad zonder.
+   */
+  includes?: IncludeKopie[];
 }
 
 /**
@@ -152,6 +167,8 @@ export interface Verborgen {
 }
 
 interface Persisted {
+  /** Ontbreekt in opslag van vóór de projectidentiteit; dan volgt hij uit nummer en naam. */
+  projectId?: string;
   projectNaam: string;
   bestandspad: string | null;
   gegevens: ProjectGegevens;
@@ -166,6 +183,12 @@ interface Persisted {
 }
 
 interface ProjectState {
+  /**
+   * De blijvende identiteit van het project, een UUID: de wortel van het IFCX, waar alle
+   * paden en GlobalId's van afhangen. Hernoemen of een ander projectnummer verandert hem
+   * niet. Nieuw project: een nieuwe. Openen: die uit het bestand. Opslaan als: dezelfde.
+   */
+  projectId: string;
   projectNaam: string;
   bestandspad: string | null;
   gegevens: ProjectGegevens;
@@ -221,6 +244,11 @@ interface ProjectState {
    * project is gewijzigd; zonder alleen het pad, en dat gaat mee bij het volgende opslaan.
    */
   werkKoppelingBij: (id: string, md: MarkdownBestand, inhoud: boolean) => void;
+  /**
+   * De gelezen `#include`-bestanden van een blad (store/includes.ts). Geen stap in de
+   * geschiedenis; `inhoud`: een tekst veranderde, dus het project is gewijzigd.
+   */
+  zetIncludes: (id: string, includes: IncludeKopie[], inhoud: boolean) => void;
   /** Een leeg canvas-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
   voegCanvasToe: (naam: string) => string;
   /** Een leeg grafblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
@@ -417,6 +445,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       return metRefs === uit.exemplaren ? uit : { ...uit, exemplaren: metRefs };
     })) as typeof zet;
   return {
+  projectId: nieuweProjectId(),
   projectNaam: nieuweProjectNaam(),
   bestandspad: null,
   gegevens: legeGegevens(),
@@ -583,6 +612,19 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       if (!s.exemplaren.some((e) => e.id === id)) return s;
       return {
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, md } : e)),
+        ...(inhoud ? { dirty: true } : {}),
+      };
+    }),
+
+  zetIncludes: (id, includes, inhoud) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        exemplaren: s.exemplaren.map((e) => {
+          if (e.id !== id) return e;
+          const { includes: _oud, ...rest } = e;
+          return includes.length > 0 ? { ...rest, includes } : rest;
+        }),
         ...(inhoud ? { dirty: true } : {}),
       };
     }),
@@ -960,6 +1002,8 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     set({
       verborgen: {},
       vreemd: undefined,
+      // Een nieuw project is een ander project, ook met dezelfde naam en hetzelfde nummer.
+      projectId: nieuweProjectId(),
       projectNaam: nieuweProjectNaam(),
       bestandspad: null,
       // Het eenhedenstelsel uit Instellingen, tab Units; daarna hoort het bij het project.
@@ -979,6 +1023,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     set({
       verborgen: p.verborgen ?? {},
       vreemd: p.vreemd,
+      projectId: idVan(p),
       projectNaam: p.projectNaam ?? nieuweProjectNaam(),
       bestandspad: p.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(p.gegevens ?? {}) },
@@ -994,6 +1039,15 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
   markeerOpgeslagen: (bestandspad) => set({ bestandspad, dirty: false }),
   };
 });
+
+/**
+ * De identiteit van een geladen of herstelde stand. Zonder bruikbare id (opslag van
+ * vóór de projectidentiteit) de id uit nummer en naam: de wortel die het project tot
+ * nu toe in zijn exports had.
+ */
+function idVan(p: Partial<Persisted>): string {
+  return leesProjectId(p.projectId) ?? afgeleideProjectId(p.projectNaam ?? nieuweProjectNaam(), p.gegevens?.project_nummer);
+}
 
 /** Is dit de naam die de app zelf aan een nieuw project gaf, in welke taal dan ook? */
 const isStandaardNaam = (naam: string) =>
@@ -1089,6 +1143,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
   if (saved && Array.isArray(saved.exemplaren) && onaangeroerd) {
     const projectNaam = saved.projectNaam ?? nieuweProjectNaam();
     useProjectStore.setState({
+      projectId: idVan({ ...saved, projectNaam }),
       projectNaam,
       bestandspad: saved.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(saved.gegevens ?? {}) },
@@ -1107,6 +1162,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
   // hydrateren worden toegevoegd, anders overleeft het geen herstart.
   useProjectStore.subscribe((s) =>
     schedulePersist({
+      projectId: s.projectId,
       projectNaam: s.projectNaam,
       bestandspad: s.bestandspad,
       gegevens: s.gegevens,

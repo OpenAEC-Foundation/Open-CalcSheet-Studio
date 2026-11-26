@@ -17,7 +17,9 @@
  *     en het IFCX volgens de specificatie;
  *   • dat een ontbrekende bron een melding geeft en de kopie nooit stil als actueel
  *     doorgaat, ook niet zolang de bron nog niet bekeken is;
- *   • het werkmapsjabloon: bewaren, lezen, toepassen op een andere werkmap;
+ *   • het werkmapsjabloon: bewaren, lezen, toepassen op een andere werkmap, en het
+ *     voorstel per onderdeel op projecttype of trefwoord (oude sjablonen zonder regel
+ *     blijven werken);
  *   • de wachter: nooit twee controles tegelijk, en een verzoek tussendoor niet kwijt.
  *
  * De werkmappen en RTF-bestanden maakt dit script zelf.
@@ -34,7 +36,8 @@ import createDOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
 import { rtfNaarMarkdown, lijktOpRtf } from "../packages/desktop/src/store/rtfLezer.ts";
 import {
-  bereikNaarMarkdown, bereikNamen, leesBereik, leesSjabloon, maakSjabloon, ontleedVerwijzing, plekVoor, toetsSjabloon,
+  bereikNaarMarkdown, bereikNamen, leesBereik, leesSjabloon, maakRegel, maakSjabloon, ontleedVerwijzing, plekVoor, stelVoor, toetsSjabloon,
+  voorgesteld, woordenUitTekst,
   verwijzingTekst, werkbladen, MAX_CELLEN,
 } from "../packages/desktop/src/store/werkmapBereik.ts";
 import {
@@ -486,6 +489,65 @@ console.log("\nWerkmapsjabloon");
   meld(getoetst[1].bereik.ok && getoetst[1].bereik.rijen[1][0] === "Eigen gewicht", "werkblad met cellen werkt ook zonder bereiknaam");
   meld(!getoetst[2].bereik.ok && getoetst[2].bereik.reden === "naamOntbreekt", "een ontbrekende bereiknaam wordt gemeld");
   meld(plekVoor(sj.onderdelen[0], ["Uitgangspunten", "Fundering"]) === 1 && plekVoor(sj.onderdelen[0], ["Fundering"]) === 1 && plekVoor({ ...sj.onderdelen[0], plek: 9 }, []) === 0, "de plek: achter het blad ervoor, anders op zijn plek of achteraan");
+  meld(getoetst.every((o) => o.voorstel.regel === false && o.voorstel.aan) && JSON.stringify(voorgesteld(getoetst)) === "[0,1]", "zonder project en zonder regel: alles wat de werkmap heeft staat aan, zoals vroeger");
+}
+
+console.log("\nVoorstel uit het sjabloon");
+{
+  const woning = { projecttype: "Eengezinswoning", omschrijving: "Het project omvat een aanbouw met een kelder en een staalconstructie." };
+  const kantoor = { projecttype: "Kantoor", omschrijving: "Een nieuw kantoorgebouw op palen." };
+  const opType = { standaardBij: { projecttype: ["woning", "utiliteit"] } };
+  const opWoord = { standaardBij: { trefwoorden: ["Kélder", "staal"] } };
+  const v1 = stelVoor(opType, woning);
+  meld(v1.regel && v1.aan && v1.redenen.length === 1 && v1.redenen[0].soort === "projecttype" && v1.redenen[0].woord === "woning", "projecttype: 'woning' past bij 'Eengezinswoning', met de reden erbij", v1);
+  const v2 = stelVoor(opType, kantoor);
+  meld(v2.regel && !v2.aan && v2.redenen.length === 0, "projecttype dat niet past: niet voorgesteld", v2);
+  const v3 = stelVoor(opWoord, woning);
+  meld(v3.aan && v3.redenen.length === 2 && v3.redenen.every((r) => r.soort === "trefwoord") && v3.redenen[0].woord === "Kélder", "trefwoord: hoofdletters en accenten tellen niet, en 'staal' past bij 'staalconstructie'", v3);
+  const v4 = stelVoor(opWoord, kantoor);
+  meld(!v4.aan, "trefwoord dat de omschrijving niet noemt: niet voorgesteld", v4);
+  const beide = stelVoor({ standaardBij: { projecttype: ["kantoor"], trefwoorden: ["kelder"] } }, woning);
+  meld(beide.aan && beide.redenen.length === 1 && beide.redenen[0].soort === "trefwoord", "projecttype of trefwoord: één van beide is genoeg", beide);
+  meld(stelVoor({}, kantoor).regel === false && stelVoor({}, kantoor).aan && stelVoor({ standaardBij: {} }, kantoor).aan, "geen regel: het onderdeel staat aan, zoals nu");
+  meld(!stelVoor(opType, { projecttype: "", omschrijving: "" }).aan, "een leeg projecttype past bij niets");
+
+  // Lezen en bewaren van de regel.
+  const metRegels = {
+    soort: "ocss-werkmapsjabloon", versie: 1,
+    onderdelen: [
+      { naam: "Kelderwanden", verwijzing: "Kelder", plek: 1, standaardBij: { trefwoorden: ["kelder", " ", 3, "KELDER"] } },
+      { naam: "Lasten", verwijzing: "Belastingen", plek: 2, standaardBij: { projecttype: "woning" } },
+      { naam: "Wind", verwijzing: "Wind", plek: 3, standaardBij: { projecttype: [], trefwoorden: [] } },
+      { naam: "Oud", verwijzing: "Oud", plek: 4, standaardBij: "kapot" },
+    ],
+  };
+  const gelezen = leesSjabloon(metRegels);
+  meld(zelfde(gelezen.onderdelen[0].standaardBij, { trefwoorden: ["kelder"] }), "lezen: lege, niet-tekst en dubbele woorden vallen weg", gelezen.onderdelen[0]);
+  meld(zelfde(gelezen.onderdelen[1].standaardBij, { projecttype: ["woning"] }), "lezen: één woord als tekst mag ook", gelezen.onderdelen[1]);
+  meld(!("standaardBij" in gelezen.onderdelen[2]) && !("standaardBij" in gelezen.onderdelen[3]), "lezen: een lege of kapotte regel is geen regel");
+  meld(JSON.stringify(leesSjabloon(JSON.parse(JSON.stringify(gelezen)))) === JSON.stringify(gelezen), "een sjabloon met regels komt via JSON ongewijzigd terug");
+  meld(zelfde(maakRegel(woordenUitTekst("woning, utiliteit;; Woning"), woordenUitTekst(" kelder ,staal")), { projecttype: ["woning", "utiliteit"], trefwoorden: ["kelder", "staal"] }) && maakRegel(woordenUitTekst(" , "), []) === undefined, "bewaren: woorden gescheiden door komma's, leeg is geen regel");
+
+  // Een oud sjabloon zonder het veld werkt als vroeger, ook met een project.
+  const oud = leesSjabloon({ soort: "ocss-werkmapsjabloon", versie: 1, onderdelen: [{ naam: "Lasten", verwijzing: "Belastingen", plek: 0 }, { naam: "Vloer", verwijzing: "'Lasten blad'!A1:B3", plek: 1 }] });
+  const wb = await openWerkmap(maakWerkmap({ bladen: [{ naam: "Lasten blad", rijen: LASTEN }], namen: { Belastingen: "'Lasten blad'!$A$1:$D$2" } }));
+  const oudGetoetst = toetsSjabloon(wb, oud, kantoor);
+  meld(oud.onderdelen.every((o) => !("standaardBij" in o)) && oudGetoetst.every((o) => !o.voorstel.regel) && JSON.stringify(voorgesteld(oudGetoetst)) === "[0,1]", "een oud sjabloon zonder regel: alles wat de werkmap heeft staat aan");
+
+  // Toepassen met regels: alleen wat in de werkmap staat én voorgesteld wordt.
+  const nieuw = { soort: "ocss-werkmapsjabloon", versie: 1, onderdelen: [
+    { naam: "Lasten", verwijzing: "Belastingen", plek: 0, standaardBij: { projecttype: ["woning"] } },
+    { naam: "Vloer", verwijzing: "'Lasten blad'!A1:B3", plek: 1, standaardBij: { trefwoorden: ["kelder"] } },
+    { naam: "Altijd", verwijzing: "'Lasten blad'!A1:A2", plek: 2 },
+    { naam: "Ontbreekt", verwijzing: "Wind", plek: 3, standaardBij: { projecttype: ["woning"] } },
+  ] };
+  const s = leesSjabloon(nieuw);
+  const bijWoning = toetsSjabloon(wb, s, woning);
+  const bijKantoor = toetsSjabloon(wb, s, kantoor);
+  wb.sluit();
+  meld(JSON.stringify(voorgesteld(bijWoning)) === "[0,1,2]", "woning met kelder: projecttype, trefwoord en zonder regel aan; ontbrekend in de werkmap uit", voorgesteld(bijWoning));
+  meld(JSON.stringify(voorgesteld(bijKantoor)) === "[2]", "kantoor zonder kelder: alleen het onderdeel zonder regel", voorgesteld(bijKantoor));
+  meld(bijWoning[3].voorstel.aan && !bijWoning[3].bereik.ok, "een voorgesteld onderdeel dat de werkmap niet heeft, blijft uit (niet aan te vinken)");
 }
 
 // ── Wachter ───────────────────────────────────────────────────────────────────

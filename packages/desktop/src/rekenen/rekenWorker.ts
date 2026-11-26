@@ -27,6 +27,7 @@ self.onmessage = (e: MessageEvent<RekenVerzoek>) => {
     // De eigen eenheden van het project gelden al bij het lezen (ParseOptions.eenheden).
     const opties = {
       includes: new Map(v.includes),
+      includeStaat: new Map(v.includeStaat ?? []),
       imageUrls: new Map(v.imageUrls),
       eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam),
     };

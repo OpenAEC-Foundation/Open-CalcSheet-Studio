@@ -31,7 +31,7 @@ import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions, Var
 import type { VastgelegdeToets } from '../types.js';
 import { leesVastgelegdeToetsingen } from '../toetsBlok.js';
 import type { IfcxBestand, IfcxKnoop, IfcxSchema } from './typen.js';
-import { padVanElement, uuidVan } from './identiteit.js';
+import { afgeleideProjectId, isUuid, leesProjectId, padVanElement, uuidVan } from './identiteit.js';
 import { ATTR, IFCX_VERSIE, OCSS_SCHEMAS, beschrijfWaarde, ifcKlasse, importsVoor, isGeimporteerd } from './namespace.js';
 import { herken, type ElementSoort, type HerkendElement, type Herkenning } from './herkenning.js';
 import { leesFiguren, leesUitkomst, type UitkomstStatus } from './uitkomst.js';
@@ -58,6 +58,12 @@ export interface IfcxBelasting {
 }
 
 export interface IfcxProjectInvoer {
+  /**
+   * De blijvende identiteit van het project (een UUID): het pad van de wortel, waar
+   * alle andere paden van afhangen. Ontbreekt hij, dan volgt hij uit nummer en naam
+   * (`afgeleideProjectId`), zoals bij een bestand van vóór deze id.
+   */
+  id?: string;
   naam: string;
   /** De formaatversie van het projectbestand; komt in `header.dataVersion`. */
   formaatversie?: number;
@@ -96,9 +102,13 @@ export interface IfcxGelezenBlad {
   toetsingen?: Record<string, VastgelegdeToets>;
   /** Zoals ze in het bestand staan; de app leest ze na (store/varianten.ts). */
   varianten?: VariantenGegevens;
+  /** `#include`-bestanden met hun bewaarde kopie; de app leest ze na (store/includes.ts). */
+  includes?: unknown[];
 }
 
 export interface IfcxGelezenProject {
+  /** Het pad van de wortel als dat een UUID is; anders afgeleid uit nummer en naam. */
+  id: string;
   formaatversie: number;
   naam: string;
   gegevens: Record<string, string>;
@@ -232,10 +242,18 @@ interface ElementInBouw {
   toetsingen: Array<{ ref: string; blad: string; status: UitkomstStatus; uc?: number }>;
 }
 
-/** Het project als IFCX-document. Twee keer bouwen geeft dezelfde paden. */
+/** De identiteit waar het document van uitgaat: de eigen id, of afgeleid bij een project zonder. */
+export function projectIdVan(invoer: Pick<IfcxProjectInvoer, 'id' | 'naam' | 'gegevens'>): string {
+  return leesProjectId(invoer.id) ?? afgeleideProjectId(invoer.naam, invoer.gegevens?.project_nummer);
+}
+
+/**
+ * Het project als IFCX-document. Twee keer bouwen geeft dezelfde paden, en met
+ * dezelfde `id` ook na een andere projectnaam of een ander nummer.
+ */
 export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGenerationOptions = {}): IfcxBestand {
   const gegevens = invoer.gegevens ?? {};
-  const wortel = uuidVan(`project/${gegevens.project_nummer ?? ''}/${invoer.naam}`);
+  const wortel = projectIdVan(invoer);
   const onder = (deel: string) => uuidVan(`${wortel}/${deel}`);
 
   const bladen = invoer.bladen;
@@ -359,6 +377,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     }
     if (blad.toetsingen && Object.keys(blad.toetsingen).length > 0) attributes[ATTR.toetsing] = toetsingAttribuut(blad.toetsingen);
     if (blad.varianten) attributes[ATTR.varianten] = variantenAttribuut(blad.varianten);
+    if (blad.includes && blad.includes.length > 0) attributes[ATTR.includes] = blad.includes;
     attributes[ATTR.uitkomst] = uitkomst;
 
     // Figuren: de tekeningen en 3D-beelden staan ook in de rekentekst; hier zijn ze als zodanig te vinden.
@@ -725,14 +744,20 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     if (toetsingen) blad.toetsingen = toetsingen;
     const varianten = variantenUitAttribuut(a[ATTR.varianten]);
     if (varianten) blad.varianten = varianten;
+    if (Array.isArray(a[ATTR.includes])) blad.includes = a[ATTR.includes] as unknown[];
     return blad;
   });
 
   const rapportKnoop = knopen.find((k) => k.attributes?.[ATTR.rapport]);
+  const naam = tekstVan(wortel.attributes![ATTR.naam]);
+  const gegevens = uitParen(project.gegevens);
   const uit: IfcxGelezenProject = {
+    // Het pad van de wortel is de identiteit. Een bestand van vóór de eigen id heeft
+    // daar de afgeleide wortel staan: die wordt zo zijn id, met dezelfde paden.
+    id: isUuid(wortel.path) ? wortel.path : afgeleideProjectId(naam, gegevens.project_nummer),
     formaatversie: typeof project.formaatversie === 'number' ? project.formaatversie : 2,
-    naam: tekstVan(wortel.attributes![ATTR.naam]),
-    gegevens: uitParen(project.gegevens),
+    naam,
+    gegevens,
     exemplaren,
   };
   if (rapportKnoop) uit.rapport = rapportKnoop.attributes![ATTR.rapport];
