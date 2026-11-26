@@ -1,11 +1,22 @@
 import { create } from "zustand";
-import { zetProjectEenheden, type ElementRef, type VastgelegdeToets } from "@ifc-calc/core";
+import {
+  afgeleideProjectId,
+  leesProjectId,
+  nieuweProjectId,
+  zetProjectEenheden,
+  zetProjectTekst,
+  type ElementRef,
+  type IfcxVreemd,
+  type VastgelegdeToets,
+} from "@ifc-calc/core";
 import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
+import { projectTekstVan } from "./projectBlad";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
 import i18next, { LANGUAGES } from "../i18n/config";
 import { leesTaal, normaliseerRapport, standaardRapport, type Rapport } from "../rapport/model";
+import { metSymbolen } from "../rapport/belastingBronnen";
 import { leesPad } from "../rapport/pad";
 import { datumTekst } from "../rapport/revisies";
 import { standaardTeksten } from "../rapport/standaardteksten";
@@ -150,6 +161,8 @@ export interface Verborgen {
 }
 
 interface Persisted {
+  /** Ontbreekt in opslag van vóór de projectidentiteit; dan volgt hij uit nummer en naam. */
+  projectId?: string;
   projectNaam: string;
   bestandspad: string | null;
   gegevens: ProjectGegevens;
@@ -159,9 +172,17 @@ interface Persisted {
   rapport?: Rapport;
   /** Ontbreekt als niets verborgen is. */
   verborgen?: Verborgen;
+  /** Gegevens van een ander programma uit het geopende bestand (core: ifcx/vreemd.ts). */
+  vreemd?: IfcxVreemd;
 }
 
 interface ProjectState {
+  /**
+   * De blijvende identiteit van het project, een UUID: de wortel van het IFCX, waar alle
+   * paden en GlobalId's van afhangen. Hernoemen of een ander projectnummer verandert hem
+   * niet. Nieuw project: een nieuwe. Openen: die uit het bestand. Opslaan als: dezelfde.
+   */
+  projectId: string;
   projectNaam: string;
   bestandspad: string | null;
   gegevens: ProjectGegevens;
@@ -172,6 +193,11 @@ interface ProjectState {
   activeId: string;
   /** Uit de projectboom gehaald (projectgegevens, rapport). */
   verborgen: Verborgen;
+  /**
+   * Wat een ander programma in het geopende bestand zette. De app wijzigt het niet;
+   * het gaat bij opslaan ongewijzigd terug (projectBestand.ts).
+   */
+  vreemd?: IfcxVreemd;
   dirty: boolean;
   /** Stapels voor ongedaan maken; niet opgeslagen, alleen voor deze sessie. */
   verleden: Momentopname[];
@@ -200,6 +226,18 @@ interface ProjectState {
   voegMarkdownToe: (naam: string, md: MarkdownBestand) => string;
   /** De tekst van een Markdown-blad; doortypen telt als één stap ongedaan maken. */
   zetMarkdown: (id: string, md: MarkdownBestand) => void;
+  /**
+   * Gekoppelde bladen (store/koppeling.ts) op hun plek tussen de bladen, in één stap
+   * ongedaan maken. `plek` telt in de lijst zoals die na de vorige in deze reeks is;
+   * zonder: achteraan. Het eerste wordt het actieve blad. Geeft de nieuwe id's.
+   */
+  voegGekoppeldeToe: (bladen: { naam: string; md: MarkdownBestand; plek?: number }[]) => string[];
+  /**
+   * De nieuwe inhoud van een gekoppeld blad uit zijn bron. Geen stap in de
+   * geschiedenis: de gebruiker deed niets. `inhoud`: de tekst veranderde, dus het
+   * project is gewijzigd; zonder alleen het pad, en dat gaat mee bij het volgende opslaan.
+   */
+  werkKoppelingBij: (id: string, md: MarkdownBestand, inhoud: boolean) => void;
   /** Een leeg canvas-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
   voegCanvasToe: (naam: string) => string;
   /** Een leeg grafblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
@@ -391,6 +429,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       return metRefs === uit.exemplaren ? uit : { ...uit, exemplaren: metRefs };
     })) as typeof zet;
   return {
+  projectId: nieuweProjectId(),
   projectNaam: nieuweProjectNaam(),
   bestandspad: null,
   gegevens: legeGegevens(),
@@ -533,6 +572,31 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
         ...metGeschiedenis(s, `md:${id}`),
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, md } : e)),
         dirty: true,
+      };
+    }),
+
+  voegGekoppeldeToe: (bladen) => {
+    const ids: string[] = [];
+    set((s) => {
+      const lijst = [...s.exemplaren];
+      for (const b of bladen) {
+        const id = nieuweId();
+        ids.push(id);
+        const ex: Exemplaar = { id, naam: vrijeNaam(lijst, b.naam, false), templateId: MARKDOWN_BLAD, source: "", waarden: {}, md: b.md };
+        lijst.splice(Math.max(0, Math.min(b.plek ?? lijst.length, lijst.length)), 0, ex);
+      }
+      if (ids.length === 0) return s;
+      return { ...metGeschiedenis(s, null), exemplaren: lijst, activeId: ids[0], dirty: true };
+    });
+    return ids;
+  },
+
+  werkKoppelingBij: (id, md, inhoud) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, md } : e)),
+        ...(inhoud ? { dirty: true } : {}),
       };
     }),
 
@@ -836,10 +900,13 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
 
   werkRapportBij: (fn) =>
     set((s) => {
-      const rapport = fn(s.rapport);
+      const nieuw = fn(s.rapport);
       // Hetzelfde object terug betekent: niets veranderd. Dan ook geen lege
       // stap in de geschiedenis en geen "niet opgeslagen".
-      if (rapport === s.rapport) return s;
+      if (nieuw === s.rapport) return s;
+      // Een nieuwe opbouw of belastingklasse krijgt hier zijn symbool voor de rekenbladen.
+      const belastingen = metSymbolen(nieuw.belastingen);
+      const rapport = belastingen === nieuw.belastingen ? nieuw : { ...nieuw, belastingen };
       return { ...metGeschiedenis(s, null), rapport, dirty: true };
     }),
 
@@ -895,6 +962,9 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     wisSessie();
     set({
       verborgen: {},
+      vreemd: undefined,
+      // Een nieuw project is een ander project, ook met dezelfde naam en hetzelfde nummer.
+      projectId: nieuweProjectId(),
       projectNaam: nieuweProjectNaam(),
       bestandspad: null,
       // Het eenhedenstelsel uit Instellingen, tab Units; daarna hoort het bij het project.
@@ -913,6 +983,8 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     wisSessie();
     set({
       verborgen: p.verborgen ?? {},
+      vreemd: p.vreemd,
+      projectId: idVan(p),
       projectNaam: p.projectNaam ?? nieuweProjectNaam(),
       bestandspad: p.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(p.gegevens ?? {}) },
@@ -928,6 +1000,15 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
   markeerOpgeslagen: (bestandspad) => set({ bestandspad, dirty: false }),
   };
 });
+
+/**
+ * De identiteit van een geladen of herstelde stand. Zonder bruikbare id (opslag van
+ * vóór de projectidentiteit) de id uit nummer en naam: de wortel die het project tot
+ * nu toe in zijn exports had.
+ */
+function idVan(p: Partial<Persisted>): string {
+  return leesProjectId(p.projectId) ?? afgeleideProjectId(p.projectNaam ?? nieuweProjectNaam(), p.gegevens?.project_nummer);
+}
 
 /** Is dit de naam die de app zelf aan een nieuw project gaf, in welke taal dan ook? */
 const isStandaardNaam = (naam: string) =>
@@ -977,6 +1058,22 @@ function volgProjectEenheden(g: ProjectGegevens) {
 volgProjectEenheden(useProjectStore.getState().gegevens);
 useProjectStore.subscribe((s) => volgProjectEenheden(s.gegevens));
 
+/*
+ * Net zo de projecttekst: de belastingen uit hoofdstuk 5 van het rapport (`g_v1`, `q_k1`)
+ * en de eigen elementen van de projectgegevens. Hij rekent vóór elk blad, ook in de
+ * uitdraai, het rapport en de IFCX-export. Alleen opnieuw als een van zijn bronnen een
+ * ander object is; de worker krijgt de tekst per verzoek mee (rekenen/doorrekening.ts).
+ */
+let vorigeProjectBronnen: readonly unknown[] = [];
+function volgProjectTekst(s: Pick<ProjectState, "gegevens" | "rapport">) {
+  const nu = [s.gegevens.projectblad, s.gegevens.projectblad_waarden, s.rapport.belastingen, s.rapport.taal];
+  if (nu.every((b, i) => b === vorigeProjectBronnen[i])) return;
+  vorigeProjectBronnen = nu;
+  zetProjectTekst(projectTekstVan(s.gegevens, s.rapport.belastingen, s.rapport.taal) ?? null);
+}
+volgProjectTekst(useProjectStore.getState());
+useProjectStore.subscribe(volgProjectTekst);
+
 // De vastgelegde antwoorden van FEM Studio, voor elk blad en elk rekenpad (rekenen/toetsCache.ts).
 zetVastgelegd(useProjectStore.getState().exemplaren.map((e) => e.toetsingen));
 useProjectStore.subscribe((s, vorige) => {
@@ -1007,6 +1104,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
   if (saved && Array.isArray(saved.exemplaren) && onaangeroerd) {
     const projectNaam = saved.projectNaam ?? nieuweProjectNaam();
     useProjectStore.setState({
+      projectId: idVan({ ...saved, projectNaam }),
       projectNaam,
       bestandspad: saved.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(saved.gegevens ?? {}) },
@@ -1016,6 +1114,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       rapport: rapportUit(saved.rapport),
       activeId: saved.activeId ?? PROJECT_ID,
       verborgen: saved.verborgen ?? {},
+      vreemd: saved.vreemd,
       dirty: false,
     });
     volgTaalVanApp();
@@ -1024,6 +1123,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
   // hydrateren worden toegevoegd, anders overleeft het geen herstart.
   useProjectStore.subscribe((s) =>
     schedulePersist({
+      projectId: s.projectId,
       projectNaam: s.projectNaam,
       bestandspad: s.bestandspad,
       gegevens: s.gegevens,
@@ -1031,6 +1131,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
       rapport: s.rapport,
       activeId: s.activeId,
       verborgen: s.verborgen,
+      vreemd: s.vreemd,
     }),
   );
 });

@@ -36,10 +36,16 @@ export async function kiesRapportPdf(naam: string, projectPad: string | null): P
   return /\.pdf$/i.test(pad) ? pad : `${pad}.pdf`;
 }
 
-/** Schrijft wat er op dit moment voor de afdruk klaarstaat naar `pad`. */
-export async function schrijfRapportPdf(pad: string): Promise<void> {
+/** Een bladwijzer in de PDF: de titel, het niveau (1 = hoofdstuk) en het id van de kop op de vellen. */
+export interface PdfKop { titel: string; niveau: number; doel: string }
+
+/**
+ * Schrijft wat er op dit moment voor de afdruk klaarstaat naar `pad`. Met `koppen` krijgt
+ * de PDF bladwijzers (src-tauri/src/bladwijzers.rs). Geeft het aantal geschreven bytes.
+ */
+export async function schrijfRapportPdf(pad: string, koppen: readonly PdfKop[] = []): Promise<number> {
   const { invoke } = await import("@tauri-apps/api/core");
-  await invoke<number>("rapport_pdf_schrijven", { pad });
+  return invoke<number>("rapport_pdf_schrijven", { pad, koppen });
 }
 
 /**
@@ -50,4 +56,28 @@ export async function meldRapportPdfFout(pad: string, fout: unknown): Promise<vo
   const { message } = await import("@tauri-apps/plugin-dialog");
   await message(i18next.t("werkruimte:pdf.schrijvenMislukt", { pad, fout: String(fout) }), { kind: "warning" })
     .catch((err) => console.warn("Melding niet getoond:", err));
+}
+
+/**
+ * Het rapport als PDF, vanuit het lint (knop Rapport) of vanuit Bestand › Exporteren.
+ * In de app op Windows vraagt het om een bestandsnaam en schrijft het zonder
+ * printdialoog; anders, of als er iets misgaat bij het kiezen, neemt de printdialoog
+ * het over ("Opslaan als PDF"). Een geannuleerde bestandskeuze doet niets.
+ */
+export async function rapportAlsPdf(): Promise<void> {
+  const { usePrintStore } = await import("../store/printStore");
+  const { useProjectStore } = await import("../store/projectStore");
+  const { afdrukken, rapportNaarPdf } = usePrintStore.getState();
+  try {
+    if (await kanRapportPdfSchrijven()) {
+      const { projectNaam, bestandspad } = useProjectStore.getState();
+      const pad = await kiesRapportPdf(projectNaam, bestandspad);
+      if (pad) rapportNaarPdf(pad);
+      return;
+    }
+  } catch (err) {
+    console.warn("Geen bestandsnaam gekozen; de printdialoog neemt het over:", err);
+  }
+  // Het hele project is het rapport: voorblad, hoofdstukken en bijlage A.
+  afdrukken(null, "rapport");
 }

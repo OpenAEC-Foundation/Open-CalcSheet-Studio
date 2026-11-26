@@ -61,8 +61,8 @@ export interface PoerDefinitie {
   };
   zij: { n: number; d: number; z: number[]; y: number };
   boven: { n: number; d: number; z: number; y: number[] };
-  /** `z` is het onderbeen, `zBoven` het uiteinde van de benen. */
-  haarspelden: { n: number; d: number; x: number[]; z: number; zBoven: number };
+  /** `z` is het onderbeen, `zBoven` het uiteinde van de benen, `y` het hart van de benen, om de trekband. */
+  haarspelden: { n: number; d: number; x: number[]; z: number; zBoven: number; y: number };
   /**
    * De staven dwars door de poer, op de lijn van beide diagonalen: `n` per helft van een
    * diagonaal, gelijk verdeeld over die helft. Elke staaf heeft een `x` en een `z`, en loopt
@@ -188,6 +188,7 @@ export function maakPoer(d: Lees, uit: Record<string, number> = {}): PoerDefinit
       x: paalX.flatMap((x) => hpRond.map((dx) => x + dx)),
       z: c_o + d_hp / 2,
       zBoven: h - c_z - d_s,
+      y: Math.max(0, lagen[0]?.y.length ? Math.max(...lagen[0].y) : 0) + d_t / 2 + d_hp,
     },
     dwarsstaven: {
       n: n_dw, d: d_dw,

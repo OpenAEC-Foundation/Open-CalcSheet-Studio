@@ -359,19 +359,28 @@ export type FemRegel =
   | {
     soort: 'opdracht';
     regel: number;
-    /** `materiaal`, `maas`, `analyse`, `plaat`, `veer`, `veren`, `lijnsteun`, `geval`, `vlaklast`, `eigengewicht`, `puntlast` of `combinatie`. */
+    /**
+     * `materiaal`, `maas`, `analyse`, `plaat`, `veer`, `veren`, `lijnsteun`, `geval`, `vlaklast`, `eigengewicht`, `puntlast`,
+     * `combinatie` of `beeld`, en voor een staafwerk `rechthoek`, `doorsnede`, `knoop`, `staaf`, `steun`, `lijnlast`,
+     * `delen` en `knikvormen`.
+     */
     woord: string;
     /** De argumenten, gescheiden door `;`, als uitdrukkingen. */
     args: string[];
-    /** De naam van een plaat, geval of combinatie, of het woord na `analyse`. */
+    /**
+     * Dezelfde argumenten zoals ze er staan: een naam (van een knoop, staaf of doorsnede)
+     * of een woord (`scharnier`, `rol`, `projectie`) is geen uitdrukking.
+     */
+    ruw?: string[];
+    /** De naam van een plaat, knoop, staaf, doorsnede, materiaal, geval of combinatie, of het woord na `analyse`. */
     naam?: string;
   }
   | { soort: 'for'; regel: number; teller: string; van: string; tot: string; body: FemRegel[] }
   | { soort: 'if'; regel: number; takken: { voorwaarde: string; body: FemRegel[] }[]; anders: FemRegel[] };
 
 /**
- * Een `@fem naam … @end`-blok: een plaatmodel dat Open FEM Studio doorrekent
- * (`solve_open_fem_3d`), zie femBlok.ts.
+ * Een `@fem naam … @end`-blok: een plaatmodel (femBlok.ts) of een staafwerk
+ * (femStaafBlok.ts) dat Open FEM Studio doorrekent.
  */
 export interface FemNode {
   type: 'fem';
@@ -420,6 +429,50 @@ export interface KernNode {
   scherm?: boolean;
 }
 
+/**
+ * Een regel van een `@last`-blok (lastBlok.ts): een belasting maal haar factoren, zoals
+ * hij in het blad staat.
+ */
+export interface LastRegel {
+  /** Blijvend (G, zonder voorvoegsel of met `G:`) of veranderlijk (`Q:`). */
+  soort: 'G' | 'Q';
+  /** De bron: een belasting als `g_v3`, of een uitdrukking als `25 kN/m^3*0.3 m*0.5 m`. */
+  bron: string;
+  /** De factoren: een belastingbreedte, oppervlak, lengte of getal. */
+  factoren: string[];
+  /** De tekst tussen aanhalingstekens aan het eind van de regel. */
+  omschrijving?: string;
+}
+
+/**
+ * Een `@last`-blok als structuur, zonder de rekenkern: wat `leesLastBlok` uit de tekst
+ * leest en `schrijfLastBlok` weer als tekst schrijft (lastBlok.ts).
+ */
+export interface LastBlok {
+  /** De naam van de uitkomst, zoals hij in het blad staat: `q_L1`, `F_1`, `Gk`. */
+  symbool: string;
+  /** De naam tussen aanhalingstekens in de kop; leeg als hij ontbreekt. */
+  naam: string;
+  /** `lijn`: een kracht per lengte (kN/m); `punt`: een kracht (kN). */
+  soort: 'lijn' | 'punt';
+  regels: LastRegel[];
+  /** Wat er niet klopt; regels tellen vanaf 1, lege regels en commentaar niet mee. */
+  fouten: string[];
+}
+
+/**
+ * Een `@last symbool "naam" lijn|punt … @end`-blok: een lijnlast of puntlast als som van
+ * belastingen maal hun factoren, gescheiden in blijvend en veranderlijk (lastBlok.ts).
+ */
+export interface LastNode extends LastBlok {
+  type: 'last';
+  /** Per regel ook de bron en de factoren als uitdrukkingen voor de rekenkern. */
+  regels: (LastRegel & { expr: string[] })[];
+  hidden?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type AstNode =
   | HeadingNode
   | TextNode
@@ -443,7 +496,8 @@ export type AstNode =
   | EenheidDefNode
   | ToetsNode
   | FemNode
-  | KernNode;
+  | KernNode
+  | LastNode;
 
 export interface EvaluatedHeading {
   type: 'heading';
@@ -459,6 +513,8 @@ export interface EvaluatedText {
   html?: boolean;
   /** Zie TextNode.inline. */
   inline?: boolean;
+  /** De plekken in `text` (van, tot) waar een uitgerekend getal is ingevuld (`'naam'`). */
+  waarden?: Array<[number, number]>;
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
@@ -543,6 +599,13 @@ export interface EvaluatedInputPrompt {
    * `currentValue` en `standaard` staan dan in die eenheid. Opgeslagen wordt in `unit`.
    */
   toonEenheid?: string;
+  /**
+   * Het veld is gekoppeld aan een cel van een spreadsheet-blad (`#3.Blad1!B4 kN`,
+   * verwijzing.ts): de verwijzing zoals getypt, en de waarde waarmee het veld rekent
+   * (`12.5 kN`), of de melding waarom het niet rekent. Bij een melding staat het veld
+   * niet in de scope: wat ervan afhangt, rekent niet.
+   */
+  koppeling?: { bron: string; waarde?: string; fout?: string };
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
 }
@@ -734,8 +797,8 @@ export interface EvaluatedEenheidDef {
 export type ToetsAntwoord =
   | {
     ok: true; uitkomst: unknown; versie?: string; schema?: string; datum?: string; waarschuwing?: string;
-    /** Bij een `@fem`-blok: het bewaarde verzoek (het raster waar het antwoord bij hoort). */
-    verzoek?: FemRekenmodel;
+    /** Bij een `@fem`-blok: het bewaarde verzoek (het raster of het staafwerk waar het antwoord bij hoort). */
+    verzoek?: FemRekenmodel | FemStaafRekenmodel;
   }
   | { ok: false; melding: string };
 
@@ -770,11 +833,12 @@ export interface ToetsVerzoek {
   tool: string;
   argumenten: Record<string, unknown>;
   /**
-   * Bij een `@fem`-blok: het rekenmodel van één belastinggeval. De app maakt er de
-   * argumenten van (femArgumenten) en bewaart het met het antwoord compact (femBewaar);
+   * Bij een `@fem`-blok: het rekenmodel van één belastinggeval van een plaatmodel, of
+   * van een heel staafwerk met al zijn rekengevallen. De app maakt er de argumenten van
+   * (femVerzoekArgumenten) en bewaart het met het antwoord compact (femBewaar);
    * `argumenten` is dan leeg.
    */
-  bewaar?: FemRekenmodel;
+  bewaar?: FemRekenmodel | FemStaafRekenmodel;
   /**
    * Bij een `@kern`-blok met `per`: de argumenten van elke aanroep, in volgorde; null is
    * een aanroep die het blad overslaat. De app roept de tool voor elk ervan aan
@@ -834,6 +898,104 @@ export interface FemUitkomstCompact {
   som: { last: number; reactie: number };
   /** Het evenwicht volgens FEM Studio. */
   evenwicht: { ok: boolean; max: number };
+}
+
+/**
+ * Een last in een rekengeval van een staafwerk (femStaven.ts), in de assen van FEM
+ * Studio: globaal positief langs +X, +Y en +Z (Z omhoog), lokaal positief langs de
+ * lokale y en z van de staaf.
+ */
+export type FemStaafLast =
+  | {
+    soort: 'lijn';
+    staaf: number;
+    /** `x`, `y`, `z`: globaal; `ly`, `lz`: langs de lokale as van de staaf. */
+    as: 'x' | 'y' | 'z' | 'ly' | 'lz';
+    /** Alleen globaal: per meter projectie loodrecht op de lastrichting in plaats van per meter staaf. */
+    projectie?: true;
+    /** De last aan het begin en het eind van het bereik (kN/m). */
+    q1: number;
+    q2: number;
+    /** Het bereik langs de staaf, vanaf het begin (m). */
+    van: number;
+    tot: number;
+  }
+  | {
+    soort: 'knoop';
+    knoop: number;
+    /** F_x, F_y, F_z (kN). */
+    F: [number, number, number];
+  };
+
+/**
+ * Het rekenmodel van een staafwerk in een `@fem`-blok, compact (femStaven.ts). Hieruit
+ * volgt de JSON voor `solve_open_fem_3d_batch` (femStaafArgumenten), en het wordt zo bij
+ * het blad vastgelegd: de knopen en tussenpunten horen bij het antwoord. Knopen, staven
+ * en doorsneden tellen vanaf 0; in de JSON vanaf 1.
+ */
+export interface FemStaafRekenmodel {
+  vorm: 'fem-staven/1';
+  /** Een vlak staafwerk in x en z: y = 0 en elke knoop is uit het vlak gehouden. */
+  vlak: boolean;
+  analyse: 'lineair' | 'tweede-orde';
+  /** Het aantal knikvormen dat FEM Studio bepaalt (0: geen). */
+  knik: number;
+  /** Per materiaal E, ν en G (MPa); zonder G volgt hij uit E en ν. */
+  materialen: { naam: string; E: number; nu: number; G: number | null }[];
+  /** Per doorsnede A (m²), I_y, I_z, I_t (m⁴) en het materiaal; bij een rechthoek ook b en h (m). */
+  doorsneden: { naam: string; A: number; Iy: number; Iz: number; It: number; materiaal: number; b?: number; h?: number }[];
+  /** De knopen (m): eerst de knopen van het model, dan de tussenpunten van de staven. */
+  x: number[];
+  y: number[];
+  z: number[];
+  /** De namen van de knopen van het model, leeg zonder naam; zoveel knopen heeft het model zelf. */
+  knopen: string[];
+  /**
+   * Per staaf de knopen van begin naar eind, met de tussenpunten erbij (voor FEM Studio
+   * één staaf met `intermediateNodeIds`), de doorsnede, een scharnier aan begin en eind,
+   * en of de staaf alleen trek opneemt.
+   */
+  staven: { naam: string; knopen: number[]; doorsnede: number; scharnier: [boolean, boolean]; trek?: true }[];
+  /**
+   * Per oplegging de knoop en per vrijheidsgraad of hij vast is (true), vrij (false) of
+   * verend (kN/m of kNm/rad). Vlak: u_x, u_z, r_y; ruimtelijk: u_x, u_y, u_z, r_x, r_y, r_z.
+   */
+  steunen: { knoop: number; vast: (boolean | number)[] }[];
+  /**
+   * De rekengevallen: elk is één berekening. Lineair zijn dat de belastinggevallen (de
+   * combinaties telt CalcSheet op); bij tweede orde, een staaf die alleen trek opneemt of
+   * knikvormen is elke combinatie een eigen berekening met haar eigen lasten.
+   */
+  gevallen: { naam: string; soort: 'geval' | 'combinatie'; lasten: FemStaafLast[] }[];
+}
+
+/** Het antwoord van FEM Studio op één rekengeval van een staafwerk, compact (femStaven.ts, femStaafBewaar). */
+export interface FemStaafGevalCompact {
+  /** Per knoop de verplaatsing (m, rad). Vlak: u_x, u_z, r_y; ruimtelijk: u_x, u_y, u_z, r_x, r_y, r_z. */
+  u: number[];
+  /**
+   * Per staaf, per deel tussen twee knopen en per snedekracht vijf waarden, op 0, ¼, ½, ¾
+   * en 1 van het deel (kN, kNm). Vlak: N, V_z, M_y; ruimtelijk: N, V_y, V_z, M_t, M_y, M_z.
+   */
+  s: number[];
+  /** Per oplegging de reactie (kN, kNm), in de vrijheidsgraden van `steunen`. */
+  R: number[];
+  /** De knikfactoren, de kleinste eerst; leeg zonder knikvormen. */
+  alpha: number[];
+  /** Bij tweede orde: het aantal iteraties en de grootste versterking van de verplaatsingen. */
+  tweede?: { iteraties: number; versterking: number };
+  /** De staven die alleen trek opnemen en in dit geval zijn weggevallen. */
+  inactief?: number[];
+  /** De belasting uit het model en de reacties samen (kN, in X, Y en Z). */
+  som: { last: [number, number, number]; reactie: [number, number, number] };
+  /** Het evenwicht volgens FEM Studio. */
+  evenwicht: { ok: boolean; max: number };
+}
+
+/** Het antwoord van FEM Studio op een staafwerk: per rekengeval, in de volgorde van het model. */
+export interface FemStaafUitkomstCompact {
+  vorm: 'fem-staven/1';
+  gevallen: FemStaafGevalCompact[];
 }
 
 /** Eén toets uit het antwoord. */
@@ -910,6 +1072,45 @@ export interface FemUitersten {
   RMax: number | null; RMin: number | null;
 }
 
+/** De kleinste en grootste waarde van een grootheid; null als hij er niet is. */
+export type FemBereik = [number, number] | null;
+
+/** Wat een `@fem`-blok met staven op het blad toont (femStaafBlok.ts). */
+export interface FemStaafBlad {
+  vlak: boolean;
+  analyse: 'lineair' | 'tweede-orde';
+  /** Het aantal staven, knopen (met de tussenpunten) en opleggingen. */
+  staven: number;
+  knopen: number;
+  steunen: number;
+  /** Het aantal staven dat alleen trek opneemt. */
+  trek: number;
+  /** Het aantal knikvormen. */
+  knik: number;
+  /**
+   * Per rekengeval de belasting en de reacties samen (kN): in x (en ruimtelijk in y), en
+   * in z met de last omlaag en de reactie omhoog positief.
+   */
+  gevallen?: { naam: string; lastX: number; lastY?: number; lastZ: number; reactieX: number; reactieY?: number; reactieZ: number }[];
+  /** Per geval en combinatie de uitersten over alle staven (kN, kNm, mm) en de knikfactor. */
+  sets?: {
+    naam: string;
+    soort: 'geval' | 'combinatie';
+    N: FemBereik;
+    V: FemBereik;
+    M: FemBereik;
+    /** De grootste doorbuiging van een staaf ten opzichte van zijn koorde (mm), met teken. */
+    w: number;
+    alpha: number | null;
+    /** De staven die alleen trek opnemen en hier zijn weggevallen. */
+    inactief?: string[];
+  }[];
+  /** Per staaf de omhullende over de combinaties (zonder combinaties: over de gevallen). */
+  omhullende?: { naam: string; lengte: number; N: FemBereik; V: FemBereik; M: FemBereik; w: number }[];
+  /** Per oplegging de omhullende van de reacties (kN, kNm); M alleen bij een ingeklemde of verende draaiing. */
+  reacties?: { naam: string; Rx: FemBereik; Ry?: FemBereik; Rz: FemBereik; M: FemBereik }[];
+}
+
 /** Een doorgerekend `@fem`-blok. */
 export interface EvaluatedFem {
   type: 'fem';
@@ -937,6 +1138,10 @@ export interface EvaluatedFem {
   uitersten?: FemUitersten[];
   /** De plattegronden in kleur van de regels `beeld UGT mx` (SVG). */
   beelden?: string[];
+  /** Bij een staafwerk: het model in het kort en de tabellen van het blok (femStaafBlok.ts). */
+  staven?: FemStaafBlad;
+  /** De tool van FEM Studio in de kop; zonder: die van een plaatmodel (`solve_open_fem_3d`). */
+  tool?: string;
   /** De hashes van alle gevallen. */
   hashes?: string[];
   /** Alleen in de modus `vragen`: de gevallen die nog geen antwoord hebben. */
@@ -998,6 +1203,49 @@ export interface EvaluatedKern {
   scherm?: boolean;
 }
 
+/** Een regel van een doorgerekend `@last`-blok. */
+export interface LastRij {
+  soort: 'G' | 'Q';
+  /** De tekst uit de regel, of de naam van de belasting in het project; ontbreekt als er geen is. */
+  omschrijving?: string;
+  /** De bron zoals hij in het blad staat. */
+  bron: string;
+  /** De naam in de rekenkern, als de bron één kale naam is (`g_v3`). */
+  variabele?: string;
+  /** De bron en de factoren zoals het blad ze toont: het getal en de eenheid van de kern (`kN / m^2`). */
+  delen: { getal: string; eenheid: string }[];
+  /** De bijdrage als getal in kN/m of kN, onafgerond. */
+  waarde: number;
+  /** De bijdrage zoals hij in de tabel staat, in `eenheid` van het blok. */
+  bijdrage: string;
+}
+
+/** Een doorgerekend `@last`-blok. */
+export interface EvaluatedLast {
+  type: 'last';
+  /** De naam van de uitkomst zoals hij in het blad staat; leeg bij een ongeldige kop. */
+  symbool: string;
+  naam: string;
+  soort: 'lijn' | 'punt';
+  /** `klaar`: de uitkomsten staan in de scope; `fout`: de reden staat in `melding` en er is geen uitkomst. */
+  status: 'klaar' | 'fout';
+  melding?: string;
+  /** De eenheid van de kolommen en de som, in de schrijfwijze van de kern: `kN / m`, `kN` of die van het eenhedenstelsel. */
+  eenheid: string;
+  rijen: LastRij[];
+  /**
+   * De uitkomsten: per deel de naam in de rekentaal (`q_L1,G`), de naam in de scope
+   * (`q_L1_G`), het getal in kN/m of kN en de tekst in `eenheid`. Alleen bij `klaar`.
+   */
+  uitkomsten?: Record<'som' | 'G' | 'Q', { naam: string; scope: string; waarde: number; tekst: string }>;
+  /** `nl` of `en`: de vaste woorden. */
+  taal: string;
+  /** Achter `#hide`: rekent mee, staat niet op het blad. */
+  verborgen?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type EvaluatedNode =
   | EvaluatedEenheidDef
   | EvaluatedHeading
@@ -1018,4 +1266,5 @@ export type EvaluatedNode =
   | EvaluatedGefUpload
   | EvaluatedToets
   | EvaluatedFem
-  | EvaluatedKern;
+  | EvaluatedKern
+  | EvaluatedLast;

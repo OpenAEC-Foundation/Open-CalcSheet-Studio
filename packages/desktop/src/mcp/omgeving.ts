@@ -17,6 +17,7 @@ import { documentToReport, projectToReport } from "../lib/documentToReport";
 import { projectScope } from "../store/projectGegevens";
 import { rekenDoor } from "./rekenen";
 import { appKoppeling, type SplitModus } from "./appKoppeling";
+import { kanRapportPdfSchrijven } from "../tauri/rapportPdf";
 import { McpFout, type McpBibliotheekModule, type McpInstellingen, type McpOmgeving, type McpWeergave } from "./contracts";
 
 /**
@@ -99,6 +100,7 @@ export const liveOmgeving: McpOmgeving = {
   stand: () => {
     const s = useProjectStore.getState();
     return {
+      projectId: s.projectId,
       projectNaam: s.projectNaam,
       bestandspad: s.bestandspad,
       gegevens: s.gegevens,
@@ -106,6 +108,7 @@ export const liveOmgeving: McpOmgeving = {
       activeId: s.activeId,
       dirty: s.dirty,
       verborgen: s.verborgen,
+      vreemd: s.vreemd,
       rapport: s.rapport,
       stappenTerug: s.verleden.length,
       stappenVooruit: s.toekomst.length,
@@ -243,6 +246,25 @@ export const liveOmgeving: McpOmgeving = {
 
   afdruk: {
     start: (soort, selectie) => usePrintStore.getState().afdrukken(selectie, soort),
+    rapportPdf: async (pad) => {
+      if (!(await kanRapportPdfSchrijven())) {
+        throw new McpFout("NOT_AVAILABLE", "This app cannot write the report PDF by itself (Windows or Linux desktop app only). Use the print tool and choose a PDF printer.");
+      }
+      if (usePrintStore.getState().bezig) throw new McpFout("CONFLICT", "The app is already printing. Try again when it has finished.");
+      // Dezelfde weg als de knop Rapport (PDF): App.tsx zet de vellen klaar en schrijft ze weg.
+      usePrintStore.getState().rapportNaarPdf(pad, true);
+      await new Promise<void>((klaar) => {
+        const stop = usePrintStore.subscribe((s) => {
+          if (!s.bezig) {
+            stop();
+            klaar();
+          }
+        });
+      });
+      const { pdfGeschreven, pdfFout, pdfBytes } = usePrintStore.getState();
+      if (pdfGeschreven !== pad) throw new McpFout("INTERNAL", `The report PDF was not written: ${pdfFout ?? "unknown reason"}`);
+      return pdfBytes;
+    },
     pdfViaEngine: async (ids, pad) => {
       const { exemplaren, gegevens, projectNaam } = useProjectStore.getState();
       const scope = projectScope(gegevens);
@@ -259,7 +281,7 @@ export const liveOmgeving: McpOmgeving = {
         if (/rapportengine/i.test(melding)) {
           throw new McpFout(
             "NOT_AVAILABLE",
-            "This build of the app has no report engine, so it cannot write a PDF by itself. Use the print tool and choose a PDF printer in the print dialog (that printout includes the drawings).",
+            "This build lacks the optional report engine. On Windows or Linux, use report_export_pdf to write the full report with drawings without opening a dialog.",
           );
         }
         throw e;

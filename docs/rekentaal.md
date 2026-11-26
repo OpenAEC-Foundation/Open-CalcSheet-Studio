@@ -57,6 +57,38 @@ zijn in deze taal geschreven.
   (`packages/core/src/verwijzing.ts`); de app zet de waarde onder die naam in de scope
   (`packages/desktop/src/rekenen/verwijzingen.ts`). Een losse module verwijst nooit naar
   een ander blad: dat doet de constructeur in zijn eigen project.
+- **Een cel uit een spreadsheet-blad:** typ in een invoerveld `#3.Blad1!B4`: blad 3,
+  werkblad Blad1, cel B4. Een werkblad met een spatie of leesteken staat tussen enkele
+  aanhalingstekens, zoals in een spreadsheet: `#3.'Lasten vloer'!B4`. Het invoerscherm
+  heeft naast elk veld een knop om het blad, het werkblad en de cel te kiezen; daar staan
+  ook de bron, de waarde waarmee gerekend is en *Koppeling verwijderen* (het veld houdt
+  dan het laatste getal uit de cel). Alleen in een invoerveld, niet in een formule, en
+  alleen van de spreadsheet naar het rekenblad.
+- **Eenheid van de cel:** zet de eenheid van het getal in de cel achter de verwijzing:
+  `#3.Blad1!B4 kN`. Het veld rekent het dan om naar zijn eigen eenheid (12,5 kN in een
+  veld in N wordt 12 500 N). Zonder eenheid achter de verwijzing krijgt het getal de
+  eenheid van het veld, en in een veld zonder eenheid blijft het een kaal getal. Past de
+  eenheid niet (12,5 m in een veld in kN), of staat er een eenheid bij een veld zonder,
+  dan is dat een fout: er wordt nooit stil omgerekend.
+- **Wat er uit de cel komt:** een getal, of de uitkomst van een formule zoals de
+  spreadsheet die bij het bewaren in de werkmap zette. Een lege cel, tekst, een ja/nee-
+  waarde, een formulefout (`#DIV/0!`), een formule zonder uitkomst (uit een bestand van
+  elders: open het spreadsheet-blad één keer), een werkblad dat er niet is of een blad dat
+  er niet (meer) is of geen spreadsheet is, geeft een melding onder het veld, op het blad
+  en in het rapport. Anders dan bij `#2.R_paal` rekent het veld dan niet met zijn
+  standaardwaarde: het staat niet in de scope, wat ervan afhangt rekent niet, en het blad
+  krijgt geen UC en geen oordeel.
+- **Verandert de cel:** het blad rekent opnieuw; de waarde van de cel hoort bij de
+  doorrekening zoals de invoer. Een cel die nog openstaat in de spreadsheet gaat eerst
+  naar het project zodra je het blad verlaat, opslaat of de kiezer opent. Het kenmerk van
+  het blad (`#3`) blijft bij een nieuwe naam van het blad. De editor kan een werkblad niet
+  hernoemen; een andere werkmap inlezen vraagt eerst bevestiging als er velden aan het blad
+  hangen, en een werkblad dat daarna ontbreekt geeft de melding hierboven.
+- **Waar:** de kern leest de verwijzing (`leesCelVerwijzing` in
+  `packages/core/src/verwijzing.ts`) en maakt het veld (`celInvoer` in `evaluator.ts`); de app
+  leest de cel uit de XLSX (`packages/desktop/src/rekenen/spreadsheetCellen.ts`) en zet de
+  waarde of de fout onder `celNaam` in de scope (`verwijzingen.ts`). Controle:
+  `scripts/check-spreadsheet-invoer.mjs`.
 
 ## Plaat op palen
 
@@ -105,6 +137,53 @@ plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent he
   blad als `calc`, pas na bevestiging, afgeschermd en zonder netwerk. Een draaibaar model kan
   met `calc.wereld3d()`, een knop met `addEventListener` (geen `onclick=`)
 
+## Een lijnlast of puntlast uit belastingen: `@last`
+
+Een blad rekent de last op een ligger of kolom uit door belastingen te vermenigvuldigen
+met een belastingbreedte, oppervlak of lengte en ze op te tellen, gescheiden in blijvend
+(G) en veranderlijk (Q). De belastingen uit hoofdstuk 5 van het rapport bestaan in elk
+blad onder hun symbool (`g_v3 = 7.75 kN/m^2`); een regel mag ook een eigen uitdrukking
+zijn.
+
+```text
+@last q_L1 "Ligger L1, as 2" lijn
+  g_v3; 3.6 m
+  g_w1; 1
+  Q: q_k1; 3.6 m; "vloer, categorie A"
+  25 kN/m^3*0.3 m*0.5 m
+@end
+q_Ed = 1.2*q_L1,G + 1.5*q_L1,Q
+```
+
+- **De kop:** `@last symbool "naam" lijn` of `… punt`. De naam en de soort mogen weg;
+  zonder soort is het een lijnlast. `lijn` geeft een kracht per lengte (kN/m), `punt` een
+  kracht (kN).
+- **Een regel:** `[G:|Q:] bron; factor; …; "omschrijving"`. De bron en elke factor zijn
+  uitdrukkingen met eenheden; hun product is de bijdrage van de regel. Zonder voorvoegsel
+  is een regel blijvend, met `Q:` veranderlijk. Een laatste deel tussen aanhalingstekens
+  is de omschrijving. Zonder omschrijving staat bij een belasting uit het project haar
+  naam uit hoofdstuk 5 (`EvalOpties.project.namen`). Lege regels en regels met `//` tellen
+  niet; `#if` en `#for` werken in dit blok niet. Een waarde uit een ander blad mag:
+  `#2.R_A; 1`.
+- **De uitkomst:** `q_L1` is de som, `q_L1,G` het blijvende en `q_L1,Q` het veranderlijke
+  deel. Een symbool zonder liggend streepje krijgt `_G` en `_Q` (`Gk_G`, `Gk_Q`). Beide
+  delen bestaan altijd, ook als ze 0 zijn.
+- **Controle:** het product van elke regel moet een kracht per lengte zijn (lijn) of een
+  kracht (punt). Klopt dat niet, is een naam onbekend of rekent een regel niet, dan staat
+  het blok als NIET GEREKEND met het regelnummer en de reden, en bestaan de uitkomsten
+  niet.
+- **Op het blad:** een tabel met een raster en een gekleurde kop. In de kop staat het
+  symbool, daarna de kolommen b, l, p_rep, G en Q. Per regel: de omschrijving, de eerste
+  maat (b), de tweede (l; bij een lijnlast zonder tweede maat een 1), de belasting (p_rep)
+  en de bijdrage in de kolom G of Q. Een kolom zet zijn eenheid in de kop als elke cel
+  dezelfde heeft; anders staat de eenheid bij de cel. Een regel zonder omschrijving die
+  geen belasting uit het project is, heeft een witte cel. Getallen in een kolom staan met
+  hun decimaalteken onder elkaar. Onder de tabel staat de som: Σ, G, Q
+  en de eenheid. De tabel staat ook op papier en in het eenhedenstelsel.
+- **Waar:** `packages/core/src/lastBlok.ts`; `leesLastBlok` en `schrijfLastBlok` lezen en
+  schrijven het blok als structuur, zonder te rekenen. De controle:
+  `scripts/check-last-blok.mjs`.
+
 ## Een plaatmodel: `@fem`
 
 Een blad bouwt een plaatmodel op en laat het door Open FEM Studio rekenen
@@ -133,6 +212,52 @@ m_ks = -fem_strook(vloer; "UGT"; "mx"; 5 m; 3.75 m; 5 m; 6.25 m)
 
 Het antwoord wordt opgezocht en vastgelegd zoals bij `@toets` hieronder; zonder antwoord
 staat het blok als NIET GEREKEND, nooit met een uitkomst.
+
+## Een staafwerk: `@fem` met staven
+
+Hetzelfde blok rekent een staafwerk, vlak (x en z) of ruimtelijk: een ligger, een
+portaal, een kap. Het blad schrijft de doorsneden, de knopen en staven met hun
+scharnieren, de opleggingen en de lasten; Open FEM Studio rekent alle gevallen in één
+aanroep (`solve_open_fem_3d_batch`) en het blad rekent verder met N, V, M, de doorbuiging,
+de reacties en de knikfactor. Alles staat in
+[fem-model.md](fem-model.md#een-staafwerk-staven-in-fem). Een ligger kan in vijf regels:
+een profiel (`doorsnede HEA200`, staal), twee knopen, een staaf, twee steunen en een
+lijnlast, zonder geval; het blok tekent dan zelf de lasten, M, V en de doorbuiging, en
+`ligger.s1.M_max` is het grootste moment. De woorden mogen ook in het Engels (`node`,
+`beam`, `support`, `pin`, `roller`, `lineload`). Een groter voorbeeld:
+
+```text
+@fem kap
+  materiaal 11000 N/mm^2; 690 N/mm^2
+  rechthoek spoor: 59 mm; 156 mm
+  knoop A: 0; 0
+  knoop B: L; 0
+  knoop nok: L/2; h_nok
+  staaf spoor_l: A; nok; spoor; scharnier eind
+  staaf spoor_r: nok; B; spoor
+  steun A; scharnier
+  steun B; scharnier
+  geval G
+    eigengewicht 4.2 kN/m^3
+  geval S
+    lijnlast spoor_l; q_s; projectie
+    lijnlast spoor_r; q_s; projectie
+  combinatie UGT = 1.2*G + 1.5*S
+  beeld UGT M
+@end
+M_Ed = kap.UGT.spoor_l.M_max
+H = kap.UGT.A.Rx
+V_2 = fem_staaf(kap; "UGT"; "spoor_l"; "V"; 2 m)
+```
+
+- Een staaf loopt door over een knoop op zijn as: een hanenbalk hangt zo aan een spoor.
+- Een lijnlast gaat omlaag (`z`), langs `x`, loodrecht op de staaf (`lokaal`) of per meter
+  grondvlak (`projectie`, voor sneeuw); een puntlast staat op een knoop of op een staaf.
+- `analyse tweede-orde` rekent elke combinatie apart; `knikvormen n` geeft
+  `kap.UGT.alpha_cr`.
+- `fem_krachten(kap; "spoor_l"; "UGT")` geeft de snedekrachten van een staaf als
+  `forces_envelope` voor een `@toets`-blok, bijvoorbeeld de houttoets
+  `check_timber_beams`.
 
 ## Een rekentool met geneste invoer: `@kern`
 
@@ -206,7 +331,13 @@ UC_max = kolom.uc_max
   - Een getal zonder eenheid gaat zoals het is.
   - Een grootheid in een veld zonder eenheid in de naam is een fout op die regel.
   - `forces_envelope` mag een matrix zijn, met per rij één station: combinatie, x (mm),
-    N, V_y, V_z (kN), M_t, M_y, M_z (kNm).
+    N, V_y, V_z (kN), M_t, M_y, M_z (kNm). Ook in een staaf van een lijst
+    (`inputs = [{…, forces_envelope: …}]`, zoals `check_timber_beams` die neemt), en
+    `fem_krachten` geeft die matrix uit een staafwerk.
+- **Een veld over meer regels.** Een veld loopt door op de volgende regels zolang er een
+  haak openstaat, met commentaar (`//`) ertussen. Zo staat een staaf van `inputs` met één
+  veld per regel in het blok; zie het voorbeeld van de houttoets in
+  [fem-model.md](fem-model.md#de-houttoets-check_timber_beams).
 - **De uitkomst.** Na het blok gelden de volgende variabelen. Een punt in een naam is in
   de rekentaal een liggend streepje, dus `kolom.uc_max` is `kolom_uc_max`.
   - `kolom.uc_max`: de hoogste UC.

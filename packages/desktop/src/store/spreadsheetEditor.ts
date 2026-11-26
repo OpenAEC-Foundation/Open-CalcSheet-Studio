@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { XlsxEditorApi } from "@betteroffice/xlsx-react";
 import type { Bereik, Cel } from "../components/calc/spreadsheetLogica";
+import { browserVoorkeur } from "../werkplek/werkplek";
 
 /**
  * De spreadsheet-editor die openstaat, voor wat buiten de editor staat: het lint
@@ -22,21 +23,13 @@ export interface Markering {
 const VELLIJNEN = "openaec.spreadsheet.vellijnen";
 
 function leesVelLijnen(): boolean {
-  try {
-    return localStorage.getItem(VELLIJNEN) !== "uit";
-  } catch {
-    return true;
-  }
+  return browserVoorkeur.lees(VELLIJNEN) !== "uit";
 }
 
 /** De papierrand in het raster aan of uit; een voorkeur, geen deel van het project. */
 export function zetVelLijnen(aan: boolean): void {
   useSpreadsheetEditor.setState({ velLijnen: aan });
-  try {
-    localStorage.setItem(VELLIJNEN, aan ? "aan" : "uit");
-  } catch {
-    // Alleen een gemak.
-  }
+  browserVoorkeur.bewaar(VELLIJNEN, aan ? "aan" : "uit");
 }
 
 /** Het bereik op het klembord, met het lopende kader eromheen. */

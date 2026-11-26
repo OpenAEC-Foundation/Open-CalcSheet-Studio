@@ -11,6 +11,7 @@ import { rekentaalDemoEn } from "./rekentaal-demo.en.ts";
 import { doorsnedeSpanningenEn } from "./doorsnede-spanningen.en.ts";
 import { liggerEn } from "./ligger.en.ts";
 import { tweepaalspoerEn } from "./tweepaalspoer.en.ts";
+import { meerpaalspoerEn } from "./meerpaalspoer.en.ts";
 
 export { bronNaBewerking };
 
@@ -19,7 +20,7 @@ export { bronNaBewerking };
  * net als bij de parametrische beelden (designerKeuze.tsx). De bron is Nederlands: in
  * die taal is er niets te vertalen.
  */
-const ENGELS: BladVertaling[] = [liggerEn, balklaagEn, tweepaalspoerEn, doorsnedeSpanningenEn, rekentaalDemoEn];
+const ENGELS: BladVertaling[] = [liggerEn, balklaagEn, tweepaalspoerEn, meerpaalspoerEn, doorsnedeSpanningenEn, rekentaalDemoEn];
 
 const inNederlands = (taal: string | undefined) => !taal || taal.startsWith("nl");
 
@@ -67,6 +68,7 @@ const KOP_VERTAALD: Readonly<Record<string, string>> = {
   Balklaag: "Timber joist floor",
   "Ligger van hout of staal": "Timber or steel beam",
   Tweepaalspoer: "Two-pile cap",
+  "Poer op drie of vier palen": "Cap on three or four piles",
   "Spanningen in een doorsnede": "Section stresses",
 };
 

@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { LANGUAGES, STANDAARD_TAAL, changeLanguage } from "../../i18n/config";
 import { getSetting, setSetting } from "../../store";
+import { openBuiten } from "../../werkplek/werkplek";
 import Modal from "../Modal";
 import ThemedSelect from "../ThemedSelect";
 import BureauTab from "../rapport/BureauTab";
 import McpTab from "./McpTab";
 import ErpnextTab, { type ErpnextConcept } from "./ErpnextTab";
 import { useBureauStore } from "../../store/bureauProfiel";
-import { leegBureau, type BureauProfiel } from "../../rapport/model";
+import { veiligLettertype, leegBureau, type BureauProfiel } from "../../rapport/model";
 import {
   ERPNEXT_STANDAARD,
   bewaarErpnextInstellingen,
@@ -21,6 +22,18 @@ import { version as pakketVersie } from "../../../package.json";
 import "../ThemedSelect.css";
 import "./SettingsDialog.css";
 import { femStudioLicentie, femStudioStatus, type FemLicentie, type FemStatus } from "../../rekenen/femStudio";
+
+const standaardLetters = { ui: "", code: "" };
+
+export async function leesLetters() {
+  return getSetting("lettertypen", standaardLetters);
+}
+
+export function pasLettersToe(letters: typeof standaardLetters) {
+  const stijl = document.documentElement.style;
+  stijl.setProperty("--oa-font-body", veiligLettertype(letters.ui));
+  stijl.setProperty("--oa-font-mono", veiligLettertype(letters.code));
+}
 
 const THEME_OPTIONS = [
   { value: "light",               labelKey: "appearance.light",             swatches: ["#F1EEEA", "#FFFFFF", "#D97706", "#2A2A32"] },
@@ -122,6 +135,7 @@ export default function SettingsDialog({
   const [activeTab, setActiveTab] = useState("general");
 
   // Draft state — only committed on Save
+  const [letters, zetLetters] = useState<typeof standaardLetters | null>(null);
   const [draftTheme, setDraftTheme] = useState(theme);
   const [draftLang, setDraftLang] = useState(STANDAARD_TAAL);
   const [draftText, setDraftText] = useState("standard");
@@ -148,6 +162,8 @@ export default function SettingsDialog({
   // Reset draft to current values when dialog opens
   useEffect(() => {
     if (open) {
+      zetLetters(null);
+      void leesLetters().then(zetLetters);
       setActiveTab(startTab ?? "general");
       originalTheme.current = theme;
       setDraftTheme(theme);
@@ -237,6 +253,10 @@ export default function SettingsDialog({
 
   // Save — commit all draft changes
   const handleSave = () => {
+    if (letters) {
+      pasLettersToe(letters);
+      setSetting("lettertypen", letters);
+    }
     onThemeChange(draftTheme);
     applyTheme(draftTheme);
     setSetting("theme", draftTheme);
@@ -295,6 +315,7 @@ export default function SettingsDialog({
   };
 
   const handleConfirmReset = () => {
+    zetLetters(standaardLetters);
     setDraftTheme("light");
     applyTheme("light");
     setDraftLang(STANDAARD_TAAL);
@@ -345,12 +366,23 @@ export default function SettingsDialog({
             <GeneralTabContent lang={draftLang} onLangChange={handleLangPreview} />
           )}
           {activeTab === "appearance" && (
+            <>
             <AppearanceTabContent
               theme={draftTheme}
               onThemeSelect={handleThemePreview}
               textSize={draftText}
               onTextSizeSelect={handleTextPreview}
             />
+            <div className="settings-section">
+              {(["ui", "code"] as const).map((soort) => (
+                <label className="settings-row" key={soort}>
+                  <span className="settings-label">{t(`appearance.lettertype.${soort}`)}</span>
+                  <input disabled={!letters} value={letters?.[soort] ?? ""} placeholder={soort === "ui" ? "Inter" : "JetBrains Mono"}
+                    onChange={(e) => letters && zetLetters({ ...letters, [soort]: e.target.value })} />
+                </label>
+              ))}
+            </div>
+            </>
           )}
           {activeTab === "units" && (
             <UnitsTabContent units={draftUnits} onChange={setDraftUnits} />
@@ -613,12 +645,7 @@ function AboutTabContent() {
   const openBron = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!femBron) return;
-    try {
-      const { openUrl } = await import("@tauri-apps/plugin-opener");
-      await openUrl(femBron);
-    } catch {
-      window.open(femBron, "_blank", "noopener,noreferrer");
-    }
+    await openBuiten(femBron);
   };
   const toonBijlage = async (e: React.MouseEvent) => {
     e.preventDefault();

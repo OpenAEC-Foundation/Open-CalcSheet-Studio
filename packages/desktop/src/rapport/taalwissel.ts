@@ -13,7 +13,7 @@
  * Zonder React en zonder stores: scripts/check-rapport-talen.mjs laadt dit bestand
  * rechtstreeks in Node.
  */
-import { inTaal, type Meertalig } from "./meertalig.ts";
+import { alleTalen, inTaal, type Meertalig } from "./meertalig.ts";
 import { inNotatie, leesTaal, MEEGELEVERD, standaardRapport, type Opbouw, type Rapport } from "./model.ts";
 import { zetOpPad, type Pad } from "./pad.ts";
 import { STANDAARD_TEKSTEN, standaardTeksten } from "./standaardteksten.ts";
@@ -25,7 +25,7 @@ const normaal = (s: string) => s.replace(/\r\n?/g, "\n").trim();
 function zoek(waarde: string, lijst: readonly Meertalig[]): Meertalig | undefined {
   const t = normaal(waarde);
   if (t === "") return undefined;
-  return lijst.find((m) => Object.values(m).some((w) => normaal(w) === t));
+  return lijst.find((m) => alleTalen(m).some((w) => normaal(w) === t));
 }
 
 /** `waarde` in de nieuwe taal als hij meegeleverd is; anders ongewijzigd. */

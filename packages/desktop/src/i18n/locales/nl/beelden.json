@@ -129,6 +129,64 @@
       "verdieping": "Verdieping"
     }
   },
+  "poerDetail": {
+    "titel": "Staaflijst en wapeningsdetail",
+    "staaflijst": "Staaflijst",
+    "merk": "Merk",
+    "aantal": "Aantal",
+    "diameter": "Ø",
+    "vorm": "Vorm",
+    "zijden": "Zijlengtes (hart)",
+    "lengte": "Lengte",
+    "totaal": "Totaal (m)",
+    "massa": "Massa (kg)",
+    "totaalMassa": "Totaal",
+    "verlopend": "verlopend",
+    "maten": "Maten in mm; zijlengtes hart op hart van de knikken, lengte langs de hartlijn.",
+    "bovenaanzicht": "Bovenaanzicht",
+    "doorsnede": "Doorsnede",
+    "soorten": {
+      "trekband": "trekband",
+      "beugel": "beugel",
+      "zijstaaf": "zijstaaf",
+      "bovenstaaf": "bovenstaaf",
+      "haarspeld": "haarspeld",
+      "dwarsstaaf": "dwarsstaaf",
+      "band": "band",
+      "net": "ondernet",
+      "randbeugel": "randbeugel"
+    },
+    "ontwerp": "Ontwerpschema",
+    "vrijgegeven": "Vrijgegeven voor uitvoering",
+    "nietVrij": "niet vrij te geven: het blad zegt niet dat de poer voldoet",
+    "vrijgeven": "Vrijgegeven voor uitvoering",
+    "uitleg": "Uit dezelfde staven als de tekening en de toets. Vormcode 00 recht, 21 U-vorm, 51 gesloten beugel met twee haken van 135°, 99 bijzondere vorm. Buigstraal: de ingevoerde doorn bij de trekband, anders de kleinste doorn uit tabel 8.1N. Vrijgeven kan alleen als het blad zegt dat de poer voldoet.",
+    "bewaarDxf": "Detail als DXF opslaan",
+    "bewaarIfcx": "Poer met wapening als IFCX opslaan",
+    "detailKop": "Wapeningsdetail",
+    "dxfFilter": "DXF-tekening",
+    "ifcxFilter": "IFCX",
+    "alleBestanden": "Alle bestanden",
+    "model": {
+      "driepaalspoer": "Poer op drie palen",
+      "vierpaalspoer": "Poer op vier palen",
+      "hartOpHart": "palen h.o.h.",
+      "poer": "Poer",
+      "paal": "Paal",
+      "kolom": "Kolom",
+      "korf": "Wapeningskorf",
+      "alleenAanzet": "Alleen de aanzet is getekend; de lengte valt buiten dit blad.",
+      "project": "Project",
+      "terrein": "Terrein",
+      "gebouw": "Gebouw",
+      "verdieping": "Verdieping",
+      "soorten": {
+        "band": "Bandstaaf",
+        "net": "Netstaaf",
+        "randbeugel": "Randbeugel"
+      }
+    }
+  },
   "doorsnede": {
     "titel": "Parametrisch beeld — spanningen in een doorsnede",
     "koppen": {
@@ -424,7 +482,36 @@
     "geenVelden": "Dit blad toont nu geen invoervelden.",
     "uitleg": "Rekent door als je een veld verlaat, op Enter drukt of even wacht.",
     "verbergBeeld": "Tekening verbergen",
-    "toonBeeld": "Tekening tonen"
+    "toonBeeld": "Tekening tonen",
+    "koppeling": {
+      "knop": "Koppel aan een spreadsheetcel",
+      "titel": "Waarde uit een spreadsheetcel",
+      "spreadsheet": "Spreadsheet-blad",
+      "werkblad": "Werkblad",
+      "cel": "Cel",
+      "eenheid": "Eenheid in de cel",
+      "metVeldEenheid": "Leeg: het getal krijgt de eenheid van het veld ({{eenheid}}).",
+      "zonderEenheid": "Leeg: een getal zonder eenheid.",
+      "celOngeldig": "Typ een cel als B4.",
+      "inDeCel": "In de cel: {{waarde}}",
+      "koppel": "Koppelen",
+      "annuleer": "Annuleren",
+      "bron": "Uit {{blad}}, {{cel}}",
+      "onbekendBlad": "blad #{{ref}}",
+      "verwijder": "Koppeling verwijderen",
+      "verwijderUitleg": "Het veld houdt de laatste waarde uit de cel.",
+      "geenSpreadsheet": "Dit project heeft nog geen spreadsheet-blad.",
+      "fout": {
+        "bron": "Het blad bestaat niet (meer).",
+        "geen-spreadsheet": "Dit blad is geen spreadsheet-blad.",
+        "werkmap": "De werkmap is niet te lezen.",
+        "werkblad": "Dit werkblad bestaat niet (meer).",
+        "leeg": "De cel is leeg.",
+        "tekst": "De cel bevat geen getal: {{detail}}",
+        "formulefout": "De formule geeft {{detail}}.",
+        "geen-waarde": "De formule heeft nog geen uitkomst; open het spreadsheet-blad."
+      }
+    }
   },
   "vloerOpPalen": {
     "plattegrond": "Plattegrond",

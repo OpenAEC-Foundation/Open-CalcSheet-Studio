@@ -3,6 +3,7 @@ import type {
 } from './types.js';
 import { jsonVoorAttribuut } from './jsAttribuut.js';
 import { FemModel, femVlak3D } from './femResultaat.js';
+import { FemStaafModel, femStaaf3D } from './femStaafResultaat.js';
 
 /**
  * Een ruimtelijk beeld in het blad: het blok `@3d … @end`.
@@ -37,7 +38,11 @@ import { FemModel, femVlak3D } from './femResultaat.js';
  *                                        `fem vloer UGT w`: elke knoop op zijn plaats met de
  *                                        waarde als hoogte (omlaag bij een positief getal),
  *                                        gekleurd zoals fem_svg; h is de getekende hoogte van
- *                                        het grootste getal (standaard 12 % van de vloer)
+ *                                        het grootste getal (standaard 12 % van de vloer).
+ *                                        Bij een staafwerk (femStaafBlok.ts), bijvoorbeeld
+ *                                        `fem kap UGT M` of `fem kap BGT u`: de staven met hun
+ *                                        doorsnede, de opleggingen, en de lijn van M, V of N of
+ *                                        de vervormde stand, vergroot
  *
  * Kleuren: hout, staal, beton, metselwerk, glas, grond, last, oplegging,
  * lijn, zwart, grijs, wit, rood, blauw, groen, geel, of `#rrggbb`. Zonder
@@ -562,6 +567,16 @@ export function bouwDrieDScene(node: DrieDNode, r: DrieDRekenaar): EvaluatedDrie
       model = r.reken(naam);
     } catch {
       model = undefined;
+    }
+    // Een staafwerk: de staven met hun doorsnede, de opleggingen en de lijn of de vervormde stand.
+    if (model instanceof FemStaafModel) {
+      try {
+        const hoogte = regel.maten.length ? maat(regel.maten[0]) : null;
+        for (const el of femStaaf3D(model, set, grootheid, 1000 / FACTOR[eenheid], hoogte)) voegToe(el);
+      } catch (err) {
+        meld(regel.regel, (err as Error).message);
+      }
+      return;
     }
     if (!(model instanceof FemModel)) {
       meld(regel.regel, `${naam} is geen doorgerekend @fem-model (zet het @fem-blok boven dit blok, en wacht tot het gerekend is)`);
