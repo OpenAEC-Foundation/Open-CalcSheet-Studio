@@ -99,6 +99,7 @@ console.log("Dispatcher:");
   gelijk(init.result?.serverInfo, { name: MCP_SERVERNAAM, version: "0.0.0-check" }, "serverInfo");
   meld(init.result?.capabilities?.tools !== undefined, "capabilities.tools");
   meld(typeof init.result?.instructions === "string" && init.result.instructions.includes("project_get"), "instructions noemen project_get");
+  meld(/Do not write \.ifccalculation or \.cpd files/.test(init.result?.instructions ?? "") && /sheet_set_source/.test(init.result?.instructions ?? ""), "instructions: in de app werken, geen eigen projectbestanden schrijven");
   gelijk(await verwerkMcpBericht(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }), deps), "", "notificatie: geen antwoord");
   gelijk((await rpc("ping")).result, {}, "ping");
   const lijst = (await rpc("tools/list")).result.tools;

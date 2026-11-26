@@ -55,7 +55,8 @@ function formuleJson(f: Formule, metCode: boolean): Record<string, unknown> {
 function maakIfc(ctx: McpContext, formaat: "ifc" | "ifcx", id: string | null): { inhoud: string; naam: string } {
   const stand = ctx.omgeving.stand();
   const naam = stand.projectNaam || "Berekening";
-  const basis = { versie: PROJECT_FORMAAT_VERSIE, naam, gegevens: stand.gegevens };
+  // Met de id van het project: één blad heeft dan dezelfde paden als in de hele export.
+  const basis = { versie: PROJECT_FORMAAT_VERSIE, id: stand.projectId, naam, gegevens: stand.gegevens };
   let doc;
   if (id !== null) {
     const blad = zoekBlad(stand, id);

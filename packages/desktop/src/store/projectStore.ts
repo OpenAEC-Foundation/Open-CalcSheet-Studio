@@ -1,5 +1,14 @@
 import { create } from "zustand";
-import { zetProjectEenheden, zetProjectTekst, type ElementRef, type IfcxVreemd, type VastgelegdeToets } from "@ifc-calc/core";
+import {
+  afgeleideProjectId,
+  leesProjectId,
+  nieuweProjectId,
+  zetProjectEenheden,
+  zetProjectTekst,
+  type ElementRef,
+  type IfcxVreemd,
+  type VastgelegdeToets,
+} from "@ifc-calc/core";
 import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
 import { projectTekstVan } from "./projectBlad";
@@ -158,6 +167,8 @@ export interface Verborgen {
 }
 
 interface Persisted {
+  /** Ontbreekt in opslag van vóór de projectidentiteit; dan volgt hij uit nummer en naam. */
+  projectId?: string;
   projectNaam: string;
   bestandspad: string | null;
   gegevens: ProjectGegevens;
@@ -172,6 +183,12 @@ interface Persisted {
 }
 
 interface ProjectState {
+  /**
+   * De blijvende identiteit van het project, een UUID: de wortel van het IFCX, waar alle
+   * paden en GlobalId's van afhangen. Hernoemen of een ander projectnummer verandert hem
+   * niet. Nieuw project: een nieuwe. Openen: die uit het bestand. Opslaan als: dezelfde.
+   */
+  projectId: string;
   projectNaam: string;
   bestandspad: string | null;
   gegevens: ProjectGegevens;
@@ -423,6 +440,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       return metRefs === uit.exemplaren ? uit : { ...uit, exemplaren: metRefs };
     })) as typeof zet;
   return {
+  projectId: nieuweProjectId(),
   projectNaam: nieuweProjectNaam(),
   bestandspad: null,
   gegevens: legeGegevens(),
@@ -969,6 +987,8 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     set({
       verborgen: {},
       vreemd: undefined,
+      // Een nieuw project is een ander project, ook met dezelfde naam en hetzelfde nummer.
+      projectId: nieuweProjectId(),
       projectNaam: nieuweProjectNaam(),
       bestandspad: null,
       // Het eenhedenstelsel uit Instellingen, tab Units; daarna hoort het bij het project.
@@ -988,6 +1008,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     set({
       verborgen: p.verborgen ?? {},
       vreemd: p.vreemd,
+      projectId: idVan(p),
       projectNaam: p.projectNaam ?? nieuweProjectNaam(),
       bestandspad: p.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(p.gegevens ?? {}) },
@@ -1003,6 +1024,15 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
   markeerOpgeslagen: (bestandspad) => set({ bestandspad, dirty: false }),
   };
 });
+
+/**
+ * De identiteit van een geladen of herstelde stand. Zonder bruikbare id (opslag van
+ * vóór de projectidentiteit) de id uit nummer en naam: de wortel die het project tot
+ * nu toe in zijn exports had.
+ */
+function idVan(p: Partial<Persisted>): string {
+  return leesProjectId(p.projectId) ?? afgeleideProjectId(p.projectNaam ?? nieuweProjectNaam(), p.gegevens?.project_nummer);
+}
 
 /** Is dit de naam die de app zelf aan een nieuw project gaf, in welke taal dan ook? */
 const isStandaardNaam = (naam: string) =>
@@ -1098,6 +1128,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
   if (saved && Array.isArray(saved.exemplaren) && onaangeroerd) {
     const projectNaam = saved.projectNaam ?? nieuweProjectNaam();
     useProjectStore.setState({
+      projectId: idVan({ ...saved, projectNaam }),
       projectNaam,
       bestandspad: saved.bestandspad ?? null,
       gegevens: { ...legeGegevens(), ...(saved.gegevens ?? {}) },
@@ -1116,6 +1147,7 @@ void getSetting<Persisted | null>(STORE_KEY, null).then((saved) => {
   // hydrateren worden toegevoegd, anders overleeft het geen herstart.
   useProjectStore.subscribe((s) =>
     schedulePersist({
+      projectId: s.projectId,
       projectNaam: s.projectNaam,
       bestandspad: s.bestandspad,
       gegevens: s.gegevens,
