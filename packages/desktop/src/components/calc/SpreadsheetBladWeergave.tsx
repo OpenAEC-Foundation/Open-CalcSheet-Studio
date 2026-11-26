@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { celVerwijzingenIn } from "@ifc-calc/core";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { bewaarOpenWerkmappen, isSpreadsheetBlad, LEGE_WERKMAP } from "../../store/spreadsheetBlad";
 import { useSpreadsheetEditor } from "../../store/spreadsheetEditor";
@@ -100,7 +101,13 @@ export function SpreadsheetBladInfo({ ex }: { ex: Exemplaar }) {
     try {
       const xlsx = await kiesWerkmap();
       if (!xlsx) return;
-      if (ex.xlsx && ex.xlsx.data !== LEGE_WERKMAP && !confirm(t("spreadsheet.vervangenVraag", { naam: ex.naam }))) return;
+      // Invoervelden die een cel uit dit blad nemen (#3.Blad1!B4): vervangen is dan een bewuste herkoppeling.
+      const aantal = useProjectStore.getState().exemplaren.reduce(
+        (n, e) => n + celVerwijzingenIn(e.waarden ?? {}).filter((c) => c.ref === ex.ref).length,
+        0,
+      );
+      const vraag = t("spreadsheet.vervangenVraag", { naam: ex.naam }) + (aantal > 0 ? `\n\n${t("spreadsheet.vervangenGekoppeld", { aantal })}` : "");
+      if ((ex.xlsx && ex.xlsx.data !== LEGE_WERKMAP || aantal > 0) && !confirm(vraag)) return;
       zetSpreadsheet(ex.id, xlsx);
     } catch (err) {
       console.error("Werkmap inlezen mislukt:", err);

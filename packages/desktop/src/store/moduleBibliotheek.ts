@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { getSetting, setSetting } from "../store";
 import { templates } from "../templates";
 import { modulesPerTemplate, type ModuleStatus } from "../components/calc/projectTree";
+import i18next from "i18next";
+import { IN_WERKPLEK, nietInWerkplek } from "../werkplek/werkplek";
 
 /**
  * De online modulebibliotheek: rekenmodules uit de openbare repository
@@ -50,7 +52,7 @@ export interface GeinstalleerdeModule extends CatalogusModule {
 }
 
 /** Het beeld van een module in de online bibliotheek, voor hij is geïnstalleerd. */
-export const bibliotheekBeeld = (m: CatalogusModule) => `${RAW}/${m.map}/${m.beeld}`;
+export const bibliotheekBeeld = (m: CatalogusModule) => (IN_WERKPLEK ? "" : `${RAW}/${m.map}/${m.beeld}`);
 
 /** Versies als jaar.week.nummer vergelijken: negatief als a ouder is dan b. */
 export function vergelijkVersie(a: string, b: string): number {
@@ -122,6 +124,11 @@ export const useModuleBibliotheek = create<ModuleBibliotheek>((set, get) => ({
   bezig: null,
 
   haalCatalogus: async () => {
+    // De catalogus staat op GitHub: geen netwerk in de werkplek. Geïnstalleerde modules werken wel.
+    if (IN_WERKPLEK) {
+      set({ laden: false, fout: nietInWerkplek(i18next.t("werkruimte:werkplek.onlineBibliotheek")) });
+      return;
+    }
     set({ laden: true, fout: null });
     try {
       const antwoord = await fetch(`${RAW}/index.json`, { cache: "no-store" });
@@ -134,6 +141,10 @@ export const useModuleBibliotheek = create<ModuleBibliotheek>((set, get) => ({
   },
 
   installeer: async (m) => {
+    if (IN_WERKPLEK) {
+      set({ fout: nietInWerkplek(i18next.t("werkruimte:werkplek.onlineBibliotheek")) });
+      return;
+    }
     set({ bezig: m.id, fout: null });
     try {
       const antwoord = await fetch(`${RAW}/${m.map}/${m.blad}`, { cache: "no-store" });
