@@ -7,6 +7,7 @@ import { projectIfcx } from "../../store/projectIfcx";
 import { bouwProjectStep, IFCX_ATTR, platteKnopen, type BladUitkomstGegevens, type IfcxBestand, type IfcxKnoop } from "@ifc-calc/core";
 import i18next from "../../i18n/config";
 import { useIfcInhoud } from "../../store/ifcInhoud";
+import { openBuiten } from "../../werkplek/werkplek";
 import "./IfcViewerPanel.css";
 
 /** Tooltip bij een IFC-type: een link naar de documentatie. Opgezocht bij het tekenen. */
@@ -24,12 +25,7 @@ function getIfcDocsUrl(entityType: string): string {
 
 function openIfcDocs(entityType: string, e: React.MouseEvent) {
   e.stopPropagation();
-  const url = getIfcDocsUrl(entityType);
-  import("@tauri-apps/plugin-opener").then(({ openUrl }) => {
-    openUrl(url);
-  }).catch(() => {
-    window.open(url, "_blank", "noopener");
-  });
+  void openBuiten(getIfcDocsUrl(entityType));
 }
 
 // ── Syntax highlighting for IFC4 STEP ─────────────────────────
@@ -384,11 +380,13 @@ interface GebouwdeIfc {
  * duren; daarom pas nadat het paneel er staat, en niet bij elke toetsaanslag.
  */
 function useProjectIfc(): GebouwdeIfc | null | "fout" {
+  const projectId = useProjectStore((s) => s.projectId);
   const projectNaam = useProjectStore((s) => s.projectNaam);
   const gegevens = useProjectStore((s) => s.gegevens);
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const rapport = useProjectStore((s) => s.rapport);
   const verborgen = useProjectStore((s) => s.verborgen);
+  const vreemd = useProjectStore((s) => s.vreemd);
   const [uit, setUit] = useState<GebouwdeIfc | null | "fout">(null);
 
   useEffect(() => {
@@ -396,11 +394,13 @@ function useProjectIfc(): GebouwdeIfc | null | "fout" {
       try {
         const doc = projectIfcx({
           versie: PROJECT_FORMAAT_VERSIE,
+          id: projectId,
           naam: projectNaam,
           gegevens,
           exemplaren,
           rapport,
           verborgen,
+          vreemd,
         });
         setUit({ doc, ifcx: JSON.stringify(doc, null, 2), step: bouwProjectStep(doc) });
       } catch (err) {
@@ -409,7 +409,7 @@ function useProjectIfc(): GebouwdeIfc | null | "fout" {
       }
     }, 150);
     return () => clearTimeout(klok);
-  }, [projectNaam, gegevens, exemplaren, rapport, verborgen]);
+  }, [projectId, projectNaam, gegevens, exemplaren, rapport, verborgen, vreemd]);
 
   return uit;
 }

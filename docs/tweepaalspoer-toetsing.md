@@ -223,12 +223,14 @@ proefresultaten.** Daarom staat de module in de catalogus op *controleren*.
 Het blad is met de hand en met willekeurige invoer nagerekend en doorzocht op een onterecht
 'voldoet'. **Een controle door een tweede constructeur heeft nog niet plaatsgevonden.**
 
-## 7. Fase 1 en verder
+## 7. De fasen uit het voorstel
 
-Dit blad is fase 1 uit het voorstel: de tweepaalspoer met berekening en parametrisch
-detail. De vierpaalspoer, staaflijst met merken, DXF en projectkoppelingen vallen hier
-buiten. De korf staat wel in de IFC-uitvoer: elke staaf met zijn vorm en diameter, zonder
-merken of buiglijst (zie [ifc-export.md](ifc-export.md)).
+| Fase | Wat | Stand |
+|---|---|---|
+| 1 | Tweepaalspoer en poer op drie of vier palen: berekening, parametrische plattegrond en doorsneden, PDF via de afdruk, SVG-detail | er (dit blad en [meerpaalspoer-toetsing.md](meerpaalspoer-toetsing.md)) |
+| 2 | Staaflijst met merken, vormen en lengtes; DXF-detail; ontwerpschema of vrijgegeven voor uitvoering | er, zie §9 |
+| 3 | IFC van het beton en elke staaf als IfcReinforcingBar met geometrie, merk en diameter | er, zie §8 en §9 |
+| 4 | Koppeling met andere apps en revisiebeheer van gekoppelde tekeningen | nog niet, zie §10 |
 
 ## 8. Het 3D-studiemodel
 
@@ -240,3 +242,62 @@ en kolom zijn alleen de aanzet, zoals op de tekening. Het staat niet op papier.
 
 `scripts/check-poer-ifcx.mjs` legt het model naast de definitie en de tekening: de maten,
 en het aantal en de plaats van elke staaf.
+
+Elke staaf in het model draagt sinds fase 3 zijn merk uit de staaflijst
+(`ocss::calc::merk`), zijn diameter en zijn lengte langs de hartlijn. De hoeken van beugels
+en haarspelden buigen om de kleinste doorn uit tabel 8.1N, zoals in de staaflijst.
+
+## 9. Staaflijst en DXF-detail
+
+Onder de tekening staat de staaflijst, uit dezelfde staven als de tekening, het model en de
+toets (`poerStaven.ts`). Op papier is het een tabel; op het scherm staat hij ingeklapt, met
+de uitleg, het vinkje *Vrijgegeven voor uitvoering* en de knop voor het DXF-detail.
+
+- **Merk**: gelijke staven (soort, diameter, vorm, haken en zijlengtes op de millimeter)
+  krijgen één merk, genummerd in de volgorde van de legenda.
+- **Vormcode**: 00 recht, 21 U-vorm, 51 gesloten beugel met twee haken, 99 een andere vorm.
+  Een eigen nummering naar de gangbare indeling.
+- **Zijlengtes** zijn hartmaten, van knik tot knik. De **lengte** is de lengte langs de
+  hartlijn: in elke knik van 90° (2 − π/2)·r korter dan de zijlengtes samen, met r de
+  buigstraal op het hart. Een gesloten beugel heeft twee haken van 135° met max(5Ø; 50 mm)
+  recht (figuur 8.5).
+- **Buigstraal**: de ingevoerde doorn bij de trekband; bij beugels en haarspelden de
+  kleinste doorn uit tabel 8.1N (4Ø tot Ø16, daarboven 7Ø).
+- **Massa** met 7850 kg/m³, per diameter en in totaal.
+- De **dwarsstaven** staan recht in de lijst, zoals op de tekening; de haken om de
+  zijstaven (8.5) tekent dit blad niet en telt het niet mee in de lengte.
+
+Het **DXF-detail** (R12, ASCII) heeft een bemaatte plattegrond, doorsnede A-A in de lengte
+door de palen en B-B dwars boven een paal, met de hartlijnen en doorsneden van de staven, en
+de staaflijst. Lagen: BETON, WAPENING, MAATVOERING en TEKST; maten in mm, op ware grootte.
+In de titel van de tekening en van de staaflijst staat de status: *Ontwerpschema*, of
+*Vrijgegeven voor uitvoering* als het vinkje aan staat **en** het blad zegt dat de poer
+voldoet. Zonder dat oordeel (een verplichte toets ontbreekt, ongeldige invoer of een UC
+boven 1) blijft het een ontwerpschema, met de reden erbij. In de app bewaart de knop via de
+bewaardialoog, in de browser via de bestandskiezer of als download. De status is een
+waarde van het blad (`tekening_vrij`) en gaat mee met het project.
+
+`scripts/check-poer-staaflijst.mjs` rekent de lengtes met de hand na (uitgeschreven in de
+kop), legt de staaflijst naast de tekening en de toets (aantallen, diameters, staalvlak, en
+het recht deel van de trekband vanaf de paal tegen l_h en l_av van het blad), controleert
+dat elke staaf binnen de dekking ligt, dat het DXF geldig is en de wapening binnen het beton
+van elk aanzicht staat, en dat elke staaf in de IFCX een IfcReinforcingBar met geometrie,
+merk en diameter is.
+
+## 10. Fase 4: wat er nog voor nodig is
+
+De koppeling met andere apps (een palenplan of een tekenprogramma) en het bijwerken van
+gekoppelde tekeningen staan niet in deze module. Daarvoor is nodig:
+
+- **Vaste sleutels**: elke poer, staaf en merk een identiteit die bij een nieuwe
+  berekening gelijk blijft. De IFCX heeft al vaste paden uit het blad; een merk dat
+  verschuift als er een staafsoort bijkomt, moet dan een eigen vaste sleutel krijgen.
+- **Revisies**: een revisienummer en datum per vrijgave, in het blad bewaard en in de titel
+  van de tekening, met een lijst van wat er sinds de vorige revisie veranderde (maten,
+  staven, merken).
+- **Invoer van buiten**: paalposities, paalmaten en paalreacties overnemen uit een
+  palenplan, met een melding als die daar veranderen.
+- **Handwerk bewaren**: tekst, maten of verplaatste aanzichten die iemand in de gekoppelde
+  tekening toevoegt, op een eigen laag of als eigen object, zodat een nieuwe uitvoer ze niet
+  overschrijft; en een zichtbaar conflict als de berekening iets verandert waar handwerk aan
+  vastzit.

@@ -1,0 +1,401 @@
+{
+  "koppen": {
+    "inleiding": "Introduction",
+    "projectgegevens": "Project details",
+    "projectomschrijving": "Project description",
+    "rol": "Role in the project and scope of this report",
+    "constructie": "Structure",
+    "toelichting": "Description of the structure",
+    "bestaand": "Existing situation",
+    "bestaand-verticaal": "Vertical load path",
+    "bestaand-stabiliteit": "Stability",
+    "bestaand-fundatie": "Foundation",
+    "bestaand-beoordeling": "Assessment of the existing structure",
+    "wijziging": "Alteration",
+    "wijzigingNieuwbouw": "Structural concept",
+    "belendingen": "Adjoining buildings",
+    "uitvoering": "Notes for construction",
+    "uitvoering-bestaand": "Existing situation",
+    "uitvoering-verbouw": "Alteration, renovation",
+    "uitvoering-nieuwbouw": "New construction",
+    "uitgangspunten": "Design basis",
+    "bouwwerk": "Structural design basis",
+    "brand": "Structural fire design",
+    "materialen": "Materials",
+    "conservering": "Corrosion protection of steelwork",
+    "factoren": "Partial factors and combinations of actions",
+    "bestaand-situatie": "Existing situation",
+    "trillingen": "Vibrations",
+    "vervormingen": "Deformations and horizontal displacements",
+    "montage": "Erection and construction stages",
+    "rekenprogrammatuur": "Calculation software",
+    "temperatuur": "Thermal actions",
+    "aardbeving": "Seismic actions",
+    "belastingen": "Loads",
+    "sneeuw": "Snow loads(Q)",
+    "wind": "Wind loads(Q)",
+    "regenwater": "Rainwater ponding(Q)",
+    "veranderlijk": "Other variable loads(Q)",
+    "blijvend": "Permanent loads(G)",
+    "berekeningen": "Calculations",
+    "bijlageA": "Detailed calculations"
+  },
+  "standaard": {
+    "titels": [
+      "Structural advice & calculations",
+      "Structural calculation",
+      "Structural advice",
+      "Structural calculations and drawings",
+      "Assessment of the existing structure"
+    ],
+    "rollen": [
+      "Lead structural engineer",
+      "Structural engineer",
+      "Structural consultant",
+      "Checking engineer"
+    ],
+    "soortenBouwwerk": [
+      "Dwelling",
+      "Single-family house",
+      "Apartment building",
+      "Villa",
+      "Office",
+      "Industrial hall",
+      "Outbuilding",
+      "Shed"
+    ],
+    "normen": "NEN-EN 1990 to 1997",
+    "eersteUitgave": "First issue",
+    "nietVanToepassing": "n/a",
+    "materiaalType": [
+      "In-situ concrete",
+      "Timber",
+      "Wood-based panels",
+      "Reinforcing steel",
+      "Steel",
+      "Grout under steel"
+    ],
+    "materiaalOpmerking": [
+      "(for exposure classes see concrete calculations and drawing)"
+    ],
+    "materialenNoot": "(unless stated otherwise)",
+    "bevestiging": [
+      "Bolts",
+      "Coach screws",
+      "Chemical anchors"
+    ],
+    "conserveringOnderdeel": [
+      "External structures",
+      "In cavity walls",
+      "Internal steelwork"
+    ],
+    "conserveringSysteem": [
+      "Duplex or hot-dip galvanised",
+      "Hot-dip galvanised",
+      "Paint system"
+    ],
+    "conserveringSlot": "Corrosion protection applies to newly installed structural elements.",
+    "vervormingOnderdeel": [
+      "Vertical deflection of roofs",
+      "Vertical deflection of floors",
+      "Floors with masonry walls",
+      "Horizontal displacement, building",
+      "Horizontal displacement, partition"
+    ]
+  },
+  "teksten": {
+    "inleiding": [
+      {
+        "label": "Main calculation",
+        "tekst": "At the request of the client, {adviseur} presents structural advice for the above project in this report.\n\nThe advice is based on the information provided.\n\nThis report contains the main calculation of the structure.\nFor the detailed engineering, additional calculations are still to be carried out by others and reviewed by {adviseur}:\n-Drawings and calculations of proprietary floor systems;\n-Drawings and calculations of the steel structure;\n-Cone penetration tests and foundation advice;"
+      },
+      {
+        "label": "Design basis only",
+        "tekst": "At the request of the client, {adviseur} presents structural advice for the above project in this report.\n\nThe advice is based on the information provided.\n\nThis report sets out the design basis of the structure."
+      }
+    ],
+    "projectomschrijving": [
+      {
+        "label": "Extension",
+        "tekst": "The project comprises the construction of an extension."
+      },
+      {
+        "label": "Roof extension",
+        "tekst": "The project comprises the construction of a roof extension."
+      },
+      {
+        "label": "New house",
+        "tekst": "The project comprises the construction of a new house."
+      },
+      {
+        "label": "Alteration",
+        "tekst": "The project comprises the alteration of an existing building."
+      }
+    ],
+    "rol": [
+      {
+        "label": "Commission: structural advice",
+        "tekst": "{adviseur} has been commissioned to provide the structural advice for this project."
+      },
+      {
+        "label": "Commission: independent check",
+        "tekst": "{adviseur} has been commissioned to check the structure of this project."
+      }
+    ],
+    "bestaand-verticaal": [
+      {
+        "label": "Timber joists on masonry",
+        "tekst": "The floors consist of timber joists. These transfer the loads through the masonry walls to the foundation."
+      },
+      {
+        "label": "Purlin roof and timber joists",
+        "tekst": "The roof is a purlin roof. The floors consist of timber joists.\nThese transfer the loads through the masonry walls and a loadbearing internal wall to the foundation."
+      },
+      {
+        "label": "Concrete floors on loadbearing walls",
+        "tekst": "The floors are concrete floors. These transfer the loads through the loadbearing walls to the foundation."
+      }
+    ],
+    "bestaand-stabiliteit": [
+      {
+        "label": "Masonry walls",
+        "tekst": "Stability is provided by the masonry walls."
+      },
+      {
+        "label": "Shear walls and diaphragm action",
+        "tekst": "Stability is provided by the shear walls, in combination with the diaphragm action of the floors."
+      }
+    ],
+    "bestaand-fundatie": [
+      {
+        "label": "Unknown, presumably shallow",
+        "tekst": "No archive information is available. The building presumably has a shallow foundation."
+      },
+      {
+        "label": "Shallow foundation",
+        "tekst": "According to the archive information, the building has a shallow foundation."
+      },
+      {
+        "label": "Piled foundation",
+        "tekst": "According to the archive information, the building has a piled foundation."
+      }
+    ],
+    "bestaand-beoordeling": [
+      {
+        "label": "No reason for doubt",
+        "tekst": "There is no reason to doubt the quality of construction of the existing structure."
+      },
+      {
+        "label": "Assess on site",
+        "tekst": "The condition of the existing structure is not known. It will be assessed on site before the works start."
+      }
+    ],
+    "wijziging": [
+      {
+        "label": "Opening in a loadbearing wall",
+        "tekst": "An opening is made in a loadbearing wall, with a steel portal frame.\nStability is provided by the remaining part of the wall.\nVertical loads are transferred to the existing foundation through the columns and the lower beam."
+      },
+      {
+        "label": "Extension with timber joists",
+        "tekst": "The extension has a timber joist roof, which transfers the loads through loadbearing walls to a new shallow foundation."
+      }
+    ],
+    "belendingen": [
+      {
+        "label": "Not considered",
+        "tekst": "The structural influence of adjoining buildings is not considered in this calculation."
+      }
+    ],
+    "uitvoering-bestaand": [
+      {
+        "label": "Check dimensions",
+        "tekst": "-Dimensions are based on archive documents and/or the architect's drawing.\n-Dimensions must be verified on site."
+      }
+    ],
+    "uitvoering-verbouw": [
+      {
+        "label": "Propping at new openings",
+        "tekst": "-When making new openings in existing masonry, provide adequate propping to the wall and the surrounding structure."
+      },
+      {
+        "label": "Demolition sequence",
+        "tekst": "-Remove loadbearing elements only after the new structure is in place or the load has been temporarily supported."
+      }
+    ],
+    "uitvoering-nieuwbouw": [
+      {
+        "label": "Shallow foundation",
+        "tekst": "-Shallow foundation: establish the bearing stratum during excavation.\n-Have the reinforcement inspected before casting."
+      },
+      {
+        "label": "Piled foundation",
+        "tekst": "-Send the piling records and pile deviations to the structural engineer.\n-Inspect the reinforcement of the foundation and of all floor pours."
+      }
+    ],
+    "trillingen": [
+      {
+        "label": "Floor vibrations",
+        "tekst": "Vibration calculations are carried out for floor structures.\nVibrations are not considered further for other elements."
+      },
+      {
+        "label": "Not considered",
+        "tekst": "Vibrations are not considered in this calculation."
+      }
+    ],
+    "vervormingen": [
+      {
+        "label": "Standard",
+        "tekst": "The deformation limits below apply to this project."
+      }
+    ],
+    "montage": [
+      {
+        "label": "Final stage",
+        "tekst": "This calculation considers the structure in its final stage. The various construction stages, such as propping, are not included."
+      }
+    ],
+    "rekenprogrammatuur": [
+      {
+        "label": "Open CalcSheet Studio",
+        "tekst": "The calculations in this report were prepared with Open CalcSheet Studio."
+      },
+      {
+        "label": "Open CalcSheet Studio with appendices",
+        "tekst": "The calculations in this report were prepared with Open CalcSheet Studio.\nCalculations made with other software are in the appendices, which state the version used."
+      }
+    ],
+    "temperatuur": [
+      {
+        "label": "Not applicable",
+        "tekst": "No particular thermal actions apply to this project."
+      },
+      {
+        "label": "Per element",
+        "tekst": "Thermal actions are considered for the elements concerned."
+      }
+    ],
+    "aardbeving": [
+      {
+        "label": "Not required",
+        "tekst": "No seismic design situation is required."
+      }
+    ],
+    "sneeuw": [
+      {
+        "label": "Standard",
+        "tekst": "Snow drift and snow loads on pitched roofs are calculated for the elements concerned, where applicable."
+      }
+    ],
+    "regenwater": [
+      {
+        "label": "Not applicable",
+        "tekst": "Not applicable"
+      },
+      {
+        "label": "Per roof element",
+        "tekst": "Water ponding on flat roofs is calculated for the roof elements concerned."
+      }
+    ]
+  },
+  "normwaarden": {
+    "categorie": {
+      "A-vloer": "Category A: domestic and residential areas",
+      "A-trap": "Category A: stairs",
+      "A-balkon": "Category A: balconies",
+      "A-gemeenschappelijk": "Category A: communal areas",
+      "B": "Category B: office areas",
+      "B-verkeer": "Category B: enclosed circulation areas",
+      "C-verkeer": "Category C: enclosed circulation areas",
+      "C1": "Category C1: areas with tables",
+      "C2": "Category C2: areas with fixed seats",
+      "C3": "Category C3: areas without obstacles",
+      "C4": "Category C4: areas for physical activities",
+      "C5": "Category C5: areas for large crowds",
+      "D-verkeer": "Category D: enclosed circulation areas",
+      "D1": "Category D1: general retail",
+      "D2": "Category D2: department stores",
+      "E": "Category E: storage areas",
+      "H-dak": "Category H: roofs"
+    },
+    "combinatie": {
+      "buitengewoon": "Accidental",
+      "karakteristiek": "Characteristic",
+      "frequent": "Frequent",
+      "quasi": "Quasi-perm.",
+      "nietGebruikt": "not used"
+    },
+    "terrein": {
+      "1": "coastal",
+      "2": "rural",
+      "3": "built-up"
+    }
+  },
+  "gewichten": {
+    "groepen": {
+      "vloerelementen": "Floor elements",
+      "bestaand": "Existing floor and roof slabs",
+      "dakelementen": "Roof elements",
+      "daktuin": "Roof garden",
+      "hsb": "Timber frame construction",
+      "glas": "Glazed facades and roofs",
+      "steenachtig": "Mineral materials",
+      "metalen": "Metals",
+      "afwerking": "Finishes"
+    },
+    "lagen": {
+      "kanaalplaat": "hollow-core slab {h} mm",
+      "kanaalplaatVerzwaard": "heavy hollow-core slab {h} mm",
+      "kernactivering": "hollow-core slab with concrete core activation {h} mm",
+      "combinatievloer": "composite floor, concrete with EPS infill blocks",
+      "ribcassette": "ribbed cassette floor",
+      "gipsvezel": "gypsum fibre floor element 2×12.5 mm + wood wool",
+      "renovatieDroog": "renovation floor with EPS elements, dry finish",
+      "renovatieHalfdroog": "renovation floor with EPS elements, semi-dry finish",
+      "renovatieStandaard": "renovation floor with EPS elements, standard finish",
+      "houtvezelcement": "wood-fibre cement roof slabs 100 mm",
+      "bims": "pumice concrete slabs",
+      "dakpaneel": "insulated steel roof panel, long span",
+      "zonnepanelenHellend": "solar panels on a pitched roof",
+      "zonnepanelenPlat": "solar panels on a flat roof, with ballast",
+      "sedum": "moss-sedum vegetation",
+      "substraat": "substrate",
+      "granulaat": "mineral granulate",
+      "zand": "sand",
+      "gipsplaat": "plasterboard",
+      "osb": "OSB/3",
+      "hpl": "wet room wall panel (HPL)",
+      "stijlwerk": "timber frame studs, 9% fill",
+      "isolatie": "insulation",
+      "glasPakket": "glass, total glass thickness 25 mm",
+      "glasStijlen": "mullions 67×120 mm, 4 m¹ per m²",
+      "betonInSitu": "concrete, cast in situ",
+      "betonPrefab": "concrete, precast",
+      "kalkzandsteen": "calcium silicate masonry",
+      "metselwerk": "masonry",
+      "gipsblokken": "gypsum blocks",
+      "kleiblokken": "porous clay blocks",
+      "grind": "gravel",
+      "staal": "steel",
+      "aluminium": "aluminium",
+      "gipskarton": "gypsum plasterboard",
+      "gips": "gypsum plaster",
+      "cementdekvloer": "cement screed",
+      "glas": "glass"
+    },
+    "opmerkingen": {
+      "woningscheidend": "separating floor between dwellings",
+      "afschot": "roof with a fall",
+      "beplanting": "for planting",
+      "drainage": "drainage layer",
+      "stijlwerk": "0.100 m × 5.0 kN/m³ × 9%",
+      "glasStijlen": "0.067 × 0.120 m × 4.0 kN/m³ × 4 m¹/m²"
+    },
+    "opbouwen": {
+      "glazenDak": "Glazed roof",
+      "hsbGipsplaat": "Timber frame internal wall with plasterboard",
+      "hsbNatteRuimte": "Timber frame internal wall, wet room",
+      "glazenPui": "Glazed facade"
+    },
+    "dikteInvullen": "enter thickness"
+  }
+}

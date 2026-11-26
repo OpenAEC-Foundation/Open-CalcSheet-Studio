@@ -64,7 +64,12 @@ export function leesResultaat(nodes: EvaluatedNode[], naam: string): Resultaat {
   let norm = "";
   let uc: number | null = null;
   const tekstdelen: string[] = [];
+  // Een invoerveld dat aan een spreadsheetcel hangt en niet rekende (rekenkern,
+  // EvaluatedInputPrompt.koppeling): dan geen UC en geen oordeel, ook niet een oud.
+  let koppelingFout = false;
   for (const n of knopen(nodes)) {
+    if (n.type === "input-prompt" && n.koppeling?.fout !== undefined) koppelingFout = true;
+    if (n.type === "text" && /^#[A-Za-z0-9_]+\..*?!\S+: (?:koppeling niet gerekend|link not calculated):/.test(n.text)) koppelingFout = true;
     if (n.type === "heading" && n.level === 1 && titel === naam) {
       const [voor, na] = n.text.split(/\s+—\s+/, 2);
       titel = voor || naam;
@@ -91,6 +96,7 @@ export function leesResultaat(nodes: EvaluatedNode[], naam: string): Resultaat {
   } else if (uc !== null) {
     voldoet = uc <= 1;
   }
+  if (koppelingFout) return { titel, norm, uc: null, voldoet: null, nietGetoetst: true };
   const r: Resultaat = { titel, norm, uc, voldoet };
   // Alleen zonder slotzin: "Maatgevende UC … voldoet niet" gaat altijd voor.
   if (slot < 0 && /Eindoordeel: (?:ongeldige invoer, )?niet getoetst|Overall result: (?:invalid input, )?not verified/.test(tekst)) {

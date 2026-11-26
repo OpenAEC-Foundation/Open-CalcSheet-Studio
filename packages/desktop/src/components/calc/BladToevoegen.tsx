@@ -8,6 +8,7 @@ import { leesGrafBestandIn, voegLeegGrafbladToe } from "../graaf/grafbladToevoeg
 import { voegLeegJupyterToe, voegNotebookToe } from "./jupyterBlad";
 import { voegLeegMarimoToe, voegMarimoBestandToe } from "./marimoBlad";
 import { voegPdfBladToe } from "./pdfBlad";
+import { kiesWerkmapBereik, pasSjabloonToe, voegRtfToe } from "./koppelingen";
 import { Uitklap } from "../ribbon/RekentaalTab";
 import Icoon from "../Icoon";
 
@@ -67,6 +68,9 @@ export default function BladToevoegen() {
     { naam: tw("browser.toevoegen.pdf"), uitleg: tw("pdf.toevoegenUitleg"), icoon: "file.import", uit: "calculations", actie: () => void voegPdfBladToe(voegPdfToe) },
     { naam: tw("browser.toevoegen.xlsx"), uitleg: tw("spreadsheet.importerenUitleg"), icoon: "data.table", actie: () => void voegWerkmapToe(voegSpreadsheetToe) },
     { naam: tw("browser.toevoegen.markdownBestand"), uitleg: tw("markdown.importerenUitleg"), icoon: "report.template", actie: () => void voegMarkdownBestandToe(voegMarkdownToe) },
+    { naam: tw("browser.toevoegen.rtf"), uitleg: tw("koppeling.rtfUitleg"), icoon: "report.template", actie: () => void voegRtfToe() },
+    { naam: tw("browser.toevoegen.bereik"), uitleg: tw("koppeling.bereikUitleg"), icoon: "data.table", actie: () => void kiesWerkmapBereik() },
+    { naam: tw("browser.toevoegen.sjabloon"), uitleg: tw("koppeling.sjabloonUitleg"), icoon: "data.table", actie: () => void pasSjabloonToe() },
     { naam: tw("browser.toevoegen.grafBestand"), uitleg: tw("graaf.importerenUitleg"), icoon: "panel.model-tree", actie: () => void leesGrafBestandIn() },
     { naam: tw("browser.toevoegen.notebook"), uitleg: tw("jupyter.importerenUitleg"), icoon: "file.structure", uit: "calculations", actie: () => void voegNotebookToe(voegJupyterToe) },
     { naam: tw("browser.toevoegen.marimoBestand"), uitleg: tw("marimo.importerenUitleg"), icoon: "data.chart", actie: () => void voegMarimoBestandToe(voegMarimoToe) },

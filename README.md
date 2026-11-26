@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/OpenAEC-Foundation/Open-CalcSheet-Studio?include_prereleases&label=release&color=D97706)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
 [![CI](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-LGPL--3.0-blue)](#license)
-[![Languages](https://img.shields.io/badge/languages-English%20%C2%B7%20Dutch-informational)](#screenshots)
+[![Languages](https://img.shields.io/badge/languages-English%20%C2%B7%20Dutch%20%C2%B7%20Lithuanian-informational)](#screenshots)
 
 ### [Download](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
 
@@ -71,18 +71,18 @@ A project is a list of sheets. Each kind has a chapter in [the sheet kinds docum
 | Sheet | What it is |
 |-------|------------|
 | **Calculation sheet** | Text in the [calculation language](docs/rekentaal.md), with formulas, conditions, plots and drawings |
-| **Spreadsheet** | An `.xlsx` workbook with formulas, cell pointing, fill and page edges |
+| **Spreadsheet** | An `.xlsx` workbook with formulas, cell pointing, fill and page edges; a cell can feed an input field of a calculation sheet |
 | **Canvas** | Formula units placed freely, calculated top to bottom with the same kernel |
 | **Graph** | Nodes for numbers, logic, lists, text and geometry, and code blocks, with a 3D preview. Reads graph files (`.dyn`) |
 | **Drawing** | A4, A3 or A2 with views to scale: grids, levels, walls, steel sections, hollow-core floors and schemes |
 | **Jupyter** | A [notebook with Python](docs/jupyter-blad.md), numpy, scipy, pandas and matplotlib, without installing anything. Optionally it runs again after every change |
 | **Marimo** | A reactive Python notebook: move a slider and everything that depends on it follows |
 | **PDF** | An existing PDF as part of the report. Zoom in, and add notes, highlights, arrows, boxes and revision clouds, on screen and on paper |
-| **Markdown** | Existing text, as part of the report |
+| **Markdown** | Existing text, as part of the report. Also an RTF file or a range from a workbook, linked: when the source is saved, the sheet updates by itself |
 
 ## Modules and library
 
-Modules are ready-made sheets with an input screen: a **timber joist floor** and a **beam in timber or steel** to EN 1995-1-1 and EN 1993-1-1, and a **two-pile cap** to EN 1992-1-1, with the Dutch national annex. The [online module library](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) can add modules without a new release; so far it holds the floor. See [how the floor check works](docs/balklaag-toetsing.md) and [the pile cap check](docs/tweepaalspoer-toetsing.md).
+Modules are ready-made sheets with an input screen: a **timber joist floor** and a **beam in timber or steel** to EN 1995-1-1 and EN 1993-1-1, a **two-pile cap** and a **cap on three or four piles** to EN 1992-1-1, with the Dutch national annex. The [online module library](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) can add modules without a new release; so far it holds the floor. Every other sheet with input, a module from that library included, gets an input form built from its own fields next to the worked-out sheet. See [how the floor check works](docs/balklaag-toetsing.md), [the pile cap check](docs/tweepaalspoer-toetsing.md) and [the three and four pile cap check](docs/meerpaalspoer-toetsing.md).
 
 The two-pile cap has a 3D study model next to its drawing. It shows the cap, the piles, the column and every bar, and follows each field and blue dimension at once. **Add module** shows a picture for every choice, from a blank drawing to a Marimo notebook.
 
@@ -106,8 +106,12 @@ The **weights library** holds over 2,300 self-weights, each with a source you ca
 | **Calculation text** (`.cpd`) | Yes | No, it is saved as the project file |
 | **Spreadsheet** (`.xlsx`) | Yes | Yes |
 | **Markdown** (`.md`) | Yes | Yes |
+| **RTF** (`.rtf`) | As a linked sheet | No |
+| **Workbook range** (`.xlsx`, by range name or cells) | As a linked table | No |
 | **Notebook** (`.ipynb`, `.py`, data files) | Yes | The work folder as `.zip` |
 | **PDF** | As a sheet | Yes, the report |
+| **DOCX** | No | Yes, the report as an editable document, with formulas as equations ([snapshot](docs/rapport-docx-odt.md)) |
+| **ODT** (OpenDocument) | No | Yes, the report as an editable document, with formulas as formula objects |
 | **DXF** | Converted to a drawing in a sheet | No |
 
 Every sheet with its text, input and results is in the IFCX file. Drawings that a module's input screen draws are not stored as figures, only what the calculation text draws itself. The two-pile cap does add its 3D model: in IFC4x3 every bar of the cage is an `IfcReinforcingBar`. Most sheets do not know where their part sits in the building, so elements without geometry are placed at the origin of the storey. See [the IFC documentation](docs/ifc-export.md).
@@ -118,7 +122,7 @@ The app has a built-in MCP server and a REST API with the same 43 tools: open an
 
 ## Testing and reliability
 
-- **72 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **92 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.
@@ -129,17 +133,17 @@ Count sources: the files named above and `ls scripts/check-*.mjs`. A module stat
 ## Current limitations
 
 - **The weights library is not complete.** It holds what could be found with a source. Several large suppliers publish no readable weights and are missing, and sheets get replaced: check the sheet of the product you actually use.
-- **Check the results yourself.** The beam, the two-pile cap and section stresses have the status *to be checked*. The app does not replace the judgment of a structural engineer.
+- **Check the results yourself.** The beam, the pile caps and section stresses have the status *to be checked*. The app does not replace the judgment of a structural engineer.
 - **Jupyter and Marimo are only tested on Windows.** On macOS and Linux the sheet will probably not start a kernel, because the webview there limits service workers. Saved files and printing do work.
 - **Notebooks have no network.** `%pip install` does not work, and libraries that rely on JavaScript in their output (plotly, bokeh, ipywidgets) show nothing. That is a deliberate choice for now.
 - **A running cell cannot be stopped.** Marimo also has no SQL cells and follows the dark or light theme only when it loads.
 - **Fonts are not embedded in the project.** Apart from Inter and Space Grotesk, a font in your house style must be installed on the computer that prints.
 - **The library needs internet the first time.** Without a connection it stays empty until it has been fetched once. After that it uses the last version.
 - **A graph file is not always complete.** Nodes this app does not have, scripts and most geometry stay on the graph with a message and do not calculate.
-- **Spreadsheet values do not reach calculation sheets yet.** A spreadsheet stands on its own for now.
+- **Spreadsheet cells only go one way, as a number, into an input field.** A calculation sheet can take a cell (`#3.Sheet1!B4 kN`), but it cannot write back to the spreadsheet, and a formula in a calculation sheet cannot use a cell directly.
 - **No feet-and-inches with fractions yet.** You cannot type or show 5'-6 ½" yet, and temperatures stay in the unit of the sheet. Explanatory notes that quote values from a standard, the weights library and the drawings a sheet makes itself also keep their own units.
 - **Report straight to PDF is Windows only.** Other platforms use the print dialog.
-- **Some text stays in Dutch for now.** The app, the sheets, the Code tab and the report follow your language, but the variable names in the modules and some names in the IFC tree are Dutch.
+- **Some text stays in Dutch for now.** The app, the sheets, the Code tab and the report follow your language, but the variable names in the modules and some names in the IFC tree are Dutch. In Lithuanian, the worked-out modules, the formula library and the entries of the weights library are in English. See [languages](docs/talen.md) for how to add a language.
 - **Page breaks can differ slightly between screen scales.** At 100% and 150% a few lines can move to another page.
 - **No WebRTC in the app.** It is blocked everywhere, so an external page in `@iframe` that needs it will not work.
 - **Open FEM Studio projects are not there yet.** The menu item is visible but disabled.
