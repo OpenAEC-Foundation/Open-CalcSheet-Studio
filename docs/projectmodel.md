@@ -100,6 +100,7 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 
 | wat | waar in het bestand | |
 |---|---|---|
+| Identiteit van het project (UUID) | het pad van het project, ook in `header.id` | bron |
 | Projectnaam | `bsi::ifc::prop::Name` op het project | bron |
 | Projectgegevens, verborgen onderdelen | `ocss::project` | bron |
 | Constructierapport | `ocss::rapport` | bron |
@@ -112,6 +113,7 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 | Werkmap | `ocss::blad::xlsx` | bron |
 | Markdown-tekst, met de afbeeldingen die naast het bestand stonden | `ocss::blad::markdown` | bron |
 | Antwoorden van Open FEM Studio op `@toets`-blokken, met verzoek, datum en herkomst | `ocss::blad::toetsing` | bron |
+| Varianten: andere invoer naast die van het blad ([varianten.md](varianten.md)) | `ocss::blad::varianten` | bron |
 | Uitkomsten, oordeel, unity checks | `ocss::blad::uitkomst` | afgeleid |
 | Tekeningen en 3D-beelden | `ocss::figuur` op een kind van het blad | afgeleid |
 | Elementen in de ruimtelijke boom | `ocss::element` | afgeleid |

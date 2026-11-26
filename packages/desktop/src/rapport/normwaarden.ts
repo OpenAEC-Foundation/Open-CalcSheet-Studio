@@ -16,7 +16,7 @@
  * geen imports, dus scripts/check-rapport.mjs kan alles rechtstreeks laden.
  */
 import { belastingFactoren, kFiVoor } from "../store/projectGegevens.ts";
-import { inTaal, type Meertalig } from "./meertalig.ts";
+import { inTaal, mt, type Meertalig } from "./meertalig.ts";
 import { decimaleKomma, inNotatie } from "./model.ts";
 
 /** K_FI bij een gevolgklasse (tabel B3); hier doorgegeven zodat het rapport één bron heeft. */
@@ -120,12 +120,12 @@ export interface FactorRij {
 
 /** De combinaties van tabel A1.4 en 6.14 t/m 6.16; de formulenummers blijven in elke taal gelijk. */
 const COMBINATIE: Record<"buitengewoon" | "karakteristiek" | "frequent" | "quasi" | "nietGebruikt", Meertalig> = {
-  buitengewoon: { en: "Accidental", nl: "Buitengewoon" },
-  karakteristiek: { en: "Characteristic", nl: "Karakteristiek" },
-  frequent: { en: "Frequent", nl: "Frequent" },
+  buitengewoon: mt("normwaarden.combinatie.buitengewoon"),
+  karakteristiek: mt("normwaarden.combinatie.karakteristiek"),
+  frequent: mt("normwaarden.combinatie.frequent"),
   // Afgekort: voluit past hij niet in de kolom naast de factoren.
-  quasi: { en: "Quasi-perm.", nl: "Quasi-Blijvend" },
-  nietGebruikt: { en: "not used", nl: "niet gebruikt" },
+  quasi: mt("normwaarden.combinatie.quasi"),
+  nietGebruikt: mt("normwaarden.combinatie.nietGebruikt"),
 };
 
 /**
@@ -194,11 +194,13 @@ export function normVoorBouwjaar(jaar: number): string {
 export interface Categorie {
   id: string; label: Meertalig;
   soort: "vloer" | "dak";
-  /** kN/m²; bij daken de waarde voor een plat dak. */
-  qk: number;
-  /** kN */
-  Qk: number;
+  /** kN/m²; bij daken de waarde voor een plat dak. null: geen tabelwaarde, de gebruiker vult zelf in. */
+  qk: number | null;
+  /** kN; null: geen tabelwaarde, de gebruiker vult zelf in. */
+  Qk: number | null;
   psi: [number, number, number];
+  /** De normverwijzing boven de klasse; zonder: 6.3.1.2. */
+  norm?: string;
 }
 
 // ψ0, ψ1, ψ2 per categorie — NEN-EN 1990 tabel NB.2–A1.1. Bij C geldt ψ0 = 0,6
@@ -208,32 +210,55 @@ const PSI_B: [number, number, number] = [0.5, 0.5, 0.3];
 const PSI_C: [number, number, number] = [0.4, 0.7, 0.6];
 const PSI_C_VERKEER: [number, number, number] = [0.6, 0.7, 0.6];
 const PSI_D: [number, number, number] = [0.4, 0.7, 0.6];
+const PSI_E: [number, number, number] = [1.0, 0.9, 0.8];
 const PSI_H: [number, number, number] = [0, 0, 0];
 
 /** NEN-EN 1991-1-1 NB (NB.1–6.2, NB.4–6.10) en NEN-EN 1990 NB (NB.2–A1.1). */
 export const CATEGORIEEN: readonly Categorie[] = [
-  { id: "A-vloer", label: { en: "Category A: domestic and residential areas", nl: "Categorie A: woon- en verblijfsruimtes" }, soort: "vloer", qk: 1.75, Qk: 3.0, psi: PSI_A },
-  { id: "A-trap", label: { en: "Category A: stairs", nl: "Categorie A: trappen" }, soort: "vloer", qk: 2.0, Qk: 3.0, psi: PSI_A },
-  { id: "A-balkon", label: { en: "Category A: balconies", nl: "Categorie A: balkons" }, soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_A },
-  { id: "A-gemeenschappelijk", label: { en: "Category A: communal areas", nl: "Categorie A: gemeenschappelijke ruimtes" }, soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_A },
-  { id: "B", label: { en: "Category B: office areas", nl: "Categorie B: kantoorruimtes" }, soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_B },
-  { id: "B-verkeer", label: { en: "Category B: enclosed circulation areas", nl: "Categorie B: omsloten verkeersruimte" }, soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_B },
-  { id: "C-verkeer", label: { en: "Category C: enclosed circulation areas", nl: "Categorie C: omsloten verkeersruimte" }, soort: "vloer", qk: 5.0, Qk: 3.0, psi: PSI_C_VERKEER },
-  { id: "C1", label: { en: "Category C1: areas with tables", nl: "Categorie C1: ruimtes met tafels" }, soort: "vloer", qk: 4.0, Qk: 3.0, psi: PSI_C },
-  { id: "C2", label: { en: "Category C2: areas with fixed seats", nl: "Categorie C2: ruimtes met vaste zitplaatsen" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_C },
-  { id: "C3", label: { en: "Category C3: areas without obstacles", nl: "Categorie C3: ruimtes zonder obstakels" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
-  { id: "C4", label: { en: "Category C4: areas for physical activities", nl: "Categorie C4: ruimtes voor lichamelijke activiteiten" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
-  { id: "C5", label: { en: "Category C5: areas for large crowds", nl: "Categorie C5: ruimtes voor grote menigten" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
-  { id: "D-verkeer", label: { en: "Category D: enclosed circulation areas", nl: "Categorie D: omsloten verkeersruimte" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
-  { id: "D1", label: { en: "Category D1: general retail", nl: "Categorie D1: detailhandel" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
-  { id: "D2", label: { en: "Category D2: department stores", nl: "Categorie D2: warenhuizen" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  { id: "A-vloer", label: mt("normwaarden.categorie.A-vloer"), soort: "vloer", qk: 1.75, Qk: 3.0, psi: PSI_A },
+  { id: "A-trap", label: mt("normwaarden.categorie.A-trap"), soort: "vloer", qk: 2.0, Qk: 3.0, psi: PSI_A },
+  { id: "A-balkon", label: mt("normwaarden.categorie.A-balkon"), soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_A },
+  { id: "A-gemeenschappelijk", label: mt("normwaarden.categorie.A-gemeenschappelijk"), soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_A },
+  { id: "B", label: mt("normwaarden.categorie.B"), soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_B },
+  { id: "B-verkeer", label: mt("normwaarden.categorie.B-verkeer"), soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_B },
+  { id: "C-verkeer", label: mt("normwaarden.categorie.C-verkeer"), soort: "vloer", qk: 5.0, Qk: 3.0, psi: PSI_C_VERKEER },
+  { id: "C1", label: mt("normwaarden.categorie.C1"), soort: "vloer", qk: 4.0, Qk: 3.0, psi: PSI_C },
+  { id: "C2", label: mt("normwaarden.categorie.C2"), soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_C },
+  { id: "C3", label: mt("normwaarden.categorie.C3"), soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
+  { id: "C4", label: mt("normwaarden.categorie.C4"), soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
+  { id: "C5", label: mt("normwaarden.categorie.C5"), soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
+  { id: "D-verkeer", label: mt("normwaarden.categorie.D-verkeer"), soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  { id: "D1", label: mt("normwaarden.categorie.D1"), soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  { id: "D2", label: mt("normwaarden.categorie.D2"), soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  // Opslag: de belasting volgt uit het gebruik. Geen tabelwaarde; q_k en Q_k vult de gebruiker per regel in.
+  { id: "E", label: mt("normwaarden.categorie.E"), soort: "vloer", qk: null, Qk: null, psi: PSI_E, norm: "6.3.2 NEN-EN 1991-1-1" },
   // Q_k 2,0 kN: de NB-waarde voor gordingen, spanten en liggers direct onder het
   // dakbeschot (NB.4–6.10), de elementen waarvoor deze tabel bedoeld is.
-  { id: "H-dak", label: { en: "Category H: roofs", nl: "Categorie H: daken" }, soort: "dak", qk: 1.0, Qk: 2.0, psi: PSI_H },
+  { id: "H-dak", label: mt("normwaarden.categorie.H-dak"), soort: "dak", qk: 1.0, Qk: 2.0, psi: PSI_H },
 ];
 
 export function categorie(id: string): Categorie | undefined {
   return CATEGORIEEN.find((c) => c.id === id);
+}
+
+/** q_k, Q_k en ψ van één belastingklasse: een ingevulde waarde gaat voor de tabel. */
+export interface KlasseWaarden {
+  /** kN/m²; null als er geen tabelwaarde is en niets is ingevuld. */
+  qk: number | null;
+  /** kN; null als er geen tabelwaarde is en niets is ingevuld. */
+  Qk: number | null;
+  psi: [number, number, number];
+  /** Welke waarden de gebruiker zelf invulde. */
+  eigen: { qk: boolean; Qk: boolean };
+}
+
+export function klasseWaarden(bk: { categorie: string; qk?: string; Qk?: string }): KlasseWaarden | null {
+  const cat = categorie(bk.categorie);
+  if (!cat) return null;
+  const qk = getal(bk.qk);
+  const Qk = getal(bk.Qk);
+  const eigen = { qk: Number.isFinite(qk), Qk: Number.isFinite(Qk) };
+  return { qk: eigen.qk ? qk : cat.qk, Qk: eigen.Qk ? Qk : cat.Qk, psi: cat.psi, eigen };
 }
 
 /**
@@ -273,9 +298,9 @@ const VB0: Record<Klasse, number> = { 1: 29.5, 2: 27.0, 3: 24.5 };          // t
 const Z0: Record<Klasse, number> = { 1: 0.005, 2: 0.2, 3: 0.5 };            // tabel NB.3–4.1, m
 const ZMIN: Record<Klasse, number> = { 1: 1, 2: 4, 3: 7 };                  // tabel NB.3–4.1, m
 const TERREIN: Record<Klasse, Meertalig> = {
-  1: { en: "coastal", nl: "kust" },
-  2: { en: "rural", nl: "onbebouwd" },
-  3: { en: "built-up", nl: "bebouwd" },
+  1: mt("normwaarden.terrein.1"),
+  2: mt("normwaarden.terrein.2"),
+  3: mt("normwaarden.terrein.3"),
 };
 
 /**

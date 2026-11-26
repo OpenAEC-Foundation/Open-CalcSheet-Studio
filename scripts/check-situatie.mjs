@@ -9,6 +9,8 @@
  *
  * Draaien:  node scripts/check-situatie.mjs
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./lib/talen.mjs";
 import { readFileSync } from "node:fs";
 import {
   leesPunt, puntJson, leesCoordinaten, puntTekst,

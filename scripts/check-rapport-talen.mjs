@@ -7,11 +7,15 @@
  *      tekst-id's en ankers;
  *   3  wisselen van taal: wat de app meelevert wisselt mee, eigen tekst blijft staan en
  *      wordt onthouden;
- *   4  de bladspiegel: de Engelse koppen en labels passen in hun cel, op de breedtes van
- *      Segoe UI;
+ *   4  de bladspiegel: de koppen en labels van elke taal behalve het Nederlands passen in
+ *      hun cel, op de breedtes van Segoe UI;
  *   5  de echte afdruk als html (lib/rapport-html.mjs): een oud rapport staat er tot op
  *      de letter hetzelfde als vóór deze wijziging (fixtures/rapport-oud-*.html), en een
  *      compleet Engels rapport bevat geen Nederlands, ook niet met de app op Nederlands.
+ *      Hetzelfde voor een compleet rapport in elke andere taal uit de lijst;
+ *   6  elke taal uit de lijst (i18n/talen.ts): geen ontbrekende sleutels, elke meegeleverde
+ *      tekst vertaald, de notatie van de getallen, wisselen heen en terug, en geen
+ *      Nederlands behalve in het Nederlands.
  *
  * Draaien:  node scripts/check-rapport-talen.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -19,6 +23,8 @@
  * De gouden bestanden zijn gemaakt met de code van vóór de talen. Verander je de
  * opmaak van het rapport bewust, dan maakt `--bewaar` ze opnieuw; kijk dan het verschil na.
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import { TALEN, vergelijkSleutels } from "./lib/talen.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,6 +35,7 @@ import {
 import {
   BIJLAGE_A, bijlagen, bouwOpzet, inhoudsopgave, inhoudVoorPaneel, OPZET, TEKST_IDS, titelVan,
 } from "../packages/desktop/src/rapport/opzet.ts";
+import { LAAGGROEPEN, OPBOUWEN } from "../packages/desktop/src/rapport/gewichten.ts";
 import { STANDAARD_TEKSTEN, standaardTeksten } from "../packages/desktop/src/rapport/standaardteksten.ts";
 import { INVULVELDEN, tekstRegels, vulIn } from "../packages/desktop/src/rapport/invullen.ts";
 import {
@@ -78,7 +85,7 @@ const nieuw = (taal) => standaardRapport(VANDAAG, standaardTeksten(taal), taal);
  * Nederlandse woorden die in een Engels rapport niet thuishoren. Geen woorden die ook
  * Engels zijn (in, is, of, over, want, project, norm).
  */
-const NL_WOORD = new RegExp(`\\b(?:${[
+const NL_WOORD = new RegExp(`(?<![\\p{L}\\p{N}_])(?:${[
   "het", "een", "van", "bij", "met", "voor", "uit", "naar", "niet", "geen", "alleen", "maar", "ook", "wordt", "worden", "zijn", "staat", "staan",
   "deze", "dit", "dat", "wel", "tenzij", "aangegeven", "bestaand", "bestaande", "constructie", "constructief", "constructieve", "constructeur",
   "berekening", "berekeningen", "belasting", "belastingen", "belastingklasse", "belastingfactoren", "belastingcombinaties",
@@ -93,7 +100,7 @@ const NL_WOORD = new RegExp(`\\b(?:${[
   "kust", "onbebouwd", "bebouwd", "conservering", "verzinkt", "thermisch", "brandwerendheidseis", "brandscheiding", "vluchtroute", "hoofddraagconstructie",
   "ontwerp", "ontwerplevensduur", "ontwerplevensduurklasse", "betrouwbaarheidsklasse", "constructiegevolgklasse", "inspectie", "toepassing", "gebruikt",
   "plat", "dak", "rol", "soort", "naam", "bron", "ja", "nee", "getoetst", "tabel", "zie",
-].join("|")})\\b`, "i");
+].join("|")})(?![\\p{L}\\p{N}_])`, "iu");
 
 // ── 1. De gegevens ──────────────────────────────────────────────────────────
 kop("1. Het model");
@@ -316,8 +323,8 @@ kop("3. Wisselen van taal");
 }
 
 // ── 4. De bladspiegel ───────────────────────────────────────────────────────
-kop("4. De bladspiegel: past de Engelse tekst in zijn cel?");
-{
+for (const code of TALEN.map((t) => t.code).filter((c) => c !== "nl")) {
+  kop(`4. De bladspiegel: past de tekst in zijn cel? (${code})`);
   /** Breedtes in em van Segoe UI, gemeten (scripts/check-rapport.mjs). */
   const SEGOE = {
     a: 0.509, b: 0.588, c: 0.462, d: 0.589, e: 0.523, f: 0.313, g: 0.589, h: 0.566, i: 0.242, j: 0.242, k: 0.497, l: 0.242, m: 0.861, n: 0.566,
@@ -326,10 +333,11 @@ kop("4. De bladspiegel: past de Engelse tekst in zijn cel?");
     O: 0.754, P: 0.56, Q: 0.754, R: 0.598, S: 0.531, T: 0.524, U: 0.687, V: 0.621, W: 0.934, X: 0.59, Y: 0.553, Z: 0.57,
     " ": 0.274, ".": 0.217, ",": 0.217, ";": 0.217, ":": 0.217, "(": 0.302, ")": 0.302, "-": 0.4, "/": 0.39, "&": 0.8,
   };
-  const em = (t) => [...t].reduce((s, c) => s + (SEGOE[c] ?? 0.54), 0);
+  // Een letter met een accent (ą, č, ė, š, ū) is zo breed als zijn letter zonder.
+  const em = (t) => [...t.normalize("NFD").replace(/\p{M}/gu, "")].reduce((s, c) => s + (SEGOE[c] ?? 0.54), 0);
   /** Een kolom is 53,8 pt, de cel houdt aan weerszijden 1,4 pt vrij; de letter is 10 pt, vet zo'n 8% breder. */
   const past = (t, kolommen, vet = false) => em(t) * (vet ? 1.08 : 1) * 10 <= kolommen * 53.8 - 2.8;
-  const rapport = JSON.parse(lees("../packages/desktop/src/i18n/locales/en/rapport.json"));
+  const rapport = JSON.parse(lees(`../packages/desktop/src/i18n/locales/${code}/rapport.json`));
   const a = rapport.afdruk;
   const REGELS = [
     [a.voorblad.project, 3, true], [a.voorblad.inOpdrachtVan, 3, true], [a.voorblad.adviseur, 3], [a.voorblad.verantwoordelijk, 3], [a.voorblad.uitvoerend, 3],
@@ -355,16 +363,17 @@ kop("4. De bladspiegel: past de Engelse tekst in zijn cel?");
     }
     toets(`"${tekst}" past in ${kolommen} kolom(men)`, past(tekst, kolommen, vet), `${(em(tekst) * (vet ? 1.08 : 1) * 10).toFixed(1)} pt van ${kolommen * 53.8 - 2.8} pt`);
   }
-  const en = nieuw("en");
+  const en = nieuw(code);
   for (const m of en.uitgangspunten.materialen) toets(`materiaal "${m.type}" past in 2 kolommen`, past(m.type, 2));
   for (const c of en.uitgangspunten.conservering) toets(`onderdeel "${c.onderdeel}" past in 2 kolommen`, past(c.onderdeel, 2));
   for (const c of en.uitgangspunten.conservering) toets(`systeem "${c.systeem}" past in 3 kolommen`, past(c.systeem, 3));
   for (const r of en.uitgangspunten.vervormingen) toets(`vervorming "${r.onderdeel}" past in 3 kolommen`, past(r.onderdeel, 3));
-  for (const r of belastingfactorTabel(2, "en")) toets(`factor "${r.naam}" past in 2 kolommen`, past(r.naam, 2));
+  for (const r of belastingfactorTabel(2, code)) toets(`factor "${r.naam}" past in 2 kolommen`, past(r.naam, 2));
   // De kop staat over de volle breedte van 190 mm, op 14 pt: niets dat afbreekt.
   const allen = (lijst) => lijst.flatMap((k) => [k, ...allen(k.kinderen ?? [])]);
   for (const k of allen(OPZET)) {
-    if (em(`4.12 ${k.titel.en}`) * 14 * 1.08 > 10 * 53.8) toets(`kop "${k.titel.en}" past op een regel`, false);
+    const titel = inTaal(k.titel, code);
+    if (em(`4.12 ${titel}`) * 14 * 1.08 > 10 * 53.8) toets(`kop "${titel}" past op een regel`, false);
   }
   const zonderMarge = en.teksten.inleiding.split("\n").every((r) => !r.startsWith(" "));
   toets("de meegeleverde teksten beginnen niet met witruimte", zonderMarge);
@@ -467,6 +476,24 @@ kop("5. De afdruk als html");
 
   // Dezelfde ankers in beide talen: de inhoudsopgave en het zijpaneel wijzen ernaar.
   const ankersVan = (html) => [...html.matchAll(/data-inhoud="([^"]*)"/g)].map((a) => a[1]);
+
+  // Hetzelfde complete rapport in elke andere taal uit de lijst, met de app op Nederlands.
+  for (const { code } of TALEN.filter((t) => t.code !== "nl" && t.code !== "en")) {
+    await taal("en");
+    zet(kloon(en), { exemplaren, gegevens, projectNaam: "Example project" });
+    const ankersEnHier = ankersVan(m.teken());
+    await taal("nl");
+    zet(wisselTaal(kloon(en), code), { exemplaren, gegevens, projectNaam: "Example project" });
+    const html = m.teken();
+    const regels = zichtbareRegels(html);
+    const nl = regels.filter((r) => NL_WOORD.test(r));
+    toets(`rapport in ${code}, app op Nederlands: ${regels.length} regels, geen Nederlands`, nl.length === 0, nl.slice(0, 25).join("\n         "));
+    const a = JSON.parse(lees(`../packages/desktop/src/i18n/locales/${code}/rapport.json`)).afdruk;
+    const vast = [a.inhoud.titel, inTaal(OPZET[0].titel, code), inTaal(OPZET[3].titel, code), inTaal(OPZET[4].titel, code), a.bouwwerk.gevolgklasse, a.bouwwerk.levensduur];
+    toets(`rapport in ${code}: de vaste woorden staan er`, vast.every((w) => regels.some((r) => r.includes(w))), vast.filter((w) => !regels.some((r) => r.includes(w))).join(" | "));
+    gelijk(`rapport in ${code}: dezelfde ankers als in het Engels`, ankersVan(html), ankersEnHier);
+    gelijk(`rapport in ${code}: de taal van de app blijft staan`, m.i18next.language, "nl");
+  }
   await taal("en");
   const nlRapport = kloon(en);
   zet(nlRapport, { exemplaren, gegevens, projectNaam: "Example project" });
@@ -475,6 +502,78 @@ kop("5. De afdruk als html");
   const nlHtml = m.teken();
   gelijk("de ankers in de afdruk veranderen niet met de taal", ankersVan(nlHtml), ankersEn);
   toets("hetzelfde rapport in het Nederlands, app op Engels", /Timber joists/.test(nlHtml) && /Balklaag —|Houten balklaag/.test(nlHtml) && /Inhoud/.test(nlHtml));
+}
+
+// ── 6. Elke taal uit de lijst ───────────────────────────────────────────────
+// Een nieuwe taal is een map met vertalingen en een regel in i18n/talen.ts. Deze sectie
+// draait voor elke taal in die lijst: dan meldt hij wat in een nieuwe taal nog ontbreekt.
+for (const { code, komma } of TALEN.filter((t) => t.code !== "en")) {
+  kop(`6. De taal ${code}`);
+  const { mist, teVeel } = vergelijkSleutels(code);
+  toets(`${code}: 0 ontbrekende sleutels`, mist.length === 0, mist.slice(0, 40).join("\n         "));
+  toets(`${code}: geen sleutel die het Engels niet heeft`, teVeel.length === 0, teVeel.slice(0, 40).join("\n         "));
+
+  // Elke meegeleverde tekst heeft een eigen vertaling: niets valt terug op het Engels.
+  const allen = (lijst) => lijst.flatMap((k) => [k, ...allen(k.kinderen ?? [])]);
+  const varianten = Object.entries(STANDAARD_TEKSTEN).flatMap(([id, l]) => l.map((v, n) => ({ id, n, ...v })));
+  const meegeleverd = [
+    ...allen(OPZET).flatMap((k) => [[`kop ${k.id}`, k.titel], ...(k.titelNieuwbouw ? [[`kop ${k.id} (nieuwbouw)`, k.titelNieuwbouw]] : [])]),
+    ["bijlage A", BIJLAGE_A],
+    ...varianten.flatMap((v) => [[`tekst ${v.id}.${v.n} (label)`, v.label], [`tekst ${v.id}.${v.n}`, v.tekst]]),
+    ...Object.entries(MEEGELEVERD).flatMap(([veld, lijst]) => lijst.map((m, i) => [`${veld}.${i}`, m])),
+    ...CATEGORIEEN.map((c) => [`categorie ${c.id}`, c.label]),
+    ...LAAGGROEPEN.flatMap((g) => [[`gewichten: groep`, g.naam], ...g.lagen.flatMap((l) => [["gewichten: laag", l.naam], ...(l.opmerking ? [["gewichten: opmerking", l.opmerking]] : [])])]),
+    ...OPBOUWEN.map((o) => ["gewichten: opbouw", o.naam]),
+  ];
+  const zonder = meegeleverd.filter(([, m]) => typeof m[code] !== "string" || m[code].trim() === "").map(([naam]) => naam);
+  toets(`${code}: elke meegeleverde tekst van het rapport is vertaald (${meegeleverd.length})`, zonder.length === 0, zonder.slice(0, 30).join("\n         "));
+
+  // De regels van de standaardteksten, zoals voor het Engels.
+  const zonderVeld = (t) => t.replace(/\{[A-Za-z]+\}/g, " ");
+  const velden = (t) => (t.match(/\{[A-Za-z]+\}/g) ?? []).sort();
+  gelijk(`${code}: dezelfde invulvelden als in het Engels`, varianten.filter((v) => !zelfde(velden(v.tekst[code] ?? ""), velden(v.tekst.en))).map((v) => v.id), []);
+  gelijk(`${code}: even veel regels als in het Engels`, varianten.filter((v) => (v.tekst[code] ?? "").split("\n").length !== v.tekst.en.split("\n").length).map((v) => v.id), []);
+  gelijk(`${code}: geen subkoppen in de meegeleverde teksten`, varianten.flatMap((v) => tekstRegels(v.tekst[code] ?? "", true)).filter((r) => r.kop).map((r) => r.tekst), []);
+  const dubbel = Object.entries(STANDAARD_TEKSTEN).filter(([, l]) => new Set(l.map((v) => v.tekst[code])).size !== l.length || new Set(l.map((v) => v.label[code])).size !== l.length);
+  gelijk(`${code}: elke variant uniek binnen zijn tekst-id`, dubbel.map(([id]) => id), []);
+  const w = Object.fromEntries(INVULVELDEN.map((v) => [v, "x"]));
+  gelijk(`${code}: alleen bekende invulvelden`, varianten.map((v) => vulIn(v.tekst[code] ?? "", w)).filter((t) => /\{[A-Za-z]+\}/.test(t)), []);
+
+  // Een nieuw rapport in deze taal.
+  const r = nieuw(code);
+  gelijk(`${code}: een nieuw rapport draagt zijn taal`, [r.taal, r.tekstTaal], [code, {}]);
+  gelijk(`${code}: de titel en de standaardtekst in de taal`, [r.titel, r.teksten.regenwater], [inTaal(TITELS[0], code), STANDAARD_TEKSTEN.regenwater[0].tekst[code]]);
+  gelijk(`${code}: getallen in de notatie van de taal`, r.belastingen.klassen[0].lichteScheidingswanden, komma ? "0,80" : "0.80");
+  gelijk(`${code}: de tabel met factoren in de notatie van de taal`, belastingfactorTabel(2, code)[1].cellen, komma ? ["0,90", "1,35", "1,5ψ0", "1,5ψ0"] : ["0.90", "1.35", "1.5ψ0", "1.5ψ0"]);
+  const koppen = inhoudsopgave(bouwOpzet(r, [{ id: "ex-a", naam: "x" }]), true).map((i) => i.titel);
+  gelijk(`${code}: de koppen in de taal`, koppen[0], inTaal(OPZET[0].titel, code));
+  gelijk(`${code}: de ankers veranderen niet`, inhoudsopgave(bouwOpzet(r, []), true).map((i) => i.anker), inhoudsopgave(bouwOpzet(nieuw("nl"), []), true).map((i) => i.anker));
+
+  // Wisselen: van en naar het Nederlands en het Engels, elke variant heen en terug.
+  gelijk(`${code}: een nieuw Nederlands rapport wisselen geeft hetzelfde als nieuw in ${code}`, wisselTaal(nieuw("nl"), code), r);
+  gelijk(`${code}: en terug naar het Nederlands`, wisselTaal(r, "nl"), nieuw("nl"));
+  gelijk(`${code}: en naar het Engels`, wisselTaal(r, "en"), nieuw("en"));
+  toets(`${code}: een nieuw rapport herkend`, isNieuwRapport(r));
+  const mis = [];
+  for (const v of varianten) {
+    const uit = wisselTaal({ ...nieuw("nl"), teksten: { [v.id]: v.tekst.nl } }, code);
+    if (uit.teksten[v.id] !== v.tekst[code] || andereTaalVan(uit, v.id)) mis.push(`${v.id}.${v.n}`);
+    if (wisselTaal(uit, "en").teksten[v.id] !== v.tekst.en) mis.push(`${v.id}.${v.n} naar Engels`);
+  }
+  gelijk(`${code}: elke meegeleverde variant wisselt mee`, mis, []);
+
+  // Geen Nederlands, behalve in het Nederlands zelf.
+  if (code !== "nl") {
+    const teksten = (x) => (typeof x === "string" ? [x] : x && typeof x === "object" ? Object.values(x).flatMap(teksten) : []);
+    const { bestaand: _codes, ...uitgangspunten } = r.uitgangspunten;
+    const rest = [
+      ...teksten([r.titel, r.normen, r.rol, uitgangspunten, r.revisies, koppen]),
+      ...varianten.flatMap((v) => [zonderVeld(v.tekst[code] ?? ""), v.label[code] ?? ""]),
+      ...CATEGORIEEN.map((c) => c.label[code] ?? ""),
+      ...meegeleverd.filter(([naam]) => naam.startsWith("gewichten")).map(([, m]) => m[code] ?? ""),
+    ].filter((t) => NL_WOORD.test(t));
+    toets(`${code}: de meegeleverde inhoud bevat geen Nederlands`, rest.length === 0, rest.slice(0, 20).join("\n         "));
+  }
 }
 
 console.log(fouten === 0 ? "\nRapport in andere talen: alles in orde." : `\n${fouten} controle(s) gezakt.`);

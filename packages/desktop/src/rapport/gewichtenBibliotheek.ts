@@ -583,8 +583,8 @@ export function alsLaagUitRegel(r: Gewichtregel, taal: string): Laag {
   const naam = inTaal(r.naam, taal);
   const d = r.d !== undefined && r.rho !== undefined && Math.abs(opDrie(r.d) - r.d) < 1e-9 ? r.d : undefined;
   const p = r.p ?? (r.d !== undefined && r.rho !== undefined && d === undefined ? r.d * r.rho : undefined);
-  const g: Gewicht = { naam, ...(d !== undefined ? { d } : {}), ...(r.rho !== undefined ? { rho: r.rho } : {}), ...(p !== undefined ? { p } : {}) };
-  return alsLaag(g);
+  const g: Gewicht = { naam: { en: naam }, ...(d !== undefined ? { d } : {}), ...(r.rho !== undefined ? { rho: r.rho } : {}), ...(p !== undefined ? { p } : {}) };
+  return alsLaag(g, "en");
 }
 
 /** "kanaalplaatvloer 200 mm" → "Kanaalplaatvloer 200 mm". */

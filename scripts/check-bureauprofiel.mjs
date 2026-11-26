@@ -13,6 +13,8 @@
  *
  * Draaien:  node scripts/check-bureauprofiel.mjs
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./lib/talen.mjs";
 import { isDeepStrictEqual } from "node:util";
 import { heeftEigenHuisstijl, huisstijlVariabelen, leegBureau, LETTERTYPEN, STANDAARD_HUISSTIJL, veiligLettertype } from "../packages/desktop/src/rapport/model.ts";
 import {

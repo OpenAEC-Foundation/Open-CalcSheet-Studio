@@ -1,3 +1,4 @@
+import { openBuiten } from "../werkplek/werkplek";
 import { BIBLIOTHEEK_EXTENSIE } from "./gewichtenBibliotheek";
 
 /**
@@ -114,10 +115,5 @@ export async function bewaarBibliotheekBestand(inhoud: string, naam: string, tek
 
 /** Een bronadres openen: buiten de app, want de pagina hoort niet in het venster van de app. */
 export async function openBron(url: string): Promise<void> {
-  if (isTauri()) {
-    const { openUrl } = await import("@tauri-apps/plugin-opener");
-    await openUrl(url);
-  } else {
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
+  await openBuiten(url);
 }

@@ -1,8 +1,23 @@
-import { bouwProjectIfcx, isIfcxBestand, isProjectIfcx, leesProjectIfcx, leesVastgelegdeToetsingen, type IfcCalcSheet } from "@ifc-calc/core";
+import {
+  afgeleideProjectId,
+  bouwProjectIfcx,
+  leesProjectId,
+  isIfcxBestand,
+  isProjectIfcx,
+  leesProjectIfcx,
+  leesVastgelegdeToetsingen,
+  metVreemdeGegevens,
+  vreemdeGegevens,
+  type IfcCalcSheet,
+  type IfcxBestand,
+  type IfcxVreemd,
+} from "@ifc-calc/core";
+import { bladenVoorIfc } from "./projectIfcx.ts";
 import { gebruikteToetsingen } from "../rekenen/toetsCache.ts";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens.ts";
 import type { Exemplaar, Verborgen } from "./projectStore";
 import { normaliseerRapport, type Rapport } from "../rapport/model.ts";
+import { belastingenVoorIfc } from "../rapport/belastingBronnen.ts";
 import { datumTekst } from "../rapport/revisies.ts";
 import { standaardTeksten } from "../rapport/standaardteksten.ts";
 import { leesRekenversie } from "../components/calc/bladVersie.ts";
@@ -14,6 +29,7 @@ import { leesGraaf } from "../graaf/model.ts";
 import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
 import { isJupyterBlad, leesJupyterWerkmap } from "./jupyterBlad.ts";
 import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
+import { leesVarianten } from "./varianten.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -60,6 +76,16 @@ import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
  * lege `source` en daarnaast `pdf`: `{ bestandsnaam, data }`, met in `data` het
  * hele PDF-bestand als base64. Zo zit de PDF in het projectbestand en blijft het
  * project overdraagbaar.
+ *
+ * Gegevens van een ander programma in het bestand (een eigen knoop, of een eigen
+ * attribuut op een knoop van deze app) gaan bij het openen mee als `vreemd` en
+ * komen bij het opslaan ongewijzigd terug: zie packages/core/src/ifcx/vreemd.ts.
+ *
+ * Het project heeft een blijvende identiteit, een UUID: het pad van de wortel van
+ * het IFCX. Alle andere paden en GlobalId's hangen daaraan, niet aan projectnaam of
+ * -nummer. Een nieuw project krijgt een willekeurige id (store/projectStore.ts); een
+ * bestand van vóór de id heeft als wortel de UUID uit nummer en naam staan, en die
+ * wordt bij het openen zijn id. Het beleid staat in docs/ifc-export.md.
  */
 
 export const PROJECT_FORMAAT_VERSIE = 2;
@@ -76,6 +102,11 @@ function leesVerborgen(v: unknown): Verborgen | undefined {
 
 export interface ProjectPayload {
   versie: number;
+  /**
+   * De blijvende identiteit van het project (een UUID): de wortel van het IFCX, waar
+   * alle paden en GlobalId's van afhangen. Zonder volgt hij uit nummer en naam.
+   */
+  id?: string;
   naam: string;
   gegevens: ProjectGegevens;
   exemplaren: Exemplaar[];
@@ -83,15 +114,24 @@ export interface ProjectPayload {
   rapport?: Rapport;
   /** Uit de projectboom gehaalde onderdelen; ontbreekt als niets verborgen is. */
   verborgen?: Verborgen;
+  /** Gegevens van een ander programma uit het geopende bestand; ze gaan ongewijzigd terug. */
+  vreemd?: IfcxVreemd;
 }
 
 export interface GelezenProject {
+  /**
+   * De identiteit uit het bestand. Een bestand zonder (een ouder formaat, een los blad)
+   * krijgt de id die uit zijn nummer en naam volgt: dezelfde wortel als voorheen.
+   */
+  projectId: string;
   projectNaam: string;
   gegevens: ProjectGegevens;
   exemplaren: Exemplaar[];
   /** Afwezig bij een oud bestand of een los blad; laadProject maakt dan een nieuw rapport. */
   rapport?: Rapport;
   verborgen?: Verborgen;
+  /** Alleen bij een IFCX-bestand waarin een ander programma iets heeft gezet. */
+  vreemd?: IfcxVreemd;
 }
 
 /**
@@ -101,12 +141,19 @@ export interface GelezenProject {
  * uit `payload`.
  */
 export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet[] | null): string {
+  return JSON.stringify(metVreemdeGegevens(eigenDocument(payload, bladen), payload.vreemd), null, 2);
+}
+
+/** Alleen wat de app zelf schrijft, zonder de gegevens van een ander. */
+function eigenDocument(payload: ProjectPayload, bladen: IfcCalcSheet[] | null): IfcxBestand {
   const uitkomsten = new Map((bladen ?? []).map((b) => [b.id, b]));
-  const doc = bouwProjectIfcx({
+  return bouwProjectIfcx({
+    id: payload.id,
     naam: payload.naam,
     formaatversie: PROJECT_FORMAAT_VERSIE,
     gegevens: payload.gegevens,
     rapport: payload.rapport,
+    belastingen: belastingenVoorIfc(payload.rapport),
     verborgen: payload.verborgen,
     bladen: payload.exemplaren.map((ex): IfcCalcSheet => ({
       nodes: [],
@@ -124,10 +171,30 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       md: ex.md,
       graaf: ex.graaf,
       ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
-      toetsingen: gebruikteToetsingen(ex.toetsingen, uitkomsten.get(ex.id)),
+      // Doorgerekend: zoals het blad ze nog gebruikt, met die van zijn varianten (projectIfcx.ts).
+      toetsingen: uitkomsten.has(ex.id) ? uitkomsten.get(ex.id)!.toetsingen : gebruikteToetsingen(ex.toetsingen, undefined),
+      ...(ex.varianten ? { varianten: ex.varianten } : {}),
     })),
   });
-  return JSON.stringify(doc, null, 2);
+}
+
+/**
+ * Wat een ander programma in het bestand zette. De app bouwt het document opnieuw op
+ * uit wat ze heeft gelezen, doorgerekend zoals bij het opslaan; wat het bestand meer
+ * heeft, is van een ander (core: ifcx/vreemd.ts).
+ */
+function vreemdUit(bron: IfcxBestand, p: GelezenProject): IfcxVreemd | undefined {
+  const payload: ProjectPayload = {
+    versie: PROJECT_FORMAAT_VERSIE,
+    // Met de id uit het bestand: anders vallen de paden anders uit en lijkt alles vreemd.
+    id: p.projectId,
+    naam: p.projectNaam,
+    gegevens: p.gegevens,
+    exemplaren: p.exemplaren,
+    rapport: p.rapport,
+    verborgen: p.verborgen,
+  };
+  return vreemdeGegevens(bron, eigenDocument(payload, bladenVoorIfc(payload)));
 }
 
 let losTeller = 0;
@@ -171,12 +238,16 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
   }
 
   if (parsed) {
-    const p: { naam?: unknown; gegevens?: unknown; exemplaren?: unknown; rapport?: unknown; verborgen?: unknown } | undefined =
+    const p: { id?: unknown; naam?: unknown; gegevens?: unknown; exemplaren?: unknown; rapport?: unknown; verborgen?: unknown } | undefined =
       isProjectIfcx(parsed) ? leesProjectIfcx(parsed) : parsed.project;
     if (p && Array.isArray(p.exemplaren)) {
-      return {
-        projectNaam: (typeof p.naam === "string" && p.naam) || bestandsnaam,
-        gegevens: { ...legeGegevens(), ...((p.gegevens as ProjectGegevens | undefined) ?? {}) },
+      const projectNaam = (typeof p.naam === "string" && p.naam) || bestandsnaam;
+      const gegevens: ProjectGegevens = { ...legeGegevens(), ...((p.gegevens as ProjectGegevens | undefined) ?? {}) };
+      const gelezen: GelezenProject = {
+        // Uit het IFCX: het pad van de wortel. Versie 1 heeft geen id: afgeleid, zoals zijn export.
+        projectId: leesProjectId(p.id) ?? afgeleideProjectId(projectNaam, gegevens.project_nummer),
+        projectNaam,
+        gegevens,
         exemplaren: normaliseerExemplaren(p.exemplaren, bestandsnaam),
         // Per veld gecontroleerd: het bestand kan van een andere versie van
         // de app komen of met de hand zijn aangepast. Onbekende velden
@@ -186,6 +257,11 @@ export function leesProjectBestand(raw: string, bestandsnaam: string): GelezenPr
           : undefined,
         verborgen: leesVerborgen(p.verborgen),
       };
+      if (isProjectIfcx(parsed)) {
+        const vreemd = vreemdUit(parsed, gelezen);
+        if (vreemd) gelezen.vreemd = vreemd;
+      }
+      return gelezen;
     }
 
     if (typeof parsed.source?.content === "string") {
@@ -241,6 +317,9 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (marimo) ex.marimo = marimo;
   const toetsingen = leesVastgelegdeToetsingen(e.toetsingen);
   if (toetsingen) ex.toetsingen = toetsingen;
+  // Varianten van het blad (store/varianten.ts); alleen een rekenblad rekent ze door.
+  const varianten = leesVarianten(e.varianten);
+  if (varianten) ex.varianten = varianten;
   return ex;
 }
 
@@ -266,9 +345,12 @@ function leesWaarden(x: unknown): Record<string, string> {
 }
 
 function losBlad(source: string, bestandsnaam: string): GelezenProject {
+  const gegevens = legeGegevens();
   return {
+    // Reproduceerbaar: hetzelfde bestand opent steeds met dezelfde identiteit.
+    projectId: afgeleideProjectId(bestandsnaam, gegevens.project_nummer),
     projectNaam: bestandsnaam,
-    gegevens: legeGegevens(),
+    gegevens,
     exemplaren: [
       { id: losseId(), naam: bestandsnaam, templateId: "", source, waarden: {}, elementen: [] },
     ],
