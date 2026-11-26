@@ -303,7 +303,8 @@
       "eigenFunctie": "Savoji funkcija",
       "drieD": "Sukiojamas 3D vaizdas su lapo matmenimis",
       "iframe": "Išorinis puslapis per lapo plotį; įkeliamas tik jums patvirtinus",
-      "js": "Scenarijus su lapo reikšmėmis kaip calc, pavyzdžiui, sukiojamas modelis su bibliotheek=three; vykdomas tik jums patvirtinus"
+      "js": "Scenarijus su lapo reikšmėmis kaip calc, pavyzdžiui, sukiojamas modelis su bibliotheek=three; vykdomas tik jums patvirtinus",
+      "include": "Įterpti kitą .cpd failą: įtaisytąjį arba diske, santykinį projekto failo atžvilgiu ar absoliutų; projektas išsaugo kopiją"
     },
     "invoeg": {
       "titel": "\"Projekto pavadinimas",

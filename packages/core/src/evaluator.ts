@@ -15,6 +15,7 @@ import { FemStaafModel, femStaafEenheid, femStaafGrootheid, femStaafKnoop, femSt
 import { bouwJsBlok } from './jsBlok.js';
 import { celNaam, celVerwijzingTekst, leesCelVerwijzing, leesVerwijzing, verwijzingNaam, verwijzingenInMelding, type CelFout, type CelVerwijzing } from './verwijzing.js';
 import { parse } from './parser.js';
+import { includeMeldingTekst } from './include.js';
 import { plaatOplossing, plaatSamenvatting, plaatDoorbuiging, plaatSvg, type PlaatInvoer } from './plaat.js';
 import {
   liggerOplossing, liggerReacties, liggerOmhullende, liggerOmhullendeReacties, liggerExtremen,
@@ -1552,6 +1553,8 @@ function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T
   const vorigeTaal = huidigeTaal;
   huidigStelsel = opties.stelsel;
   huidigeTaal = opties.taal?.toLowerCase().startsWith('en') ? 'en' : 'nl';
+  const vorigeTaalCode = huidigeTaalCode;
+  huidigeTaalCode = opties.taal?.toLowerCase() || 'nl';
   const stand = nieuweStand();
   // De projecttekst van de app (zetProjectTekst) geldt waar de aanroep er zelf geen meegeeft.
   const metProject = opties.project || !projectTekst ? opties : { ...opties, project: projectTekst };
@@ -1568,6 +1571,7 @@ function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T
     currentAngleMode = appModus;
     huidigStelsel = vorigStelsel;
     huidigeTaal = vorigeTaal;
+    huidigeTaalCode = vorigeTaalCode;
     ruimEenhedenOp(stand);
   }
 }
@@ -1637,6 +1641,8 @@ export function zetProjectTekst(project: EvalOpties['project'] | null): void {
 let huidigStelsel: Stelsel | undefined;
 /** De taal van de vaste woorden in een beeld (fem_svg), van het blad dat nu doorgerekend wordt. */
 let huidigeTaal = 'nl';
+/** De taal van de uitvoer zoals de app hem meegeeft (`nl`, `en`, `lt`), voor de meldingen bij `#include`. */
+let huidigeTaalCode = 'nl';
 
 /**
  * Rekent een document door en geeft ook de scope aan het eind terug: de waarden
@@ -1857,6 +1863,11 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
 
       case 'text':
         if (node.hidden) break;
+        if (node.includeMelding) {
+          // Een melding bij een `#include` (include.ts), in de taal van de uitvoer.
+          result.push({ type: 'text', text: includeMeldingTekst(node.includeMelding, huidigeTaalCode), includeMelding: node.includeMelding });
+          break;
+        }
         if (node.parts && node.parts.length > 0) {
           // Resolve prose interpolation — eval each `expr` part and
           // concat with literal parts. Failed exprs fall back to the source.

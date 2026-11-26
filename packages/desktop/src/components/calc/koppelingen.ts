@@ -14,6 +14,7 @@ import {
 import { maakOmzetter, type OpenWerkmap } from "../../store/koppelingOmzetten";
 import { useKoppelingStatus, type KoppelingStand } from "../../store/koppelingStatus";
 import { lijktOpWerkmap } from "../../store/spreadsheetBlad";
+import { controleerIncludes } from "./includeBestanden";
 
 /*
  * Gekoppelde bestanden in de app: een RTF-bestand of een werkmapbereik kiezen,
@@ -32,6 +33,9 @@ import { lijktOpWerkmap } from "../../store/spreadsheetBlad";
  *
  * In de browser is er geen bestandstoegang: daar geldt alleen de bewaarde kopie, en
  * het blad zegt dat.
+ *
+ * Dezelfde wachter leest ook de bestanden die een rekenblad met `#include` invoegt
+ * (includeBestanden.ts).
  */
 
 export function isTauri(): boolean {
@@ -87,6 +91,12 @@ function gekoppeldeBladen() {
 }
 
 async function controleerAlles(): Promise<void> {
+  // Ook de `#include`-bestanden van de rekenbladen (includeBestanden.ts).
+  try {
+    await controleerIncludes();
+  } catch (err) {
+    console.error("#include-bestanden lezen mislukt:", err);
+  }
   const bladen = gekoppeldeBladen();
   const status = useKoppelingStatus.getState();
   if (!isTauri()) {

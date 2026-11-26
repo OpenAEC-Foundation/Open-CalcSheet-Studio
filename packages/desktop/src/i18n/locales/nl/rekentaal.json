@@ -303,7 +303,8 @@
       "eigenFunctie": "Eigen functie",
       "drieD": "Draaibaar 3D-beeld met maten uit het blad",
       "iframe": "Externe pagina op de bladbreedte; laadt pas na bevestiging",
-      "js": "Script met de waarden van het blad als calc, bijvoorbeeld een draaibaar model met bibliotheek=three; loopt pas na bevestiging"
+      "js": "Script met de waarden van het blad als calc, bijvoorbeeld een draaibaar model met bibliotheek=three; loopt pas na bevestiging",
+      "include": "Ander .cpd-bestand invoegen: ingebouwd, of op schijf relatief tot het projectbestand of absoluut; het project bewaart een kopie"
     },
     "invoeg": {
       "titel": "\"Project Titel",

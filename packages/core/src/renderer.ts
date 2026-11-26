@@ -350,6 +350,11 @@ function renderNode(node: EvaluatedNode): string {
       return `<h${node.level}>${escapeHtml(node.text)}</h${node.level}>`;
 
     case 'text':
+      // Een melding bij een `#include` (include.ts): een kopie is een waarschuwing, de rest een fout.
+      if (node.includeMelding) {
+        const soort = node.includeMelding.soort === 'kopie' || node.includeMelding.soort === 'lezen' ? 'waarschuwing' : 'fout';
+        return `<p class="calc-text calc-include-melding calc-include-${soort}" data-include="${escapeHtml(node.includeMelding.pad)}">${escapeHtml(node.text)}</p>`;
+      }
       // prose lines (`'…`) come through with `html: true` and may contain
       // inline tags like <i>, <b>, <hr/>, <sub>. Pass them through unescaped.
       return node.html
@@ -670,6 +675,19 @@ export const defaultStyles = `
   flex-wrap: wrap;
   align-items: center;
   column-gap: 0.1em;
+}
+
+/* Een melding bij een #include (include.ts), op het scherm en op papier. */
+.calc-include-melding {
+  border-left: 3px solid #b45309;
+  background: #fffbeb;
+  color: #78350f;
+  padding: 0.2em 0.6em;
+}
+.calc-include-fout {
+  border-left-color: #dc2626;
+  background: #fef2f2;
+  color: #991b1b;
 }
 
 .calc-comment {

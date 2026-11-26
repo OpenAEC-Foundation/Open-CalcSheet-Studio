@@ -26,6 +26,7 @@ import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
 import { MARIMO_BLAD, type MarimoNotebook } from "./marimoBlad";
 import { metBladRefs } from "./bladRefs";
 import { variantInvoer, type Varianten } from "./varianten";
+import type { IncludeKopie } from "./includes";
 
 const STORE_KEY = "projectState";
 
@@ -139,6 +140,11 @@ export interface Exemplaar {
    * (store/varianten.ts). Ontbreekt bij een blad zonder varianten.
    */
   varianten?: Varianten;
+  /**
+   * De bestanden op schijf die dit blad met `#include` invoegt, met een kopie van de
+   * laatst gelezen tekst (store/includes.ts). Ontbreekt bij een blad zonder.
+   */
+  includes?: IncludeKopie[];
 }
 
 /**
@@ -221,6 +227,11 @@ interface ProjectState {
    * project is gewijzigd; zonder alleen het pad, en dat gaat mee bij het volgende opslaan.
    */
   werkKoppelingBij: (id: string, md: MarkdownBestand, inhoud: boolean) => void;
+  /**
+   * De gelezen `#include`-bestanden van een blad (store/includes.ts). Geen stap in de
+   * geschiedenis; `inhoud`: een tekst veranderde, dus het project is gewijzigd.
+   */
+  zetIncludes: (id: string, includes: IncludeKopie[], inhoud: boolean) => void;
   /** Een leeg canvas-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
   voegCanvasToe: (naam: string) => string;
   /** Een leeg grafblad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
@@ -578,6 +589,19 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       if (!s.exemplaren.some((e) => e.id === id)) return s;
       return {
         exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, md } : e)),
+        ...(inhoud ? { dirty: true } : {}),
+      };
+    }),
+
+  zetIncludes: (id, includes, inhoud) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        exemplaren: s.exemplaren.map((e) => {
+          if (e.id !== id) return e;
+          const { includes: _oud, ...rest } = e;
+          return includes.length > 0 ? { ...rest, includes } : rest;
+        }),
         ...(inhoud ? { dirty: true } : {}),
       };
     }),

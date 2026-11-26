@@ -112,7 +112,7 @@ const SECTIONS: Section[] = [
     items: [
       { label: "#def name(args) … #end def", insert: "#def line$(x1$; y1$; x2$; y2$)\n\t'<line x1=\"'x1$'\" y1=\"'y1$'\" .../>\n#end def" },
       { label: vt("item.defConstante"), insert: "#def style1$ = \"stroke:black\"" },
-      { label: vt("item.include"), insert: vt("invoeg.include") },
+      { label: vt("item.include"), insert: vt("invoeg.include"), description: vt("omschrijving.include") },
     ],
   },
   {
