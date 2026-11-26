@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Een project heeft een eigen, blijvende identiteit, die met het projectbestand meegaat. De IFCX- en IFC-export hangen daaraan in plaats van aan projectnaam en -nummer: hernoemen of een ander projectnummer verandert geen GlobalId meer, en twee los gemaakte projecten met dezelfde naam en hetzelfde nummer zijn verschillende projecten. Een ouder bestand houdt bij het openen zijn identificaties. Nieuw project geeft een nieuwe identiteit, Opslaan als houdt hem (docs/ifc-export.md).
+
 - De pakketgegevens van de app noemen nu overal dezelfde licentie als het licentiebestand en de README: LGPL-3.0. De meegeleverde FEM-server houdt zijn eigen AGPL-3.0.
 
 ## v2026.48.0 — 2026-11-26

@@ -100,6 +100,7 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 
 | wat | waar in het bestand | |
 |---|---|---|
+| Identiteit van het project (UUID) | het pad van het project, ook in `header.id` | bron |
 | Projectnaam | `bsi::ifc::prop::Name` op het project | bron |
 | Projectgegevens, verborgen onderdelen | `ocss::project` | bron |
 | Constructierapport | `ocss::rapport` | bron |
