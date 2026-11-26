@@ -5,6 +5,10 @@ import { useProjectStore } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
 import { PROJECT_VELDEN, kFiVoor, keuzesVoor, vervallenKeuze, type Keuze, type VeldDef } from "../../store/projectGegevens";
 import { PROJECTBLAD, PROJECTBLAD_WAARDEN, projectBladVan, projectWaardenVan } from "../../store/projectBlad";
+import { useNormkeuze } from "../../store/actiefBlad";
+import { inTaal } from "../../rapport/meertalig";
+import { landVanCode, veldZichtbaar } from "../../rapport/normen/keuze";
+import NormenOverzicht from "./NormenOverzicht";
 import WindAreaMap from "./WindAreaMap";
 import LocatieKiezer from "./LocatieKiezer";
 import EenhedenEditor from "./EenhedenEditor";
@@ -25,6 +29,7 @@ const GROEP_SLEUTELS: Record<string, string> = {
   "Units": "eenheden",
   "Calculation method": "rekenwijze",
   "Project": "project",
+  "Country and standards": "land",
   "Basis of design (NEN-EN 1990 + NB)": "grondslagen",
   "Wind (NEN-EN 1991-1-4 + NB)": "wind",
 };
@@ -74,8 +79,9 @@ function Rij({ label, naam, hint, children, onder }: {
  * nooit in de weg zitten.
  */
 export default function ProjectGegevensPanel() {
-  const { t } = useTranslation("werkruimte");
+  const { t, i18n } = useTranslation("werkruimte");
   const gegevens = useProjectStore((s) => s.gegevens);
+  const keuze = useNormkeuze();
   const zetGegeven = useProjectStore((s) => s.zetGegeven);
   const projectNaam = useProjectStore((s) => s.projectNaam);
   const zetProjectNaam = useProjectStore((s) => s.zetProjectNaam);
@@ -85,22 +91,35 @@ export default function ProjectGegevensPanel() {
   // het formulier compact blijft voor wie het gebied al weet.
   const [modelOpen, zetModelOpen] = useState(false);
   const [kaartOpen, setKaartOpen] = useState(false);
+  // Wat aan de Nederlandse bijlage hangt, staat alleen op het formulier als die geldt.
+  const zichtbaarIn = (sleutel: string) => veldenVan(sleutel).filter((v) => veldZichtbaar(v.naam, keuze));
 
   const cc = parseFloat(gegevens.CC ?? "2");
   const kFi = kFiVoor(Number.isFinite(cc) ? cc : 2);
 
-  const groepNaam = (sleutel: string) => t(`gegevens.groepen.${sleutel}`);
+  const groepNaam = (sleutel: string) =>
+    sleutel === "grondslagen" && !keuze.nlTabellen ? t("gegevens.groepen.grondslagenAlgemeen") : t(`gegevens.groepen.${sleutel}`);
+  // De toelichting bij CC en de ontwerplevensduur noemt de tabellen van de Nederlandse bijlage.
+  const nlToelichting = (veld: VeldDef) => veld.naam === "CC" || veld.naam === "DesignLife";
   const veldTekst = (veld: VeldDef, deel: "label" | "hint") =>
-    t(`gegevens.velden.${veld.naam}.${deel}`, { defaultValue: veld[deel] ?? "" });
+    deel === "hint" && nlToelichting(veld) && !keuze.nlTabellen
+      ? t(`gegevens.velden.${veld.naam}.${keuze.eurocode ? "hintEurocode" : "hintEigen"}`)
+      : t(`gegevens.velden.${veld.naam}.${deel}`, { defaultValue: veld[deel] ?? "" });
   // Dezelfde keuzes als keuzesVoor, met vertaalde labels. Een vervallen of
   // onbekende keuze krijgt hier opnieuw zijn tekst, op dezelfde manier als in
   // de store: "10 jaar — vervallen keuze, gerekend als 15 jaar".
-  const keuzeLabel = (veld: VeldDef, keuze: Keuze): string => {
-    if (veld.opties?.some((o) => o.waarde === keuze.waarde)) {
-      return t(`gegevens.velden.${veld.naam}.opties.${keuze.waarde}`, { defaultValue: keuze.label });
+  const keuzeLabel = (veld: VeldDef, optie: Keuze): string => {
+    if (veld.naam === "land") {
+      const land = landVanCode(optie.waarde);
+      return land ? inTaal(land.naam, i18n.language) : t("gegevens.onbekendeKeuze", { waarde: optie.waarde });
     }
-    const oud = vervallenKeuze(veld, keuze.waarde);
-    if (!oud) return t("gegevens.onbekendeKeuze", { waarde: keuze.waarde });
+    if (veld.opties?.some((o) => o.waarde === optie.waarde)) {
+      // De klassen bij de ontwerplevensduur komen uit de Nederlandse bijlage; elders alleen de jaren.
+      if (veld.naam === "DesignLife" && !keuze.nlTabellen) return t("gegevens.jaren", { jaren: optie.waarde });
+      return t(`gegevens.velden.${veld.naam}.opties.${optie.waarde}`, { defaultValue: optie.label });
+    }
+    const oud = vervallenKeuze(veld, optie.waarde);
+    if (!oud) return t("gegevens.onbekendeKeuze", { waarde: optie.waarde });
     const naar = veld.opties?.find((o) => o.waarde === oud.naar);
     return t("gegevens.vervallenKeuze", {
       label: t(`gegevens.velden.${veld.naam}.vervallen.${oud.waarde}`, { defaultValue: oud.label }),
@@ -109,18 +128,25 @@ export default function ProjectGegevensPanel() {
     });
   };
 
+  // De landen op hun naam in de taal van de app, onder de twee die vooraan horen.
+  const opGoedeVolgorde = (veld: VeldDef, opties: Keuze[]): Keuze[] =>
+    veld.naam !== "land"
+      ? opties
+      : [...opties.slice(0, 2), ...opties.slice(2).sort((a, b) => keuzeLabel(veld, a).localeCompare(keuzeLabel(veld, b), i18n.language))];
+
   const veld = (v: VeldDef) => {
     const ruw = gegevens[v.naam] ?? v.standaard;
     return (
       <Rij
         key={v.naam}
         label={veldTekst(v, "label")}
-        naam={v.naam === "eenheden" || v.naam === "rekenwijze" ? undefined : v.naam}
+        // Het land, het eenhedenstelsel en de rekenwijze zijn geen variabelen voor de bladen.
+        naam={v.naam === "eenheden" || v.naam === "rekenwijze" || v.naam === "land" ? undefined : v.naam}
         hint={v.hint ? veldTekst(v, "hint") : undefined}
         onder={
           <>
             {vervallenKeuze(v, ruw) && <span className="pg-melding">{t("gegevens.vervallen")}</span>}
-            {v.naam === "CC" && (
+            {v.naam === "CC" && keuze.eurocode && (
               <span className="pg-afgeleid">
                 {t("gegevens.afgeleid")} K<sub>FI</sub> = {ucTekst(kFi)}
               </span>
@@ -132,7 +158,7 @@ export default function ProjectGegevensPanel() {
           // Een waarde die niet (meer) tussen de keuzes staat, komt er als
           // extra keuze bij; anders toont de lijst stil de eerste keuze.
           <select value={ruw} onChange={(e) => zetGegeven(v.naam, e.target.value)}>
-            {keuzesVoor(v, ruw).map((o) => (
+            {opGoedeVolgorde(v, keuzesVoor(v, ruw)).map((o) => (
               <option key={o.waarde} value={o.waarde}>
                 {keuzeLabel(v, o)}
               </option>
@@ -159,6 +185,8 @@ export default function ProjectGegevensPanel() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- alleen de invoer zelf telt
   const waarden = useMemo(() => projectWaardenVan(gegevens), [ruweWaarden]);
 
+  const windVelden = zichtbaarIn("wind");
+
   const formulier = (
     <div className="pg-formulier">
       <header className="pg-kop">
@@ -179,31 +207,40 @@ export default function ProjectGegevensPanel() {
               onChange={(e) => zetProjectNaam(e.target.value)}
             />
           </Rij>
-          {veldenVan("project").map(veld)}
+          {zichtbaarIn("project").map(veld)}
         </div>
         <div className="pg-onder">
           <LocatieKiezer />
         </div>
       </section>
 
+      <section className="pg-vak">
+        <h2>{groepNaam("land")}</h2>
+        <div className="pg-rijen">{zichtbaarIn("land").map(veld)}</div>
+        <NormenOverzicht keuze={keuze} />
+      </section>
+
       <div className="pg-naast">
         <section className="pg-vak">
           <h2>{groepNaam("grondslagen")}</h2>
-          <div className="pg-rijen">{veldenVan("grondslagen").map(veld)}</div>
+          <div className="pg-rijen">{zichtbaarIn("grondslagen").map(veld)}</div>
         </section>
-        <section className="pg-vak">
-          <h2>{groepNaam("wind")}</h2>
-          <div className="pg-rijen">{veldenVan("wind").map(veld)}</div>
-          <button type="button" className="pg-windkaart-toggle" onClick={() => setKaartOpen((o) => !o)}>
-            <svg className={`panel-section-chevron${kaartOpen ? " open" : ""}`} width="10" height="10" viewBox="0 0 10 10"
-              fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="2,3 5,6 8,3" />
-            </svg>
-            {t("gegevens.kaart")}
-          </button>
-        </section>
+        {/* De windgebieden en hun kaart zijn die van de Nederlandse bijlage. */}
+        {windVelden.length > 0 && (
+          <section className="pg-vak">
+            <h2>{groepNaam("wind")}</h2>
+            <div className="pg-rijen">{windVelden.map(veld)}</div>
+            <button type="button" className="pg-windkaart-toggle" onClick={() => setKaartOpen((o) => !o)}>
+              <svg className={`panel-section-chevron${kaartOpen ? " open" : ""}`} width="10" height="10" viewBox="0 0 10 10"
+                fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="2,3 5,6 8,3" />
+              </svg>
+              {t("gegevens.kaart")}
+            </button>
+          </section>
+        )}
       </div>
-      {kaartOpen && (
+      {kaartOpen && windVelden.length > 0 && (
         <section className="pg-vak pg-windkaart">
           <WindAreaMap
             initialAddress={gegevens.locatie ?? ""}
@@ -222,11 +259,11 @@ export default function ProjectGegevensPanel() {
       <div className="pg-naast">
         <section className="pg-vak">
           <h2>{groepNaam("rekenwijze")}</h2>
-          <div className="pg-rijen">{veldenVan("rekenwijze").map(veld)}</div>
+          <div className="pg-rijen">{zichtbaarIn("rekenwijze").map(veld)}</div>
         </section>
         <section className="pg-vak">
           <h2>{groepNaam("eenheden")}</h2>
-          <div className="pg-rijen">{veldenVan("eenheden").map(veld)}</div>
+          <div className="pg-rijen">{zichtbaarIn("eenheden").map(veld)}</div>
           <EenhedenEditor />
         </section>
       </div>

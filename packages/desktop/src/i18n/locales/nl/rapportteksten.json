@@ -278,6 +278,10 @@
       {
         "label": "Niet voorgeschreven",
         "tekst": "Er is geen aardbevingsontwerpsituatie voorgeschreven."
+      },
+      {
+        "label": "Volgens de locatie",
+        "tekst": "De aardbevingsbelasting volgt uit de norm die op de locatie geldt."
       }
     ],
     "sneeuw": [
@@ -405,5 +409,207 @@
     "nieuwHoofdstuk": "Nieuw hoofdstuk",
     "nieuweParagraaf": "Nieuwe paragraaf",
     "nieuwTekstblok": "Nieuw tekstblok"
+  },
+  "normen": {
+    "grootheden": {
+      "vb0": "Fundamentele waarde van de basiswindsnelheid",
+      "sk": "Karakteristieke sneeuwbelasting op de grond",
+      "agr": "Referentie-piekgrondversnelling"
+    },
+    "TWEEDE_GENERATIE_TEKST": "Tweede generatie Eurocodes (EN 1990:2023 e.v.)",
+    "landen": {
+      "NL": {
+        "naam": "Nederland",
+        "normenTekst": "NEN-EN 1990 t/m 1997",
+        "tekst": "Het Bbl verwijst naar de normen; de edities staan in bijlage II van de Omgevingsregeling, en die tellen juridisch.",
+        "opmerking": "Het Bbl wijst NEN-EN 1998 niet aan. NPR 9998 is beperkt tot Noordoost-Nederland.",
+        "opmerking2": "Het Bbl wijst geen aardbevingsnorm aan; voor Noordoost-Nederland zie NPR 9998."
+      },
+      "EUROCODE": {
+        "naam": "Eurocode zonder nationale bijlage",
+        "normenTekst": "EN 1990 t/m EN 1998",
+        "tekst": "Geen nationale keuzes. De aanbevolen waarden gelden; veel waarden, zoals wind en sneeuw, staan alleen in een nationale bijlage en moet je invullen."
+      },
+      "AT": {
+        "naam": "Oostenrijk",
+        "normenTekst": "ÖNORM EN 1990 t/m 1998 met ÖNORM B",
+        "tekst": "OIB-Richtlinie 1 verwijst naar ÖNORM EN 1990 met ÖNORM B 1990-1 en is bindend via de deelstaten.",
+        "qb0": "Basisstuwdruk"
+      },
+      "AU": {
+        "naam": "Australië",
+        "normenTekst": "NCC 2025, AS/NZS 1170",
+        "tekst": "De ABCB geeft NCC 2025 uit, die wettelijke kracht krijgt via wetgeving per staat of territorium; de data verschillen per staat.",
+        "regio": "Windregio",
+        "VR": "Regionale windsnelheid",
+        "sg": "Sneeuwbelasting op de grond",
+        "Z": "Gevarenfactor"
+      },
+      "BE": {
+        "naam": "België",
+        "normenTekst": "NBN EN 1990 t/m 1998 met ANB",
+        "tekst": "NBN stelt dat een berekening zonder ANB juridisch niet geldig is; een Belgisch bouwbesluit is niet gevonden."
+      },
+      "CA": {
+        "naam": "Canada",
+        "normenTekst": "NBC 2025",
+        "tekst": "NRC geeft NBC 2025 uit (16e editie), een modelcode die pas wettelijk geldt als een provincie of territorium hem vaststelt.",
+        "q": "Referentiestuwdruk, 1/500",
+        "Ss": "Sneeuwbelasting op de grond, 1/1000",
+        "Sr": "Bijbehorende regenbelasting, 1/1000",
+        "PGA": "Piekgrondversnelling",
+        "PGV": "Piekgrondsnelheid",
+        "SaT": "Spectrale versnelling"
+      },
+      "CH": {
+        "naam": "Zwitserland",
+        "normenTekst": "SIA 260:2013, SIA 261:2020",
+        "tekst": "SIA geeft de constructienormen uit; de juridische status is niet vastgesteld. BAFU vraagt om te bouwen volgens de geldende normen.",
+        "qp0": "Referentiewaarde van de stuwdruk",
+        "h0": "Referentiehoogte",
+        "zone": "Aardbevingszone (Z1a t/m Z3b)",
+        "agd": "Rekenwaarde grondversnelling",
+        "baugrund": "Grondklasse"
+      },
+      "DE": {
+        "naam": "Duitsland",
+        "normenTekst": "DIN EN 1990 t/m 1998 met /NA, MVV TB 2025/1",
+        "tekst": "MVV TB 2025/1 is een model van DIBt dat pas geldt als een deelstaat het bekendmaakt. MVV TB is de editie die daar staat; DIN is de nieuwste in de DIN-catalogus.",
+        "opmerking": "DIN noemt ook DIN EN 1990/NA/A1:2024-05.",
+        "tekst2": "MVV TB 2025/1 noemt alleen DIN 4149:2005-04.",
+        "windzone": "Windzone",
+        "qb0": "Basisstuwdruk",
+        "schneelastzone": "Sneeuwbelastingzone",
+        "erdbebenzone": "Aardbevingszone",
+        "untergrund": "Geologische ondergrondklasse"
+      },
+      "DK": {
+        "naam": "Denemarken",
+        "normenTekst": "DS/EN 1990 t/m 1998 met DK NA",
+        "tekst": "BR18, hoofdstuk 15, is wettelijk en verwijst naar de Eurocodes met DK NA, alleen de eerste generatie.",
+        "ag": "Rekenwaarde grondversnelling"
+      },
+      "ES": {
+        "naam": "Spanje",
+        "normenTekst": "CTE DB SE, NCSE-02, Código Estructural",
+        "tekst": "Wettelijk gelden CTE, NCSE-02 en de Código Estructural; die laatste staat de Eurocodes toe met een nationale bijlage van het ministerie.",
+        "qb": "Basiswaarde van de stuwdruk",
+        "vb": "Basiswindsnelheid",
+        "ab": "Basisversnelling",
+        "K": "Bijdragecoëfficiënt"
+      },
+      "FI": {
+        "naam": "Finland",
+        "normenTekst": "SFS-EN 1990 t/m 1997 met nationale keuzes",
+        "tekst": "Besluit 477/2014: de Eurocodes met de nationale keuzes van het milieuministerie voldoen; andere methoden mogen als ze aan dezelfde eisen voldoen.",
+        "opmerking": "Geen nationale bijlage.",
+        "opmerking2": "Aardbevingsontwerp alleen op verzoek van de opdrachtgever, volgens de betonrichtlijn van het ministerie."
+      },
+      "FR": {
+        "naam": "Frankrijk",
+        "normenTekst": "NF EN 1990 t/m 1998 met nationale bijlagen",
+        "tekst": "AFNOR noemt de Eurocodes vrijwillig; alleen aardbeving is wettelijk aangewezen (arrêté van 22-10-2010, dat NF EN 1998-1/NA 2007-12 noemt).",
+        "zone": "Seismische zone (1 t/m 5)",
+        "agr": "Referentie-piekgrondversnelling"
+      },
+      "GB": {
+        "naam": "Verenigd Koninkrijk",
+        "normenTekst": "BS EN 1990 t/m 1998 met Britse nationale bijlagen",
+        "tekst": "Approved Document A (Engeland) noemt BS EN met UK NA als praktische richtlijn en laat andere wegen toe. Schotland, Wales en Noord-Ierland zijn niet nagekeken.",
+        "vbmap": "Kaartwindsnelheid",
+        "PGA": "Piekgrondversnelling (kaarten in PD 6698)"
+      },
+      "IE": {
+        "naam": "Ierland",
+        "normenTekst": "I.S. EN 1990 t/m 1997 met Ierse nationale bijlagen",
+        "tekst": "Technical Guidance Document A (2012) noemt de Eurocodes met de Ierse NA als praktische richtlijn voor Part A.",
+        "opmerking": "Geen nationale bijlage gevonden.",
+        "vbmap": "Fundamentele basiswindsnelheid",
+        "opmerking2": "NSAI rekent heel Ierland tot zeer lage seismiciteit (voorwoord bij I.S. EN 1998-5)."
+      },
+      "IN": {
+        "naam": "India",
+        "normenTekst": "IS 875, IS 1893, IS 456, IS 800",
+        "tekst": "BIS noemt de National Building Code een modelcode voor overheden en lokale besturen; hoe bindend die is, hangt af van lokale verordeningen. De opvolger is SP 7:2026, waarvan de verwijzingen niet zijn gelezen.",
+        "tekst2": "De lijst van BIS toont 2016, terwijl een ander BIS-record een editie 2025 met dezelfde titel heeft; welke geldt, is nog te bevestigen.",
+        "Vb": "Basiswindsnelheid",
+        "s0": "Karakteristieke sneeuwbelasting op de grond",
+        "Z": "Zonefactor van de seismische zone"
+      },
+      "IT": {
+        "naam": "Italië",
+        "normenTekst": "NTC 2018 (DM 17-01-2018)",
+        "tekst": "Wettelijk gelden NTC 2018 en Circolare n. 7/2019; de Eurocodes met Appendici Nazionali gelden alleen als documenten van aangetoonde waarde (hoofdstuk 1 en 12).",
+        "vb0": "Basisreferentiesnelheid op zeeniveau",
+        "qsk": "Referentiewaarde sneeuwbelasting op de grond",
+        "ag": "Maximale horizontale versnelling",
+        "Fo": "Spectrumfactor",
+        "TC": "Referentieperiode"
+      },
+      "NO": {
+        "naam": "Noorwegen",
+        "normenTekst": "NS-EN 1990 t/m 1998 met NA",
+        "tekst": "TEK17 § 10-2 is wettelijk: de Eurocodes met NA voldoen, alternatieven moeten gelijkwaardig zijn aangetoond."
+      },
+      "NZ": {
+        "naam": "Nieuw-Zeeland",
+        "normenTekst": "B1/VM1 (2e editie), AS/NZS 1170, NZS 1170.5",
+        "tekst": "MBIE beheert de wettelijke Building Code; B1/VM1, tweede editie (28-07-2025), is één manier om naleving aan te tonen. TS 1170.5:2025 is een alternatieve weg, NZS 1170.5:2004 blijft de aangewezen norm.",
+        "regio": "Windregio",
+        "VR": "Regionale windsnelheid",
+        "sg": "Sneeuwbelasting op de grond",
+        "Z": "Gevarenfactor"
+      },
+      "PL": {
+        "naam": "Polen",
+        "normenTekst": "PN-EN 1990 t/m 1997 met NA",
+        "tekst": "§ 204 van de Warunki techniczne is wettelijk: de veiligheid geldt als vervuld bij voldoen aan de Poolse normen voor ontwerp. De laatste consolidatie is niet nagekeken.",
+        "opmerking": "Oorspronkelijke taalversie; geen nationale bijlage in de lijst van PKN.",
+        "opmerking2": "PKN meldt geen vertaling wegens de aseismische ligging van Polen."
+      },
+      "SE": {
+        "naam": "Zweden",
+        "normenTekst": "BFS 2024:6, SS-EN 1990 t/m 1997",
+        "tekst": "Wettelijk geldt BFS 2024:6 (sinds 01-07-2025, in plaats van EKS); de Eurocodes met de Zweedse NA zijn een erkende route via de algemene adviezen daarin. De waarden van Boverket gaan voor.",
+        "opmerking": "Bestaat, maar staat niet in de lijst van BFS 2024:6.",
+        "vb": "Referentiewindsnelheid",
+        "S0": "Karakteristieke sneeuwbelasting op de grond",
+        "opmerking2": "BFS 2024:6 noemt geen grootheid voor aardbeving; de status van Eurocode 8 in Zweden is niet vastgesteld."
+      },
+      "US": {
+        "naam": "Verenigde Staten",
+        "normenTekst": "IBC 2024, ASCE/SEI 7-22",
+        "tekst": "ICC geeft de IBC 2024 uit, die pas geldt als een staat of gemeente hem vaststelt. Edities verschillen per staat, en sommige staten hebben geen IBC voor de hele staat.",
+        "V": "Basiswindsnelheid",
+        "pg": "Sneeuwbelasting op de grond",
+        "SS": "Kaartversnelling, korte periode",
+        "S1": "Kaartversnelling, 1 s",
+        "SDS": "Rekenversnelling, korte periode",
+        "SD1": "Rekenversnelling, 1 s"
+      }
+    },
+    "en1990": {
+      "factoren": {
+        "1": "Buitengewoon(6.11a/b)",
+        "2": "Karakteristiek(6.14b)",
+        "3": "Quasi-Blijvend(6.16b)"
+      },
+      "psi": {
+        "1": "Categorie A: woon- en verblijfsruimtes",
+        "2": "Categorie B: kantoorruimtes",
+        "3": "Categorie C: bijeenkomstruimtes",
+        "4": "Categorie D: winkelruimtes",
+        "5": "Categorie E: opslagruimtes",
+        "6": "Categorie F: verkeer, voertuig tot 30 kN",
+        "7": "Categorie G: verkeer, voertuig 30 tot 160 kN",
+        "8": "Categorie H: daken",
+        "9": "Sneeuw: Finland, IJsland, Noorwegen, Zweden",
+        "10": "Sneeuw: elders, H boven 1000 m",
+        "11": "Sneeuw: elders, H tot 1000 m",
+        "12": "Wind",
+        "13": "Temperatuur (geen brand)"
+      }
+    },
+    "locatiewaarde": "Locatiewaarde (zie de norm)"
   }
 }

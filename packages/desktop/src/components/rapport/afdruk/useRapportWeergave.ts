@@ -8,7 +8,8 @@ import { projectBladVan } from "../../../store/projectBlad";
 import { gebruikteSymbolen } from "../../../rapport/belastingBronnen";
 import type { BeeldEenheden } from "../../calc/beeldEenheden";
 import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
-import type { BureauProfiel, Rapport } from "../../../rapport/model";
+import type { BureauProfiel, LokaleInvoer, Rapport } from "../../../rapport/model";
+import { lokaalVan, normkeuzeVan, type Normkeuze } from "../../../rapport/normen/keuze";
 import { fmt, notatie } from "../../../rapport/normwaarden";
 import {
   bijlageRegels,
@@ -68,6 +69,10 @@ export interface RapportWeergave {
   ne: (s: string, bron: string) => string;
   rapport: Rapport;
   gegevens: ProjectGegevens;
+  /** Het land en de generatie van het project, en of de Nederlandse tabellen gelden. */
+  normkeuze: Normkeuze;
+  /** De invoer voor dit land, voor wat buiten de Nederlandse tabellen staat. */
+  lokaal: LokaleInvoer;
   projectNaam: string;
   /** Het bureau dat op het rapport staat (zie useRapportBureau). */
   bureau: BureauProfiel;
@@ -165,10 +170,12 @@ export function useRapportWeergave(): RapportWeergave {
     ne: (s: string, bron: string) => eenheden.getypt(s, bron, (v, dec) => fmt(v, dec, false, taal)) ?? notatie(s, taal),
   }), [taal, eenheden]);
 
+  const normkeuze = useMemo(() => normkeuzeVan(gegevens), [gegevens]);
+  const lokaal = useMemo(() => lokaalVan(rapport, normkeuze), [rapport, normkeuze]);
   const symbolen = useMemo(
     () => gebruikteSymbolen(rapport.belastingen, [...exemplaren.map((ex) => ex.source), projectBladVan(gegevens)]),
     [rapport.belastingen, exemplaren, gegevens],
   );
 
-  return { taal, ...woorden, rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul, symbolen };
+  return { taal, ...woorden, rapport, gegevens, normkeuze, lokaal, projectNaam, bureau, bladen, ...opzet, invul, symbolen };
 }

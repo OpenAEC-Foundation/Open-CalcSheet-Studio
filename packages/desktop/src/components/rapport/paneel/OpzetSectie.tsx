@@ -2,13 +2,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { alleenInTaal, inTaal, inTaalGezet } from "../../../rapport/meertalig";
 import { heeftEigenHuisstijl, type Rapport } from "../../../rapport/model";
+import { landVanCode, metLandTekst } from "../../../rapport/normen/keuze";
 import { heeftBerekeningen, isRekenblok, opzetVan, titelVan, type Inhoud, type Knoop } from "../../../rapport/opzet";
 import {
   hernoemKnoop,
   INGEBOUWD_NAAM,
   leesTemplate,
   ongeplaatsteBlokken,
-  pasTemplateToe,
   plaatsBlok,
   schrijfTemplate,
   springKnoop,
@@ -22,6 +22,7 @@ import {
   type Template,
   type TemplateMelding,
 } from "../../../rapport/template";
+import { useNormkeuze } from "../../../store/actiefBlad";
 import { useProjectStore } from "../../../store/projectStore";
 import { useTemplateStore } from "../../../store/rapportTemplates";
 import { bewaarTemplateBestand, openTemplateBestand } from "../../../tauri/templateBestand";
@@ -73,6 +74,8 @@ function TemplateBalk() {
   const { t, i18n } = useTranslation("rapport");
   const rapport = useRapport();
   const werkBij = useProjectStore((s) => s.werkRapportBij);
+  const pasToe = useProjectStore((s) => s.pasTemplateToe);
+  const keuze = useNormkeuze();
   const huisstijl = useRapportBureau().huisstijl;
   const lijst = useTemplateStore((s) => s.lijst);
   const standaard = useTemplateStore((s) => s.standaard);
@@ -86,6 +89,11 @@ function TemplateBalk() {
 
   const naamVan = (template: Template) => inTaal(template.naam, i18n.language);
   const meldingTekst = (m: TemplateMelding) => t(`opzet.meldingen.${m.soort}`, { id: m.id ?? "", waarde: m.waarde ?? "" });
+  /** Wat erachter komt als het template het land van het project verandert. */
+  const landBericht = (template: Template) => {
+    const land = landVanCode(template.land);
+    return land && land.code !== keuze.land.code ? ` ${t("opzet.landGezet", { land: inTaal(land.naam, i18n.language) })}` : "";
+  };
 
   const open = async () => {
     setBericht(null);
@@ -98,10 +106,10 @@ function TemplateBalk() {
         return;
       }
       bewaar(u.template);
-      werkBij((r) => pasTemplateToe(r, u.template));
+      pasToe(u.template);
       const details = u.meldingen.slice(0, MAX_DETAILS).map(meldingTekst);
       if (u.meldingen.length > MAX_DETAILS) details.push(t("opzet.meerMeldingen", { aantal: u.meldingen.length - MAX_DETAILS }));
-      setBericht({ tekst: t("opzet.geopend", { naam: naamVan(u.template) }), details });
+      setBericht({ tekst: t("opzet.geopend", { naam: naamVan(u.template) }) + landBericht(u.template), details });
     } catch (err) {
       console.error("Template openen mislukt:", err);
       setBericht({ fout: true, tekst: t("opzet.fouten.lezen", { fout: (err as Error)?.message ?? String(err) }) });
@@ -121,6 +129,7 @@ function TemplateBalk() {
       rapport,
       rapport.template ? inTaalGezet(rapport.template.naam, rapport.taal, getypt) : alleenInTaal(getypt, rapport.taal),
       heeftEigenHuisstijl(huisstijl) ? huisstijl : undefined,
+      keuze.land.code,
     );
 
   const bevestigNaam = async () => {
@@ -146,7 +155,8 @@ function TemplateBalk() {
   const terug = () => {
     if (!confirm(t("opzet.terugVraag", { naam: inTaal(INGEBOUWD_NAAM, i18n.language) }))) return;
     setBericht(null);
-    werkBij(terugNaarIngebouwd);
+    // Het land blijft: het ingebouwde template heeft er geen.
+    werkBij((r) => metLandTekst(terugNaarIngebouwd(r), keuze));
   };
 
   const status = rapport.template
@@ -223,8 +233,8 @@ function TemplateBalk() {
                   className="rapport-knop"
                   title={t("opzet.toepassenUitleg")}
                   onClick={() => {
-                    werkBij((r) => pasTemplateToe(r, e.template));
-                    setBericht({ tekst: t("opzet.toegepast", { naam: naamVan(e.template) }) });
+                    pasToe(e.template);
+                    setBericht({ tekst: t("opzet.toegepast", { naam: naamVan(e.template) }) + landBericht(e.template) });
                   }}
                 >
                   {t("opzet.toepassen")}

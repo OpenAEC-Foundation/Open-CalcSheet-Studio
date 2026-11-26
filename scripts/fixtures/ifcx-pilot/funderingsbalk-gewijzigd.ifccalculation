@@ -453,6 +453,14 @@
               "waarde": ""
             },
             {
+              "naam": "land",
+              "waarde": "NL"
+            },
+            {
+              "naam": "eurocode_generatie",
+              "waarde": "1"
+            },
+            {
               "naam": "CC",
               "waarde": "2"
             },

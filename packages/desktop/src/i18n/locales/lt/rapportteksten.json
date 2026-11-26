@@ -278,6 +278,10 @@
       {
         "label": "Nereikalinga",
         "tekst": "Seisminė projektinė situacija nereikalinga."
+      },
+      {
+        "label": "Pagal vietą",
+        "tekst": "Seisminiai poveikiai nustatomi pagal vietoje galiojantį standartą."
       }
     ],
     "sneeuw": [
@@ -405,5 +409,207 @@
     "nieuwHoofdstuk": "Naujas skyrius",
     "nieuweParagraaf": "Naujas poskyris",
     "nieuwTekstblok": "Naujas teksto blokas"
+  },
+  "normen": {
+    "grootheden": {
+      "vb0": "Pagrindinio vėjo greičio fundamentinė reikšmė",
+      "sk": "Charakteristinė sniego apkrova ant žemės",
+      "agr": "Etaloninis didžiausias grunto pagreitis"
+    },
+    "TWEEDE_GENERATIE_TEKST": "Antrosios kartos Eurokodai (EN 1990:2023 ir vėlesni)",
+    "landen": {
+      "NL": {
+        "naam": "Nyderlandai",
+        "normenTekst": "NEN-EN 1990–1997",
+        "tekst": "Bbl nurodo standartus; jų leidimai pateikti Omgevingsregeling II priede, ir teisiškai galioja būtent jie.",
+        "opmerking": "Bbl nenurodo NEN-EN 1998. NPR 9998 taikomas tik šiaurės rytų Nyderlanduose.",
+        "opmerking2": "Bbl nenurodo jokio seisminio standarto; šiaurės rytų Nyderlandams žr. NPR 9998."
+      },
+      "EUROCODE": {
+        "naam": "Eurokodas be nacionalinio priedo",
+        "normenTekst": "EN 1990–EN 1998",
+        "tekst": "Nacionalinių pasirinkimų nėra. Taikomos rekomenduojamos reikšmės; daugelis reikšmių, pavyzdžiui, vėjo ir sniego, pateikiamos tik nacionaliniame priede, todėl jas reikia įvesti."
+      },
+      "AT": {
+        "naam": "Austrija",
+        "normenTekst": "ÖNORM EN 1990–1998 su ÖNORM B",
+        "tekst": "OIB-Richtlinie 1 nurodo ÖNORM EN 1990 su ÖNORM B 1990-1 ir yra privaloma per federalines žemes.",
+        "qb0": "Bazinis vėjo greičio slėgis"
+      },
+      "AU": {
+        "naam": "Australija",
+        "normenTekst": "NCC 2025, AS/NZS 1170",
+        "tekst": "ABCB leidžia NCC 2025, kuris įgyja teisinę galią per valstijų ir teritorijų teisės aktus; datos kiekvienoje valstijoje skiriasi.",
+        "regio": "Vėjo regionas",
+        "VR": "Regioninis vėjo greitis",
+        "sg": "Sniego apkrova ant žemės",
+        "Z": "Pavojaus koeficientas"
+      },
+      "BE": {
+        "naam": "Belgija",
+        "normenTekst": "NBN EN 1990–1998 su ANB",
+        "tekst": "NBN teigia, kad skaičiavimas be ANB teisiškai negalioja; Belgijos statybos reglamento nerasta."
+      },
+      "CA": {
+        "naam": "Kanada",
+        "normenTekst": "NBC 2025",
+        "tekst": "NRC leidžia NBC 2025 (16-asis leidimas) – pavyzdinį kodeksą, kuris teisiškai galioja tik provincijai ar teritorijai jį priėmus.",
+        "q": "Etaloninis vėjo greičio slėgis, 1/500",
+        "Ss": "Sniego apkrova ant žemės, 1/1000",
+        "Sr": "Kartu veikianti lietaus apkrova, 1/1000",
+        "PGA": "Didžiausias grunto pagreitis",
+        "PGV": "Didžiausias grunto greitis",
+        "SaT": "Spektrinis pagreitis"
+      },
+      "CH": {
+        "naam": "Šveicarija",
+        "normenTekst": "SIA 260:2013, SIA 261:2020",
+        "tekst": "SIA leidžia konstrukcijų standartus; jų teisinis statusas nenustatytas. BAFU prašo statyti pagal galiojančius standartus.",
+        "qp0": "Vėjo greičio slėgio etaloninė reikšmė",
+        "h0": "Etaloninis aukštis",
+        "zone": "Seisminė zona (Z1a–Z3b)",
+        "agd": "Skaičiuotinis grunto pagreitis",
+        "baugrund": "Grunto klasė"
+      },
+      "DE": {
+        "naam": "Vokietija",
+        "normenTekst": "DIN EN 1990–1998 su /NA, MVV TB 2025/1",
+        "tekst": "MVV TB 2025/1 yra DIBt pavyzdys, kuris galioja tik federalinei žemei jį paskelbus. MVV TB reiškia ten nurodytą leidimą; DIN – naujausią DIN kataloge.",
+        "opmerking": "DIN taip pat nurodo DIN EN 1990/NA/A1:2024-05.",
+        "tekst2": "MVV TB 2025/1 nurodo tik DIN 4149:2005-04.",
+        "windzone": "Vėjo zona",
+        "qb0": "Bazinis vėjo greičio slėgis",
+        "schneelastzone": "Sniego apkrovos zona",
+        "erdbebenzone": "Seisminė zona",
+        "untergrund": "Geologinio pagrindo klasė"
+      },
+      "DK": {
+        "naam": "Danija",
+        "normenTekst": "DS/EN 1990–1998 su DK NA",
+        "tekst": "BR18 15 skyrius yra teisiškai privalomas ir nurodo Eurokodus su DK NA, tik pirmosios kartos.",
+        "ag": "Skaičiuotinis grunto pagreitis"
+      },
+      "ES": {
+        "naam": "Ispanija",
+        "normenTekst": "CTE DB SE, NCSE-02, Código Estructural",
+        "tekst": "Pagal įstatymą galioja CTE, NCSE-02 ir Código Estructural; Código Estructural leidžia taikyti Eurokodus su ministerijos paskelbtu nacionaliniu priedu.",
+        "qb": "Dinaminio slėgio bazinė reikšmė",
+        "vb": "Bazinis vėjo greitis",
+        "ab": "Bazinis seisminis pagreitis",
+        "K": "Įtakos koeficientas"
+      },
+      "FI": {
+        "naam": "Suomija",
+        "normenTekst": "SFS-EN 1990–1997 su nacionaliniais pasirinkimais",
+        "tekst": "Nutarimas 477/2014: Eurokodai su Aplinkos ministerijos nacionaliniais pasirinkimais atitinka reikalavimus; kiti metodai leidžiami, jei atitinka tuos pačius reikalavimus.",
+        "opmerking": "Nacionalinio priedo nėra.",
+        "opmerking2": "Seisminis projektavimas atliekamas tik užsakovo prašymu, pagal ministerijos betono gaires."
+      },
+      "FR": {
+        "naam": "Prancūzija",
+        "normenTekst": "NF EN 1990–1998 su nacionaliniais priedais",
+        "tekst": "AFNOR Eurokodus laiko savanoriškais; teisės aktu nurodyta tik seisminė dalis (2010-10-22 arrêté, kuriame minimas NF EN 1998-1/NA 2007-12).",
+        "zone": "Seismiškumo zona (1–5)",
+        "agr": "Etaloninis didžiausias grunto pagreitis"
+      },
+      "GB": {
+        "naam": "Jungtinė Karalystė",
+        "normenTekst": "BS EN 1990–1998 su JK nacionaliniais priedais",
+        "tekst": "Approved Document A (Anglija) BS EN su JK NA nurodo kaip praktines gaires ir leidžia kitus būdus. Škotija, Velsas ir Šiaurės Airija netikrinti.",
+        "vbmap": "Žemėlapio vėjo greitis",
+        "PGA": "Didžiausias grunto pagreitis (žemėlapiai PD 6698)"
+      },
+      "IE": {
+        "naam": "Airija",
+        "normenTekst": "I.S. EN 1990–1997 su Airijos nacionaliniais priedais",
+        "tekst": "Technical Guidance Document A (2012) Eurokodus su Airijos NA nurodo kaip praktines gaires A daliai.",
+        "opmerking": "Nacionalinio priedo nerasta.",
+        "vbmap": "Fundamentinis bazinis vėjo greitis",
+        "opmerking2": "NSAI visą Airiją priskiria labai mažo seismiškumo zonai (I.S. EN 1998-5 pratarmė)."
+      },
+      "IN": {
+        "naam": "Indija",
+        "normenTekst": "IS 875, IS 1893, IS 456, IS 800",
+        "tekst": "BIS Nacionalinį statybos kodeksą vadina pavyzdiniu kodeksu vyriausybėms ir vietos valdžiai; jo privalomumas priklauso nuo vietos taisyklių. Jo įpėdinis yra SP 7:2026, kurio nuorodos neperskaitytos.",
+        "tekst2": "BIS sąraše nurodyti 2016 m., o kitame BIS įraše yra 2025 m. leidimas tuo pačiu pavadinimu; kuris galioja, dar reikia patvirtinti.",
+        "Vb": "Bazinis vėjo greitis",
+        "s0": "Charakteristinė sniego apkrova ant žemės",
+        "Z": "Seisminės zonos koeficientas"
+      },
+      "IT": {
+        "naam": "Italija",
+        "normenTekst": "NTC 2018 (DM 17-01-2018)",
+        "tekst": "Pagal įstatymą galioja NTC 2018 ir Circolare n. 7/2019; Eurokodai su Appendici Nazionali laikomi tik įrodytos vertės dokumentais (1 ir 12 skyriai).",
+        "vb0": "Bazinis etaloninis greitis jūros lygyje",
+        "qsk": "Sniego apkrovos ant žemės etaloninė reikšmė",
+        "ag": "Didžiausias horizontalusis pagreitis",
+        "Fo": "Spektro koeficientas",
+        "TC": "Etaloninis periodas"
+      },
+      "NO": {
+        "naam": "Norvegija",
+        "normenTekst": "NS-EN 1990–1998 su NA",
+        "tekst": "TEK17 § 10-2 yra teisiškai privalomas: Eurokodai su NA atitinka reikalavimus, alternatyvų lygiavertiškumas turi būti įrodytas."
+      },
+      "NZ": {
+        "naam": "Naujoji Zelandija",
+        "normenTekst": "B1/VM1 (2-asis leidimas), AS/NZS 1170, NZS 1170.5",
+        "tekst": "MBIE administruoja privalomą Statybos kodeksą; B1/VM1 antrasis leidimas (2025-07-28) yra vienas iš būdų įrodyti atitiktį. TS 1170.5:2025 yra alternatyvus kelias, NZS 1170.5:2004 lieka nurodytu standartu.",
+        "regio": "Vėjo regionas",
+        "VR": "Regioninis vėjo greitis",
+        "sg": "Sniego apkrova ant žemės",
+        "Z": "Pavojaus koeficientas"
+      },
+      "PL": {
+        "naam": "Lenkija",
+        "normenTekst": "PN-EN 1990–1997 su NA",
+        "tekst": "Warunki techniczne § 204 yra teisiškai privalomas: saugos reikalavimas laikomas įvykdytu, kai laikomasi Lenkijos projektavimo standartų. Naujausia suvestinė redakcija netikrinta.",
+        "opmerking": "Originalo kalbos versija; PKN sąraše nacionalinio priedo nėra.",
+        "opmerking2": "PKN nurodo, kad vertimo nėra, nes Lenkija yra aseisminėje zonoje."
+      },
+      "SE": {
+        "naam": "Švedija",
+        "normenTekst": "BFS 2024:6, SS-EN 1990–1997",
+        "tekst": "Pagal įstatymą galioja BFS 2024:6 (nuo 2025-07-01, vietoj EKS); Eurokodai su Švedijos NA yra pripažintas kelias per jame pateiktus bendruosius patarimus. Pirmenybė teikiama Boverket reikšmėms.",
+        "opmerking": "Egzistuoja, bet nėra BFS 2024:6 sąraše.",
+        "vb": "Etaloninis vėjo greitis",
+        "S0": "Charakteristinė sniego apkrova ant žemės",
+        "opmerking2": "BFS 2024:6 nenurodo jokio seisminio dydžio; Eurokodo 8 statusas Švedijoje nenustatytas."
+      },
+      "US": {
+        "naam": "Jungtinės Valstijos",
+        "normenTekst": "IBC 2024, ASCE/SEI 7-22",
+        "tekst": "ICC leidžia IBC 2024, kuris galioja tik valstijai ar savivaldybei jį priėmus. Leidimai skirtingose valstijose skiriasi, o kai kuriose valstijose bendro IBC visai valstijai nėra.",
+        "V": "Bazinis vėjo greitis",
+        "pg": "Sniego apkrova ant žemės",
+        "SS": "Žemėlapio pagreitis, trumpas periodas",
+        "S1": "Žemėlapio pagreitis, 1 s",
+        "SDS": "Skaičiuotinis pagreitis, trumpas periodas",
+        "SD1": "Skaičiuotinis pagreitis, 1 s"
+      }
+    },
+    "en1990": {
+      "factoren": {
+        "1": "Ypatingasis(6.11a/b)",
+        "2": "Charakteristinis(6.14b)",
+        "3": "Kvazinuol.(6.16b)"
+      },
+      "psi": {
+        "1": "Kategorija A: buitinės ir gyvenamosios patalpos",
+        "2": "Kategorija B: biurų patalpos",
+        "3": "Kategorija C: susirinkimų zonos",
+        "4": "Kategorija D: prekybos zonos",
+        "5": "Kategorija E: sandėliavimo zonos",
+        "6": "Kategorija F: eismas, transporto priemonė iki 30 kN",
+        "7": "Kategorija G: eismas, transporto priemonė nuo 30 iki 160 kN",
+        "8": "Kategorija H: stogai",
+        "9": "Sniegas: Suomija, Islandija, Norvegija, Švedija",
+        "10": "Sniegas: kitur, H daugiau kaip 1000 m",
+        "11": "Sniegas: kitur, H iki 1000 m",
+        "12": "Vėjas",
+        "13": "Temperatūra (ne gaisro)"
+      }
+    },
+    "locatiewaarde": "Vietos reikšmė (žr. standartą)"
   }
 }

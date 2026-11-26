@@ -92,8 +92,10 @@
       "teVeel": "Faile per daug dalių: likusios praleistos.",
       "nieuwereVersie": "Failas sukurtas naujesne programos versija (formatas {{waarde}}): tai, ko ši versija nežino, praleista.",
       "geenNaam": "Failas neturi pavadinimo.",
-      "onbekendeTekst": "Tekstai prie {{id}} praleisti: tokios dalies nėra."
-    }
+      "onbekendeTekst": "Tekstai prie {{id}} praleisti: tokios dalies nėra.",
+      "onbekendLand": "Šablone nurodyta šiai programai nežinoma šalis ({{waarde}}): projekto šalis nesikeičia."
+    },
+    "landGezet": "Projekto šalis dabar yra {{land}}."
   },
   "algemeen": {
     "omhoog": "Perkelti aukštyn",
@@ -164,7 +166,9 @@
     "talen": {
       "en": "Anglų",
       "nl": "Nyderlandų"
-    }
+    },
+    "normenHint": "Atitinka projekto duomenyse nurodytą šalį. Jūsų įvestas tekstas lieka.",
+    "land": "Šalis arba regionas"
   },
   "revisies": {
     "intro": "Pirmoji laida nustato pirmąją ataskaitos datą; kiekviena vėlesnė prideda pakeitimo datos eilutę. Paskutinė laida nustato ataskaitos būseną tituliniame lape.",
@@ -579,7 +583,65 @@
       "vulling": "užpildas",
       "vloerDaken": "PERDANGOS, STOGAI",
       "wanden": "SIENOS"
+    },
+    "lokaal": {
+      "teBevestigen": "dar reikia patvirtinti",
+      "bron": "Šaltinis",
+      "nietIngevuld": "neįvesta",
+      "veiligheid": "Saugos arba rizikos klasė",
+      "normenKop": "Taikomi standartai: {{land}}",
+      "editieTeBevestigen": "leidimą dar reikia patvirtinti",
+      "onderwerpen": {
+        "belastingen": "Poveikiai",
+        "wind": "Vėjas",
+        "sneeuw": "Sniegas",
+        "aardbeving": "Seisminiai poveikiai",
+        "beton": "Betonas",
+        "staal": "Plienas",
+        "hout": "Mediena",
+        "metselwerk": "Mūras",
+        "funderingen": "Pamatai"
+      },
+      "combinatie": "Derinys",
+      "formule": "Formulė",
+      "combinatiesNietIngevuld": "Apkrovų deriniai: neįvesta.",
+      "factorenAanbevolen": "Rekomenduojamos EN 1990 reikšmės, jei šiam projektui nepakeistos; nacionalinis priedas jas gali pakeisti.",
+      "factorenGeneratie2": "Antroji karta: koeficientai nustatomi pagal EN 1990:2023 ir jo nacionalinį priedą.",
+      "belasting": "Poveikis",
+      "sneeuwPlatDak": "Sniego apkrova ant plokščio stogo s",
+      "stuwdruk": "Vėjo greičio slėgis q",
+      "klassenNietIngevuld": "Naudojimo apkrovos: neįvesta."
+    },
+    "bladNorm": {
+      "eigen": "Šis lapas pagrįstas {{normen}} (Eurokodais), o ne šiam projektui pasirinktais standartais ({{land}}). Jo rezultatai nėra patikrinimas pagal tuos standartus.",
+      "bijlage": "Šis lapas pagrįstas {{normen}} su Nyderlandų nacionaliniu priedu, o ne su šio projekto pasirinkimais ({{land}}). Patikrinkite jo reikšmes pagal ten galiojantį standartą.",
+      "zonderBijlage": "Šis lapas pagrįstas {{normen}} be šio projekto nacionalinių pasirinkimų ({{land}}). Patikrinkite jo reikšmes pagal ten galiojantį standartą.",
+      "generatie": "Šis lapas pagrįstas pirmosios kartos Eurokodais ({{normen}}), o šis projektas taiko antrąją kartą."
     }
+  },
+  "lokaal": {
+    "invullen": "Įveskite, kas galioja vietoje ({{land}}), ir nurodykite šaltinį. Reikšmės neatsisiunčiamos ir iš anksto neužpildomos: jos imamos iš standarto žemėlapio ar lentelės.",
+    "teBevestigen": "Dar nepatvirtinta oficialiame šaltinyje: patikrinkite šį dydį standarte.",
+    "bron": "Šių reikšmių šaltinis",
+    "bronVoorbeeld": "pvz., nacionalinis priedas, žemėlapis ar lentelė, data",
+    "bronHint": "Rodoma ataskaitoje po šiomis reikšmėmis.",
+    "norm": "Standartas:",
+    "editieTeBevestigen": "leidimą dar reikia patvirtinti",
+    "waardenBron": "Kur paskelbtos reikšmės",
+    "sneeuwPlatDak": "Sniego apkrova ant plokščio stogo s",
+    "stuwdruk": "Šioje ataskaitoje naudojamas vėjo greičio slėgis q",
+    "nietBerekend": "Nustatoma pagal šios šalies standartą; ją įvedate jūs, programa jos čia neskaičiuoja.",
+    "klassenUitleg": "Naudojimo apkrovų čia programoje nėra ({{land}}): įveskite q_k ir Q_k iš standarto.",
+    "factorenAanbevolen": "Rekomenduojamos EN 1990 reikšmės ({{land}}). Nacionalinis priedas jas gali pakeisti: patikrinkite ir prireikus pakoreguokite čia.",
+    "factorenGeneratie2": "Antroji karta: viešo šaltinio su galutiniais EN 1990:2023 koeficientais nėra, todėl niekas neužpildyta. Įveskite juos iš standarto ir jo nacionalinio priedo.",
+    "psiKop": "ψ koeficientai (EN 1990, A1.1 lentelė)",
+    "combinatiesUitleg": "Čia Eurokodai netaikomi ({{land}}): įveskite apkrovų derinius taip, kaip jie užrašyti standarte.",
+    "combinatieToevoegen": "Pridėti derinį",
+    "formuleVoorbeeld": "pvz., 1.2D + 1.6L",
+    "vervormingen": "Už Nyderlandų ribų šie apribojimai iš anksto neužpildomi: įveskite šioje šalyje galiojančius apribojimus.",
+    "levensduur": "{{jaren}} m.",
+    "veiligheidHint": "Čia galiojančio standarto klasė ({{land}}), pavyzdžiui, rizikos ar svarbos kategorija. Tuščia – ataskaitoje nerodoma.",
+    "alleenVerwijzing": "Čia ({{land}}) programa turi tik nuorodas į standartus, ir ne viską pavyko patvirtinti. Žr. projekto duomenis."
   },
   "documentExport": {
     "momentopname": "{{project}} momentinė kopija, laida {{revisie}}, sukurta {{moment}} su Open CalcSheet Studio. Šio dokumento skaičiai, formulės ir patikros neperskaičiuojami: čia atlikti pakeitimai neperskaičiuojami ir negrįžta į skaičiavimą.",

@@ -197,7 +197,28 @@
     "verwijder": "Pašalinti",
     "verwijderLabel": "Pašalinti {{nummer}}",
     "verwijderVraag": "Pašalinti {{nummer}} ({{editie}}) iš vietinės bibliotekos?",
-    "nietBeschikbaar": "PDF failas nebeprieinamas"
+    "nietBeschikbaar": "PDF failas nebeprieinamas",
+    "onderwerp": "Sritis",
+    "norm": "Standartas",
+    "editieKop": "Leidimas",
+    "uitgever": "Leidėjas",
+    "bron": "Oficialus šaltinis",
+    "teBevestigen": "dar reikia patvirtinti",
+    "onderwerpen": {
+      "belastingen": "Poveikiai",
+      "wind": "Vėjas",
+      "sneeuw": "Sniegas",
+      "aardbeving": "Seisminiai poveikiai",
+      "beton": "Betonas",
+      "staal": "Plienas",
+      "hout": "Mediena",
+      "metselwerk": "Mūras",
+      "funderingen": "Pamatai"
+    },
+    "compleet": "Šios nuorodos ({{land}}) patikrintos oficialiuose arba aiškiai patikimuose šaltiniuose 2026-11-05. Visada patikrinkite galiojantį leidimą.",
+    "verwijzing": "Čia ({{land}}) programa turi tik nuorodas: ne viską pavyko patvirtinti oficialiame šaltinyje, o tai, kas pažymėta „dar reikia patvirtinti“, dar turi būti patikrinta. Vietos reikšmės niekada neužpildomos iš anksto.",
+    "tweedeGeneratie": "Antroji karta tiek, kiek CEN ją įrodomai išleido. Nacionalinių priedų čia dar nėra: patikrinkite juos ({{land}}).",
+    "overgang": "Antrosios kartos nacionalinis paskelbimas – ne vėliau kaip {{publicatie}}, pirmosios kartos atšaukimas – ne vėliau kaip {{intrekking}}."
   },
   "gegevens": {
     "introGeen": "Šios reikšmės galioja kiekvienam į šį projektą pridėtam lapui. Kiekvienas lapas gali jas naudoti, jų nebeklausdamas.",
@@ -223,7 +244,9 @@
       "rekenwijze": "Skaičiavimo būdas",
       "project": "Projektas",
       "grondslagen": "Projektavimo prielaidos (NEN-EN 1990 + NB)",
-      "wind": "Vėjas (NEN-EN 1991-1-4 + NB)"
+      "wind": "Vėjas (NEN-EN 1991-1-4 + NB)",
+      "land": "Šalis ir standartai",
+      "grondslagenAlgemeen": "Projektavimo pagrindai"
     },
     "velden": {
       "eenheden": {
@@ -270,7 +293,9 @@
           "1": "CC1 – mažos pasekmės",
           "2": "CC2 – vidutinės pasekmės",
           "3": "CC3 – didelės pasekmės"
-        }
+        },
+        "hintEurocode": "Nustato K_FI (EN 1990, B3 lentelė): CC1 → 0,9 · CC2 → 1,0 · CC3 → 1,1, nebent nacionalinis priedas nurodo kitaip. Kiekvienas lapas gauna ir CC, ir K_FI.",
+        "hintEigen": "Eurokodų sąvoka. Ją naudoja tik Eurokodais pagrįsti lapai; šios šalies standarto klasė įrašoma į ataskaitą, skyriuje „Projektavimo prielaidos“."
       },
       "RC": {
         "label": "Patikimumo klasė",
@@ -292,7 +317,9 @@
         "vervallen": {
           "10": "10 metų",
           "25": "25 metai"
-        }
+        },
+        "hintEurocode": "Kategorijos pagal paskirtį pateiktos EN 1990 2.1 lentelėje; nacionalinis priedas jas gali pakeisti.",
+        "hintEigen": "Šią reikšmę naudoja tik Eurokodais pagrįsti lapai."
       },
       "windgebied": {
         "label": "Vėjo zona",
@@ -311,8 +338,21 @@
           "2": "II – neužstatyta vietovė (z₀ = 0,2 · z_min = 4)",
           "3": "III – užstatyta vietovė (z₀ = 0,5 · z_min = 7)"
         }
+      },
+      "land": {
+        "label": "Šalis arba regionas",
+        "hint": "Nustato, kuriuos standartus nurodo ataskaita ir kokių reikšmių ji prašo. Už Nyderlandų ribų vietos reikšmes įvedate patys, su šaltiniu; iš išorinių paslaugų niekas neatsisiunčiama."
+      },
+      "eurocode_generatie": {
+        "label": "Eurokodų karta",
+        "hint": "CEN pirmąją kartą atšaukia ne vėliau kaip 2028-03-30; kuri karta taikoma šiam projektui, nustato nacionalinės taisyklės. Skaičiavimo lapai pagrįsti pirmąja karta.",
+        "opties": {
+          "1": "Pirmoji karta (EN 1990:2002 ir vėlesni)",
+          "2": "Antroji karta (EN 1990:2023 ir vėlesni)"
+        }
       }
     },
+    "jaren": "{{jaren}} m.",
     "eenheden": {
       "eigenEenheden": "Savi vienetai",
       "eigenEenhedenHint": "Prieinami kiekviename šio projekto lape, pavyzdžiui, kipf = 1000 lbf. Lapas gali apibrėžti savus vienetus su .pavadinimas = išraiška.",

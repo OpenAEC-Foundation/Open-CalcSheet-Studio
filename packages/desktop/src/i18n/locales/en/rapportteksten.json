@@ -278,6 +278,10 @@
       {
         "label": "Not required",
         "tekst": "No seismic design situation is required."
+      },
+      {
+        "label": "According to the location",
+        "tekst": "Seismic actions follow from the standard that applies at the location."
       }
     ],
     "sneeuw": [
@@ -405,5 +409,207 @@
     "nieuwHoofdstuk": "New chapter",
     "nieuweParagraaf": "New section",
     "nieuwTekstblok": "New text block"
+  },
+  "normen": {
+    "grootheden": {
+      "vb0": "Fundamental value of the basic wind velocity",
+      "sk": "Characteristic ground snow load",
+      "agr": "Reference peak ground acceleration"
+    },
+    "TWEEDE_GENERATIE_TEKST": "Second-generation Eurocodes (EN 1990:2023 and further)",
+    "landen": {
+      "NL": {
+        "naam": "Netherlands",
+        "normenTekst": "NEN-EN 1990 to 1997",
+        "tekst": "The Bbl refers to the standards; the editions are in Annex II of the Omgevingsregeling, and those count legally.",
+        "opmerking": "The Bbl does not designate NEN-EN 1998. NPR 9998 is limited to the north-east of the Netherlands.",
+        "opmerking2": "No seismic standard is designated by the Bbl; for the north-east of the Netherlands see NPR 9998."
+      },
+      "EUROCODE": {
+        "naam": "Eurocode without national annex",
+        "normenTekst": "EN 1990 to EN 1998",
+        "tekst": "No national choices. The recommended values apply; many values, such as wind and snow, only exist in a national annex and have to be entered."
+      },
+      "AT": {
+        "naam": "Austria",
+        "normenTekst": "ÖNORM EN 1990 to 1998 with ÖNORM B",
+        "tekst": "OIB-Richtlinie 1 refers to ÖNORM EN 1990 with ÖNORM B 1990-1 and is binding through the federal states.",
+        "qb0": "Basic velocity pressure"
+      },
+      "AU": {
+        "naam": "Australia",
+        "normenTekst": "NCC 2025, AS/NZS 1170",
+        "tekst": "The ABCB publishes NCC 2025, which takes legal effect through state and territory legislation; dates differ per state.",
+        "regio": "Wind region",
+        "VR": "Regional wind speed",
+        "sg": "Ground snow load",
+        "Z": "Hazard factor"
+      },
+      "BE": {
+        "naam": "Belgium",
+        "normenTekst": "NBN EN 1990 to 1998 with ANB",
+        "tekst": "NBN states that a calculation without the ANB is not legally valid; no Belgian building decree was found."
+      },
+      "CA": {
+        "naam": "Canada",
+        "normenTekst": "NBC 2025",
+        "tekst": "NRC publishes NBC 2025 (16th edition), a model code that only applies by law once a province or territory adopts it.",
+        "q": "Reference velocity pressure, 1/500",
+        "Ss": "Ground snow load, 1/1000",
+        "Sr": "Associated rain load, 1/1000",
+        "PGA": "Peak ground acceleration",
+        "PGV": "Peak ground velocity",
+        "SaT": "Spectral acceleration"
+      },
+      "CH": {
+        "naam": "Switzerland",
+        "normenTekst": "SIA 260:2013, SIA 261:2020",
+        "tekst": "SIA publishes the structural standards; their legal status has not been established. BAFU asks for building according to the applicable standards.",
+        "qp0": "Reference value of the velocity pressure",
+        "h0": "Reference height",
+        "zone": "Seismic zone (Z1a to Z3b)",
+        "agd": "Design ground acceleration",
+        "baugrund": "Ground class"
+      },
+      "DE": {
+        "naam": "Germany",
+        "normenTekst": "DIN EN 1990 to 1998 with /NA, MVV TB 2025/1",
+        "tekst": "MVV TB 2025/1 is a model by DIBt that only applies once a federal state announces it. MVV TB means the edition listed there; DIN means the latest in the DIN catalogue.",
+        "opmerking": "DIN also lists DIN EN 1990/NA/A1:2024-05.",
+        "tekst2": "MVV TB 2025/1 only lists DIN 4149:2005-04.",
+        "windzone": "Wind zone",
+        "qb0": "Basic velocity pressure",
+        "schneelastzone": "Snow load zone",
+        "erdbebenzone": "Seismic zone",
+        "untergrund": "Geological subsoil class"
+      },
+      "DK": {
+        "naam": "Denmark",
+        "normenTekst": "DS/EN 1990 to 1998 with DK NA",
+        "tekst": "BR18, chapter 15, is legally binding and refers to the Eurocodes with DK NA, first generation only.",
+        "ag": "Design ground acceleration"
+      },
+      "ES": {
+        "naam": "Spain",
+        "normenTekst": "CTE DB SE, NCSE-02, Código Estructural",
+        "tekst": "By law CTE, NCSE-02 and the Código Estructural apply; the Código Estructural allows the Eurocodes with a national annex published by the ministry.",
+        "qb": "Basic value of the dynamic pressure",
+        "vb": "Basic wind velocity",
+        "ab": "Basic seismic acceleration",
+        "K": "Contribution coefficient"
+      },
+      "FI": {
+        "naam": "Finland",
+        "normenTekst": "SFS-EN 1990 to 1997 with national choices",
+        "tekst": "Decree 477/2014: the Eurocodes with the national choices of the ministry of the environment comply; other methods may be used if they meet the same requirements.",
+        "opmerking": "No national annex.",
+        "opmerking2": "Seismic design only at the request of the client, according to the concrete guidance of the ministry."
+      },
+      "FR": {
+        "naam": "France",
+        "normenTekst": "NF EN 1990 to 1998 with national annexes",
+        "tekst": "AFNOR describes the Eurocodes as voluntary; only the seismic part is designated by law (arrêté of 22-10-2010, which names NF EN 1998-1/NA 2007-12).",
+        "zone": "Seismicity zone (1 to 5)",
+        "agr": "Reference peak ground acceleration"
+      },
+      "GB": {
+        "naam": "United Kingdom",
+        "normenTekst": "BS EN 1990 to 1998 with UK National Annexes",
+        "tekst": "Approved Document A (England) names BS EN with the UK NA as practical guidance and allows other routes. Scotland, Wales and Northern Ireland have not been checked.",
+        "vbmap": "Map wind speed",
+        "PGA": "Peak ground acceleration (maps in PD 6698)"
+      },
+      "IE": {
+        "naam": "Ireland",
+        "normenTekst": "I.S. EN 1990 to 1997 with Irish National Annexes",
+        "tekst": "Technical Guidance Document A (2012) names the Eurocodes with the Irish NA as practical guidance for Part A.",
+        "opmerking": "No national annex found.",
+        "vbmap": "Fundamental basic wind velocity",
+        "opmerking2": "NSAI classifies all of Ireland as very low seismicity (foreword to I.S. EN 1998-5)."
+      },
+      "IN": {
+        "naam": "India",
+        "normenTekst": "IS 875, IS 1893, IS 456, IS 800",
+        "tekst": "BIS calls the National Building Code a model code for governments and local bodies; how binding it is depends on local bye-laws. Its successor is SP 7:2026, whose references have not been read.",
+        "tekst2": "The BIS list shows 2016, while another BIS record has a 2025 edition with the same title; which one applies is to be confirmed.",
+        "Vb": "Basic wind speed",
+        "s0": "Characteristic ground snow load",
+        "Z": "Zone factor of the seismic zone"
+      },
+      "IT": {
+        "naam": "Italy",
+        "normenTekst": "NTC 2018 (DM 17-01-2018)",
+        "tekst": "By law NTC 2018 and Circolare n. 7/2019 apply; the Eurocodes with Appendici Nazionali only count as documents of proven validity (chapters 1 and 12).",
+        "vb0": "Basic reference velocity at sea level",
+        "qsk": "Reference value of the ground snow load",
+        "ag": "Maximum horizontal acceleration",
+        "Fo": "Spectrum factor",
+        "TC": "Reference period"
+      },
+      "NO": {
+        "naam": "Norway",
+        "normenTekst": "NS-EN 1990 to 1998 with NA",
+        "tekst": "TEK17 § 10-2 is legally binding: the Eurocodes with NA comply, alternatives must be shown to be equivalent."
+      },
+      "NZ": {
+        "naam": "New Zealand",
+        "normenTekst": "B1/VM1 (2nd edition), AS/NZS 1170, NZS 1170.5",
+        "tekst": "MBIE manages the statutory Building Code; B1/VM1, second edition (28-07-2025), is one way to show compliance. TS 1170.5:2025 is an alternative route, NZS 1170.5:2004 stays the cited standard.",
+        "regio": "Wind region",
+        "VR": "Regional wind speed",
+        "sg": "Ground snow load",
+        "Z": "Hazard factor"
+      },
+      "PL": {
+        "naam": "Poland",
+        "normenTekst": "PN-EN 1990 to 1997 with NA",
+        "tekst": "§ 204 of the Warunki techniczne is legally binding: safety is ensured by complying with the Polish Standards for design. The latest consolidation has not been checked.",
+        "opmerking": "Original language version; no national annex in the list of PKN.",
+        "opmerking2": "PKN reports no translation because of the aseismic location of Poland."
+      },
+      "SE": {
+        "naam": "Sweden",
+        "normenTekst": "BFS 2024:6, SS-EN 1990 to 1997",
+        "tekst": "By law BFS 2024:6 applies (since 01-07-2025, replacing EKS); the Eurocodes with the Swedish NA are a recognised route through its general advice. Boverket's own values come first.",
+        "opmerking": "Exists, but is not in the list of BFS 2024:6.",
+        "vb": "Reference wind speed",
+        "S0": "Characteristic ground snow load",
+        "opmerking2": "BFS 2024:6 names no quantity for seismic actions; the status of Eurocode 8 in Sweden has not been established."
+      },
+      "US": {
+        "naam": "United States",
+        "normenTekst": "IBC 2024, ASCE/SEI 7-22",
+        "tekst": "ICC publishes the IBC 2024, which only applies once a state or municipality adopts it. Editions differ per state, and some states have no statewide IBC.",
+        "V": "Basic wind speed",
+        "pg": "Ground snow load",
+        "SS": "Mapped acceleration, short period",
+        "S1": "Mapped acceleration, 1 s",
+        "SDS": "Design acceleration, short period",
+        "SD1": "Design acceleration, 1 s"
+      }
+    },
+    "en1990": {
+      "factoren": {
+        "1": "Accidental(6.11a/b)",
+        "2": "Characteristic(6.14b)",
+        "3": "Quasi-perm.(6.16b)"
+      },
+      "psi": {
+        "1": "Category A: domestic, residential areas",
+        "2": "Category B: office areas",
+        "3": "Category C: congregation areas",
+        "4": "Category D: shopping areas",
+        "5": "Category E: storage areas",
+        "6": "Category F: traffic, vehicle up to 30 kN",
+        "7": "Category G: traffic, vehicle 30 to 160 kN",
+        "8": "Category H: roofs",
+        "9": "Snow: Finland, Iceland, Norway, Sweden",
+        "10": "Snow: elsewhere, H above 1000 m",
+        "11": "Snow: elsewhere, H up to 1000 m",
+        "12": "Wind",
+        "13": "Temperature (non-fire)"
+      }
+    },
+    "locatiewaarde": "Location value (see the standard)"
   }
 }

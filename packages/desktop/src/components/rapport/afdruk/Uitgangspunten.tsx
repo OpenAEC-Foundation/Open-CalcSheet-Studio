@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import {
   belastingfactorTabel,
   beta,
+  type FactorRij,
   getal,
   inspectieniveau,
   klasse,
@@ -12,6 +13,7 @@ import {
 import { KOLOMMEN, materialenRijen } from "../../../rapport/materialen";
 import { kFiVoor, projectWaarde } from "../../../store/projectGegevens";
 import type { RapportWeergave } from "./useRapportWeergave";
+import { EigenCombinaties, FactorenSlot, LokaalBouwwerk } from "./Lokaal";
 import { Cel, Eenheid, Index, Leeg, Rij, Tekst } from "./raster";
 
 /*
@@ -41,6 +43,7 @@ function Veld({ label, waarde, norm, invoer }: {
  * komen uit de projectgegevens; β, K_FI, supervisie en inspectie volgen daaruit.
  */
 export function Bouwwerk({ w }: { w: RapportWeergave }) {
+  if (!w.normkeuze.nlTabellen) return <LokaalBouwwerk w={w} />;
   const cc = klasse(w.gegevens.CC, 2);
   const rc = klasse(w.gegevens.RC, 2);
   const jaren = getal(projectWaarde(w.gegevens, "DesignLife"));
@@ -154,11 +157,16 @@ export function Conservering({ w }: { w: RapportWeergave }) {
 /**
  * 4.5 Belastingfactoren en belastingcombinaties bij de gevolgklasse van het
  * project. Opeenvolgende regels "niet van toepassing" delen één vak, zonder
- * lijn ertussen, zoals in de referentie.
+ * lijn ertussen, zoals in de referentie. Buiten de Nederlandse tabellen dezelfde tabel met de
+ * invoer van dit land; buiten de Eurocodes de eigen combinaties.
  */
 export function Factoren({ w }: { w: RapportWeergave }) {
-  const rijen = belastingfactorTabel(klasse(w.gegevens.CC, 2), w.taal);
-  const { t } = w;
+  const { t, n, normkeuze: k } = w;
+  if (!k.eurocode) return <EigenCombinaties w={w} />;
+  const rijen = k.nlTabellen
+    ? belastingfactorTabel(klasse(w.gegevens.CC, 2), w.taal)
+    : w.lokaal.factoren.map((r): FactorRij => ({ groep: r.groep, naam: r.naam, cellen: [n(r.gGinf), n(r.gGsup), n(r.gQ1), n(r.gQi)] }));
+  if (rijen.length === 0) return <FactorenSlot w={w} />;
   return (
     <>
       <Rij houd>
@@ -193,6 +201,7 @@ export function Factoren({ w }: { w: RapportWeergave }) {
           </Rij>
         );
       })}
+      {!k.nlTabellen && <FactorenSlot w={w} />}
     </>
   );
 }
@@ -213,11 +222,14 @@ export function Bestaand({ w }: { w: RapportWeergave }) {
         <Cel k={6} o>{t("afdruk.bestaand.bron")}</Cel>
         <Cel k={7} n={2} o klasse="rpa-invoer">{b.bron}</Cel>
       </Rij>
-      <Rij>
-        <Cel k={1} n={3} o>{t("afdruk.bestaand.norm")}</Cel>
-        <Cel k={4} o>{norm}</Cel>
-        <Cel k={7} n={2} o>{t("afdruk.bestaand.afgeleid")}</Cel>
-      </Rij>
+      {/* De oude voorschriften zijn Nederlands; elders zegt het bouwjaar hier niets over. */}
+      {w.normkeuze.land.code === "NL" && (
+        <Rij>
+          <Cel k={1} n={3} o>{t("afdruk.bestaand.norm")}</Cel>
+          <Cel k={4} o>{norm}</Cel>
+          <Cel k={7} n={2} o>{t("afdruk.bestaand.afgeleid")}</Cel>
+        </Rij>
+      )}
       <Rij>
         <Cel k={1} n={3} o>{t("afdruk.bestaand.berekening")}</Cel>
         <Cel k={4} o klasse="rpa-invoer">{jaNee(b.berekeningBeschikbaar)}</Cel>
