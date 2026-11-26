@@ -5,6 +5,7 @@ import type { BladUitkomst } from "./bladResultaat";
 import { maakStaaflijst, zijdenKort, type Staaflijst } from "./poerStaven";
 import { detailNaarDxf, maakDetail, tekeningStatus, type DetailTeksten, type PoerVorm } from "./poerDxf";
 import { bewaarTekstBestand, veiligeBestandsnaam } from "./poerBewaren";
+import { usePoerRevisie } from "./PoerKoppeling";
 
 /**
  * De staaflijst van een poer op het blad, met de status van de tekening en de knop voor
@@ -16,6 +17,7 @@ import { bewaarTekstBestand, veiligeBestandsnaam } from "./poerBewaren";
  *
  * De status is een waarde van het blad (`tekening_vrij`), zodat hij met het project wordt
  * bewaard. Vrijgegeven komt alleen in de titel als het blad zegt dat de poer voldoet.
+ * Achter de status staat de revisie (poerRevisie.ts); het DXF opslaan legt hem vast.
  */
 export const STATUS_VELD = "tekening_vrij";
 
@@ -37,7 +39,7 @@ export function useTekeningStatus(d: (naam: string) => number, uitkomst: BladUit
 }
 
 /** `kort`: op papier, zo laag mogelijk; het blad moet kort blijven. */
-export function StaaflijstTabel({ lijst, status, kort = false }: { lijst: Staaflijst; status: string; kort?: boolean }) {
+export function StaaflijstTabel({ lijst, status, kort = false, noot }: { lijst: Staaflijst; status: string; kort?: boolean; noot?: string }) {
   const { t, i18n } = useTranslation("beelden");
   const g = (w: number, n = 0) => fmt(w, n, i18n.language);
   const cel = { padding: kort ? "0 4px" : "1px 6px" } as const;
@@ -76,6 +78,7 @@ export function StaaflijstTabel({ lijst, status, kort = false }: { lijst: Staafl
       <div style={{ fontSize: kort ? 9.5 : 11, marginTop: kort ? 1 : 2 }}>
         {lijst.perDiameter.map((p) => `Ø${g(p.d)}: ${g(p.lengte, 2)} m, ${g(p.massa, 1)} kg`).join(" · ")}
         {" · "}<b>{`${t("poerDetail.totaalMassa")}: ${g(lijst.massa, 1)} kg`}</b>
+        {noot && <>{" · "}{noot}</>}
       </div>
     </div>
   );
@@ -95,17 +98,19 @@ export default function PoerStaaflijst({ vorm, titel, bestand, d, set, uitkomst,
   const { t } = useTranslation("beelden");
   const teksten = useDetailTeksten();
   const status = useTekeningStatus(d, uitkomst);
+  const rev = usePoerRevisie(vorm);
   const lijst = maakStaaflijst(vorm.staven);
   const vrij = Math.round(d(STATUS_VELD)) === 1;
 
   const bewaarDxf = () => {
-    const detail = maakDetail(vorm, { titel, status: status.tekst, teksten, staaflijst: lijst });
+    const detail = maakDetail(vorm, { titel, status: status.tekst, revisie: rev.label, teksten, staaflijst: lijst });
+    rev.vastleggen();
     void bewaarTekstBestand(detailNaarDxf(detail), `${veiligeBestandsnaam(bestand, "poer")}.dxf`, { naam: t("poerDetail.dxfFilter"), extensie: "dxf", mime: "application/dxf" });
   };
 
   return (
     <div className="poer-detail" style={{ padding: alleenLezen ? "0" : "6px 16px" }}>
-      <StaaflijstTabel lijst={lijst} status={status.tekst} kort={alleenLezen} />
+      <StaaflijstTabel lijst={lijst} status={`${status.tekst} · ${rev.label}`} kort={alleenLezen} noot={vorm.kruisend ? t("poerDetail.kruisend") : undefined} />
       {!alleenLezen && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 6 }}>
           <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12 }}>

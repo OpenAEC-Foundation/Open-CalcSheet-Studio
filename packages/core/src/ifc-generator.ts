@@ -88,6 +88,11 @@ export interface IfcCalcSheet {
   jupyter?: { bestandsnaam: string; data: string; metCode: boolean; automatisch?: boolean };
   /** Bij een Marimo-blad: het notebook als tekst, en de laatste uitvoer per cel. */
   marimo?: { bestandsnaam: string; code: string; metCode: boolean; uitvoer: string[] };
+  /**
+   * De bestanden op schijf die het blad met `#include` invoegt: per sleutel (include.ts)
+   * een kopie van de laatst gelezen tekst, zodat het blad ook zonder het bestand rekent.
+   */
+  includes?: { sleutel: string; pad: string; tekst: string; gelezenOp: string; hash: string }[];
   /** De antwoorden van Open FEM Studio op de @toets-blokken, per hash van de invoer. */
   toetsingen?: Record<string, VastgelegdeToets>;
   /** Varianten van het blad: andere invoer naast het blad, met per variant alleen de eigen waarden. */

@@ -30,6 +30,8 @@ export interface McpPdf {
 /** Eén blad zoals de tools het zien; een uittreksel van `Exemplaar`. */
 export interface McpBlad {
   id: string;
+  /** Het kenmerk voor een verwijzing uit een ander blad (`#1.R_paal`); zie store/bladRefs.ts. */
+  ref?: string;
   naam: string;
   templateId: string;
   source: string;
@@ -45,6 +47,8 @@ export interface McpBlad {
 
 /** De stand van het project op één moment. */
 export interface McpProjectStand {
+  /** De blijvende identiteit van het project (de wortel van de IFCX); zonder volgt hij uit nummer en naam. */
+  projectId?: string;
   projectNaam: string;
   bestandspad: string | null;
   gegevens: Record<string, string>;

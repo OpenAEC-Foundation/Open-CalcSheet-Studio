@@ -36,6 +36,9 @@ in de omschrijving de handberekening.
 - **Formules met eenheden:** `mm`, `kN`, `N/mm²`, `mm⁴`, … via de eenheden van mathjs.
 - **Eenheden vereenvoudigen vanzelf:** `b*h` geeft direct `mm²`, zonder `to`.
 - **Wiskundige opmaak:** KaTeX, met echte breuken, superscripts, subscripts en Griekse letters.
+- **Lange regels breken af**, op het scherm en op papier: liefst na een `=`, anders na een `+`,
+  `−` of `·` op het hoogste niveau. De vervolgregels springen in, de uitkomst blijft aan het
+  eind. Een breuk of matrix breekt niet binnen zichzelf.
 - **Live:** de editor is CodeMirror 6, de uitkomst volgt terwijl je typt.
 - **Meerdere bladen:** dezelfde module kan er meerdere keren in, elk met eigen invoer; de
   projectgegevens gelden voor alle bladen.
@@ -159,12 +162,21 @@ plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent he
 
 - `"Title`, `'tekst`, `// commentaar`
 - `#if … #else if … #else … #end if`, `#hide / #show / #pre / #post`
+- `and(…)`, `or(…)` en `xor(…)` met twee of meer delen, gelijk aan `And(…)`, `Or(…)` en `Xor(…)`:
+  `#if and(a ≡ 1; b ≡ 2; c ≠ 4)` is onwaar zodra één deel onwaar is, op welke plaats ook
 - `#repeat n … #end repeat` en `#for var = lo : hi … #loop`, ook genest
 - `#def name(p1; p2; …) … #end def` voor macro's, `#def Name$ = literal` voor constanten
-- `#include filename.cpd` voor externe macro's en SVG-tekeningen
+- `#include bestand.cpd` voegt een ander rekentaalbestand in: een ingebouwd bestand of een
+  bestand op schijf (zie hieronder)
 - `$Plot{ … @ x = lo : hi }` voor grafieken in het blad
 - Komma's in een index (`V_b,0`, `n_Int,support,points`), `$`-verwijzingen, matrix `[a;b|c;d]`
-- Opmaak (`:F2`), namen met punt of procent (`Cs.Cd`, `F_0.9G50%TotalWeight`)
+- Opmaak (`:F2`), namen met punt of procent (`Cs.Cd`, `F_0.9G50%TotalWeight`). Een procent
+  hoort bij de naam: `F_1%50` en `F_1_50` zijn twee variabelen, en in de uitwerking staat
+  F<sub>1%50</sub>. Een komma of punt in een naam wordt wél een liggend streepje
+  (`V_b,0` is `V_b_0`, `Cs.Cd` is `Cs_Cd`). Een procent zonder letter of cijfer direct
+  erna blijft een operator: `50%` is 0,5 en `n % 5` is de rest na delen. Ook een waarde
+  uit een ander blad mag een procent hebben: `#1.F_1%50`. (In de scope staat het procent
+  als de letter `ǂ`, zie `packages/core/src/naam.ts`; typ die niet zelf.)
 - `take`, `hlookup`, `hlookup_ge`, `hlookup_le`, `vlookup`, `get`, ook op matrices
 - `@select var "Label" … @end` voor een keuzelijst, bijvoorbeeld een materiaal
 - `@bron #4 p. 57 "NEN-EN 1995-1-1, 6.1.7"` voor een verwijzing naar een pagina in een eigen PDF
@@ -232,6 +244,47 @@ Een blad merkt een waarde die uit de nationale bijlage komt met een commentaarre
   worden bekeken.
 - **Waar:** `components/calc/nbKeuzes.ts` (lezen, ook in de rekenworker) en `NbKeuzesTabel`
   in `components/calc/BladNormen.tsx`. Controle: `scripts/check-nb-keuzes.mjs`.
+
+## `#include` van een bestand op schijf
+
+Vaste waarden en macro's in een eigen `.cpd`-bestand, voor meerdere bladen:
+
+```text
+project/
+├── main.ifcx
+└── lib/
+    ├── constants.cpd
+    └── more.cpd
+```
+
+```text
+#include lib/constants.cpd
+my_pi
+```
+
+- **Pad:** een relatief pad geldt vanaf de map van het projectbestand; in een ingevoegd
+  bestand vanaf de map van dat bestand (`#include more.cpd` in `lib/constants.cpd` leest
+  `lib/more.cpd`). Een absoluut pad (`C:\data\x.cpd`, `/home/…/x.cpd`) geldt zoals het er
+  staat. De ingebouwde bestanden van de app gaan voor.
+- **Genest** mag; elk bestand komt één keer in het blad. Een kring (a voegt b in, b voegt a
+  in) wordt herkend: de tweede keer komt er een melding in plaats van het bestand.
+- **Opslaan:** de `#include` blijft een verwijzing; het bestand op schijf is de bron. Het
+  project bewaart van elk ingevoegd bestand wel een kopie van de laatst gelezen tekst
+  (`ocss::blad::includes`, [projectmodel.md](projectmodel.md)). Zo opent en rekent het
+  project ook zonder het bestand.
+- **Bijwerken:** de desktop-app leest de bestanden bij openen, bij focus van het venster,
+  vóór afdrukken en elke twee seconden (dezelfde wachter als de gekoppelde bestanden).
+- **Meldingen**, op het scherm en op papier, in de taal van de uitvoer:
+  - een bestand dat niet bestaat en geen kopie heeft: een rode regel met het gevraagde pad
+    en waar gezocht is;
+  - een kring: een rode regel met de keten;
+  - het bestand is weg, het blad staat in de webversie (die leest niets van schijf) of het
+    project is nog niet opgeslagen: met een kopie rekent het blad daarmee en zegt een gele
+    regel van wanneer de kopie is; zonder kopie een rode regel met wat te doen.
+- **Code:** `packages/core/src/include.ts` (sleutels, invoegen, meldingen),
+  `packages/desktop/src/store/includes.ts` (lezen en kopieën) en
+  `packages/desktop/src/components/calc/includeBestanden.ts` (de wachter in de app).
+  Controle: `scripts/check-include.mjs`.
 
 ## Tekeningen in het blad
 

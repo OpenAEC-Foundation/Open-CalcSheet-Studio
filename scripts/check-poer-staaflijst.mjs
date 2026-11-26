@@ -15,6 +15,8 @@
  *   6. De status van de tekening: vrijgegeven alleen als het blad "voldoet" zegt; een
  *      ontbrekende verplichte toets of ongeldige invoer geeft nooit "voldoet".
  *   7. Onzin tijdens het typen: geen NaN en geen fout.
+ *   8. Drie palen: de kruisende banden in drie lagen, in de staven, de staaflijst, het DXF
+ *      en de IFCX.
  *
  * Handberekening (mm). Afspraken: zijlengtes hart op hart van de knikken, de lengte langs
  * de hartlijn; een knik van 90° met buigstraal r op het hart is (2 − π/2)·r korter dan de
@@ -54,6 +56,11 @@
  *   t = (400 − 40 − 12 − 10 − 160·sin 30°)/cos 30° = 258/0,86603 = 297,91 voorbij het paalhart
  *   L = 2·500 + (1200 + 2·297,91) − 2·(2 − π/2)·110 = 2795,82 − 94,42 = 2701,40
  *   l_h = 297,91 − 160 − 50 = 87,91 (blad: l_h3)
+ *   lagen: de schuine banden kruisen boven de bovenste paal. Onderin de band tussen de
+ *   onderste palen (hart 75 + 10 = 85), daarop de linker schuine band (105), de rechter een
+ *   laag hoger (125). Het net ligt op de derde laag: 75 + 3·20 + 6 = 141 en 153; de
+ *   randbeugels op 135 + k·(900 − 135 − 40)/4 = 316,25, 497,5 en 678,75. De lengtes blijven
+ *   gelijk: de drie banden houden één merk, en onder de staaflijst staat de volgorde.
  *
  * Draaien:  node scripts/check-poer-staaflijst.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -474,6 +481,55 @@ for (const [naam, invoer, twee] of [
   waar(`${naam}: geen fout en geen NaN`, schoon && !fout, fout);
 }
 waar("koorde buiten de veelhoek: niets", koorde([[0, 0], [1, 0], [1, 1], [0, 1]], 1, 2) === null);
+
+// ── 8. Kruisende banden bij drie palen ──────────────────────────────────────
+console.log("\n8. Drie palen: de kruisende banden in drie lagen");
+{
+  const m = maakMeerpaalPoer(lees({ ...MEER_BASIS, n_p: "3" }));
+  const staven = stavenMeerpaal(m);
+  // De hoogte van het rechte stuk van een band: het tweede punt van een omgebogen staaf.
+  const hoogte = (sleutel) => [...new Set(staven.filter((s) => s.sleutel === sleutel).map((s) => s.pad[1][2]))];
+  waar("drie lagen: z = 85, 105 en 125", m.zBand.length === 3 && m.zBand.every((z, i) => dichtbij(z, [85, 105, 125][i], 1e-9)), m.zBand.join(","));
+  waar("de onderste band (paal 2 naar 3) op 85, de linker schuine op 105, de rechter op 125",
+    hoogte("band/2").join() === "85" && hoogte("band/1").join() === "105" && hoogte("band/3").join() === "125", `${hoogte("band/1")} ${hoogte("band/2")} ${hoogte("band/3")}`);
+  const netZ = [...new Set(staven.filter((s) => s.soort === "net").map((s) => s.pad[0][2]))].sort((a, b) => a - b);
+  waar("het net op de banden: 141 en 153", netZ.length === 2 && dichtbij(netZ[0], 141, 1e-9) && dichtbij(netZ[1], 153, 1e-9), netZ.join(","));
+  const randZ = staven.filter((s) => s.soort === "randbeugel").map((s) => s.pad[0][2]);
+  waar("randbeugels op 316,25, 497,5 en 678,75", randZ.length === 3 && randZ.every((z, i) => dichtbij(z, [316.25, 497.5, 678.75][i], 1e-9)), randZ.join(","));
+  const blad = doorreken(MEER, { ...MEER_BASIS, n_p: "3" });
+  waar(`de hoogste band ligt op h − d van het blad (${blad.uit.d_eff})`, dichtbij(m.h - Math.max(...m.zBand), blad.uit.d_eff, 1e-9));
+  const vier = maakMeerpaalPoer(lees(MEER_BASIS));
+  waar("vier palen: twee lagen, 85 en 105, het net op 121", vier.zBand.length === 2 && dichtbij(vier.zBand[1], 105, 1e-9)
+    && dichtbij(Math.min(...stavenMeerpaal(vier).filter((s) => s.soort === "net").map((s) => s.pad[0][2])), 121, 1e-9));
+  // De twee schuine banden kruisen boven de bovenste paal: daar mogen ze elkaar niet raken.
+  const op = (sleutel) => staven.filter((s) => s.sleutel === sleutel);
+  const afstand = Math.min(...op("band/1").flatMap((a) => op("band/3").map((b) => Math.abs(a.pad[1][2] - b.pad[1][2]))));
+  waar("de schuine banden liggen een staafdiameter uit elkaar (hart op hart 20)", dichtbij(afstand, 20, 1e-9), String(afstand));
+  const lijst = maakStaaflijst(staven);
+  waar("de staaflijst: één merk voor de drie banden, 15 staven", lijst.regels.filter((r) => r.soort === "band").length === 1 && regelVan(lijst, "band").aantal === 15);
+  const vorm = meerpaalVorm(m);
+  waar("de vorm weet dat de banden kruisen; vier palen niet", vorm.kruisend === true && !meerpaalVorm(vier).kruisend);
+  const detail = maakDetail(vorm, { titel: "P", status: "x" });
+  waar("onder de staaflijst in de tekening staat de volgorde van de lagen", detail.prims.some((p) => p.soort === "tekst" && p.t === DETAIL_NL.kruisend));
+  // Doorsnede B-B door de bovenste paal: de drie banden als cirkels op hun eigen hoogte.
+  const bb = detail.aanzichten[2].kader;
+  const cirkels = detail.prims.filter((p) => p.soort === "cirkel" && p.laag === "WAPENING" && dichtbij(p.r, 10, 1e-9)
+    && p.c[0] >= bb.x0 && p.c[0] <= bb.x1 && p.c[1] >= bb.y0 && p.c[1] <= bb.y1);
+  // Hoger snijdt het vlak nog de bochten naar de benen; de rechte stukken liggen op hun laag.
+  const zB = [...new Set(cirkels.map((p) => Math.round((p.c[1] - bb.y0) * 1000) / 1000))].sort((a, b) => a - b);
+  waar(`doorsnede B-B: de rechte stukken van de banden op 85, 105 en 125 (${zB.join(", ")})`, zB.slice(0, 3).join() === "85,105,125", zB.join(","));
+  const dxf = detailNaarDxf(detail);
+  waar("het DXF heeft de tekst over de lagen", dxf.includes("Banden in drie lagen"));
+  const uit = leesIfcx(JSON.parse(JSON.stringify(meerpaalIfcxDocument(m))));
+  const bandBars = uit.elementen.filter((e) => e.klasse === "IfcReinforcingBar" && e.naam.startsWith("Bandstaaf"));
+  const onder = {};
+  for (const e of bandBars) {
+    // Op de millimeter: de buis is een achthoek en ligt bij een schuine staaf iets gedraaid.
+    const z = Math.round(e.grenzen.min[2] * 1e3);
+    onder[z] = (onder[z] ?? 0) + 1;
+  }
+  waar("IFCX: 5 bandstaven met hun onderkant op 75, 95 en 115 mm", onder[75] === 5 && onder[95] === 5 && onder[115] === 5, JSON.stringify(onder));
+}
 
 console.log(`\nStaaflijst, DXF en IFC-wapening: ${getest} controles, ${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

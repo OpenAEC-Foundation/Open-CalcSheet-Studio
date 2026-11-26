@@ -15,6 +15,7 @@ import { FemStaafModel, femStaafEenheid, femStaafGrootheid, femStaafKnoop, femSt
 import { bouwJsBlok } from './jsBlok.js';
 import { celNaam, celVerwijzingTekst, leesCelVerwijzing, leesVerwijzing, verwijzingNaam, verwijzingenInMelding, type CelFout, type CelVerwijzing } from './verwijzing.js';
 import { parse } from './parser.js';
+import { includeMeldingTekst } from './include.js';
 import { plaatOplossing, plaatSamenvatting, plaatDoorbuiging, plaatSvg, type PlaatInvoer } from './plaat.js';
 import {
   liggerOplossing, liggerReacties, liggerOmhullende, liggerOmhullendeReacties, liggerExtremen,
@@ -88,6 +89,23 @@ math.import({
   // De rekentaal schrijft `ln` voor de natuurlijke logaritme; mathjs kent alleen
   // `log` (dat zonder base-argument al natural log is).
   ln: (v: unknown) => math.log(v as number),
+}, { override: true });
+
+// `and(a; b; c)`, `or(…)` en `xor(…)` met drie of meer delen. mathjs kent ze
+// alleen met twee argumenten en las bij meer delen alleen de eerste twee, zodat
+// `and(waar; waar; onwaar)` waar gaf. Hier vouwen we alle delen van links naar
+// rechts met mathjs' eigen functie: twee delen (ook de operator `a and b`) en
+// het elementsgewijze rekenen met matrices blijven ongewijzigd.
+const nativeAnd = math.and, nativeOr = math.or, nativeXor = math.xor;
+type Logisch = (a: unknown, b: unknown) => unknown;
+const vouw = (f: Logisch, naam: string) => (...args: unknown[]): unknown => {
+  if (args.length < 2) throw new Error(`${naam}() vraagt minstens twee delen`);
+  return args.slice(1).reduce((acc, a) => f(acc, a), args[0]);
+};
+math.import({
+  and: vouw(nativeAnd as unknown as Logisch, 'and'),
+  or: vouw(nativeOr as unknown as Logisch, 'or'),
+  xor: vouw(nativeXor as unknown as Logisch, 'xor'),
 }, { override: true });
 
 // Helper functions that mathjs doesn't ship with.
@@ -1535,6 +1553,8 @@ function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T
   const vorigeTaal = huidigeTaal;
   huidigStelsel = opties.stelsel;
   huidigeTaal = opties.taal?.toLowerCase().startsWith('en') ? 'en' : 'nl';
+  const vorigeTaalCode = huidigeTaalCode;
+  huidigeTaalCode = opties.taal?.toLowerCase() || 'nl';
   const stand = nieuweStand();
   // De projecttekst van de app (zetProjectTekst) geldt waar de aanroep er zelf geen meegeeft.
   const metProject = opties.project || !projectTekst ? opties : { ...opties, project: projectTekst };
@@ -1551,6 +1571,7 @@ function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T
     currentAngleMode = appModus;
     huidigStelsel = vorigStelsel;
     huidigeTaal = vorigeTaal;
+    huidigeTaalCode = vorigeTaalCode;
     ruimEenhedenOp(stand);
   }
 }
@@ -1620,6 +1641,8 @@ export function zetProjectTekst(project: EvalOpties['project'] | null): void {
 let huidigStelsel: Stelsel | undefined;
 /** De taal van de vaste woorden in een beeld (fem_svg), van het blad dat nu doorgerekend wordt. */
 let huidigeTaal = 'nl';
+/** De taal van de uitvoer zoals de app hem meegeeft (`nl`, `en`, `lt`), voor de meldingen bij `#include`. */
+let huidigeTaalCode = 'nl';
 
 /**
  * Rekent een document door en geeft ook de scope aan het eind terug: de waarden
@@ -1840,6 +1863,11 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
 
       case 'text':
         if (node.hidden) break;
+        if (node.includeMelding) {
+          // Een melding bij een `#include` (include.ts), in de taal van de uitvoer.
+          result.push({ type: 'text', text: includeMeldingTekst(node.includeMelding, huidigeTaalCode), includeMelding: node.includeMelding });
+          break;
+        }
         if (node.parts && node.parts.length > 0) {
           // Resolve prose interpolation — eval each `expr` part and
           // concat with literal parts. Failed exprs fall back to the source.

@@ -14,14 +14,14 @@
  */
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import i18next from "i18next";
-import { setAngleMode, type AngleMode, type EvalOpties, type ToetsVerzoek } from "@ifc-calc/core";
+import { setAngleMode, type AngleMode, type EvalOpties, type IncludeStaat, type ToetsVerzoek } from "@ifc-calc/core";
 import { useProjectStore } from "../store/projectStore";
 import { evalOptiesVan } from "../store/projectEenheden";
 import { projectTekstVan } from "../store/projectBlad";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
 import type { BladInvoer } from "../components/calc/invoer/velden";
-import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
+import { abonneerOpIncludes, rekentaalIncludes, rekentaalIncludeStaat, rekentaalIncludeVersie, rekentaalImageUrls } from "../templates/rekentaal-includes";
 import { verwezenBladen, type VerwijsBlad } from "./verwijzingen";
 import { metToetsingen } from "./toetsCache";
 import { kenFemStudio, legToetsingenVast, useToetsVersie, vraagToetsingen } from "./femToetsing";
@@ -40,6 +40,8 @@ export interface RekenVerzoek {
   /** Het eenhedenstelsel en de eigen eenheden van het project (store/projectEenheden.ts). */
   evalOpties?: EvalOpties;
   includes: [string, string][];
+  /** Waarom een `#include`-bestand er niet (vers) is, per sleutel (core: include.ts). */
+  includeStaat?: [string, IncludeStaat][];
   imageUrls: [string, string][];
   /** De bladen waarnaar dit blad verwijst (#1.R_paal), om eerst door te rekenen (verwijzingen.ts). */
   verwijzingen?: VerwijsBlad[];
@@ -188,14 +190,18 @@ export function useDoorrekening(
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const verwijzingen = useMemo(() => verwezenBladen(source, waarden, exemplaren), [source, waarden, exemplaren]);
   const verwijsSleutel = verwijzingen.length ? JSON.stringify(verwijzingen) : "";
-  const sleutel = [hoekmodus, taal, optiesSleutel, naam, JSON.stringify(scope), JSON.stringify(waarden), source, verwijsSleutel].join("\u0000");
+  // De `#include`-bestanden van het project (templates/rekentaal-includes.ts): een nieuwe
+  // lezing of een andere stand geeft een nieuwe sleutel.
+  const includeV = useSyncExternalStore(abonneerOpIncludes, rekentaalIncludeVersie);
+  const includeSleutel = /^[ \t]*#include\s/m.test(source) || verwijzingen.length ? `i${includeV}` : "";
+  const sleutel = [hoekmodus, taal, optiesSleutel, naam, JSON.stringify(scope), JSON.stringify(waarden), source, verwijsSleutel, includeSleutel].join("\u0000");
   const hier = useSyncExternalStore(abonneer, () => uitkomsten.get(sleutel) ?? null);
 
   useEffect(() => {
     if (!source.trim()) return;
     vraag({
       sleutel, blad, source, waarden, scope, naam, hoekmodus, taal, evalOpties,
-      includes: [...rekentaalIncludes], imageUrls: [...rekentaalImageUrls],
+      includes: [...rekentaalIncludes], includeStaat: [...rekentaalIncludeStaat], imageUrls: [...rekentaalImageUrls],
       ...(verwijzingen.length ? { verwijzingen } : {}),
     });
     // verwijzingen zit in de sleutel

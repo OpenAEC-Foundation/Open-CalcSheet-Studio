@@ -120,9 +120,31 @@ Every sheet with its text, input and results is in the IFCX file. Drawings that 
 
 The app has a built-in MCP server and a REST API with the same 43 tools: open and save projects, add sheets, set input, calculate, export and print. It only listens on your own computer (`127.0.0.1`), behind a token. You can switch it off, make it read-only or pause it under **Settings › API and AI assistant**. See [the MCP documentation](docs/mcp.md) and [the REST API](docs/api.md).
 
+For servers there is also a calculation service without a window: the same REST routes and MCP tools over HTTP or stdio, with API keys, the results as JSON and the report as PDF. Each release publishes it as the image `ghcr.io/openaec-foundation/open-calcsheet-studio-api`. See [the calculation service](docs/rekendienst.md).
+
+## Docker
+
+Each release also publishes the Linux app as a container image, for a workspace that streams programs to the browser: the app itself, full screen, without a desktop, on one HTTP port.
+
+```sh
+docker run -p 3000:3000 -v <folder>:/openaec ghcr.io/openaec-foundation/open-calcsheet-studio:latest
+```
+
+Open `http://localhost:3000`. Your files are in `/openaec`, where the dialogs start; the settings are in the volume `/config`.
+
+| Variable | Meaning |
+|---|---|
+| `OCSS_TAAL` | Language of the app: `en`, `nl`, `lt` or `auto`. |
+| `OCSS_THEMA` | Theme: `light`, `dark`, `high-contrast-dark`, … |
+| `OCSS_BESTAND` | A project file to open at start, such as `/openaec/hall.ifccalculation`. |
+| `OCSS_SCHERM` | Screen size, default `1600x900`. |
+| `OCSS_MCP_TOKEN` | Token (64 hex characters) of the app's MCP server and REST API, on port `3001` for the internal network only; do not publish that port. Without it the app makes one. |
+
+`GET /gezond` and the image's health check are OK only when the app runs with its window on screen. The container needs no root, no `--privileged`, no FUSE and no GPU. The app connects out only for the Library examples and the module library (`raw.githubusercontent.com`), the maps, address search and water lookup (`tile.openstreetmap.org`, `nominatim.openstreetmap.org`, `overpass-api.de`), feedback the user sends (`open-feedback-studio.pages.dev`) and an ERPNext link the user sets up. There is no update check: an update is a new image. Images are signed with cosign (keyless) and carry an SBOM and a build attestation. For a server without a screen there is the calculation service, image `ghcr.io/openaec-foundation/open-calcsheet-studio-api` ([docs/rekendienst.md](docs/rekendienst.md)).
+
 ## Testing and reliability
 
-- **99 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **104 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.

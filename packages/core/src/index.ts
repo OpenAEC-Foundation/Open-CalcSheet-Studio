@@ -2,6 +2,8 @@ export { parse, type ParseOptions } from './parser.js';
 export { evaluate, evaluateMetScope, extractScope, setAngleMode, zetProjectEenheden, projectEenheidFouten, zetProjectTekst, type EvalOpties } from './evaluator.js';
 export { geldigeEenheidNaam } from './eenheden.js';
 export { verwijzingNaam, vervangVerwijzingen, leesVerwijzing, verwijzingenIn, verwijzingVanNaam, verwijzingenInMelding, leesCelVerwijzing, celVerwijzingTekst, celNaam, celVerwijzingenIn, isVerwijzingInvoer } from './verwijzing.js';
+export { PROCENT_IN_NAAM, naamInScope, naamMetProcent } from './naam.js';
+export { includeSleutel, includeNamen, includeNaam, includeMeldingTekst, isAbsoluutPad, leesmoment, type IncludeMelding, type IncludeSoort, type IncludeStaat } from './include.js';
 export type { CelVerwijzing, CelFout, CelWaarde } from './verwijzing.js';
 export { STELSELS, grootheidVan, decimalenNa, doelInStelsel, toonInvoer, invoerNaarBron, omrekenen, eenheidUitBeeld, eenheidInBeeld, type Grootheid, type Stelsel } from './eenheidstelsel.js';
 export { rekenUitdrukking, uitkomstTekst } from './evaluator.js';
@@ -92,6 +94,7 @@ export {
   isProjectIfcx,
   leesProjectIfcx,
   platteKnopen,
+  projectIdVan,
   type IfcxGelezenBlad,
   type IfcxBelasting,
   type IfcxGelezenProject,
@@ -100,7 +103,7 @@ export {
 export { metVreemdeGegevens, vreemdeGegevens, type IfcxVreemd } from './ifcx/vreemd.js';
 export { bouwProjectStep, type StepOpties } from './ifcx/step.js';
 export { ATTR as IFCX_ATTR, OCSS_SCHEMAS, ifcKlasse } from './ifcx/namespace.js';
-export { ifcGuid, padVanElement, uuidUitIfcGuid, uuidVan } from './ifcx/identiteit.js';
+export { afgeleideProjectId, ifcGuid, leesProjectId, nieuweProjectId, padVanElement, uuidUitIfcGuid, uuidVan } from './ifcx/identiteit.js';
 export type {
   BladFiguur,
   BladOordeel,

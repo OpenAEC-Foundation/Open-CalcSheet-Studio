@@ -1,7 +1,7 @@
 import i18next from "i18next";
 import { defaultStyles, type EvalOpties } from "@ifc-calc/core";
 import type { Exemplaar } from "../../store/projectStore";
-import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal-includes";
+import { rekentaalIncludes, rekentaalIncludeStaat, rekentaalImageUrls } from "../../templates/rekentaal-includes";
 import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { bladSoortVan } from "./bladSoorten";
@@ -79,7 +79,7 @@ export function rekenBladDoor(
   let resultaat: Resultaat = { titel: ex.naam, norm: "", uc: null, voldoet: null };
   try {
     // De eigen eenheden van het project gelden al bij het lezen (ParseOptions.eenheden).
-    const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls, eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam) };
+    const opties = { includes: rekentaalIncludes, includeStaat: rekentaalIncludeStaat, imageUrls: rekentaalImageUrls, eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam) };
     const uitvoer = bronVoorUitvoer(ex.source, taal);
     const metRefs = scopeMetVerwijzingen(ex.source, ex.waarden, scope, verwezenBladen(ex.source, ex.waarden, alle), opties, evalOpties);
     const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, metRefs, opties, uitvoer.namen, evalOpties);

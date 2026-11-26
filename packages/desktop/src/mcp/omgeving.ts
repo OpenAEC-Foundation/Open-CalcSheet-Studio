@@ -100,6 +100,7 @@ export const liveOmgeving: McpOmgeving = {
   stand: () => {
     const s = useProjectStore.getState();
     return {
+      projectId: s.projectId,
       projectNaam: s.projectNaam,
       bestandspad: s.bestandspad,
       gegevens: s.gegevens,

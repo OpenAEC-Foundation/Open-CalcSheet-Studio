@@ -13,6 +13,34 @@
  *   4. De vier toestanden: voldoet, voldoet niet, niet getoetst, niet van toepassing;
  *      ongeldige invoer en buiten het toepassingsgebied.
  *   5. Tekening en 3D-beeld voor drie en vier palen.
+ *   6. De kruisende banden bij drie palen: de rechter schuine band ligt een laag hoger.
+ *
+ * Handberekening kruisende banden, drie palen met de standaardinvoer (driehoek h.o.h. 1200,
+ * rand 400, h = 900, c_o = 75, 5Ø20-80, kolom 400 × 400, paal 320, e_p = 50,
+ * N_Ed = 2000 kN, C30/37: f_cd = 20, ν′ = 0,88, σ_ccc = 17,6 N/mm²). Eenheden N, mm, kN.
+ *   lagen      onderin de band tussen de onderste palen (hart 75 + 10 = 85), daarop de linker
+ *              schuine band (hart 105) en de rechter een laag hoger (hart 125): de schuine
+ *              banden kruisen boven de bovenste paal en kunnen daar niet in één laag
+ *   d          900 − 125 = 775 (met twee lagen 900 − 105 = 795)
+ *   last       A_c = √3/4·L_g² − √3·r² = 2,6178 m²; G = 25·2,6178·0,9 = 58,90 kN;
+ *              N = 2000 + 1,35·58,90 = 2079,52 kN; M = N·e_p = 103,98 kNm om beide assen
+ *   reactie    R_3 = 1200/√3 = 692,82; R onder = N/3 + M/(3·0,69282) + M/1,2
+ *              = 693,17 + 50,03 + 86,65 = 829,84 kN
+ *   arm        r = 692,82 + 50 − 400/4 = 642,82
+ *              ξ = 2·829,84e3·642,82/(400·17,6·775²) = 0,2523; x = 775·(1 − √0,7477) = 104,87
+ *              z = min(775 − 104,87/2; 0,9·775; 642,82·tan 55°) = min(722,57; 697,5; 918,04) = 697,5
+ *              met twee lagen 0,9·795 = 715,5: de arm is 18 mm (2,5 %) kleiner
+ *   hoek       θ = atan(697,5/642,82) = 47,34° (was 48,06°), nog boven de grens van 45°
+ *   band       T = R·r/z/√3 = 829,84·642,82/697,5/√3 = 441,55 kN (was 430,44)
+ *              T_Rd = 5·314,16·434,78 = 682,95 kN: UC_T = 0,647 (was 0,630)
+ *   knoop      F_c = R/sin θ = 829,84/0,73534 = 1128,5 kN; x_c = 2·(775 − 697,5) = 155;
+ *              A_A = 160000/3·0,73534 + 266,67·155·0,67771 = 39218 + 28012 = 67230 mm²;
+ *              σ_A = 16,79 N/mm²: UC_ccc = 16,79/17,6 = 0,954 (was 0,932), de hoogste
+ *   aanhechting h = 900 > 600: de hoogste band ligt 900 − 125 = 775 ≥ 300 onder de bovenkant,
+ *              dus η₁ = 1 (figuur 8.2d); bij h ≤ 600 en een band hoger dan 250 is η₁ = 0,7
+ *   been       bovenkant been 75 + 3·20 + 500 + 40 = 675 ≤ 900
+ *   randbeugel hart eerste beugel 75 + 3·20 + (900 − 75 − 40 − 60)/4 = 316,25 (was 301,25)
+ *   uitkomst   UC_max = 0,96 (naar boven afgerond), de poer voldoet
  *
  * Draaien:  node scripts/check-meerpaalspoer.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -58,7 +86,9 @@ function hand(i) {
   const σ_ccc = ν_s * f_cd, σ_ctt = 0.75 * ν_s * f_cd;
   const A_t1 = Math.PI * i.d_t ** 2 / 4, A_b = i.n_t * A_t1, A_n1 = Math.PI * i.d_n ** 2 / 4;
   const A_k = i.c * i.c, A_p = i.p * i.p, e_k = i.c / 4;
-  const d = i.h - i.c_o - 1.5 * i.d_t;
+  // Vier palen: twee lagen banden; drie palen: drie, de schuine banden kruisen boven de bovenste paal.
+  const lagen = i.lagen ?? (v ? 2 : 3);
+  const d = i.h - i.c_o - (lagen - 0.5) * i.d_t;
   const b_band = (i.n_t - 1) * i.s_t + i.d_t;
   // Poer en paalreacties.
   const R_3 = i.a / Math.sqrt(3), r_in = i.a / (2 * Math.sqrt(3)), L_g = 2 * Math.sqrt(3) * (r_in + i.r_rand);
@@ -145,7 +175,7 @@ function hand(i) {
     : Math.max(Nf / 3 + Mxf / (1.5 * R_3 / 1000), Nf / 3 + Mxf / (3 * R_3 / 1000) + Myf / (i.a / 1000));
   const T_fr = R_fr * (v ? d_x : r_3 / Math.sqrt(3)) / z_s, σ_s = T_fr * 1000 / A_b;
   const ε = Math.max((σ_s - 0.4 * f_ctm / ρ_p * (1 + α_e * ρ_p)) / 200000, 0.6 * σ_s / 200000);
-  return { G, R, R_min, θ: θ / rad, z, T, F_c, UC_T: T * 1000 / (A_b * f_yd), UC_ccc, UC_ctt, UC_V, UC_Vc, UC_v, UC_l: l_bd / l_av, σ_s, w_k: s_r * ε };
+  return { d, G, R, R_min, θ: θ / rad, z, T, F_c, UC_T: T * 1000 / (A_b * f_yd), UC_ccc, UC_ctt, UC_V, UC_Vc, UC_v, UC_l: l_bd / l_av, σ_s, w_k: s_r * ε };
 }
 
 const BASIS = { n_p: 4, a: 1000, l: 1700, b: 1700, r_rand: 400, h: 900, e_p: 50, t_in: 50, p: 320, c: 400, c_o: 75, c_z: 40,
@@ -220,6 +250,37 @@ for (const [naam, inv] of [["vier palen", {}], ["drie palen", { n_p: "3" }]]) {
   waar(`${naam}: 3D-beeld`, /calc-3d/.test(r.html));
   const palen = (r.html.match(/stroke-dasharray:4 2/g) ?? []).length;
   waar(`${naam}: ${inv.n_p === "3" ? 3 : 4} palen in de plattegrond`, palen === (inv.n_p === "3" ? 3 : 4), String(palen));
+}
+
+console.log("\n6. Kruisende banden bij drie palen");
+{
+  const r = doorreken({ n_p: "3", horiz: "1" });
+  const vier = doorreken({ horiz: "1" });
+  const drie = hand({ ...BASIS, n_p: 3, a: 1200 });
+  const twee = hand({ ...BASIS, n_p: 3, a: 1200, lagen: 2 });
+  waar("d bij drie palen = 900 − 75 − 2,5·20 = 775: de derde laag", Math.abs(r.uit.d_eff - 775) < 1e-6 && Math.abs(drie.d - 775) < 1e-9, String(r.uit.d_eff));
+  waar("d bij vier palen = 900 − 75 − 1,5·20 = 795: twee lagen", Math.abs(vier.uit.d_eff - 795) < 1e-6, String(vier.uit.d_eff));
+  waar("z = 697,5 met drie lagen, 715,5 met twee: 18 mm kleiner", Math.abs(r.uit.z_u - 697.5) < 1e-6 && Math.abs(twee.z - 715.5) < 1e-6, `${r.uit.z_u} ${twee.z}`);
+  waar("θ = 47,34° (was 48,06°)", Math.abs(r.uit.θ_g - 47.3361) < 1e-3 && Math.abs(twee.θ - 48.0628) < 1e-3, `${r.uit.θ_g}`);
+  waar("T = 441,55 kN (was 430,44), UC_T = 0,647 (was 0,630)", Math.abs(r.uit.T_s - 441.55) < 0.01 && Math.abs(twee.T - 430.44) < 0.01
+    && Math.abs(r.uit.UC_T - 0.6465) < 1e-4 && Math.abs(twee.UC_T - 0.6303) < 1e-4, `${r.uit.T_s} ${r.uit.UC_T}`);
+  waar("UC_ccc = 0,954 (was 0,932), de hoogste: UC_max = 0,96, voldoet", Math.abs(r.uit.UC_ccc - 0.9537) < 1e-4 && Math.abs(twee.UC_ccc - 0.9320) < 1e-4
+    && r.uit.UC_max === 0.96 && r.r.voldoet === true, `${r.uit.UC_ccc} ${r.uit.UC_max}`);
+  // De aanhechting: een lage poer met een band hoger dan 250 mm heeft η₁ = 0,7 (figuur 8.2c).
+  // Een kleine poer, zodat de diagonaal steiler dan 45° blijft.
+  const klein = { n_p: "3", a_3: "500", r_rand: "300", h_poer: "600", p_x: "200", p_y: "200", c_x: "300", c_y: "300", e_p: "10", N_Ed: "300", N_fr: "200", horiz: "1" };
+  const laagGoed = doorreken({ ...klein, c_o: "150" });
+  const laagSlecht = doorreken({ ...klein, c_o: "210" });
+  waar("h = 600, hoogste band op 150 + 50 = 200: η₁ = 1; op 210 + 50 = 260 > 250: f_bd 0,7 maal zo groot",
+    Math.abs(laagGoed.uit.f_bd - 2.25 * 2.0 / 1.5) < 1e-6 && Math.abs(laagSlecht.uit.f_bd - 0.7 * 2.25 * 2.0 / 1.5) < 1e-6, `${laagGoed.uit.f_bd} ${laagSlecht.uit.f_bd}`);
+  waar("bij vier palen verandert niets: dezelfde uitkomsten als geval A", Math.abs(vier.uit.z_u - hand(BASIS).z) < 1e-6);
+  waar("de tekst op het blad noemt de kruisende banden", /kruisen elkaar boven de bovenste paal/.test(r.tekst));
+  // In het 3D-beeld van het blad: de onderste band op 85, de linker schuine op 105, de rechter op 125; elk n_t staven.
+  const scene = JSON.parse((r.html.match(/data-scene="([^"]+)"/)?.[1] ?? "{}").replace(/&quot;/g, '"'));
+  const banden = (scene.elementen ?? []).filter((e) => e.soort === "buis" && e.d === 20);
+  const perHoogte = {};
+  for (const e of banden) perHoogte[e.van[2]] = (perHoogte[e.van[2]] ?? 0) + (e.van[2] === e.naar[2] ? 1 : 0);
+  waar("3D-beeld van het blad: 5 staven op 85, 105 en 125 mm", perHoogte[85] === 5 && perHoogte[105] === 5 && perHoogte[125] === 5, JSON.stringify(perHoogte));
 }
 
 console.log(`\n${getest} controles, ${fouten} fout(en).`);
