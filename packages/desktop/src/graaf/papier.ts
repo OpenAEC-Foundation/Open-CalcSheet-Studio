@@ -5,10 +5,11 @@
  * geen thema.
  */
 import { uitkomstVerborgen, type Graaf, type GraafNode } from "./model.ts";
-import { KOP_HOOGTE, RIJ_HOOGTE, nodeBreedte, poortPlek, poortenVan, veldSleutel, verbindingMidden, verbindingPad, type Poorten } from "./nodes.ts";
+import { KOP_HOOGTE, RIJ_HOOGTE, nodeBreedte, poortenVan, veldSleutel, verbindingMidden, verbindingPad, type Poorten } from "./nodes.ts";
 import { actieveVerbindingen, type GraafMelding, type GraafUitkomst } from "./rekenen.ts";
 import { voorbeeldVan } from "./voorbeeld.ts";
 import { waardeTekst } from "./waarde.ts";
+import { groepKader, ingeklaptKaart, zichtbarePoortPlek, type Maat } from "./groepen.ts";
 
 export interface PapierTeksten {
   naamVan: (node: GraafNode) => string;
@@ -41,6 +42,25 @@ const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 function kort(t: string, breedte: number): string {
   const max = Math.max(4, Math.floor(breedte / TEKEN_BREEDTE));
   return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+}
+
+/** Breekt tekst af op woorden zodat elke regel in `breedte` past; een te lang woord wordt ingekort. */
+function ombreek(t: string, breedte: number): string[] {
+  const max = Math.max(4, Math.floor(breedte / TEKEN_BREEDTE));
+  const uit: string[] = [];
+  for (const alinea of t.split("\n")) {
+    let regel = "";
+    for (const woord of alinea.split(/\s+/).filter(Boolean)) {
+      if (!regel) regel = woord;
+      else if (regel.length + 1 + woord.length <= max) regel += ` ${woord}`;
+      else {
+        uit.push(kort(regel, breedte));
+        regel = woord;
+      }
+    }
+    uit.push(kort(regel, breedte));
+  }
+  return uit;
 }
 
 function tekst(x: number, y: number, t: string, opties: { kleur?: string; dik?: boolean; rechts?: boolean; mono?: boolean } = {}): string {
@@ -136,10 +156,58 @@ export function graafSvg(graaf: Graaf, uitkomst: GraafUitkomst, t: PapierTeksten
   const verbonden = new Set(actief.map((v) => `${v.naarNode}\u0000${v.naarPoort}`));
   const opId = new Map(graaf.nodes.map((n) => [n.id, n]));
 
-  const nodes = graaf.nodes.map((n) => ({ n, ...tekenNode(n, poorten.get(n.id)!, uitkomst, verbonden, t) }));
+  const alle = graaf.nodes.map((n) => ({ n, ...tekenNode(n, poorten.get(n.id)!, uitkomst, verbonden, t) }));
+  const maten = new Map<string, Maat>(alle.map(({ n, hoogte }) => [n.id, { x: n.x, y: n.y, b: nodeBreedte(n), h: hoogte }]));
+
+  // Wat in een ingeklapte groep zit, staat niet op papier (wel zijn maat, voor de kaart).
+  const weg = new Set((graaf.groepen ?? []).filter((g) => g.ingeklapt).flatMap((g) => g.leden));
+
+  // Losse teksten: titel vet, de tekst eronder, in een dun kader; lange regels lopen door.
+  const teksten = (graaf.teksten ?? []).flatMap((tk) => {
+    const regels = tk.tekst ? ombreek(tk.tekst, tk.breedte - 16) : [];
+    const h = 8 + (tk.titel ? REGEL : 0) + regels.length * REGEL + 6;
+    maten.set(tk.id, { x: tk.x, y: tk.y, b: tk.breedte, h });
+    let y = 8;
+    const delen: string[] = [];
+    if (tk.titel) {
+      y += REGEL;
+      delen.push(tekst(8, y - 4, kort(tk.titel, tk.breedte - 16), { dik: true }));
+    }
+    for (const r of regels) {
+      y += REGEL;
+      delen.push(tekst(8, y - 4, kort(r, tk.breedte - 16)));
+    }
+    if (weg.has(tk.id)) return [];
+    return [`<g transform="translate(${tk.x} ${tk.y})"><rect x="0" y="0" width="${tk.breedte}" height="${h}" rx="4" fill="#fff" stroke="${KLEUR.rand}" stroke-width="0.8"/>${delen.join("")}</g>`];
+  });
+
+  // Groepen: een gestippeld kader met de naam; ingeklapt een kaart, zonder de leden.
+  const kaders: string[] = [];
+  const kaarten: string[] = [];
+  const groepMaten: Maat[] = [];
+  for (const g of graaf.groepen ?? []) {
+    const k = g.ingeklapt ? ingeklaptKaart(g, maten) : groepKader(g, maten);
+    if (!k) continue;
+    groepMaten.push(k);
+    if (g.ingeklapt) {
+      kaarten.push(
+        `<g transform="translate(${k.x} ${k.y})"><rect x="0" y="0" width="${k.b}" height="${k.h}" rx="6" fill="${KLEUR.kop}" stroke="${KLEUR.rand}"/>` +
+          `${tekst(10, 24, kort(g.naam, k.b - 20), { dik: true })}${tekst(10, 42, `(${g.leden.length})`, { kleur: KLEUR.zacht })}</g>`,
+      );
+    } else {
+      kaders.push(
+        `<g transform="translate(${k.x} ${k.y})"><rect x="0" y="0" width="${k.b}" height="${k.h}" rx="8" fill="none" stroke="${KLEUR.zacht}" stroke-dasharray="4 3"/>` +
+          `${tekst(10, 20, kort(g.naam, k.b - 20), { dik: true })}</g>`,
+      );
+    }
+  }
+
+  const nodes = alle.filter(({ n }) => !weg.has(n.id));
   const lijnen = actief.flatMap((v) => {
-    const a = poortPlek(opId.get(v.vanNode)!, poorten.get(v.vanNode)!, "uit", v.vanPoort);
-    const b = poortPlek(opId.get(v.naarNode)!, poorten.get(v.naarNode)!, "in", v.naarPoort);
+    // Binnen één ingeklapte groep: niet te zien.
+    if (weg.has(v.vanNode) && weg.has(v.naarNode) && graaf.groepen?.some((g) => g.ingeklapt && g.leden.includes(v.vanNode) && g.leden.includes(v.naarNode))) return [];
+    const a = zichtbarePoortPlek(graaf, opId.get(v.vanNode)!, poorten.get(v.vanNode)!, "uit", v.vanPoort, maten);
+    const b = zichtbarePoortPlek(graaf, opId.get(v.naarNode)!, poorten.get(v.naarNode)!, "in", v.naarPoort, maten);
     if (!a || !b) return [];
     const pad = `<path d="${verbindingPad(a, b)}" fill="none" stroke="${KLEUR.lijn}" stroke-width="1.2"/>`;
     // Een blijvend label: de waarde op het midden van de lijn, op een wit vlakje.
@@ -159,13 +227,18 @@ export function graafSvg(graaf: Graaf, uitkomst: GraafUitkomst, t: PapierTeksten
   let y0 = Infinity;
   let x1 = -Infinity;
   let y1 = -Infinity;
-  for (const { n, hoogte } of nodes) {
-    x0 = Math.min(x0, n.x);
-    y0 = Math.min(y0, n.y);
-    x1 = Math.max(x1, n.x + nodeBreedte(n));
-    y1 = Math.max(y1, n.y + hoogte);
+  const vlakken: Maat[] = [
+    ...nodes.map(({ n, hoogte }) => ({ x: n.x, y: n.y, b: nodeBreedte(n), h: hoogte })),
+    ...(graaf.teksten ?? []).filter((tk) => !weg.has(tk.id)).map((tk) => maten.get(tk.id)!),
+    ...groepMaten,
+  ];
+  for (const m of vlakken) {
+    x0 = Math.min(x0, m.x);
+    y0 = Math.min(y0, m.y);
+    x1 = Math.max(x1, m.x + m.b);
+    y1 = Math.max(y1, m.y + m.h);
   }
-  if (nodes.length === 0) {
+  if (vlakken.length === 0) {
     x0 = y0 = 0;
     x1 = y1 = 1;
   }
@@ -174,6 +247,6 @@ export function graafSvg(graaf: Graaf, uitkomst: GraafUitkomst, t: PapierTeksten
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0 - MARGE} ${y0 - MARGE} ${breedte} ${hoogte}" ` +
     `font-family="Segoe UI, Inter, system-ui, sans-serif" font-size="11">` +
-    `${lijnen.join("")}${nodes.map((d) => d.svg).join("")}</svg>`;
+    `${kaders.join("")}${lijnen.join("")}${nodes.map((d) => d.svg).join("")}${teksten.join("")}${kaarten.join("")}</svg>`;
   return { svg, breedte, hoogte };
 }

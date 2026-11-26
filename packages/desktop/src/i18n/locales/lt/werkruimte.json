@@ -603,7 +603,7 @@
     "paneel": "Grafo lapas",
     "rij": "Grafo lapas – perskaičiuojamas savaime",
     "info": "Mazgų: {{nodes}} · jungčių: {{verbindingen}}",
-    "hint": "Dukart spustelėti: pridėti mazgą · Dešinysis spustelėjimas: meniu · Vilkti tuščioje vietoje: pažymėti (Shift: pridėti) · Ctrl+spustelėti: pridėti mazgą · Alt+vilkti: sukti 3D · Vilkti dešiniuoju ar viduriniu mygtuku: slinkti · Ratukas: mastelis · Ctrl+C/V/D: kopijuoti, įklijuoti, dubliuoti · Delete: pašalinti",
+    "hint": "Dukart spustelėti: pridėti mazgą · Dešinysis spustelėjimas: meniu · Vilkti tuščioje vietoje: pažymėti (Shift: pridėti) · Ctrl+spustelėti: pridėti mazgą · Alt+vilkti: sukti 3D · Vilkti dešiniuoju ar viduriniu mygtuku: slinkti · Ratukas: mastelis · Ctrl+C/V/D: kopijuoti, įklijuoti, dubliuoti · Ctrl+G: grupuoti · T: tekstas · Delete: pašalinti",
     "draaien": "Sukti 3D",
     "draaienUitleg": "Įjungta: vilkimas tuščioje vietoje suka 3D peržiūrą. Išjungta: vilkimas brėžia rėmelį mazgams pažymėti; tada sukama su Alt+vilkimu.",
     "leeg": "Dukart spustelėkite drobę, kad pridėtumėte mazgą, ir vilkite nuo išvesties prie įvesties, kad sujungtumėte.",
@@ -655,7 +655,26 @@
       "nodeToevoegen": "Pridėti mazgą",
       "plakken": "Įklijuoti",
       "allesKiezen": "Pažymėti viską",
-      "passend": "Talpinti į vaizdą"
+      "passend": "Talpinti į vaizdą",
+      "groeperen": "Grupuoti",
+      "tekstHier": "Tekstas čia",
+      "opheffen": "Išgrupuoti",
+      "metInhoudWeg": "Ištrinti su turiniu",
+      "tekstBewerken": "Redaguoti"
+    },
+    "groep": {
+      "nieuw": "Grupė",
+      "inklappen": "Suskleisti",
+      "uitklappen": "Išskleisti",
+      "leden_one": "{{count}} dalis",
+      "leden_few": "{{count}} dalys",
+      "leden_many": "{{count}} dalies",
+      "leden_other": "{{count}} dalių"
+    },
+    "tekstblok": {
+      "titel": "Pavadinimas",
+      "tekst": "Tekstas, pavyzdžiui, prielaida",
+      "breedte": "Vilkite, kad pakeistumėte plotį"
     },
     "catalogus": {
       "titel": "Mazgų katalogas",
