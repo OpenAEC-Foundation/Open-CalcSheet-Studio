@@ -624,7 +624,26 @@
       "nodeToevoegen": "Pridėti mazgą",
       "plakken": "Įklijuoti",
       "allesKiezen": "Pažymėti viską",
-      "passend": "Talpinti į vaizdą"
+      "passend": "Talpinti į vaizdą",
+      "groeperen": "Grupuoti",
+      "tekstHier": "Tekstas čia",
+      "opheffen": "Išgrupuoti",
+      "metInhoudWeg": "Ištrinti su turiniu",
+      "tekstBewerken": "Redaguoti"
+    },
+    "groep": {
+      "nieuw": "Grupė",
+      "inklappen": "Suskleisti",
+      "uitklappen": "Išskleisti",
+      "leden_one": "{{count}} dalis",
+      "leden_few": "{{count}} dalys",
+      "leden_many": "{{count}} dalies",
+      "leden_other": "{{count}} dalių"
+    },
+    "tekstblok": {
+      "titel": "Pavadinimas",
+      "tekst": "Tekstas, pavyzdžiui, prielaida",
+      "breedte": "Vilkite, kad pakeistumėte plotį"
     },
     "catalogus": {
       "titel": "Mazgų katalogas",
