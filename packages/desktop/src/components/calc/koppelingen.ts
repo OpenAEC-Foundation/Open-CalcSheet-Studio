@@ -9,7 +9,7 @@ import {
 import { lijktOpRtf, rtfNaarMarkdown } from "../../store/rtfLezer";
 import {
   bereikNaarMarkdown, bereikNamen, leesSjabloon, maakSjabloon, toetsSjabloon, werkbladen,
-  type BereikLezer, type GelezenBereik, type SjabloonOnderdeel, type WerkmapSjabloon,
+  type BereikLezer, type GelezenBereik, type GetoetstOnderdeel, type ProjectKenmerken, type WerkmapSjabloon,
 } from "../../store/werkmapBereik";
 import { maakOmzetter, type OpenWerkmap } from "../../store/koppelingOmzetten";
 import { useKoppelingStatus, type KoppelingStand } from "../../store/koppelingStatus";
@@ -247,19 +247,22 @@ export interface GekozenWerkmap {
 interface VensterState {
   /** Het venster voor één bereik. */
   bereik: GekozenWerkmap | null;
-  /** Het venster voor een sjabloon, met per onderdeel wat de werkmap heeft. */
-  sjabloon: { werkmap: GekozenWerkmap; onderdelen: { onderdeel: SjabloonOnderdeel; bereik: GelezenBereik }[] } | null;
+  /** Het venster voor een sjabloon, met per onderdeel wat de werkmap heeft en het voorstel. */
+  sjabloon: { werkmap: GekozenWerkmap; project: ProjectKenmerken; onderdelen: GetoetstOnderdeel[] } | null;
+  /** Het venster om een sjabloon te bewaren, met per onderdeel de regel. */
+  bewaren: WerkmapSjabloon | null;
   sluit: () => void;
 }
 
 export const useKoppelVenster = create<VensterState>((set, get) => ({
   bereik: null,
   sjabloon: null,
+  bewaren: null,
   sluit: () => {
     const { bereik, sjabloon } = get();
     bereik?.wb.sluit();
     sjabloon?.werkmap.wb.sluit();
-    set({ bereik: null, sjabloon: null });
+    set({ bereik: null, sjabloon: null, bewaren: null });
   },
 }));
 
@@ -303,15 +306,27 @@ export function voegBereikenToe(bladen: { naam: string; md: MarkdownBestand; ple
 
 // ── Sjabloon ──────────────────────────────────────────────────────────────────
 
-/** Bewaart de werkmapbereiken van het project als sjabloon (JSON). */
-export async function bewaarSjabloon(): Promise<void> {
-  const t = i18next.getFixedT(null, "werkruimte");
-  const { exemplaren, projectNaam } = useProjectStore.getState();
-  const sjabloon = maakSjabloon(exemplaren);
+/** Wat het voorstel van het project gebruikt: de soort bouwwerk (4.1) en de projectomschrijving van het rapport. */
+export function projectKenmerken(): ProjectKenmerken {
+  const { rapport } = useProjectStore.getState();
+  return { projecttype: rapport.uitgangspunten.soortBouwwerk ?? "", omschrijving: rapport.teksten.projectomschrijving ?? "" };
+}
+
+/** Opent het venster om de werkmapbereiken van het project als sjabloon te bewaren. */
+export function bewaarSjabloon(): void {
+  const sjabloon = maakSjabloon(useProjectStore.getState().exemplaren);
   if (sjabloon.onderdelen.length === 0) {
-    alert(t("koppeling.sjabloonLeeg"));
+    alert(i18next.t("werkruimte:koppeling.sjabloonLeeg"));
     return;
   }
+  useKoppelVenster.getState().sluit();
+  useKoppelVenster.setState({ bewaren: sjabloon });
+}
+
+/** Schrijft een sjabloon weg als JSON. */
+export async function schrijfSjabloon(sjabloon: WerkmapSjabloon): Promise<void> {
+  const t = i18next.getFixedT(null, "werkruimte");
+  const { projectNaam } = useProjectStore.getState();
   const naam = `${projectNaam.replace(/[\\/:*?"<>|]+/g, "-").trim() || "werkmap"}.werkmapsjabloon.json`;
   const bytes = new TextEncoder().encode(`${JSON.stringify(sjabloon, null, 2)}\n`);
   try {
@@ -375,7 +390,8 @@ export async function pasSjabloonToe(): Promise<void> {
     const werkmap = await kiesWerkmapBron();
     if (!werkmap) return;
     useKoppelVenster.getState().sluit();
-    useKoppelVenster.setState({ sjabloon: { werkmap, onderdelen: toetsSjabloon(werkmap.wb, sjabloon) } });
+    const project = projectKenmerken();
+    useKoppelVenster.setState({ sjabloon: { werkmap, project, onderdelen: toetsSjabloon(werkmap.wb, sjabloon, project) } });
   } catch (err) {
     meldFout("lezenMislukt", err);
   }
