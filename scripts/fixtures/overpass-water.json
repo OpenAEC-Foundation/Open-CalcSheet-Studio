@@ -1,0 +1,197 @@
+{
+ "version": 0.6,
+ "generator": "Overpass API (testgegevens)",
+ "osm3s": {
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+ },
+ "elements": [
+  {
+   "type": "way",
+   "id": 1001,
+   "nodes": [
+    1,
+    2,
+    3,
+    4,
+    1
+   ],
+   "geometry": [
+    {
+     "lat": 52.0004497,
+     "lon": 4.9996713
+    },
+    {
+     "lat": 52.0004497,
+     "lon": 5.0003287
+    },
+    {
+     "lat": 52.0008544,
+     "lon": 5.0003287
+    },
+    {
+     "lat": 52.0008544,
+     "lon": 4.9996713
+    },
+    {
+     "lat": 52.0004497,
+     "lon": 4.9996713
+    }
+   ],
+   "tags": {
+    "natural": "water",
+    "water": "pond"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1002,
+   "nodes": [
+    5,
+    6,
+    7,
+    8,
+    5
+   ],
+   "geometry": [
+    {
+     "lat": 51.9997302,
+     "lon": 4.9998539
+    },
+    {
+     "lat": 51.9997302,
+     "lon": 5.0001461
+    },
+    {
+     "lat": 51.9998921,
+     "lon": 5.0001461
+    },
+    {
+     "lat": 51.9998921,
+     "lon": 4.9998539
+    },
+    {
+     "lat": 51.9997302,
+     "lon": 4.9998539
+    }
+   ],
+   "tags": {
+    "natural": "water",
+    "water": "ditch"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1003,
+   "nodes": [
+    9,
+    10,
+    11,
+    12,
+    9
+   ],
+   "geometry": [
+    {
+     "lat": 51.9977517,
+     "lon": 5.0116859
+    },
+    {
+     "lat": 51.9977517,
+     "lon": 5.0233718
+    },
+    {
+     "lat": 52.0022483,
+     "lon": 5.0233718
+    },
+    {
+     "lat": 52.0022483,
+     "lon": 5.0116859
+    },
+    {
+     "lat": 51.9977517,
+     "lon": 5.0116859
+    }
+   ],
+   "tags": {
+    "natural": "water",
+    "water": "lake",
+    "name": "Testmeer"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1004,
+   "nodes": [
+    13,
+    14,
+    15
+   ],
+   "geometry": [
+    {
+     "lat": 52.0269796,
+     "lon": 4.9415705
+    },
+    {
+     "lat": 52.0269796,
+     "lon": 5
+    },
+    {
+     "lat": 52.0269796,
+     "lon": 5.0584295
+    }
+   ],
+   "tags": {
+    "natural": "coastline"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 2001,
+   "members": [
+    {
+     "type": "way",
+     "ref": 3001,
+     "role": "outer",
+     "geometry": [
+      {
+       "lat": 51.9955034,
+       "lon": 4.9123557
+      },
+      {
+       "lat": 51.9955034,
+       "lon": 4.9269631
+      },
+      {
+       "lat": 52.0044966,
+       "lon": 4.9269631
+      }
+     ]
+    },
+    {
+     "type": "way",
+     "ref": 3002,
+     "role": "outer",
+     "geometry": [
+      {
+       "lat": 52.0044966,
+       "lon": 4.9269631
+      },
+      {
+       "lat": 52.0044966,
+       "lon": 4.9123557
+      },
+      {
+       "lat": 51.9955034,
+       "lon": 4.9123557
+      }
+     ]
+    }
+   ],
+   "tags": {
+    "type": "multipolygon",
+    "natural": "water",
+    "water": "reservoir",
+    "name": "Teststuwmeer"
+   }
+  }
+ ]
+}

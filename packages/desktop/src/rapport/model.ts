@@ -3,14 +3,17 @@
  * uitgangspunten en belastingen.
  *
  * Alleen gegevens en standaardwaarden: geen React, en imports met waarden alleen uit
- * deze map (met extensie .ts), zodat scripts/check-rapport.mjs dit bestand rechtstreeks
+ * deze map en uit kaart/ (met extensie .ts, zonder React), zodat scripts/check-rapport.mjs dit bestand rechtstreeks
  * kan laden. Invoer staat als tekst opgeslagen, net als de projectgegevens: wat de
  * gebruiker typte ("0,56") blijft staan, rekenen gebeurt pas bij het opmaken.
  *
  * Wat de app meelevert is meertalig, met Engels als bron (meertalig.ts). Een rapport
  * bewaart de tekst in zijn eigen taal (`Rapport.taal`), zoals de gebruiker hem ziet.
  */
-import { inTaal, leesMeertalig, leesTaal, type Meertalig } from "./meertalig.ts";
+import { BRONTAAL, bundel, decimaleKomma as kommaTaal } from "../i18n/talen.ts";
+import { inTaal, leesMeertalig, leesTaal, mt, RAPPORTTEKSTEN, type Meertalig } from "./meertalig.ts";
+import { normaliseerSituatie, type Situatie } from "./situatie.ts";
+import { metSymbolen } from "./belastingBronnen.ts";
 import { leesWeggehaald, normaliseerOpzet, type Knoop, type Weggehaald } from "./opzet.ts";
 import { leesVarianten, type Tekstvariant } from "./standaardteksten.ts";
 
@@ -207,6 +210,12 @@ export interface Belastingklasse {
   dakhelling: string;
   /** kN/m¹, alleen bij daken. */
   qlast: string;
+  /** Eigen q_k in kN/m²; "" of afwezig = de waarde uit de tabel. Bij categorie E verplicht. */
+  qk?: string;
+  /** Eigen Q_k in kN; "" of afwezig = de waarde uit de tabel. Bij categorie E verplicht. */
+  Qk?: string;
+  /** De naam waaronder q_k in de rekenbladen bestaat (rapport/belastingBronnen.ts). */
+  symbool?: string;
 }
 
 /** Een laag in een vlakopbouw: p = d × ρ, of de ingevulde p als die er staat. */
@@ -214,9 +223,16 @@ export interface Laag { naam: string; d: string; rho: string; p: string; }
 /** Een laag in een gevelopbouw: q = p × h × vulling. */
 export interface Gevellaag { naam: string; p: string; h: string; vulling: string; }
 
+/**
+ * Wat een opbouw tot een los blok maakt: het symbool waaronder zijn som in de rekenbladen
+ * bestaat (rapport/belastingBronnen.ts), en zijn plek op het canvas van 5.5 in px. Zonder
+ * plek zet het canvas hem zelf neer.
+ */
+export interface Blokplek { symbool?: string; x?: number; y?: number; }
+
 export type Opbouw =
-  | { soort: "vlak"; naam: string; lagen: Laag[] }
-  | { soort: "gevel"; naam: string; lagen: Gevellaag[] };
+  | ({ soort: "vlak"; naam: string; lagen: Laag[] } & Blokplek)
+  | ({ soort: "gevel"; naam: string; lagen: Gevellaag[] } & Blokplek);
 
 export interface Belastingen {
   wind: Wind;
@@ -241,6 +257,28 @@ export interface Opmaak {
    * uitwerking daar, onder bijlage A de rest (inhoudsopgave in opzet.ts).
    */
   bladenInInhoud: boolean;
+  /**
+   * Alleen `false` wordt bewaard: een blad met zijn uitwerking in bijlage A heeft dan geen
+   * paragraaf in hoofdstuk Berekeningen en telt daar niet mee in de nummering (bladKnopen
+   * in opzet.ts). Zonder dit veld heeft elk blad er een, met de verwijzing naar de bijlage.
+   */
+  bijlageParagrafen?: boolean;
+}
+
+/** Een afbeelding onder de tekst van een paragraaf, zoals een overzichtstekening. */
+export interface Rapportbeeld {
+  /** data-URL van een PNG of JPEG. */
+  data: string;
+  bijschrift: string;
+  /** Breedte in procenten van de tekstbreedte: BEELD_BREEDTE.min t/m 100. */
+  breedte: number;
+}
+
+export const BEELD_BREEDTE = { min: 20, max: 100, standaard: 100 } as const;
+
+/** Is dit een afbeelding die het rapport kan tonen? Alleen PNG en JPEG, als data-URL. */
+export function isBeeldData(s: unknown): s is string {
+  return typeof s === "string" && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+=*$/.test(s);
 }
 
 export interface Rapport {
@@ -271,6 +309,8 @@ export interface Rapport {
   rol: Rol;
   uitgangspunten: Uitgangspunten;
   belastingen: Belastingen;
+  /** Per tekst-id (zie opzet.ts) de afbeeldingen onder de tekst van die paragraaf. */
+  beelden: Record<string, Rapportbeeld[]>;
   /** Per exemplaar-id een eigen toelichting voor hoofdstuk Berekeningen. */
   toelichting: Record<string, string>;
   /** Per exemplaar-id: uitwerking in het hoofdstuk zelf in plaats van in bijlage A. */
@@ -280,6 +320,11 @@ export interface Rapport {
   /** Per knoop-id uit opzet.ts: begint op een nieuwe pagina (overschrijft de standaard). */
   nieuwePagina: Record<string, boolean>;
   opmaak: Opmaak;
+  /**
+   * De pagina Situatie met kaarten van de plek van het project. Ontbreekt zolang er geen
+   * kaarten zijn gemaakt; een nieuw optioneel veld, dus RAPPORT_VERSIE blijft gelijk.
+   */
+  situatie?: Situatie;
   /** Vastgelegde kopie van het bureauprofiel. */
   bureau: BureauProfiel;
   /**
@@ -332,74 +377,59 @@ export const RAPPORT_VERSIE = 5;
 // taal. Wisselen van taal zoekt hierin (taalwissel.ts): een waarde die gelijk is aan een
 // regel hier, wisselt mee; eigen invoer blijft staan.
 
+/** De meegeleverde tekst op standaard.<sleutel> in rapportteksten.json. */
+const st = (sleutel: string): Meertalig => mt(`standaard.${sleutel}`);
+
+/** Een lijst uit standaard.<sleutel>: even lang als in het Engels, de bron. */
+function stLijst(sleutel: string): Meertalig[] {
+  const bron = bundel(BRONTAAL, RAPPORTTEKSTEN)?.standaard as Record<string, readonly unknown[]>;
+  return bron[sleutel].map((_, i) => st(`${sleutel}.${i}`));
+}
+
 /** Suggesties voor de rapporttitel; de eerste is de standaard. */
-export const TITELS: readonly Meertalig[] = [
-  { en: "Structural advice & calculations", nl: "Constructieadvies & berekeningen" },
-  { en: "Structural calculation", nl: "Constructieve berekening" },
-  { en: "Structural advice", nl: "Constructief advies" },
-  { en: "Structural calculations and drawings", nl: "Constructieve berekeningen en tekeningen" },
-  { en: "Assessment of the existing structure", nl: "Beoordeling bestaande constructie" },
-];
+export const TITELS: readonly Meertalig[] = stLijst("titels");
 
 /** Suggesties voor de rol in 2.2; de eerste is de standaard. */
-export const ROLLEN: readonly Meertalig[] = [
-  { en: "Lead structural engineer", nl: "Hoofdconstructeur" },
-  { en: "Structural engineer", nl: "Constructeur" },
-  { en: "Structural consultant", nl: "Constructief adviseur" },
-  { en: "Checking engineer", nl: "Controlerend constructeur" },
-];
+export const ROLLEN: readonly Meertalig[] = stLijst("rollen");
 
 /** Suggesties voor de soort bouwwerk in 4.1; de eerste is de standaard. */
-export const SOORTEN_BOUWWERK: readonly Meertalig[] = [
-  { en: "Dwelling", nl: "Woning" },
-  { en: "Single-family house", nl: "Eengezinswoning" },
-  { en: "Apartment building", nl: "Appartementencomplex" },
-  { en: "Villa", nl: "Villa" },
-  { en: "Office", nl: "Kantoor" },
-  { en: "Industrial hall", nl: "Bedrijfshal" },
-  { en: "Outbuilding", nl: "Bijgebouw" },
-  { en: "Shed", nl: "Schuur" },
-];
+export const SOORTEN_BOUWWERK: readonly Meertalig[] = stLijst("soortenBouwwerk");
 
-const NORMEN: Meertalig = { en: "NEN-EN 1990 to 1997", nl: "NEN-EN 1990 t/m 1997" };
-const EERSTE_UITGAVE: Meertalig = { en: "First issue", nl: "Eerste uitgave" };
-const NIET_VAN_TOEPASSING: Meertalig = { en: "n/a", nl: "n.v.t." };
+const NORMEN = st("normen");
+const EERSTE_UITGAVE = st("eersteUitgave");
+const NIET_VAN_TOEPASSING = st("nietVanToepassing");
 
+const MATERIAAL_TYPE = stLijst("materiaalType");
+const MATERIAAL_OPMERKING = stLijst("materiaalOpmerking");
 /** 4.3: de standaardregels; de sterkteklassen zijn codes en blijven in elke taal gelijk. */
 const MATERIALEN: readonly { type: Meertalig; soort: string; opmerking: Meertalig | string }[] = [
-  {
-    type: { en: "In-situ concrete", nl: "TPG Beton" },
-    soort: "C20/25",
-    opmerking: { en: "(for exposure classes see concrete calculations and drawing)", nl: "(voor milieuklassen zie berekening betononderdelen en tekening)" },
-  },
-  { type: { en: "Timber", nl: "Hout" }, soort: "C24", opmerking: "" },
-  { type: { en: "Wood-based panels", nl: "Plaatmateriaal" }, soort: "CE2+", opmerking: "" },
-  { type: { en: "Reinforcing steel", nl: "Wapeningsstaal" }, soort: "B500", opmerking: "" },
-  { type: { en: "Steel", nl: "Staal" }, soort: "S235", opmerking: "JR" },
-  { type: { en: "Grout under steel", nl: "Ondervoeging staal" }, soort: "K50", opmerking: "" },
+  { type: MATERIAAL_TYPE[0], soort: "C20/25", opmerking: MATERIAAL_OPMERKING[0] },
+  { type: MATERIAAL_TYPE[1], soort: "C24", opmerking: "" },
+  { type: MATERIAAL_TYPE[2], soort: "CE2+", opmerking: "" },
+  { type: MATERIAAL_TYPE[3], soort: "B500", opmerking: "" },
+  { type: MATERIAAL_TYPE[4], soort: "S235", opmerking: "JR" },
+  { type: MATERIAAL_TYPE[5], soort: "K50", opmerking: "" },
 ];
-const MATERIALEN_NOOT: Meertalig = { en: "(unless stated otherwise)", nl: "(tenzij anders aangegeven)" };
+const MATERIALEN_NOOT = st("materialenNoot");
+const BEVESTIGING_TYPE = stLijst("bevestiging");
 const BEVESTIGING: readonly { type: Meertalig; kwaliteit: string }[] = [
-  { type: { en: "Bolts", nl: "Bouten" }, kwaliteit: "8.8" },
-  { type: { en: "Coach screws", nl: "Houtdraaibout" }, kwaliteit: "4.6" },
-  { type: { en: "Chemical anchors", nl: "Chemische Ankers" }, kwaliteit: "5.8" },
+  { type: BEVESTIGING_TYPE[0], kwaliteit: "8.8" },
+  { type: BEVESTIGING_TYPE[1], kwaliteit: "4.6" },
+  { type: BEVESTIGING_TYPE[2], kwaliteit: "5.8" },
 ];
-const CONSERVERING: readonly { onderdeel: Meertalig; systeem: Meertalig }[] = [
-  { onderdeel: { en: "External structures", nl: "Buitenconstructies" }, systeem: { en: "Duplex or hot-dip galvanised", nl: "Duplex of thermisch verzinkt" } },
-  { onderdeel: { en: "In cavity walls", nl: "Constructies in spouw" }, systeem: { en: "Hot-dip galvanised", nl: "Thermisch verzinkt" } },
-  { onderdeel: { en: "Internal steelwork", nl: "Staal binnen" }, systeem: { en: "Paint system", nl: "Verf systeem" } },
-];
-const CONSERVERING_SLOT: Meertalig = {
-  en: "Corrosion protection applies to newly installed structural elements.",
-  nl: "Conservering wordt toegepast op nieuw te plaatsen constructieonderdelen.",
-};
+const CONSERVERING_ONDERDEEL = stLijst("conserveringOnderdeel");
+const CONSERVERING_SYSTEEM = stLijst("conserveringSysteem");
+const CONSERVERING: readonly { onderdeel: Meertalig; systeem: Meertalig }[] =
+  CONSERVERING_ONDERDEEL.map((onderdeel, i) => ({ onderdeel, systeem: CONSERVERING_SYSTEEM[i] }));
+const CONSERVERING_SLOT = st("conserveringSlot");
+const VERVORMING_ONDERDEEL = stLijst("vervormingOnderdeel");
 /** 4.8: de eisen zijn getallen en symbolen; die krijgen de notatie van de taal (standaardVervormingen). */
 const VERVORMINGEN: readonly { onderdeel: Meertalig; ueind: string; ubij: string; uhor: string }[] = [
-  { onderdeel: { en: "Vertical deflection of roofs", nl: "Verticale doorbuiging van daken" }, ueind: "0,004l_rep", ubij: "0,004l_rep", uhor: "" },
-  { onderdeel: { en: "Vertical deflection of floors", nl: "Verticale doorbuiging van vloeren" }, ueind: "0,004l_rep", ubij: "0,003l_rep", uhor: "" },
-  { onderdeel: { en: "Floors with masonry walls", nl: "Vloer met steenachtige wanden" }, ueind: "", ubij: "0,002l_rep", uhor: "" },
-  { onderdeel: { en: "Horizontal displacement, building", nl: "Horizontale verplaatsing bouwwerk" }, ueind: "", ubij: "", uhor: "H/300" },
-  { onderdeel: { en: "Horizontal displacement, partition", nl: "Horizontale verplaatsing afscheiding" }, ueind: "", ubij: "", uhor: "< 20 mm" },
+  { onderdeel: VERVORMING_ONDERDEEL[0], ueind: "0,004l_rep", ubij: "0,004l_rep", uhor: "" },
+  { onderdeel: VERVORMING_ONDERDEEL[1], ueind: "0,004l_rep", ubij: "0,003l_rep", uhor: "" },
+  { onderdeel: VERVORMING_ONDERDEEL[2], ueind: "", ubij: "0,002l_rep", uhor: "" },
+  { onderdeel: VERVORMING_ONDERDEEL[3], ueind: "", ubij: "", uhor: "H/300" },
+  { onderdeel: VERVORMING_ONDERDEEL[4], ueind: "", ubij: "", uhor: "< 20 mm" },
 ];
 
 const meertalig = (x: Meertalig | string): x is Meertalig => typeof x !== "string";
@@ -424,11 +454,11 @@ export const MEEGELEVERD = {
 } as const satisfies Record<string, readonly Meertalig[]>;
 
 /**
- * Talen die een getal met een decimale komma schrijven. Ook de bron van het
- * vaste getal in een meegeleverde waarde: die staat hier met een komma.
+ * Schrijft deze taal een getal met een decimale komma? Dat staat in de lijst van talen
+ * (i18n/talen.ts). Het vaste getal in een meegeleverde waarde staat hier met een komma.
  */
 export function decimaleKomma(taal: string): boolean {
-  return /^(nl|de|fr)\b/.test(taal);
+  return kommaTaal(taal);
 }
 
 /**
@@ -490,8 +520,8 @@ function standaardBelastingen(taal: string): Belastingen {
       ],
     },
     klassen: [
-      { categorie: "A-vloer", lichteScheidingswanden: n("0,80"), dakhelling: "", qlast: "" },
-      { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: n("2,0") },
+      { categorie: "A-vloer", lichteScheidingswanden: n("0,80"), dakhelling: "", qlast: "", symbool: "q_k1" },
+      { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: n("2,0"), symbool: "q_k2" },
     ],
     vloerenDaken: [],
     wanden: [],
@@ -516,6 +546,7 @@ export function standaardRapport(vandaag: string, teksten: Record<string, string
     rol: standaardRol(taal),
     uitgangspunten: standaardUitgangspunten(taal),
     belastingen: standaardBelastingen(taal),
+    beelden: {},
     toelichting: {},
     inHoofdstuk: {},
     bijlagen: [],
@@ -571,6 +602,28 @@ function tekstRecord(x: unknown, basis: Record<string, string> = {}): Record<str
   return uit;
 }
 
+/** Afbeeldingen per tekst-id. Wat geen PNG of JPEG is, valt weg; een lege lijst ook. */
+function beeldenRecord(x: unknown): Record<string, Rapportbeeld[]> {
+  const uit: Record<string, Rapportbeeld[]> = {};
+  const o = object(x);
+  if (!o) return uit;
+  for (const [k, v] of Object.entries(o)) {
+    const beelden = lijst<Rapportbeeld>(v, [], (b) => {
+      if (!isBeeldData(b.data)) return null;
+      const breedte = typeof b.breedte === "number" && Number.isFinite(b.breedte) ? b.breedte : Number(b.breedte);
+      return {
+        data: b.data,
+        bijschrift: tekst(b.bijschrift, ""),
+        breedte: Number.isFinite(breedte) && breedte > 0
+          ? Math.round(Math.min(BEELD_BREEDTE.max, Math.max(BEELD_BREEDTE.min, breedte)))
+          : BEELD_BREEDTE.standaard,
+      };
+    });
+    if (beelden.length) uit[k] = beelden;
+  }
+  return uit;
+}
+
 /** Ja/nee-waarden per sleutel; andere typen vallen weg. */
 function waarheidRecord(x: unknown): Record<string, boolean> {
   const uit: Record<string, boolean> = {};
@@ -579,10 +632,22 @@ function waarheidRecord(x: unknown): Record<string, boolean> {
   return uit;
 }
 
+/** Symbool en plek van een blok; een plek alleen als beide maten een getal zijn. */
+function blokplek(o: Los): Blokplek {
+  const uit: Blokplek = {};
+  if (typeof o.symbool === "string" && o.symbool.trim()) uit.symbool = o.symbool.trim();
+  if (typeof o.x === "number" && typeof o.y === "number" && Number.isFinite(o.x) && Number.isFinite(o.y)) {
+    uit.x = Math.max(0, o.x);
+    uit.y = Math.max(0, o.y);
+  }
+  return uit;
+}
+
 function normaliseerOpbouw(o: Los): Opbouw | null {
   const naam = tekst(o.naam, "");
   if (o.soort === "vlak") {
     return {
+      ...blokplek(o),
       soort: "vlak", naam,
       lagen: lijst(o.lagen, [], (l): Laag => ({
         naam: tekst(l.naam, ""), d: tekst(l.d, ""), rho: tekst(l.rho, ""), p: tekst(l.p, ""),
@@ -591,6 +656,7 @@ function normaliseerOpbouw(o: Los): Opbouw | null {
   }
   if (o.soort === "gevel") {
     return {
+      ...blokplek(o),
       soort: "gevel", naam,
       lagen: lijst(o.lagen, [], (l): Gevellaag => ({
         naam: tekst(l.naam, ""), p: tekst(l.p, ""), h: tekst(l.h, ""), vulling: tekst(l.vulling, ""),
@@ -733,6 +799,7 @@ export function normaliseerRapport(
   // rapport zonder eigen keuze houdt de kop Wijziging en tekst zonder subkoppen.
   const opmaak = object(o.opmaak) ?? {};
   const keuze = (x: unknown, standaard: boolean) => (typeof x === "boolean" ? x : versie < 3 ? false : standaard);
+  const situatie = normaliseerSituatie(o.situatie);
 
   return {
     // Een nieuwer rapport houdt zijn hogere versie: zijn eigen bijwerkingen zijn al gedaan.
@@ -791,7 +858,7 @@ export function normaliseerRapport(
         onderdeel: tekst(v.onderdeel, ""), ueind: tekst(v.ueind, ""), ubij: tekst(v.ubij, ""), uhor: tekst(v.uhor, ""),
       })),
     },
-    belastingen: {
+    belastingen: metSymbolen({
       wind: {
         gebouwhoogte: tekst(wind.gebouwhoogte, sb.wind.gebouwhoogte),
         cscd: tekst(wind.cscd, sb.wind.cscd),
@@ -804,10 +871,15 @@ export function normaliseerRapport(
         lichteScheidingswanden: tekst(k.lichteScheidingswanden, ""),
         dakhelling: tekst(k.dakhelling, ""),
         qlast: tekst(k.qlast, ""),
+        // Alleen als er iets staat: een rapport zonder eigen waarden blijft zoals het was.
+        ...(tekst(k.qk, "").trim() ? { qk: tekst(k.qk, "") } : {}),
+        ...(tekst(k.Qk, "").trim() ? { Qk: tekst(k.Qk, "") } : {}),
+        ...(typeof k.symbool === "string" && k.symbool.trim() ? { symbool: k.symbool.trim() } : {}),
       })),
       vloerenDaken: lijst(b.vloerenDaken, sb.vloerenDaken, normaliseerOpbouw),
       wanden: lijst(b.wanden, sb.wanden, normaliseerOpbouw),
-    },
+    }),
+    beelden: beeldenRecord(o.beelden),
     toelichting: tekstRecord(o.toelichting),
     inHoofdstuk: waarheidRecord(o.inHoofdstuk),
     bijlagen: Array.isArray(o.bijlagen) ? o.bijlagen.filter((t): t is string => typeof t === "string") : s.bijlagen,
@@ -816,7 +888,9 @@ export function normaliseerRapport(
       constructieprincipe: keuze(opmaak.constructieprincipe, s.opmaak.constructieprincipe),
       subkoppen: keuze(opmaak.subkoppen, s.opmaak.subkoppen),
       bladenInInhoud: typeof opmaak.bladenInInhoud === "boolean" ? opmaak.bladenInInhoud : versie >= 4 && s.opmaak.bladenInInhoud,
+      ...(opmaak.bijlageParagrafen === false ? { bijlageParagrafen: false } : {}),
     },
+    ...(situatie ? { situatie } : {}),
     bureau: normaliseerBureau(o.bureau),
     ...templateVelden(o),
   };

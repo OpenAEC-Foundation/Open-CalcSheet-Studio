@@ -378,7 +378,32 @@ function doorsnedeSpanningen() {
   return b.svg();
 }
 
+/** Poer op drie of vier palen: een poer op vier palen met de kolom erop en de trekbanden over de palen. */
+function meerpaalspoer() {
+  const b = beeld();
+  const a = 58;
+  const p = 24;
+  b.schaduw(-96, -96, 192, 192, 44);
+  // de palen onder de poer, van achter naar voren
+  for (const [x, y] of [[-a, -a], [a, -a], [-a, a], [a, a]]) b.blok(x - p / 2, y - p / 2, 0, p, p, 64, LICHT);
+  // de poer
+  b.blok(-96, -96, 64, 192, 192, 62, LEI);
+  // de trekbanden over de palen, op het bovenvlak getekend
+  const z = 126.4;
+  for (const s of [-a, a]) {
+    b.lijn([[-88, s - 7, z], [88, s - 7, z]], TURKOOIS.boven, 2.4);
+    b.lijn([[-88, s + 7, z], [88, s + 7, z]], TURKOOIS.boven, 2.4);
+    b.lijn([[s - 7, -88, z], [s - 7, 88, z]], TURKOOIS.links, 2.4);
+    b.lijn([[s + 7, -88, z], [s + 7, 88, z]], TURKOOIS.links, 2.4);
+  }
+  // de kolom
+  b.blok(-22, -22, 126, 44, 44, 74, { boven: PAPIER, links: PAPIER_LINKS, rechts: PAPIER_RECHTS });
+  pijlOmlaag(b, 0, 0, 260, 206);
+  return b.svg();
+}
+
 const BEELDEN = {
+  meerpaalspoer,
   "doorsnede-spanningen": doorsnedeSpanningen,
   tekenblad,
   "fem-project": femProject,

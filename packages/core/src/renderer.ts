@@ -1,9 +1,13 @@
 import katex from 'katex';
-import type { EvaluatedNode, MatrixUitkomst } from './types.js';
+import type { EvaluatedNode, InStelsel, MatrixUitkomst } from './types.js';
 import { exprToLatex, matrixResultToLatex, metWeergaveNamen, nameToLatex, resultToLatex, weergaveNaam } from './latex.js';
 import { renderDrieD } from './drieD.js';
 import { renderIframe } from './iframeBlok.js';
 import { renderIfcxBlok } from './ifcxBlok.js';
+import { renderToets, TOETS_CSS } from './toetsBlok.js';
+import { renderFem, FEM_CSS } from './femBlok.js';
+import { renderKern, KERN_CSS } from './kernBlok.js';
+import { renderLast, LAST_CSS } from './lastBlok.js';
 import { renderJsBlok } from './jsBlok.js';
 
 // ─── KaTeX rendering ────────────────────────────────────────────────
@@ -192,8 +196,30 @@ export interface RenderOpties {
   namen?: Readonly<Record<string, string>>;
 }
 
+/**
+ * De versie van FEM Studio bij de `@toets`-blokken: hebben alle blokken van het blad
+ * dezelfde, dan staat hij alleen bij het eerste. Een blok dat alleen op het scherm
+ * staat, telt niet mee: op papier zou de versie dan ontbreken.
+ */
+let toetsKop: { eenVersie: boolean; getoond: boolean } | null = null;
+
+function toetsVersies(nodes: readonly EvaluatedNode[], uit = new Set<string>()): Set<string> {
+  for (const n of nodes) {
+    if (n.type === 'toets' && n.versie && !n.verborgen && !n.scherm) uit.add(n.versie);
+    const kinderen = (n as { children?: EvaluatedNode[] }).children;
+    if (Array.isArray(kinderen)) toetsVersies(kinderen, uit);
+  }
+  return uit;
+}
+
 export function render(nodes: EvaluatedNode[], opties: RenderOpties = {}): string {
-  return metWeergaveNamen(opties.namen, () => maakHtml(nodes));
+  const vorige = toetsKop;
+  toetsKop = { eenVersie: toetsVersies(nodes).size <= 1, getoond: false };
+  try {
+    return metWeergaveNamen(opties.namen, () => maakHtml(nodes));
+  } finally {
+    toetsKop = vorige;
+  }
 }
 
 function maakHtml(nodes: EvaluatedNode[]): string {
@@ -211,7 +237,7 @@ function maakHtml(nodes: EvaluatedNode[]): string {
       const voor = open.map((t) => t.open).join('');
       open = openOpmaakNa(open, node.text);
       const na = [...open].reverse().map((t) => `</${t.tag}>`).join('');
-      const regel = `${voor}${node.text}${na}`;
+      const regel = `${voor}${metWaarden(node)}${na}`;
       const klasse = (isUitleg(regel) ? 'calc-text calc-uitleg' : 'calc-text') + (scherm ? ' alleen-scherm' : '');
       parts.push(`<p class="${klasse}">${regel}</p>`);
       continue;
@@ -225,7 +251,7 @@ function maakHtml(nodes: EvaluatedNode[]): string {
       node.type === 'text' && node.inline &&
       /^<div class="calc-(line|input-prompt)\b/.test(vorige) && /<\/div>\s*$/.test(vorige)
     ) {
-      const inhoud = node.html ? node.text : escapeHtml(node.text);
+      const inhoud = node.html ? metWaarden(node) : escapeHtml(node.text);
       // Een korte toelichting (", permanent", ", veld 1") hoort bij de formule;
       // een lange is uitleg en blijft alleen op het scherm.
       const zichtbaar = inhoud
@@ -244,6 +270,21 @@ function maakHtml(nodes: EvaluatedNode[]): string {
   return parts.join('\n');
 }
 
+/**
+ * De tekst van een regel met elk ingevuld getal in een `calc-waarde`: zo krijgt het op
+ * papier het decimaalteken van de taal. Niet binnen een tag en niet in een tekening.
+ */
+function metWaarden(node: { text: string; waarden?: Array<[number, number]> }): string {
+  const { text, waarden } = node;
+  if (!waarden?.length || /<svg\b/i.test(text)) return text;
+  let uit = text;
+  for (const [van, tot] of [...waarden].reverse()) {
+    if (text.lastIndexOf('<', van - 1) > text.lastIndexOf('>', van - 1)) continue;
+    uit = `${uit.slice(0, van)}<span class="calc-waarde">${uit.slice(van, tot)}</span>${uit.slice(tot)}`;
+  }
+  return uit;
+}
+
 function renderNode(node: EvaluatedNode): string {
   switch (node.type) {
     case 'heading':
@@ -253,7 +294,7 @@ function renderNode(node: EvaluatedNode): string {
       // prose lines (`'…`) come through with `html: true` and may contain
       // inline tags like <i>, <b>, <hr/>, <sub>. Pass them through unescaped.
       return node.html
-        ? `<p class="calc-text">${node.text}</p>`
+        ? `<p class="calc-text">${metWaarden(node)}</p>`
         : `<p class="calc-text">${escapeHtml(node.text)}</p>`;
 
     case 'plot':
@@ -277,6 +318,21 @@ function renderNode(node: EvaluatedNode): string {
     case 'ifcx':
       return renderIfcxBlok(node);
 
+    case 'toets': {
+      const metVersie = !toetsKop?.eenVersie || !toetsKop.getoond;
+      if (toetsKop && node.versie && !node.verborgen && !node.scherm) toetsKop.getoond = true;
+      return renderToets(node, metVersie);
+    }
+
+    case 'fem':
+      return renderFem(node);
+
+    case 'kern':
+      return renderKern(node);
+
+    case 'last':
+      return renderLast(node);
+
     case 'js':
       return renderJsBlok(node);
 
@@ -297,6 +353,9 @@ function renderNode(node: EvaluatedNode): string {
 
     case 'gef-upload':
       return renderGefUpload(node);
+
+    case 'eenheid-def':
+      return renderEenheidDef(node);
   }
 }
 
@@ -308,14 +367,25 @@ function renderUserFunction(node: { name: string; params: string[]; expression: 
   return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
 }
 
-function renderVarDisplay(node: { name: string; result: string; unit: string; matrix?: MatrixUitkomst; getoond?: string }): string {
+/** Een eigen eenheid: de naam rechtop, als eenheid, met zijn definitie. */
+function renderEenheidDef(node: { name: string; expression: string; result: string }): string {
+  const latex = `\\mathrm{${node.name.replace(/_/g, '\\_')}} = ${exprToLatex(node.expression)}`;
+  if (node.result.startsWith('Error:')) {
+    return `<div class="calc-line calc-error">${renderLatex(latex)} <span class="calc-error-msg">${escapeHtml(node.result)}</span></div>`;
+  }
+  return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
+}
+
+function renderVarDisplay(node: { name: string; result: string; unit: string; matrix?: MatrixUitkomst; getoond?: string; inStelsel?: InStelsel }): string {
   const nameLatex = nameToLatex(node.name);
+  // In het eenhedenstelsel als dat de waarde omrekent (InStelsel).
+  const toon = node.inStelsel ?? node;
   // node.result already includes the unit ("2.91 m"); pass num + unit to
   // resultToLatex separately so we don't double-print the unit suffix.
   // Met een opmaak (`x:F2`, `#round n`) de getoonde vorm.
-  const { numStr, unitStr } = splitResult(node.getoond ?? node.result);
-  const effectiveUnit = node.unit || unitStr;
-  const valueLatex = node.matrix ? matrixResultToLatex(node.matrix) : resultToLatex(numStr, effectiveUnit);
+  const { numStr, unitStr } = splitResult(toon.getoond ?? toon.result);
+  const effectiveUnit = toon.unit || unitStr;
+  const valueLatex = toon.matrix ? matrixResultToLatex(toon.matrix) : resultToLatex(numStr, effectiveUnit);
   const latex = `${nameLatex} = ${valueLatex}`;
   return `<div class="calc-line"><span class="calc-formula">${renderLatex(latex, true)}</span></div>`;
 }
@@ -326,13 +396,22 @@ function renderInputPrompt(node: {
   unit: string;
   currentValue: string;
   standaard?: string;
+  toonEenheid?: string;
+  koppeling?: { bron: string; waarde?: string; fout?: string };
 }): string {
   // Een leeggemaakt veld rekent met de standaardwaarde (`?{5000}`, anders 0)
   // en toont hem grijs als placeholder.
   const placeholder = node.standaard !== undefined ? `\n    placeholder="${escapeHtml(node.standaard)}"` : '';
-  const unitSuffix = node.unit
-    ? `<span class="calc-input-unit">${escapeHtml(node.unit)}</span>`
+  const toon = node.toonEenheid ?? node.unit;
+  const unitSuffix = toon
+    ? `<span class="calc-input-unit">${escapeHtml(toon)}</span>`
     : '';
+  // De eenheid van de bladtekst, en die in beeld: zo rekent de app wat je typt terug
+  // (invoerNaarBron), ook "5 m" in een veld in mm.
+  const eenheden = (node.unit ? `
+    data-eenheid="${escapeHtml(node.unit)}"` : '')
+    + (node.toonEenheid ? `
+    data-toon-eenheid="${escapeHtml(node.toonEenheid)}"` : '');
   // Een tekstveld en geen type="number": daarin is een tussenstand als "0," of
   // "0." ongeldig en leest de waarde als leeg, zodat een getal met een komma of
   // punt niet in te typen was. inputmode="decimal" geeft op een tablet toch het
@@ -342,9 +421,23 @@ function renderInputPrompt(node: {
   <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false"
     class="calc-input-value"
     data-prompt="${escapeHtml(node.name)}"
-    value="${escapeHtml(node.currentValue)}"${placeholder} />
-  ${unitSuffix}
+    value="${escapeHtml(node.currentValue)}"${placeholder}${eenheden} />
+  ${unitSuffix}${koppelingTekst(node.koppeling)}
 </div>`;
+}
+
+/**
+ * Achter een veld dat aan een spreadsheetcel gekoppeld is: de waarde waarmee het rekent,
+ * of in rood waarom het niet rekent. Ook op papier: de verwijzing in het veld alleen zegt
+ * niet welk getal er gebruikt is.
+ */
+function koppelingTekst(k: { bron: string; waarde?: string; fout?: string } | undefined): string {
+  if (!k) return '';
+  if (k.fout !== undefined) return `
+  <span class="calc-error-msg calc-koppeling-fout">${escapeHtml(k.fout)}</span>`;
+  const { numStr, unitStr } = splitResult(k.waarde ?? '');
+  return `
+  <span class="calc-formula calc-koppeling">${renderLatex(`= ${resultToLatex(numStr, unitStr)}`, true)}</span>`;
 }
 
 function renderSelect(node: {
@@ -391,6 +484,7 @@ function renderAssignment(node: {
   unit: string;
   matrix?: MatrixUitkomst;
   getoond?: string;
+  inStelsel?: InStelsel;
   weergave?: 'val' | 'noc' | 'nosub' | 'novar';
 }): string {
   // Error case
@@ -404,10 +498,11 @@ function renderAssignment(node: {
   // Build the LaTeX chain: name = expr [= substitution] = result
   // Split numeric value and unit from result. Met een opmaak (`:F2`,
   // `#round n`) de getoonde vorm.
-  const { numStr, unitStr } = splitResult(node.getoond ?? node.result);
+  const toon = node.inStelsel ?? node;
+  const { numStr, unitStr } = splitResult(toon.getoond ?? toon.result);
   // Een vector of matrix krijgt de matrixopmaak, elk element afgerond als een
   // gewone uitkomst.
-  const resultLatex = node.matrix ? matrixResultToLatex(node.matrix) : resultToLatex(numStr, unitStr);
+  const resultLatex = toon.matrix ? matrixResultToLatex(toon.matrix) : resultToLatex(numStr, unitStr);
   const uitkomst = `\\textcolor{#059669}{\\boldsymbol{${resultLatex}}}`;
 
   // Name
@@ -637,6 +732,10 @@ export const defaultStyles = `
   font-size: 0.85em;
 }
 
+/* @toets: een normtoets door Open FEM Studio (toetsBlok.ts). */${TOETS_CSS}
+/* @fem: een plaatmodel, gerekend door Open FEM Studio (femBlok.ts). */${FEM_CSS}
+/* @kern: een rekentool van Open FEM Studio met geneste invoer (kernBlok.ts). */${KERN_CSS}
+/* @last: een lijnlast of puntlast uit belastingen (lastBlok.ts). */${LAST_CSS}
 /* @iframe: een kader met het adres. De app zet er een iframe in als de gebruiker
    het heeft bevestigd; de maat staat vast, geladen of niet. */
 .calc-iframe {
@@ -769,6 +868,12 @@ export const defaultStyles = `
   outline: none;
   border-color: #D97706;
   box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+/* Een eenheid die niet bij het veld past ("3 kip" in een veld in mm): niet opgeslagen. */
+.calc-input-value.calc-input-fout {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.2);
 }
 
 .calc-input-unit {

@@ -39,7 +39,7 @@
     "beweeglijk": "mechanism: too few supports or one hinge too many",
     "klik": "Click a blue dimension or a load to edit it — the change flows straight back into the calculation sheet.",
     "inBlad": "Combinations, envelope and checks are in the calculation sheet.",
-    "lengte": "length {{l}} m",
+    "lengte": "length {{l}}",
     "lasten_one": "{{count}} load",
     "lasten_other": "{{count}} loads",
     "scharnieren_one": "{{count}} hinge",
@@ -71,6 +71,7 @@
     "dekkingOnder": "Soffit to link",
     "dekkingZij": "cover at sides and top",
     "staafwerk": "Orange: checked truss. Dimensions in mm.",
+    "staafwerkKort": "Orange: checked truss.",
     "koppen": {
       "geometrie": "Piles and column",
       "overig": "Side bars and hairpins",
@@ -126,6 +127,64 @@
       "terrein": "Site",
       "gebouw": "Building",
       "verdieping": "Storey"
+    }
+  },
+  "poerDetail": {
+    "titel": "Bar schedule and reinforcement detail",
+    "staaflijst": "Bar schedule",
+    "merk": "Mark",
+    "aantal": "No.",
+    "diameter": "Ø",
+    "vorm": "Shape",
+    "zijden": "Leg lengths (centre)",
+    "lengte": "Length",
+    "totaal": "Total (m)",
+    "massa": "Mass (kg)",
+    "totaalMassa": "Total",
+    "verlopend": "varying",
+    "maten": "Dimensions in mm; leg lengths between bend points on the bar centre line, length along the centre line.",
+    "bovenaanzicht": "Plan",
+    "doorsnede": "Section",
+    "soorten": {
+      "trekband": "tie",
+      "beugel": "link",
+      "zijstaaf": "side bar",
+      "bovenstaaf": "top bar",
+      "haarspeld": "hairpin",
+      "dwarsstaaf": "transverse bar",
+      "band": "tie",
+      "net": "bottom mesh",
+      "randbeugel": "edge link"
+    },
+    "ontwerp": "Design scheme",
+    "vrijgegeven": "Released for construction",
+    "nietVrij": "cannot be released: the sheet does not say the cap is OK",
+    "vrijgeven": "Released for construction",
+    "uitleg": "From the same bars as the drawing and the checks. Shape code 00 straight, 21 U-bar, 51 closed link with two 135° hooks, 99 other shape. Bend radius: the entered mandrel for the tie, otherwise the smallest mandrel from table 8.1N. Release is only possible when the sheet says the cap is OK.",
+    "bewaarDxf": "Save detail as DXF",
+    "bewaarIfcx": "Save cap with reinforcement as IFCX",
+    "detailKop": "Reinforcement detail",
+    "dxfFilter": "DXF drawing",
+    "ifcxFilter": "IFCX",
+    "alleBestanden": "All files",
+    "model": {
+      "driepaalspoer": "Cap on three piles",
+      "vierpaalspoer": "Cap on four piles",
+      "hartOpHart": "pile centres",
+      "poer": "Pile cap",
+      "paal": "Pile",
+      "kolom": "Column",
+      "korf": "Reinforcement cage",
+      "alleenAanzet": "Only the stub is drawn; the length is outside this sheet.",
+      "project": "Project",
+      "terrein": "Site",
+      "gebouw": "Building",
+      "verdieping": "Storey",
+      "soorten": {
+        "band": "Tie bar",
+        "net": "Mesh bar",
+        "randbeugel": "Edge link"
+      }
     }
   },
   "doorsnede": {
@@ -353,7 +412,7 @@
     "demping": "ζ — damping ratio",
     "plattegrond": "Plan of the opening",
     "doorsnedeOnderslag": "Cross-section of the supporting beam",
-    "belasteBreedteMaat": "loaded width {{b}} m",
+    "belasteBreedteMaat": "loaded width {{b}}",
     "doorsnede": "Cross-section",
     "schemaKop": "Static system — characteristic loads per joist",
     "veranderlijk": "variable",
@@ -382,7 +441,7 @@
       "trilling": "vibrations",
       "nietAangetoond": "not demonstrated",
       "trillingNvt": "vibrations n/a",
-      "trekOplegging": "uplift at bearing {{kn}} kN",
+      "trekOplegging": "uplift at bearing {{kn}}",
       "plaat": "panel",
       "lijmnaad": "glue line",
       "flensbreedte": "flange width",
@@ -414,6 +473,55 @@
     "sparing": "opening",
     "staart": "tail",
     "wisselbalkEnkel": "trimming joist"
+  },
+  "invoer": {
+    "wacht": "Not sent yet…",
+    "rekent": "Calculating…",
+    "fem": "Open FEM Studio is calculating…",
+    "eerst": "The input fields appear as soon as the sheet has been calculated.",
+    "geenVelden": "This sheet shows no input fields at the moment.",
+    "uitleg": "Calculates when you leave a field, press Enter or pause for a moment.",
+    "verbergBeeld": "Hide drawing",
+    "toonBeeld": "Show drawing",
+    "koppeling": {
+      "knop": "Link to a spreadsheet cell",
+      "titel": "Value from a spreadsheet cell",
+      "spreadsheet": "Spreadsheet sheet",
+      "werkblad": "Worksheet",
+      "cel": "Cell",
+      "eenheid": "Unit in the cell",
+      "metVeldEenheid": "Empty: the number gets the unit of the field ({{eenheid}}).",
+      "zonderEenheid": "Empty: a number without a unit.",
+      "celOngeldig": "Type a cell such as B4.",
+      "inDeCel": "In the cell: {{waarde}}",
+      "koppel": "Link",
+      "annuleer": "Cancel",
+      "bron": "From {{blad}}, {{cel}}",
+      "onbekendBlad": "sheet #{{ref}}",
+      "verwijder": "Remove link",
+      "verwijderUitleg": "The field keeps the last value from the cell.",
+      "geenSpreadsheet": "This project has no spreadsheet sheet yet.",
+      "fout": {
+        "bron": "The sheet does not exist (any more).",
+        "geen-spreadsheet": "This sheet is not a spreadsheet sheet.",
+        "werkmap": "The workbook cannot be read.",
+        "werkblad": "This worksheet does not exist (any more).",
+        "leeg": "The cell is empty.",
+        "tekst": "The cell does not hold a number: {{detail}}",
+        "formulefout": "The formula gives {{detail}}.",
+        "geen-waarde": "The formula has no result yet; open the spreadsheet sheet."
+      }
+    }
+  },
+  "vloerOpPalen": {
+    "plattegrond": "Plan",
+    "doorsnede": "Section at a pile",
+    "strook": "strip",
+    "kop": "drop panel",
+    "paal": "pile",
+    "klik": "Click a blue dimension to edit it.",
+    "oudeMaten": "The drawing shows the last valid dimensions: a pile spacing and the floor thickness must be greater than zero.",
+    "geenModel": "Enter a pile spacing and a floor thickness greater than zero to see the drawing."
   },
   "afdruk": {
     "titel": "Print preview",
@@ -450,6 +558,7 @@
     "inhoudResultaten": "Contents and results",
     "grondslag": "Basis",
     "oordeel": "Verdict",
+    "paginaKolom": "Page",
     "alleVoldoen": "All checked parts are OK.",
     "nietGetoetstEen": "{{n}} of the {{totaal}} parts is not verified; see the sheet concerned.",
     "nietGetoetstMeer": "{{n}} of the {{totaal}} parts are not verified; see the sheets concerned.",
@@ -461,6 +570,13 @@
     "project": "Project {{nummer}}",
     "opgesteldDoor": "Prepared by {{naam}}",
     "paginaWoord": "Page",
-    "vanWoord": "of"
+    "vanWoord": "of",
+    "varianten": {
+      "kop": "Variants",
+      "uitleg": "{{naam}} with other input; input not listed is the same as in the sheet above.",
+      "blad": "Sheet",
+      "uc": "Governing UC",
+      "oordeel": "Verdict"
+    }
   }
 }

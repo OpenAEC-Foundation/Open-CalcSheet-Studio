@@ -5,9 +5,11 @@ import { rekentaalImageUrls, rekentaalIncludes } from "../../../templates/rekent
 import { bronVoorUitvoer } from "../../../templates/vertalingen";
 import { projectScope } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
+import { metToetsingen } from "../../../rekenen/toetsCache";
 import { staatInHoofdstuk, type Knoop } from "../../../rapport/opzet";
 import { leesResultaat, samenvatting, type Resultaat } from "../../calc/bladResultaat";
 import { bladSoortVan, bladVoorOpzet } from "../../calc/bladSoorten";
+import BeeldenInvoer from "./BeeldenInvoer";
 import { GroeiVeld, Sectie, SubkopMelding, useOpzetStand, useRapport, Vink } from "./velden";
 
 interface Uitkomst {
@@ -30,7 +32,7 @@ function useUitkomsten(taal: string): Map<string, Uitkomst> {
     const uit = new Map<string, Uitkomst>();
     for (const ex of exemplaren) {
       try {
-        const nodes = evaluate(parse(bronVoorUitvoer(ex.source, taal).bron, opties), ex.waarden, scope);
+        const nodes = evaluate(parse(bronVoorUitvoer(ex.source, taal).bron, opties), ex.waarden, scope, metToetsingen({}, "lezen"));
         uit.set(ex.id, { resultaat: leesResultaat(nodes, ex.naam), fout: null });
       } catch (err) {
         uit.set(ex.id, {
@@ -64,12 +66,21 @@ export default function BerekeningenSectie({ knoop, titel }: { knoop: Knoop; tit
       intro={t("berekeningen.intro")}
     >
       {exemplaren.length === 0 && <p className="rapport-hint">{t("berekeningen.geenBladen")}</p>}
+      {exemplaren.length > 0 && <BeeldenInvoer id="berekeningen" />}
       {exemplaren.length > 0 && (
         <Vink
           label={t("berekeningen.bladenInInhoud")}
           pad="opmaak.bladenInInhoud"
           aan={rapport.opmaak.bladenInInhoud}
           hint={t("berekeningen.bladenInInhoudUitleg")}
+        />
+      )}
+      {exemplaren.length > 0 && (
+        <Vink
+          label={t("berekeningen.bijlageParagrafen")}
+          pad="opmaak.bijlageParagrafen"
+          aan={rapport.opmaak.bijlageParagrafen !== false}
+          hint={t("berekeningen.bijlageParagrafenUitleg")}
         />
       )}
       {exemplaren.map((ex) => {

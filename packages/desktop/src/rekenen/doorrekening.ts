@@ -12,15 +12,24 @@
  * De afdruk rekent niet via dit pad: daar moet elk blad klaar zijn voordat er
  * papier uit komt (bladResultaat.ts, bladDoorrekenen.ts).
  */
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import i18next from "i18next";
-import { setAngleMode, type AngleMode } from "@ifc-calc/core";
+import { setAngleMode, type AngleMode, type EvalOpties, type ToetsVerzoek } from "@ifc-calc/core";
+import { useProjectStore } from "../store/projectStore";
+import { evalOptiesVan } from "../store/projectEenheden";
+import { projectTekstVan } from "../store/projectBlad";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
+import type { BladInvoer } from "../components/calc/invoer/velden";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
+import { verwezenBladen, type VerwijsBlad } from "./verwijzingen";
+import { metToetsingen } from "./toetsCache";
+import { kenFemStudio, legToetsingenVast, useToetsVersie, vraagToetsingen } from "./femToetsing";
 
 export interface RekenVerzoek {
   sleutel: string;
+  /** Het id van het blad: daar worden de antwoorden van FEM Studio vastgelegd. */
+  blad?: string;
   source: string;
   waarden: Record<string, string>;
   scope: Record<string, unknown>;
@@ -28,8 +37,12 @@ export interface RekenVerzoek {
   hoekmodus: string;
   /** De taal van de uitvoer: de taal van de app (templates/vertalingen.ts). */
   taal?: string;
+  /** Het eenhedenstelsel en de eigen eenheden van het project (store/projectEenheden.ts). */
+  evalOpties?: EvalOpties;
   includes: [string, string][];
   imageUrls: [string, string][];
+  /** De bladen waarnaar dit blad verwijst (#1.R_paal), om eerst door te rekenen (verwijzingen.ts). */
+  verwijzingen?: VerwijsBlad[];
 }
 
 export interface RekenAntwoord {
@@ -37,12 +50,20 @@ export interface RekenAntwoord {
   html: string;
   /** Bij een canvas-blad: de uitwerking per eenheid (components/calc/canvasRekenen.ts). */
   eenheden?: CanvasUitwerking[];
+  /** De @toets-blokken zonder antwoord (toetsBlok.ts); gaan naar FEM Studio. */
+  verzoeken?: ToetsVerzoek[];
+  /** De hashes van alle @toets-blokken, met of zonder antwoord. */
+  toetsen?: string[];
+  /** De invoervelden die het blad nu toont, per kop (components/calc/invoer/velden.ts). */
+  invoer?: BladInvoer;
   uitkomst: BladUitkomst | null;
 }
 
 export interface Doorrekening {
   html: string;
   eenheden?: CanvasUitwerking[];
+  /** Ontbreekt als het blad niet doorrekende. */
+  invoer?: BladInvoer;
   uitkomst: BladUitkomst | null;
 }
 
@@ -66,14 +87,21 @@ function deWorker(): Worker {
   if (!worker) {
     worker = new Worker(new URL("./rekenWorker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (e: MessageEvent<RekenAntwoord>) => {
-      const { sleutel, html, eenheden, uitkomst } = e.data;
-      uitkomsten.set(sleutel, { html, eenheden, uitkomst });
+      const { sleutel, html, eenheden, uitkomst, verzoeken, toetsen, invoer } = e.data;
+      const blad = bezig?.blad;
+      if (verzoeken?.length) void vraagToetsingen(verzoeken);
+      uitkomsten.set(sleutel, { html, eenheden, uitkomst, invoer });
       while (uitkomsten.size > BEWAARD) uitkomsten.delete(uitkomsten.keys().next().value!);
       bezig = null;
       const volgende = wachtend;
       wachtend = null;
       if (volgende && !uitkomsten.has(volgende.sleutel)) stuur(volgende);
       meld();
+      // Na het tonen: de antwoorden bij het blad vastleggen geeft een nieuwe ronde.
+      if (toetsen?.length) {
+        kenFemStudio();
+        if (blad) legToetsingenVast(blad, toetsen);
+      }
     };
   }
   return worker;
@@ -88,6 +116,11 @@ function vraag(v: RekenVerzoek) {
   if (uitkomsten.has(v.sleutel) || bezig?.sleutel === v.sleutel) return;
   if (bezig) wachtend = v;
   else stuur(v);
+}
+
+/** De hoekmodus van nu, voor de worker van de varianten (variantRekenen.ts). */
+export function hoekmodusNu(): AngleMode {
+  return hoekmodus;
 }
 
 /**
@@ -135,16 +168,39 @@ export function useDoorrekening(
   // taal: de uitvoer volgt de app, en wie deze hook gebruikt, tekent bij een
   // taalwissel opnieuw (useTranslation in de uitwerking en in het beeld).
   const taal = i18next.language ?? "";
-  const sleutel = [hoekmodus, taal, naam, JSON.stringify(scope), JSON.stringify(waarden), source].join("\u0000");
+  // Het eenhedenstelsel van het project: een wissel geeft een nieuwe sleutel.
+  const gegevens = useProjectStore((s) => s.gegevens);
+  // De belastingen uit hoofdstuk 5 en de eigen elementen van de projectgegevens rekenen vóór
+  // het blad; de worker kent het project niet en krijgt die tekst dus mee.
+  const belastingen = useProjectStore((s) => s.rapport.belastingen);
+  const rapportTaal = useProjectStore((s) => s.rapport.taal);
+  const basisOpties = useMemo(() => {
+    const project = projectTekstVan(gegevens, belastingen, rapportTaal);
+    return { ...evalOptiesVan(gegevens), ...(project ? { project } : {}) };
+  }, [gegevens, belastingen, rapportTaal]);
+  // Een nieuw antwoord van FEM Studio maakt elke doorrekening verouderd; de antwoorden
+  // zelf staan niet in de sleutel (ze zijn groot), hun versie wel.
+  const toetsV = useToetsVersie();
+  const evalOpties = useMemo(() => metToetsingen(basisOpties, "vragen", taal), [basisOpties, toetsV, taal]);
+  const optiesSleutel = JSON.stringify(basisOpties) + "|t" + toetsV;
+  // De bladen waarnaar dit blad verwijst gaan mee, en horen in de sleutel: verandert
+  // de invoer van blad 1, dan rekent een blad met #1.R_paal opnieuw.
+  const exemplaren = useProjectStore((s) => s.exemplaren);
+  const verwijzingen = useMemo(() => verwezenBladen(source, waarden, exemplaren), [source, waarden, exemplaren]);
+  const verwijsSleutel = verwijzingen.length ? JSON.stringify(verwijzingen) : "";
+  const sleutel = [hoekmodus, taal, optiesSleutel, naam, JSON.stringify(scope), JSON.stringify(waarden), source, verwijsSleutel].join("\u0000");
   const hier = useSyncExternalStore(abonneer, () => uitkomsten.get(sleutel) ?? null);
 
   useEffect(() => {
     if (!source.trim()) return;
     vraag({
-      sleutel, source, waarden, scope, naam, hoekmodus, taal,
+      sleutel, blad, source, waarden, scope, naam, hoekmodus, taal, evalOpties,
       includes: [...rekentaalIncludes], imageUrls: [...rekentaalImageUrls],
+      ...(verwijzingen.length ? { verwijzingen } : {}),
     });
-  }, [sleutel, source, waarden, scope, naam, taal]);
+    // verwijzingen zit in de sleutel
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sleutel, blad, source, waarden, scope, naam, taal, evalOpties]);
 
   const resultaat = hier?.uitkomst?.resultaat;
   useEffect(() => {

@@ -55,7 +55,8 @@ function formuleJson(f: Formule, metCode: boolean): Record<string, unknown> {
 function maakIfc(ctx: McpContext, formaat: "ifc" | "ifcx", id: string | null): { inhoud: string; naam: string } {
   const stand = ctx.omgeving.stand();
   const naam = stand.projectNaam || "Berekening";
-  const basis = { versie: PROJECT_FORMAAT_VERSIE, naam, gegevens: stand.gegevens };
+  // Met de id van het project: één blad heeft dan dezelfde paden als in de hele export.
+  const basis = { versie: PROJECT_FORMAAT_VERSIE, id: stand.projectId, naam, gegevens: stand.gegevens };
   let doc;
   if (id !== null) {
     const blad = zoekBlad(stand, id);
@@ -63,7 +64,7 @@ function maakIfc(ctx: McpContext, formaat: "ifc" | "ifcx", id: string | null): {
     doc = projectIfcx({ ...basis, exemplaren: [blad] });
     return { inhoud: formaat === "ifc" ? bouwProjectStep(doc) : JSON.stringify(doc, null, 2), naam: blad.naam };
   }
-  doc = projectIfcx({ ...basis, exemplaren: stand.exemplaren, rapport: stand.rapport, verborgen: stand.verborgen });
+  doc = projectIfcx({ ...basis, exemplaren: stand.exemplaren, rapport: stand.rapport, verborgen: stand.verborgen, vreemd: stand.vreemd });
   return { inhoud: formaat === "ifc" ? bouwProjectStep(doc) : JSON.stringify(doc, null, 2), naam };
 }
 
@@ -84,6 +85,11 @@ const EENHEDEN_SCHEMA = objectSchema({
   defaultForce: { type: "string", enum: ["N", "kN", "MN"] },
   defaultStress: { type: "string", enum: ["Pa", "kPa", "MPa", "GPa", "N/mm^2"] },
   returnAngleUnits: { type: "boolean" },
+  stelsel: {
+    type: "string",
+    enum: ["blad", "si-mm", "si-m", "us", "eigen"],
+    description: "Unit system for new projects: 'blad' (as written in the sheet), 'si-mm', 'si-m', 'us' (US customary) or 'eigen' (per quantity). The open project's own system is the project data field 'eenheden'.",
+  },
 });
 
 const WEERGAVEN: McpWeergave[] = ["code-visual", "code-output", "visual-output", "print-preview", "ifc"];
@@ -251,7 +257,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     kind: "file",
     description:
       "Write calculation sheets to a PDF file through the report engine (a cover page plus the sheets; without drawings). Only available in an app build that includes the report engine; otherwise NOT_AVAILABLE. " +
-      "The full structural report with drawings is printed through the app's print dialog: use print and choose a PDF printer there.",
+      "Use report_export_pdf on Windows or Linux to write the full report with drawings without opening a dialog.",
     inputSchema: objectSchema(
       {
         path: { type: "string", minLength: 1, description: "Absolute path of the PDF (.pdf is added when missing)." },
@@ -278,11 +284,34 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
   },
 
   {
+    name: "report_export_pdf",
+    kind: "file",
+    description:
+      "Write the full structural report (cover, chapters, calculation sheets and drawings, as in the print preview) to a PDF file, without any dialog. " +
+      "The app window briefly shows the report preview while it writes. Windows or Linux desktop app only; elsewhere NOT_AVAILABLE. A large report can take a minute or more.",
+    inputSchema: objectSchema(
+      { path: { type: "string", minLength: 1, description: "Absolute path of the PDF (.pdf is added when missing). An existing file is overwritten." } },
+      ["path"],
+    ),
+    annotations: WIJZIGEN,
+    rest: [{ method: "POST", path: "/report/export/pdf" }],
+    handler: async (args, ctx) => {
+      if (!ctx.omgeving.bestanden.beschikbaar()) return fout("NOT_AVAILABLE", "Writing the report PDF only works in the desktop app.");
+      const opgegeven = String(args.path).trim();
+      // Een schijfletter, een netwerkpad of een pad vanaf de wortel.
+      if (!/^([A-Za-z]:[\\/]|[\\/]{2}|\/)/.test(opgegeven)) return fout("VALIDATION", "path must be an absolute path, for example C:/projects/report.pdf.");
+      const pad = /[.]pdf$/i.test(opgegeven) ? opgegeven : `${opgegeven}.pdf`;
+      const bytes = await ctx.omgeving.afdruk.rapportPdf(pad);
+      return ok({ path: pad, bytes });
+    },
+  },
+
+  {
     name: "print",
     kind: "ui",
     description:
       "Print from the app, as the Print buttons do: what='report' for the structural report (cover, chapters, sheets in appendix A), what='sheets' for calculation sheets (ids, default all). " +
-      "The system print dialog opens in the app; the user picks the printer there, or a PDF printer to save a PDF. The app waits until the dialog is closed.",
+      "The system print dialog opens in the app; the user picks the printer there, or a PDF printer to save a PDF. MCP and REST requests may block until someone closes the dialog. For unattended report export on Windows or Linux, use report_export_pdf.",
     inputSchema: objectSchema(
       {
         what: { type: "string", enum: ["report", "sheets"], description: "The structural report or calculation sheets." },
@@ -354,7 +383,7 @@ export const OVERIGE_TOOLS: McpToolDef[] = [
     name: "settings_set",
     kind: "mutate",
     description:
-      "Change app settings, as Settings does: theme, language ('auto' follows the system), textSize, and units (any subset of angleMode, defaultLength, defaultForce, defaultStress, returnAngleUnits). " +
+      "Change app settings, as Settings does: theme, language ('auto' follows the system), textSize, and units (any subset of angleMode, defaultLength, defaultForce, defaultStress, returnAngleUnits, stelsel). " +
       "Takes effect immediately and is saved.",
     inputSchema: objectSchema({
       theme: { type: "string", enum: THEMAS },

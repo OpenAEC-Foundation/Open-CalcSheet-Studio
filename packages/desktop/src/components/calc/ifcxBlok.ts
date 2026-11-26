@@ -17,7 +17,7 @@
  * de afdruk laadt alleen three.js (ifcxAfdruk.ts). Zonder WebGL blijft de projectie
  * van de kern staan, op het scherm en op papier, en is het IFCX nog te bewaren.
  */
-import { useLayoutEffect, useSyncExternalStore, type RefObject } from "react";
+import { useLayoutEffect, type RefObject } from "react";
 import type { IfcxKijker, IfcxTeksten } from "./ifcxWeergave";
 
 type Weergave = typeof import("./ifcxWeergave");
@@ -171,26 +171,6 @@ const AFDRUK_HOOGTE = 230;
 const afbeeldingen = new Map<string, string>();
 const BEWAARD = 24;
 
-let versie = 0;
-const luisteraars = new Set<() => void>();
-
-function meld() {
-  versie += 1;
-  for (const l of luisteraars) l();
-}
-
-function abonneer(l: () => void) {
-  luisteraars.add(l);
-  return () => {
-    luisteraars.delete(l);
-  };
-}
-
-/** Verandert zodra er een afbeelding voor de afdruk klaar is; het afdrukvoorbeeld verdeelt dan opnieuw. */
-export function useIfcxVersie(): number {
-  return useSyncExternalStore(abonneer, () => versie);
-}
-
 function zetAfbeelding(vak: HTMLElement, url: string) {
   const img = document.createElement("img");
   img.className = "calc-ifcx-afbeelding";
@@ -245,7 +225,6 @@ export function useIfcxAfdruk(ref: RefObject<HTMLElement | null>, html: string) 
         if (url) zetAfbeelding(vak, url);
         blok.removeAttribute("data-afdruk-laadt");
       }
-      meld();
     })();
     return () => {
       weg = true;

@@ -14,13 +14,13 @@
  *                   projectie (`useDrieDAfdruk`, in PrintBlad en het rapport).
  *                   Zolang die getekend wordt, draagt het blok
  *                   `data-afdruk-laadt`; het afdrukken wacht daarop
- *                   (rapport/afdruk/drukvellen.ts), en het afdrukvoorbeeld
- *                   verdeelt opnieuw zodra hij er is (`useDrieDVersie`).
+ *                   (rapport/afdruk/drukvellen.ts). Het afdrukvoorbeeld ziet
+ *                   de afbeelding zelf komen en zet het blok opnieuw op zijn vel.
  *
  * three.js wordt pas geladen bij het eerste 3D-blok (drieDWeergave.ts). Zonder
  * WebGL blijft de projectie van de kern staan, op het scherm en op papier.
  */
-import { useLayoutEffect, useSyncExternalStore, type RefObject } from "react";
+import { useLayoutEffect, type RefObject } from "react";
 import type { DrieDScene } from "@ifc-calc/core";
 import type { DrieDTeksten, Kijker } from "./drieDWeergave";
 
@@ -138,26 +138,6 @@ const AFDRUK_MAX_HOOGTE = 260;
 const afbeeldingen = new Map<string, string>();
 const BEWAARD = 24;
 
-let versie = 0;
-const luisteraars = new Set<() => void>();
-
-function meld() {
-  versie += 1;
-  for (const l of luisteraars) l();
-}
-
-function abonneer(l: () => void) {
-  luisteraars.add(l);
-  return () => {
-    luisteraars.delete(l);
-  };
-}
-
-/** Verandert zodra er een 3D-afbeelding voor de afdruk klaar is; het afdrukvoorbeeld verdeelt dan opnieuw. */
-export function useDrieDVersie(): number {
-  return useSyncExternalStore(abonneer, () => versie);
-}
-
 function zetAfbeelding(vak: HTMLElement, url: string) {
   const img = document.createElement("img");
   img.className = "calc-3d-afbeelding";
@@ -221,7 +201,6 @@ export function useDrieDAfdruk(ref: RefObject<HTMLElement | null>, html: string)
         if (url) zetAfbeelding(vak, url);
         blok.removeAttribute("data-afdruk-laadt");
       }
-      meld();
     })();
     return () => {
       weg = true;

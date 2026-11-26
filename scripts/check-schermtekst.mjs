@@ -13,8 +13,10 @@
  * Symbolen, eenheden, formules en productnamen zijn geen tekst om te vertalen: die staan
  * in TOEGESTAAN. Daarnaast:
  *
- *   6  elke vertaalsleutel bestaat in elke taal, en geen enkele taal heeft een sleutel
- *      meer dan de andere; zolang een sleutel ontbreekt, valt de app stil terug;
+ *   6  elke taal uit de lijst (i18n/talen.ts) heeft een map, elke vertaalsleutel van het
+ *      Engels bestaat in elke taal (een meervoud met de vormen van die taal), en geen taal
+ *      heeft een sleutel die het Engels niet heeft; zolang een sleutel ontbreekt, valt de app
+ *      stil terug. Geen taal behalve het Nederlands bevat Nederlandse woorden;
  *   7  een vaste sleutel in t("…") bestaat in de namespace van zijn onderdeel.
  *
  * Draaien:  node scripts/check-schermtekst.mjs
@@ -143,22 +145,28 @@ for (const taal of TALEN) {
   inhoud[taal] = {};
   for (const ns of NAMESPACES) inhoud[taal][ns] = new Set(sleutels(JSON.parse(readFileSync(join(LOCALES, taal, `${ns}.json`), "utf8"))));
 }
-for (const ns of NAMESPACES) {
-  for (const taal of TALEN) {
-    const anders = TALEN.filter((t) => t !== taal);
-    const mist = anders.flatMap((t) => [...inhoud[t][ns]].filter((k) => !inhoud[taal][ns].has(k)).map((k) => `${k} (wel in ${t})`));
-    meld(mist.length === 0, `${taal}/${ns}.json: niets ontbreekt (${inhoud[taal][ns].size} sleutels)`, mist);
+{
+  const { TALEN: LIJST, BRONTAAL, vergelijkSleutels } = await import("./lib/talen.mjs");
+  const codes = LIJST.map((t) => t.code);
+  const los = [...codes.filter((c) => !TALEN.includes(c)).map((c) => `${c}: in de lijst, geen map`), ...TALEN.filter((c) => !codes.includes(c)).map((c) => `${c}: een map, niet in de lijst`)];
+  meld(los.length === 0, `de talen in de lijst en de mappen zijn dezelfde (${codes.join(", ")})`, los);
+  for (const taal of codes.filter((c) => c !== BRONTAAL)) {
+    const { mist, teVeel } = vergelijkSleutels(taal);
+    const aantal = NAMESPACES.reduce((s, ns) => s + (inhoud[taal]?.[ns]?.size ?? 0), 0);
+    meld(mist.length === 0, `${taal}: 0 ontbrekende sleutels in ${NAMESPACES.length} bestanden (${aantal} sleutels)`, mist);
+    meld(teVeel.length === 0, `${taal}: geen sleutel die het Engels niet heeft`, teVeel);
   }
 }
 
-// Geen Nederlands in de Engelse vertaling. Een invulveld en `hoogte=` (rekentaal) tellen niet.
-{
-  const NL = /\b(?:het|een|van|bij|met|voor|uit|naar|niet|geen|alleen|maar|ook|wordt|worden|zijn|staat|staan|deze|dit|dat|wel|tenzij|bestaande|constructie|constructeur|berekening|berekeningen|belasting|belastingen|uitgangspunten|inleiding|inhoud|bijlage|toelichting|uitvoering|nieuwbouw|wijziging|stabiliteit|fundering|trillingen|vloer|vloeren|daken|wanden|gevel|gebouw|hout|staal|beton|onderdeel|datum|rapport|blad|bladen|bestand|invoer|uitvoer|kop|tekst|naam|waarde|balk|ligger|voldoet|breedte|lengte|sparing|oplegging)\b/i;
+// Geen Nederlands in een andere taal dan het Nederlands. Een invulveld en `hoogte=` (rekentaal) tellen niet.
+for (const taal of TALEN.filter((t) => t !== "nl")) {
+  // Een woordgrens die ook ą, ė en ų als letter kent: "tekstą" is geen "tekst".
+  const NL = /(?<![\p{L}\p{N}_])(?:het|een|van|bij|met|voor|uit|naar|niet|geen|alleen|maar|ook|wordt|worden|zijn|staat|staan|deze|dit|dat|wel|tenzij|bestaande|constructie|constructeur|berekening|berekeningen|belasting|belastingen|uitgangspunten|inleiding|inhoud|bijlage|toelichting|uitvoering|nieuwbouw|wijziging|stabiliteit|fundering|trillingen|vloer|vloeren|daken|wanden|gevel|gebouw|hout|staal|beton|onderdeel|datum|rapport|blad|bladen|bestand|invoer|uitvoer|kop|tekst|naam|waarde|balk|ligger|voldoet|breedte|lengte|sparing|oplegging)(?![\p{L}\p{N}_])/iu;
   const waarden = (o, voor) => Object.entries(o).flatMap(([k, v]) => (v && typeof v === "object" ? waarden(v, `${voor}${k}.`) : [[`${voor}${k}`, String(v)]]));
-  const nl = NAMESPACES.flatMap((ns) => waarden(JSON.parse(readFileSync(join(LOCALES, "en", `${ns}.json`), "utf8")), `${ns}:`))
+  const nl = NAMESPACES.flatMap((ns) => waarden(JSON.parse(readFileSync(join(LOCALES, taal, `${ns}.json`), "utf8")), `${ns}:`))
     .filter(([, v]) => NL.test(v.replace(/\{\{?[^}]*\}\}?/g, " ")))
     .map(([k, v]) => `${k}: ${v.slice(0, 90)}`);
-  meld(nl.length === 0, "geen Nederlandse woorden in de Engelse vertaling", nl);
+  meld(nl.length === 0, `geen Nederlandse woorden in de vertaling ${taal}`, nl);
 }
 
 // De woorden om te overtypen in een lintfragment: geen ervan blijft Nederlands.

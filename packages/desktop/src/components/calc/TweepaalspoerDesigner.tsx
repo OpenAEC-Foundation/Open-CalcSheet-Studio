@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useDesigner, Dim, UitkomstKop } from "./designerKit";
+import { useDesigner, Dim, UitkomstKop, StelselGetal, fmt } from "./designerKit";
 import { useBladUitkomst } from "./bladResultaat";
 import { maakPoer } from "./poerDefinitie";
 import { tekenPoer, TEKENING_MIN_BREEDTE, type TekeningTeksten } from "./poerTekening";
 import PoerModel from "./PoerModel";
+import PoerStaaflijst from "./PoerStaaflijst";
+import { tweepaalVorm } from "./poerDxf";
 import { useActiefExemplaar, useAlleenLezen } from "../../store/actiefBlad";
 import { bewaarAls } from "../../store/ifcInhoud";
 import "./VoetplaatDesigner.css";
@@ -17,6 +19,8 @@ import "./VoetplaatDesigner.css";
  * Het beeld rekent niet: de staven komen uit de invoer via de poerdefinitie
  * (poerDefinitie.ts), het staafwerk en het oordeel uit het doorgerekende blad. De SVG
  * op het scherm, op papier en in de download is dezelfde tekst (poerTekening.ts).
+ * Onder de tekening de staaflijst uit dezelfde staven, met het DXF-detail
+ * (PoerStaaflijst.tsx); op het scherm ingeklapt, op papier als tabel.
  *
  * De indeling hangt af van de maat van het paneel; de tekening staat in rust altijd
  * helemaal in beeld:
@@ -75,7 +79,8 @@ export default function TweepaalspoerDesigner() {
   const uitkomst = useBladUitkomst();
   const exemplaar = useActiefExemplaar();
   const alleenLezen = useAlleenLezen();
-  const { t } = useTranslation("beelden");
+  const { t, i18n } = useTranslation("beelden");
+  const eenheden = ctx.eenheden;
 
   const teksten: TekeningTeksten = useMemo(() => ({
     bovenaanzicht: t("tweepaalspoer.bovenaanzicht"),
@@ -101,8 +106,11 @@ export default function TweepaalspoerDesigner() {
     geen: t("tweepaalspoer.geen"),
     dekkingOnder: t("tweepaalspoer.dekkingOnder"),
     dekkingZij: t("tweepaalspoer.dekkingZij"),
-    staafwerk: t("tweepaalspoer.staafwerk"),
-  }), [t]);
+    // Omgerekend draagt elke maat zijn eenheid; anders staat er dat de maten in mm zijn.
+    staafwerk: eenheden.doel("mm") ? t("tweepaalspoer.staafwerkKort") : t("tweepaalspoer.staafwerk"),
+    // De maten op papier in het eenhedenstelsel; zonder omrekening het getal in mm, zoals altijd.
+    ...(eenheden.doel("mm") ? { maat: (mm: number) => eenheden.tekst(mm, "mm", 0, (w, n) => fmt(w, n, i18n.language)) } : {}),
+  }), [t, eenheden, i18n.language]);
 
   // De breedte van het hele paneel: die hangt niet af van de indeling, de maat van de
   // tekeningkolom wel. Daarop kiezen zou de indeling heen en weer laten springen.
@@ -138,10 +146,12 @@ export default function TweepaalspoerDesigner() {
     : smal ? Math.min(380, Math.max(240, Math.round(box.w * 0.62)))
     : Math.max(MODEL_MIN, Math.floor(box.h - tekening.hoogte * schaal - MODEL_KOP - TUSSENRUIMTE));
 
-  const getal = (naam: string, stap = 10) => (
-    <input type="number" step={stap} value={d(naam)}
-      onChange={(e) => set(naam, parseFloat(e.target.value.replace(",", ".")) || 0)} />
+  // Een maat ("mm") staat in het eenhedenstelsel van het project; een aantal niet.
+  const getal = (naam: string, stap = 10, eenheid = "") => (
+    <StelselGetal eenheden={eenheden} eenheid={eenheid} step={stap} waarde={d(naam)}
+      onWijzig={(w) => set(naam, w || 0)} />
   );
+  const veld = (sleutel: string) => eenheden.label(t(`tweepaalspoer.velden.${sleutel}`), "mm");
   const diameter = (naam: string) => (
     <select value={Math.round(d(naam))} onChange={(e) => set(naam, parseInt(e.target.value))}>
       {DIAMETERS.map((w) => <option key={w} value={w}>Ø{w}</option>)}
@@ -175,12 +185,12 @@ export default function TweepaalspoerDesigner() {
               <option value={2}>{t("tweepaalspoer.keuzes.rond")}</option>
             </select>
           </label>
-          <label>{t("tweepaalspoer.velden.afwijking")}{getal("e_p")}</label>
+          <label>{veld("afwijking")}{getal("e_p", 10, "mm")}</label>
 
           <span className="vd-ctrl-h">{t("tweepaalspoer.trekband")}</span>
           <label>{t("tweepaalspoer.velden.aantal")}{getal("n_t", 1)}</label>
           <label>{t("tweepaalspoer.velden.diameter")}{diameter("d_t")}</label>
-          <label>{t("tweepaalspoer.velden.hoh")}{getal("s_t", 5)}</label>
+          <label>{veld("hoh")}{getal("s_t", 5, "mm")}</label>
           <label>{t("tweepaalspoer.velden.lagen")}
             <select value={Math.round(d("lagen"))} onChange={(e) => set("lagen", parseInt(e.target.value))}>
               <option value={1}>1</option>
@@ -195,14 +205,14 @@ export default function TweepaalspoerDesigner() {
           </label>
           {Math.round(d("vorm_t")) === 2 && (
             <>
-              <label>{t("tweepaalspoer.velden.been")}{getal("l_op", 25)}</label>
-              <label>{t("tweepaalspoer.velden.doorn")}{getal("D_m", 5)}</label>
+              <label>{veld("been")}{getal("l_op", 25, "mm")}</label>
+              <label>{veld("doorn")}{getal("D_m", 5, "mm")}</label>
             </>
           )}
 
           <span className="vd-ctrl-h">{t("tweepaalspoer.beugels")}</span>
           <label>{t("tweepaalspoer.velden.diameter")}{diameter("d_s")}</label>
-          <label>{t("tweepaalspoer.velden.hoh")}{getal("s_s", 25)}</label>
+          <label>{veld("hoh")}{getal("s_s", 25, "mm")}</label>
           <label>{t("tweepaalspoer.velden.sneden")}{getal("n_s", 2)}</label>
 
           <span className="vd-ctrl-h">{t("tweepaalspoer.koppen.overig")}</span>
@@ -232,13 +242,24 @@ export default function TweepaalspoerDesigner() {
             <div className="vd-stage" style={{ width: tekening.breedte * schaal, height: tekening.hoogte * schaal, background: "transparent", border: "none", borderRadius: 0 }}>
               <div className="vd-svg vd-svg-pas" dangerouslySetInnerHTML={inhoud} />
               {!alleenLezen && tekening.maten.map((m) => (
-                <Dim key={m.naam} ctx={ctx} name={m.naam} value={m.waarde} x={m.x * schaal} y={m.y * schaal} label={m.label} />
+                <Dim key={m.naam} ctx={ctx} name={m.naam} value={m.waarde} x={m.x * schaal} y={m.y * schaal} label={m.label} eenheid="mm" />
               ))}
             </div>
           </div>
           {!alleenLezen && <PoerModel poer={poer} hoogte={modelHoogte} naast={naast} />}
         </div>
       </div>
+
+      {alleenLezen ? (
+        <PoerStaaflijst vorm={tweepaalVorm(poer)} titel={exemplaar?.naam ?? MARKER} bestand={exemplaar?.naam ?? MARKER}
+          d={d} set={set} uitkomst={uitkomst} alleenLezen />
+      ) : (
+        <details className="poer-staaflijst-scherm" style={{ flex: "none", borderTop: "1px solid var(--theme-border-subtle, #d1d5db)" }}>
+          <summary style={{ padding: "6px 16px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>{t("poerDetail.titel")}</summary>
+          <PoerStaaflijst vorm={tweepaalVorm(poer)} titel={exemplaar?.naam ?? MARKER} bestand={exemplaar?.naam ?? MARKER}
+            d={d} set={set} uitkomst={uitkomst} alleenLezen={false} />
+        </details>
+      )}
 
       <div className="vd-foot">
         <span>{t("tweepaalspoer.klik")}</span>

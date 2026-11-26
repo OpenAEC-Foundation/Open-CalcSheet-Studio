@@ -30,8 +30,8 @@ export function laadTemplate(bestand) {
  * verwanten staan in de app vóór de eerste regel in de scope, niet als
  * invoerveld. Zonder die derde parameter rekent zo'n blad met NaN door.
  */
-export function reken(tpl, selectValues, initialScope) {
-  const nodes = evaluate(parse(tpl), selectValues, initialScope);
+export function reken(tpl, selectValues, initialScope, opties) {
+  const nodes = evaluate(parse(tpl), selectValues, initialScope, opties);
   const values = {};
   // Zowel de toekenningsregel (`x = formule = uitkomst`) als de kale herhaling
   // eronder (`x = uitkomst`) draagt de waarde. Alleen op die herhaling

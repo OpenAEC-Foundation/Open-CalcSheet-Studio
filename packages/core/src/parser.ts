@@ -1,8 +1,15 @@
-import { Unit } from 'mathjs';
+import { math } from './eenheden.js';
+
+const { Unit } = math;
 import type { AstNode, ConditionalNode, OpdrachtNode, PlotNode, TextNode } from './types.js';
 import { DRIE_D_START_RE, leesDrieD } from './drieD.js';
+import { vervangVerwijzingen } from './verwijzing.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';
 import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
+import { TOETS_START_RE, leesToetsBlok } from './toetsBlok.js';
+import { FEM_START_RE, leesFemBlok } from './femBlok.js';
+import { KERN_START_RE, leesKernBlok } from './kernBlok.js';
+import { LAST_START_RE, leesLastNode } from './lastBlok.js';
 import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.js';
 
 /**
@@ -57,6 +64,10 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
  *                       `{{formule}}`); zie drieD.ts
  *                       `@iframe url hoogte=120mm` — externe pagina; zie iframeBlok.ts
  *                       `@ifcx balklaag` — 3D-beeld uit een IFCX-document; zie ifcxBlok.ts
+ *                       `@toets naam = tool … @end` — normtoets door Open FEM Studio; zie toetsBlok.ts
+ *                       `@fem naam … @end` — plaatmodel of staafwerk, gerekend door Open FEM Studio; zie femBlok.ts en femStaafBlok.ts
+ *                       `@kern naam = tool … @end` — rekentool van Open FEM Studio met geneste invoer; zie kernBlok.ts
+ *                       `@last symbool "naam" lijn … @end` — lijnlast of puntlast uit belastingen; zie lastBlok.ts
  *                       `@js … @end` — JavaScript, letterlijk en afgeschermd; zie jsBlok.ts
  *
  *   Statement separator: `,'` (single comma + single-quote) splits one line into
@@ -73,6 +84,8 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
 // The language's use of Greek and other non-ASCII letters (θ, α, β, …).
 const IDENT = '[\\p{L}_][\\p{L}\\p{N}_]*';
 const ASSIGNMENT_RE = new RegExp(`^(${IDENT})\\s*=\\s*(.+)$`, 'u');
+/** `.naam = uitdrukking`: een eigen eenheid (EenheidDefNode). */
+const EENHEID_DEF_RE = new RegExp(`^\\.(${IDENT})\\s*=\\s*(.+)$`, 'u');
 const INPUT_PROMPT_RE = new RegExp(`^(${IDENT})\\s*=\\s*\\?\\s*(.*)$`, 'u');
 // Parameters mogen met een komma of een puntkomma gescheiden worden: de rekentaal
 // schrijft puntkomma's, mathjs komma's, en beide horen hier te werken.
@@ -217,15 +230,44 @@ function foldSubscriptCommas(source: string): string {
  * commentaar. Koppen (`# …`) zijn geheel tekst, net als de keuzes binnen een
  * `@select`-blok; van de `@select`-regel zelf telt alleen de naam als code.
  */
-function alleenInCode(source: string, fn: (code: string) => string): string {
+/**
+ * De rekendelen van een blad, zonder tekst, commentaar en koppen, onder elkaar.
+ * Zo telt een `#1.R_paal` in een uitlegregel niet als verwijzing (verwijzing.ts).
+ */
+export function rekendelen(source: string): string {
+  const delen: string[] = [];
+  const neem = (code: string) => {
+    delen.push(code);
+    return code;
+  };
+  // Ook de regels van een `@last`-blok, zonder hun omschrijving: een `#2.R_A` daarin is
+  // een verwijzing naar een ander blad.
+  alleenInCode(source, neem, (regel) => neem(regel.replace(/"[^"]*"/g, '""')));
+  return delen.join('\n');
+}
+
+function alleenInCode(source: string, fn: (code: string) => string, inLastBlok?: (regel: string) => void): string {
   let inSelect = false;
   let in3d = false;
+  let inLast = false;
   return source
     .split('\n')
     .map((regel) => {
       const t = regel.trim();
       if (inSelect) {
         if (/^@end\b/.test(t)) inSelect = false;
+        return regel;
+      }
+      // Een `@last`-blok gaat ook ongemoeid door: de naam in de kop en de omschrijvingen
+      // blijven letterlijk, `Q: N` is geen formaataanduiding, en de uitdrukkingen krijgen
+      // de herschrijvingen bij het inlezen van het blok (normaliseer3d).
+      if (inLast) {
+        if (/^@end\b/.test(t)) inLast = false;
+        else inLastBlok?.(regel);
+        return regel;
+      }
+      if (LAST_START_RE.test(t)) {
+        inLast = true;
         return regel;
       }
       // Een `@3d`-blok gaat ongemoeid door: zijn teksten blijven letterlijk, en
@@ -235,7 +277,8 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
         if (/^@end\b/.test(t)) in3d = false;
         return regel;
       }
-      if (DRIE_D_START_RE.test(t)) {
+      // Ook een `@kern`-blok: een pad met punten (`inputs.input.forces`) is daar geen naam.
+      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t) || KERN_START_RE.test(t)) {
         in3d = true;
         return regel;
       }
@@ -288,7 +331,7 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
  * preceding word char.
  */
 function stripDollarSuffix(source: string): string {
-  if (!/^\s*@(?:3d\s*$|iframe\b|ifcx\b|js\u0003)/im.test(source)) return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
+  if (!/^\s*@(?:3d\s*$|fem\b|kern\b|last\b|iframe\b|ifcx\b|js\u0003)/im.test(source)) return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
   // De teksten in een `@3d`-blok blijven letterlijk (zie alleenInCode).
   let in3d = false;
   return source
@@ -299,7 +342,7 @@ function stripDollarSuffix(source: string): string {
         if (/^@end\b/.test(t)) in3d = false;
         return regel;
       }
-      if (DRIE_D_START_RE.test(t)) in3d = true;
+      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t) || KERN_START_RE.test(t) || LAST_START_RE.test(t)) in3d = true;
       // Een dollarteken in een adres is geen achtervoegsel van een naam.
       if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t)) return regel;
       return regel.replace(/([\p{L}\p{N}_])\$/gu, '$1');
@@ -315,7 +358,7 @@ function stripDollarSuffix(source: string): string {
  */
 function normaliseer3d(expr: string): string {
   return normalizeExpression(
-    rewriteMatrixLiterals(stripDollarSuffix(foldIdentifierDots(foldSubscriptCommas(expr)))).trim(),
+    rewriteMatrixLiterals(stripDollarSuffix(foldIdentifierDots(foldSubscriptCommas(vervangVerwijzingen(expr))))).trim(),
   );
 }
 
@@ -822,6 +865,12 @@ export interface ParseOptions {
    * `src="./Images/Picture0.png"` and we'll match the `"Picture0.png"` key.
    */
   imageUrls?: ReadonlyMap<string, string>;
+  /**
+   * Namen van eigen eenheden die buiten het blad gemaakt zijn (de eenheden van het
+   * project). Ze gelden bij het lezen als eenheid achter een getal, net als de
+   * namen die het blad zelf met `.naam = …` maakt.
+   */
+  eenheden?: readonly string[];
 }
 
 /**
@@ -860,6 +909,18 @@ function isOpdrachtRegel(code: string): boolean {
 
 // ── Entry point ────────────────────────────────────────────────────────
 export function parse(source: string, options: ParseOptions = {}): AstNode[] {
+  // De eigen eenheden van dit blad en van het project gelden tijdens het lezen.
+  const vorige = eigenEenheden;
+  const inBlad = [...source.matchAll(new RegExp(`^[ \\t]*\\.(${IDENT})[ \\t]*=`, 'gmu'))].map((m) => m[1]);
+  eigenEenheden = new Set([...(options.eenheden ?? []), ...inBlad]);
+  try {
+    return parseBron(source, options);
+  } finally {
+    eigenEenheden = vorige;
+  }
+}
+
+function parseBron(source: string, options: ParseOptions): AstNode[] {
   // De code van een `@js`-blok is geen rekentaal: vóór alle bewerkingen eruit,
   // en nog een keer na het invoegen, voor een blok uit een `#include`.
   const jsBlokken: JsCode[] = [];
@@ -876,6 +937,10 @@ export function parse(source: string, options: ParseOptions = {}): AstNode[] {
   // `x1\$` and substitute them across the body. After expansion we strip \$
   // from any remaining identifiers.
   source = expandMacros(source);
+  // Een verwijzing naar een ander blad (`#1.R_paal`) wordt een gewone naam, vóór de
+  // andere herschrijvingen van namen (verwijzing.ts). Alleen in rekendelen: een kop
+  // of tekst met een # blijft staan.
+  source = alleenInCode(source, vervangVerwijzingen);
   source = rewriteMatrixLiterals(
     stripDollarSuffix(
       foldIdentifierDots(stripFormatSpecs(foldSubscriptCommas(source))),
@@ -903,7 +968,8 @@ export function parse(source: string, options: ParseOptions = {}): AstNode[] {
       if (BLOCK_END_RE.test(trimmed)) in3d = false;
       continue;
     }
-    if (DRIE_D_START_RE.test(trimmed)) {
+    // Zo ook een `@last`-blok: een apostrof in een omschrijving hoort bij die tekst.
+    if (DRIE_D_START_RE.test(trimmed) || FEM_START_RE.test(trimmed) || LAST_START_RE.test(trimmed)) {
       in3d = true;
       lines.push(raw);
       continue;
@@ -1217,6 +1283,69 @@ function parseLines(
       continue;
     }
 
+    // Toetsblok (`@toets naam = tool … @end`): een normtoets door FEM Studio (toetsBlok.ts).
+    const toetsMatch = trimmed.match(TOETS_START_RE);
+    if (toetsMatch) {
+      const blokRegels: string[] = [];
+      i++;
+      while (i < end && !BLOCK_END_RE.test(lines[i].trim())) {
+        blokRegels.push(lines[i]);
+        i++;
+      }
+      const blok = leesToetsBlok(toetsMatch[1], toetsMatch[2], blokRegels, normaliseer3d);
+      if (i >= end) blok.fouten.push('toetsblok zonder @end');
+      nodes.push(markHidden({ type: 'toets', ...blok }, state));
+      if (i < end) i++;
+      continue;
+    }
+
+    // FEM-blok (`@fem naam … @end`): een plaatmodel of staafwerk dat FEM Studio doorrekent (femBlok.ts).
+    const femMatch = trimmed.match(FEM_START_RE);
+    if (femMatch) {
+      const blokRegels: string[] = [];
+      i++;
+      while (i < end && !BLOCK_END_RE.test(lines[i].trim())) {
+        blokRegels.push(lines[i]);
+        i++;
+      }
+      const blok = leesFemBlok(femMatch[1], blokRegels, normaliseer3d);
+      if (i >= end) blok.fouten.push('@fem-blok zonder @end');
+      nodes.push(markHidden({ type: 'fem', ...blok }, state));
+      if (i < end) i++;
+      continue;
+    }
+
+    // Kernblok (`@kern naam = tool … @end`): een rekentool van FEM Studio met geneste invoer (kernBlok.ts).
+    const kernMatch = trimmed.match(KERN_START_RE);
+    if (kernMatch) {
+      const blokRegels: string[] = [];
+      i++;
+      while (i < end && !BLOCK_END_RE.test(lines[i].trim())) {
+        blokRegels.push(lines[i]);
+        i++;
+      }
+      const blok = leesKernBlok(kernMatch[1], kernMatch[2], blokRegels, normaliseer3d);
+      if (i >= end) blok.fouten.push('@kern-blok zonder @end');
+      nodes.push(markHidden({ type: 'kern', ...blok }, state));
+      if (i < end) i++;
+      continue;
+    }
+
+    // Lastblok (`@last symbool "naam" lijn … @end`): een lijnlast of puntlast uit belastingen (lastBlok.ts).
+    if (LAST_START_RE.test(trimmed)) {
+      const blokRegels: string[] = [];
+      i++;
+      while (i < end && !BLOCK_END_RE.test(lines[i].trim())) {
+        blokRegels.push(lines[i]);
+        i++;
+      }
+      const blok = leesLastNode(trimmed, blokRegels, normaliseer3d);
+      if (i >= end) blok.fouten.push('@last-blok zonder @end');
+      nodes.push(markHidden({ type: 'last', ...blok }, state));
+      if (i < end) i++;
+      continue;
+    }
+
     // 3D-blok (`@3d … @end`): de regels tot `@end` vormen de scène (drieD.ts).
     if (DRIE_D_START_RE.test(trimmed)) {
       const blokRegels: string[] = [];
@@ -1395,6 +1524,14 @@ function parseLines(
           ...metFormaat,
         }, state),
       );
+      i++;
+      continue;
+    }
+
+    // Een eigen eenheid: `.kipf = 1000 lbf`.
+    const eenheidMatch = trimmed.match(EENHEID_DEF_RE);
+    if (eenheidMatch) {
+      nodes.push(markHidden({ type: 'eenheid-def', name: eenheidMatch[1], expression: normalizeExpression(eenheidMatch[2].trim()) }, state));
       i++;
       continue;
     }
@@ -1609,7 +1746,7 @@ function isDoeleenheid(doel: string): boolean {
   const namen = t.match(/[\p{L}_°][\p{L}\p{N}_°]*/gu) ?? [];
   if (namen.length === 0) return false;
   return namen.every((n) => {
-    if (n === 'in' || n === 'inch') return true;
+    if (n === 'in' || n === 'inch' || eigenEenheden.has(n)) return true;
     if (GEEN_EENHEID.has(n)) return false;
     try {
       return Unit.isValuelessUnit(n);
@@ -1629,7 +1766,16 @@ const EENHEID_EEN_LETTER = new Set(['m', 'N', 'J', 'W', 'V']);
 /** Woorden die mathjs als eenheid kent maar hier een bewerking zijn (`x to mm`, `x in mm`). */
 const GEEN_EENHEID = new Set(['to', 'in', 'and', 'or', 'xor', 'not', 'mod']);
 
+/**
+ * Eigen eenheden die bij het lezen van dit blad gelden: wat het blad zelf met
+ * `.naam = …` maakt en wat `ParseOptions.eenheden` meegeeft. De rekenkern maakt ze
+ * pas bij het rekenen aan; het lezen moet ze eerder kennen, anders hoort `0.92EUR`
+ * niet bij elkaar.
+ */
+let eigenEenheden: ReadonlySet<string> = new Set();
+
 function isEenheid(naam: string): boolean {
+  if (eigenEenheden.has(naam)) return true;
   if (GEEN_EENHEID.has(naam)) return false;
   if (naam.length === 1 && !EENHEID_EEN_LETTER.has(naam)) return false;
   try {

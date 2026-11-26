@@ -1,13 +1,17 @@
 import { useMemo } from "react";
 import i18next from "i18next";
+import { landcode } from "../../i18n/talen";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { projectScope, projectWaarde } from "../../store/projectGegevens";
+import { evalOptiesVan } from "../../store/projectEenheden";
 import { usePrintStore } from "../../store/printStore";
 import { ucTekst } from "./bladResultaat";
 import { rekenBladDoor, zorgVoorKernstijlen, type DoorgerekendBlad } from "./bladDoorrekenen";
 import { rekenversie } from "./bladVersie";
 import { Oordeel, PrintBlad } from "./PrintBlad";
 import "./PrintDocument.css";
+import { metToetsingen } from "../../rekenen/toetsCache";
+import { useToetsVersie } from "../../rekenen/femToetsing";
 
 /** Een tekst op papier: de uitdraai volgt de taal van de app (beelden.json, onder `afdruk`). */
 const op = (sleutel: string, opties?: Record<string, unknown>) => i18next.t(`beelden:afdruk.${sleutel}`, opties ?? {});
@@ -38,6 +42,7 @@ export function useUitdraai(): Uitdraai {
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const selectie = usePrintStore((s) => s.selectie);
   const soort = usePrintStore((s) => s.soort);
+  const toetsV = useToetsVersie();
 
   zorgVoorKernstijlen();
 
@@ -49,10 +54,13 @@ export function useUitdraai(): Uitdraai {
     const scope = projectScope(gegevens);
     // Een selectie met alleen verdwenen bladen valt terug op het hele project.
     const gekozen = selectie ? exemplaren.filter((e) => selectie.includes(e.id)) : exemplaren;
-    return (gekozen.length ? gekozen : exemplaren).map((ex) => ({ ex, ...rekenBladDoor(ex, scope) }));
+    // In het eenhedenstelsel van het project, net als op het scherm.
+    // Lezen: een @toets-blok zonder antwoord staat op papier als niet getoetst.
+    const evalOpties = metToetsingen(evalOptiesVan(gegevens), "lezen", i18next.language);
+    return (gekozen.length ? gekozen : exemplaren).map((ex) => ({ ex, ...rekenBladDoor(ex, scope, i18next.language, evalOpties, exemplaren) }));
     // De taal hoort erbij: de uitvoer volgt de taal van de app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exemplaren, gegevens, selectie, soort, i18next.language]);
+  }, [exemplaren, gegevens, selectie, soort, i18next.language, toetsV]);
 
   const kop: Array<[string, string | undefined]> = [
     [op("projectnummer"), gegevens.project_nummer],
@@ -80,14 +88,23 @@ export function useUitdraai(): Uitdraai {
     alleBladen: exemplaren,
     enkel: bladen.length === 1,
     kopregels: kop.filter((r): r is [string, string] => !!r[1]),
-    datum: new Date().toLocaleDateString(i18next.language?.startsWith("nl") ? "nl-NL" : "en-GB", { day: "numeric", month: "long", year: "numeric" }),
+    datum: new Date().toLocaleDateString(landcode(i18next.language), { day: "numeric", month: "long", year: "numeric" }),
     onderdeel: gegevens.onderdeel,
     projectNummer: gegevens.project_nummer,
     constructeur: gegevens.constructeur,
   };
 }
 
-/** De resultatentabel: per blad de norm, de maatgevende UC en het oordeel. */
+/** Het anker van de kop van een blad in de uitdraai, voor de inhoud op het voorblad. */
+export const bladAnker = (id: string) => `blad-${id}`;
+
+/**
+ * De inhoud met de resultaten: per blad de norm, de maatgevende UC, het oordeel en de
+ * pagina waar het blad begint. Het paginanummer vult het afdrukvoorbeeld in zodra de
+ * vellen verdeeld zijn; de kolom staat er al, dus de verdeling verandert er niet door.
+ * In het voorbeeld springt een klik op een regel naar het blad, in de PDF een klik op
+ * het nummer (drukvellen.ts).
+ */
 function Resultaten({ uitdraai }: { uitdraai: Uitdraai }) {
   const { bladen } = uitdraai;
   const nietGoed = bladen.filter((b) => b.resultaat.voldoet === false).length;
@@ -96,28 +113,26 @@ function Resultaten({ uitdraai }: { uitdraai: Uitdraai }) {
   return (
     <>
       <p className="print-sectiekop">{op("inhoudResultaten")}</p>
-      <table className="print-resultaten">
-        <thead>
-          <tr>
-            <th className="nr">#</th>
-            <th>{op("onderdeel")}</th>
-            <th>{op("grondslag")}</th>
-            <th className="uc">UC</th>
-            <th>{op("oordeel")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bladen.map(({ ex, resultaat }, i) => (
-            <tr key={ex.id}>
-              <td className="nr">{i + 1}</td>
-              <td>{ex.naam}</td>
-              <td className="norm">{resultaat.norm || "—"}</td>
-              <td className="uc">{resultaat.uc !== null ? ucTekst(resultaat.uc) : "—"}</td>
-              <td><Oordeel r={resultaat} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="print-inhoud">
+        <div className="print-inhoud-rij print-inhoud-kop">
+          <span className="nr">#</span>
+          <span>{op("onderdeel")}</span>
+          <span>{op("grondslag")}</span>
+          <span className="uc">UC</span>
+          <span>{op("oordeel")}</span>
+          <span className="pag">{op("paginaKolom")}</span>
+        </div>
+        {bladen.map(({ ex, resultaat }, i) => (
+          <div key={ex.id} className="print-inhoud-rij" data-naar={bladAnker(ex.id)}>
+            <span className="nr">{i + 1}</span>
+            <span>{ex.naam}</span>
+            <span className="norm">{resultaat.norm || "—"}</span>
+            <span className="uc">{resultaat.uc !== null ? ucTekst(resultaat.uc) : "—"}</span>
+            <span><Oordeel r={resultaat} /></span>
+            <span className="pag" data-inhoud-doel={bladAnker(ex.id)} />
+          </div>
+        ))}
+      </div>
       <p className="print-resultaten-noot">
         {nietGoed === 0 && nietGetoetst === 0 && op("alleVoldoen")}
         {nietGoed > 0 && op(nietGoed === 1 ? "nietGoedEen" : "nietGoedMeer", { n: nietGoed, totaal: bladen.length })}
@@ -193,6 +208,7 @@ export function UitdraaiInhoud({ uitdraai }: { uitdraai: Uitdraai }) {
       {!enkel && <PrintVoorblad uitdraai={uitdraai} />}
       {bladen.map(({ ex, html, resultaat, eenheden }, i) => (
         <PrintBlad key={ex.id} ex={ex} html={html} nummer={i + 1} resultaat={resultaat} titelInKop eenheden={eenheden}
+          anker={enkel ? undefined : bladAnker(ex.id)}
           projectregel={enkel ? <PrintProjectregel uitdraai={uitdraai} rekenversie={rekenversie(ex.source)} /> : undefined} />
       ))}
     </>

@@ -15,6 +15,7 @@
  * Dit bestand en de andere kernbestanden importeren met `.ts`-extensie en
  * zonder React of stores, zodat Node ze rechtstreeks kan laden.
  */
+import type { IfcxVreemd } from "@ifc-calc/core";
 import type { TekenVel } from "../store/tekenBlad.ts";
 
 import type { Graaf } from "../graaf/model.ts";
@@ -44,6 +45,8 @@ export interface McpBlad {
 
 /** De stand van het project op één moment. */
 export interface McpProjectStand {
+  /** De blijvende identiteit van het project (de wortel van de IFCX); zonder volgt hij uit nummer en naam. */
+  projectId?: string;
   projectNaam: string;
   bestandspad: string | null;
   gegevens: Record<string, string>;
@@ -54,6 +57,8 @@ export interface McpProjectStand {
   dirty: boolean;
   /** Uit de projectboom gehaald. */
   verborgen: { gegevens?: boolean; rapport?: boolean };
+  /** Gegevens van een ander programma uit het geopende bestand; ze gaan mee in de IFCX. */
+  vreemd?: IfcxVreemd;
   /** Het constructierapport (rapport/model.ts). */
   rapport: unknown;
   /** Aantal stappen voor ongedaan maken en opnieuw. */
@@ -70,6 +75,11 @@ export interface McpEenheden {
   defaultForce: "N" | "kN" | "MN";
   defaultStress: "Pa" | "kPa" | "MPa" | "GPa" | "N/mm^2";
   returnAngleUnits: boolean;
+  /**
+   * Het eenhedenstelsel voor een nieuw project (Instellingen, tab Units). Het stelsel van een
+   * open project is het projectgegeven `eenheden` (project_data_set).
+   */
+  stelsel?: "blad" | "si-mm" | "si-m" | "us" | "eigen";
 }
 
 export interface McpInstellingen {
@@ -167,6 +177,13 @@ export interface McpOmgeving {
      * tekeningen). Werpt `McpFout("NOT_AVAILABLE")` als de build hem niet heeft.
      */
     pdfViaEngine(ids: string[], pad: string): Promise<number>;
+    /**
+     * Het hele rapport (voorblad, hoofdstukken, bladen) als PDF naar `pad`, zonder
+     * dialoog: dezelfde weg als de knop Rapport (PDF). Geeft het aantal bytes. Werpt
+     * `McpFout("NOT_AVAILABLE")` als deze app dat niet kan (browser, of een platform
+     * zonder die opdracht), en `McpFout("INTERNAL")` als het schrijven mislukt.
+     */
+    rapportPdf(pad: string): Promise<number>;
   };
 }
 
