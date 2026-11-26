@@ -16,7 +16,7 @@ import "./JupyterBlad.css";
 import { MATEN, type Maten } from "./paginering";
 import { UitwerkingHtml } from "./UitwerkingHtml";
 import VariantenAfdruk from "./varianten/VariantenAfdruk";
-import { BladNormenRegel } from "./BladNormen";
+import { BladNormenRegel, NbKeuzesTabel } from "./BladNormen";
 import "./PrintDocument.css";
 
 /*
@@ -159,6 +159,8 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
         </div>
       )}
       {isCanvasBlad(ex) && eenheden ? <CanvasVellen eenheden={eenheden} bladId={ex.id} /> : <UitwerkingHtml html={html} bladId={ex.id} />}
+      {/* De gekozen waarden uit de nationale bijlage (nbKeuzes.ts), als het blad ze merkt of gebruikt. */}
+      <NbKeuzesTabel source={ex.source} nb={resultaat.nb} papier />
       {/* De varianten van het blad, als het vinkje aan staat (docs/varianten.md). */}
       {ex.varianten?.opPapier && <VariantenAfdruk ex={ex} />}
     </section>

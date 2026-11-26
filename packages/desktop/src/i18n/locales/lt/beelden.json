@@ -539,7 +539,15 @@
     "normNb": "nacionalinis priedas {{nb}}",
     "editieOnbekend": "leidimas neužfiksuotas",
     "nbOnbekend": "nacionalinis priedas neužfiksuotas",
-    "nietInProject": "{{deel}} projekte neužfiksuotas"
+    "nietInProject": "{{deel}} projekte neužfiksuotas",
+    "nbKeuzesKop": "Iš nacionalinio priedo pasirinktos vertės",
+    "nbVolgensProject": "Nacionalinis priedas pagal projekto duomenis: {{bijlagen}}",
+    "nbNietInProject": "Projekto duomenyse šio lapo standartams nacionalinis priedas neužfiksuotas.",
+    "nbSymbool": "Simbolis",
+    "nbWaarde": "Vertė",
+    "nbArtikel": "Straipsnis (nacionalinis priedas)",
+    "nbNietBerekend": "neapskaičiuota",
+    "nbUitProject": "projekto duomenys"
   },
   "poerDetail": {
     "titel": "Strypų žiniaraštis ir armavimo detalė",

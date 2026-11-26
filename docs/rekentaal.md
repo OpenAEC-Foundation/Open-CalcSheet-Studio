@@ -168,6 +168,38 @@ plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent he
 - `take`, `hlookup`, `hlookup_ge`, `hlookup_le`, `vlookup`, `get`, ook op matrices
 - `@select var "Label" … @end` voor een keuzelijst, bijvoorbeeld een materiaal
 
+## Keuzes uit de nationale bijlage: `//@nb`
+
+Een blad merkt een waarde die uit de nationale bijlage komt met een commentaarregel:
+
+```text
+γ_M0 = 1.0
+//@nb γ_M0 6.1(1)
+```
+
+- **De regel:** `//@nb naam artikel`, op een eigen regel, meestal direct onder de toekenning.
+  Voor de rekentaal is het commentaar (zoals `//@eenheid` van het canvas-blad): het rekenen
+  verandert er niet door. Schrijf in het artikel alleen nummers (`6.1(1)`, `NB.2 – A1.1`),
+  geen normtekst.
+- **De waarde** is de laatste uitkomst van die naam, ook als hij verborgen staat (`#hide`).
+  Een merkteken in een tak van `#if` die niet geldt, of bij een naam die het blad niet
+  uitrekent, telt niet mee: zo merkt de ligger γ_M0 en γ_M1 voor staal, en staan ze bij hout
+  niet in de tabel. Een verkeerd gespelde naam verdwijnt daardoor ook uit de tabel.
+- **Uit de projectgegevens** komen erbij: `K_FI`, `windgebied` en `terreincategorie`, als de
+  rekentekst ze noemt (niet in commentaar).
+- **In beeld:** onder de uitwerking een tabel *Gekozen waarden uit de nationale bijlage*
+  (symbool, waarde, artikel), met daarboven de nationale bijlage die de projectgegevens voor
+  de normen van het blad vastleggen ([projectmodel.md](projectmodel.md#normen-en-nationale-bijlagen)).
+  Op papier staat de tabel onder het blad, alleen bij een blad met een merkteken: een blad
+  zonder blijft op papier gelijk.
+- **In de modules:** de ligger merkt γ_M0 en γ_M1 (staal), de balklaag ψ_0 en ψ_2.
+- **Samenhang met de landenkeuze (pull request #30):** #30 zegt per blad of het op een andere
+  norm of bijlage rust dan het land van het project. Deze tabel laat zien wélke waarden uit
+  een bijlage komen; met #30 erbij is dat het lijstje dat in een ander land opnieuw moet
+  worden bekeken.
+- **Waar:** `components/calc/nbKeuzes.ts` (lezen, ook in de rekenworker) en `NbKeuzesTabel`
+  in `components/calc/BladNormen.tsx`. Controle: `scripts/check-nb-keuzes.mjs`.
+
 ## Tekeningen in het blad
 
 - **SVG met waarden uit het blad:** `'<line x1="'a'" y1="'b'"/>`

@@ -6,6 +6,7 @@ import { bronVoorUitvoer } from "../../templates/vertalingen";
 import { leesResultaat, type Resultaat } from "./bladResultaat";
 import { bladSoortVan } from "./bladSoorten";
 import { rekenUitwerking, type CanvasUitwerking } from "./canvasRekenen";
+import { leesNbKeuzes } from "./nbKeuzes";
 import { isJupyterBlad } from "../../store/jupyterBlad";
 import { werkmapHtml } from "./jupyterPapier";
 import { papier } from "./pdfBlad";
@@ -85,6 +86,9 @@ export function rekenBladDoor(
     html = uitwerking.html;
     eenheden = uitwerking.eenheden;
     resultaat = leesResultaat(uitwerking.nodes, ex.naam);
+    // De gemerkte keuzes uit de nationale bijlage, voor de tabel onder het blad (nbKeuzes.ts).
+    const nb = leesNbKeuzes(ex.source, uitwerking.nodes, uitwerking.scope);
+    if (nb.length) resultaat.nb = nb;
   } catch (err) {
     html = `<p class="calc-text" style="color:#b91c1c">${i18next.t("beelden:afdruk.nietDoorgerekend", { lng: taal })} ${
       (err as Error).message

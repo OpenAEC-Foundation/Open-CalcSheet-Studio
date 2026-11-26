@@ -589,6 +589,14 @@
     "normNb": "national annex {{nb}}",
     "editieOnbekend": "edition not recorded",
     "nbOnbekend": "national annex not recorded",
-    "nietInProject": "{{deel}} not recorded in the project"
+    "nietInProject": "{{deel}} not recorded in the project",
+    "nbKeuzesKop": "Values chosen from the national annex",
+    "nbVolgensProject": "National annex according to the project data: {{bijlagen}}",
+    "nbNietInProject": "The project data do not record a national annex for the standards of this sheet.",
+    "nbSymbool": "Symbol",
+    "nbWaarde": "Value",
+    "nbArtikel": "Clause (national annex)",
+    "nbNietBerekend": "not calculated",
+    "nbUitProject": "project data"
   }
 }

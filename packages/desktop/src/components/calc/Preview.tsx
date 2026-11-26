@@ -12,6 +12,7 @@ import { useZoom } from "../../hooks/useZoom";
 import { useDoorrekening } from "../../rekenen/doorrekening";
 import { klikOpToetsKnop } from "../../rekenen/femToetsing";
 import HelpPanel from "./HelpPanel";
+import { NbKeuzesTabel } from "./BladNormen";
 import { DrieDBeelden } from "./drieDBlok";
 import { IfcxBeelden, ifcxTeksten } from "./ifcxBlok";
 import { IframeBeelden } from "./iframeBlok";
@@ -274,6 +275,7 @@ export default function Preview() {
         <div className="calc-preview-content">
           <div ref={containerRef} dangerouslySetInnerHTML={inhoud} onClick={(e) => klikOpToetsKnop(e.target)} />
           <div ref={laagRef} className="calc-iframe-laag" />
+          <NbKeuzesTabel source={source} nb={doorrekening?.uitkomst?.resultaat.nb} />
         </div>
       )}
     </div>

@@ -589,6 +589,14 @@
     "normNb": "nationale bijlage {{nb}}",
     "editieOnbekend": "editie niet vastgelegd",
     "nbOnbekend": "nationale bijlage niet vastgelegd",
-    "nietInProject": "{{deel}} niet vastgelegd in het project"
+    "nietInProject": "{{deel}} niet vastgelegd in het project",
+    "nbKeuzesKop": "Gekozen waarden uit de nationale bijlage",
+    "nbVolgensProject": "Nationale bijlage volgens de projectgegevens: {{bijlagen}}",
+    "nbNietInProject": "De projectgegevens leggen voor de normen van dit blad geen nationale bijlage vast.",
+    "nbSymbool": "Symbool",
+    "nbWaarde": "Waarde",
+    "nbArtikel": "Artikel (nationale bijlage)",
+    "nbNietBerekend": "niet berekend",
+    "nbUitProject": "projectgegevens"
   }
 }
