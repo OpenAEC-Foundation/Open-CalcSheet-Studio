@@ -632,6 +632,12 @@ export const defaultStyles = `
   text-align: left;
 }
 
+.calc-line .katex-display {
+  /* Geen 'hidden' of 'auto': dan wordt het blok een scrollvak dat het muiswiel
+     vangt (een breuk is een paar pixels hoger dan haar vak). */
+  overflow: visible;
+}
+
 .calc-error {
   /* Fout-regels krijgen wel een lichte rood-tint zodat ze opvallen. */
   background: #fef2f2;

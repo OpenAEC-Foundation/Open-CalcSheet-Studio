@@ -9,6 +9,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 - `and(…)`, `or(…)` en `xor(…)` met drie of meer delen nemen alle delen mee. `and(a ≡ 1; b ≡ 2; c ≠ 4)` gaf waar, ook als het derde deel onwaar was; nu geven ze dezelfde uitkomst als `And(…)`, `Or(…)` en `Xor(…)`, ook binnen `#if`.
 - Een procentteken in een naam hoort bij de naam. `F_1%50` en `F_1_50` waren stil dezelfde variabele, zodat de tweede de eerste overschreef; nu zijn het er twee, en in de uitwerking staat het procent. `50%` en `n % 5` rekenen zoals eerst.
+- Het muiswiel scrolt de uitwerking ook als de muis boven een formule staat. Een formule met een breuk of een index werd zelf een onzichtbaar scrollvak dat het wiel opving en een paar pixels verschoof.
 
 ## v2026.48.0 — 2026-11-26
 
