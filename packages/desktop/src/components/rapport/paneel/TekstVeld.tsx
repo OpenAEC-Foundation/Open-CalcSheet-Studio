@@ -3,22 +3,21 @@ import { useTranslation } from "react-i18next";
 import type { EigenVariant } from "../../../rapport/bureau";
 import { INVULVELDEN, SUBKOP_WOORDEN, type Invulwaarden } from "../../../rapport/invullen";
 import { inTaal } from "../../../rapport/meertalig";
-import { STANDAARD_TEKSTEN, type Tekstvariant } from "../../../rapport/standaardteksten";
+import { variantenVan } from "../../../rapport/standaardteksten";
 import { andereTaalVan, metTekst } from "../../../rapport/taalwissel";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { useProjectStore } from "../../../store/projectStore";
 import { uittreksel } from "./hulp";
 import { GroeiVeld, SubkopMelding, Vink } from "./velden";
 
-const GEEN: readonly Tekstvariant[] = [];
 const GEEN_EIGEN: readonly EigenVariant[] = [];
 
 /**
  * Eén tekstonderdeel van het rapport (rapport.teksten[id]) met zijn
  * standaardteksten.
  *
- * "Standaardtekst ▾" toont de meegeleverde varianten en de eigen varianten
- * uit de instellingen. Kiezen vervangt de tekst; staat er al iets anders,
+ * "Standaardtekst ▾" toont de varianten van het template van dit rapport (anders de
+ * meegeleverde) en de eigen varianten uit de instellingen. Kiezen vervangt de tekst; staat er al iets anders,
  * dan vraagt het eerst om bevestiging. Het vervangen is één eigen stap in
  * ongedaan maken. "Bewaar als eigen variant" legt de tekst van nu vast onder
  * een naam, voor dit onderdeel in elk volgend rapport.
@@ -37,6 +36,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
 }) {
   const { t, i18n } = useTranslation("rapport");
   const rapportTaal = useProjectStore((s) => s.rapport.taal);
+  const varianten = useProjectStore((s) => variantenVan(s.rapport, id));
   const tekst = useProjectStore((s) => s.rapport.teksten[id] ?? "");
   const andereTaal = useProjectStore((s) => andereTaalVan(s.rapport, id));
   const zet = useProjectStore((s) => s.zetRapportVeld);
@@ -45,7 +45,7 @@ export default function TekstVeld({ id, kop, hint, placeholder }: {
   const voegTekstToe = useBureauStore((s) => s.voegTekstToe);
   const verwijderTekst = useBureauStore((s) => s.verwijderTekst);
   // Als gewone tekst: het label in de taal van de app, de tekst in die van het rapport.
-  const meegeleverd: EigenVariant[] = (STANDAARD_TEKSTEN[id] ?? GEEN).map((v) => ({
+  const meegeleverd: EigenVariant[] = varianten.map((v) => ({
     label: inTaal(v.label, i18n.language),
     tekst: inTaal(v.tekst, rapportTaal),
   }));

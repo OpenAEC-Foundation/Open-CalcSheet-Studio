@@ -397,5 +397,13 @@
       "glazenPui": "Glazed facade"
     },
     "dikteInvullen": "enter thickness"
+  },
+  "template": {
+    "ingebouwdNaam": "Standard report",
+    "zonderNaam": "Report template",
+    "eigenLabel": "Template text",
+    "nieuwHoofdstuk": "New chapter",
+    "nieuweParagraaf": "New section",
+    "nieuwTekstblok": "New text block"
   }
 }

@@ -397,5 +397,13 @@
       "glazenPui": "Stiklinis fasadas"
     },
     "dikteInvullen": "įveskite storį"
+  },
+  "template": {
+    "ingebouwdNaam": "Standartinė ataskaita",
+    "zonderNaam": "Ataskaitos šablonas",
+    "eigenLabel": "Šablono tekstas",
+    "nieuwHoofdstuk": "Naujas skyrius",
+    "nieuweParagraaf": "Naujas poskyris",
+    "nieuwTekstblok": "Naujas teksto blokas"
   }
 }

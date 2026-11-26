@@ -325,23 +325,23 @@ kop("model.ts en opzet.ts — een opgeslagen rapport van vóór versie 4: de inh
   // De keuze aan: elk blad één keer, op de plek van zijn uitwerking.
   const nieuw = standaardNl(VANDAAG, tekstenNl());
   nieuw.inHoofdstuk = { "ex-a": true };
-  const k = bouwOpzet(nieuw, [{ ...bladen[0], koppen: [{ titel: "Een kop", anker: "ex-a#0" }] }, { ...bladen[1], koppen: [{ titel: "Twee", anker: "ex-b#1" }] }]);
+  const metKoppen = [{ ...bladen[0], koppen: [{ titel: "Een kop", anker: "ex-a#0" }] }, { ...bladen[1], koppen: [{ titel: "Twee", anker: "ex-b#1" }] }];
+  const k = bouwOpzet(nieuw, metKoppen);
   const regels = inhoudsopgave(k, true);
   gelijk("met de bladen: in het hoofdstuk het blad met zijn koppen", regels.slice(-3).map((i) => [i.nummer, i.titel, i.niveau, i.anker]), [
     ["6", "Berekeningen", 1, "berekeningen"],
     ["6.1", "Blad in het hoofdstuk", 2, "ex-a"],
     ["", "Een kop", 3, "ex-a#0"],
   ]);
-  gelijk("met de bladen: onder de bijlage de rest", bijlageRegels(k).map((i) => [i.nummer, i.titel, i.niveau, i.anker]), [
+  gelijk("met de bladen: onder de bijlage de rest", bijlageRegels(nieuw, metKoppen).map((i) => [i.nummer, i.titel, i.niveau, i.anker]), [
     ["A.1", "Blad in de bijlage", 2, bijlageBladAnker("ex-b")],
     ["", "Twee", 3, "ex-b#1"],
   ]);
-  toets("zonder bladen in de bijlage geen regels", bijlageRegels(bouwOpzet(nieuw, [bladen[0]])).length === 0);
+  toets("zonder bladen in de bijlage geen regels", bijlageRegels(nieuw, [bladen[0]]).length === 0);
   gelijk("elk hoofdstuk en elke paragraaf heeft een anker", inhoudsopgave(k).slice(0, 2).map((i) => i.anker), ["inleiding", "projectgegevens"]);
   gelijk("het anker van een bijlage", bijlageAnker("A"), "bijlage-A");
 
   // Het zijpaneel: alle nummers, ook als de bladen niet in de inhoudsopgave op papier staan.
-  const metKoppen = [{ ...bladen[0], koppen: [{ titel: "Een kop", anker: "ex-a#0" }] }, { ...bladen[1], koppen: [{ titel: "Twee", anker: "ex-b#1" }] }];
   const paneel = inhoudVoorPaneel(nieuw, metKoppen);
   gelijk("zijpaneel: het blad in het hoofdstuk, met het blad dat het opent",
     paneel.find((r) => r.anker === "ex-a"), { nummer: "6.1", titel: "Blad in het hoofdstuk", niveau: 2, anker: "ex-a", bladId: "ex-a" });
@@ -354,8 +354,8 @@ kop("model.ts en opzet.ts — een opgeslagen rapport van vóór versie 4: de inh
   gelijk("zijpaneel: elk anker één keer", new Set(paneel.map((r) => r.anker)).size, paneel.length);
   const zonderKeuze = { ...nieuw, opmaak: { ...nieuw.opmaak, bladenInInhoud: false } };
   toets("zijpaneel: de bladen staan er ook als ze niet op papier in de inhoud staan", inhoudVoorPaneel(zonderKeuze, metKoppen).some((r) => r.bladId === "ex-a"));
-  gelijk("elke anker komt één keer voor", new Set([...regels, ...bijlageRegels(k)].map((i) => i.anker)).size,
-    regels.length + bijlageRegels(k).length);
+  gelijk("elke anker komt één keer voor", new Set([...regels, ...bijlageRegels(nieuw, metKoppen)].map((i) => i.anker)).size,
+    regels.length + bijlageRegels(nieuw, metKoppen).length);
 }
 
 kop("opzet.ts — de plek van een blad volgt zijn soort, tot de gebruiker kiest");
@@ -1042,7 +1042,7 @@ kop("opzet.ts — bladen in bijlage A zonder paragraaf in hoofdstuk Berekeningen
     && !("bijlageParagrafen" in normaliseerRapport({ opmaak: { bijlageParagrafen: true } }, VANDAAG, teksten, "nl").opmaak));
   gelijk("uit: de bladen in het hoofdstuk nummeren door, de bijlagebladen hebben geen nummer", paragrafen(uit).map((k) => k.nummer), ["", `${h}.1`, "", `${h}.2`]);
   gelijk("uit: de bijlagebladen houden hun plek in bijlage A", paragrafen(uit).map((k) => [k.blad.bijlage, k.blad.zonderParagraaf === true]), [["A.1", true], ["", false], ["A.2", true], ["", false]]);
-  gelijk("uit: bijlage A noemt ze nog steeds", bijlageRegels(bouwOpzet(uit, bladen)).map((i) => `${i.nummer} ${i.titel}`), ["A.1 Uitdraai spanten", "A.2 Uitdraai wapening"]);
+  gelijk("uit: bijlage A noemt ze nog steeds", bijlageRegels(uit, bladen).map((i) => `${i.nummer} ${i.titel}`), ["A.1 Uitdraai spanten", "A.2 Uitdraai wapening"]);
   gelijk("uit: de inhoudsopgave noemt de bladen in het hoofdstuk met hun nieuwe nummer", inhoudsopgave(bouwOpzet(uit, bladen), true).filter((i) => i.nummer.startsWith(`${h}.`)).map((i) => `${i.nummer} ${i.titel}`), [`${h}.1 Ligger`, `${h}.2 Kolom`]);
   gelijk("een blad dat de gebruiker naar het hoofdstuk haalt, krijgt weer een paragraaf", paragrafen({ ...uit, inHoofdstuk: { pdf1: true } }).map((k) => k.nummer), [`${h}.1`, `${h}.2`, "", `${h}.3`]);
 }

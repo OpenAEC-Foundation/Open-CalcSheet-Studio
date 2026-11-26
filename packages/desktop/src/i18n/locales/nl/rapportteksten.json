@@ -397,5 +397,13 @@
       "glazenPui": "Glazen pui"
     },
     "dikteInvullen": "dikte invullen"
+  },
+  "template": {
+    "ingebouwdNaam": "Standaardrapport",
+    "zonderNaam": "Rapporttemplate",
+    "eigenLabel": "Tekst uit het template",
+    "nieuwHoofdstuk": "Nieuw hoofdstuk",
+    "nieuweParagraaf": "Nieuwe paragraaf",
+    "nieuwTekstblok": "Nieuw tekstblok"
   }
 }

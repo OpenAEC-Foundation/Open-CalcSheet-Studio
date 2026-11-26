@@ -29,14 +29,16 @@ const INGANG = `
   import { createRoot } from "react-dom/client";
   import i18next from "./i18n/config";
   import RapportAfdruk from "./components/rapport/afdruk/RapportAfdruk";
+  import RapportPanel from "./components/rapport/RapportPanel";
   import { useProjectStore } from "./store/projectStore";
   import { useBureauStore } from "./store/bureauProfiel";
+  import { useTemplateStore } from "./store/rapportTemplates";
   import { useModuleKiezer } from "./store/moduleKiezer";
   import { useEditorViewStore } from "./store/editorViewStore";
   import Editor from "./components/calc/Editor";
   import { UitdraaiInhoud, useUitdraai } from "./components/calc/PrintDocument";
 
-  export { i18next, useProjectStore, useBureauStore, useModuleKiezer };
+  export { i18next, useProjectStore, useBureauStore, useTemplateStore, useModuleKiezer, flushSync };
   export { bladHashNu, bladUitkomsten } from "./components/calc/controleHash";
   export { openBron, bronnenInvullen, bronSoort } from "./components/calc/bronnen";
 
@@ -82,6 +84,15 @@ const INGANG = `
     const html = plek.innerHTML;
     wortel.unmount();
     return html;
+  }
+
+  /** Het rapportpaneel in het document, om in te klikken. Geeft de plek en wat hem weer weghaalt. */
+  export function tekenPaneel() {
+    const plek = document.createElement("div");
+    document.body.appendChild(plek);
+    const wortel = createRoot(plek);
+    flushSync(() => wortel.render(createElement(RapportPanel)));
+    return { plek, weg: () => { wortel.unmount(); plek.remove(); } };
   }
 `;
 

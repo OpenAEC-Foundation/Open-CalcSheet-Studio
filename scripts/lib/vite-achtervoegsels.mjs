@@ -27,7 +27,8 @@ export const viteAchtervoegsels = {
       loader: "js",
     }));
     b.onLoad({ filter: /.*/, namespace: "vite-url" }, () => ({ contents: 'export default "";', loader: "js" }));
-    b.onLoad({ filter: /ModuleAfbeelding\.tsx$/ }, (a) => ({
+    // De meegeleverde gewichtenbibliotheek laadt het rapportpaneel pas als het venster opent: niet op papier.
+    b.onLoad({ filter: /(ModuleAfbeelding\.tsx|gewichtenLaden\.ts)$/ }, (a) => ({
       contents: readFileSync(a.path, "utf8").replace(/import\.meta\.glob\([\s\S]*?\)\s*(as [^;]+)?;/, "({});"),
       loader: "tsx",
     }));

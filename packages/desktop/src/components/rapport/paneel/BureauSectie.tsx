@@ -26,6 +26,8 @@ const KLEUREN: readonly Exclude<keyof Huisstijl, "lettertype">[] = [
 export default function BureauSectie() {
   const { t } = useTranslation("rapport");
   const bureau = useProjectStore((s) => s.rapport.bureau);
+  // De huisstijl uit het template gaat op papier voor; toon dan ook die.
+  const huisstijl = useProjectStore((s) => s.rapport.huisstijl) ?? bureau.huisstijl;
   const werkBij = useProjectStore((s) => s.werkRapportBij);
   const profiel = useBureauStore((s) => s.profiel);
 
@@ -89,13 +91,13 @@ export default function BureauSectie() {
               <span className="rapport-kleuren">
                 {KLEUREN.map((veld) => (
                   <span className="rapport-kleur" key={veld}>
-                    <span className="rapport-staal" style={{ background: bureau.huisstijl[veld] }} />
+                    <span className="rapport-staal" style={{ background: huisstijl[veld] }} />
                     {t(`bureau.kleuren.${veld}`)}
                   </span>
                 ))}
               </span>
-              <span className="rapport-lettertype" style={{ fontFamily: bureau.huisstijl.lettertype }}>
-                {lettertypeNaam(bureau.huisstijl.lettertype) || "—"}
+              <span className="rapport-lettertype" style={{ fontFamily: huisstijl.lettertype }}>
+                {lettertypeNaam(huisstijl.lettertype) || "—"}
               </span>
             </dd>
           </dl>
