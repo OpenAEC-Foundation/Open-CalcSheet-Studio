@@ -6,7 +6,7 @@ import Ribbon from "./components/ribbon/Ribbon";
 import DocumentBar from "./components/DocumentBar";
 import StatusBar from "./components/StatusBar";
 import Backstage from "./components/backstage/Backstage";
-import SettingsDialog, { applyTheme, applyTextSize } from "./components/settings/SettingsDialog";
+import SettingsDialog, { leesLetters, pasLettersToe, applyTheme, applyTextSize } from "./components/settings/SettingsDialog";
 import Modal from "./components/Modal";
 import HelpPanel from "./components/calc/HelpPanel";
 import Welkom, { welkomBijStart } from "./components/Welkom";
@@ -15,9 +15,12 @@ import Preview from "./components/calc/Preview";
 import SplitPane from "./components/calc/SplitPane";
 import ProjectBrowser from "./components/calc/ProjectBrowser";
 import { designerVoor } from "./components/calc/designerKeuze";
+import { invoerSchermVoor } from "./components/calc/invoer/invoerScherm";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
-import { vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { klaargezetteKoppen, vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { maakRapportDocument } from "./tauri/rapportDocument";
+import { schrijfRapportPdf } from "./tauri/rapportPdf";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
 import BladBijwerken from "./components/calc/BladBijwerken";
@@ -27,8 +30,11 @@ import IfcViewerPanel from "./components/calc/IfcViewerPanel";
 import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave";
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
 import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
+import GekoppeldeBestanden from "./components/calc/GekoppeldeBestanden";
 import FeedbackDialog from "./components/FeedbackDialog";
+import { IN_WERKPLEK } from "./werkplek/werkplek";
 import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
+import VariantenPaneel from "./components/calc/varianten/VariantenPaneel";
 import { isPdfBlad } from "./store/pdfBijlage";
 import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
 import { isMarkdownBlad } from "./store/markdownBlad";
@@ -49,9 +55,10 @@ import { useSneltoetsen } from "./hooks/useSneltoetsen";
 import { useMcpBrug } from "./mcp/useMcpBrug";
 import { useBestandActies } from "./hooks/useBestandActies";
 import { GeenProjectFout, leesProjectBestand } from "./store/projectBestand";
-import { startbestand } from "./tauri/fileOps";
+import { isDocsPad, openUitDocs, startbestand } from "./tauri/fileOps";
 import type { AngleMode } from "@ifc-calc/core";
 import { zetHoekmodus, useBladResultaat } from "./rekenen/doorrekening";
+import { werkToetsingenBij } from "./rekenen/femToetsing";
 import { UNITS_DEFAULTS, type UnitsSettings } from "./components/settings/SettingsDialog";
 
 /**
@@ -99,11 +106,8 @@ export default function App() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState("general");
   const [helpOpen, setHelpOpen] = useState(false);
-  // Het welkomstvenster bij het opstarten, tot je het uitzet (Welkom.tsx).
+  // Het welkomstvenster, alleen de eerste keer dat de app opent (Welkom.tsx).
   const [welkomOpen, setWelkomOpen] = useState(false);
-  useEffect(() => {
-    welkomBijStart().then((tonen) => { if (tonen) setWelkomOpen(true); });
-  }, []);
   const openSettings = useCallback((tab = "general") => {
     setSettingsTab(tab);
     setSettingsOpen(true);
@@ -115,12 +119,15 @@ export default function App() {
   const [splitMode, setSplitMode] = useState<"cv" | "cu" | "vu">("vu");
   // Een canvas-blad opent op het canvas; zijn rekentekst is de tab ernaast.
   const [canvasCode, setCanvasCode] = useState(false);
+  // De tab Varianten van een rekenblad (docs/varianten.md); een ander blad opent weer in zijn gewone weergave.
+  const [variantenOpen, setVariantenOpen] = useState(false);
 
   useEffect(() => {
     getSetting<string>("theme", "light").then((saved) => {
       setTheme(saved);
       applyTheme(saved);
     });
+    void leesLetters().then(pasLettersToe);
     getSetting<string>("textSize", "standard").then(applyTextSize);
     getSetting<UnitsSettings>("units", UNITS_DEFAULTS).then((u) => {
       zetHoekmodus(u.angleMode as AngleMode);
@@ -131,13 +138,12 @@ export default function App() {
     };
     window.addEventListener("units-changed", onUnits);
     // Show window once theme is applied (avoids flash of unstyled chrome)
-    import("@tauri-apps/api/window")
-      .then(({ getCurrentWindow }) => {
-        getCurrentWindow().show();
-      })
-      .catch(() => {
-        // Browser fallback (npm run dev without Tauri)
-      });
+    const zichtbaar = "__TAURI_INTERNALS__" in window
+      ? import("@tauri-apps/api/core").then(({ invoke }) => invoke<boolean>("toon_werkvenster"))
+      : Promise.resolve(true);
+    zichtbaar.then(async (tonen) => {
+      if (tonen && await welkomBijStart()) setWelkomOpen(true);
+    }).catch(console.error);
     return () => window.removeEventListener("units-changed", onUnits);
   }, []);
 
@@ -155,7 +161,17 @@ export default function App() {
   const { addRecentFile } = useRecentFiles();
   const { openen } = useBestandActies();
   useSneltoetsen();
-  useMcpBrug({ splitMode, setSplitMode, activeView, setActiveView, setTheme });
+  // Een blad waar je de rekentekst schrijft of leest (een eigen rekenblad, de demo van de
+  // rekentaal) opent met de code; het invoerscherm is daar een tab erbij. Ook als zo'n blad
+  // tijdens het typen zijn eerste invoerveld krijgt, blijft de editor staan waarin je typt.
+  // Tot je zelf een weergave kiest. Een module opent met haar invoerscherm. De keuze valt
+  // bij het openen van een blad (`blad` is het blad waarvoor ze geldt).
+  const [opening, setOpening] = useState<{ blad: string; code: boolean }>({ blad: "", code: false });
+  const kiesSplitMode = useCallback((m: "cv" | "cu" | "vu") => {
+    setOpening((o) => ({ ...o, code: false }));
+    setSplitMode(m);
+  }, []);
+  useMcpBrug({ splitMode, setSplitMode: kiesSplitMode, activeView, setActiveView, setTheme });
 
   const printBezig = usePrintStore((s) => s.bezig);
   const printVoorbeeld = usePrintStore((s) => s.voorbeeld);
@@ -178,14 +194,35 @@ export default function App() {
     if (rapport) project.selecteer(RAPPORT_ID);
     else if (project.activeId === RAPPORT_ID) project.selecteer(selectie?.[0] ?? project.exemplaren[0]?.id ?? "");
     toonVoorbeeld(rapport ? null : undefined, printSoort);
-    wachtOpVellen()
+    // Eerst de @toets-blokken zonder antwoord laten toetsen: anders staan ze als niet
+    // getoetst op papier. Een ouder antwoord blijft staan; opnieuw toetsen is een knop.
+    // Het rapport heeft alle bladen.
+    werkToetsingenBij(rapport ? null : usePrintStore.getState().selectie)
+      .then(() => wachtOpVellen())
       .then(async (vellen) => {
         if (afgebroken) return;
+        // Een bewerkbaar document (DOCX, ODT) leest de afdruk zelf uit; geen kopie van de vellen.
+        const { documentFormaat } = usePrintStore.getState();
+        if (documentFormaat) {
+          try {
+            await maakRapportDocument(documentFormaat);
+          } finally {
+            printKlaar();
+          }
+          return;
+        }
         const opruimen = zetDrukvellenKlaar(vellen);
         try {
           await wachtOpDrukbeelden();
-          const { pdfPad, meldPdfGeschreven } = usePrintStore.getState();
-          if (pdfPad && (await vellenNaarPdf(pdfPad))) meldPdfGeschreven(pdfPad);
+          const { pdfPad, stil, meldPdfGeschreven, meldPdfFout } = usePrintStore.getState();
+          if (pdfPad && stil) {
+            // Via de API: geen melding en geen printdialoog; de aanroeper krijgt de reden.
+            try {
+              meldPdfGeschreven(pdfPad, await schrijfRapportPdf(pdfPad, klaargezetteKoppen()));
+            } catch (err) {
+              meldPdfFout(String(err));
+            }
+          } else if (pdfPad && (await vellenNaarPdf(pdfPad))) meldPdfGeschreven(pdfPad);
           else window.print();
         } finally {
           opruimen();
@@ -194,7 +231,9 @@ export default function App() {
         }
       })
       .catch((err) => {
-        alert((err as Error).message);
+        const { stil, meldPdfFout } = usePrintStore.getState();
+        if (stil) meldPdfFout((err as Error).message);
+        else alert((err as Error).message);
         printKlaar();
       });
     return () => {
@@ -223,7 +262,13 @@ export default function App() {
     if ((printSoort === "rapport") !== (activeId === RAPPORT_ID)) sluitVoorbeeld();
   }, [printVoorbeeld, printSoort, activeId, sluitVoorbeeld]);
 
-  const designerPane = designerVoor(source);
+  // Het parametrische beeld van het blad. Een rekenblad zonder eigen beeld krijgt het
+  // invoerscherm uit zijn eigen velden, bij een module met een beeld erboven
+  // (components/calc/invoer/invoerScherm.tsx).
+  const eigenBeeld = designerVoor(source);
+  const invoerScherm = eigenBeeld || !actief ? null : invoerSchermVoor(actief);
+  const designerPane = eigenBeeld ?? invoerScherm?.scherm ?? null;
+  const opentMetScherm = eigenBeeld !== null || !!invoerScherm?.opent;
   // Het projectgegevens-formulier is geen rekenblad: geen editor, geen
   // uitwerking, geen splitsing — alleen het formulier.
   const toontProjectGegevens = activeId === PROJECT_ID;
@@ -244,6 +289,7 @@ export default function App() {
   const canvasBlad = actief !== null && isCanvasBlad(actief);
   const toontCanvas = canvasBlad && !canvasCode;
   useEffect(() => setCanvasCode(false), [activeId]);
+  useEffect(() => setVariantenOpen(false), [activeId]);
   // Idem een grafblad: alleen zijn vlak.
   const graafBlad = actief !== null && isGraafBlad(actief);
   // En een tekenblad: alleen zijn vel.
@@ -252,14 +298,24 @@ export default function App() {
   const jupyterBlad = actief !== null && isJupyterBlad(actief);
   // En een Marimo-blad: ook alleen zijn omgeving.
   const marimoBlad = actief !== null && isMarimoBlad(actief);
-  const mode = hasDesigner ? splitMode : "cu";
+  // Alleen bij het openen van een blad: wat het daarna krijgt, komt erbij als tab. Tijdens
+  // het tekenen beslist, niet in een effect: anders staat het invoerscherm er één beeld lang.
+  let codeBlijft = opening.code;
+  if (opening.blad !== activeId) {
+    codeBlijft = !(hasDesigner && opentMetScherm);
+    setOpening({ blad: activeId, code: codeBlijft });
+  }
+  const mode = hasDesigner && !codeBlijft ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
     <WerkPaneel titel={t("paneel.code")} info={t("paneel.regels", { count: regels })}>
       <Editor />
     </WerkPaneel>
   );
-  const beeldPaneel = <WerkPaneel titel={t("paneel.visueel")} papier>{designerPane}</WerkPaneel>;
+  // Het formulier zonder beeld heet naar wat het is: invoer.
+  const beeldPaneel = (
+    <WerkPaneel titel={invoerScherm && !invoerScherm.metBeeld ? t("paneel.invoer") : t("paneel.visueel")} papier>{designerPane}</WerkPaneel>
+  );
   const uitwerkingPaneel = (
     <WerkPaneel titel={t("paneel.uitwerking")} info={actief ? <UcInfo blad={actief.id} /> : null} papier>
       <Preview />
@@ -274,9 +330,14 @@ export default function App() {
   // melding als de module intussen een nieuwere rekenversie heeft.
   const kiesWeergave = (m: "cv" | "cu" | "vu") => {
     sluitVoorbeeld();
-    setSplitMode(m);
+    kiesSplitMode(m);
     setCanvasCode(true);
+    setVariantenOpen(false);
   };
+  // Varianten bij elk blad met rekentekst: een rekenblad, een module of een canvas.
+  const kanVarianten = actief !== null && !pdfBlad && !spreadsheetBlad && !markdownBlad && !graafBlad && !tekenBlad && !jupyterBlad && !marimoBlad;
+  const toontVarianten = variantenOpen && kanVarianten && !printVoorbeeld;
+  const aantalVarianten = actief?.varianten?.lijst.length ?? 0;
 
   // Het lint (tab Rekentaal) vraagt om de code: weg uit de IFC-weergave en het
   // afdrukvoorbeeld, en een weergave mét editor.
@@ -287,6 +348,7 @@ export default function App() {
     sluitVoorbeeld();
     setSplitMode((m) => (m === "vu" ? "cv" : m));
     setCanvasCode(true);
+    setVariantenOpen(false);
   }, [codeVerzoek, sluitVoorbeeld]);
   const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad || jupyterBlad || marimoBlad) ? (
     <div className="split-tabs">
@@ -298,22 +360,32 @@ export default function App() {
       <div className="split-tabs">
         {canvasBlad && (
           <button
-            className={`split-tab${!printVoorbeeld && toontCanvas ? " active" : ""}`}
+            className={`split-tab${!printVoorbeeld && !toontVarianten && toontCanvas ? " active" : ""}`}
             onClick={() => {
               sluitVoorbeeld();
               setCanvasCode(false);
+              setVariantenOpen(false);
             }}
           >
             {t("canvas.tab")}
           </button>
         )}
         {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>{t("weergave.codeVisueel")}</button>
+          <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontCanvas && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>{t("weergave.codeVisueel")}</button>
         )}
-        <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
+        <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontCanvas && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
         {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && !toontCanvas && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
+          <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontCanvas && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
         )}
+        <button
+          className={`split-tab${toontVarianten ? " active" : ""}`}
+          onClick={() => {
+            sluitVoorbeeld();
+            setVariantenOpen(true);
+          }}
+        >
+          {aantalVarianten ? t("varianten.tabAantal", { count: aantalVarianten }) : t("varianten.tab")}
+        </button>
         <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
         <BladVersieKop ex={actief} />
       </div>
@@ -334,6 +406,13 @@ export default function App() {
   // effect hieronder het startbestand niet opnieuw.
   const handleOpenRecent = useCallback(async (path: string) => {
     try {
+      // In de werkplek van de SuperCloud: een bestand uit Docs (pad docs:<id>).
+      if (isDocsPad(path)) {
+        const file = await openUitDocs(path);
+        laadProject(leesProjectBestand(file.raw, file.name));
+        markeerOpgeslagen(file.path);
+        return;
+      }
       // Only Tauri runtime can read by absolute path; browser fallback cannot.
       const win = window as unknown as { __TAURI_INTERNALS__?: unknown };
       if (!win.__TAURI_INTERNALS__) {
@@ -407,6 +486,13 @@ export default function App() {
                 <Trans t={t} i18nKey="leeg.uitleg" components={{ b: <b /> }} />
               </p>
             </div>
+          ) : toontVarianten && actief ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <VariantenPaneel key={actief.id} ex={actief} />
+              </div>
+            </>
           ) : markdownBlad ? (
             <>
               {tabBalk}
@@ -494,7 +580,9 @@ export default function App() {
       {welkomOpen && <Welkom onSluit={() => setWelkomOpen(false)} />}
       <StatusBar />
       <SpreadsheetHouder />
-      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <GekoppeldeBestanden />
+      {/* De SuperCloud heeft een eigen feedbackknop; in de werkplek geen eigen dialoog. */}
+      {!IN_WERKPLEK && <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
       <JupyterHouder />
       <Backstage
         open={backstageOpen}

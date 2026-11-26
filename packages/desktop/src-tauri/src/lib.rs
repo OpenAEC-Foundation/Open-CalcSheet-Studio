@@ -18,8 +18,10 @@
 //! API-geheim staat in de sleutelbos van het besturingssysteem.
 
 mod erpnext;
+mod fem_studio;
 mod jupyter_omgeving;
 mod mcp_bridge;
+mod bladwijzers;
 mod rapport_pdf;
 
 #[cfg(feature = "rapportengine")]
@@ -79,6 +81,16 @@ fn engine_preview_pdf(report: serde_json::Value) -> Result<String, String> {
     let path = dir.join(format!("preview-{}.pdf", ts));
     std::fs::write(&path, &bytes).map_err(|e| format!("Failed to write preview PDF: {}", e))?;
     Ok(path.to_string_lossy().into_owned())
+}
+
+/// In een headless sessie blijft de WebView actief voor rekenen en PDF-export.
+#[tauri::command]
+fn toon_werkvenster(window: tauri::WebviewWindow) -> Result<bool, String> {
+    let zichtbaar = !std::env::args_os().any(|arg| arg == "--headless");
+    if zichtbaar {
+        window.show().map_err(|err| err.to_string())?;
+    }
+    Ok(zichtbaar)
 }
 
 /// Het projectbestand waarmee de app is gestart. Een dubbelklik in de
@@ -186,11 +198,14 @@ pub fn run() {
         .manage(mcp_bridge::BridgeState::default())
         // De server van de Jupyter-bladen; start bij het eerste blad.
         .manage(jupyter_omgeving::JupyterOmgeving::default())
+        // De server van Open FEM Studio voor de toetsing; start bij de eerste aanroep.
+        .manage(fem_studio::FemStudio::default())
         .invoke_handler(tauri::generate_handler![
             engine_generate_pdf,
             engine_save_pdf,
             engine_preview_pdf,
             startbestand,
+            toon_werkvenster,
             rapport_pdf::rapport_pdf_beschikbaar,
             rapport_pdf::rapport_pdf_schrijven,
             mcp_bridge::mcp_bridge_start,
@@ -199,7 +214,17 @@ pub fn run() {
             erpnext::erpnext_zet_geheim,
             erpnext::erpnext_heeft_geheim,
             erpnext::erpnext_project_veld,
+            fem_studio::fem_studio_status,
+            fem_studio::fem_studio_licentie,
+            fem_studio::fem_studio_tools,
+            fem_studio::fem_studio_aanroep,
         ])
-        .run(context)
-        .expect("error while running tauri application");
+        .build(context)
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // Het kindproces van FEM Studio gaat mee dicht.
+            if let tauri::RunEvent::Exit = event {
+                tauri::Manager::state::<fem_studio::FemStudio>(app).stop();
+            }
+        });
 }

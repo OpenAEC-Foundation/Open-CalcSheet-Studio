@@ -24,6 +24,7 @@ const { balklaagEn } = await import("../packages/desktop/src/templates/balklaag.
 const { liggerEn } = await import("../packages/desktop/src/templates/ligger.en.ts");
 const { rekentaalDemoEn } = await import("../packages/desktop/src/templates/rekentaal-demo.en.ts");
 const { tweepaalspoerEn } = await import("../packages/desktop/src/templates/tweepaalspoer.en.ts");
+const { meerpaalspoerEn } = await import("../packages/desktop/src/templates/meerpaalspoer.en.ts");
 const { doorsnedeSpanningenEn } = await import("../packages/desktop/src/templates/doorsnede-spanningen.en.ts");
 
 let fouten = 0;
@@ -42,6 +43,7 @@ const MODULES = [
   { naam: "ligger", bron: blad("ligger.ts", '"Ligger van hout of staal'), v: liggerEn },
   { naam: "demoblad", bron: blad("rekentaal-demo.ts", '"Open CalcSheet Studio demo'), v: rekentaalDemoEn },
   { naam: "tweepaalspoer", bron: blad("tweepaalspoer.ts", '"Tweepaalspoer —'), v: tweepaalspoerEn },
+  { naam: "meerpaalspoer", bron: blad("meerpaalspoer.ts", '"Poer op drie of vier palen —'), v: meerpaalspoerEn },
   { naam: "doorsnede", bron: blad("doorsnede-spanningen.ts", '"Spanningen in een doorsnede —'), v: doorsnedeSpanningenEn },
 ];
 
@@ -204,6 +206,26 @@ const LIGGER_GEVALLEN = [
   meld(rNiet.nietGetoetst === true && rNiet.voldoet === null && rNiet.uc === null, "tweepaalspoer: 'niet getoetst' in het Engels", JSON.stringify(rNiet));
   const rFout = leesResultaat(evaluate(parse(v.bron), { ...POER, n_t: "2" }, PROJECT), "x");
   meld(rFout.voldoet === false, "tweepaalspoer: 'voldoet niet' in het Engels", JSON.stringify(rFout));
+
+  // De poer op drie of vier palen in al zijn takken.
+  const MEER_GEVALLEN = [
+    { horiz: "1" }, {}, { e_p: "0", horiz: "1" }, { n_t: "2", horiz: "1" }, { vorm_t: "1", horiz: "1" }, { h_poer: "1100", horiz: "1" },
+    { paalvorm: "2", kolomvorm: "2", horiz: "1" }, { M_Edx: "300", M_Edy: "200", horiz: "1" }, { N_Ed: "0" }, { l_poer: "1000" },
+    { a_x: "1500", a_y: "1500", l_poer: "2200", b_poer: "2200", horiz: "1" }, { betonstaal: "1" }, { d_t: "40" }, { M_Edx: "2000" },
+    { n_p: "3", horiz: "1" }, { n_p: "3" }, { n_p: "3", M_Edx: "150", M_Edy: "100", horiz: "1" }, { n_p: "3", r_rand: "100" }, { n_p: "3", a_3: "2000" },
+  ];
+  const meer = new Map();
+  const vm = bronVoorUitvoer(MODULES.find((m) => m.naam === "meerpaalspoer").bron, "en");
+  for (const invoer of MEER_GEVALLEN) {
+    const html = render(evaluate(parse(vm.bron), invoer, PROJECT), { namen: vm.namen });
+    for (const r of zoekNederlands(html)) if (!meer.has(r)) meer.set(r, JSON.stringify(invoer));
+  }
+  meld(meer.size === 0, `meerpaalspoer: ${MEER_GEVALLEN.length} gevallen, geen Nederlandse woorden`,
+    [...meer].map(([r, g]) => `${r}   (${g})`).join("\n         "));
+  const rMeer = leesResultaat(evaluate(parse(vm.bron), { horiz: "1" }, PROJECT), "x");
+  meld(rMeer.voldoet === true && rMeer.uc !== null && /Cap on three or four piles/.test(rMeer.titel), "meerpaalspoer: de slotregel en de kop in het Engels", JSON.stringify(rMeer));
+  const rMeerNiet = leesResultaat(evaluate(parse(vm.bron), {}, PROJECT), "x");
+  meld(rMeerNiet.nietGetoetst === true && rMeerNiet.voldoet === null, "meerpaalspoer: 'niet getoetst' in het Engels", JSON.stringify(rMeerNiet));
 
   // Spanningen in een doorsnede: elke vorm, zonder en met grenswaarde, en de meldingen.
   const LAST = { N_x: "-200", M_y: "100", M_z: "10", V_y: "10", V_z: "80", f_y: "0" };

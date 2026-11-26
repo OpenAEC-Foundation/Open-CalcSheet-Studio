@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { defaultStyles, invoerNaarBron, toonInvoer } from "@ifc-calc/core";
+import { defaultStyles, invoerNaarBron, isVerwijzingInvoer, toonInvoer } from "@ifc-calc/core";
 import {
   useActiefExemplaar,
   useActieveBron,
@@ -10,6 +10,7 @@ import {
 } from "../../store/actiefBlad";
 import { useZoom } from "../../hooks/useZoom";
 import { useDoorrekening } from "../../rekenen/doorrekening";
+import { klikOpToetsKnop } from "../../rekenen/femToetsing";
 import HelpPanel from "./HelpPanel";
 import { DrieDBeelden } from "./drieDBlok";
 import { IfcxBeelden, ifcxTeksten } from "./ifcxBlok";
@@ -188,14 +189,16 @@ export default function Preview() {
       // "12," halverwege "12" worden.
       const getyptNu = typtIn.current?.naam === varName ? typtIn.current.tekst : undefined;
       // De waarde zoals hij in beeld staat als niemand typt: omgerekend naar het stelsel.
-      const inBeeld = stored === undefined ? undefined : bron && toon ? toonInvoer(String(stored), bron, toon) : String(stored);
+      // Een verwijzing naar een ander blad (#1.R_paal) of een cel (#3.Blad1!B4) staat er zoals hij getypt is.
+      const inBeeld = stored === undefined ? undefined : bron && toon && !isVerwijzingInvoer(String(stored)) ? toonInvoer(String(stored), bron, toon) : String(stored);
       if (getyptNu !== undefined) inp.value = getyptNu;
       else if (inBeeld !== undefined) inp.value = inBeeld;
       // "12" in een veld in inch, of "5 m" in een veld in mm: terug naar de eenheid van de
       // bladtekst. Een eenheid die niet past of nog niet af is, krijgt een rode rand en
       // wordt niet opgeslagen; ook als het veld opnieuw getekend wordt.
       const lees = (tekst: string) => {
-        const terug = bron ? invoerNaarBron(tekst, toon ?? bron, bron) : { waarde: tekst };
+        // #1.R_paal of #3.Blad1!B4: een waarde uit een ander blad; de kern rekent hem om naar de eenheid van het veld.
+        const terug = isVerwijzingInvoer(tekst) ? { waarde: tekst.trim() } : bron ? invoerNaarBron(tekst, toon ?? bron, bron) : { waarde: tekst };
         if ("fout" in terug) {
           inp.classList.add("calc-input-fout");
           inp.title = terug.fout;
@@ -269,7 +272,7 @@ export default function Preview() {
         <HelpPanel />
       ) : (
         <div className="calc-preview-content">
-          <div ref={containerRef} dangerouslySetInnerHTML={inhoud} />
+          <div ref={containerRef} dangerouslySetInnerHTML={inhoud} onClick={(e) => klikOpToetsKnop(e.target)} />
           <div ref={laagRef} className="calc-iframe-laag" />
         </div>
       )}

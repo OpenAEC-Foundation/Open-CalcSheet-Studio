@@ -1,0 +1,19 @@
+{
+  "titel": "Biblioteka",
+  "uitleg": "Pavyzdžiai iš Eurokodų ir klasikinės mechanikos. Spustelėkite pavyzdį, kad pamatytumėte jo skaičiavimą, tada įterpkite jį arba pradėkite su juo naują lapą.",
+  "invoegen": "Įterpti",
+  "invoegenUitleg": "Įterpti šį pavyzdį atidaryto lapo žymeklio vietoje; jei lapas neatidarytas, pradedamas naujas",
+  "nieuwBlad": "Naujas lapas",
+  "nieuwBladUitleg": "Pradėti naują lapą su šiuo pavyzdžiu",
+  "sluiten": "Uždaryti",
+  "opCursor": "Žymeklio vietoje lape {{naam}}",
+  "geenBlad": "Neatidarytas joks lapas: Įterpti pradeda naują lapą",
+  "alleFormules": "Ieškoti visose formulėse…",
+  "alleFormulesUitleg": "Atidaryti formulių biblioteką su visomis formulėmis, įskaitant šiuos pavyzdžius",
+  "rekenfout": "Šio pavyzdžio apskaičiuoti negalima: {{fout}}",
+  "ophalen": "Įkeliama biblioteka…",
+  "nietOpgehaald": "Nepavyko įkelti bibliotekos. Patikrinkite interneto ryšį.",
+  "nietBijgewerkt": "Neatnaujinta: tai {{datum}} versija.",
+  "teNieuw": "Šiai bibliotekai reikia naujesnės programos versijos.",
+  "opnieuw": "Bandyti dar kartą"
+}

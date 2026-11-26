@@ -48,6 +48,7 @@
     "dark": "Dark",
     "blueprint": "Blueprint",
     "font": "Font",
+    "lettertype": { "ui": "Interface font", "code": "Code font" },
     "uiFontSize": "UI Font Size",
     "highContrastDark": "High contrast dark",
     "highContrastLight": "High contrast light",
@@ -208,6 +209,17 @@
     "version": "Version",
     "framework": "Framework",
     "license": "License",
-    "description": "Structural calculation sheets with live output, parametric views and a structural report. Part of the OpenAEC family."
+    "description": "Structural calculation sheets with live output, parametric views and a structural report. Part of the OpenAEC family.",
+    "femStudio": "FEM Studio (code checks)",
+    "femStudioBezig": "starting…",
+    "femLicentie": "FEM Studio license",
+    "femLicentieTekst": "GNU AGPL-3.0; a separate program next to CalcSheet.",
+    "femBron": "Source code of this version",
+    "femBijlagen": "License and third-party notices",
+    "femStudioNiet": {
+      "geenDesktop": "desktop app only",
+      "nietMeegeleverd": "not included in this version",
+      "startMislukt": "does not start"
+    }
   }
 }

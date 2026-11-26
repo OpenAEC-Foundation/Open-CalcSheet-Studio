@@ -30,6 +30,12 @@ export const MCP_INSTRUCTIES = [
   "- Start with project_get. Add modules with modules_list + sheet_add; read and change inputs with sheet_get + sheet_set_input; compute with sheet_evaluate. UC is a unity check: UC <= 1.0 passes.",
   "- Every change goes through the app's undo history (undo/redo) and marks the project unsaved; save only when the user asks (project_save). Never invent input values the user did not give you: say which values you assumed.",
   "- calc_evaluate computes loose calculation text without touching the project; formulas_list finds standard formulas to insert with sheet_insert_formula.",
+  "",
+  "Work inside the app, not around it:",
+  "- Do the work in the project that is open, through these tools. Do not write .ifccalculation or .cpd files yourself, do not edit a project file on disk and do not build a project with your own script: the user then has to open a new file and loses the open state, the undo history and the stored answers of Open FEM Studio.",
+  "- A new calculation is a sheet: sheet_add (a module, or an empty sheet), then sheet_set_source with the calculation text and sheet_set_input for the inputs. Change an existing sheet in place instead of making a copy.",
+  "- Check a result with sheet_evaluate; models (@fem) and checks (@toets) are calculated by Open FEM Studio inside the app. To print or export, use report_export_pdf, export_pdf or export_ifc.",
+  "- Open or create a file only when the user asks for it (project_open, project_new). If a tool is missing for what you need to do, say so and stop, rather than working around the app.",
 ].join("\n");
 
 type JsonRpcId = string | number | null;
