@@ -12,6 +12,26 @@ import { useZoom } from "../../hooks/useZoom";
 import { useDoorrekening } from "../../rekenen/doorrekening";
 import { klikOpToetsKnop } from "../../rekenen/femToetsing";
 import HelpPanel from "./HelpPanel";
+import { NbKeuzesTabel } from "./BladNormen";
+import { bladenUitSleutel, bladNamenSleutel, bronnenInvullen, bronTeksten, openBron } from "./bronnen";
+import { useProjectStore } from "../../store/projectStore";
+import i18next from "i18next";
+
+/** Een klik op een verwijzing met `@bron`: de PDF op die pagina (bronnen.ts). */
+function klikOpBron(doel: EventTarget | null): boolean {
+  const link = doel instanceof Element ? doel.closest(".calc-bron-link") : null;
+  const bron = link?.closest<HTMLElement>(".calc-bron");
+  if (!bron) return false;
+  const pagina = bron.dataset.pagina ? Number(bron.dataset.pagina) : null;
+  void openBron(bron.dataset.bron ?? "", pagina, {
+    geenBlad: i18next.t("werkruimte:bron.geenBlad", { doel: bron.dataset.bron }),
+    geenPdf: i18next.t("werkruimte:bron.geenPdf", { doel: bron.dataset.bron }),
+    alleenApp: i18next.t("werkruimte:bron.alleenApp", { doel: bron.dataset.bron }),
+  }).then((melding) => {
+    if (melding) alert(melding);
+  });
+  return true;
+}
 import { DrieDBeelden } from "./drieDBlok";
 import { IfcxBeelden, ifcxTeksten } from "./ifcxBlok";
 import { IframeBeelden } from "./iframeBlok";
@@ -65,7 +85,15 @@ export default function Preview() {
   // elk nieuw object opnieuw neer, ook als de tekst niet veranderde; dan
   // verdween bij elke andere aanleiding (zoomen, de rekenstand) het
   // draaibare 3D-beeld uit de uitwerking.
-  const inhoud = useMemo(() => ({ __html: schoonUitwerking(html) }), [html]);
+  // Een verwijzing met `@bron` wordt een link naar de PDF op die pagina (bronnen.ts).
+  const { t: tb } = useTranslation("beelden");
+  // Als tekst, zodat het object alleen verandert als een kenmerk of naam verandert: een nieuw
+  // object zet de uitwerking opnieuw neer, en dan verliest een invoerveld zijn cursor.
+  const bladNamen = useProjectStore((s) => bladNamenSleutel(s.exemplaren));
+  const inhoud = useMemo(
+    () => ({ __html: bronnenInvullen(schoonUitwerking(html), bronTeksten(tb), bladenUitSleutel(bladNamen)) }),
+    [html, tb, bladNamen],
+  );
 
   // Een `@3d`-blok krijgt een draaibaar beeld (drieDBlok.ts). De beelden
   // blijven bestaan over herberekeningen heen en verhuizen mee naar de nieuwe
@@ -272,8 +300,9 @@ export default function Preview() {
         <HelpPanel />
       ) : (
         <div className="calc-preview-content">
-          <div ref={containerRef} dangerouslySetInnerHTML={inhoud} onClick={(e) => klikOpToetsKnop(e.target)} />
+          <div ref={containerRef} dangerouslySetInnerHTML={inhoud} onClick={(e) => { if (!klikOpBron(e.target)) klikOpToetsKnop(e.target); }} />
           <div ref={laagRef} className="calc-iframe-laag" />
+          <NbKeuzesTabel source={source} nb={doorrekening?.uitkomst?.resultaat.nb} />
         </div>
       )}
     </div>

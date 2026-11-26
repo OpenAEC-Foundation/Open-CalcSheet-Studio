@@ -1,0 +1,15 @@
+{
+  "onderdeel": "herhalingen",
+  "omschrijving": "#while k < 5: 0, 2, 4, 6.",
+  "uitkomst": {
+    "k": "6"
+  },
+  "reeks": {
+    "k": [
+      "0",
+      "2",
+      "4",
+      "6"
+    ]
+  }
+}

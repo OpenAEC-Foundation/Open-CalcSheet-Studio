@@ -1,0 +1,8 @@
+{
+  "onderdeel": "eenheden",
+  "omschrijving": "Omrekenen met to: 5 m = 5000 mm, 2500 N = 2,5 kN.",
+  "uitkomst": {
+    "L_mm": "5000 mm",
+    "F": "2.5 kN"
+  }
+}

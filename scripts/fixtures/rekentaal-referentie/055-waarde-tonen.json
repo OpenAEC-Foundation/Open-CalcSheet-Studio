@@ -1,0 +1,11 @@
+{
+  "onderdeel": "opmaak",
+  "omschrijving": "Een naam alleen op een regel toont de waarde; L|mm rekent om.",
+  "reeks": {
+    "L": [
+      "5 m",
+      "5 m",
+      "5000 mm"
+    ]
+  }
+}

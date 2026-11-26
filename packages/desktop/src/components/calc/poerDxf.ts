@@ -46,6 +46,8 @@ export interface PoerVorm {
   kolom: { rond: boolean; x: number; y: number };
   staven: Staaf[];
   snedes: Snede[];
+  /** Bij drie palen: de schuine banden kruisen, de banden liggen in drie lagen. Dat staat onder de staaflijst. */
+  kruisend?: boolean;
 }
 
 export interface DetailTeksten {
@@ -63,6 +65,7 @@ export interface DetailTeksten {
   totaalMassa: string;
   verlopend: string;
   maten: string;
+  kruisend: string;
   soorten: Record<StaafSoort, string>;
   /** Een getal in de notatie van de taal. */
   getal?: (w: number, decimalen: number) => string;
@@ -101,7 +104,7 @@ export function meerpaalVorm(m: MeerpaalDefinitie): PoerVorm {
   const snedes: Snede[] = m.n === 4
     ? [{ naam: "A", vlak: "xz", waarde: m.maten.a_y / 2, venster }, { naam: "B", vlak: "yz", waarde: m.maten.a_x / 2, venster }]
     : [{ naam: "A", vlak: "xz", waarde: m.palen[1][1], venster }, { naam: "B", vlak: "yz", waarde: 0, venster }];
-  return { omtrek: m.omtrek, h: m.h, palen: m.palen, paal: m.paal, kolom: m.kolom, staven: stavenMeerpaal(m), snedes };
+  return { omtrek: m.omtrek, h: m.h, palen: m.palen, paal: m.paal, kolom: m.kolom, staven: stavenMeerpaal(m), snedes, kruisend: m.n === 3 };
 }
 
 // ── de tekening als lijnen, cirkels en teksten ──────────────────────────────
@@ -122,6 +125,8 @@ export interface Detail {
 export interface DetailOpties {
   titel: string;
   status: string;
+  /** De revisie als tekst, bijvoorbeeld "revisie 2" (poerRevisie.ts); staat achter de status. */
+  revisie?: string;
   teksten?: DetailTeksten;
   staaflijst?: Staaflijst;
 }
@@ -192,9 +197,10 @@ export function maakDetail(v: PoerVorm, opties: DetailOpties): Detail {
   const tussen = Math.max(4 * th, S * 0.12);
   const getalMaat = (w: number) => g(w, 0);
   const paden = v.staven.map((s) => afgerondPad(s, 3));
+  const status = opties.revisie ? `${opties.status} - ${opties.revisie}` : opties.status;
 
   // ── titel ────────────────────────────────────────────────────────────────
-  uit.push({ soort: "tekst", laag: "TEKST", p: [plan.x0, plan.y1 + tussen + 2.6 * th], t: `${opties.titel} - ${opties.status}`, hoogte: th * 1.4, uitlijn: "links" });
+  uit.push({ soort: "tekst", laag: "TEKST", p: [plan.x0, plan.y1 + tussen + 2.6 * th], t: `${opties.titel} - ${status}`, hoogte: th * 1.4, uitlijn: "links" });
   uit.push({ soort: "tekst", laag: "TEKST", p: [plan.x0, plan.y1 + tussen + 0.9 * th], t: t.maten, hoogte: th * 0.8, uitlijn: "links" });
 
   // ── plattegrond ──────────────────────────────────────────────────────────
@@ -317,7 +323,7 @@ export function maakDetail(v: PoerVorm, opties: DetailOpties): Detail {
     return x + Math.max(k.length, ...rijen.map((r) => r[i].length)) * teken + th * 1.2;
   }, plan.x0);
   let y = laagste - tussen;
-  uit.push({ soort: "tekst", laag: "TEKST", p: [plan.x0, y], t: `${t.staaflijst} - ${opties.status}`, hoogte: th * 1.2, uitlijn: "links" });
+  uit.push({ soort: "tekst", laag: "TEKST", p: [plan.x0, y], t: `${t.staaflijst} - ${status}`, hoogte: th * 1.2, uitlijn: "links" });
   y -= 2 * th;
   kop.forEach((k, i) => uit.push({ soort: "tekst", laag: "TEKST", p: [kolX[i], y], t: k, hoogte: th * 0.9, uitlijn: "links" }));
   for (const cellen of rijen) {
@@ -330,6 +336,10 @@ export function maakDetail(v: PoerVorm, opties: DetailOpties): Detail {
     y -= 1.5 * th;
   }
   uit.push({ soort: "tekst", laag: "TEKST", p: [plan.x0, y], t: `${t.totaalMassa}: ${g(lijst.massa, 1)} kg`, hoogte: th * 0.9, uitlijn: "links" });
+  if (v.kruisend) {
+    y -= 1.5 * th;
+    uit.push({ soort: "tekst", laag: "TEKST", p: [plan.x0, y], t: t.kruisend, hoogte: th * 0.9, uitlijn: "links" });
+  }
 
   return { prims: uit, aanzichten, stavenInPlan };
 }

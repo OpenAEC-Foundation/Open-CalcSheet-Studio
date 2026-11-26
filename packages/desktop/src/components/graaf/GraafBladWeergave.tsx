@@ -30,6 +30,7 @@ import { GraafZoekmenu } from "./GraafZoekmenu";
 import { nodeNaam } from "./graafTeksten";
 import { leesGrafBestandIn } from "./grafbladToevoegen";
 import type { GraafAchtergrond } from "./graafAchtergrond";
+import { browserVoorkeur } from "../../werkplek/werkplek";
 import "./GraafBlad.css";
 
 /*
@@ -110,18 +111,10 @@ const ctrl = (e: { ctrlKey: boolean; metaKey: boolean }) => e.ctrlKey || e.metaK
 /** Of de catalogus open staat: de app onthoudt het, het project niet. */
 const CATALOGUS = "ocss.graaf.catalogus";
 function leesCatalogusOpen(): boolean {
-  try {
-    return localStorage.getItem(CATALOGUS) !== "dicht";
-  } catch {
-    return true;
-  }
+  return browserVoorkeur.lees(CATALOGUS) !== "dicht";
 }
 function bewaarCatalogusOpen(open: boolean) {
-  try {
-    localStorage.setItem(CATALOGUS, open ? "open" : "dicht");
-  } catch {
-    // Geen opslag: dan alleen voor nu.
-  }
+  browserVoorkeur.bewaar(CATALOGUS, open ? "open" : "dicht");
 }
 
 /** Een verbinding die nu getrokken wordt, vanaf een poort naar de muis. */

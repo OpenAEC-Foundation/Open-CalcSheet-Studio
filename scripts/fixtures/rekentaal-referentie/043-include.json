@@ -1,0 +1,11 @@
+{
+  "onderdeel": "macro's",
+  "omschrijving": "#include haalt macro's en regels uit een ander bestand.",
+  "includes": {
+    "hulp.cpd": "#def dubbel$(x$) = 2*x$\nk_inc = 42\n"
+  },
+  "uitkomst": {
+    "e": "8",
+    "k_inc": "42"
+  }
+}

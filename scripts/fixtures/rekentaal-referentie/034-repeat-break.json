@@ -1,0 +1,7 @@
+{
+  "onderdeel": "herhalingen",
+  "omschrijving": "#repeat zonder aantal stopt bij #break: t = 4.",
+  "uitkomst": {
+    "t": "4"
+  }
+}

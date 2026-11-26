@@ -1,0 +1,8 @@
+{
+  "onderdeel": "tekst",
+  "omschrijving": "Een tekstregel die helemaal cursief staat, is uitleg (klasse calc-uitleg); met ook-afdruk niet.",
+  "html": [
+    "<p class=\"calc-text calc-uitleg\"><i>Dit is uitleg.</i></p>",
+    "<p class=\"calc-text\"><i class=\"ook-afdruk\">Dit blijft op papier.</i></p>"
+  ]
+}

@@ -38,6 +38,17 @@ pub const SERVER_NAAM: &str = if cfg!(windows) { "openaec-mcp-server.exe" } else
 pub const TIJD_START: Duration = Duration::from_secs(30);
 /// Eén toets; een model met tweede orde kan even duren.
 pub const TIJD_AANROEP: Duration = Duration::from_secs(300);
+/// De niet-lineaire plaat (`compute_plate_analysis`): een combinatie die bijna bezwijkt,
+/// rekent in stapjes door tot de grens en kan zo enkele minuten kosten.
+pub const TIJD_PLAAT: Duration = Duration::from_secs(900);
+
+/// Hoe lang een aanroep van deze tool mag duren.
+pub fn wachttijd(tool: &str) -> Duration {
+    match tool {
+        "compute_plate_analysis" => TIJD_PLAAT,
+        _ => TIJD_AANROEP,
+    }
+}
 /// De melding als het proces weg is.
 pub const GESTOPT: &str = "FEM Studio is gestopt.";
 
@@ -283,7 +294,7 @@ impl Proces {
             return Err(json!({ "melding": "Een toets krijgt zijn model in het verzoek, niet als pad naar een bestand." }));
         }
         let resultaat = self
-            .roep("tools/call", json!({ "name": tool, "arguments": argumenten }), TIJD_AANROEP)
+            .roep("tools/call", json!({ "name": tool, "arguments": argumenten }), wachttijd(tool))
             .map_err(|m| json!({ "melding": m }))?;
         toolresultaat(resultaat)
     }
@@ -425,6 +436,14 @@ mod tests {
         let e = toolresultaat(fout).unwrap_err();
         assert_eq!(e["melding"], "profiel onbekend");
         assert_eq!(e["gestructureerd"]["error_code"], "X");
+    }
+
+    #[test]
+    fn langer_wachten_op_de_plaat() {
+        assert_eq!(wachttijd("compute_plate_analysis"), TIJD_PLAAT);
+        assert_eq!(wachttijd("solve_open_fem_3d"), TIJD_AANROEP);
+        assert!(TIJD_PLAAT > TIJD_AANROEP);
+        assert!(toegestaan("compute_plate_analysis"));
     }
 
     #[test]

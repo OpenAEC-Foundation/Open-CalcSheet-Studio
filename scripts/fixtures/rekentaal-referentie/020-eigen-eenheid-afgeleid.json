@@ -1,0 +1,7 @@
+{
+  "onderdeel": "eenheden",
+  "omschrijving": "Een eigen eenheid uit een andere: .kipf = 1000 lbf, 2 kipf = 2000 · 4,448222 N = 8,896 kN.",
+  "uitkomst": {
+    "F": "8.896 kN"
+  }
+}

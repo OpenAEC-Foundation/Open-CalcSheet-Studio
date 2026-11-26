@@ -1,0 +1,7 @@
+{
+  "onderdeel": "invoer",
+  "omschrijving": "Een invoerveld zonder standaardwaarde begint op 0.",
+  "uitkomst": {
+    "m": "1"
+  }
+}
