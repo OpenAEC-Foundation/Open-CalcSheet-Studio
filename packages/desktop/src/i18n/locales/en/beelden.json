@@ -143,6 +143,7 @@
     "totaalMassa": "Total",
     "verlopend": "varying",
     "maten": "Dimensions in mm; leg lengths between bend points on the bar centre line, length along the centre line.",
+    "kruisend": "Ties in three layers: at the bottom the tie between the lower piles, on top of it the left inclined tie, above that the right inclined tie. The inclined ties cross above the upper pile.",
     "bovenaanzicht": "Plan",
     "doorsnede": "Section",
     "soorten": {

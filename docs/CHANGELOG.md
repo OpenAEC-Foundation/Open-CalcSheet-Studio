@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Poer op drie palen: de twee schuine trekbanden kruisen elkaar boven de bovenste paal, dus de rechter ligt nu een laag hoger. De toets rekent met de nuttige hoogte van die derde laag (bij de standaardinvoer 18 mm minder arm, UC trekband 0,647 in plaats van 0,630), de aanhechting volgt uit de hoogte van de bovenste band, en het ondernet en de randbeugels beginnen boven de derde laag. Het 3D-beeld, de doorsneden, het DXF-detail en de IFCX tonen de hogere band op zijn plaats; onder de staaflijst staat de volgorde van de lagen.
+
 ## v2026.48.0 — 2026-11-26
 
 - Bestand › Exporteren zet het rapport ook in een bewerkbaar document: DOCX of ODT. Tekst, koppen en tabellen blijven bewerkbaar, formules worden vergelijkingen, tekeningen gaan als afbeelding mee. Het is een momentopname met project, revisie en exportmoment; wat niet mee kan, zoals de pagina's van een PDF-blad, noemt de app vooraf

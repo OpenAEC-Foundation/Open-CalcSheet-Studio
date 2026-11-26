@@ -135,7 +135,7 @@ s_t = ?{80}*(mm)', hart-op-hart in de band<span class="kolom-3"></span>'
     D_m = 0 mm
     #show
 #end if
-'<i>Bij vier palen ligt de band in x onderin en de band in y erop; bij drie palen de band tussen de twee onderste palen onderin en de twee schuine banden erop. De hefboomsarm rekent met de bovenste laag.</i><span class="alleen-scherm"></span>
+'<i>Bij vier palen ligt de band in x onderin en de band in y erop. Bij drie palen ligt de band tussen de twee onderste palen onderin; de twee schuine banden kruisen elkaar boven de bovenste paal, dus de linker ligt erop en de rechter nog een laag hoger. De hefboomsarm rekent met de bovenste laag.</i><span class="alleen-scherm"></span>
 
 '<h6>Ondernet en randbeugels</h6>
 d_n = ?{12}*(mm)', ondernet, diameter<span class="alleen-scherm">; 0 = geen net</span><span class="kolom-3"></span>'
@@ -163,12 +163,15 @@ ok_staven = bool(n_t ≥ 1)*bool(n_t ≡ round(n_t))*bool(d_t > 0 mm)*bool(s_t >
 ok_vorm = 1 - bool(vorm_t ≡ 2)*(1 - bool(l_op > 0 mm)*bool(D_m > 0 mm))
 ok_last = bool(N_Ed > 0 kN)*bool(N_fr > 0 kN)*bool(N_fr ≤ N_Ed)*bool(abs(M_frx) ≤ abs(M_Edx))*bool(abs(M_fry) ≤ abs(M_Edy))
 ok_inpas = if(vier ≡ 1; bool(l_poer ≥ a_x + p_x)*bool(b_poer ≥ a_y + p_y)*bool(a_x > p_x)*bool(a_y > p_y)*bool(c_x ≤ l_poer)*bool(c_y ≤ b_poer); bool(r_rand > max(p_x; p_y)/2)*bool(a_3 > max(p_x; p_y)))
-'Hoogten: de onderste laag (band in x, of de onderste band bij drie palen) en de bovenste laag erop.
+'Hoogten: de onderste laag (band in x, of de onderste band bij drie palen) en de lagen erop.
+'Bij drie palen kruisen de schuine banden boven de bovenste paal: de rechter ligt een derde laag hoger.
 s_v = max(d_t; d_g + 5 mm; 20 mm)
+n_lg = if(vier ≡ 1; 2; 3)
 a_t1 = c_o + d_t/2
 a_t2 = c_o + d_t + d_t/2
-a_tb = c_o + 2*d_t
-d_eff = h_poer - a_t2
+a_tt = c_o + (n_lg - 1)*d_t + d_t/2
+a_tb = c_o + n_lg*d_t
+d_eff = h_poer - a_tt
 ok_hoogte = bool(d_eff > 0 mm)*bool(a_tb > t_in)
 ok_project = bool(DesignLife > 0)*bool(CC ≥ 1)
 invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
@@ -215,7 +218,7 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
     ν_s = 1 - f_ck/(250 N/mm^2)', ν′ (NB)<span class="kolom-4"></span>'
     ν_v = 0.6*ν_s', ν (6.6N)<span class="kolom-4"></span>'
     A_b', één band<span class="kolom-4"></span>'
-    d_eff', nuttige hoogte, bovenste laag<span class="kolom-4"></span>'
+    d_eff', nuttige hoogte, bovenste laag<span class="alleen-scherm">; bij drie palen de derde laag, waar de schuine banden kruisen</span><span class="kolom-4"></span>'
     A_c', grondvlak poer<span class="kolom-4"></span>'
     G_poer = 25 kN/m^3*A_c*h_poer to kN', eigen gewicht<span class="kolom-4"></span>'
     #hide
@@ -382,7 +385,9 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
 
         #hide
         f_ctd = f_ctk/1.5
-        f_bd = 2.25*1.0*1.0*f_ctd
+        'Aanhechting (8.4.2, figuur 8.2) bij de hoogste band: tot h = 250 mm overal goed, tot 600 mm in de onderste 250 mm, daarboven buiten de bovenste 300 mm.
+        η_1 = if(h_poer ≤ 250 mm; 1.0; if(h_poer ≤ 600 mm; if(a_tt ≤ 250 mm; 1.0; 0.7); if(h_poer - a_tt ≥ 300 mm; 1.0; 0.7)))
+        f_bd = 2.25*η_1*1.0*f_ctd
         σ_sd = T_Ed/A_b
         l_rqd = d_t/4*σ_sd/f_bd
         a_v2 = s_t - d_t
@@ -404,7 +409,7 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         l_av = if(vorm_t ≡ 2; l_h + l_op - (2 - π/2)*r_m; l_h)
         n_ein = if(vorm_t ≡ 2; a_tb + l_op + c_z; 0 mm)
         #show
-        f_bd', (8.2)<span class="alleen-scherm">, 2,25·η<sub>1</sub>·η<sub>2</sub>·f<sub>ctd</sub>, goede aanhechting</span><span class="kolom-4"></span>'
+        f_bd', (8.2)<span class="alleen-scherm">, 2,25·η<sub>1</sub>·η<sub>2</sub>·f<sub>ctd</sub>, η<sub>1</sub> uit de hoogte van de bovenste band (8.4.2)</span><span class="kolom-4"></span>'
         l_rqd', (8.3)<span class="alleen-scherm">, l<sub>b,rqd</sub></span><span class="kolom-4"></span>'
         α_1', tabel 8.2<span class="kolom-4"></span>'
         α_2', tabel 8.2<span class="alleen-scherm">, α<sub>3</sub> = α<sub>4</sub> = α<sub>5</sub> = 1, aan de veilige kant</span><span class="kolom-4"></span>'
@@ -484,7 +489,7 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         w_lim', tabel 7.1N (NB)<span class="alleen-scherm">, met k<sub>x</sub></span><span class="kolom-2"></span>'
         UC_w = max(w_k/w_lim; σ_s/f_yk; σ_k/f_yk)', scheurwijdte, en de staalspanning onder de vloeigrens<span class="alleen-scherm"></span>'
         #hide
-        h_in = h_poer - c_o - c_z - 2*d_t
+        h_in = h_poer - a_tb - c_z
         l_zijde = if(vier ≡ 1; max(l_poer; b_poer); L_g)
         #show
         #if h_poer ≥ 1000 mm
@@ -693,9 +698,9 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
         #else
         kolom {{q_x(k)}} {{q_y(k)}} {{-600 mm}} {{t_in}} {{p_y}} {{p_x}} beton
         #end if
-        // de band van paal k naar k+1: de onderste (k = 1) onderin, de schuine erop
+        // de band van paal k naar k+1: de onderste (k = 1) onderin, de linker schuine (k = 0) erop, de rechter (k = 2) een laag hoger
         #for j = 1 : n_t
-        buis {{q_x(k) - b_ux(k)*L_x3 - b_uy(k)*(j - (n_t + 1)/2)*s_t}} {{q_y(k) - b_uy(k)*L_x3 + b_ux(k)*(j - (n_t + 1)/2)*s_t}} {{a_t1 + if(k ≡ 1; 0 mm; d_t)}} {{q_x(mod(k + 1; 3)) + b_ux(k)*L_x3 - b_uy(k)*(j - (n_t + 1)/2)*s_t}} {{q_y(mod(k + 1; 3)) + b_uy(k)*L_x3 + b_ux(k)*(j - (n_t + 1)/2)*s_t}} {{a_t1 + if(k ≡ 1; 0 mm; d_t)}} {{d_t}} rood
+        buis {{q_x(k) - b_ux(k)*L_x3 - b_uy(k)*(j - (n_t + 1)/2)*s_t}} {{q_y(k) - b_uy(k)*L_x3 + b_ux(k)*(j - (n_t + 1)/2)*s_t}} {{a_t1 + if(k ≡ 1; 0 mm; if(k ≡ 0; d_t; 2*d_t))}} {{q_x(mod(k + 1; 3)) + b_ux(k)*L_x3 - b_uy(k)*(j - (n_t + 1)/2)*s_t}} {{q_y(mod(k + 1; 3)) + b_uy(k)*L_x3 + b_ux(k)*(j - (n_t + 1)/2)*s_t}} {{a_t1 + if(k ≡ 1; 0 mm; if(k ≡ 0; d_t; 2*d_t))}} {{d_t}} rood
         #loop
         #loop
         #end if

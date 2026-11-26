@@ -46,6 +46,8 @@ export interface PoerVorm {
   kolom: { rond: boolean; x: number; y: number };
   staven: Staaf[];
   snedes: Snede[];
+  /** Bij drie palen: de schuine banden kruisen, de banden liggen in drie lagen. Dat staat onder de staaflijst. */
+  kruisend?: boolean;
 }
 
 export interface DetailTeksten {
@@ -63,6 +65,7 @@ export interface DetailTeksten {
   totaalMassa: string;
   verlopend: string;
   maten: string;
+  kruisend: string;
   soorten: Record<StaafSoort, string>;
   /** Een getal in de notatie van de taal. */
   getal?: (w: number, decimalen: number) => string;
@@ -101,7 +104,7 @@ export function meerpaalVorm(m: MeerpaalDefinitie): PoerVorm {
   const snedes: Snede[] = m.n === 4
     ? [{ naam: "A", vlak: "xz", waarde: m.maten.a_y / 2, venster }, { naam: "B", vlak: "yz", waarde: m.maten.a_x / 2, venster }]
     : [{ naam: "A", vlak: "xz", waarde: m.palen[1][1], venster }, { naam: "B", vlak: "yz", waarde: 0, venster }];
-  return { omtrek: m.omtrek, h: m.h, palen: m.palen, paal: m.paal, kolom: m.kolom, staven: stavenMeerpaal(m), snedes };
+  return { omtrek: m.omtrek, h: m.h, palen: m.palen, paal: m.paal, kolom: m.kolom, staven: stavenMeerpaal(m), snedes, kruisend: m.n === 3 };
 }
 
 // ── de tekening als lijnen, cirkels en teksten ──────────────────────────────
@@ -330,6 +333,10 @@ export function maakDetail(v: PoerVorm, opties: DetailOpties): Detail {
     y -= 1.5 * th;
   }
   uit.push({ soort: "tekst", laag: "TEKST", p: [plan.x0, y], t: `${t.totaalMassa}: ${g(lijst.massa, 1)} kg`, hoogte: th * 0.9, uitlijn: "links" });
+  if (v.kruisend) {
+    y -= 1.5 * th;
+    uit.push({ soort: "tekst", laag: "TEKST", p: [plan.x0, y], t: t.kruisend, hoogte: th * 0.9, uitlijn: "links" });
+  }
 
   return { prims: uit, aanzichten, stavenInPlan };
 }

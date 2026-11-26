@@ -72,7 +72,15 @@ kolom een drukdiagonaal naar elke paal, onderin trekbanden over de palen.
   paalknoop opgenomen door de twee banden onder 60°, elk H/√3; een band krijgt de grootste
   van zijn twee uiteinden. De bovenste en de onderste palen hebben elk hun eigen reactie.
 - **Lagen.** Vier palen: band in x onderin, band in y erop. Drie palen: de band tussen de
-  twee onderste palen onderin, de schuine banden erop.
+  twee onderste palen onderin, de linker schuine band erop en de rechter nog een laag
+  hoger. De twee schuine banden kruisen elkaar boven de bovenste paal en kunnen daar niet
+  in één laag; zo kruist elk paar banden in twee verschillende lagen.
+- **Nuttige hoogte.** d hoort bij de hoogste laag: d = h − c_o − 1,5·Ø bij vier palen en
+  h − c_o − 2,5·Ø bij drie. Die d geldt voor het hele staafwerk, de dwarskracht, de pons
+  en de scheurwijdte; bij drie palen is dat voor de onderste banden aan de veilige kant.
+  Bij de standaardinvoer van drie palen kost de derde laag 18 mm arm (697,5 in plaats van
+  715,5) en wordt UC_T 0,647 in plaats van 0,630 (handberekening in de kop van
+  `scripts/check-meerpaalspoer.mjs`).
 
 ## 4. Toetsset
 
@@ -90,7 +98,7 @@ tweepaalspoer (zie daar §4).
 | Dwarskracht, bovengrens | 6.2.2(6), (6.5) | 0,5·b·d·ν·f_cd over de volle breedte op het kolomvlak |
 | Dwarskracht V_Rd,c met β | 6.2.2(1), (6.2a), 6.2.2(6) | β = a_v/2d ≥ 0,25; ρ_l uit het ondernet en bij vier palen de banden in die richting |
 | Pons langs kolom en paal | 6.4.5(3) | v_Rd,max = 0,4·ν·f_cd (NB); kolom β = 1,15, paal als hoekkolom u₀ = 3d ≤ c₁ + c₂ met β = 1,5 |
-| Verankering en ombuiging | 8.4, 6.5.4(7), 8.3, figuur 8.1 | als de tweepaalspoer |
+| Verankering en ombuiging | 8.4, 6.5.4(7), 8.3, figuur 8.1 | als de tweepaalspoer; η₁ uit de hoogte van de hoogste band (8.4.2, figuur 8.2), en het been vanaf de bovenkant van de hoogste laag |
 
 ### BGT en detaillering
 
@@ -159,7 +167,11 @@ merk, vormcode, lengte en buigstraal zijn die van de tweepaalspoer
 Wat het blad niet vastlegt en de definitie kiest:
 
 - **Banden**: bij vier palen de band in x onderin en de band in y erop, bij drie palen de
-  band tussen de twee onderste palen onderin en de schuine banden erop, zoals het blad.
+  band tussen de twee onderste palen onderin, de linker schuine band erop en de rechter een
+  laag hoger, zoals het blad. Het ondernet en de randbeugels beginnen boven de hoogste laag.
+  De drie banden zijn even lang en houden één merk; onder de staaflijst (op papier, in het
+  DXF) staat de volgorde van de lagen, en doorsnede B-B door de bovenste paal toont de drie
+  hoogten.
 - **Been binnen de randbeugel.** Een omgebogen band buigt op binnen de randbeugel: het hart
   van het been ligt op c_z + Ø_randbeugel + Ø/2 van de rand (u_r in het blad). Het blad meet
   de verankering (l_h) daar ook; de eerste versie mat tot de dekking, een randbeugel verder.
@@ -178,10 +190,6 @@ Wat het blad niet vastlegt en de definitie kiest:
   (b − 2·b_band)/s_n en ligt er meer.
 - **Randbeugels** liggen op de dekking langs de omtrek (bij drie palen een zeshoek, vorm
   99), gelijk verdeeld over de hoogte tussen de banden en de bovendekking; elk met twee haken.
-
-Open punt: bij drie palen kruisen de twee schuine banden elkaar boven de bovenste paal op
-dezelfde hoogte. Het blad rekent met twee lagen; in het werk moet een van beide een laag
-hoger, wat d daar met één staafdiameter verkleint. Dat staat nog niet in de toets.
 
 De **IFCX** van de poer (ook in het projectbestand en de STEP) heeft het beton als prisma
 met de omtrek van de poer, de palen en de kolom als aanzet, en elke staaf als een eigen

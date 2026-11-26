@@ -37,7 +37,7 @@ export function useTekeningStatus(d: (naam: string) => number, uitkomst: BladUit
 }
 
 /** `kort`: op papier, zo laag mogelijk; het blad moet kort blijven. */
-export function StaaflijstTabel({ lijst, status, kort = false }: { lijst: Staaflijst; status: string; kort?: boolean }) {
+export function StaaflijstTabel({ lijst, status, kort = false, noot }: { lijst: Staaflijst; status: string; kort?: boolean; noot?: string }) {
   const { t, i18n } = useTranslation("beelden");
   const g = (w: number, n = 0) => fmt(w, n, i18n.language);
   const cel = { padding: kort ? "0 4px" : "1px 6px" } as const;
@@ -76,6 +76,7 @@ export function StaaflijstTabel({ lijst, status, kort = false }: { lijst: Staafl
       <div style={{ fontSize: kort ? 9.5 : 11, marginTop: kort ? 1 : 2 }}>
         {lijst.perDiameter.map((p) => `Ø${g(p.d)}: ${g(p.lengte, 2)} m, ${g(p.massa, 1)} kg`).join(" · ")}
         {" · "}<b>{`${t("poerDetail.totaalMassa")}: ${g(lijst.massa, 1)} kg`}</b>
+        {noot && <>{" · "}{noot}</>}
       </div>
     </div>
   );
@@ -105,7 +106,7 @@ export default function PoerStaaflijst({ vorm, titel, bestand, d, set, uitkomst,
 
   return (
     <div className="poer-detail" style={{ padding: alleenLezen ? "0" : "6px 16px" }}>
-      <StaaflijstTabel lijst={lijst} status={status.tekst} kort={alleenLezen} />
+      <StaaflijstTabel lijst={lijst} status={status.tekst} kort={alleenLezen} noot={vorm.kruisend ? t("poerDetail.kruisend") : undefined} />
       {!alleenLezen && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 6 }}>
           <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12 }}>
