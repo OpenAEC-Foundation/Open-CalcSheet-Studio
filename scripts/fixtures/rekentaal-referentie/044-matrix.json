@@ -1,0 +1,8 @@
+{
+  "onderdeel": "matrices",
+  "omschrijving": "Een matrix [a; b | c; d] en zijn determinant: 1·4 − 2·3 = −2.",
+  "uitkomst": {
+    "M": "[1; 2 | 3; 4]",
+    "d": "-2"
+  }
+}

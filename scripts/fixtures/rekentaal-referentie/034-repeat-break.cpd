@@ -1,0 +1,7 @@
+t = 0
+#repeat
+t = t + 1
+#if t ≥ 4
+#break
+#end if
+#end repeat

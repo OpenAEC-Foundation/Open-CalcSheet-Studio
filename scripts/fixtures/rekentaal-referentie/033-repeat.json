@@ -1,0 +1,15 @@
+{
+  "onderdeel": "herhalingen",
+  "omschrijving": "#repeat 3: drie keer 2 erbij = 6.",
+  "uitkomst": {
+    "n": "6"
+  },
+  "reeks": {
+    "n": [
+      "0",
+      "2",
+      "4",
+      "6"
+    ]
+  }
+}

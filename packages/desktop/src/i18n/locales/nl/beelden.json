@@ -143,6 +143,7 @@
     "totaalMassa": "Totaal",
     "verlopend": "verlopend",
     "maten": "Maten in mm; zijlengtes hart op hart van de knikken, lengte langs de hartlijn.",
+    "kruisend": "Banden in drie lagen: onderin de band tussen de onderste palen, daarop de linker schuine band, bovenop de rechter schuine band. De schuine banden kruisen elkaar boven de bovenste paal.",
     "bovenaanzicht": "Bovenaanzicht",
     "doorsnede": "Doorsnede",
     "soorten": {
@@ -185,6 +186,64 @@
         "net": "Netstaaf",
         "randbeugel": "Randbeugel"
       }
+    }
+  },
+  "poerKoppeling": {
+    "kop": "Palenplan en revisie",
+    "revisieTitel": "revisie {{nr}}",
+    "revisieVast": "Revisie {{nr}}, vastgelegd op {{datum}}.",
+    "revisieNieuw": "Revisie {{nr}}, nog niet vastgelegd. Opslaan als DXF of IFCX legt hem vast.",
+    "vastleggen": "Revisie vastleggen",
+    "sinds": "Veranderd sinds revisie {{nr}}:",
+    "inRevisie": "Veranderd ten opzichte van revisie {{nr}}:",
+    "meer": "… nog {{n}}",
+    "nieuw": "nieuw",
+    "vervallen": "vervallen",
+    "poerId": "Poer-id: {{id}}",
+    "bron": "(uit {{bestand}})",
+    "poerIdLos": "Niet gekoppeld aan een palenplan; de IFC-uitvoer houdt de vaste paden van dit blad.",
+    "inlezen": "Palenplan inlezen (IFCX)…",
+    "gelezen": "{{bestand}}: poeren {{n}}",
+    "fout": "Dit bestand is geen leesbaar IFCX: {{fout}}",
+    "nietInPlan": "Poer {{id}} staat niet in dit palenplan.",
+    "gelijk": "Het blad komt overeen met het palenplan.",
+    "verschillen": "Verschilt met het palenplan:",
+    "inPlanVeranderd": "veranderd in het plan",
+    "inBladVeranderd": "anders in het blad",
+    "overnemen": "Uit het palenplan overnemen",
+    "palen": "palen: {{n}}",
+    "inDitBlad": "In dit blad",
+    "alsNieuwBlad": "Als nieuw blad",
+    "geenBlad": "past in geen poerblad",
+    "uitleg": "Het wapeningsdetail, het DXF en de IFCX komen altijd uit de invoer van dit blad. Wat je in een getekend detail met de hand verandert, wordt bij een nieuwe uitvoer niet bewaard. Het revisienummer gaat omhoog zodra de maten of de staven veranderen, ook door een wijziging uit het palenplan; de lijst toont wat er anders is. De poer-id en de ids van de palen blijven gelijk en staan in de IFCX.",
+    "sleutels": {
+      "poer": "Poer",
+      "palen": "Palen",
+      "paal": "Paal",
+      "kolom": "Kolom",
+      "staaf": "Staven",
+      "hoogte": "Hoogte"
+    },
+    "velden": {
+      "poer_id": "poer-id",
+      "paal_ids": "palen",
+      "plan_x": "plaats x",
+      "plan_y": "plaats y",
+      "plan_z": "onderkant",
+      "plan_hoek": "draaiing"
+    },
+    "meldingen": {
+      "geenPoeren": "Geen poeren (IfcFooting) in dit bestand.",
+      "lossePalen": "Palen onder geen enkele poer: {{n}}.",
+      "dubbeleId": "De id {{id}} komt meer dan eens voor.",
+      "aantalPalen": "Palen: {{n}}. Een poerblad kent twee, drie of vier palen.",
+      "nietSymmetrisch": "De poer ligt niet symmetrisch om de palen; het blad legt hem wel zo.",
+      "geenRechthoek": "Het grondvlak is geen rechthoek; het blad rekent met de omhullende rechthoek.",
+      "palenRechthoek": "De palen staan niet in een rechthoek; het blad zet ze wel zo.",
+      "palenDriehoek": "De palen staan niet in een gelijkzijdige driehoek; het blad zet ze wel zo.",
+      "vormDriehoek": "Het grondvlak is geen driehoek met afgeschuinde hoeken op gelijke afstand van de palen; het blad rekent met de kleinste afstand.",
+      "ongelijkePalen": "De palen zijn niet even groot; het blad rekent met de grootste.",
+      "kolomMidden": "De kolom staat niet in het midden van de palen; het blad zet hem daar."
     }
   },
   "doorsnede": {
@@ -577,6 +636,30 @@
       "blad": "Blad",
       "uc": "Maatgevende UC",
       "oordeel": "Oordeel"
-    }
+    },
+    "normenKop": "Normen en nationale bijlagen",
+    "normenNiet": "De edities van de normen en de nationale bijlagen zijn niet vastgelegd in de projectgegevens.",
+    "normKolom": "Norm",
+    "editieKolom": "Editie",
+    "nbKolom": "Nationale bijlage",
+    "nietVastgelegd": "niet vastgelegd",
+    "normenKort": "Normen:",
+    "normEditie": "editie {{editie}}",
+    "normNb": "nationale bijlage {{nb}}",
+    "editieOnbekend": "editie niet vastgelegd",
+    "nbOnbekend": "nationale bijlage niet vastgelegd",
+    "nietInProject": "{{deel}} niet vastgelegd in het project",
+    "nbKeuzesKop": "Gekozen waarden uit de nationale bijlage",
+    "nbVolgensProject": "Nationale bijlage volgens de projectgegevens: {{bijlagen}}",
+    "nbNietInProject": "De projectgegevens leggen voor de normen van dit blad geen nationale bijlage vast.",
+    "nbSymbool": "Symbool",
+    "nbWaarde": "Waarde",
+    "nbArtikel": "Artikel (nationale bijlage)",
+    "nbNietBerekend": "niet berekend",
+    "nbUitProject": "projectgegevens",
+    "bronLabel": "Bron:",
+    "bronBlad": "blad {{ref}} {{naam}}",
+    "bronBladOnbekend": "blad {{ref}}, niet in dit project",
+    "bronPagina": "p. {{n}}"
   }
 }

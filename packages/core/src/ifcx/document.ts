@@ -27,7 +27,7 @@
  * opnieuw maken. Uitkomsten, figuren en elementen zijn wel afgeleid: de app rekent ze
  * opnieuw uit bij het openen en opslaan.
  */
-import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions, VariantenGegevens } from '../ifc-generator.js';
+import type { ControleGegevens, ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions, VariantenGegevens } from '../ifc-generator.js';
 import type { VastgelegdeToets } from '../types.js';
 import { leesVastgelegdeToetsingen } from '../toetsBlok.js';
 import type { IfcxBestand, IfcxKnoop, IfcxSchema } from './typen.js';
@@ -102,6 +102,10 @@ export interface IfcxGelezenBlad {
   toetsingen?: Record<string, VastgelegdeToets>;
   /** Zoals ze in het bestand staan; de app leest ze na (store/varianten.ts). */
   varianten?: VariantenGegevens;
+  /** Zoals ze in het bestand staat; de app leest haar na (store/controle.ts). */
+  controle?: ControleGegevens;
+  /** `#include`-bestanden met hun bewaarde kopie; de app leest ze na (store/includes.ts). */
+  includes?: unknown[];
 }
 
 export interface IfcxGelezenProject {
@@ -171,12 +175,14 @@ function graafAttribuut(g: GraafGegevens) {
     versie: g.versie,
     nodes: g.nodes.map(({ invoer, ...n }) => ({ ...n, ...(invoer ? { invoer: paren(invoer) } : {}) })),
     verbindingen: g.verbindingen,
+    ...(g.groepen?.length ? { groepen: g.groepen } : {}),
+    ...(g.teksten?.length ? { teksten: g.teksten } : {}),
   };
 }
 
 /** De graaf uit een attribuut; het model leest hem daarna nog na (leesGraaf). */
 function graafUitAttribuut(x: unknown): GraafGegevens | undefined {
-  const g = x as { versie?: unknown; nodes?: unknown; verbindingen?: unknown } | undefined;
+  const g = x as { versie?: unknown; nodes?: unknown; verbindingen?: unknown; groepen?: unknown; teksten?: unknown } | undefined;
   if (!g || !Array.isArray(g.nodes)) return undefined;
   return {
     versie: typeof g.versie === 'number' ? g.versie : 1,
@@ -185,6 +191,8 @@ function graafUitAttribuut(x: unknown): GraafGegevens | undefined {
       return { ...rest, ...(invoer ? { invoer: uitParen(invoer) } : {}) };
     }),
     verbindingen: Array.isArray(g.verbindingen) ? (g.verbindingen as GraafGegevens['verbindingen']) : [],
+    ...(Array.isArray(g.groepen) ? { groepen: g.groepen as NonNullable<GraafGegevens['groepen']> } : {}),
+    ...(Array.isArray(g.teksten) ? { teksten: g.teksten as NonNullable<GraafGegevens['teksten']> } : {}),
   };
 }
 
@@ -375,6 +383,8 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
     }
     if (blad.toetsingen && Object.keys(blad.toetsingen).length > 0) attributes[ATTR.toetsing] = toetsingAttribuut(blad.toetsingen);
     if (blad.varianten) attributes[ATTR.varianten] = variantenAttribuut(blad.varianten);
+    if (blad.controle && blad.controle.registraties.length > 0) attributes[ATTR.controle] = blad.controle;
+    if (blad.includes && blad.includes.length > 0) attributes[ATTR.includes] = blad.includes;
     attributes[ATTR.uitkomst] = uitkomst;
 
     // Figuren: de tekeningen en 3D-beelden staan ook in de rekentekst; hier zijn ze als zodanig te vinden.
@@ -741,6 +751,9 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     if (toetsingen) blad.toetsingen = toetsingen;
     const varianten = variantenUitAttribuut(a[ATTR.varianten]);
     if (varianten) blad.varianten = varianten;
+    const controle = a[ATTR.controle] as { registraties?: unknown } | undefined;
+    if (controle && typeof controle === 'object' && Array.isArray(controle.registraties)) blad.controle = controle as ControleGegevens;
+    if (Array.isArray(a[ATTR.includes])) blad.includes = a[ATTR.includes] as unknown[];
     return blad;
   });
 

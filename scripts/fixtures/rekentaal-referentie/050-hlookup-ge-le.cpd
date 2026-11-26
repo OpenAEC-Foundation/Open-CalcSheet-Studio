@@ -1,0 +1,3 @@
+T = [1; 2; 3 | 10; 20; 30]
+h_ge = hlookup_ge(T; 2.5; 1; 2)
+h_le = hlookup_le(T; 2.5; 1; 2)

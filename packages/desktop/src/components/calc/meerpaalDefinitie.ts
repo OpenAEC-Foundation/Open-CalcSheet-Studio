@@ -7,10 +7,13 @@ import { bestaat, buigStraal, maakStaaf, type P3, type Staaf } from "./poerStave
  * komen hieruit (poerStaven.ts, poerDxf.ts, meerpaalIfcx.ts).
  *
  * Hier staan geen rekenregels: alleen de opbouw van de korf uit de invoer van het blad
- * (templates/meerpaalspoer.ts). De plaats van de banden volgt het blad: de band in x (of
- * bij drie palen de onderste band) onderin, de andere band erop; de hefboomsarm rekent
- * met de bovenste laag. Dat het been van een band hier op dezelfde plaats staat als in de
- * verankering van het blad (l_h), bewaakt scripts/check-poer-staaflijst.mjs.
+ * (templates/meerpaalspoer.ts). De plaats van de banden volgt het blad: bij vier palen de
+ * band in x onderin en de band in y erop. Bij drie palen de band tussen de twee onderste
+ * palen onderin, de linker schuine band (paal 1 naar 2) erop en de rechter (paal 3 naar 1)
+ * nog een laag hoger: de schuine banden kruisen elkaar boven de bovenste paal. De
+ * hefboomsarm rekent met de bovenste laag. Dat het been van een band hier op dezelfde
+ * plaats staat als in de verankering van het blad (l_h), bewaakt
+ * scripts/check-poer-staaflijst.mjs.
  *
  * Wat het blad niet vastlegt en hier gekozen is (ook in docs/meerpaalspoer-toetsing.md):
  *   - het ondernet ligt in twee eigen lagen direct op de banden, over de volle breedte
@@ -45,8 +48,11 @@ export interface MeerpaalDefinitie {
    * of tot het uiteinde. Bij vier palen in x en in y, bij drie palen voor elke band gelijk.
    */
   uitsteek: { x: number; y: number };
-  /** Hart van de onderste en de bovenste laag banden. */
-  zBand: [number, number];
+  /**
+   * Hart van elke laag banden, van onder naar boven: twee bij vier palen, drie bij drie
+   * palen (de schuine banden kruisen boven de bovenste paal).
+   */
+  zBand: number[];
 }
 
 const geheel = (w: number) => Math.max(0, Math.round(w));
@@ -152,8 +158,10 @@ export function maakMeerpaalPoer(d: Lees): MeerpaalDefinitie {
     uitsteek = { x: t, y: t };
   }
 
-  const h_in = h - c_o - c_z - 2 * d_t;
-  const randZ = Array.from({ length: n_z }, (_, i) => c_o + 2 * d_t + ((i + 1) * h_in) / (n_z + 1));
+  // Zoveel lagen banden: de randbeugels en het net beginnen erboven (a_tb in het blad).
+  const lagen = vier ? 2 : 3;
+  const h_in = h - c_o - c_z - lagen * d_t;
+  const randZ = Array.from({ length: n_z }, (_, i) => c_o + lagen * d_t + ((i + 1) * h_in) / (n_z + 1));
   return {
     n: vier ? 4 : 3,
     h, omtrek, palen,
@@ -164,7 +172,7 @@ export function maakMeerpaalPoer(d: Lees): MeerpaalDefinitie {
     net: { d: d_n, s: s_n },
     rand: { n: n_z, d: d_z, z: randZ },
     uitsteek,
-    zBand: [c_o + d_t / 2, c_o + (3 * d_t) / 2],
+    zBand: Array.from({ length: lagen }, (_, i) => c_o + (i + 0.5) * d_t),
   };
 }
 
@@ -183,7 +191,7 @@ function verdeelTot(a: number, b: number, s: number): number[] {
 export function stavenMeerpaal(m: MeerpaalDefinitie): Staaf[] {
   const uit: Staaf[] = [];
   const bd = m.band;
-  const [z1, z2] = m.zBand;
+  const [z1, z2, z3 = z2] = m.zBand;
   const offsets = Array.from({ length: bd.n }, (_, j) => (j - (bd.n - 1) / 2) * bd.s);
   const rBand = (bd.doorn + bd.d) / 2;
   /** Een band van a naar b (paalharten), met een uitsteek t voorbij elke paal. */
@@ -208,8 +216,9 @@ export function stavenMeerpaal(m: MeerpaalDefinitie): Staaf[] {
     for (const y of [-a_y / 2, a_y / 2]) band("band/x", [-a_x / 2, y], [a_x / 2, y], m.uitsteek.x, z1);
     for (const x of [-a_x / 2, a_x / 2]) band("band/y", [x, -a_y / 2], [x, a_y / 2], m.uitsteek.y, z2);
   } else {
-    // Band k van paal k naar paal k+1; de band tussen de twee onderste palen (k = 1) onderin.
-    for (let k = 0; k < 3; k++) band(`band/${k + 1}`, m.palen[k], m.palen[(k + 1) % 3], m.uitsteek.x, k === 1 ? z1 : z2);
+    // Band k van paal k naar paal k+1: de band tussen de twee onderste palen (k = 1) onderin,
+    // de linker schuine (k = 0) erop, de rechter (k = 2) een laag hoger.
+    for (let k = 0; k < 3; k++) band(`band/${k + 1}`, m.palen[k], m.palen[(k + 1) % 3], m.uitsteek.x, k === 1 ? z1 : k === 0 ? z2 : z3);
   }
 
   // ── ondernet ──────────────────────────────────────────────────────────────
@@ -220,7 +229,7 @@ export function stavenMeerpaal(m: MeerpaalDefinitie): Staaf[] {
     const δEind = m.c_z + (bd.omgebogen && bd.n > 0 ? (m.rand.n > 0 && m.rand.d > 0 ? m.rand.d : 0) + bd.d : 0);
     const zij = binnenOmtrek(m.omtrek, Math.max(m.c_z + nt.d / 2, δEind));
     const eind = binnenOmtrek(m.omtrek, δEind);
-    const zNet = m.c_o + 2 * bd.d + nt.d / 2;
+    const zNet = m.c_o + m.zBand.length * bd.d + nt.d / 2;
     const verloopt = m.n === 3;
     ([[1, zNet, "net/x"], [0, zNet + nt.d, "net/y"]] as const).forEach(([as, z, sleutel]) => {
       const waarden = zij.map((p) => p[as]);

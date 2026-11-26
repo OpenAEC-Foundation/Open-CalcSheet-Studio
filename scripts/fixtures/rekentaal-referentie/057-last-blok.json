@@ -1,0 +1,7 @@
+{
+  "onderdeel": "blokken",
+  "omschrijving": "@last: G = 3·2 = 6 kN/m, Q = 2·2 = 4 kN/m; 1,2·6 + 1,5·4 = 13,2 kN/m.",
+  "uitkomst": {
+    "q_Ed": "13.2 kN / m"
+  }
+}

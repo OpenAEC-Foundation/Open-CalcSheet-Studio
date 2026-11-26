@@ -1,0 +1,7 @@
+{
+  "onderdeel": "macro's",
+  "omschrijving": "#def kwadraat$(x$) = x$^2, kwadraat$(3) = 9.",
+  "uitkomst": {
+    "c": "9"
+  }
+}

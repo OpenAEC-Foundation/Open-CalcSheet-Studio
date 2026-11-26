@@ -410,3 +410,19 @@ export async function voegPdfBladToe(
     alert(i18next.t("werkruimte:pdf.lezenMislukt", { fout: (err as Error)?.message ?? String(err) }));
   }
 }
+
+/**
+ * Eén pagina van een PDF van schijf, voor een verwijzing met `@bron` (BronVenster.tsx): het
+ * aantal pagina's en de pagina als afbeelding (een object-URL; de aanroeper geeft hem vrij).
+ */
+export async function bronPagina(bytes: Uint8Array, nummer: number): Promise<{ url: string; aantal: number; pagina: number }> {
+  const lib = await pdfjs();
+  const doc = await lib.getDocument({ data: bytes, verbosity: lib.VerbosityLevel.ERRORS }).promise;
+  try {
+    const pagina = Math.max(1, Math.min(nummer, doc.numPages));
+    const url = await inRij(() => tekenPagina(doc, pagina));
+    return { url, aantal: doc.numPages, pagina };
+  } finally {
+    void doc.loadingTask.destroy();
+  }
+}

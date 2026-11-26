@@ -38,8 +38,13 @@
   max-width: 100%;
 }
 
+/* 'clip' en niet 'hidden': bij 'hidden' wordt overflow-y vanzelf 'auto', en een
+   formule die een paar pixels hoger is dan haar vak (een breuk, een index) werd
+   een scrollvak dat het muiswiel ving. Een lange regel breekt af (renderer.ts),
+   dus hier valt normaal niets weg. */
 .calc-preview-content .katex-display {
-  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .calc-preview-content::-webkit-scrollbar {
@@ -64,8 +69,13 @@
   max-width: 100%;
 }
 
+/* 'clip' en niet 'hidden': bij 'hidden' wordt overflow-y vanzelf 'auto', en een
+   formule die een paar pixels hoger is dan haar vak (een breuk, een index) werd
+   een scrollvak dat het muiswiel ving. Een lange regel breekt af (renderer.ts),
+   dus hier valt normaal niets weg. */
 .calc-preview-content .katex-display {
-  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .calc-preview-content .ifc-calc {
@@ -396,4 +406,51 @@
 
 .calc-preview.rekent .calc-preview-content {
   opacity: 0.7;
+}
+
+/* Een verwijzing met `@bron` (bronnen.ts): op het scherm een link naar de PDF op die pagina. */
+.calc-preview-content .calc-bron-link {
+  color: #1d4ed8;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.calc-bron-label,
+.calc-bron-plek {
+  color: #57534e;
+}
+
+/* Het venster met een PDF van schijf (BronVenster.tsx). */
+.bron-venster {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+
+.bron-venster-balk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bron-venster-pad {
+  margin-left: auto;
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--theme-text-secondary);
+  font-size: 11px;
+}
+
+.bron-venster-fout {
+  color: #b91c1c;
+}
+
+.bron-venster-pagina {
+  max-width: 100%;
+  align-self: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  background: #fff;
 }

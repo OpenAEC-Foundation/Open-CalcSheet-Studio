@@ -1,0 +1,7 @@
+{
+  "onderdeel": "macro's",
+  "omschrijving": "#def Naam$ = 7, Naam$ + 1 = 8.",
+  "uitkomst": {
+    "d": "8"
+  }
+}

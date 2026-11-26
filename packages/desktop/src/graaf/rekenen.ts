@@ -218,6 +218,9 @@ export function rekenGraaf(graaf: Graaf): GraafUitkomst {
     const def = nodeDef(node.soort);
     if (!def) {
       nodes[id] = { poorten: p, waarden: {}, fouten: [{ code: "onbekendeSoort", gegevens: { soort: node.soort } }], meldingen: [] };
+    } else if (node.uit) {
+      // Uitgeschakeld: geen waarden; een node erachter meldt een ingang zonder waarde.
+      nodes[id] = { poorten: p, waarden: {}, fouten: [], meldingen: [{ code: "uitgeschakeld", gegevens: {} }] };
     } else if (cirkel.has(id)) {
       nodes[id] = { poorten: p, waarden: {}, fouten: [{ code: "cirkel", gegevens: {} }], meldingen: [] };
     } else {
