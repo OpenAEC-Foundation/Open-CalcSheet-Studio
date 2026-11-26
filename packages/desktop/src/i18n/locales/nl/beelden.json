@@ -636,6 +636,30 @@
       "blad": "Blad",
       "uc": "Maatgevende UC",
       "oordeel": "Oordeel"
-    }
+    },
+    "normenKop": "Normen en nationale bijlagen",
+    "normenNiet": "De edities van de normen en de nationale bijlagen zijn niet vastgelegd in de projectgegevens.",
+    "normKolom": "Norm",
+    "editieKolom": "Editie",
+    "nbKolom": "Nationale bijlage",
+    "nietVastgelegd": "niet vastgelegd",
+    "normenKort": "Normen:",
+    "normEditie": "editie {{editie}}",
+    "normNb": "nationale bijlage {{nb}}",
+    "editieOnbekend": "editie niet vastgelegd",
+    "nbOnbekend": "nationale bijlage niet vastgelegd",
+    "nietInProject": "{{deel}} niet vastgelegd in het project",
+    "nbKeuzesKop": "Gekozen waarden uit de nationale bijlage",
+    "nbVolgensProject": "Nationale bijlage volgens de projectgegevens: {{bijlagen}}",
+    "nbNietInProject": "De projectgegevens leggen voor de normen van dit blad geen nationale bijlage vast.",
+    "nbSymbool": "Symbool",
+    "nbWaarde": "Waarde",
+    "nbArtikel": "Artikel (nationale bijlage)",
+    "nbNietBerekend": "niet berekend",
+    "nbUitProject": "projectgegevens",
+    "bronLabel": "Bron:",
+    "bronBlad": "blad {{ref}} {{naam}}",
+    "bronBladOnbekend": "blad {{ref}}, niet in dit project",
+    "bronPagina": "p. {{n}}"
   }
 }

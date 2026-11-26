@@ -41,6 +41,7 @@ export {
   drieDVlakken, drieDBeeldvlak, drieDGrenzen, drieDGrootte, drieDSvg, DRIE_D_KLEUREN, type DrieDVlak,
 } from './drieD.js';
 export { iframeAdres, IFRAME_MIN_MM, IFRAME_MAX_MM, IFRAME_STANDAARD_MM } from './iframeBlok.js';
+export { BRON_RE, leesBron, bronHtml, bronPlek, type BronVerwijzing } from './bronBlok.js';
 export { jsHost, JS_BIBLIOTHEKEN } from './jsBlok.js';
 export { leesIfcx, ifcxNaarScene, type IfcxElement, type IfcxGelezen } from './ifcxLezen.js';
 export {
@@ -75,6 +76,7 @@ export {
   type IfcxDocument,
   type GraafGegevens,
   type VariantenGegevens,
+  type ControleGegevens,
 } from './ifc-generator.js';
 export type {
   IfcxBestand,

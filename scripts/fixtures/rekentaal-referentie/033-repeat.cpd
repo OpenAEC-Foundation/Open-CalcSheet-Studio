@@ -1,0 +1,4 @@
+n = 0
+#repeat 3
+n = n + 2
+#end repeat

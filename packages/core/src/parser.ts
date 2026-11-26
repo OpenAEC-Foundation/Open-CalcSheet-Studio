@@ -7,6 +7,7 @@ import { vervangVerwijzingen } from './verwijzing.js';
 import { PROCENT_IN_NAAM, naamMetProcent } from './naam.js';
 import { voegIncludesIn, type IncludeMelding, type IncludeStaat } from './include.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';
+import { BRON_RE, bronHtml, leesBron } from './bronBlok.js';
 import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
 import { TOETS_START_RE, leesToetsBlok } from './toetsBlok.js';
 import { FEM_START_RE, leesFemBlok } from './femBlok.js';
@@ -297,7 +298,8 @@ function alleenInCode(source: string, fn: (code: string) => string, inLastBlok?:
       if (/^@img\(/.test(t)) return regel;
       // Idem voor een adres in `@iframe`, en de opties van `@ifcx`; hun `{{…}}`
       // krijgt dezelfde herschrijvingen bij het inlezen (normaliseer3d).
-      if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t)) return regel;
+      // En de verwijzing van `@bron` (bronBlok.ts): een pad, adres en paginanummer.
+      if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t) || BRON_RE.test(t)) return regel;
       let uit = '';
       let stuk = '';
       let code = true;
@@ -348,7 +350,7 @@ function stripDollarSuffix(source: string): string {
       }
       if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t) || KERN_START_RE.test(t) || LAST_START_RE.test(t)) in3d = true;
       // Een dollarteken in een adres is geen achtervoegsel van een naam.
-      if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t)) return regel;
+      if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t) || BRON_RE.test(t)) return regel;
       return regel.replace(/([\p{L}\p{N}_])\$/gu, '$1');
     })
     .join('\n');
@@ -1405,6 +1407,14 @@ function parseLines(
     const jsMatch = trimmed.match(JS_PLEK_RE);
     if (jsMatch) {
       nodes.push(markHidden({ type: 'js', ...leesJsBlok(jsMatch[2], state.jsBlokken[Number(jsMatch[1])], normaliseer3d) }, state));
+      i++;
+      continue;
+    }
+
+    // @bron #4 p. 57 "NEN-EN 1995-1-1, 6.1.7" (bronBlok.ts): een tekstregel met de verwijzing.
+    const bronMatch = trimmed.match(BRON_RE);
+    if (bronMatch) {
+      nodes.push(markHidden({ type: 'text', text: bronHtml(leesBron(bronMatch[1] ?? '')), html: true }, state));
       i++;
       continue;
     }

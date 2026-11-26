@@ -5,6 +5,32 @@ kern (`packages/core`) rekent de regels van boven naar beneden door en toont bij
 uitkomst `naam = formule = ingevulde waarden = resultaat`. Bestanden met de extensie `.cpd`
 zijn in deze taal geschreven.
 
+## Referentieversie
+
+Referentieversie: **1.0** (26-11-2026, kern 2026.48.0).
+
+Wat de rekentaal doet, ligt vast in een openbare set gevallen:
+`scripts/fixtures/rekentaal-referentie/`. Elk geval is een `.cpd` met de rekentekst en een
+`.json` met de verwachte uitkomst: de uitkomst als tekst (`"22.5 kN m"`), de eenheid, het
+onafgeronde getal, een foutmelding, of wat er in de uitwerking staat. Versie 1.0 heeft 59
+gevallen over tekst en koppen, rekenen, eenheden, invoervelden en keuzelijsten,
+voorwaarden, herhalingen, functies, macro's en `#include`, matrices, opzoeken, namen,
+opmaak, verwijzingen naar een ander blad, `@last`, grafieken en fouten. Bij elk geval staat
+in de omschrijving de handberekening.
+
+- **Controle:** `scripts/check-rekentaal-referentie.mjs` draait alle gevallen, bij elke
+  wijziging (onderdeel van `check-alles` en dus van CI). Een ander programma dat deze
+  rekentaal leest, kan dezelfde gevallen gebruiken.
+- **De versie:** `referentie.json` in de map houdt de versies bij, elk met de sha256 van
+  de gevallen. Verandert er een geval of komt er een bij, dan zakt de controle tot er een
+  nieuwe versie in `referentie.json` staat, met dezelfde versie hierboven. Een verwachting
+  wijzigen betekent dat de taal anders rekent: een nieuwe referentieversie, met in
+  `wijziging` wat er anders is. `--hash` geeft de hash van de gevallen zoals ze nu zijn.
+- **Wat de set vastlegt dat je misschien niet verwacht:** een uitkomst staat op vier
+  significante cijfers (`666700 mm^3`), `:F2` verandert alleen de weergave, een
+  variabele gaat voor een eenheid met dezelfde naam (met `m = 2` is `10 m` gelijk aan 20),
+  een regel binnen `#hide` komt niet in de uitwerking, en `1/0` is `∞` en geen fout.
+
 ## Rekenen
 
 - **Formules met eenheden:** `mm`, `kN`, `N/mm²`, `mm⁴`, … via de eenheden van mathjs.
@@ -35,6 +61,23 @@ zijn in deze taal geschreven.
   eenheid van de bladtekst.
 - **Temperatuur** rekent niet om naar een ander stelsel: in een blad is het bijna altijd
   een verschil. Voet-en-inch met breuken (5'-6 ½") komt later.
+  - `20 degC to K` is 293,15 K, `68 degF to degC` is 20 °C, en `20 degC + 10 K` is 30 °C.
+  - In een product geldt een temperatuur als verschil: `α_T*(30 degC - 10 degC)` met
+    `α_T = 1.2e-5/K` is 2,4·10⁻⁴, met α in 1/K of in 1/degC.
+  - Let op: `30 degC - 10 degC` blijft 20 °C, en `to K` maakt daar 293,15 K van, een
+    absolute temperatuur. Schrijf een verschil daarom in K (`ΔT = 20 K`).
+- **Toerental:** `rpm` is een frequentie, omwentelingen per minuut: `1500 rpm to Hz` is
+  25 Hz. Een hoeksnelheid schrijf je als `ω = 2*pi*n to 1/s` (157,1 1/s), zonder `rad`:
+  dat heeft in de rekenbibliotheek een eigen dimensie, en dan rekent `M*ω` niet meer naar
+  kW (0,5 kNm · 157,1 1/s = 78,54 kW).
+- **Elektrisch:** `V`, `A`, `W`, `VA`, `ohm` (met voorvoegsels: `kohm`), `C` en `kWh`, ook met
+  voorvoegsels als `mA` en `kV`. Het teken Ω kan niet als eenheid: schrijf `ohm`. Pas op met
+  een variabele die zo heet: een variabele gaat voor een eenheid met dezelfde naam, dus na
+  `A = 300 mm^2` is `10 A` geen stroom meer.
+- **Nul:** `0 kN` blijft een kracht en rekent overal mee (`0 kN to N`, `0 kN/(2 m)`); een
+  deling door nul geeft ∞ en `0/0` geeft NaN, geen fout.
+- **Controle:** `scripts/check-eenheden-randgevallen.mjs` (nul, temperatuur, toerental,
+  elektrisch, met de handberekeningen bovenin).
 - **Eenhedenstelsel:** `evaluate(nodes, waarden, scope, { stelsel })` toont elke waarde in de
   eenheid van zijn grootheid (`STELSELS` in `eenheidstelsel.ts`: SI (mm), SI (m) en US
   customary). Alleen de weergave verandert: `result`, `unit` en `waarde` blijven in de
@@ -136,6 +179,71 @@ plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent he
   als de letter `ǂ`, zie `packages/core/src/naam.ts`; typ die niet zelf.)
 - `take`, `hlookup`, `hlookup_ge`, `hlookup_le`, `vlookup`, `get`, ook op matrices
 - `@select var "Label" … @end` voor een keuzelijst, bijvoorbeeld een materiaal
+- `@bron #4 p. 57 "NEN-EN 1995-1-1, 6.1.7"` voor een verwijzing naar een pagina in een eigen PDF
+
+## Een normartikel in een eigen PDF: `@bron`
+
+Een regel koppelt een normartikel aan de pagina in een PDF van de gebruiker:
+
+```text
+@bron #4 p. 57 "NEN-EN 1995-1-1, 6.1.7(2)"
+@bron "D:\Normen\NEN-EN 1993-1-1.pdf" p. 41 "NEN-EN 1993-1-1, 6.2.5"
+@bron https://voorbeeld.nl/norm.pdf p. 3 "Norm"
+```
+
+- **Het doel:** het kenmerk van een PDF-blad in het project (`#4`), een pad op schijf of een
+  adres (http of https). Een pad met spaties staat tussen dubbele aanhalingstekens. Daarna
+  de pagina (`p. 57`, `p.57`, `pagina 57`, `page 57`) en tussen aanhalingstekens de norm en
+  het artikel. Pagina en omschrijving mogen weg. Alleen nummers en een eigen omschrijving:
+  geen normtekst in het blad.
+- **Op het scherm** staat *Bron:* met de omschrijving als link, en erachter het PDF-blad met
+  zijn naam (of de bestandsnaam) en de pagina. Een klik op een PDF-blad opent dat blad op
+  die pagina; een adres opent in de browser met `#page=`; een pad op schijf opent in de
+  app in een venster op die pagina (alleen een `.pdf`, en alleen in de app op de computer:
+  de browser kan geen pad lezen). Een blad dat er niet is of geen PDF is, geeft een melding.
+- **Op papier** staat dezelfde regel als bronvermelding, zonder link:
+  *Bron: NEN-EN 1995-1-1, 6.1.7(2) (blad #4 Normtekst hout, p. 57)*.
+- **Rekenen** verandert er niet door; binnen `#hide` staat de regel er niet. Het pad of adres
+  blijft letterlijk (de kern leest er geen namen of verwijzingen in).
+- **Samenhang met de normbestanden:** het tabblad *Normbestanden* bewaart PDF's alleen op
+  deze computer; een PDF-blad gaat mee in het projectbestand. Voor een verwijzing die bij
+  een collega ook werkt: een PDF-blad (let op het auteursrecht van de norm), of een pad op
+  een gedeelde schijf.
+- **Waar:** `packages/core/src/bronBlok.ts` (lezen en de html), in de app
+  `components/calc/bronnen.ts` (invullen en openen) en `BronVenster.tsx`. Controle:
+  `scripts/check-bronnen.mjs`.
+
+## Keuzes uit de nationale bijlage: `//@nb`
+
+Een blad merkt een waarde die uit de nationale bijlage komt met een commentaarregel:
+
+```text
+γ_M0 = 1.0
+//@nb γ_M0 6.1(1)
+```
+
+- **De regel:** `//@nb naam artikel`, op een eigen regel, meestal direct onder de toekenning.
+  Voor de rekentaal is het commentaar (zoals `//@eenheid` van het canvas-blad): het rekenen
+  verandert er niet door. Schrijf in het artikel alleen nummers (`6.1(1)`, `NB.2 – A1.1`),
+  geen normtekst.
+- **De waarde** is de laatste uitkomst van die naam, ook als hij verborgen staat (`#hide`).
+  Een merkteken in een tak van `#if` die niet geldt, of bij een naam die het blad niet
+  uitrekent, telt niet mee: zo merkt de ligger γ_M0 en γ_M1 voor staal, en staan ze bij hout
+  niet in de tabel. Een verkeerd gespelde naam verdwijnt daardoor ook uit de tabel.
+- **Uit de projectgegevens** komen erbij: `K_FI`, `windgebied` en `terreincategorie`, als de
+  rekentekst ze noemt (niet in commentaar).
+- **In beeld:** onder de uitwerking een tabel *Gekozen waarden uit de nationale bijlage*
+  (symbool, waarde, artikel), met daarboven de nationale bijlage die de projectgegevens voor
+  de normen van het blad vastleggen ([projectmodel.md](projectmodel.md#normen-en-nationale-bijlagen)).
+  Op papier staat de tabel onder het blad, alleen bij een blad met een merkteken: een blad
+  zonder blijft op papier gelijk.
+- **In de modules:** de ligger merkt γ_M0 en γ_M1 (staal), de balklaag ψ_0 en ψ_2.
+- **Samenhang met de landenkeuze (pull request #30):** #30 zegt per blad of het op een andere
+  norm of bijlage rust dan het land van het project. Deze tabel laat zien wélke waarden uit
+  een bijlage komen; met #30 erbij is dat het lijstje dat in een ander land opnieuw moet
+  worden bekeken.
+- **Waar:** `components/calc/nbKeuzes.ts` (lezen, ook in de rekenworker) en `NbKeuzesTabel`
+  in `components/calc/BladNormen.tsx`. Controle: `scripts/check-nb-keuzes.mjs`.
 
 ## `#include` van een bestand op schijf
 

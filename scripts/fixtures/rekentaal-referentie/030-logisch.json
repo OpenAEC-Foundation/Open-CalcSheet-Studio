@@ -1,0 +1,8 @@
+{
+  "onderdeel": "voorwaarden",
+  "omschrijving": "and en or geven waar of niet waar.",
+  "uitkomst": {
+    "a": "false",
+    "b": "true"
+  }
+}

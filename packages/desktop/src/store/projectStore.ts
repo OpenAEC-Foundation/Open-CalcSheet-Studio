@@ -35,6 +35,7 @@ import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
 import { MARIMO_BLAD, type MarimoNotebook } from "./marimoBlad";
 import { metBladRefs } from "./bladRefs";
 import { variantInvoer, type Varianten } from "./varianten";
+import type { Controle, Registratie } from "./controle";
 import type { IncludeKopie } from "./includes";
 
 const STORE_KEY = "projectState";
@@ -149,6 +150,11 @@ export interface Exemplaar {
    * (store/varianten.ts). Ontbreekt bij een blad zonder varianten.
    */
   varianten?: Varianten;
+  /**
+   * De toetsregistratie van dit blad (vier ogen, store/controle.ts): elke controle met de
+   * hash van de gecontroleerde stand. Ontbreekt bij een blad dat niet is gecontroleerd.
+   */
+  controle?: Controle;
   /**
    * De bestanden op schijf die dit blad met `#include` invoegt, met een kopie van de
    * laatst gelezen tekst (store/includes.ts). Ontbreekt bij een blad zonder.
@@ -307,6 +313,8 @@ interface ProjectState {
    * ongedaan maken; met `sleutel` (een cel) is doortypen in dezelfde cel één stap.
    */
   zetVarianten: (id: string, varianten: Varianten | undefined, sleutel?: string) => void;
+  /** Een controle (vier ogen) erbij voor een blad; de eerdere blijven staan. Eén stap ongedaan maken. */
+  registreerControle: (id: string, registratie: Registratie) => void;
   /** De invoer van een variant wordt de invoer van het blad. Eén stap ongedaan maken. */
   neemVariantOver: (id: string, variantId: string) => void;
   /**
@@ -741,8 +749,9 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
   dupliceer: (id) => {
     const gevonden = get().exemplaren.find((e) => e.id === id);
     if (!gevonden) return null;
-    // Zonder het kenmerk van het origineel: de kopie krijgt een eigen (metBladRefs).
-    const { ref: _ref, ...bron } = gevonden;
+    // Zonder het kenmerk van het origineel: de kopie krijgt een eigen (metBladRefs). Ook
+    // zonder de controle: een vrijgave hoort bij het blad dat gecontroleerd is.
+    const { ref: _ref, controle: _controle, ...bron } = gevonden;
     const nieuw: Exemplaar = {
       ...bron,
       id: nieuweId(),
@@ -880,6 +889,18 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       };
     }),
 
+  registreerControle: (id, registratie) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: s.exemplaren.map((e) =>
+          e.id === id ? { ...e, controle: { registraties: [...(e.controle?.registraties ?? []), registratie] } } : e,
+        ),
+        dirty: true,
+      };
+    }),
+
   neemVariantOver: (id, variantId) =>
     set((s) => {
       const ex = s.exemplaren.find((e) => e.id === id);
@@ -898,7 +919,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
     const v = bron?.varianten?.lijst.find((x) => x.id === variantId);
     if (!bron || !v) return null;
     // Een eigen blad: een eigen kenmerk (metBladRefs), en zonder de varianten van het blad.
-    const { varianten, ref: _ref, ...rest } = bron;
+    const { varianten, ref: _ref, controle: _controle, ...rest } = bron;
     const nieuw: Exemplaar = {
       ...rest,
       id: nieuweId(),

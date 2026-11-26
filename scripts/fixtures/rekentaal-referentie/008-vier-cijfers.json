@@ -1,0 +1,11 @@
+{
+  "onderdeel": "rekenen",
+  "omschrijving": "Een uitkomst staat op vier significante cijfers: 2/3 = 0,6667 en 1,1·100 = 110.",
+  "uitkomst": {
+    "x": "0.6667",
+    "y": "110"
+  },
+  "getallen": {
+    "x": 0.6666666666666666
+  }
+}

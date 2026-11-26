@@ -97,6 +97,8 @@ export interface IfcCalcSheet {
   toetsingen?: Record<string, VastgelegdeToets>;
   /** Varianten van het blad: andere invoer naast het blad, met per variant alleen de eigen waarden. */
   varianten?: VariantenGegevens;
+  /** De toetsregistratie (vier ogen) van het blad: controleur, datum, uitkomst, vrijgave met hash. */
+  controle?: ControleGegevens;
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */
@@ -114,6 +116,30 @@ export interface VariantenGegevens {
   opPapier?: boolean;
   zoek?: unknown;
   lijst: { id: string; naam: string; waarden: Record<string, string>; gezocht?: string[] }[];
+}
+
+/**
+ * De toetsregistratie van een blad (`ocss::blad::controle`): elke controle met wie, wanneer,
+ * de uitkomst en de opmerkingen, en de hashes van de stand die gecontroleerd is. De app
+ * leest ze na (store/controle.ts) en vergelijkt de hashes met de stand van nu.
+ */
+export interface ControleGegevens {
+  registraties: {
+    id: string;
+    controleur: string;
+    /** De datum van de controle, JJJJ-MM-DD. */
+    datum: string;
+    /** akkoord, opmerkingen of afgekeurd. */
+    uitkomst: string;
+    opmerkingen: string;
+    /** Vrijgegeven: vanaf hier geldt de stand met deze hashes. */
+    vrijgegeven: boolean;
+    /** Het moment van vastleggen, ISO 8601. */
+    tijd: string;
+    rekenversie?: string;
+    /** sha256 (hex) van de rekentekst, de invoer, de uitkomst en het geheel. */
+    hash: { rekentekst: string; invoer: string; uitkomst: string; totaal: string };
+  }[];
 }
 
 /** De graaf van een grafblad, zoals hij in een project staat: nodes en verbindingen, geen uitkomsten. */

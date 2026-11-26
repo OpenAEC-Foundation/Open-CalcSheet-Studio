@@ -1,0 +1,8 @@
+{
+  "onderdeel": "namen",
+  "omschrijving": "Een komma in de index en een punt in de naam worden een liggend streepje.",
+  "uitkomst": {
+    "V_b_0": "27 m / s",
+    "Cs_Cd": "0.9"
+  }
+}
