@@ -601,8 +601,11 @@
       "eenheid": "vienetas",
       "min": "min",
       "max": "maks",
-      "stap": "žingsnis"
+      "stap": "žingsnis",
+      "schuif": "Rodyti arba slėpti slankiklį ir ribas"
     },
+    "uitkomstTonen": "Rodyti rezultatą (H)",
+    "uitkomstVerbergen": "Slėpti rezultatą (H)",
     "soort": {
       "getal": "Skaičius",
       "tekst": "Tekstas",
