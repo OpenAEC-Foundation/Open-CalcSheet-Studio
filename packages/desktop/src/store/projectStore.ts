@@ -249,6 +249,11 @@ interface ProjectState {
 
   zetBron: (id: string, source: string) => void;
   zetWaarde: (id: string, naam: string, waarde: string) => void;
+  /**
+   * Meerdere waarden van één blad tegelijk, in één stap van de geschiedenis: een poer uit
+   * een palenplan, of een vastgelegde revisie (components/calc/PoerKoppeling.tsx).
+   */
+  zetWaarden: (id: string, waarden: Record<string, string>) => void;
   /** Vult ontbrekende waarden aan; bestaande blijven staan. */
   seedWaarden: (id: string, defaults: Record<string, string>) => void;
   /**
@@ -758,6 +763,16 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
         e.id === id ? { ...e, waarden: { ...e.waarden, [naam]: waarde } } : e,
       ),
       dirty: true,
+      };
+    }),
+
+  zetWaarden: (id, waarden) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id) || Object.keys(waarden).length === 0) return s;
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, waarden: { ...e.waarden, ...waarden } } : e)),
+        dirty: true,
       };
     }),
 

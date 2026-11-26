@@ -587,5 +587,63 @@
         "randbeugel": "Kraštinė apkaba"
       }
     }
+  },
+  "poerKoppeling": {
+    "kop": "Polių planas ir redakcija",
+    "revisieTitel": "redakcija {{nr}}",
+    "revisieVast": "Redakcija {{nr}}, užfiksuota {{datum}}.",
+    "revisieNieuw": "Redakcija {{nr}}, dar neužfiksuota. Išsaugojus kaip DXF arba IFCX ji užfiksuojama.",
+    "vastleggen": "Užfiksuoti redakciją",
+    "sinds": "Pakeista nuo redakcijos {{nr}}:",
+    "inRevisie": "Pakeista, palyginti su redakcija {{nr}}:",
+    "meer": "… dar {{n}}",
+    "nieuw": "nauja",
+    "vervallen": "pašalinta",
+    "poerId": "Rostverko ID: {{id}}",
+    "bron": "(iš {{bestand}})",
+    "poerIdLos": "Nesusieta su polių planu; IFC išvestis išlaiko pastovius šio lapo kelius.",
+    "inlezen": "Nuskaityti polių planą (IFCX)…",
+    "gelezen": "{{bestand}}: rostverkų {{n}}",
+    "fout": "Šis failas nėra nuskaitomas IFCX: {{fout}}",
+    "nietInPlan": "Rostverko {{id}} šiame polių plane nėra.",
+    "gelijk": "Lapas atitinka polių planą.",
+    "verschillen": "Skiriasi nuo polių plano:",
+    "inPlanVeranderd": "pakeista plane",
+    "inBladVeranderd": "kitaip lape",
+    "overnemen": "Perimti iš polių plano",
+    "palen": "polių: {{n}}",
+    "inDitBlad": "Į šį lapą",
+    "alsNieuwBlad": "Kaip naują lapą",
+    "geenBlad": "netinka jokiam rostverko lapui",
+    "uitleg": "Armavimo detalė, DXF ir IFCX visada gaunami iš šio lapo įvesties. Tai, ką ranka pakeičiate nubraižytoje detalėje, nauja išvestimi neišsaugoma. Redakcijos numeris didėja, kai tik pasikeičia matmenys ar strypai, taip pat dėl pakeitimo polių plane; sąraše matyti, kas kitaip. Rostverko ir polių ID nesikeičia ir yra IFCX faile.",
+    "sleutels": {
+      "poer": "Rostverkas",
+      "palen": "Poliai",
+      "paal": "Polis",
+      "kolom": "Kolona",
+      "staaf": "Strypai",
+      "hoogte": "Aukštis"
+    },
+    "velden": {
+      "poer_id": "rostverko ID",
+      "paal_ids": "poliai",
+      "plan_x": "padėtis x",
+      "plan_y": "padėtis y",
+      "plan_z": "apačia",
+      "plan_hoek": "pasukimas"
+    },
+    "meldingen": {
+      "geenPoeren": "Šiame faile nėra rostverkų (IfcFooting).",
+      "lossePalen": "Poliai be rostverko: {{n}}.",
+      "dubbeleId": "ID {{id}} pasikartoja.",
+      "aantalPalen": "Polių: {{n}}. Rostverko lapas skirtas dviem, trims arba keturiems poliams.",
+      "nietSymmetrisch": "Rostverkas nėra simetriškas polių atžvilgiu; lapas jį taip išdėsto.",
+      "geenRechthoek": "Pagrindo kontūras nėra stačiakampis; lapas skaičiuoja su gaubiančiu stačiakampiu.",
+      "palenRechthoek": "Poliai neišdėstyti stačiakampiu; lapas juos taip išdėsto.",
+      "palenDriehoek": "Poliai neišdėstyti lygiakraščiu trikampiu; lapas juos taip išdėsto.",
+      "vormDriehoek": "Pagrindo kontūras nėra trikampis su nusklembtais kampais vienodu atstumu nuo polių; lapas skaičiuoja su mažiausiu atstumu.",
+      "ongelijkePalen": "Poliai nevienodo dydžio; lapas skaičiuoja su didžiausiu.",
+      "kolomMidden": "Kolona nėra polių centre; lapas ją ten pastato."
+    }
   }
 }

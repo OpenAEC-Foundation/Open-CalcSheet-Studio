@@ -53,6 +53,9 @@ const ATTR = {
   aantal: "ocss::calc::aantalStaven",
   getoond: "ocss::calc::aantalGetoond",
   opmerking: "ocss::calc::opmerking",
+  poerId: "ocss::poer::id",
+  paalId: "ocss::paal::id",
+  revisie: "ocss::revisie",
 } as const;
 
 /** De beschrijving van de eigen attributen in een los document. */
@@ -62,7 +65,44 @@ export const POER_IFCX_SCHEMAS: Record<string, IfcxSchema> = {
   [ATTR.aantal]: { value: { dataType: "Integer" } },
   [ATTR.getoond]: BALKLAAG_IFCX_SCHEMAS[ATTR.getoond],
   [ATTR.opmerking]: BALKLAAG_IFCX_SCHEMAS[ATTR.opmerking],
+  [ATTR.poerId]: { value: { dataType: "String" } },
+  [ATTR.paalId]: { value: { dataType: "String" } },
+  [ATTR.revisie]: { value: { dataType: "Integer" } },
 };
+
+/**
+ * De koppeling van een poer met een palenplan en zijn revisie (palenplan.ts, poerRevisie.ts):
+ * de vaste id van de poer en zijn palen, het revisienummer van het detail, en de plaats en
+ * draaiing in het plan (mm en graden). Zonder koppeling staat de poer op de oorsprong.
+ */
+export interface PoerKoppelingIfcx {
+  poerId?: string | null;
+  paalIds?: string[];
+  revisie?: number;
+  plaatsing?: { x: number; y: number; z: number; hoek: number } | null;
+}
+
+/** De attributen van de koppeling op de wortel van een poer: id, revisie en plaats. */
+export function koppelAttributen(k: PoerKoppelingIfcx): Record<string, unknown> {
+  const uit: Record<string, unknown> = {};
+  if (k.poerId) uit[ATTR.poerId] = k.poerId;
+  if (k.revisie && k.revisie > 0) uit[ATTR.revisie] = Math.round(k.revisie);
+  const p = k.plaatsing;
+  if (p && [p.x, p.y, p.z, p.hoek].every(Number.isFinite)) {
+    const h = (p.hoek * Math.PI) / 180;
+    const c = Math.round(Math.cos(h) * 1e12) / 1e12;
+    const s = Math.round(Math.sin(h) * 1e12) / 1e12;
+    uit[ATTR.plaatsing] = { transform: [[c, s, 0, 0], [-s, c, 0, 0], [0, 0, 1, 0], [naarM(p.x), naarM(p.y), naarM(p.z), 1]] };
+  }
+  return uit;
+}
+
+/** De vaste id van paal `i` (vanaf 0), als het plan er een gaf. */
+export const paalIdAttribuut = (k: PoerKoppelingIfcx, i: number): Record<string, unknown> =>
+  k.paalIds?.[i] ? { [ATTR.paalId]: k.paalIds[i] } : {};
+
+/** De vaste id van de poer op het betonvolume. */
+export const poerIdAttribuut = (k: PoerKoppelingIfcx): Record<string, unknown> => (k.poerId ? { [ATTR.poerId]: k.poerId } : {});
 
 /** Het betonvolume is doorzichtig: de korf moet er doorheen te zien zijn. */
 const BETON_KLEUR = "#a8adb5";
@@ -258,7 +298,7 @@ export function poerModelTelling(p: PoerDefinitie): { totaal: number; getoond: n
  * De eerste knoop is de wortel (IfcElementAssembly); de paden zijn vaste UUID's, afgeleid
  * van `bladId`. Null als de poer geen volume heeft: dan is er niets te tekenen.
  */
-export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTeksten = NEDERLANDS): IfcxKnoop[] | null {
+export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTeksten = NEDERLANDS, koppeling: PoerKoppelingIfcx = {}): IfcxKnoop[] | null {
   if (!(p.l > 0 && p.b > 0 && p.h > 0)) return null;
   const pad = (naam: string) => uuidVan(`${bladId}/tweepaalspoer/${naam}`);
   const knopen: IfcxKnoop[] = [];
@@ -299,6 +339,7 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
       [ATTR.lengte]: naarM(p.l),
       [ATTR.breedte]: naarM(p.b),
       [ATTR.hoogte]: naarM(p.h),
+      ...poerIdAttribuut(koppeling),
     },
   });
   kinderen.Poer = poerPad;
@@ -323,6 +364,7 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
           [ATTR.dikte]: naarM(p.paal.y),
           [ATTR.opmerking]: t.alleenAanzet,
           [ATTR.plaatsing]: verplaatsing(x, 0, 0),
+          ...paalIdAttribuut(koppeling, i),
         },
       });
       kinderen[`Paal_${i + 1}`] = q;
@@ -468,6 +510,7 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
       [ATTR.klasse]: ifcKlasse("IfcElementAssembly"),
       [ATTR.naam]: t.tweepaalspoer,
       [ATTR.omschrijving]: `${t.tweepaalspoer} ${getal(p.l)}×${getal(p.b)}×${getal(p.h)}, ${t.hartOpHart} ${getal(p.a)}`,
+      ...koppelAttributen(koppeling),
     },
   };
   return [wortel, ...knopen];
@@ -478,10 +521,10 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
  * knopen, met een vast tijdstip: gelijke invoer geeft zo een gelijk document. Bij het
  * bewaren komt het echte tijdstip erin (ifcxBewaren.ts).
  */
-export function poerIfcxDocument(p: PoerDefinitie, opties: { bladId?: string; teksten?: PoerModelTeksten } = {}): IfcxBestand | null {
+export function poerIfcxDocument(p: PoerDefinitie, opties: { bladId?: string; teksten?: PoerModelTeksten; koppeling?: PoerKoppelingIfcx } = {}): IfcxBestand | null {
   const bladId = opties.bladId ?? "tweepaalspoer";
   const t = opties.teksten ?? NEDERLANDS;
-  const knopen = poerIfcxKnopen(p, bladId, t);
+  const knopen = poerIfcxKnopen(p, bladId, t, opties.koppeling);
   if (!knopen) return null;
   const pad = (naam: string) => uuidVan(`${bladId}/tweepaalspoer/ruimte/${naam}`);
   const laag = (naam: string, klasse: string, titel: string, kinderen: Record<string, string>): IfcxKnoop => ({

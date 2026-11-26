@@ -234,6 +234,13 @@ tweepaalspoer (`components/calc/poerIfcx.ts`) en de poer op drie of vier palen
 Palen en kolom zijn alleen de aanzet; hun lengte staat niet in het blad. Het document van
 de tweepaalspoer is ook het 3D-model in het beeld van de poer.
 
+De samenstelling van een poer draagt het revisienummer van zijn detail (`ocss::revisie`,
+geheel getal, zie [tweepaalspoer-toetsing.md](tweepaalspoer-toetsing.md), §10). Komt de
+poer uit een palenplan, dan dragen de samenstelling en de `IfcFooting` de vaste id van de
+poer (`ocss::poer::id`) en elke `IfcPile` die van zijn paal (`ocss::paal::id`), en staat
+de samenstelling met `usd::xformop` op zijn plaats en in zijn draaiing in het plan. Zonder
+palenplan staat de poer op de oorsprong en zijn er alleen de vaste paden van het blad.
+
 ## Koppelen aan een bestaand model
 
 Een exemplaar kan vastleggen over wélke elementen in een bronmodel het gaat:

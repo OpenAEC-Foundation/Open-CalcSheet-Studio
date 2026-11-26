@@ -196,3 +196,8 @@ met de omtrek van de poer, de palen en de kolom als aanzet, en elke staaf als ee
 IfcReinforcingBar met een buis langs de hartlijn, met de bochten, en met merk, diameter
 en lengte. Op het scherm is hij als IFCX te bewaren. `scripts/check-poer-staaflijst.mjs`
 controleert dit alles, met de handberekening in de kop.
+
+Palen en poer overnemen uit een palenplan, de vaste ids en de revisies van het detail
+gaan zoals bij de tweepaalspoer ([tweepaalspoer-toetsing.md](tweepaalspoer-toetsing.md),
+§10). Bij drie palen kiest de lezer als bovenste paal van het blad de paal die in het plan
+het dichtst bij de y-as boven het midden staat, en zet de draaiing in `plan_hoek`.
