@@ -198,6 +198,16 @@ brug gereed is. Open een project via de API en gebruik
 `POST /api/v1/report/export/pdf` met het absolute uitvoerpad in het veld
 `path`. Beëindig na de export het gestarte proces.
 
+## Een server zonder app: de rekendienst
+
+Voor een server, een pijplijn of de OpenAEC SuperCloud is er een losse rekendienst in
+Node, zonder WebView: [rekendienst.md](rekendienst.md). Hij heeft dezelfde routes en
+schema's onder `/api/v1` (en dezelfde onder `/v1`), met API-sleutels in plaats van het
+token van de app, een project per MCP-sessie of per verzoek, en geen paden op de server:
+een project gaat als inhoud mee. De tools die het venster of bestanden op paden nodig
+hebben, zitten er niet in; daarvoor in de plaats komen `project_load`,
+`project_export`, `project_evaluate`, `evaluate_sheet`, `list_includes` en `report_pdf`.
+
 ## Linux zonder zichtbaar venster
 
 Gebruik op een Linux-server met Xvfb en xauth

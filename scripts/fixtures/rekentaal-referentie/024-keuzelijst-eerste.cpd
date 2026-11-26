@@ -1,0 +1,5 @@
+@select staal "Staalsoort"
+  S235 = 235
+  S355 = 355
+@end
+f_y = staal*N/mm^2

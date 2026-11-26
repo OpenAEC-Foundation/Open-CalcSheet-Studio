@@ -9,6 +9,8 @@
  * opsplitsen in formule en tekst.
  */
 
+import type { IncludeStaat } from "@ifc-calc/core";
+
 /**
  * Detail bij het voorbeeldblad (templates/rekentaal-demo.ts, hoofdstuk 12): een
  * ligger met kopplaat op een kolom, schematisch.
@@ -45,9 +47,50 @@ const detailOplegging = `<svg viewBox="0 0 480 250" xmlns="http://www.w3.org/200
   <text x="470" y="244" text-anchor="end" style="fill:#64748b; font-size:10px">detail oplegging, schematisch</text>
 </svg>`;
 
-export const rekentaalIncludes: ReadonlyMap<string, string> = new Map([
+/** De bestanden die in de app zijn ingebouwd. Die gaan voor een bestand op schijf. */
+export const ingebouwdeIncludes: ReadonlyMap<string, string> = new Map([
   ["detail-oplegging.svg", detailOplegging],
 ]);
+
+/**
+ * De tabel voor `#include` bij het inlezen: de ingebouwde bestanden en de bestanden op
+ * schijf die de bladen van het open project invoegen, zoals ze laatst gelezen zijn
+ * (store/includes.ts). De app werkt hem bij (components/calc/includeBestanden.ts); elke
+ * plek die een blad inleest, gebruikt deze ene tabel, ook voor een blad waarnaar een
+ * ander blad verwijst.
+ */
+export const rekentaalIncludes: Map<string, string> = new Map(ingebouwdeIncludes);
+
+/** Per sleutel waarom een bestand er niet (vers) is; komt als melding in het blad (core: include.ts). */
+export const rekentaalIncludeStaat: Map<string, IncludeStaat> = new Map();
+
+let includeVersie = 0;
+const luisteraars = new Set<() => void>();
+
+/** Zet de bestanden van het project en hun stand; de doorrekening rekent dan opnieuw. */
+export function zetProjectIncludes(tabel: ReadonlyMap<string, string>, staat: ReadonlyMap<string, IncludeStaat>): void {
+  const zelfde = <T>(a: ReadonlyMap<string, T>, b: ReadonlyMap<string, T>) =>
+    a.size === b.size && [...a].every(([k, v]) => JSON.stringify(b.get(k)) === JSON.stringify(v));
+  if (zelfde(rekentaalIncludes, tabel) && zelfde(rekentaalIncludeStaat, staat)) return;
+  rekentaalIncludes.clear();
+  for (const [k, v] of tabel) rekentaalIncludes.set(k, v);
+  rekentaalIncludeStaat.clear();
+  for (const [k, v] of staat) rekentaalIncludeStaat.set(k, v);
+  includeVersie++;
+  for (const l of luisteraars) l();
+}
+
+/** Telt op bij elke wijziging van de tabel of de stand: hoort in de sleutel van een doorrekening. */
+export function rekentaalIncludeVersie(): number {
+  return includeVersie;
+}
+
+export function abonneerOpIncludes(l: () => void): () => void {
+  luisteraars.add(l);
+  return () => {
+    luisteraars.delete(l);
+  };
+}
 
 /**
  * Raster images referenced inline via `<img src="./Images/Picture0.png">`.

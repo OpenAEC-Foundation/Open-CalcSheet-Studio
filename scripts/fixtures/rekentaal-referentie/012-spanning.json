@@ -1,0 +1,7 @@
+{
+  "onderdeel": "eenheden",
+  "omschrijving": "σ = N_Ed/A = 150 000 N / 15 000 mm² = 10 N/mm².",
+  "uitkomst": {
+    "σ": "10 N / mm^2"
+  }
+}

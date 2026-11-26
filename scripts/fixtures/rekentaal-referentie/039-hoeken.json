@@ -1,0 +1,12 @@
+{
+  "onderdeel": "functies",
+  "omschrijving": "Een hoek met zijn eenheid: sin 30° = cos 60° = 0,5.",
+  "uitkomst": {
+    "s_a": "0.5",
+    "c_a": "0.5"
+  },
+  "getallen": {
+    "s_a": 0.5,
+    "c_a": 0.5
+  }
+}

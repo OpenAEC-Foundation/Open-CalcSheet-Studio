@@ -1,0 +1,2 @@
+b = 40
+'<svg><rect width="'b'"/></svg>

@@ -1,0 +1,7 @@
+{
+  "onderdeel": "eenheden",
+  "omschrijving": "Een variabele gaat voor een eenheid met dezelfde naam: met m = 2 is 10 m gelijk aan 20.",
+  "uitkomst": {
+    "x": "20"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "onderdeel": "invoer",
+  "omschrijving": "Een ingevulde waarde gaat voor de standaardwaarde: 2·7 m = 14 m.",
+  "invoer": {
+    "L": "7"
+  },
+  "uitkomst": {
+    "M": "14 m"
+  }
+}

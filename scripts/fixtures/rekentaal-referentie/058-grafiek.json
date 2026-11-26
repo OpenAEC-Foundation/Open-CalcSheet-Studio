@@ -1,0 +1,7 @@
+{
+  "onderdeel": "blokken",
+  "omschrijving": "$Plot tekent een grafiek als SVG in het blad.",
+  "html": [
+    "class=\"calc-plot\""
+  ]
+}

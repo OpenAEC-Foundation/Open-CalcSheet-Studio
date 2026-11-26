@@ -2,6 +2,8 @@ export { parse, type ParseOptions } from './parser.js';
 export { evaluate, evaluateMetScope, extractScope, setAngleMode, zetProjectEenheden, projectEenheidFouten, zetProjectTekst, type EvalOpties } from './evaluator.js';
 export { geldigeEenheidNaam } from './eenheden.js';
 export { verwijzingNaam, vervangVerwijzingen, leesVerwijzing, verwijzingenIn, verwijzingVanNaam, verwijzingenInMelding, leesCelVerwijzing, celVerwijzingTekst, celNaam, celVerwijzingenIn, isVerwijzingInvoer } from './verwijzing.js';
+export { PROCENT_IN_NAAM, naamInScope, naamMetProcent } from './naam.js';
+export { includeSleutel, includeNamen, includeNaam, includeMeldingTekst, isAbsoluutPad, leesmoment, type IncludeMelding, type IncludeSoort, type IncludeStaat } from './include.js';
 export type { CelVerwijzing, CelFout, CelWaarde } from './verwijzing.js';
 export { STELSELS, grootheidVan, decimalenNa, doelInStelsel, toonInvoer, invoerNaarBron, omrekenen, eenheidUitBeeld, eenheidInBeeld, type Grootheid, type Stelsel } from './eenheidstelsel.js';
 export { rekenUitdrukking, uitkomstTekst } from './evaluator.js';
@@ -39,6 +41,7 @@ export {
   drieDVlakken, drieDBeeldvlak, drieDGrenzen, drieDGrootte, drieDSvg, DRIE_D_KLEUREN, type DrieDVlak,
 } from './drieD.js';
 export { iframeAdres, IFRAME_MIN_MM, IFRAME_MAX_MM, IFRAME_STANDAARD_MM } from './iframeBlok.js';
+export { BRON_RE, leesBron, bronHtml, bronPlek, type BronVerwijzing } from './bronBlok.js';
 export { jsHost, JS_BIBLIOTHEKEN } from './jsBlok.js';
 export { leesIfcx, ifcxNaarScene, type IfcxElement, type IfcxGelezen } from './ifcxLezen.js';
 export {
@@ -73,6 +76,7 @@ export {
   type IfcxDocument,
   type GraafGegevens,
   type VariantenGegevens,
+  type ControleGegevens,
 } from './ifc-generator.js';
 export type {
   IfcxBestand,
