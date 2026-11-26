@@ -939,5 +939,48 @@ console.log("\nModel versie 2");
   });
 }
 
+// ── Iconen en het beeld van een node ────────────────────────────────────────
+console.log("\nIconen en het beeld van een node");
+{
+  const N = await import("../packages/desktop/src/graaf/nodes.ts");
+  const M = await import("../packages/desktop/src/graaf/model.ts");
+  const hier = dirname(fileURLToPath(import.meta.url));
+  const sprite = readFileSync(join(hier, "../packages/desktop/public/icons/graaf.svg"), "utf8");
+  const BEDIENING = ["object.show", "object.hide", "selection.box", "list.group-by", "draw.note", "view.search", "view.orbit", "edit.delete", "edit.copy", "ui.more", "status.warning"];
+  const proef = (naam, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      meld(false, `${naam}: ${e.message}`);
+    }
+  };
+  proef("iconen", () => {
+    const ids = new Set([...Object.values(N.GROEP_ICOON), ...NODE_SOORTEN.map((s) => N.nodeIcoon(s)), N.nodeIcoon("bestaatNiet"), ...BEDIENING]);
+    const mist = [...ids].filter((id) => !sprite.includes(`id="i16-${id}"`) || !sprite.includes(`id="i24-${id}"`));
+    meld(Object.keys(N.GROEP_ICOON).length === 6 && mist.length === 0, `iconen: elke groep, node en knop heeft zijn icoon in graaf.svg (16 en 24 px)${mist.length ? `: mist ${mist}` : ""}`);
+    meld(N.nodeIcoon("codeblok") === "category.code" && N.nodeIcoon("som") === N.GROEP_ICOON.lijst && N.nodeIcoon("bestaatNiet") === "status.warning",
+      "iconen: een eigen icoon, anders dat van de groep, onbekend een waarschuwing");
+  });
+  const t = { naamVan: (n) => n.naam ?? n.soort, poort: (_n, p) => p, melding: (x) => x.code, meer: (n) => `+${n}` };
+  proef("kop_hoogte", () => {
+    const { g, ids } = bouw([["c", "codeblok", { code: "y = x * 2" }]]);
+    const n = g.nodes.find((x) => x.id === ids.c);
+    const p = poortPlek(n, poortenVan(n), "in", "x");
+    meld(N.KOP_HOOGTE === 34 && p.y === n.y + 34 + 13, "kop_hoogte: de eerste poort op 34 + 13 px onder de bovenkant", JSON.stringify(p));
+  });
+  proef("papier_verborgen", () => {
+    const { g: g0, ids } = bouw([["a", "getal", { waarde: "3" }], ["c", "codeblok", { code: "y = x * 2" }]], ["a.waarde -> c.x"]);
+    const zichtbaar = graafSvg(g0, rekenGraaf(g0), t).svg;
+    const g = M.zetVerborgen(g0, [ids.c], true);
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(zichtbaar.includes(">6<") && !svg.includes(">6<") && svg.includes("codeblok"), "papier_verborgen: een verborgen uitkomst staat niet op papier, de node wel");
+  });
+  proef("papier_getal_compact", () => {
+    const { g } = bouw([["q", "getal", { waarde: "5", eenheid: "kN/m", min: "0", max: "20", stap: "0.5" }]]);
+    const svg = graafSvg(g, rekenGraaf(g), t).svg;
+    meld(svg.includes("5 kN/m") && !/\bmin\b|\bmax\b|\bstap\b/.test(svg), "papier_getal_compact: een getal toont op papier alleen zijn waarde", svg.slice(0, 300));
+  });
+}
+
 console.log(fouten === 0 ? "\nAlles klopt." : `\n${fouten} fout(en).`);
 process.exit(fouten === 0 ? 0 : 1);

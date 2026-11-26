@@ -1,15 +1,17 @@
 import {
   useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
-  type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent,
+  type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { drieDSvg } from "@ifc-calc/core";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import {
-  dupliceer, kopieerKeuze, legeGraaf, ontkoppel, plak, verbind, verplaatsKeuze, verwijderKeuze, voegNodeToe, wisselGeheel, zetInvoer, zetNodeNaam,
+  dupliceer, kopieerKeuze, legeGraaf, ontkoppel, plak, uitkomstVerborgen, verbind, verplaatsKeuze, verwijderKeuze, voegNodeToe, wisselGeheel,
+  zetInvoer, zetNodeNaam, zetSchuif, zetVerborgen,
   type Graaf, type GraafVerbinding, type NodeSoort,
 } from "../../graaf/model";
 import { leesStuk, stukAlsTekst } from "../../graaf/klembord";
+import { waardeKleur } from "./graafKleur";
 import { poortPlek, poortenVan, verbindingPad } from "../../graaf/nodes";
 import { actieveVerbindingen, rekenGraaf } from "../../graaf/rekenen";
 import { graafScene } from "../../graaf/scene";
@@ -433,6 +435,8 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       k.delete(nodeId);
       zetKeuze(k);
     },
+    zetVerborgen: (ids, verborgen) => zet(zetVerborgen(huidig(), ids, verborgen)),
+    zetSchuif: (nodeId, open) => zet(zetSchuif(huidig(), nodeId, open)),
   }), [huidig, opVlak, zet, zetKeuze]);
 
   const voegToe = useCallback((soort: NodeSoort, m: Menu) => {
@@ -501,6 +505,12 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
       const r = dupliceer(huidig(), [...k]);
       zet(r.graaf);
       zetKeuze(new Set(r.ids));
+    } else if (!ctrl(e) && !e.altKey && e.key.toLowerCase() === "h" && k.size > 0) {
+      // Het oogje voor de keuze: staat er nog één uitkomst, dan alles verbergen; anders alles tonen.
+      const g = huidig();
+      const nodes = g.nodes.filter((n) => k.has(n.id) && n.soort !== "bekijken");
+      const ietsTeZien = nodes.some((n) => !uitkomstVerborgen(n));
+      zet(zetVerborgen(g, nodes.map((n) => n.id), ietsTeZien));
     }
   };
 
@@ -556,7 +566,10 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
   const origineel = new Map(graaf.nodes.map((n) => [n.id, n]));
   const poorten = new Map(nodes.map((n) => [n.id, uitkomst.nodes[n.id]?.poorten ?? poortenVan(n)]));
   const actief = actieveVerbindingen(graaf, poorten);
-  const verbondenMet = (nodeId: string) => actief.filter((v) => v.naarNode === nodeId).map((v) => v.naarPoort).sort().join("\n");
+  /** De kleur van een verbinding: die van de waarde aan zijn begin. */
+  const lijnKleur = (v: GraafVerbinding) => waardeKleur(uitkomst.nodes[v.vanNode]?.waarden[v.vanPoort]);
+  const verbondenMet = (nodeId: string) =>
+    actief.filter((v) => v.naarNode === nodeId).map((v) => `${v.naarPoort}\t${lijnKleur(v) ?? ""}`).sort().join("\n");
 
   const trekPad = (() => {
     if (!trek) return null;
@@ -607,7 +620,7 @@ export function GraafBladWeergave({ ex }: { ex: Exemplaar }) {
             const dezeGekozen = lijn?.naarNode === v.naarNode && lijn.naarPoort === v.naarPoort;
             return (
               <g key={`${v.naarNode}\u0000${v.naarPoort}`}>
-                <path d={d} className={`graaf-lijn${dezeGekozen ? " gekozen" : ""}`} />
+                <path d={d} className={`graaf-lijn${dezeGekozen ? " gekozen" : ""}`} style={{ "--lijn": lijnKleur(v) } as CSSProperties} />
                 <path
                   d={d}
                   className="graaf-lijn-raak"

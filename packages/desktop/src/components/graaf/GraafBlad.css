@@ -60,10 +60,11 @@
   pointer-events: none;
 }
 
+/* Een verbinding in de kleur van de waarde aan zijn begin (--lijn, graafKleur.ts). */
 .graaf-lijn {
   fill: none;
-  stroke: var(--theme-text-muted);
-  stroke-width: 1.6;
+  stroke: var(--lijn, var(--theme-text-muted));
+  stroke-width: 1.8;
 }
 
 .graaf-lijn.gekozen,
@@ -148,23 +149,46 @@
 
 /* ─── Een node ────────────────────────────────────────────────── */
 
+/* De groepen in de categoriekleuren van de Blueprint; 7 en 8 blijven vrij (FEM Studio, Python). */
+.graaf-vlak {
+  --graaf-kleur-invoer: var(--oa-category-1);
+  --graaf-kleur-lijst: var(--oa-category-2);
+  --graaf-kleur-reken: var(--oa-category-3);
+  --graaf-kleur-logica: var(--oa-category-4);
+  --graaf-kleur-tekst: var(--oa-category-5);
+  --graaf-kleur-geometrie: var(--oa-category-6);
+  --graaf-kleur-leeg: var(--theme-text-muted);
+}
+
+/* Stijl A: een rustige kaart; de groep zit in een streepje bovenaan en in het icoon. */
 .graaf-node {
   position: absolute;
   box-sizing: border-box;
   pointer-events: auto;
   background: var(--theme-surface);
   border: 1px solid var(--theme-border);
-  border-radius: 6px;
-  box-shadow: var(--theme-panel-shadow);
+  border-radius: var(--oa-radius-large, 10px);
+  box-shadow: var(--oa-shadow-panel, var(--theme-panel-shadow));
   font-size: var(--oa-size-label);
   color: var(--theme-text);
   user-select: none;
 }
 
+.graaf-node::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--groep, var(--graaf-kleur-leeg));
+}
+
 .graaf-node.gekozen {
   z-index: 1;
   border-color: var(--theme-accent);
-  box-shadow: 0 0 0 1px var(--theme-accent), var(--theme-panel-shadow);
+  box-shadow: 0 0 0 2px var(--theme-accent), var(--oa-shadow-panel, var(--theme-panel-shadow));
 }
 
 .graaf-node.fout {
@@ -174,46 +198,69 @@
 .graaf-node-kop {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   box-sizing: border-box;
-  padding: 0 4px 0 8px;
-  background: var(--theme-bg);
+  padding: 0 6px 0 8px;
   border-bottom: 1px solid var(--theme-border-subtle);
-  border-radius: 5px 5px 0 0;
   cursor: move;
 }
 
-.graaf-soort-codeblok .graaf-node-kop,
-.graaf-soort-bekijken .graaf-node-kop {
-  background: var(--theme-accent-soft);
+.graaf-node-icoon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--oa-radius-medium, 6px);
+  background: var(--groep, var(--graaf-kleur-leeg));
+  color: var(--oa-text-on-accent);
+}
+
+.graaf-node-namen {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
 }
 
 .graaf-node-titel {
-  flex: 1;
-  min-width: 0;
+  display: block;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   font-weight: 600;
 }
 
-.graaf-node-weg {
+.graaf-node-soort {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  color: var(--theme-text-muted);
+}
+
+/* Het oogje: de uitkomst onder de node tonen of verbergen. */
+.graaf-oog {
   flex: none;
-  width: 18px;
-  height: 18px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--oa-radius-small, 4px);
   background: none;
   color: var(--theme-text-muted);
-  font-size: 14px;
-  line-height: 1;
   cursor: pointer;
 }
 
-.graaf-node-weg:hover {
+.graaf-oog:hover {
   background: var(--theme-hover);
   color: var(--theme-text);
+}
+
+.graaf-oog.aan {
+  color: var(--theme-accent);
 }
 
 /* De rijen hebben een vaste hoogte (nodes.ts): daar rekenen de verbindingen mee. */
@@ -262,7 +309,7 @@
   height: 11px;
   box-sizing: border-box;
   margin-top: -5.5px;
-  border: 2px solid var(--theme-text-muted);
+  border: 2px solid var(--poort, var(--graaf-kleur-leeg));
   border-radius: 50%;
   background: var(--theme-surface);
   cursor: crosshair;
@@ -272,9 +319,10 @@
   left: -6px;
 }
 
+/* Een uitgang is vol, in de kleur van zijn waarde (graafKleur.ts). */
 .graaf-poort.uit {
   right: -6px;
-  background: var(--theme-text-muted);
+  background: var(--poort, var(--graaf-kleur-leeg));
 }
 
 .graaf-poort:hover,
@@ -333,6 +381,43 @@
 
 .graaf-eenheid {
   flex: 0 0 64px;
+}
+
+/* De compacte getal-node: waarde en eenheid in de rij van de uitgang. */
+.graaf-rij.getal {
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.graaf-rij.getal .graaf-veld {
+  min-width: 0;
+}
+
+.graaf-rij.getal .graaf-veld:first-child {
+  flex: 1;
+}
+
+.graaf-rij.getal .graaf-eenheid {
+  flex: 0 0 56px;
+}
+
+.graaf-schuifknop {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small, 4px);
+  background: var(--theme-surface);
+  color: var(--theme-text-muted);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.graaf-schuifknop[aria-expanded="true"] {
+  border-color: var(--theme-accent);
+  color: var(--theme-accent);
 }
 
 .graaf-schuif {
