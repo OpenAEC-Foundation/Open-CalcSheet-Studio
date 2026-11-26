@@ -614,6 +614,8 @@ F_k = ?*(kN)', geconcentreerd<span class="kolom-3"></span>'
 ψ_tabel = [1; 2; 3; 4; 5; 6; 7; 8; 9; 10 |0.4; 0.5; 0.4; 0.4; 1.0; 0.7; 0.7; 0; 0; 0 |0.5; 0.5; 0.7; 0.7; 0.9; 0.7; 0.5; 0; 0.2; 0.2 |0.3; 0.3; 0.6; 0.6; 0.8; 0.6; 0.3; 0; 0; 0]
 ψ_0 = if(belastingcat ≡ 11; ψ_0_zelf; hlookup(ψ_tabel; belastingcat; 1; 2))
 ψ_2 = if(belastingcat ≡ 11; ψ_2_zelf; hlookup(ψ_tabel; belastingcat; 1; 4))
+//@nb ψ_0 NB.2 – A1.1
+//@nb ψ_2 NB.2 – A1.1
 #show
 '<span class="alleen-afdruk"></span>
 #if belastingcat ≡ 11

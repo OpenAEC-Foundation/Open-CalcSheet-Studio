@@ -1,5 +1,6 @@
 import i18next from "i18next";
 import type { EvaluatedNode } from "@ifc-calc/core";
+import type { NbKeuze } from "./nbKeuzes";
 
 /*
  * Wat een doorgerekend blad oplevert, gelezen uit de uitgerekende knopen.
@@ -28,6 +29,8 @@ export interface Resultaat {
    * dat te onderscheiden van een blad dat gewoon geen oordeel kent.
    */
   nietGetoetst?: boolean;
+  /** De gemerkte keuzes uit de nationale bijlage (`//@nb`, nbKeuzes.ts); ontbreekt zonder merkteken. */
+  nb?: NbKeuze[];
 }
 
 /** Twee decimalen in de notatie van de taal, zonder taal die van de app; een oneindige UC als ∞. */

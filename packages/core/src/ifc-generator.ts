@@ -88,10 +88,17 @@ export interface IfcCalcSheet {
   jupyter?: { bestandsnaam: string; data: string; metCode: boolean; automatisch?: boolean };
   /** Bij een Marimo-blad: het notebook als tekst, en de laatste uitvoer per cel. */
   marimo?: { bestandsnaam: string; code: string; metCode: boolean; uitvoer: string[] };
+  /**
+   * De bestanden op schijf die het blad met `#include` invoegt: per sleutel (include.ts)
+   * een kopie van de laatst gelezen tekst, zodat het blad ook zonder het bestand rekent.
+   */
+  includes?: { sleutel: string; pad: string; tekst: string; gelezenOp: string; hash: string }[];
   /** De antwoorden van Open FEM Studio op de @toets-blokken, per hash van de invoer. */
   toetsingen?: Record<string, VastgelegdeToets>;
   /** Varianten van het blad: andere invoer naast het blad, met per variant alleen de eigen waarden. */
   varianten?: VariantenGegevens;
+  /** De toetsregistratie (vier ogen) van het blad: controleur, datum, uitkomst, vrijgave met hash. */
+  controle?: ControleGegevens;
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */
@@ -111,6 +118,30 @@ export interface VariantenGegevens {
   lijst: { id: string; naam: string; waarden: Record<string, string>; gezocht?: string[] }[];
 }
 
+/**
+ * De toetsregistratie van een blad (`ocss::blad::controle`): elke controle met wie, wanneer,
+ * de uitkomst en de opmerkingen, en de hashes van de stand die gecontroleerd is. De app
+ * leest ze na (store/controle.ts) en vergelijkt de hashes met de stand van nu.
+ */
+export interface ControleGegevens {
+  registraties: {
+    id: string;
+    controleur: string;
+    /** De datum van de controle, JJJJ-MM-DD. */
+    datum: string;
+    /** akkoord, opmerkingen of afgekeurd. */
+    uitkomst: string;
+    opmerkingen: string;
+    /** Vrijgegeven: vanaf hier geldt de stand met deze hashes. */
+    vrijgegeven: boolean;
+    /** Het moment van vastleggen, ISO 8601. */
+    tijd: string;
+    rekenversie?: string;
+    /** sha256 (hex) van de rekentekst, de invoer, de uitkomst en het geheel. */
+    hash: { rekentekst: string; invoer: string; uitkomst: string; totaal: string };
+  }[];
+}
+
 /** De graaf van een grafblad, zoals hij in een project staat: nodes en verbindingen, geen uitkomsten. */
 export interface GraafGegevens {
   versie: number;
@@ -122,8 +153,13 @@ export interface GraafGegevens {
     naam?: string;
     invoer?: Record<string, string>;
     geheel?: string[];
+    verborgen?: boolean;
+    uit?: true;
+    schuif?: true;
   }[];
-  verbindingen: { vanNode: string; vanPoort: string; naarNode: string; naarPoort: string }[];
+  verbindingen: { vanNode: string; vanPoort: string; naarNode: string; naarPoort: string; label?: true }[];
+  groepen?: { id: string; naam: string; leden: string[]; ingeklapt?: true }[];
+  teksten?: { id: string; x: number; y: number; breedte: number; titel?: string; tekst: string }[];
 }
 
 export interface IfcGenerationResult {

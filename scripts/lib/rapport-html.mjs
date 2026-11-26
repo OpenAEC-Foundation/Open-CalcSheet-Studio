@@ -10,47 +10,18 @@
  * Wat vite regelt en esbuild niet kent, staat hier met de hand: `?raw` en `?url`,
  * import.meta.glob, import.meta.env en __LIBRARY_DEV__.
  */
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { JSDOM } from "jsdom";
 import { talenPlugin } from "./talen.mjs";
+import { viteAchtervoegsels } from "./vite-achtervoegsels.mjs";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const WORTEL = join(hier, "../..");
 const SRC = join(WORTEL, "packages/desktop/src");
-
-/** Wat vite met een achtervoegsel regelt: `?raw` is de tekst van het bestand, `?url` hier een lege tekst. */
-const viteAchtervoegsels = {
-  name: "vite-achtervoegsels",
-  setup(b) {
-    b.onResolve({ filter: /\?(raw|url)$/ }, (a) => {
-      const [pad, soort] = a.path.split("?");
-      return { path: resolve(a.resolveDir, pad), namespace: `vite-${soort}` };
-    });
-    b.onLoad({ filter: /.*/, namespace: "vite-raw" }, (a) => ({
-      contents: `export default ${JSON.stringify(leesOfLeeg(a.path))};`,
-      loader: "js",
-    }));
-    b.onLoad({ filter: /.*/, namespace: "vite-url" }, () => ({ contents: 'export default "";', loader: "js" }));
-    // import.meta.glob bestaat alleen in vite; de beelden van de modules en de meegeleverde
-    // gewichtenbibliotheek (die het paneel pas laadt als het venster opent) staan niet op papier.
-    b.onLoad({ filter: /(ModuleAfbeelding\.tsx|gewichtenLaden\.ts)$/ }, (a) => ({
-      contents: readFileSync(a.path, "utf8").replace(/import\.meta\.glob\([\s\S]*?\)\s*(as [^;]+)?;/, "({});"),
-      loader: "tsx",
-    }));
-  },
-};
-
-function leesOfLeeg(pad) {
-  try {
-    return readFileSync(pad, "utf8");
-  } catch {
-    return "";
-  }
-}
 
 const INGANG = `
   import { createElement } from "react";
@@ -65,8 +36,25 @@ const INGANG = `
   import { useModuleKiezer } from "./store/moduleKiezer";
   import { useEditorViewStore } from "./store/editorViewStore";
   import Editor from "./components/calc/Editor";
+  import { UitdraaiInhoud, useUitdraai } from "./components/calc/PrintDocument";
 
   export { i18next, useProjectStore, useBureauStore, useTemplateStore, useModuleKiezer, flushSync };
+  export { bladHashNu, bladUitkomsten } from "./components/calc/controleHash";
+  export { openBron, bronnenInvullen, bronSoort } from "./components/calc/bronnen";
+
+  /** De losse uitdraai van de bladen (voorblad en bladen), zoals het afdrukvoorbeeld hem toont. */
+  function Uitdraai() {
+    return createElement(UitdraaiInhoud, { uitdraai: useUitdraai() });
+  }
+
+  export function tekenUitdraai() {
+    const plek = document.createElement("div");
+    const wortel = createRoot(plek);
+    flushSync(() => wortel.render(createElement(Uitdraai)));
+    const html = plek.innerHTML;
+    wortel.unmount();
+    return html;
+  }
 
   /** De echte tab Code: wat erin staat, en typen of weghalen aan het eind van een regel. */
   export function tekenEditor() {
@@ -110,7 +98,7 @@ const INGANG = `
 
 /**
  * De bundel, geladen in jsdom. Geeft `teken()` (de html van het rapport dat in de store
- * staat), de store en i18next.
+ * staat), `tekenUitdraai()` (de losse uitdraai van de bladen), de store en i18next.
  */
 export async function laadRapportAfdruk() {
   const map = mkdtempSync(join(tmpdir(), "rapport-html-"));

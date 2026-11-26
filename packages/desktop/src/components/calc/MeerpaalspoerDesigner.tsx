@@ -5,6 +5,7 @@ import { maakMeerpaalPoer } from "./meerpaalDefinitie";
 import { meerpaalIfcxDocument, type MeerpaalModelTeksten } from "./meerpaalIfcx";
 import { detailNaarSvg, maakDetail, meerpaalVorm } from "./poerDxf";
 import PoerStaaflijst, { useDetailTeksten, useTekeningStatus } from "./PoerStaaflijst";
+import PoerKoppeling, { usePoerRevisie } from "./PoerKoppeling";
 import { bewaarIfcx } from "./ifcxBewaren";
 import { useActiefExemplaar, useAlleenLezen } from "../../store/actiefBlad";
 import "./VoetplaatDesigner.css";
@@ -12,7 +13,8 @@ import "./VoetplaatDesigner.css";
 /**
  * Beeld bij het blad "Poer op drie of vier palen" (templates/meerpaalspoer.ts): de
  * staaflijst, en op het scherm het wapeningsdetail (plattegrond en twee doorsneden) met
- * de knoppen voor het DXF-detail en de IFCX met de wapening.
+ * de knoppen voor het DXF-detail en de IFCX met de wapening, en de koppeling met een
+ * palenplan en de revisie van het detail (PoerKoppeling.tsx).
  *
  * Het beeld rekent niet. De staven komen uit de invoer via meerpaalDefinitie.ts, dezelfde
  * als de IFC-uitvoer; het oordeel uit het doorgerekende blad. De plattegrond en het
@@ -38,24 +40,32 @@ export default function MeerpaalspoerDesigner() {
   const { t } = useTranslation("beelden");
   const teksten = useDetailTeksten();
   const status = useTekeningStatus(ctx.d, uitkomst);
-  if (!ctx.actief) return null;
+  const poer = ctx.actief ? maakMeerpaalPoer(ctx.d) : null;
+  const vorm = poer ? meerpaalVorm(poer) : null;
+  const rev = usePoerRevisie(vorm);
+  if (!ctx.actief || !poer || !vorm) return null;
   const { d, set, box, wrapRef } = ctx;
 
-  const poer = maakMeerpaalPoer(d);
-  const vorm = meerpaalVorm(poer);
   const naam = exemplaar?.naam ?? MARKER;
 
   const bewaarModel = () => {
-    const doc = meerpaalIfcxDocument(poer, { bladId: exemplaar?.id, teksten: t("poerDetail.model", { returnObjects: true }) as unknown as MeerpaalModelTeksten });
-    if (doc) void bewaarIfcx(JSON.stringify(doc), naam, undefined);
+    const doc = meerpaalIfcxDocument(poer, {
+      bladId: exemplaar?.id,
+      teksten: t("poerDetail.model", { returnObjects: true }) as unknown as MeerpaalModelTeksten,
+      koppeling: rev.koppeling,
+    });
+    if (!doc) return;
+    rev.vastleggen();
+    void bewaarIfcx(JSON.stringify(doc), naam, undefined);
   };
-  const detail = alleenLezen ? null : detailNaarSvg(maakDetail(vorm, { titel: naam, status: status.tekst, teksten }), Math.max(320, Math.min(box.w, 900)));
+  const detail = alleenLezen ? null : detailNaarSvg(maakDetail(vorm, { titel: naam, status: status.tekst, revisie: rev.label, teksten }), Math.max(320, Math.min(box.w, 900)));
 
   return (
     <div className="vd-panel" data-afdrukhoogte="inhoud">
       <UitkomstKop titel={t("poerDetail.titel")} uitkomst={uitkomst} />
       <PoerStaaflijst vorm={vorm} titel={naam} bestand={naam} d={d} set={set} uitkomst={uitkomst} alleenLezen={alleenLezen}
         extra={<button type="button" className="settings-btn settings-btn-secondary" onClick={bewaarModel}>{t("poerDetail.bewaarIfcx")}</button>} />
+      {!alleenLezen && <PoerKoppeling templateId="meerpaalspoer" vorm={vorm} />}
       {!alleenLezen && (
         <div ref={wrapRef} style={{ padding: "6px 16px 14px", flex: "none" }}>
           <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{t("poerDetail.detailKop")}</div>

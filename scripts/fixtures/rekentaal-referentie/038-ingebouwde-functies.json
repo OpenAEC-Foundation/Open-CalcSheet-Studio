@@ -1,0 +1,12 @@
+{
+  "onderdeel": "functies",
+  "omschrijving": "min, max, abs, ceil, floor en round.",
+  "uitkomst": {
+    "a": "3",
+    "b": "5",
+    "c": "2",
+    "d": "3",
+    "e_1": "2",
+    "r": "2.35"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "onderdeel": "tekst",
+  "omschrijving": "Een titel, een hoofdstuk, een paragraaf en een tekstregel met HTML.",
+  "html": [
+    "<h1>Titel van het blad</h1>",
+    "<h1>1. Hoofdstuk</h1>",
+    "<h2>1.1 Paragraaf</h2>",
+    "<p class=\"calc-text\">Gewone tekst met <b>vet</b></p>"
+  ]
+}

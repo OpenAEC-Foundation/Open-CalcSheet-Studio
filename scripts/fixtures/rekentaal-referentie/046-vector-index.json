@@ -1,0 +1,8 @@
+{
+  "onderdeel": "matrices",
+  "omschrijving": "Element k van een vector met v.k, en de som.",
+  "uitkomst": {
+    "v_3": "7",
+    "som": "18"
+  }
+}

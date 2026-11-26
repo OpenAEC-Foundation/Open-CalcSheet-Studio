@@ -1,0 +1,12 @@
+{
+  "versie": "1.0",
+  "geschiedenis": [
+    {
+      "versie": "1.0",
+      "datum": "2026-11-26",
+      "kern": "2026.48.0",
+      "hash": "db7b2867f16ff602b797e290461dfc72bc6c35dc281a6cb4f89f84c799fbf544",
+      "wijziging": "Eerste vastgelegde versie: 59 gevallen over tekst, rekenen, eenheden, invoer, voorwaarden, herhalingen, functies, macro's, matrices, opzoeken, namen, opmaak, verwijzingen, blokken en fouten."
+    }
+  ]
+}

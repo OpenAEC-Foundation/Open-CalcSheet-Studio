@@ -1,0 +1,7 @@
+{
+  "onderdeel": "functies",
+  "omschrijving": "1/0 is oneindig, geen fout.",
+  "uitkomst": {
+    "b": "∞"
+  }
+}
