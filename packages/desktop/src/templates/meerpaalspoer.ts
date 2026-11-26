@@ -633,7 +633,7 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
             #end if
             #loop
             #loop
-            '  <text x="'p_X(0)'" y="'p_Y(-b_poer/2) + 16'" text-anchor="middle" style="fill:#334155">'round(l_poer/(1 mm))' × 'round(b_poer/(1 mm))' × 'round(h_poer/(1 mm))' mm, palen 'round(a_x/(1 mm))' × 'round(a_y/(1 mm))' h.o.h.</text>
+            '  <text x="'p_X(0 mm)'" y="'p_Y(-b_poer/2) + 16'" text-anchor="middle" style="fill:#334155">'round(l_poer/(1 mm))' × 'round(b_poer/(1 mm))' × 'round(h_poer/(1 mm))' mm, palen 'round(a_x/(1 mm))' × 'round(a_y/(1 mm))' h.o.h.</text>
         #else
             '  <polygon points="'p_X(h_x(0; -1))','p_Y(h_y(0; -1))' 'p_X(h_x(0; 1))','p_Y(h_y(0; 1))' 'p_X(h_x(1; -1))','p_Y(h_y(1; -1))' 'p_X(h_x(1; 1))','p_Y(h_y(1; 1))' 'p_X(h_x(2; -1))','p_Y(h_y(2; -1))' 'p_X(h_x(2; 1))','p_Y(h_y(2; 1))'" style="fill:#f1f5f9; stroke:#334155; stroke-width:1.2"/>
             #for k = 0 : 2
@@ -644,10 +644,10 @@ invoer_ok = ok_maten*ok_staven*ok_vorm*ok_last*ok_inpas*ok_hoogte*ok_project
             '  <rect x="'p_X(q_x(k) - p_x/2)'" y="'p_Y(q_y(k) + p_y/2)'" width="'p_x/(1 mm)*p_s'" height="'p_y/(1 mm)*p_s'" style="fill:none; stroke:#1e293b; stroke-width:1.2; stroke-dasharray:4 2"/>
             #end if
             #loop
-            '  <text x="'p_X(0)'" y="'p_Y(-R_3/2 - r_rand) + 16'" text-anchor="middle" style="fill:#334155">driehoek 'round(a_3/(1 mm))' mm h.o.h., rand 'round(r_rand/(1 mm))' mm, h = 'round(h_poer/(1 mm))' mm</text>
+            '  <text x="'p_X(0 mm)'" y="'p_Y(-R_3/2 - r_rand) + 16'" text-anchor="middle" style="fill:#334155">driehoek 'round(a_3/(1 mm))' mm h.o.h., rand 'round(r_rand/(1 mm))' mm, h = 'round(h_poer/(1 mm))' mm</text>
         #end if
         #if kolomvorm ≡ 2
-            '  <circle cx="'p_X(0)'" cy="'p_Y(0)'" r="'c_x/2/(1 mm)*p_s'" style="fill:#94a3b8; fill-opacity:0.6; stroke:#334155"/>
+            '  <circle cx="'p_X(0 mm)'" cy="'p_Y(0 mm)'" r="'c_x/2/(1 mm)*p_s'" style="fill:#94a3b8; fill-opacity:0.6; stroke:#334155"/>
         #else
             '  <rect x="'p_X(-c_x/2)'" y="'p_Y(c_y/2)'" width="'c_x/(1 mm)*p_s'" height="'c_y/(1 mm)*p_s'" style="fill:#94a3b8; fill-opacity:0.6; stroke:#334155"/>
         #end if
