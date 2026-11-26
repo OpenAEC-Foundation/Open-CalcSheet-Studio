@@ -54,6 +54,7 @@ export const undoIcon = b2("edit.undo");
 export const redoIcon = b2("edit.redo");
 export const searchIcon = b2("view.search", "standard");
 export const moduleIcon = b2("calculation.module-picker");
+export const vergelijkIcon = b2("project.compare-reference");
 export const extensionsIcon = b2("extensions.manage", "standard");
 export const blankSheetIcon = b2("file.new");
 export const spreadsheetIcon = b2("spreadsheet.sheet-add");

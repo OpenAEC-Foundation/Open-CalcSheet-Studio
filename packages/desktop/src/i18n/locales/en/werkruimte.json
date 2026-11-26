@@ -1274,5 +1274,39 @@
     "geenBlad": "There is no sheet {{doel}} in this project.",
     "geenPdf": "{{doel}} is not a PDF.",
     "alleenApp": "{{doel}} is a file on disk; it can only be opened in the desktop app."
+  },
+  "vergelijken": {
+    "titel": "Compare with another file",
+    "kies": "Choose file…",
+    "uitleg": "Choose a project file (.ifccalculation, .ifcx) or a sheet (.cpd). It is only read and calculated, never opened or changed.",
+    "met": "This project (left) compared with {{naam}} (right).",
+    "gegevens": "Project data",
+    "gegevensGelijk": "The project data are the same.",
+    "gegevensVerschil_one": "{{count}} project value differs.",
+    "gegevensVerschil_other": "{{count}} project values differ.",
+    "bladen": "Sheets",
+    "geenBladen": "Neither version has sheets.",
+    "soort": {
+      "gelijk": "same",
+      "gewijzigd": "changed",
+      "alleenHier": "only in this project",
+      "alleenDaar": "only in the file"
+    },
+    "alleenVerschil": "Only differences",
+    "heleTekst": "Whole calculation text",
+    "oordeel": "Result",
+    "rekentekst": "Calculation text",
+    "invoer": "Input",
+    "uitkomsten": "Results",
+    "naam": "Name",
+    "hier": "This project",
+    "daar": "File",
+    "verschil": "Difference",
+    "ontbreekt": "absent",
+    "geenVerschil": "No differences.",
+    "tekstGelijk": "The calculation text is the same.",
+    "rekentNiet": "does not calculate",
+    "voldoet": "OK",
+    "voldoetNiet": "not OK"
   }
 }

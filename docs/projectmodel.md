@@ -165,6 +165,30 @@ Dat gaat bewust via de browser en niet via de Rust-rapportengine — zie
 `docs/backlog.md`. De engine slaat tekeningen over, en zonder de
 `openaec-reports`-repo is de app niet eens te bouwen.
 
+## Twee versies vergelijken
+
+De knop **Vergelijken** (tab Start, groep Uitvoer) zet het project dat openstaat naast een
+gekozen bestand: een ander projectbestand (`.ifccalculation`, `.ifcx`), een oudere versie
+van hetzelfde project, of een los blad (`.cpd`). Het bestand wordt alleen gelezen en
+doorgerekend, nooit geopend of veranderd.
+
+- **De bladen** worden gekoppeld op id (een opgeslagen versie van hetzelfde project), dan op
+  kenmerk (`#4`), dan op naam. Per blad staat erbij of het gelijk is, gewijzigd, of alleen
+  aan één kant staat.
+- **Per blad** het oordeel (UC en voldoet/voldoet niet), de rekentekst regel voor regel naast
+  elkaar (een minimaal verschil, met de gewijzigde regels tegenover elkaar), de invoer en de
+  uitkomsten per naam. Standaard alleen de verschillen, met twee regels eromheen; met een
+  vinkje de hele tekst en alle namen. Bij twee getallen met dezelfde eenheid staat het
+  relatieve verschil erbij.
+- **De projectgegevens** die verschillen, staan bovenaan.
+- **Elke kant rekent met zijn eigen project:** de uitkomsten van het bestand komen uit de
+  projectgegevens, de belastingen en de bladen van dat bestand. Zo is een andere gevolgklasse
+  in de uitkomsten te zien, ook als de rekentekst gelijk is.
+- **Waar:** `store/vergelijken.ts` (koppelen, regelverschil, tabellen; zonder React) en
+  `components/calc/VergelijkVenster.tsx`. Controle: `scripts/check-vergelijken.mjs`.
+- **Nog niet:** twee bladen binnen hetzelfde project naast elkaar zetten, of een versie uit
+  de geschiedenis van ongedaan maken; vergelijken gaat altijd tegen een bestand.
+
 ## Toetsregistratie (vier ogen)
 
 Elk blad met rekentekst heeft een tab **Controle**. Een tweede constructeur legt daar een

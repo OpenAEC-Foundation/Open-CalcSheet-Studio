@@ -65,7 +65,7 @@ const INGANG = `
   import { UitdraaiInhoud, useUitdraai } from "./components/calc/PrintDocument";
 
   export { i18next, useProjectStore, useBureauStore, useModuleKiezer };
-  export { bladHashNu } from "./components/calc/controleHash";
+  export { bladHashNu, bladUitkomsten } from "./components/calc/controleHash";
   export { openBron, bronnenInvullen, bronSoort } from "./components/calc/bronnen";
 
   /** De losse uitdraai van de bladen (voorblad en bladen), zoals het afdrukvoorbeeld hem toont. */

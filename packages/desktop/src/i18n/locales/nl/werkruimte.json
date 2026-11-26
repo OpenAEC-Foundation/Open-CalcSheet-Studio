@@ -1274,5 +1274,39 @@
     "geenBlad": "Er is geen blad {{doel}} in dit project.",
     "geenPdf": "{{doel}} is geen PDF.",
     "alleenApp": "{{doel}} is een bestand op schijf; dat opent alleen in de app op de computer."
+  },
+  "vergelijken": {
+    "titel": "Vergelijken met een ander bestand",
+    "kies": "Bestand kiezen…",
+    "uitleg": "Kies een projectbestand (.ifccalculation, .ifcx) of een blad (.cpd). Het wordt alleen gelezen en doorgerekend, nooit geopend of veranderd.",
+    "met": "Dit project (links) naast {{naam}} (rechts).",
+    "gegevens": "Projectgegevens",
+    "gegevensGelijk": "De projectgegevens zijn gelijk.",
+    "gegevensVerschil_one": "{{count}} projectgegeven verschilt.",
+    "gegevensVerschil_other": "{{count}} projectgegevens verschillen.",
+    "bladen": "Bladen",
+    "geenBladen": "Geen van beide versies heeft bladen.",
+    "soort": {
+      "gelijk": "gelijk",
+      "gewijzigd": "gewijzigd",
+      "alleenHier": "alleen in dit project",
+      "alleenDaar": "alleen in het bestand"
+    },
+    "alleenVerschil": "Alleen verschillen",
+    "heleTekst": "Hele rekentekst",
+    "oordeel": "Oordeel",
+    "rekentekst": "Rekentekst",
+    "invoer": "Invoer",
+    "uitkomsten": "Uitkomsten",
+    "naam": "Naam",
+    "hier": "Dit project",
+    "daar": "Bestand",
+    "verschil": "Verschil",
+    "ontbreekt": "ontbreekt",
+    "geenVerschil": "Geen verschillen.",
+    "tekstGelijk": "De rekentekst is gelijk.",
+    "rekentNiet": "rekent niet door",
+    "voldoet": "voldoet",
+    "voldoetNiet": "voldoet niet"
   }
 }

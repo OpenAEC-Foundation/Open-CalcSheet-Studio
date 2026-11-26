@@ -27,7 +27,9 @@ import {
   graafIcon,
   jupyterIcon,
   marimoIcon,
+  vergelijkIcon,
 } from "./calcIcons";
+import { useVergelijkVenster } from "../calc/VergelijkVenster";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID } from "../../store/projectStore";
 import { usePrintStore } from "../../store/printStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
@@ -235,6 +237,13 @@ export default function CalcTab({ onSettingsClick, onHelpClick, onWelkomClick }:
             label={t("calc.report")}
             size="large"
             onClick={handlePrint}
+          />
+          {/* Dit project naast een ander bestand: tekst, invoer en uitkomsten (VergelijkVenster.tsx). */}
+          <RibbonButton
+            icon={vergelijkIcon}
+            label={t("calc.vergelijken")}
+            size="large"
+            onClick={() => useVergelijkVenster.setState({ open: true })}
           />
         </RibbonGroup>
 

@@ -1304,5 +1304,41 @@
     "geenBlad": "Šiame projekte nėra lapo {{doel}}.",
     "geenPdf": "{{doel}} nėra PDF.",
     "alleenApp": "{{doel}} yra failas diske; jį galima atidaryti tik kompiuterio programoje."
+  },
+  "vergelijken": {
+    "titel": "Palyginti su kitu failu",
+    "kies": "Pasirinkti failą…",
+    "uitleg": "Pasirinkite projekto failą (.ifccalculation, .ifcx) arba lapą (.cpd). Jis tik nuskaitomas ir apskaičiuojamas, niekada neatidaromas ir nekeičiamas.",
+    "met": "Šis projektas (kairėje) palyginti su {{naam}} (dešinėje).",
+    "gegevens": "Projekto duomenys",
+    "gegevensGelijk": "Projekto duomenys sutampa.",
+    "gegevensVerschil_one": "Skiriasi {{count}} projekto duomuo.",
+    "gegevensVerschil_few": "Skiriasi {{count}} projekto duomenys.",
+    "gegevensVerschil_many": "Skiriasi {{count}} projekto duomens.",
+    "gegevensVerschil_other": "Skiriasi {{count}} projekto duomenų.",
+    "bladen": "Lapai",
+    "geenBladen": "Nė viena versija neturi lapų.",
+    "soort": {
+      "gelijk": "sutampa",
+      "gewijzigd": "pakeista",
+      "alleenHier": "tik šiame projekte",
+      "alleenDaar": "tik faile"
+    },
+    "alleenVerschil": "Tik skirtumai",
+    "heleTekst": "Visas skaičiavimo tekstas",
+    "oordeel": "Išvada",
+    "rekentekst": "Skaičiavimo tekstas",
+    "invoer": "Įvestis",
+    "uitkomsten": "Rezultatai",
+    "naam": "Pavadinimas",
+    "hier": "Šis projektas",
+    "daar": "Failas",
+    "verschil": "Skirtumas",
+    "ontbreekt": "nėra",
+    "geenVerschil": "Skirtumų nėra.",
+    "tekstGelijk": "Skaičiavimo tekstas sutampa.",
+    "rekentNiet": "neapskaičiuojama",
+    "voldoet": "tenkina",
+    "voldoetNiet": "netenkina"
   }
 }
