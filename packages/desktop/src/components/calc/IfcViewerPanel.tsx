@@ -380,6 +380,7 @@ interface GebouwdeIfc {
  * duren; daarom pas nadat het paneel er staat, en niet bij elke toetsaanslag.
  */
 function useProjectIfc(): GebouwdeIfc | null | "fout" {
+  const projectId = useProjectStore((s) => s.projectId);
   const projectNaam = useProjectStore((s) => s.projectNaam);
   const gegevens = useProjectStore((s) => s.gegevens);
   const exemplaren = useProjectStore((s) => s.exemplaren);
@@ -393,6 +394,7 @@ function useProjectIfc(): GebouwdeIfc | null | "fout" {
       try {
         const doc = projectIfcx({
           versie: PROJECT_FORMAAT_VERSIE,
+          id: projectId,
           naam: projectNaam,
           gegevens,
           exemplaren,
@@ -407,7 +409,7 @@ function useProjectIfc(): GebouwdeIfc | null | "fout" {
       }
     }, 150);
     return () => clearTimeout(klok);
-  }, [projectNaam, gegevens, exemplaren, rapport, verborgen, vreemd]);
+  }, [projectId, projectNaam, gegevens, exemplaren, rapport, verborgen, vreemd]);
 
   return uit;
 }

@@ -70,6 +70,8 @@ export interface BladVoorIfc {
 /** Wat dit bestand van een project nodig heeft. */
 export interface ProjectVoorIfc {
   versie: number;
+  /** De blijvende identiteit van het project; zonder volgt hij uit nummer en naam (core: ifcx/identiteit.ts). */
+  id?: string;
   naam: string;
   gegevens: Record<string, string>;
   exemplaren: BladVoorIfc[];
@@ -170,6 +172,7 @@ export function bladenVoorIfc(project: Pick<ProjectVoorIfc, "exemplaren" | "gege
 /** Het project als IFCX-document. `bladen` zijn de doorgerekende bladen; zonder rekent dit ze door. */
 export function projectIfcx(project: ProjectVoorIfc, bladen?: IfcCalcSheet[]): IfcxBestand {
   return metVreemdeGegevens(bouwProjectIfcx({
+    id: project.id,
     naam: project.naam,
     formaatversie: project.versie,
     gegevens: project.gegevens,
