@@ -17,7 +17,9 @@
  *
  * Ook het werkmapsjabloon staat hier: per onderdeel de naam, de plek in het
  * project en de verwijzing, om bij een nieuw project op een andere werkmap toe te
- * passen.
+ * passen. Een onderdeel kan een regel hebben wanneer het standaard aan staat
+ * (`standaardBij`): bij een projecttype of als de projectomschrijving een
+ * trefwoord noemt. `stelVoor` toetst die regel; zonder regel staat het aan.
  */
 
 /** Het deel van een geopende werkmap dat hier nodig is. */
@@ -212,6 +214,22 @@ export interface SjabloonOnderdeel {
   plek: number;
   /** De naam van het blad ervoor, als dat er was: daarachter komt het, als het er is. */
   na?: string;
+  /**
+   * Wanneer het onderdeel bij het toepassen standaard aan staat. Ontbreekt dit, dan
+   * staat het aan zodra de werkmap het heeft (zoals in sjablonen van vóór de regel).
+   */
+  standaardBij?: StandaardBij;
+}
+
+/**
+ * De regel voor een onderdeel: het staat aan als één van de projecttypen past bij
+ * de soort bouwwerk van het project, of als de projectomschrijving één van de
+ * trefwoorden noemt. Hoofdletters en accenten tellen niet mee; een woord past ook
+ * als deel van een langer woord ("woning" past bij "Eengezinswoning").
+ */
+export interface StandaardBij {
+  projecttype?: string[];
+  trefwoorden?: string[];
 }
 
 export interface WerkmapSjabloon {
@@ -224,6 +242,82 @@ export interface WerkmapSjabloon {
 interface BladVoorSjabloon {
   naam: string;
   md?: { koppeling?: { soort: string; verwijzing?: string } };
+}
+
+/** Een lijst woorden uit een bestand: alleen niet-lege tekst, zonder dubbele. Ook één tekst mag. */
+function leesWoorden(x: unknown): string[] {
+  const lijst = typeof x === "string" ? [x] : Array.isArray(x) ? x : [];
+  const uit: string[] = [];
+  for (const w of lijst) {
+    if (typeof w !== "string") continue;
+    const t = w.trim();
+    if (t && !uit.some((u) => vergelijkbaar(u) === vergelijkbaar(t))) uit.push(t);
+  }
+  return uit;
+}
+
+/** Woorden zoals de gebruiker ze typt, gescheiden door komma's of puntkomma's. */
+export function woordenUitTekst(tekst: string): string[] {
+  return leesWoorden(tekst.split(/[,;]/));
+}
+
+/** Een regel zonder lege lijsten; zonder woorden: geen regel (undefined). */
+export function maakRegel(projecttype: readonly string[], trefwoorden: readonly string[]): StandaardBij | undefined {
+  const p = leesWoorden([...projecttype]);
+  const w = leesWoorden([...trefwoorden]);
+  if (p.length === 0 && w.length === 0) return undefined;
+  return { ...(p.length > 0 ? { projecttype: p } : {}), ...(w.length > 0 ? { trefwoorden: w } : {}) };
+}
+
+function leesRegel(x: unknown): StandaardBij | undefined {
+  if (!x || typeof x !== "object" || Array.isArray(x)) return undefined;
+  const r = x as { projecttype?: unknown; trefwoorden?: unknown };
+  return maakRegel(leesWoorden(r.projecttype), leesWoorden(r.trefwoorden));
+}
+
+/** Kleine letters, zonder accenten en met enkele spaties: zo worden woorden vergeleken. */
+function vergelijkbaar(tekst: string): string {
+  return tekst.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/** Wat het voorstel van het project weet: de soort bouwwerk en de projectomschrijving. */
+export interface ProjectKenmerken {
+  projecttype: string;
+  omschrijving: string;
+}
+
+/** Waarom een onderdeel voorgesteld wordt. */
+export interface VoorstelReden {
+  soort: "projecttype" | "trefwoord";
+  /** Het woord zoals het in de regel staat. */
+  woord: string;
+}
+
+export interface Voorstel {
+  /** Heeft het onderdeel een regel? Zonder regel staat het aan, zoals vroeger. */
+  regel: boolean;
+  /** Staat het onderdeel in het voorstel aan (als de werkmap het heeft)? */
+  aan: boolean;
+  /** Wat er past; leeg zonder regel of als niets past. */
+  redenen: VoorstelReden[];
+}
+
+/** Toetst de regel van een onderdeel aan het project. */
+export function stelVoor(onderdeel: Pick<SjabloonOnderdeel, "standaardBij">, project: ProjectKenmerken): Voorstel {
+  const r = onderdeel.standaardBij;
+  if (!r || ((r.projecttype?.length ?? 0) === 0 && (r.trefwoorden?.length ?? 0) === 0)) return { regel: false, aan: true, redenen: [] };
+  const soort = vergelijkbaar(project.projecttype);
+  const omschrijving = vergelijkbaar(project.omschrijving);
+  const redenen: VoorstelReden[] = [];
+  for (const woord of r.projecttype ?? []) {
+    const w = vergelijkbaar(woord);
+    if (w && soort.includes(w)) redenen.push({ soort: "projecttype", woord });
+  }
+  for (const woord of r.trefwoorden ?? []) {
+    const w = vergelijkbaar(woord);
+    if (w && omschrijving.includes(w)) redenen.push({ soort: "trefwoord", woord });
+  }
+  return { regel: true, aan: redenen.length > 0, redenen };
 }
 
 /** Het sjabloon uit de gekoppelde werkmapbereiken van een project, in de volgorde van de bladen. */
@@ -252,14 +346,37 @@ export function leesSjabloon(x: unknown): WerkmapSjabloon | null {
       verwijzing: d.verwijzing,
       plek: typeof d.plek === "number" && Number.isFinite(d.plek) ? Math.max(0, Math.floor(d.plek)) : Number.MAX_SAFE_INTEGER,
       ...(typeof d.na === "string" && d.na ? { na: d.na } : {}),
+      ...(() => {
+        const regel = leesRegel(d.standaardBij);
+        return regel ? { standaardBij: regel } : {};
+      })(),
     });
   }
   return onderdelen.length > 0 ? { soort: SJABLOON_SOORT, versie: 1, onderdelen } : null;
 }
 
-/** Elk onderdeel met wat de gekozen werkmap ervoor heeft. */
-export function toetsSjabloon(wb: BereikLezer, sjabloon: WerkmapSjabloon): { onderdeel: SjabloonOnderdeel; bereik: GelezenBereik }[] {
-  return sjabloon.onderdelen.map((onderdeel) => ({ onderdeel, bereik: leesBereik(wb, onderdeel.verwijzing) }));
+/** Een onderdeel bij het toepassen: wat de werkmap ervoor heeft en het voorstel voor dit project. */
+export interface GetoetstOnderdeel {
+  onderdeel: SjabloonOnderdeel;
+  bereik: GelezenBereik;
+  voorstel: Voorstel;
+}
+
+/**
+ * Elk onderdeel met wat de gekozen werkmap ervoor heeft en het voorstel. Zonder
+ * project is er geen voorstel: elk onderdeel staat dan aan, zoals zonder regel.
+ */
+export function toetsSjabloon(wb: BereikLezer, sjabloon: WerkmapSjabloon, project?: ProjectKenmerken): GetoetstOnderdeel[] {
+  return sjabloon.onderdelen.map((onderdeel) => ({
+    onderdeel,
+    bereik: leesBereik(wb, onderdeel.verwijzing),
+    voorstel: project ? stelVoor(onderdeel, project) : { regel: false, aan: true, redenen: [] },
+  }));
+}
+
+/** De onderdelen die bij het openen van het venster aangevinkt staan: in de werkmap en voorgesteld. */
+export function voorgesteld(onderdelen: readonly Pick<GetoetstOnderdeel, "bereik" | "voorstel">[]): number[] {
+  return onderdelen.flatMap((o, i) => (o.bereik.ok && o.voorstel.aan ? [i] : []));
 }
 
 /**

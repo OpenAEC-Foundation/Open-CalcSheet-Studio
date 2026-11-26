@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Een werkmapsjabloon kan per onderdeel zeggen wanneer het standaard aan staat: bij een projecttype, zoals woning of utiliteit, of als de projectomschrijving een trefwoord noemt, zoals kelder of staal. Dat vul je in bij Sjabloon bewaren. Pas je het sjabloon toe, dan staat de voorgestelde selectie aangevinkt met per onderdeel waarom, en vink je zelf aan of uit wat je wilt. Sjablonen zonder zo'n regel werken als voorheen.
+
 ## v2026.48.0 — 2026-11-26
 
 - Bestand › Exporteren zet het rapport ook in een bewerkbaar document: DOCX of ODT. Tekst, koppen en tabellen blijven bewerkbaar, formules worden vergelijkingen, tekeningen gaan als afbeelding mee. Het is een momentopname met project, revisie en exportmoment; wat niet mee kan, zoals de pagina's van een PDF-blad, noemt de app vooraf
