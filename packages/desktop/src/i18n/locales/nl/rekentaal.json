@@ -280,6 +280,7 @@
       "matrix": "Matrix",
       "eenvoudig": "Eenvoudig",
       "subscript": "Subscript",
+      "procentInNaam": "Procent in een naam",
       "griekseLetter": "Griekse letter",
       "break": "#break (vroegtijdig stoppen)",
       "defConstante": "#def Name$ = waarde",
@@ -298,6 +299,7 @@
     "omschrijving": {
       "eenvoudig": "Bind 'b' aan 300 mm",
       "subscript": "Komma's in subscripts toegestaan",
+      "procentInNaam": "Hoort bij de naam: F_1%50 en F_1_50 zijn twee variabelen",
       "eigenFunctie": "Eigen functie",
       "drieD": "Draaibaar 3D-beeld met maten uit het blad",
       "iframe": "Externe pagina op de bladbreedte; laadt pas na bevestiging",

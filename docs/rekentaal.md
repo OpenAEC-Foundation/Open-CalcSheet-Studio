@@ -123,7 +123,13 @@ plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent he
 - `#include filename.cpd` voor externe macro's en SVG-tekeningen
 - `$Plot{ … @ x = lo : hi }` voor grafieken in het blad
 - Komma's in een index (`V_b,0`, `n_Int,support,points`), `$`-verwijzingen, matrix `[a;b|c;d]`
-- Opmaak (`:F2`), namen met punt of procent (`Cs.Cd`, `F_0.9G50%TotalWeight`)
+- Opmaak (`:F2`), namen met punt of procent (`Cs.Cd`, `F_0.9G50%TotalWeight`). Een procent
+  hoort bij de naam: `F_1%50` en `F_1_50` zijn twee variabelen, en in de uitwerking staat
+  F<sub>1%50</sub>. Een komma of punt in een naam wordt wél een liggend streepje
+  (`V_b,0` is `V_b_0`, `Cs.Cd` is `Cs_Cd`). Een procent zonder letter of cijfer direct
+  erna blijft een operator: `50%` is 0,5 en `n % 5` is de rest na delen. Ook een waarde
+  uit een ander blad mag een procent hebben: `#1.F_1%50`. (In de scope staat het procent
+  als de letter `ǂ`, zie `packages/core/src/naam.ts`; typ die niet zelf.)
 - `take`, `hlookup`, `hlookup_ge`, `hlookup_le`, `vlookup`, `get`, ook op matrices
 - `@select var "Label" … @end` voor een keuzelijst, bijvoorbeeld een materiaal
 

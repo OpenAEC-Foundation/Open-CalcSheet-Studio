@@ -4,6 +4,7 @@ const { Unit } = math;
 import type { AstNode, ConditionalNode, OpdrachtNode, PlotNode, TextNode } from './types.js';
 import { DRIE_D_START_RE, leesDrieD } from './drieD.js';
 import { vervangVerwijzingen } from './verwijzing.js';
+import { PROCENT_IN_NAAM, naamMetProcent } from './naam.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';
 import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
 import { TOETS_START_RE, leesToetsBlok } from './toetsBlok.js';
@@ -575,12 +576,14 @@ function applyMacro(macro: { params: string[]; body: string[]; oneLine: string |
 /**
  * The language allows `.` and `%` inside identifier names (e.g. `Cs.Cd`,
  * `F_0.9G50%TotalWeight`). mathjs treats `.` as member access and `%` as
- * modulo, so these names blow up. Fold them to `_` when the surrounding
+ * modulo, so these names blow up. Fold them when the surrounding
  * tokens form an identifier-like cluster: a leading letter/underscore,
- * followed by one or more `.`/`%`-separated word groups.
+ * followed by one or more `.`/`%`-separated word groups. Een punt wordt `_`,
+ * een procent de letter PROCENT_IN_NAAM (naam.ts): anders waren `F_1%50` en
+ * `F_1_50` stil dezelfde variabele.
  *
  *   `Cs.Cd`                  →  `Cs_Cd`
- *   `F_0.9G50%TotalWeight`   →  `F_0_9G50_TotalWeight`
+ *   `F_0.9G50%TotalWeight`   →  `F_0_9G50ǂTotalWeight`
  *   `0.5`                    →  unchanged (leading digit excluded)
  *   `q * 0.9`                →  unchanged
  */
@@ -620,7 +623,7 @@ function foldIdentifierDots(source: string): string {
     // catches what the one above now leaves alone (`t.o.v` → `t_o_v`).
     out = out.replace(
       /(?<![\p{L}\p{N}_])([\p{L}_][\p{L}\p{N}_]*(?:[.%][\p{L}\p{N}_]+)+)(?![\p{L}\p{N}_.])/gu,
-      (match) => match.replace(/[.%]/g, '_'),
+      (match) => match.replace(/\./g, '_').replace(/%/g, PROCENT_IN_NAAM),
     );
     return out;
   };
@@ -1474,7 +1477,7 @@ function parseLines(
         markHidden({
           type: 'input-prompt',
           name: promptMatch[1],
-          label: promptMatch[1],
+          label: naamMetProcent(promptMatch[1]),
           defaultValue,
           unit,
         }, state),

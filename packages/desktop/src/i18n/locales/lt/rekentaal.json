@@ -280,6 +280,7 @@
       "matrix": "Matrica",
       "eenvoudig": "Paprastas",
       "subscript": "Apatinis indeksas",
+      "procentInNaam": "Procento ženklas pavadinime",
       "griekseLetter": "Graikiška raidė",
       "break": "#break (sustabdyti anksčiau)",
       "defConstante": "#def Name$ = reikšmė",
@@ -298,6 +299,7 @@
     "omschrijving": {
       "eenvoudig": "Priskiria 'b' reikšmę 300 mm",
       "subscript": "Apatiniuose indeksuose leidžiami kableliai",
+      "procentInNaam": "Pavadinimo dalis: F_1%50 ir F_1_50 yra du skirtingi kintamieji",
       "eigenFunctie": "Savoji funkcija",
       "drieD": "Sukiojamas 3D vaizdas su lapo matmenimis",
       "iframe": "Išorinis puslapis per lapo plotį; įkeliamas tik jums patvirtinus",

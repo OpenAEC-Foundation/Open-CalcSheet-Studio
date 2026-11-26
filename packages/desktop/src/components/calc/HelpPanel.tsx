@@ -56,6 +56,7 @@ const SECTIONS: Section[] = [
     items: [
       { label: vt("item.eenvoudig"), insert: "b = 300 mm", description: vt("omschrijving.eenvoudig") },
       { label: vt("item.subscript"), insert: "V_b,0 = 27 m/s", description: vt("omschrijving.subscript") },
+      { label: vt("item.procentInNaam"), insert: "F_1%50 = 2", description: vt("omschrijving.procentInNaam") },
       { label: vt("item.griekseLetter"), insert: "γ_Q = 1.5", description: "γ, σ, ψ, μ, π …" },
     ],
   },

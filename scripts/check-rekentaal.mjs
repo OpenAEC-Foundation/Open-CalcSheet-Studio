@@ -5,11 +5,14 @@
  *      net als `And()`, `Or()` en `Xor()`, voor elke plaats van het onware of
  *      ware deel; ook binnen `#if`. Twee delen, de operator `a and b` en een
  *      matrix (elementsgewijs) blijven zoals ze waren.
+ *   2. Een procentteken in een naam (`F_1%50`) hoort bij de naam: `F_1%50` en
+ *      `F_1_50` zijn twee variabelen, apart in de scope en in de uitwerking, en
+ *      in beeld staat het procent. `50%` en `a % b` blijven rekenen.
  *
  * Draaien:  node scripts/check-rekentaal.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
  */
-import { parse, evaluateMetScope } from "../packages/core/dist/index.js";
+import { parse, evaluateMetScope, render, verwijzingNaam } from "../packages/core/dist/index.js";
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -58,6 +61,37 @@ console.log("\nOngewijzigd");
   meld(waar(scope.u) === false && waar(scope.v) === true, "de operatoren and en or");
   const m = scope.M && typeof scope.M.toArray === "function" ? scope.M.toArray() : scope.M;
   meld(JSON.stringify(m) === JSON.stringify([true, false, false]), "and met twee vectoren rekent elementsgewijs", JSON.stringify(m));
+}
+
+console.log("\nEen procentteken in een naam");
+{
+  const { nodes, scope } = reken("F_1%50 = 2\nF_1_50 = 3\nF_1%50\nF_1_50\nx = F_1%50*10 + F_1_50");
+  const disp = nodes.filter((n) => n.type === "var-display");
+  const getal = (n) => Number(String(n?.value ?? n?.result ?? "").replace(",", "."));
+  meld(disp.length === 2 && getal(disp[0]) === 2 && getal(disp[1]) === 3, "F_1%50 toont 2 en F_1_50 toont 3",
+    JSON.stringify(disp.map((n) => [n.name, n.value ?? n.result])));
+  meld(Number(scope.x) === 23, "F_1%50*10 + F_1_50 = 23", String(scope.x));
+  const namen = Object.keys(scope).filter((k) => k.startsWith("F_1"));
+  meld(namen.length === 2, "twee namen in de scope", JSON.stringify(namen));
+  const html = render(nodes);
+  const tex = [...html.matchAll(/<annotation encoding="application\/x-tex">([^<]*)<\/annotation>/g)].map((m) => m[1]);
+  meld(tex[0]?.includes("1\\%50") && !tex[1]?.includes("\\%"), "in de uitwerking staat F_{1%50} met procent en F_{1,50} zonder", JSON.stringify(tex.slice(0, 2)));
+}
+{
+  // De bekende schrijfwijze uit de documentatie blijft rekenen, ook met een punt in de naam.
+  const { scope } = reken("F_0.9G50%TotalWeight = 7 kN\nCs.Cd = 0.9\nF = Cs.Cd*F_0.9G50%TotalWeight");
+  meld(Math.abs(scope.F?.toNumber?.("kN") - 6.3) < 1e-9, "F_0.9G50%TotalWeight en Cs.Cd rekenen", String(scope.F));
+  // Een procent als getal of als modulo blijft een operator.
+  const r = reken("p = 50%\nq = 7 % 3\nn = 12\nm = n % 5");
+  meld(Number(r.scope.p) === 0.5 && Number(r.scope.q) === 1 && Number(r.scope.m) === 2, "50% en 7 % 3 en n % 5 blijven rekenen",
+    `${r.scope.p} / ${r.scope.q} / ${r.scope.m}`);
+}
+{
+  // Een waarde uit een ander blad met een procent in de naam.
+  const naam = verwijzingNaam("1", "F_1%50");
+  meld(naam !== verwijzingNaam("1", "F_1_50"), "#1.F_1%50 en #1.F_1_50 zijn verschillende verwijzingen", naam);
+  const { scope } = evaluateMetScope(parse("y = #1.F_1%50 + #1.F_1_50"), {}, { [naam]: 2, [verwijzingNaam("1", "F_1_50")]: 3 });
+  meld(Number(scope.y) === 5, "#1.F_1%50 + #1.F_1_50 = 5", String(scope.y));
 }
 
 console.log(fouten === 0 ? "\nAlle controles geslaagd." : `\n${fouten} controle(s) gezakt.`);
