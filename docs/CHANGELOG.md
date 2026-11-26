@@ -7,6 +7,9 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- Een rekendienst zonder venster, voor servers en de OpenAEC SuperCloud: rekenbladen en hele projecten doorrekenen via dezelfde REST-routes en MCP-tools als de app, over HTTP of stdio, met API-sleutels, een grens aan grootte, gelijktijdigheid en tijd, en zonder paden op de server. Hij rekent met dezelfde regels als de app (projectgegevens, belastingen uit hoofdstuk 5, verwijzingen tussen bladen en spreadsheetcellen), stuurt `@toets`-, `@fem`- en `@kern`-blokken naar de meegeleverde FEM Studio en geeft het rapport als PDF. Elke release publiceert hem als image `ghcr.io/openaec-foundation/open-calcsheet-studio-api` (docs/rekendienst.md).
+- `sheet_evaluate` en `project_get` van de MCP-server en de REST-API rekenen een blad dat naar een ander blad of een spreadsheetcel verwijst (`#1.R_paal`) met de waarde daaruit, net als het scherm, het rapport en de IFCX-export.
+
 ## v2026.48.0 — 2026-11-26
 
 - Bestand › Exporteren zet het rapport ook in een bewerkbaar document: DOCX of ODT. Tekst, koppen en tabellen blijven bewerkbaar, formules worden vergelijkingen, tekeningen gaan als afbeelding mee. Het is een momentopname met project, revisie en exportmoment; wat niet mee kan, zoals de pagina's van een PDF-blad, noemt de app vooraf

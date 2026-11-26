@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-platform/
+dist-rekendienst/
 .vite/
 *.tsbuildinfo
 PROMPTS.md

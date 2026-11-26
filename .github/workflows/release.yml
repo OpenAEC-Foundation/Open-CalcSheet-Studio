@@ -166,6 +166,22 @@ jobs:
             -F draft=false -F prerelease=false -f make_latest=true \
             --jq '"Gepubliceerd: " + .html_url'
 
+  # De Docker-images, pas als de release openbaar is en dus na alle andere controles:
+  # bouwen, in een container testen, en dan met het versienummer en latest naar GHCR
+  # (docker-images.yml, docs/rekendienst.md).
+  images:
+    name: Docker-images
+    needs: [voorbereiden, publiceren]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/docker-images.yml
+    with:
+      versie: ${{ needs.voorbereiden.outputs.versie }}
+      sha: ${{ needs.voorbereiden.outputs.sha }}
+
   # De werkelijk aangeboden downloads nog een keer. Dit kan niets meer tegenhouden,
   # maar een rode run hier betekent dat er iets mis is met wat openbaar staat.
   na-publicatie:

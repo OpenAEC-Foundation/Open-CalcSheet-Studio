@@ -120,9 +120,11 @@ Every sheet with its text, input and results is in the IFCX file. Drawings that 
 
 The app has a built-in MCP server and a REST API with the same 43 tools: open and save projects, add sheets, set input, calculate, export and print. It only listens on your own computer (`127.0.0.1`), behind a token. You can switch it off, make it read-only or pause it under **Settings › API and AI assistant**. See [the MCP documentation](docs/mcp.md) and [the REST API](docs/api.md).
 
+For servers there is also a calculation service without a window: the same REST routes and MCP tools over HTTP or stdio, with API keys, the results as JSON and the report as PDF. Each release publishes it as the image `ghcr.io/openaec-foundation/open-calcsheet-studio-api`. See [the calculation service](docs/rekendienst.md).
+
 ## Testing and reliability
 
-- **92 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
+- **93 check scripts** in `scripts/`, run with `npm run check` on every pull request, on Linux and on Windows.
 - **382 results against hand calculations**: 313 in `scripts/check-formules.mjs` and 69 in `scripts/check-library.mjs`, the latter where possible along another route, such as checking equilibrium.
 - **A real PDF of a mixed project** in `scripts/check-rapport-pdf.mjs`: as many pages as sheets of paper, every page its number, and every line of the table of contents on the right page.
 - **Security checks in the real app**, run by hand: `scripts/proef-js-webrtc.mjs` for scripts in a sheet, and `scripts/proef-jupyter-venster.mjs` and `scripts/proef-marimo-venster.mjs` for notebooks. They use a listening post to count what gets out.

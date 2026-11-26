@@ -20,7 +20,7 @@
  */
 import type { HttpMethode, JsonSchema, McpContext, McpFoutCode, McpRestRoute, McpToolDef, McpToolResultaat } from "./contracts.ts";
 import { voerToolUit } from "./uitvoeren.ts";
-import { bouwOpenApi } from "./openapi.ts";
+import { bouwOpenApi, type OpenApiOpties } from "./openapi.ts";
 
 export const REST_BASIS = "/api/v1";
 
@@ -32,6 +32,8 @@ export interface RestAntwoord {
 export interface RestDeps {
   tools: McpToolDef[];
   context: () => McpContext;
+  /** Voor een andere server dan de desktop-app (de rekendienst): titel, adres en extra paden. */
+  openapi?: OpenApiOpties;
 }
 
 export const FOUT_STATUS: Record<McpFoutCode, number> = {
@@ -168,7 +170,7 @@ export async function verwerkRest(methode: string, url: string, body: string, de
   if (rest.length === 1 && rest[0] === "openapi.json") {
     if (m !== "GET") return foutAntwoord(405, "METHOD_NOT_ALLOWED", `${m} is not allowed on ${pad}.`);
     const ctx = deps.context();
-    return json(200, bouwOpenApi(deps.tools, ctx.server));
+    return json(200, bouwOpenApi(deps.tools, ctx.server, deps.openapi));
   }
   if (rest[0] === "tools") {
     if (rest.length === 1) {

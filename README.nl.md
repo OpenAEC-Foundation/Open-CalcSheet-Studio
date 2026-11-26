@@ -122,9 +122,11 @@ Elk blad staat met tekst, invoer en uitkomsten in het IFCX-bestand. Tekeningen d
 
 De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: projecten openen en opslaan, bladen toevoegen, invoer zetten, doorrekenen, exporteren en afdrukken. Hij luistert alleen op je eigen computer (`127.0.0.1`), achter een token. Je kunt hem uitzetten, op alleen lezen zetten of pauzeren onder **Settings › API and AI assistant**. Zie [de MCP-documentatie](docs/mcp.md) en [de REST-API](docs/api.md).
 
+Voor servers is er ook een rekendienst zonder venster: dezelfde REST-routes en MCP-tools over HTTP of stdio, met API-sleutels, de uitkomsten als JSON en het rapport als PDF. Elke release publiceert hem als het image `ghcr.io/openaec-foundation/open-calcsheet-studio-api`. Zie [de rekendienst](docs/rekendienst.md).
+
 ## Testen en betrouwbaarheid
 
-- **92 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **93 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.

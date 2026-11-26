@@ -99,6 +99,12 @@ een tijdelijke map en controleert:
 
 Met `--bundel <map>` controleert het script een bestaande bouw.
 
+## Rekenen zonder werkplek
+
+Rekenbladen doorrekenen als dienst, zonder werkplek en zonder ingelogde gebruiker, doet
+de rekendienst: [rekendienst.md](rekendienst.md), image
+`ghcr.io/openaec-foundation/open-calcsheet-studio-api`.
+
 ## Een versie vastpinnen
 
 De SuperCloud bouwt de bundel zelf uit een vaste commit

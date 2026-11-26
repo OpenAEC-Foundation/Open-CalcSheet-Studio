@@ -30,6 +30,8 @@ export interface McpPdf {
 /** Eén blad zoals de tools het zien; een uittreksel van `Exemplaar`. */
 export interface McpBlad {
   id: string;
+  /** Het kenmerk voor een verwijzing uit een ander blad (`#1.R_paal`); zie store/bladRefs.ts. */
+  ref?: string;
   naam: string;
   templateId: string;
   source: string;

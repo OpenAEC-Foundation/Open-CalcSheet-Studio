@@ -1,0 +1,159 @@
+name: Docker-images
+
+# De images bij een release, naar GHCR:
+#   - ghcr.io/openaec-foundation/open-calcsheet-studio-api: de rekendienst zonder venster
+#     (docker/rekendienst.Dockerfile, docs/rekendienst.md).
+# Elk image wordt eerst gebouwd en in een container getest; pas als die proef groen is,
+# gaat het met het versienummer en latest naar GHCR, ondertekend met cosign (zonder
+# sleutel, via de OIDC-identiteit van deze workflow), met een SBOM en een build-attestatie.
+#
+# release.yml roept dit aan nadat de release openbaar is, dus na alle andere controles.
+# Met Run workflow op een tak: bouwen en testen, en alleen publiceren als dat gevraagd is.
+
+on:
+  workflow_call:
+    inputs:
+      versie:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+      publiceren:
+        required: false
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      publiceren:
+        description: 'Ook naar GHCR (anders alleen bouwen en testen)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  rekendienst:
+    name: Rekendienst (API)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      IMAGE: ghcr.io/openaec-foundation/open-calcsheet-studio-api
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # De versie komt van de release; bij Run workflow uit de app zelf.
+      - name: Versie bepalen
+        id: versie
+        env:
+          VERSIE: ${{ inputs.versie }}
+        run: |
+          set -euo pipefail
+          VERSIE="${VERSIE:-$(node -p "require('./packages/desktop/package.json').version")}"
+          if ! [[ "$VERSIE" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$ ]]; then
+            echo "::error::Geen versie JJJJ.W.N: $VERSIE"
+            exit 1
+          fi
+          echo "versie=$VERSIE" >> "$GITHUB_OUTPUT"
+          echo "revisie=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Bouwen voor de proef
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/rekendienst.Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: rekendienst:proef
+          build-args: |
+            VERSIE=${{ steps.versie.outputs.versie }}
+            REVISIE=${{ steps.versie.outputs.revisie }}
+          cache-from: type=gha,scope=rekendienst
+          cache-to: type=gha,mode=max,scope=rekendienst
+
+      # Start de container, wacht tot hij gezond is en rekent het voorbeeldproject door,
+      # met FEM Studio en het rapport als PDF (scripts/rooktest-rekendienst.mjs).
+      - name: Proef in een container
+        run: |
+          set -euo pipefail
+          SLEUTEL="$(openssl rand -hex 24)"
+          docker run -d --name rekendienst -p 127.0.0.1:8080:8080 -e REKENDIENST_TOKEN="$SLEUTEL" rekendienst:proef
+          node scripts/rooktest-rekendienst.mjs http://127.0.0.1:8080 "$SLEUTEL" --volledig
+          for i in $(seq 1 30); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' rekendienst)" = healthy ] && break
+            sleep 2
+          done
+          test "$(docker inspect -f '{{.State.Health.Status}}' rekendienst)" = healthy
+          test "$(docker exec rekendienst id -u)" != 0
+          for f in LICENSE THIRD-PARTY-NOTICES.txt fem-studio/LICENSE-AGPL-3.0.txt fem-studio/THIRD-PARTY-NOTICES.txt fem-studio/SOURCE.txt; do
+            docker exec rekendienst test -s "/opt/rekendienst/$f"
+          done
+          docker exec rekendienst sh -c 'ls /opt/rekendienst/fem-studio/openaec-mcp-server_*_source.tar.gz'
+          {
+            echo "## Rekendienst ${{ steps.versie.outputs.versie }}"
+            echo
+            echo "Proef geslaagd. Geheugen na de proef: $(docker stats --no-stream --format '{{.MemUsage}}' rekendienst)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Logboek van de container
+        if: always()
+        run: docker logs rekendienst || true
+
+      - name: Aanmelden bij GHCR
+        if: inputs.publiceren
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publiceren
+        if: inputs.publiceren
+        id: publiceren
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/rekendienst.Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: mode=max
+          sbom: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.versie.outputs.versie }}
+            ${{ env.IMAGE }}:latest
+          build-args: |
+            VERSIE=${{ steps.versie.outputs.versie }}
+            REVISIE=${{ steps.versie.outputs.revisie }}
+          cache-from: type=gha,scope=rekendienst
+
+      - uses: sigstore/cosign-installer@v3
+        if: inputs.publiceren
+
+      - name: Ondertekenen met cosign
+        if: inputs.publiceren
+        env:
+          DIGEST: ${{ steps.publiceren.outputs.digest }}
+        run: cosign sign --yes "$IMAGE@$DIGEST"
+
+      - name: Build-attestatie
+        if: inputs.publiceren
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.publiceren.outputs.digest }}
+          push-to-registry: true
