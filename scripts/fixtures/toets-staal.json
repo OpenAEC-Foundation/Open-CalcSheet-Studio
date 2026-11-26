@@ -1,0 +1,652 @@
+{
+ "versie": "2026.44.2",
+ "staal": {
+  "content": [
+   {
+    "type": "text",
+    "text": "{\"beam_id\":1,\"checks\":[{\"id\":\"6.2.3_tension\",\"kind\":{\"data\":{\"article\":\"art. 6.2.3 (6.6)\",\"formula_latex\":\"N_{t,Rd} = N_{pl,Rd} = \\\\frac{A \\\\cdot f_y}{\\\\gamma_{M0}}\",\"id\":\"6.2.3_tension\",\"notes\":[\"Niet van toepassing: de omhullende bevat geen trekkracht (grootste N_Ed = -20,00 kN, combinatie 1, x = 0 mm; N is trek-positief). De weerstand staat er ter informatie.\"],\"status\":\"NotApplicable\",\"title\":\"Trek\",\"uc\":null,\"unit\":\"kN\",\"value\":1264.3,\"variables\":[{\"symbol\":\"A\",\"unit\":\"mm²\",\"value\":5380},{\"symbol\":\"f_y\",\"unit\":\"MPa\",\"value\":235},{\"symbol\":\"\\\\gamma_{M0}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Resistance\"}},{\"id\":\"6.2.4_compression\",\"kind\":{\"data\":{\"article\":\"art. 6.2.4 (6.10)\",\"formula_latex\":\"N_{c,Rd} = \\\\frac{A \\\\cdot f_y}{\\\\gamma_{M0}}\",\"id\":\"6.2.4_compression\",\"notes\":[\"Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235).\"],\"status\":\"Ok\",\"title\":\"Druk\",\"uc\":{\"ed\":20,\"formula_latex\":\"N_{Ed} / N_{c,Rd}\",\"rd\":1264.3,\"uc\":0.015819030293443014},\"unit\":\"kN\",\"value\":1264.3,\"variables\":[{\"symbol\":\"A\",\"unit\":\"mm²\",\"value\":5380},{\"symbol\":\"f_y\",\"unit\":\"MPa\",\"value\":235},{\"symbol\":\"\\\\gamma_{M0}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Resistance\"}},{\"id\":\"6.2.5_bending_y\",\"kind\":{\"data\":{\"article\":\"art. 6.2.5 (6.13)\",\"formula_latex\":\"M_{y,c,Rd} = M_{pl,y,Rd} = \\\\frac{W_{pl,y} \\\\cdot f_y}{\\\\gamma_{M0}}\",\"id\":\"6.2.5_bending_y\",\"notes\":[\"Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235).\"],\"status\":\"Ok\",\"title\":\"Buigend moment (maatgevend)\",\"uc\":{\"ed\":50,\"formula_latex\":\"M_{y,Ed} / M_{y,c,Rd}\",\"rd\":101.05,\"uc\":0.4948045522018803},\"unit\":\"kNm\",\"value\":101.05,\"variables\":[{\"symbol\":\"W_{pl,y}\",\"unit\":\"mm³\",\"value\":430000},{\"symbol\":\"f_y\",\"unit\":\"MPa\",\"value\":235},{\"symbol\":\"\\\\gamma_{M0}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Resistance\"}},{\"id\":\"6.2.5_bending_z\",\"kind\":{\"data\":{\"article\":\"art. 6.2.5\",\"formula_latex\":\"M_{z,c,Rd} = \\\\frac{W_{pl,z} \\\\cdot f_y}{\\\\gamma_{M0}}\",\"id\":\"6.2.5_bending_z\",\"notes\":[\"Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235).\"],\"status\":\"Ok\",\"title\":\"Buigend moment (z-as)\",\"uc\":{\"ed\":0,\"formula_latex\":\"M_{z,Ed} / M_{z,c,Rd}\",\"rd\":47.94,\"uc\":0},\"unit\":\"kNm\",\"value\":47.94,\"variables\":[{\"symbol\":\"W_{pl,z}\",\"unit\":\"mm³\",\"value\":204000},{\"symbol\":\"f_y\",\"unit\":\"MPa\",\"value\":235},{\"symbol\":\"\\\\gamma_{M0}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Resistance\"}},{\"id\":\"6.2.6_shear_z\",\"kind\":{\"data\":{\"article\":\"art. 6.2.6 (6.18)\",\"formula_latex\":\"V_{c,z,Rd} = V_{pl,z,Rd} = \\\\frac{A_v \\\\cdot (f_y / \\\\sqrt{3})}{\\\\gamma_{M0}}\",\"id\":\"6.2.6_shear_z\",\"notes\":[\"Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235).\"],\"status\":\"Ok\",\"title\":\"Dwarskracht\",\"uc\":{\"ed\":25,\"formula_latex\":\"V_{z,Ed} / V_{c,z,Rd}\",\"rd\":244.89755043350954,\"uc\":0.1020835037171496},\"unit\":\"kN\",\"value\":244.89755043350954,\"variables\":[{\"symbol\":\"A_v\",\"unit\":\"mm²\",\"value\":1805},{\"symbol\":\"f_y\",\"unit\":\"MPa\",\"value\":235},{\"symbol\":\"\\\\gamma_{M0}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Resistance\"}},{\"id\":\"6.2.6_shear_y\",\"kind\":{\"data\":{\"article\":\"art. 6.2.6\",\"formula_latex\":\"V_{c,y,Rd} = \\\\frac{A_v \\\\cdot (f_y/\\\\sqrt{3})}{\\\\gamma_{M0}}\",\"id\":\"6.2.6_shear_y\",\"notes\":[\"Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235).\"],\"status\":\"Ok\",\"title\":\"Dwarskracht (y-as)\",\"uc\":{\"ed\":0,\"formula_latex\":\"V_{y,Ed}/V_{c,y,Rd}\",\"rd\":542.7092530382482,\"uc\":0},\"unit\":\"kN\",\"value\":542.7092530382482,\"variables\":[{\"symbol\":\"A_v\",\"unit\":\"mm²\",\"value\":4000},{\"symbol\":\"f_y\",\"unit\":\"MPa\",\"value\":235},{\"symbol\":\"\\\\gamma_{M0}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Resistance\"}},{\"id\":\"6.2.8_combined_mv\",\"kind\":{\"data\":{\"article\":\"art. 6.2.8\",\"formula_latex\":\"M_{y,V,Rd} = (1 - \\\\rho) \\\\cdot M_{y,c,Rd}\",\"id\":\"6.2.8_combined_mv\",\"notes\":[\"Getoetst op alle 3 punten van de omhullende, telkens met V_z,Ed en M_y,Ed van dat punt; maatgevend is combinatie 1 op x = 0 mm.\"],\"status\":\"Ok\",\"title\":\"Buiging en dwarskracht\",\"uc\":{\"ed\":50,\"formula_latex\":\"M_{y,Ed} / M_{y,V,Rd}\",\"rd\":101.05,\"uc\":0.4948045522018803},\"unit\":\"kNm\",\"value\":101.05,\"variables\":[{\"symbol\":\"V_{z,Ed}\",\"unit\":\"kN\",\"value\":25},{\"symbol\":\"V_{z,pl,Rd}\",\"unit\":\"kN\",\"value\":244.89755043350954},{\"symbol\":\"M_{y,c,Rd}\",\"unit\":\"kNm\",\"value\":101.05}]},\"type\":\"Resistance\"}},{\"id\":\"6.2.9_combined_mn\",\"kind\":{\"data\":{\"article\":\"art. 6.2.9.1 (6.36)–(6.38)\",\"formula_latex\":\"M_{y,Ed} \\\\leq M_{N,y,Rd}, \\\\quad M_{N,y,Rd} = M_{pl,y,Rd} \\\\cdot \\\\frac{1 - n}{1 - 0{,}5 a} \\\\leq M_{pl,y,Rd}\",\"id\":\"6.2.9_combined_mn\",\"notes\":[\"Getoetst op alle 3 punten van de omhullende, telkens met N, M_y en M_z van dat punt; maatgevend is combinatie 1 op x = 0 mm.\"],\"status\":\"Ok\",\"title\":\"Buiging en normaalkracht\",\"uc\":{\"ed\":50,\"formula_latex\":\"M_{y,Ed} / M_{N,y,Rd}\",\"rd\":101.05,\"uc\":0.4948045522018803},\"unit\":\"kNm\",\"value\":101.05,\"variables\":[{\"symbol\":\"N_{Ed}\",\"unit\":\"kN\",\"value\":20},{\"symbol\":\"N_{pl,Rd}\",\"unit\":\"kN\",\"value\":1264.3},{\"symbol\":\"a\",\"unit\":\"-\",\"value\":0.25650557620817843}]},\"type\":\"Resistance\"}},{\"id\":\"6.2.10_combined_mnv\",\"kind\":{\"data\":{\"article\":\"art. 6.2.10\",\"formula_latex\":\"M_{y,Ed} \\\\leq M_{N,y,Rd}, \\\\quad M_{N,y,Rd} = M_{pl,y,Rd} \\\\cdot \\\\frac{1 - n}{1 - 0{,}5 a} \\\\leq M_{pl,y,Rd}\",\"id\":\"6.2.10_combined_mnv\",\"notes\":[\"Getoetst op alle 3 punten van de omhullende, telkens met N, V_y, V_z, M_y en M_z van dat punt; maatgevend is combinatie 1 op x = 0 mm.\"],\"status\":\"Ok\",\"title\":\"Buiging, normaal- en dwarskracht\",\"uc\":{\"ed\":50,\"formula_latex\":\"M_{y,Ed} / M_{N,y,Rd}\",\"rd\":101.05,\"uc\":0.4948045522018803},\"unit\":\"kNm\",\"value\":101.05,\"variables\":[{\"symbol\":\"N_{Ed}\",\"unit\":\"kN\",\"value\":20},{\"symbol\":\"N_{pl,Rd}\",\"unit\":\"kN\",\"value\":1264.3},{\"symbol\":\"a\",\"unit\":\"-\",\"value\":0.25650557620817843}]},\"type\":\"Resistance\"}},{\"id\":\"6.3.1_buckling\",\"kind\":{\"data\":{\"article\":\"art. 6.3.1 (6.46)\",\"formula_latex\":\"N_{b,Rd} = \\\\chi \\\\cdot A \\\\cdot f_y / \\\\gamma_{M1}\",\"id\":\"6.3.1_buckling\",\"notes\":[\"Om de y-as (in het vlak): L_cr,y = 4000 mm (staaflengte (terugval)), λ̄_y = 0,514, knikkromme b (α = 0,34), χ_y = 0,8778, N_b,Rd,y = 1109,8 kN, UC = 0,018.\"],\"status\":\"Ok\",\"title\":\"Kolomknik — om y (in het vlak) en om z (uit het vlak)\",\"uc\":{\"ed\":20,\"formula_latex\":\"N_{Ed} / N_{b,Rd}\",\"rd\":794.8358063322944,\"uc\":0.025162429574339867},\"unit\":\"kN\",\"value\":794.8358063322944,\"variables\":[{\"symbol\":\"A\",\"unit\":\"mm²\",\"value\":5380},{\"symbol\":\"f_y\",\"unit\":\"MPa\",\"value\":235},{\"symbol\":\"\\\\gamma_{M1}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Stability\"}},{\"id\":\"6.3.2_ltb\",\"kind\":{\"data\":{\"article\":\"art. 6.3.2.3 (tabel 6.3/6.5) + NB.NB.2/NB.4/NB.7/NB.11/NB.13\",\"formula_latex\":\"M_{b,Rd} = \\\\chi_{LT} \\\\cdot W_{pl,y} \\\\cdot f_y / \\\\gamma_{M1}\",\"id\":\"6.3.2_ltb\",\"notes\":[\"Gewalst I-profiel met h/b = 0,950 → kipkromme b volgens tabel 6.5; α_LT = 0,34 volgens tabel 6.3.\"],\"status\":\"Ok\",\"title\":\"Kipweerstand\",\"uc\":{\"ed\":50,\"formula_latex\":\"M_{y,Ed} / M_{b,Rd}\",\"rd\":90.25466799258236,\"uc\":0.5539879666291531},\"unit\":\"kNm\",\"value\":90.25466799258236,\"variables\":[{\"symbol\":\"W_{pl,y}\",\"unit\":\"mm³\",\"value\":430000},{\"symbol\":\"f_y\",\"unit\":\"MPa\",\"value\":235},{\"symbol\":\"\\\\gamma_{M1}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Stability\"}},{\"id\":\"6.3.3_eq_6_61\",\"kind\":{\"data\":{\"article\":\"art. 6.3.3 (6.61)\",\"formula_latex\":\"\\\\frac{N_{Ed}}{\\\\chi_y N_{Rk}/\\\\gamma_{M1}} + k_{yy}\\\\frac{M_{y,Ed}}{\\\\chi_{LT} M_{y,Rk}/\\\\gamma_{M1}} + k_{yz}\\\\frac{M_{z,Ed}}{M_{z,Rk}/\\\\gamma_{M1}} \\\\leq 1\",\"id\":\"6.3.3_eq_6_61\",\"notes\":[\"C_my tabel B.3, rij 1 (alleen eindmomenten, lineair verloop): M = 50,00 kNm en ψ·M met ψ = 1,000 → C_m = 0,6 + 0,4·ψ = 1,000 (ondergrens 0,4).\"],\"status\":\"Ok\",\"title\":\"Knik en kip om de y-as (N + M)\",\"uc\":{\"ed\":0.5751462796736297,\"formula_latex\":\"Sum of terms\",\"rd\":1,\"uc\":0.5751462796736297},\"unit\":\"-\",\"value\":0.5751462796736297,\"variables\":[{\"symbol\":\"k_{yy}\",\"unit\":\"-\",\"value\":1.0056637974159477},{\"symbol\":\"k_{yz}\",\"unit\":\"-\",\"value\":0.6167110827534213},{\"symbol\":\"C_{my}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Stability\"}},{\"id\":\"6.3.3_eq_6_62\",\"kind\":{\"data\":{\"article\":\"art. 6.3.3 (6.62)\",\"formula_latex\":\"\\\\frac{N_{Ed}}{\\\\chi_z N_{Rk}/\\\\gamma_{M1}} + k_{zy}\\\\frac{M_{y,Ed}}{\\\\chi_{LT} M_{y,Rk}/\\\\gamma_{M1}} + k_{zz}\\\\frac{M_{z,Ed}}{M_{z,Rk}/\\\\gamma_{M1}} \\\\leq 1\",\"id\":\"6.3.3_eq_6_62\",\"notes\":[\"C_my tabel B.3, rij 1 (alleen eindmomenten, lineair verloop): M = 50,00 kNm en ψ·M met ψ = 1,000 → C_m = 0,6 + 0,4·ψ = 1,000 (ondergrens 0,4).\"],\"status\":\"Ok\",\"title\":\"Knik en kip om de z-as (N + M)\",\"uc\":{\"ed\":0.5775641712362639,\"formula_latex\":\"Sum of terms\",\"rd\":1,\"uc\":0.5775641712362639},\"unit\":\"-\",\"value\":0.5775641712362639,\"variables\":[{\"symbol\":\"k_{zy}\",\"unit\":\"-\",\"value\":0.997136715844424},{\"symbol\":\"k_{zz}\",\"unit\":\"-\",\"value\":1.0278518045890357},{\"symbol\":\"C_{my}\",\"unit\":\"-\",\"value\":1}]},\"type\":\"Stability\"}},{\"id\":\"deflection_w_fin\",\"kind\":{\"data\":{\"article\":\"NEN-EN 1990:2002/NB:2019 A1.4.3(4)\",\"formula_latex\":\"w_{fin,z} = w_z + w_{zeeg,z}\",\"id\":\"deflection_w_fin\",\"notes\":[\"Grenswaarde w_fin (w_max: de doorbuiging met de zeeg verrekend): 1/250 deel van ℓ_rep, volgens NEN-EN 1990:2002/NB:2019 A1.4.3(4), \\\"bij zowel vloeren als daken\\\". Met ℓ_rep = 4000 mm is dat 16.0 mm.\"],\"status\":\"Ok\",\"title\":\"Doorbuiging w_fin (BGT)\",\"uc\":{\"ed\":8,\"formula_latex\":\"|w| / w_{max}\",\"rd\":16,\"uc\":0.5},\"unit\":\"mm\",\"value\":16,\"variables\":[{\"symbol\":\"L\",\"unit\":\"mm\",\"value\":4000},{\"symbol\":\"w\",\"unit\":\"mm\",\"value\":-8},{\"symbol\":\"L/n\",\"unit\":\"-\",\"value\":250}]},\"type\":\"Resistance\"}},{\"id\":\"deflection_w_add\",\"kind\":{\"data\":{\"article\":\"NEN-EN 1990:2002/NB:2019 A1.4.3(3)\",\"formula_latex\":\"w_{add,z} = w_z - w_{BGT,perm,z}\",\"id\":\"deflection_w_add\",\"notes\":[\"w_add = w_fin − w_BGT,permanent staat voor de som w2 + w3 uit figuur NB.1 bij NEN-EN 1990:2002/NB:2019 A1.4.3(2): de doorbuiging bovenop het deel dat de blijvende belasting al veroorzaakt.\"],\"status\":\"Ok\",\"title\":\"Doorbuiging w_add (BGT)\",\"uc\":{\"ed\":8,\"formula_latex\":\"|w| / w_{max}\",\"rd\":16,\"uc\":0.5},\"unit\":\"mm\",\"value\":16,\"variables\":[{\"symbol\":\"L\",\"unit\":\"mm\",\"value\":4000},{\"symbol\":\"w\",\"unit\":\"mm\",\"value\":-8},{\"symbol\":\"L/n\",\"unit\":\"-\",\"value\":250}]},\"type\":\"Resistance\"}}],\"classification\":\"Class1\",\"governing_check_id\":\"6.3.3_eq_6_62\",\"profile_name\":\"HEA200\",\"status\":\"Ok\",\"steel_grade\":\"S235\",\"uc_max\":0.5775641712362639}"
+   }
+  ],
+  "isError": false,
+  "structuredContent": {
+   "beam_id": 1,
+   "checks": [
+    {
+     "id": "6.2.3_tension",
+     "kind": {
+      "data": {
+       "article": "art. 6.2.3 (6.6)",
+       "formula_latex": "N_{t,Rd} = N_{pl,Rd} = \\frac{A \\cdot f_y}{\\gamma_{M0}}",
+       "id": "6.2.3_tension",
+       "notes": [
+        "Niet van toepassing: de omhullende bevat geen trekkracht (grootste N_Ed = -20,00 kN, combinatie 1, x = 0 mm; N is trek-positief). De weerstand staat er ter informatie."
+       ],
+       "status": "NotApplicable",
+       "title": "Trek",
+       "uc": null,
+       "unit": "kN",
+       "value": 1264.3,
+       "variables": [
+        {
+         "symbol": "A",
+         "unit": "mm²",
+         "value": 5380
+        },
+        {
+         "symbol": "f_y",
+         "unit": "MPa",
+         "value": 235
+        },
+        {
+         "symbol": "\\gamma_{M0}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "6.2.4_compression",
+     "kind": {
+      "data": {
+       "article": "art. 6.2.4 (6.10)",
+       "formula_latex": "N_{c,Rd} = \\frac{A \\cdot f_y}{\\gamma_{M0}}",
+       "id": "6.2.4_compression",
+       "notes": [
+        "Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235)."
+       ],
+       "status": "Ok",
+       "title": "Druk",
+       "uc": {
+        "ed": 20,
+        "formula_latex": "N_{Ed} / N_{c,Rd}",
+        "rd": 1264.3,
+        "uc": 0.015819030293443014
+       },
+       "unit": "kN",
+       "value": 1264.3,
+       "variables": [
+        {
+         "symbol": "A",
+         "unit": "mm²",
+         "value": 5380
+        },
+        {
+         "symbol": "f_y",
+         "unit": "MPa",
+         "value": 235
+        },
+        {
+         "symbol": "\\gamma_{M0}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "6.2.5_bending_y",
+     "kind": {
+      "data": {
+       "article": "art. 6.2.5 (6.13)",
+       "formula_latex": "M_{y,c,Rd} = M_{pl,y,Rd} = \\frac{W_{pl,y} \\cdot f_y}{\\gamma_{M0}}",
+       "id": "6.2.5_bending_y",
+       "notes": [
+        "Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235)."
+       ],
+       "status": "Ok",
+       "title": "Buigend moment (maatgevend)",
+       "uc": {
+        "ed": 50,
+        "formula_latex": "M_{y,Ed} / M_{y,c,Rd}",
+        "rd": 101.05,
+        "uc": 0.4948045522018803
+       },
+       "unit": "kNm",
+       "value": 101.05,
+       "variables": [
+        {
+         "symbol": "W_{pl,y}",
+         "unit": "mm³",
+         "value": 430000
+        },
+        {
+         "symbol": "f_y",
+         "unit": "MPa",
+         "value": 235
+        },
+        {
+         "symbol": "\\gamma_{M0}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "6.2.5_bending_z",
+     "kind": {
+      "data": {
+       "article": "art. 6.2.5",
+       "formula_latex": "M_{z,c,Rd} = \\frac{W_{pl,z} \\cdot f_y}{\\gamma_{M0}}",
+       "id": "6.2.5_bending_z",
+       "notes": [
+        "Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235)."
+       ],
+       "status": "Ok",
+       "title": "Buigend moment (z-as)",
+       "uc": {
+        "ed": 0,
+        "formula_latex": "M_{z,Ed} / M_{z,c,Rd}",
+        "rd": 47.94,
+        "uc": 0
+       },
+       "unit": "kNm",
+       "value": 47.94,
+       "variables": [
+        {
+         "symbol": "W_{pl,z}",
+         "unit": "mm³",
+         "value": 204000
+        },
+        {
+         "symbol": "f_y",
+         "unit": "MPa",
+         "value": 235
+        },
+        {
+         "symbol": "\\gamma_{M0}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "6.2.6_shear_z",
+     "kind": {
+      "data": {
+       "article": "art. 6.2.6 (6.18)",
+       "formula_latex": "V_{c,z,Rd} = V_{pl,z,Rd} = \\frac{A_v \\cdot (f_y / \\sqrt{3})}{\\gamma_{M0}}",
+       "id": "6.2.6_shear_z",
+       "notes": [
+        "Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235)."
+       ],
+       "status": "Ok",
+       "title": "Dwarskracht",
+       "uc": {
+        "ed": 25,
+        "formula_latex": "V_{z,Ed} / V_{c,z,Rd}",
+        "rd": 244.89755043350954,
+        "uc": 0.1020835037171496
+       },
+       "unit": "kN",
+       "value": 244.89755043350954,
+       "variables": [
+        {
+         "symbol": "A_v",
+         "unit": "mm²",
+         "value": 1805
+        },
+        {
+         "symbol": "f_y",
+         "unit": "MPa",
+         "value": 235
+        },
+        {
+         "symbol": "\\gamma_{M0}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "6.2.6_shear_y",
+     "kind": {
+      "data": {
+       "article": "art. 6.2.6",
+       "formula_latex": "V_{c,y,Rd} = \\frac{A_v \\cdot (f_y/\\sqrt{3})}{\\gamma_{M0}}",
+       "id": "6.2.6_shear_y",
+       "notes": [
+        "Tabel 3.1: dikste element t = 10 mm ≤ 40 mm, dus f_y = 235 N/mm² en f_u = 360 N/mm² (S235)."
+       ],
+       "status": "Ok",
+       "title": "Dwarskracht (y-as)",
+       "uc": {
+        "ed": 0,
+        "formula_latex": "V_{y,Ed}/V_{c,y,Rd}",
+        "rd": 542.7092530382482,
+        "uc": 0
+       },
+       "unit": "kN",
+       "value": 542.7092530382482,
+       "variables": [
+        {
+         "symbol": "A_v",
+         "unit": "mm²",
+         "value": 4000
+        },
+        {
+         "symbol": "f_y",
+         "unit": "MPa",
+         "value": 235
+        },
+        {
+         "symbol": "\\gamma_{M0}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "6.2.8_combined_mv",
+     "kind": {
+      "data": {
+       "article": "art. 6.2.8",
+       "formula_latex": "M_{y,V,Rd} = (1 - \\rho) \\cdot M_{y,c,Rd}",
+       "id": "6.2.8_combined_mv",
+       "notes": [
+        "Getoetst op alle 3 punten van de omhullende, telkens met V_z,Ed en M_y,Ed van dat punt; maatgevend is combinatie 1 op x = 0 mm."
+       ],
+       "status": "Ok",
+       "title": "Buiging en dwarskracht",
+       "uc": {
+        "ed": 50,
+        "formula_latex": "M_{y,Ed} / M_{y,V,Rd}",
+        "rd": 101.05,
+        "uc": 0.4948045522018803
+       },
+       "unit": "kNm",
+       "value": 101.05,
+       "variables": [
+        {
+         "symbol": "V_{z,Ed}",
+         "unit": "kN",
+         "value": 25
+        },
+        {
+         "symbol": "V_{z,pl,Rd}",
+         "unit": "kN",
+         "value": 244.89755043350954
+        },
+        {
+         "symbol": "M_{y,c,Rd}",
+         "unit": "kNm",
+         "value": 101.05
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "6.2.9_combined_mn",
+     "kind": {
+      "data": {
+       "article": "art. 6.2.9.1 (6.36)–(6.38)",
+       "formula_latex": "M_{y,Ed} \\leq M_{N,y,Rd}, \\quad M_{N,y,Rd} = M_{pl,y,Rd} \\cdot \\frac{1 - n}{1 - 0{,}5 a} \\leq M_{pl,y,Rd}",
+       "id": "6.2.9_combined_mn",
+       "notes": [
+        "Getoetst op alle 3 punten van de omhullende, telkens met N, M_y en M_z van dat punt; maatgevend is combinatie 1 op x = 0 mm."
+       ],
+       "status": "Ok",
+       "title": "Buiging en normaalkracht",
+       "uc": {
+        "ed": 50,
+        "formula_latex": "M_{y,Ed} / M_{N,y,Rd}",
+        "rd": 101.05,
+        "uc": 0.4948045522018803
+       },
+       "unit": "kNm",
+       "value": 101.05,
+       "variables": [
+        {
+         "symbol": "N_{Ed}",
+         "unit": "kN",
+         "value": 20
+        },
+        {
+         "symbol": "N_{pl,Rd}",
+         "unit": "kN",
+         "value": 1264.3
+        },
+        {
+         "symbol": "a",
+         "unit": "-",
+         "value": 0.25650557620817843
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "6.2.10_combined_mnv",
+     "kind": {
+      "data": {
+       "article": "art. 6.2.10",
+       "formula_latex": "M_{y,Ed} \\leq M_{N,y,Rd}, \\quad M_{N,y,Rd} = M_{pl,y,Rd} \\cdot \\frac{1 - n}{1 - 0{,}5 a} \\leq M_{pl,y,Rd}",
+       "id": "6.2.10_combined_mnv",
+       "notes": [
+        "Getoetst op alle 3 punten van de omhullende, telkens met N, V_y, V_z, M_y en M_z van dat punt; maatgevend is combinatie 1 op x = 0 mm."
+       ],
+       "status": "Ok",
+       "title": "Buiging, normaal- en dwarskracht",
+       "uc": {
+        "ed": 50,
+        "formula_latex": "M_{y,Ed} / M_{N,y,Rd}",
+        "rd": 101.05,
+        "uc": 0.4948045522018803
+       },
+       "unit": "kNm",
+       "value": 101.05,
+       "variables": [
+        {
+         "symbol": "N_{Ed}",
+         "unit": "kN",
+         "value": 20
+        },
+        {
+         "symbol": "N_{pl,Rd}",
+         "unit": "kN",
+         "value": 1264.3
+        },
+        {
+         "symbol": "a",
+         "unit": "-",
+         "value": 0.25650557620817843
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "6.3.1_buckling",
+     "kind": {
+      "data": {
+       "article": "art. 6.3.1 (6.46)",
+       "formula_latex": "N_{b,Rd} = \\chi \\cdot A \\cdot f_y / \\gamma_{M1}",
+       "id": "6.3.1_buckling",
+       "notes": [
+        "Om de y-as (in het vlak): L_cr,y = 4000 mm (staaflengte (terugval)), λ̄_y = 0,514, knikkromme b (α = 0,34), χ_y = 0,8778, N_b,Rd,y = 1109,8 kN, UC = 0,018."
+       ],
+       "status": "Ok",
+       "title": "Kolomknik — om y (in het vlak) en om z (uit het vlak)",
+       "uc": {
+        "ed": 20,
+        "formula_latex": "N_{Ed} / N_{b,Rd}",
+        "rd": 794.8358063322944,
+        "uc": 0.025162429574339867
+       },
+       "unit": "kN",
+       "value": 794.8358063322944,
+       "variables": [
+        {
+         "symbol": "A",
+         "unit": "mm²",
+         "value": 5380
+        },
+        {
+         "symbol": "f_y",
+         "unit": "MPa",
+         "value": 235
+        },
+        {
+         "symbol": "\\gamma_{M1}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Stability"
+     }
+    },
+    {
+     "id": "6.3.2_ltb",
+     "kind": {
+      "data": {
+       "article": "art. 6.3.2.3 (tabel 6.3/6.5) + NB.NB.2/NB.4/NB.7/NB.11/NB.13",
+       "formula_latex": "M_{b,Rd} = \\chi_{LT} \\cdot W_{pl,y} \\cdot f_y / \\gamma_{M1}",
+       "id": "6.3.2_ltb",
+       "notes": [
+        "Gewalst I-profiel met h/b = 0,950 → kipkromme b volgens tabel 6.5; α_LT = 0,34 volgens tabel 6.3."
+       ],
+       "status": "Ok",
+       "title": "Kipweerstand",
+       "uc": {
+        "ed": 50,
+        "formula_latex": "M_{y,Ed} / M_{b,Rd}",
+        "rd": 90.25466799258236,
+        "uc": 0.5539879666291531
+       },
+       "unit": "kNm",
+       "value": 90.25466799258236,
+       "variables": [
+        {
+         "symbol": "W_{pl,y}",
+         "unit": "mm³",
+         "value": 430000
+        },
+        {
+         "symbol": "f_y",
+         "unit": "MPa",
+         "value": 235
+        },
+        {
+         "symbol": "\\gamma_{M1}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Stability"
+     }
+    },
+    {
+     "id": "6.3.3_eq_6_61",
+     "kind": {
+      "data": {
+       "article": "art. 6.3.3 (6.61)",
+       "formula_latex": "\\frac{N_{Ed}}{\\chi_y N_{Rk}/\\gamma_{M1}} + k_{yy}\\frac{M_{y,Ed}}{\\chi_{LT} M_{y,Rk}/\\gamma_{M1}} + k_{yz}\\frac{M_{z,Ed}}{M_{z,Rk}/\\gamma_{M1}} \\leq 1",
+       "id": "6.3.3_eq_6_61",
+       "notes": [
+        "C_my tabel B.3, rij 1 (alleen eindmomenten, lineair verloop): M = 50,00 kNm en ψ·M met ψ = 1,000 → C_m = 0,6 + 0,4·ψ = 1,000 (ondergrens 0,4)."
+       ],
+       "status": "Ok",
+       "title": "Knik en kip om de y-as (N + M)",
+       "uc": {
+        "ed": 0.5751462796736297,
+        "formula_latex": "Sum of terms",
+        "rd": 1,
+        "uc": 0.5751462796736297
+       },
+       "unit": "-",
+       "value": 0.5751462796736297,
+       "variables": [
+        {
+         "symbol": "k_{yy}",
+         "unit": "-",
+         "value": 1.0056637974159477
+        },
+        {
+         "symbol": "k_{yz}",
+         "unit": "-",
+         "value": 0.6167110827534213
+        },
+        {
+         "symbol": "C_{my}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Stability"
+     }
+    },
+    {
+     "id": "6.3.3_eq_6_62",
+     "kind": {
+      "data": {
+       "article": "art. 6.3.3 (6.62)",
+       "formula_latex": "\\frac{N_{Ed}}{\\chi_z N_{Rk}/\\gamma_{M1}} + k_{zy}\\frac{M_{y,Ed}}{\\chi_{LT} M_{y,Rk}/\\gamma_{M1}} + k_{zz}\\frac{M_{z,Ed}}{M_{z,Rk}/\\gamma_{M1}} \\leq 1",
+       "id": "6.3.3_eq_6_62",
+       "notes": [
+        "C_my tabel B.3, rij 1 (alleen eindmomenten, lineair verloop): M = 50,00 kNm en ψ·M met ψ = 1,000 → C_m = 0,6 + 0,4·ψ = 1,000 (ondergrens 0,4)."
+       ],
+       "status": "Ok",
+       "title": "Knik en kip om de z-as (N + M)",
+       "uc": {
+        "ed": 0.5775641712362639,
+        "formula_latex": "Sum of terms",
+        "rd": 1,
+        "uc": 0.5775641712362639
+       },
+       "unit": "-",
+       "value": 0.5775641712362639,
+       "variables": [
+        {
+         "symbol": "k_{zy}",
+         "unit": "-",
+         "value": 0.997136715844424
+        },
+        {
+         "symbol": "k_{zz}",
+         "unit": "-",
+         "value": 1.0278518045890357
+        },
+        {
+         "symbol": "C_{my}",
+         "unit": "-",
+         "value": 1
+        }
+       ]
+      },
+      "type": "Stability"
+     }
+    },
+    {
+     "id": "deflection_w_fin",
+     "kind": {
+      "data": {
+       "article": "NEN-EN 1990:2002/NB:2019 A1.4.3(4)",
+       "formula_latex": "w_{fin,z} = w_z + w_{zeeg,z}",
+       "id": "deflection_w_fin",
+       "notes": [
+        "Grenswaarde w_fin (w_max: de doorbuiging met de zeeg verrekend): 1/250 deel van ℓ_rep, volgens NEN-EN 1990:2002/NB:2019 A1.4.3(4), \"bij zowel vloeren als daken\". Met ℓ_rep = 4000 mm is dat 16.0 mm."
+       ],
+       "status": "Ok",
+       "title": "Doorbuiging w_fin (BGT)",
+       "uc": {
+        "ed": 8,
+        "formula_latex": "|w| / w_{max}",
+        "rd": 16,
+        "uc": 0.5
+       },
+       "unit": "mm",
+       "value": 16,
+       "variables": [
+        {
+         "symbol": "L",
+         "unit": "mm",
+         "value": 4000
+        },
+        {
+         "symbol": "w",
+         "unit": "mm",
+         "value": -8
+        },
+        {
+         "symbol": "L/n",
+         "unit": "-",
+         "value": 250
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    },
+    {
+     "id": "deflection_w_add",
+     "kind": {
+      "data": {
+       "article": "NEN-EN 1990:2002/NB:2019 A1.4.3(3)",
+       "formula_latex": "w_{add,z} = w_z - w_{BGT,perm,z}",
+       "id": "deflection_w_add",
+       "notes": [
+        "w_add = w_fin − w_BGT,permanent staat voor de som w2 + w3 uit figuur NB.1 bij NEN-EN 1990:2002/NB:2019 A1.4.3(2): de doorbuiging bovenop het deel dat de blijvende belasting al veroorzaakt."
+       ],
+       "status": "Ok",
+       "title": "Doorbuiging w_add (BGT)",
+       "uc": {
+        "ed": 8,
+        "formula_latex": "|w| / w_{max}",
+        "rd": 16,
+        "uc": 0.5
+       },
+       "unit": "mm",
+       "value": 16,
+       "variables": [
+        {
+         "symbol": "L",
+         "unit": "mm",
+         "value": 4000
+        },
+        {
+         "symbol": "w",
+         "unit": "mm",
+         "value": -8
+        },
+        {
+         "symbol": "L/n",
+         "unit": "-",
+         "value": 250
+        }
+       ]
+      },
+      "type": "Resistance"
+     }
+    }
+   ],
+   "classification": "Class1",
+   "governing_check_id": "6.3.3_eq_6_62",
+   "profile_name": "HEA200",
+   "status": "Ok",
+   "steel_grade": "S235",
+   "uc_max": 0.5775641712362639
+  }
+ },
+ "fout": {
+  "content": [
+   {
+    "text": "{\"beam_id\":1,\"checks\":[],\"classification\":\"Class1\",\"governing_check_id\":\"ERROR: profile HEA999 not found; er is niet getoetst. Bedoeld: \\\"HEA 1000\\\", \\\"HEA 900\\\", \\\"HEA 800\\\"? (zie list_steel_profiles)\",\"profile_name\":\"HEA999\",\"status\":\"NotApplicable\",\"steel_grade\":\"S235\",\"uc_max\":0.0}",
+    "type": "text"
+   }
+  ],
+  "isError": false,
+  "structuredContent": {
+   "beam_id": 1,
+   "checks": [],
+   "classification": "Class1",
+   "governing_check_id": "ERROR: profile HEA999 not found; er is niet getoetst. Bedoeld: \"HEA 1000\", \"HEA 900\", \"HEA 800\"? (zie list_steel_profiles)",
+   "profile_name": "HEA999",
+   "status": "NotApplicable",
+   "steel_grade": "S235",
+   "uc_max": 0
+  }
+ }
+}

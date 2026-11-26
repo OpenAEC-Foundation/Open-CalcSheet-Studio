@@ -23,6 +23,8 @@
  * Draaien:      node scripts/maak-rapport-voorbeeld.mjs
  * Controleren:  node scripts/maak-rapport-voorbeeld.mjs --controleer
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./lib/talen.mjs";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";

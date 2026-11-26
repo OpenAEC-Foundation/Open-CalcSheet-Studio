@@ -5,6 +5,7 @@
  *
  * Draaien:
  *   node scripts/versie.mjs controleer             alle velden gelijk en geldig?
+ *                                                  (ook de licentievelden)
  *   node scripts/versie.mjs controleer 2026.45.0   alle velden gelijk aan dit nummer?
  *   node scripts/versie.mjs zet 2026.45.0          zet het nummer overal en maakt
  *                                                  van "Nog niet uitgebracht" in
@@ -13,8 +14,9 @@
  *   node scripts/versie.mjs volgende               het nummer van de volgende release
  *
  * Alleen eigen pakketvelden staan in het register: de versies van afhankelijkheden,
- * rekenbladen, modules en het projectbestand hebben hun eigen levensloop. De
- * tests staan in check-versie.mjs.
+ * rekenbladen, modules en het projectbestand hebben hun eigen levensloop. Een
+ * tweede register, LICENTIEVELDEN, bewaakt dat elk eigen pakket dezelfde licentie
+ * noemt als LICENSE. De tests staan in check-versie.mjs.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -40,6 +42,11 @@ export const VERSIEVELDEN = [
     pad: "packages/desktop/src-tauri/Cargo.lock",
     patroon: /(\[\[package\]\]\r?\nname = "open-calcsheet-studio"\r?\nversion = ")([^"]*)(")/g,
   },
+  ...["fem-brug/Cargo.toml", "fem-brug/Cargo.lock", "Cargo.lock"].map((bestand) => ({
+    pad: "packages/desktop/src-tauri/" + bestand,
+    veld: "ocss-fem-brug",
+    patroon: /(\nname = "ocss-fem-brug"\r?\nversion = ")([^"]*)(")/g,
+  })),
   {
     pad: "package-lock.json",
     veld: "packages/core",
@@ -54,7 +61,57 @@ export const VERSIEVELDEN = [
   { pad: "packages/desktop/src/i18n/locales/en/common.json", patroon: OVER_REGEL },
 ];
 
+/**
+ * De licentie van de eigen pakketten: dezelfde als LICENSE in de root (LGPL-3.0,
+ * zonder "of later") en de README's. De meegeleverde FEM-server in
+ * src-tauri/fem-studio heeft zijn eigen licentie (AGPL-3.0) en staat hier bewust niet in.
+ */
+export const LICENTIE = "LGPL-3.0-only";
+
+const JSON_LICENTIE = /("license"\s*:\s*")([^"]*)(")/g;
+// Alleen in de [package]-sectie, tot de volgende sectie.
+const CARGO_LICENTIE = /(\[package\]\r?\n(?:(?!\[)[^\n]*\n)*?license = ")([^"]*)(")/g;
+const lockLicentie = (pad, naam) =>
+  new RegExp(`("${pad}"\\s*:\\s*\\{\\s*"name"\\s*:\\s*"${naam}",(?:\\s*"version"\\s*:\\s*"[^"]*",)?\\s*"license"\\s*:\\s*")([^"]*)(")`, "g");
+
+/** Per licentieveld: bestand, omschrijving en een patroon met de licentie als tweede groep. */
+export const LICENTIEVELDEN = [
+  { pad: "package.json", patroon: JSON_LICENTIE },
+  { pad: "packages/core/package.json", patroon: JSON_LICENTIE },
+  { pad: "packages/desktop/package.json", patroon: JSON_LICENTIE },
+  { pad: "packages/desktop/src-tauri/Cargo.toml", patroon: CARGO_LICENTIE },
+  { pad: "packages/desktop/src-tauri/fem-brug/Cargo.toml", patroon: CARGO_LICENTIE },
+  { pad: "package-lock.json", veld: "root", patroon: lockLicentie("", "open-calcsheet-studio") },
+  { pad: "package-lock.json", veld: "packages/core", patroon: lockLicentie("packages/core", "@ifc-calc/core") },
+  { pad: "package-lock.json", veld: "packages/desktop", patroon: lockLicentie("packages/desktop", "@openaec/calcsheet-studio") },
+];
+
 const naamVan = (v) => (v.veld ? `${v.pad} (${v.veld})` : v.pad);
+
+/**
+ * Fout als een licentieveld ontbreekt, dubbel staat of iets anders zegt dan
+ * LICENTIE, of als LICENSE en de README's niet dezelfde licentie noemen.
+ */
+export function controleerLicenties(map = repoMap) {
+  const fouten = [];
+  for (const v of LICENTIEVELDEN) {
+    const waarden = [...readFileSync(join(map, v.pad), "utf8").matchAll(v.patroon)].map((m) => m[2]);
+    if (waarden.length !== 1) fouten.push(`  ${naamVan(v)}: verwachtte één licentieveld, vond er ${waarden.length}`);
+    else if (waarden[0] !== LICENTIE) fouten.push(`  ${naamVan(v)}: ${waarden[0]}`);
+  }
+  const licentie = readFileSync(join(map, "LICENSE"), "utf8");
+  if (!/^\s*GNU LESSER GENERAL PUBLIC LICENSE\s+Version 3, 29 June 2007/.test(licentie)) {
+    fouten.push("  LICENSE: is niet de tekst van de LGPL-3.0");
+  }
+  for (const readme of ["README.md", "README.nl.md"]) {
+    const tekst = readFileSync(join(map, readme), "utf8");
+    if (!/^LGPL-3\.0\. /m.test(tekst) || /LGPL-3\.0(?:\+|-or-later| or later| of later)/i.test(tekst)) {
+      fouten.push(`  ${readme}: noemt niet LGPL-3.0 (zonder "of later")`);
+    }
+  }
+  if (fouten.length > 0) throw new Error(`Licentievelden wijken af van ${LICENTIE}:\n${fouten.join("\n")}`);
+  return LICENTIE;
+}
 
 /** ISO-weekjaar en -week; de donderdag van de week bepaalt allebei. */
 export function isoWeek(datum) {
@@ -166,6 +223,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (rest.length > 0) throw new Error("Te veel argumenten.");
     if (opdracht === "controleer") {
       console.log(`Alle versievelden staan op ${controleerVelden(nummer)}.`);
+      console.log(`Alle licentievelden staan op ${controleerLicenties()}.`);
     } else if (opdracht === "zet" && nummer) {
       // De changelog eerst voorbereiden: geen wijzigingen, dan blijft ook het nummer staan.
       const changelog = bereidUitbrengenVoor(nummer, new Date().toISOString().slice(0, 10));

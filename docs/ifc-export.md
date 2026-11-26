@@ -71,6 +71,7 @@ Project (IfcProject)                ocss::project
 │  └─ blad (IfcGroup)               ocss::blad, ::rekentekst, ::invoer, ::elementen, ::pdf, ::xlsx, ::markdown, ::uitkomst
 │     └─ figuur                     ocss::figuur: svg, plot, 3d, afbeelding, iframe, ifcx
 └─ Constructierapport               ocss::rapport
+   └─ belasting                     ocss::belasting: symbool, soort (G of Q), waarde en eenheid
 ```
 
 Paden zijn UUID's, afgeleid van de plek in het project, dus gelijk bij elke
@@ -87,18 +88,89 @@ constructeur een element heeft aangewezen.
 
 Bij het openen telt: de projectnaam, de gegevens, de verborgen onderdelen, het
 rapport, en per blad zijn naam, id, `templateId`, `bronVersie`, rekentekst,
-invoer, elementen, PDF, werkmap en Markdown-tekst.
+invoer, elementen, PDF, werkmap en Markdown-tekst (met de koppeling van een gekoppeld blad: soort, pad, relatief pad, verwijzing, moment en hash van de laatste lezing), en de antwoorden van Open FEM
+Studio op de `@toets`-blokken (`ocss::blad::toetsing`). Die antwoorden zijn geen
+afleiding: de app kan ze niet zelf opnieuw maken. Per hash van de invoer op het
+blad staan er de tool, de datum, de herkomst (`versie`, `sha256`, `schema`) en het
+verzoek en het antwoord als JSON-tekst.
 
 Afgeleid, en alleen voor andere lezers: `ocss::blad::uitkomst`, `ocss::figuur`,
-de elementen in de ruimtelijke boom en de geometrie. De app rekent die bij het
+`ocss::belasting`, de elementen in de ruimtelijke boom en de geometrie. De app rekent die bij het
 openen opnieuw uit de tekst en de invoer. Zo kan een andere lezer de resultaten
 gebruiken zonder de rekentaal te kennen, en blijft de tekst de waarheid.
 
 Opslaan, openen en opslaan geeft dezelfde inhoud, afgezien van het tijdstempel.
 Een andere lezer die een knoop aanvult (dezelfde `path` nog een keer, zoals IFCX
 dat bedoelt), wordt gelezen zoals IFCX het samenstelt: de laatste wint per
-attribuut. Knopen van een ander programma die de app niet kent, blijven bij
-opnieuw opslaan niet staan.
+attribuut.
+
+### Gegevens van een andere Studio
+
+Wat een ander programma in het projectbestand zet, blijft bij opnieuw opslaan
+staan zoals het was (`packages/core/src/ifcx/vreemd.ts`). Bij het openen bouwt de
+app het document opnieuw op uit wat ze heeft gelezen, doorgerekend zoals bij het
+opslaan; wat het bestand meer heeft, is van een ander en gaat apart mee
+(`vreemd` in de projectstore). Bij het opslaan komt het terug:
+
+- een **knoop** met een pad dat de app niet schrijft en zonder attribuut `ocss::`,
+  met al zijn attributen, `children` en `inherits`;
+- een **attribuut** dat de app op een van haar eigen paden niet zet, buiten
+  `ocss::`, zoals een categorie of een materiaalverwijzing op een gekoppelde balk;
+- een **naam** onder `children` of `inherits` die de app op dat pad niet gebruikt;
+- de **schema's** die de app niet schrijft, en de **imports** die ze zelf nooit
+  schrijft; de imports van de standaard die vreemde attributen nodig hebben, komen
+  erbij.
+
+Wat de app zelf schrijft gaat voor: krijgt een vreemd attribuut later dezelfde
+naam als iets van de app, dan wint de app. Een knoop met `ocss::` die de app niet
+meer schrijft (een verwijderd blad), vervalt; vreemde attributen op een pad dat de
+app niet meer schrijft (een ontkoppelde balk), blijven als eigen knoop staan.
+Meerdere knopen met hetzelfde pad komen samengesteld terug in één knoop.
+
+Grenzen: de vergelijking is met wat deze versie van de app schrijft. De paden van
+de app hangen aan de identiteit van het project (hieronder), niet aan naam of
+nummer: na hernoemen zitten vreemde attributen nog op hetzelfde blad en hetzelfde
+element. Op een gekoppeld element komt het pad uit het bronmodel.
+
+### De identiteit van het project
+
+Elk project heeft een eigen, blijvende id: een UUID. Die id is het pad van de
+wortel (het `IfcProject`) en staat in de kop als `ocss:project:<id>`. Alle andere
+paden worden ervan afgeleid (`uuidVan` in `packages/core/src/ifcx/identiteit.ts`),
+en elke GlobalId in de STEP is de korte vorm van zo'n pad. Een blad hangt daaronder
+aan zijn eigen id, niet aan zijn plaats in de lijst. Dus:
+
+- Een andere projectnaam of een ander projectnummer verandert geen pad en geen
+  GlobalId.
+- Twee projecten die los van elkaar zijn gemaakt, met dezelfde naam en hetzelfde
+  nummer, hebben elk een andere id.
+- Eén blad los exporteren (via MCP of de API) geeft dat blad hetzelfde pad en
+  dezelfde GlobalId als in de export van het hele project.
+
+Wanneer de id blijft en wanneer er een nieuwe komt:
+
+| Handeling | Id |
+|---|---|
+| Nieuw project | nieuw, willekeurig (UUID versie 4) |
+| Opslaan, openen, opnieuw opslaan | blijft: hij staat in het bestand |
+| Opslaan als | blijft: het is hetzelfde project, op een andere plek |
+| Hernoemen, ander projectnummer | blijft |
+| Een bestand buiten de app kopiëren | blijft: de kopie is voor IFC hetzelfde project. Wil je er een ander project van maken, begin dan een nieuw project en zet de bladen erin |
+| Een blad dupliceren | het project houdt zijn id; het nieuwe blad krijgt een eigen blad-id en dus eigen paden |
+| Een ouder bestand openen | de wortel die al in het bestand staat (zie hieronder) |
+
+Een **ouder bestand** heeft geen eigen id: daar is de wortel afgeleid uit nummer en
+naam, als `uuidVan("project/<nummer>/<naam>")` (`afgeleideProjectId`). Bij het
+openen wordt die wortel de id van het project. Zo houdt het zijn paden en
+GlobalId's, en kloppen eerdere exports en de vreemde gegevens van een andere Studio
+nog. Vanaf dat moment hangt de id niet meer aan naam en nummer. Een bestand van
+versie 1, een los blad en een `.cpd` hebben geen wortel: daar wordt de id op
+dezelfde manier uit nummer en naam bij het openen gemaakt, dus reproduceerbaar en
+gelijk aan wat hun export voorheen gaf. De bewaarde stand van de app (waar de app
+opent waar je hem achterliet) krijgt zonder id op dezelfde manier een id uit zijn
+huidige nummer en naam. Alleen een export die een eerdere versie van de app maakte
+nadat het project hernoemd was, maar voordat het zo werd opgeslagen, heeft andere
+paden; die moet opnieuw gekoppeld worden.
 
 ### De namespace `ocss::`
 
@@ -192,12 +264,14 @@ toetsing van dat blad. In de STEP wordt zo'n knoop een element, met
 samenstelling via `IfcRelAggregates`. Een klasse die niet in de lijst in `step.ts`
 staat, wordt een proxy met de klasse als `ObjectType`.
 
-Twee modules leveren geometrie: de balklaag (`packages/core/src/balklaagIfcx.ts`) en
-de tweepaalspoer (`components/calc/poerIfcx.ts`). De poer is een `IfcFooting` met twee
-`IfcPile`, een `IfcColumn` en een samenstelling met de korf: elke staaf een
-`IfcReinforcingBar` met zijn diameter (`NominalDiameter`). Palen en kolom zijn alleen
-de aanzet; hun lengte staat niet in het blad. Merken en een buiglijst staan er niet in.
-Hetzelfde document is het 3D-model in het beeld van de poer.
+Drie modules leveren geometrie: de balklaag (`packages/core/src/balklaagIfcx.ts`), de
+tweepaalspoer (`components/calc/poerIfcx.ts`) en de poer op drie of vier palen
+(`components/calc/meerpaalIfcx.ts`). Een poer is een `IfcFooting` met zijn palen
+(`IfcPile`), een `IfcColumn` en een samenstelling met de korf: elke staaf een
+`IfcReinforcingBar` met een buis langs de hartlijn als geometrie, zijn diameter
+(`NominalDiameter`), zijn merk uit de staaflijst (`ocss::calc::merk`) en zijn lengte.
+Palen en kolom zijn alleen de aanzet; hun lengte staat niet in het blad. Het document van
+de tweepaalspoer is ook het 3D-model in het beeld van de poer.
 
 ## Koppelen aan een bestaand model
 
@@ -213,8 +287,40 @@ elementen?: ElementRef[]   // { id: GlobalId of IFCX-pad, naam?: string }
   aan alle balken van die laag hangen; dat is precies hoe je toetst.
 
 Een GlobalId wordt in IFCX de UUID van dat element, zo heet het in de IFCX van het
-bronmodel. Bij het samenstellen van de twee komt de toetsing dus op het echte
-element terecht.
+bronmodel. Een IFCX-pad blijft staan zoals het is, ook met `/`
+(`/elements/0900…`; `padVanElement` in `ifcx/identiteit.ts`). Bij het samenstellen
+van de twee komt de toetsing dus op het echte element terecht.
+
+### Proef: een funderingsbalk in IFCX Explorer
+
+`scripts/fixtures/ifcx-pilot/` legt de koppeling vast met één balk uit het
+referentiemodel van IFCX Explorer, `/elements/0900886be4fa5a0fab2c5a3b2c6282be`
+(een funderingsbalk 400×500):
+
+- `funderingsbalk-buiging.cpd` — een klein rekenblad, geen module: de buigtoets
+  van een gewapendbetonnen balk volgens EN 1992-1-1 (3.1.7), zonder FEM. Bij een
+  te grote drukzone geeft het blad geen oordeel ("niet getoetst").
+- `funderingsbalk.ifccalculation` — een project met dat blad, `elementen` op het
+  pad van de balk en M_Ed = 180 kNm (UC 0,81, voldoet). Een andere Studio heeft er
+  het materiaal van de balk als eigen knoop in gezet, en op de balk een categorie
+  en een verwijzing naar dat materiaal, met hun schema's en de import
+  `urn:openaec:school:schema`.
+- `funderingsbalk-gewijzigd.ifccalculation` — hetzelfde bestand na openen, M_Ed
+  naar 240 kNm en opslaan: UC 1,08, voldoet niet.
+
+`scripts/check-ifcx-pilot.mjs` controleert dat openen, wijzigen en opslaan de
+vreemde knoop, de vreemde attributen, hun waarden, paden, verwijzingen, schema's
+en imports ongewijzigd laat, dat het blad en de balk hun pad houden, en dat
+`ocss::blad::uitkomst` en de verwijzing in `ocss::element` de nieuwe uitkomst
+tonen. Met `--schrijf` maakt het de twee projectbestanden opnieuw.
+
+Een lezer vindt de toetsing van een element langs twee wegen: het blad met
+`ocss::blad::elementen` waarin het pad staat, of `ocss::element.toetsingen[].ref`
+op het element. Uit `ocss::blad::uitkomst` leest hij de norm (`norm`), de
+maatgevende UC (`uc`, zonder eenheid), de invoer met eenheid (`invoervelden`) en
+het oordeel (`status`). Alleen `voldoet` is voldoet; `geen_oordeel` en
+`niet_doorgerekend` zijn niet getoetst. IFCX Explorer toont dat bij het selecteren
+van de balk, na het openen van het projectbestand.
 
 De koppeling wordt **nooit geraden**. De herkenning in `ifcx/herkenning.ts` herkent
 hoogstens het *soort* element aan de variabelenamen: paal, fundering of balk. Wélk
@@ -234,7 +340,11 @@ ingekort; de export bevat alles.
 
 `scripts/check-ifcx.mjs` loopt mee in de controles en werkt zonder netwerk: de
 vorm volgens de specificatie, elk attribuut tegen zijn schema, heen en terug, oude
-bestanden en de STEP tegen het IFCX.
+bestanden, de STEP tegen het IFCX en de identiteit van het project: hernoemen en
+een ander nummer geven dezelfde paden en GlobalId's, een ouder bestand houdt de
+zijne, een nieuw project krijgt een andere id. `scripts/check-ifcx-pilot.mjs`
+controleert de proef met de funderingsbalk en de gegevens van een andere Studio,
+ook na hernoemen.
 
 Daarnaast, met de hand en lokaal, want er komt software van buiten bij kijken:
 

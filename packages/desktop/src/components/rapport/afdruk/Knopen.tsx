@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Rapportknoop } from "../../../rapport/opzet";
-import { vulIn } from "../../../rapport/invullen";
+import { vulIn, type Invulwaarden } from "../../../rapport/invullen";
+import type { Rapportbeeld } from "../../../rapport/model";
 import { samenvatting } from "../../calc/bladResultaat";
 import { MATEN } from "../../calc/paginering";
 import { bladSoortVan } from "../../calc/bladSoorten";
@@ -89,8 +90,11 @@ function RolInhoud({ w }: { w: RapportWeergave }) {
  * Berekeningen (bouwOpzet laat het weg).
  */
 function BerekeningenInhoud({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
-  const paragrafen = knoop.kinderen.filter((k) => k.blad);
-  if (paragrafen.length === 0) return null;
+  const paragrafen = knoop.kinderen.filter((k) => k.blad && !k.blad.zonderParagraaf);
+  // Een afbeelding bij het hoofdstuk (rapport.beelden.berekeningen), zoals het 3D-model van de
+  // constructie: onder de inhoudsopgave van het hoofdstuk, vóór de eerste paragraaf.
+  const beelden = <Beelden beelden={w.rapport.beelden[knoop.id]} invul={w.invul} />;
+  if (paragrafen.length === 0) return beelden;
   return (
     <>
       <h3 className="rpa-io-kop">{w.t("afdruk.inhoud.inhoudsopgave")}</h3>
@@ -101,6 +105,7 @@ function BerekeningenInhoud({ knoop, w }: { knoop: Rapportknoop; w: RapportWeerg
         </Rij>
       ))}
       <Leeg />
+      {beelden}
     </>
   );
 }
@@ -141,11 +146,34 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
   );
 }
 
+/**
+ * De afbeeldingen onder de tekst van een paragraaf, elk met zijn bijschrift. Een
+ * afbeelding is één blok: past hij niet meer op het vel, dan gaat hij naar het volgende.
+ */
+function Beelden({ beelden, invul }: { beelden: Rapportbeeld[] | undefined; invul: Invulwaarden }) {
+  if (!beelden?.length) return null;
+  return (
+    <>
+      {beelden.map((b, i) => (
+        <figure key={i} className="rpa-beeld" style={{ width: `${b.breedte}%` }}>
+          <img src={b.data} alt={b.bijschrift} />
+          {b.bijschrift.trim() && <figcaption>{vulIn(b.bijschrift, invul)}</figcaption>}
+        </figure>
+      ))}
+    </>
+  );
+}
+
 /** De eigen inhoud van een knoop, naar zijn soort. */
 function InhoudVan({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
   switch (knoop.inhoud) {
     case "tekst":
-      return <Tekst tekst={w.rapport.teksten[knoop.id]} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />;
+      return (
+        <>
+          <Tekst tekst={w.rapport.teksten[knoop.id]} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />
+          <Beelden beelden={w.rapport.beelden[knoop.id]} invul={w.invul} />
+        </>
+      );
     case "rol":
       return <RolInhoud w={w} />;
     case "bouwwerk":
@@ -235,7 +263,8 @@ function voegToe(knoop: Rapportknoop, w: RapportWeergave, plaats: Plaats, uit: S
   // Het eerste kind staat direct onder deze kop als deze knoop zelf niets
   // toont en het kind niet op een nieuw vel begint.
   const zonderEigen = !knoop.inhoud && !knoop.blad;
-  knoop.kinderen.forEach((kind, i) =>
+  // Een blad dat alleen in bijlage A staat, heeft hier geen paragraaf.
+  knoop.kinderen.filter((kind) => !kind.blad?.zonderParagraaf).forEach((kind, i) =>
     voegToe(
       kind,
       w,

@@ -16,15 +16,22 @@
  * (scripts/check-mcp.mjs) dit bestand in Node gebruikt.
  */
 import { parse, evaluate } from "@ifc-calc/core";
+import { metToetsingen } from "../rekenen/toetsCache.ts";
 import type { AstNode, EvaluatedNode } from "@ifc-calc/core";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
 import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../components/calc/bladLezen.ts";
 import { rekenEenhedenDoor } from "../components/calc/canvasRekenen.ts";
 import { heeftEenheden } from "../store/canvasBlad.ts";
 
+// Een API-aanvraag leest doorgaans de velden en rekent meteen dezelfde bron door.
+let laatstGelezen: { source: string; ast: AstNode[] } | undefined;
+
 /** Leest een rekentekst in, met dezelfde includes en afbeeldingen als de uitwerking. */
 export function leesBron(source: string): AstNode[] {
-  return parse(source, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls });
+  if (laatstGelezen?.source === source) return laatstGelezen.ast;
+  const ast = parse(source, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls });
+  laatstGelezen = { source, ast };
+  return ast;
 }
 
 export interface Doorrekening {
@@ -34,17 +41,25 @@ export interface Doorrekening {
   getallen: Record<string, number>;
 }
 
-/** Rekent een tekst door. Werpt bij een fout in het inlezen of rekenen. */
+/**
+ * Rekent een tekst door. Werpt bij een fout in het inlezen of rekenen.
+ *
+ * Een `@toets`-blok leest de antwoorden van FEM Studio (rekenen/toetsCache.ts). `vragen`
+ * alleen vóór het afdrukken (femToetsing.ts, werkToetsingenBij): dan geeft een blok
+ * zonder antwoord zijn verzoek mee. Hier gaat zelf niets naar FEM Studio.
+ */
 export function rekenDoor(
   source: string,
   waarden: Record<string, string>,
   scope: Record<string, unknown>,
   naam: string,
+  toetsModus: "vragen" | "lezen" = "lezen",
 ): Doorrekening {
+  const evalOpties = metToetsingen({}, toetsModus);
   // Een canvas-blad langs dezelfde route als op het scherm: een fout blijft bij zijn eenheid.
   const nodes = heeftEenheden(source)
-    ? rekenEenhedenDoor(source, waarden, scope, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }).flatMap((u) => u.nodes)
-    : evaluate(leesBron(source), waarden, scope);
+    ? rekenEenhedenDoor(source, waarden, scope, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }, evalOpties).flatMap((u) => u.nodes)
+    : evaluate(leesBron(source), waarden, scope, evalOpties);
   return {
     nodes,
     resultaat: leesResultaat(nodes, naam),

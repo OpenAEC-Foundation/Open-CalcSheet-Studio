@@ -1,12 +1,21 @@
 import type { MathNode } from 'mathjs';
 import { math, isEenheidNaam, geldigeEenheidNaam } from './eenheden.js';
 import { decimalenNa, doelInStelsel, toonInvoer, type Stelsel } from './eenheidstelsel.js';
-import type { AstNode, ConditionalNode, EvaluatedNode, InStelsel, MatrixUitkomst, OpdrachtNode } from './types.js';
+import type { AstNode, ConditionalNode, EvaluatedNode, InStelsel, MatrixUitkomst, OpdrachtNode, ToetsAntwoord } from './types.js';
 import { losStelselOp, rangVan, eigenSymmetrisch } from './matrixrekening.js';
 import { bouwDrieDScene } from './drieD.js';
 import { bouwIframe } from './iframeBlok.js';
 import { bouwIfcxBlok } from './ifcxBlok.js';
+import { bouwToets } from './toetsBlok.js';
+import { bouwFem } from './femBlok.js';
+import { bouwKern } from './kernBlok.js';
+import { bouwLast } from './lastBlok.js';
+import { FemModel, femWaarde, femStrook, femSvg, femGrootheid, FEM_EENHEID } from './femResultaat.js';
+import { FemStaafModel, femStaafEenheid, femStaafGrootheid, femStaafKnoop, femStaafKrachten, femStaafSvg, femStaafWaarde } from './femStaafResultaat.js';
 import { bouwJsBlok } from './jsBlok.js';
+import { celNaam, celVerwijzingTekst, leesCelVerwijzing, leesVerwijzing, verwijzingNaam, verwijzingenInMelding, type CelFout, type CelVerwijzing } from './verwijzing.js';
+import { parse } from './parser.js';
+import { plaatOplossing, plaatSamenvatting, plaatDoorbuiging, plaatSvg, type PlaatInvoer } from './plaat.js';
 import {
   liggerOplossing, liggerReacties, liggerOmhullende, liggerOmhullendeReacties, liggerExtremen,
   liggerInterpoleer, liggerNulpunt, liggerStatus, liggerDelen, liggerVelden, liggerSvgPunten, liggerSamen,
@@ -759,6 +768,170 @@ math.import(
   { override: true },
 );
 
+// ── Plaat op palen (packages/core/src/plaat.ts) ─────────────────────────────
+// Een vlakke plaat op verende palen in een regelmatig raster, met DKT-elementen.
+// geo = [L_x; L_y; n_x; n_y; t; E; ν; k; d_kop; n_el]: paalafstanden, aantal velden,
+// dikte, E-modulus, dwarscontractie, veer per paal, diameter paalkop en elementen
+// per veld. last = per veld de belasting (kN/m²), een rij per veld in y (de
+// onderste eerst), een kolom per veld in x. Een maat met eenheid wordt omgerekend
+// naar m, kN/m², kN/m en kN/m²; een kaal getal telt in die eenheden.
+
+const PLAAT_EENHEDEN = ['m', 'm', '', '', 'm', 'kN/m^2', '', 'kN/m', 'm', ''];
+
+function plaatGetal(v: unknown, eenheid: string): number {
+  if (isUnit(v)) {
+    if (!eenheid) return v.value;
+    try { return v.toNumber(eenheid); } catch { throw new Error(`plaat: ${String(v)} past niet bij ${eenheid}`); }
+  }
+  return liggerGetal(v);
+}
+
+function plaatInvoer(geo: unknown, last: unknown): PlaatInvoer {
+  const a = toArrayLike(geo);
+  const g = (a ?? [geo]).flatMap((r) => toArrayLike(r) ?? [r]);
+  if (g.length < 10) throw new Error('plaat: geo heeft 10 waarden: [L_x; L_y; n_x; n_y; t; E; ν; k; d_kop; n_el]');
+  const v = PLAAT_EENHEDEN.map((e, i) => plaatGetal(g[i], e));
+  const q = invoerTabel(last, (x) => plaatGetal(x, 'kN/m^2'));
+  return { lx: v[0], ly: v[1], nbx: Math.round(v[2]), nby: Math.round(v[3]), t: v[4], E: v[5], nu: v[6], k: v[7], dKop: v[8], nEl: Math.round(v[9]), q };
+}
+
+math.import(
+  {
+    /** plaat_palen(geo; last) → [m_x,veld; m_y,veld; m_x,steun; m_y,steun; m_x,ks; m_y,ks; w_max; R_max; R_midden] (kNm/m, mm, kN). */
+    plaat_palen: function (geo: unknown, last: unknown) {
+      return math.matrix(plaatSamenvatting(plaatOplossing(plaatInvoer(geo, last))));
+    },
+    /** plaat_R(geo; last) → [i, j, x, y, R] per paal (m, kN). */
+    plaat_R: function (geo: unknown, last: unknown) {
+      return math.matrix(plaatOplossing(plaatInvoer(geo, last)).palen.map((p) => [p.i, p.j, p.x, p.y, p.R]));
+    },
+    /** plaat_w(geo; last; x; y) → de doorbuiging (mm) op (x, y) in m. */
+    plaat_w: function (geo: unknown, last: unknown, x: unknown, y: unknown) {
+      return plaatDoorbuiging(plaatOplossing(plaatInvoer(geo, last)), plaatGetal(x, 'm'), plaatGetal(y, 'm'));
+    },
+    /** plaat_svg(geo; last; grootheid; x0; y0; schaal) → SVG-elementen: 1 = w, 2 = m_x, 3 = m_y. */
+    plaat_svg: function (geo: unknown, last: unknown, grootheid: unknown, x0: unknown, y0: unknown, schaal: unknown) {
+      return plaatSvg(plaatOplossing(plaatInvoer(geo, last)), liggerGetal(grootheid), liggerGetal(x0), liggerGetal(y0), liggerGetal(schaal));
+    },
+  },
+  { override: true },
+);
+
+// ── Een @fem-model (packages/core/src/femBlok.ts, femResultaat.ts) ───────────
+// Het blok zet het doorgerekende model onder zijn naam in de scope. De functies
+// krijgen het model, de naam van een geval of combinatie als tekst, de grootheid
+// ("w", "mx", "my", "mxy", "vx", "vy") en plaatsen in m (een kaal getal telt in m).
+
+function femModelUit(model: unknown, functie: string): FemModel {
+  if (model instanceof FemModel) return model;
+  if (model instanceof FemStaafModel) throw new Error(`${functie}: ${model.naam} is een staafwerk; gebruik fem_staaf, fem_knoop of fem_krachten`);
+  throw new Error(`${functie}: het eerste argument is een @fem-model, zoals vloer (de naam van het blok)`);
+}
+/** Een staafwerk uit een @fem-blok (femStaafBlok.ts). */
+function femStavenUit(model: unknown, functie: string): FemStaafModel {
+  if (model instanceof FemStaafModel) return model;
+  if (model instanceof FemModel) throw new Error(`${functie}: ${model.naam} is een plaatmodel; gebruik fem_waarde of fem_strook`);
+  throw new Error(`${functie}: het eerste argument is een @fem-model met staven, zoals kap (de naam van het blok)`);
+}
+/** Een staaf bij naam ("spoor") of nummer. */
+function femStaafRef(v: unknown, functie: string): string | number {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' && Number.isInteger(v)) return v;
+  throw new Error(`${functie}: de staaf is een naam tussen aanhalingstekens, zoals "spoor", of een nummer`);
+}
+const FEM_STAAF_EENHEID = { kN: 'kN', kNm: 'kN m', mm: 'mm', rad: 'rad' } as const;
+function femTekst(v: unknown, functie: string, wat: string): string {
+  if (typeof v === 'string') return v;
+  throw new Error(`${functie}: ${wat} staat tussen aanhalingstekens, zoals "UGT"`);
+}
+const femMeter = (v: unknown) => plaatGetal(v, 'm');
+/** Een uitkomst met zijn eenheid: mm, kNm/m of kN/m. */
+function femMetEenheid(v: number, grootheid: string) {
+  const e = FEM_EENHEID[femGrootheid(grootheid)];
+  return math.unit(v, e === 'kNm/m' ? 'kN m / m' : e === 'kN/m' ? 'kN / m' : e);
+}
+
+math.import(
+  {
+    /** fem_waarde(model; "UGT"; "mx"; x; y) → de waarde op (x, y): w in mm, momenten in kNm/m, dwarskrachten in kN/m. */
+    fem_waarde: function (model: unknown, set: unknown, grootheid: unknown, x: unknown, y: unknown) {
+      const g = femTekst(grootheid, 'fem_waarde', 'de grootheid');
+      return femMetEenheid(femWaarde(femModelUit(model, 'fem_waarde'), femTekst(set, 'fem_waarde', 'het geval'), g, femMeter(x), femMeter(y)), g);
+    },
+    /** fem_strook(model; "UGT"; "mx"; x1; y1; x2; y2) → het gemiddelde over de rechthoek, of over de lijn als hij geen breedte heeft. */
+    fem_strook: function (model: unknown, set: unknown, grootheid: unknown, x1: unknown, y1: unknown, x2: unknown, y2: unknown) {
+      const g = femTekst(grootheid, 'fem_strook', 'de grootheid');
+      return femMetEenheid(
+        femStrook(femModelUit(model, 'fem_strook'), femTekst(set, 'fem_strook', 'het geval'), g, femMeter(x1), femMeter(y1), femMeter(x2), femMeter(y2)),
+        g,
+      );
+    },
+    /**
+     * fem_svg(model; "UGT"; "mx" [; breedte]) → een plattegrond in kleur met legenda, als <svg> voor een @svg-blok.
+     * Bij een staafwerk: "M", "V", "N" (de lijn), "u" (de vervormde stand) of "lasten"; "omhullende" als geval tekent
+     * de grootste en kleinste lijn over de combinaties.
+     */
+    fem_svg: function (model: unknown, set: unknown, grootheid: unknown, breedte?: unknown) {
+      const b = Math.min(1600, Math.max(240, breedte === undefined ? 640 : Math.round(liggerGetal(breedte))));
+      if (model instanceof FemStaafModel) return femStaafSvg(model, femTekst(set, 'fem_svg', 'het geval'), femTekst(grootheid, 'fem_svg', 'de grootheid'), b, huidigeTaal);
+      return femSvg(femModelUit(model, 'fem_svg'), femTekst(set, 'fem_svg', 'het geval'), femTekst(grootheid, 'fem_svg', 'de grootheid'), b, huidigeTaal);
+    },
+    /**
+     * fem_staaf(model; "UGT"; "spoor"; "M"; x) → de waarde op de afstand x van het begin van een staaf: N en V in kN,
+     * M in kNm, de doorbuiging "w" en de verplaatsing "ux", "uz" in mm. "max" of "min" als geval: de omhullende.
+     */
+    fem_staaf: function (model: unknown, set: unknown, staaf: unknown, grootheid: unknown, x: unknown) {
+      const m = femStavenUit(model, 'fem_staaf');
+      const g = femTekst(grootheid, 'fem_staaf', 'de grootheid');
+      const v = femStaafWaarde(m, femTekst(set, 'fem_staaf', 'het geval'), femStaafRef(staaf, 'fem_staaf'), g, femMeter(x));
+      return math.unit(v, FEM_STAAF_EENHEID[femStaafEenheid(femStaafGrootheid(m, g))]);
+    },
+    /**
+     * fem_knoop(model; "UGT"; "nok"; "uz") → een grootheid van een benoemde knoop: de verplaatsing "ux", "uy", "uz"
+     * (mm), de verdraaiing "ry" (rad), of van zijn oplegging de reactie "Rx", "Rz" (kN) en "My" (kNm).
+     */
+    fem_knoop: function (model: unknown, set: unknown, knoop: unknown, grootheid: unknown) {
+      const u = femStaafKnoop(femStavenUit(model, 'fem_knoop'), femTekst(set, 'fem_knoop', 'het geval'), femTekst(knoop, 'fem_knoop', 'de knoop'), femTekst(grootheid, 'fem_knoop', 'de grootheid'));
+      return math.unit(u.waarde, FEM_STAAF_EENHEID[u.eenheid]);
+    },
+    /**
+     * fem_krachten(model; "spoor"; "UGT_1"; "UGT_2"; …) → de snedekrachten van een staaf als matrix voor een toets
+     * (`forces_envelope`): per combinatie en station [nummer; x; N; V_y; V_z; M_t; M_y; M_z], de combinaties
+     * genummerd in de volgorde waarin ze staan.
+     */
+    fem_krachten: function (model: unknown, staaf: unknown, ...sets: unknown[]) {
+      const m = femStavenUit(model, 'fem_krachten');
+      const namen = sets.map((s) => femTekst(s, 'fem_krachten', 'een geval of combinatie'));
+      const rijen = femStaafKrachten(m, femStaafRef(staaf, 'fem_krachten'), namen).map((r) => [
+        r[0], math.unit(r[1], 'm'), math.unit(r[2], 'kN'), math.unit(r[3], 'kN'), math.unit(r[4], 'kN'),
+        math.unit(r[5], 'kN m'), math.unit(r[6], 'kN m'), math.unit(r[7], 'kN m'),
+      ]);
+      return math.matrix(rijen as unknown as number[][]);
+    },
+    /**
+     * fem_reacties(model; "UGT") → per veer [x; y; R] (m, m, kN), in de volgorde van het blok. Bij een staafwerk per
+     * oplegging [x; z; R_x; R_z; M_y], ruimtelijk [x; y; z; R_x; R_y; R_z; M_x; M_y; M_z].
+     */
+    fem_reacties: function (model: unknown, set: unknown) {
+      if (model instanceof FemStaafModel) {
+        const s = model.set(femTekst(set, 'fem_reacties', 'het geval'));
+        const sm = model.m;
+        const rijen = sm.steunen.map((st, i) => {
+          const R = model.reactie(s, i);
+          const plek = (sm.vlak ? [sm.x[st.knoop], sm.z[st.knoop]] : [sm.x[st.knoop], sm.y[st.knoop], sm.z[st.knoop]]).map((v) => math.unit(v, 'm'));
+          return [...plek, ...R.map((v, k) => math.unit(v, k < R.length / 2 || (sm.vlak && k < 2) ? 'kN' : 'kN m'))];
+        });
+        return math.matrix(rijen as unknown as number[][]);
+      }
+      const m = femModelUit(model, 'fem_reacties');
+      const R = m.verenReactie(m.set(femTekst(set, 'fem_reacties', 'het geval')));
+      const rijen = m.m.veren.map((v, i) => [math.unit(m.m.x[v[0][0]], 'm'), math.unit(m.m.y[v[0][0]], 'm'), math.unit(R[i], 'kN')]);
+      return math.matrix(rijen as unknown as number[][]);
+    },
+  },
+  { override: true },
+);
+
 // ── Doorsnede (packages/core/src/doorsnede.ts) ──────────────────────────────
 // Grootheden van een samengestelde doorsnede: in het blad per `|` een rij
 // [soort; p1 … p5; y; z; n; draai] met per kolom een deel, kale getallen in mm (een lengte met eenheid wordt naar mm
@@ -1359,18 +1532,25 @@ export function evaluate(
 function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T): T {
   const appModus = currentAngleMode;
   const vorigStelsel = huidigStelsel;
+  const vorigeTaal = huidigeTaal;
   huidigStelsel = opties.stelsel;
+  huidigeTaal = opties.taal?.toLowerCase().startsWith('en') ? 'en' : 'nl';
   const stand = nieuweStand();
+  // De projecttekst van de app (zetProjectTekst) geldt waar de aanroep er zelf geen meegeeft.
+  const metProject = opties.project || !projectTekst ? opties : { ...opties, project: projectTekst };
+  stand.opties = metProject;
   try {
     // Een ongeldige of al bestaande naam slaat over; zo'n melding toont het projectpaneel
     // (zetProjectEenheden).
     for (const e of opties.eigenEenheden ?? []) {
       if (geldigeEenheidNaam(e.naam)) maakEenheid(e.naam, e.uitdrukking, scope, stand);
     }
+    rekenProjectDoor(scope, metProject, stand);
     return doe(stand);
   } finally {
     currentAngleMode = appModus;
     huidigStelsel = vorigStelsel;
+    huidigeTaal = vorigeTaal;
     ruimEenhedenOp(stand);
   }
 }
@@ -1381,10 +1561,65 @@ export interface EvalOpties {
   stelsel?: Stelsel;
   /** Eigen eenheden die in het hele blad gelden, zoals die van het project. */
   eigenEenheden?: { naam: string; uitdrukking: string }[];
+  /**
+   * De antwoorden van Open FEM Studio op `@toets`-blokken, op de hash van hun invoer
+   * (toetsBlok.ts). Gegevens, geen functie: de opties gaan ook naar de rekenworker.
+   */
+  toetsingen?: Record<string, ToetsAntwoord>;
+  /** `vragen`: een blok zonder antwoord geeft een verzoek mee (de werkruimte); anders "niet getoetst". */
+  toetsModus?: 'vragen' | 'lezen';
+  /**
+   * De FEM Studio van nu: zijn versie en per tool de hash van het schema. Alleen in de
+   * modus `vragen`: een antwoord van een andere versie of een ander schema krijgt dan
+   * de melding en de knop "opnieuw toetsen".
+   */
+  fem?: { versie?: string; schemas?: Record<string, string> };
+  /** De taal van de vaste woorden in de uitvoer, zoals `nl` of `en`. */
+  taal?: string;
+  /**
+   * De eigen rekentekst van de projectgegevens, met de invoer daarvan. Hij rekent vóór
+   * elk blad, zodat wat daar staat (`ψ_0 = 0,7`, `h_verd = ?{3} m`) in elk blad geldt.
+   * Een blad mag een naam gewoon overschrijven, net als bij de vaste projectgegevens.
+   * `namen`: de weergavenaam bij een variabele uit die tekst (`g_v3` → "1e–3e verdieping");
+   * een `@last`-blok gebruikt hem als omschrijving van een regel (lastBlok.ts).
+   */
+  project?: { bron: string; waarden?: Record<string, string>; namen?: Record<string, string> };
+}
+
+/**
+ * Rekent de eigen rekentekst van het project door in de scope van het blad. Een fout
+ * daarin laat het blad gewoon rekenen: de projectpagina toont hem zelf.
+ */
+function rekenProjectDoor(scope: Scope, opties: EvalOpties, stand: Stand): void {
+  const bron = opties.project?.bron ?? '';
+  if (!bron.trim()) return;
+  try {
+    const nodes = parse(bron, { eenheden: (opties.eigenEenheden ?? []).map((e) => e.naam) });
+    evaluateNodes(nodes, scope, opties.project?.waarden ?? {}, stand);
+  } catch {
+    /* zie hierboven */
+  }
+  delete scope[BREAK_FLAG];
+  delete scope[CONTINUE_FLAG];
+}
+
+/**
+ * De projecttekst, blijvend op deze kant (de app): de belastingen uit het rapport en de
+ * eigen elementen van de projectgegevens. Zo kennen alle routes hem die zelf geen
+ * `project` meegeven: de uitdraai, het rapport, de varianten en de IFCX-export. Elke
+ * aanroep vervangt de vorige tekst; zonder tekst is hij weg. De rekenworker heeft zijn
+ * eigen rekenkern en krijgt de tekst per verzoek in de opties.
+ */
+let projectTekst: EvalOpties['project'];
+
+export function zetProjectTekst(project: EvalOpties['project'] | null): void {
+  projectTekst = project?.bron.trim() ? project : undefined;
 }
 
 /** Het stelsel van het blad dat nu doorgerekend wordt (zie evaluate). */
 let huidigStelsel: Stelsel | undefined;
+/** De taal van de vaste woorden in een beeld (fem_svg), van het blad dat nu doorgerekend wordt. */
+let huidigeTaal = 'nl';
 
 /**
  * Rekent een document door en geeft ook de scope aan het eind terug: de waarden
@@ -1441,10 +1676,12 @@ interface Stand {
   decimalen: number | null;
   /** De eigen eenheden die dit blad maakte (`.naam = …`); na het blad gaan ze weg. */
   eenheden: string[];
+  /** De opties van deze doorrekening, voor de blokken die ze nodig hebben (`@toets`). */
+  opties: EvalOpties;
 }
 
 function nieuweStand(): Stand {
-  return { weergave: 'equ', invullen: 'varsub', decimalen: null, eenheden: [] };
+  return { weergave: 'equ', invullen: 'varsub', decimalen: null, eenheden: [], opties: {} };
 }
 
 /**
@@ -1607,19 +1844,24 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
           // Resolve prose interpolation — eval each `expr` part and
           // concat with literal parts. Failed exprs fall back to the source.
           const out: string[] = [];
+          // Waar een ingevuld getal staat: op papier volgt het de taal (decimaalteken.ts).
+          const waarden: Array<[number, number]> = [];
+          let lengte = 0;
           for (const p of node.parts) {
-            if (p.kind === 'literal') {
-              out.push(p.value);
-            } else {
+            let stuk = p.value;
+            if (p.kind !== 'literal') {
               try {
                 const v = reken(p.value, scope);
-                out.push(stringifyInterpolated(v, p.formaat, stand.decimalen));
+                stuk = stringifyInterpolated(v, p.formaat, stand.decimalen);
+                if ((typeof v === 'number' || isUnit(v)) && stuk !== '') waarden.push([lengte, lengte + stuk.length]);
               } catch {
-                out.push(p.value);
+                stuk = p.value;
               }
             }
+            out.push(stuk);
+            lengte += stuk.length;
           }
-          result.push({ type: 'text', text: out.join(''), html: true, ...(node.inline ? { inline: true } : {}) });
+          result.push({ type: 'text', text: out.join(''), html: true, ...(node.inline ? { inline: true } : {}), ...(waarden.length ? { waarden } : {}) });
         } else {
           // De normbladen schrijven een uitkomst als {{naam}} in een tekstregel,
           // zoals in een tekening. Zonder invulling stond er letterlijk
@@ -1652,8 +1894,45 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         // 1 kN rekende of verderop NaN en "unit with undefined value" gaf;
         // zonder eenheid bleef de naam ongedefinieerd. Het veld zelf blijft
         // leeg (currentValue) en toont de standaardwaarde als placeholder.
-        const raw = invoer.trim().replace(',', '.') || standaard.trim().replace(',', '.') || '0';
-        try {
+        // Een waarde uit een ander blad (`#1.R_paal`, verwijzing.ts): de app zet die
+        // vooraf in de scope. In een veld met eenheid wordt hij daarnaar omgerekend;
+        // past de eenheid niet of is het blad of de naam onbekend, dan rekent het
+        // veld met zijn standaardwaarde en staat er een fout onder.
+        const ref = leesVerwijzing(invoer);
+        let refFout: string | null = null;
+        if (ref) {
+          const gevonden = scope[verwijzingNaam(ref.ref, ref.naam)];
+          if (gevonden === undefined) {
+            refFout = `#${ref.ref}.${ref.naam} niet gevonden: geen blad #${ref.ref} of geen waarde ${ref.naam} daarin`;
+          } else if (node.unit && math.isUnit(gevonden)) {
+            try {
+              scope[node.name] = (gevonden as { to: (eenheid: string) => unknown }).to(node.unit);
+            } catch {
+              refFout = `#${ref.ref}.${ref.naam} (${math.format(gevonden, { precision: 4 })}) past niet bij de eenheid ${node.unit} van dit veld`;
+            }
+          } else {
+            scope[node.name] = gevonden;
+          }
+        }
+        // Een cel uit een spreadsheet-blad (`#3.Blad1!B4 kN`, verwijzing.ts). Anders dan
+        // hierboven geen terugval op de standaardwaarde: lukt het niet, dan staat het veld
+        // niet in de scope en rekent wat ervan afhangt niet. Zo staat er nooit een oordeel
+        // op een waarde die niet uit de cel komt.
+        const cel = ref ? null : leesCelVerwijzing(invoer);
+        let koppeling: { bron: string; waarde?: string; fout?: string } | undefined;
+        if (cel) {
+          const uit = celInvoer(cel, scope[celNaam(cel.ref, cel.blad, cel.cel)], node.unit);
+          koppeling = { bron: celVerwijzingTekst({ ...cel, eenheid: '' }) };
+          if ('fout' in uit) {
+            delete scope[node.name];
+            koppeling.fout = uit.fout;
+          } else {
+            scope[node.name] = uit.waarde;
+            koppeling.waarde = formatResult(uit.waarde);
+          }
+        }
+        const raw = ref ? standaard.trim().replace(',', '.') || '0' : invoer.trim().replace(',', '.') || standaard.trim().replace(',', '.') || '0';
+        if (!cel && (!ref || refFout)) try {
           // Wat geen getal oplevert (alleen een eenheid of een teken, zoals
           // "kN" of "-"), gaat naar de afhandeling van een halve invoer. Dat
           // geldt voor de invoer zelf, zonder de eenheid erachter: een eenheid
@@ -1686,6 +1965,8 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
           let standaardInBeeld = standaard;
           try {
             toon = huidigStelsel && node.unit && !eigen ? doelInStelsel(node.unit, huidigStelsel) : null;
+            // Een koppeling staat er zoals getypt; de eenheid erin geldt voor de cel.
+            if (toon && cel) toon = null;
             if (toon) {
               // Een eenheid in het stelsel die niet bij het veld past (met de hand
               // bewerkt project): dan zoals in het blad.
@@ -1706,8 +1987,13 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             currentValue,
             standaard: standaardInBeeld,
             ...(toon ? { toonEenheid: toon } : {}),
+            ...(koppeling ? { koppeling } : {}),
           });
+        } else if (koppeling?.fout) {
+          // Een verborgen veld: de melding moet toch op het blad staan.
+          result.push({ type: 'text', text: `${koppeling.bron}: ${koppeling.fout}` });
         }
+        if (refFout) result.push({ type: 'text', text: `Error evaluating ${refFout}` });
         break;
       }
 
@@ -1888,6 +2174,76 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         }));
         break;
 
+      case 'toets': {
+        // Ook verborgen rekent het blok: zijn variabelen gelden voor wat eronder staat,
+        // en een verzoek moet naar FEM Studio, ook als het blok niet op het blad staat.
+        result.push(bouwToets(node, { reken: (expr) => reken(expr, scope), scope, opties: stand.opties }));
+        break;
+      }
+
+      case 'fem': {
+        // Net als @toets: ook verborgen rekent het blok. De teller van een #for en de
+        // gevallen in een combinatie staan even in de scope en daarna weer zoals ze waren.
+        result.push(bouwFem(node, {
+          reken: (expr) => reken(expr, scope),
+          zet: (naam, waarde) => {
+            const had = Object.prototype.hasOwnProperty.call(scope, naam);
+            const oud = scope[naam];
+            scope[naam] = waarde;
+            return () => {
+              if (had) scope[naam] = oud;
+              else delete scope[naam];
+            };
+          },
+          scope,
+          opties: stand.opties,
+        }));
+        break;
+      }
+
+      case 'kern': {
+        // Net als @toets en @fem: ook verborgen rekent het blok, en de teller van `per`
+        // of een #for staat even in de scope en daarna weer zoals hij was.
+        result.push(bouwKern(node, {
+          reken: (expr) => reken(expr, scope),
+          zet: (naam, waarde) => {
+            const had = Object.prototype.hasOwnProperty.call(scope, naam);
+            const oud = scope[naam];
+            scope[naam] = waarde;
+            return () => {
+              if (had) scope[naam] = oud;
+              else delete scope[naam];
+            };
+          },
+          scope,
+          opties: stand.opties,
+        }));
+        break;
+      }
+
+      case 'last': {
+        // Het blok rekent zelf, ook verborgen: zijn uitkomsten gelden voor wat eronder
+        // staat. De getallen volgen `#round`, de eenheden het eenhedenstelsel.
+        const opmaak = opmaakVan(stand);
+        result.push(bouwLast(node, {
+          reken: (expr) => reken(expr, scope),
+          scope,
+          opties: stand.opties,
+          getal: (n) => formatGetal(n, opmaak),
+          toon: (waarde) => {
+            let w = waarde;
+            try {
+              w = inHetStelsel(waarde) ?? waarde;
+            } catch {
+              /* een fout in de weergave: dan zoals het blad */
+            }
+            if (isUnit(w)) return { getal: formatGetal(getNumericValue(w), opmaak), eenheid: simplifyUnitString(w) };
+            return { getal: typeof w === 'number' ? formatGetal(w, opmaak) : String(w), eenheid: '' };
+          },
+        }));
+        break;
+      }
+
       case 'ifcx':
         if (node.hidden) break;
         result.push(bouwIfcxBlok(node, { reken: (expr) => reken(expr, scope), scope }));
@@ -1936,6 +2292,78 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
   }
 
   return result;
+}
+
+/** De vaste woorden van een melding bij een gekoppelde cel, in de taal van de uitvoer. */
+const CEL_MELDING: Record<'nl' | 'en', Record<CelFout | 'eenheid' | 'eenheid-onbekend', (c: CelVerwijzing, detail: string) => string>> = {
+  nl: {
+    bron: (c) => `koppeling niet gerekend: er is geen blad #${c.ref} (meer)`,
+    'geen-spreadsheet': (c) => `koppeling niet gerekend: blad #${c.ref} is geen spreadsheet-blad`,
+    werkmap: (c) => `koppeling niet gerekend: de werkmap van blad #${c.ref} is niet te lezen`,
+    werkblad: (c) => `koppeling niet gerekend: blad #${c.ref} heeft geen werkblad "${c.blad}"`,
+    leeg: (c) => `koppeling niet gerekend: cel ${c.cel} is leeg`,
+    tekst: (c, d) => `koppeling niet gerekend: cel ${c.cel} bevat geen getal${d ? ` maar "${d}"` : ''}`,
+    formulefout: (c, d) => `koppeling niet gerekend: de formule in cel ${c.cel} geeft ${d || 'een fout'}`,
+    'geen-waarde': (c) => `koppeling niet gerekend: de formule in cel ${c.cel} heeft nog geen uitkomst; open het spreadsheet-blad`,
+    eenheid: (c, d) => `koppeling niet gerekend: ${d} uit cel ${c.cel} past niet bij de eenheid van dit veld`,
+    'eenheid-onbekend': (c) => `koppeling niet gerekend: onbekende eenheid "${c.eenheid}"`,
+  },
+  en: {
+    bron: (c) => `link not calculated: there is no sheet #${c.ref} (any more)`,
+    'geen-spreadsheet': (c) => `link not calculated: sheet #${c.ref} is not a spreadsheet sheet`,
+    werkmap: (c) => `link not calculated: the workbook of sheet #${c.ref} cannot be read`,
+    werkblad: (c) => `link not calculated: sheet #${c.ref} has no worksheet "${c.blad}"`,
+    leeg: (c) => `link not calculated: cell ${c.cel} is empty`,
+    tekst: (c, d) => `link not calculated: cell ${c.cel} does not hold a number${d ? ` but "${d}"` : ''}`,
+    formulefout: (c, d) => `link not calculated: the formula in cell ${c.cel} gives ${d || 'an error'}`,
+    'geen-waarde': (c) => `link not calculated: the formula in cell ${c.cel} has no result yet; open the spreadsheet sheet`,
+    eenheid: (c, d) => `link not calculated: ${d} from cell ${c.cel} does not match the unit of this field`,
+    'eenheid-onbekend': (c) => `link not calculated: unknown unit "${c.eenheid}"`,
+  },
+};
+
+/**
+ * De waarde van een invoerveld dat aan een cel gekoppeld is. `gevonden` is wat de app
+ * in de scope zette (een getal of een fout, verwijzing.ts); niets als het blad er niet is.
+ *
+ * De eenheid: een eenheid in de koppeling (`#3.Blad1!B4 kN`) is die van het getal in de
+ * cel; het veld rekent het dan om naar zijn eigen eenheid. Zonder eenheid in de koppeling
+ * krijgt het getal de eenheid van het veld; zonder beide is het een kaal getal. Een
+ * eenheid die niet bij het veld past, of een getal met een eenheid in een veld zonder
+ * (en omgekeerd), is een fout: er wordt nooit stil iets anders van gemaakt.
+ */
+function celInvoer(cel: CelVerwijzing, gevonden: unknown, doel: string): { waarde: unknown } | { fout: string } {
+  const woorden = CEL_MELDING[huidigeTaal === 'en' ? 'en' : 'nl'];
+  if (gevonden === undefined) return { fout: woorden.bron(cel, '') };
+  if (typeof gevonden !== 'number') {
+    const f = gevonden as { fout?: CelFout; detail?: string };
+    return { fout: (woorden[f.fout ?? 'werkmap'] ?? woorden.werkmap)(cel, f.detail ?? '') };
+  }
+  if (!Number.isFinite(gevonden)) return { fout: woorden.tekst(cel, String(gevonden)) };
+  const getal = String(gevonden);
+  if (!cel.eenheid) {
+    if (!doel) return { waarde: gevonden };
+    try {
+      return { waarde: getalMetEenheid(getal, doel) };
+    } catch {
+      return { fout: woorden.eenheid(cel, getal) };
+    }
+  }
+  let bron: unknown;
+  try {
+    bron = getalMetEenheid(getal, cel.eenheid);
+    if (zonderGetal(bron)) throw new Error('geen getal');
+  } catch {
+    return { fout: woorden['eenheid-onbekend'](cel, '') };
+  }
+  const tekst = `${getal} ${cel.eenheid}`;
+  if (!doel) return isUnit(bron) ? { fout: woorden.eenheid(cel, tekst) } : { waarde: bron };
+  if (!isUnit(bron)) return { fout: woorden.eenheid(cel, tekst) };
+  try {
+    return { waarde: (bron as { to: (eenheid: string) => unknown }).to(doel) };
+  } catch {
+    return { fout: woorden.eenheid(cel, tekst) };
+  }
 }
 
 /** Geen getal: niets, of een eenheid zonder waarde (`kN`). */
@@ -2059,7 +2487,8 @@ function evaluateAssignment(
       name: index === undefined ? name : `${name}.(${index.replace(/,/g, ';')})`,
       expression,
       substitution: '',
-      result: `Error: ${(err as Error).message}`,
+      // "Undefined symbol ref__1__R_paal" leest als "Undefined symbol #1.R_paal".
+      result: `Error: ${verwijzingenInMelding((err as Error).message)}`,
       unit: '',
     };
   }

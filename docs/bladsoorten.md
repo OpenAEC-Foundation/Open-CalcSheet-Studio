@@ -125,6 +125,70 @@ De koppen uit de tekst komen standaard in de inhoudsopgave, de bovenste twee niv
 erin voorkomen. Een eerste kop gelijk aan de naam van het blad vervalt, op papier en in
 de inhoudsopgave. Uitzetten kan per blad, op zijn kaart in het paneel Rapport.
 
+## Gekoppelde bestanden: RTF en werkmapbereik
+
+Een RTF-bestand en een bereik uit een werkmap (.xlsx) worden een Markdown-blad met een
+`koppeling` (`store/koppeling.ts`). Afdruk, rapport en inhoudsopgave werken daardoor zoals
+bij elke Markdown-tekst; alleen de naam van de soort onder de kop is anders. De tekst is
+alleen te lezen: hij komt uit de bron. *Ontkoppelen* maakt er een gewoon Markdown-blad van.
+Toevoegen gaat via *Blad toevoegen › Uit een bestand* en bij RTF ook via *Module… ›
+Documenten*.
+
+Het blad bewaart het absolute pad van de bron, het pad relatief tot het projectbestand,
+bij een werkmap de verwijzing (een bereiknaam of `Blad!B4:F20`), en het moment en de hash
+van de laatste lezing. De tekst zelf is de kopie van die lezing, zodat het project ook
+zonder de bron opent en afdrukt. Gezocht wordt eerst naast het project (het relatieve pad),
+dan op het absolute pad: een gekopieerde projectmap leest zo zijn eigen bron.
+
+In de app bekijkt één wachter (`components/calc/koppelingen.ts`) de bronnen: bij het
+openen van een project, bij focus van het venster, vóór het afdrukvoorbeeld en het
+afdrukken, en elke twee seconden. Hij kijkt eerst naar de wijzigingstijd en leest het
+bestand pas als die anders is; gelijke bytes veranderen het blad niet. Vóór het afdrukken
+staat op papier een melding met `data-afdruk-laadt` tot de controle klaar is. Een
+bestandswatcher van Tauri staat niet aan: die vraagt een extra onderdeel aan de Rust-kant.
+
+Ontbreekt de bron, of is hij niet om te zetten (bereik of werkblad weg, geen RTF), dan
+blijft de kopie staan en staat er, op het scherm en op papier, een melding met de
+bestandsnaam en het moment van de laatste lezing (`meldingVoor`). Zolang de bron in de app
+nog niet bekeken is, geldt "lezen"; in de browser, zonder bestandstoegang, altijd "bewaarde
+kopie". De kopie gaat zo nooit stil door voor actueel.
+
+**RTF** (`store/rtfLezer.ts`): alinea's, regeleinden, tabs, vet, cursief, onderstreept,
+superscript en subscript (als html-tags in de Markdown), lijsten uit `\pntext` en
+`\listtext` (of `\ls` zonder teken) met hun niveau, koppen uit `\outlinelevel` of een stijl
+"heading 1", eenvoudige tabellen, `\uN` en `\'hh` in de codepagina van het bestand, en
+afbeeldingen in PNG of JPEG (als data-URL in `beelden`). Andere afbeeldingen worden gemeld.
+Lettertypen, kleuren, kop- en voetteksten, voetnoten en onbekende `\*`-groepen vallen weg.
+
+**Werkmapbereik** (`store/werkmapBereik.ts`): de rekenkern van het spreadsheet-blad leest
+de werkmap. Een bereiknaam wordt bij elke lezing opnieuw opgezocht, zodat ingevoegde rijen
+meegaan. De cellen komen als de werkmap ze toont: getallen in hun notatie, formules als hun
+uitkomst. De eerste rij is de kop, lege rijen en kolommen aan het eind vallen weg, en een
+kolom met alleen getallen staat rechts.
+
+**Werkmapsjabloon**: een JSON-bestand met per onderdeel de naam, de verwijzing, de plek en
+het blad ervoor (`maakSjabloon`). Toepassen op een andere werkmap toont per onderdeel wat
+gevonden is en wat ontbreekt, met aan- en uitvinken.
+
+Een onderdeel kan een regel hebben wanneer het standaard aan staat:
+
+```json
+{ "naam": "Kelderwanden", "verwijzing": "Kelder", "plek": 3,
+  "standaardBij": { "projecttype": ["woning", "utiliteit"], "trefwoorden": ["kelder"] } }
+```
+
+`stelVoor` toetst de regel aan het project: `projecttype` aan de soort bouwwerk uit het
+rapport (`uitgangspunten.soortBouwwerk`, paragraaf 4.1), `trefwoorden` aan de
+projectomschrijving (`teksten.projectomschrijving`). Eén passend woord is genoeg.
+Hoofdletters en accenten tellen niet, en een woord past ook als deel van een langer woord
+("woning" past bij "Eengezinswoning", "staal" bij "staalconstructie"). Bij het toepassen
+staan de voorgestelde onderdelen aangevinkt, met per onderdeel waarom ("projecttype
+woning", "omschrijving noemt kelder") of dat het niet voorgesteld wordt; de gebruiker vinkt
+daarna aan of uit, en "Terug naar het voorstel" zet de vinkjes terug. Een onderdeel zonder
+regel staat aan zodra de werkmap het heeft, net als in sjablonen van vóór de regel. Bij
+"Sjabloon bewaren…" vul je de regel per onderdeel in, woorden gescheiden door komma's; laat
+je beide velden leeg, dan krijgt het onderdeel geen regel.
+
 ## PDF
 
 Een PDF-blad toont de pagina's onder elkaar, met een eigen tab PDF op het lint.
@@ -162,6 +226,11 @@ wat in het voorbeeld staat, komt op papier.
 
 ## Canvas, graaf, tekenblad, Jupyter en Marimo
 
+- **Een lastblok** op een canvas is een eenheid met alleen een `@last`-blok (docs/rekentaal.md).
+  Die opent als formulier in plaats van als tekst (`LastBlokFormulier.tsx`): de regels kiezen
+  hun belasting uit hoofdstuk 5 van het rapport (`rapport/belastingBronnen.ts`). Het formulier
+  schrijft gewone rekentekst; staat er meer in de eenheid dan het blok, dan opent ze als tekst
+  (`store/lastBlok.ts`).
 - **Canvas** is geen losse soort maar een rekenblad: de rekentekst staat gewoon in
   `source`, met per eenheid een regel `//@eenheid id=e1 x=10 y=15`. De kern rekent van
   boven naar beneden, en `CanvasVellen` zet de eenheden op papier. Ctrl en scrollen zoomt
@@ -187,10 +256,62 @@ wat in het voorbeeld staat, komt op papier.
   laatste uitvoer, en is aangemeld met `MarimoPapier`. Een schuif staat op papier als zijn waarde. De
   Python-omgeving is die van de Jupyter-bladen: zie `docs/jupyter-blad.md`.
 
+## Het invoerscherm van een rekenblad
+
+Een rekenblad heeft naast de uitwerking een scherm om in te vullen (de tabs *Code + Visueel* en
+*Visueel + Uitwerking*). Welk scherm dat is, kiest de werkruimte in deze volgorde:
+
+1. **Een eigen parametrisch beeld** (`components/calc/designerKeuze.tsx`): de ingebouwde modules,
+   herkend aan een tekst in de kop van het blad. Dat beeld staat ook op papier.
+2. **Een beeld bij een module uit de modulebibliotheek** (`components/calc/invoer/invoerScherm.tsx`):
+   het formulier met een tekening erboven die de invoer volgt. Het hangt aan het `templateId` van
+   het blad. Dat is het id van de module (`store/moduleBibliotheek.ts`), en het blijft bij het
+   blad, ook in een projectbestand op een computer waar de module niet is geïnstalleerd. Nu alleen
+   `vloer-op-palen`: de plattegrond van het paalraster en een doorsnede bij een paal.
+3. **Het formulier uit de velden van het blad** (`components/calc/invoer/InvoerPaneel.tsx`): elk
+   ander rekenblad met een `?`-veld of een keuzelijst. Een module hoeft er niets voor te doen.
+
+Een canvas houdt zijn eigen scherm, en een blad zonder invoer heeft alleen *Code + Uitwerking*.
+
+Een module opent met haar invoerscherm. Een blad waar je de rekentekst schrijft of leest, opent
+met de code en heeft het invoerscherm als tab erbij: een eigen rekenblad (ook een voorbeeld uit
+de bibliotheek), een los geopend bestand en de demo van de rekentaal (`opentMetInvoer` in
+`invoer/velden.ts`). Krijgt zo'n blad tijdens het typen zijn eerste invoerveld, dan blijft de
+editor staan.
+
+Het formulier:
+
+- **De velden** komen uit het doorgerekende blad (`leesInvoer` in `invoer/velden.ts`, in de
+  rekenworker), niet uit de tekst. Zo staat er precies wat de uitwerking toont: in de volgorde van
+  het blad, onder zijn koppen, met de toelichting achter het veld en de eenheid, in de taal van de
+  uitvoer. Een veld in een tak van `#if` die niet gekozen is, of achter `#hide`, staat er niet.
+- **Schrijven** gaat alleen met `zetWaarde`, op de naam uit de rekentekst: dezelfde invoer als het
+  veld in de uitwerking. De rekentekst en de rekenversie veranderen niet, en ongedaan maken en de
+  tab Varianten zien een gewone wijziging van de invoer. Er wordt niets vooraf ingevuld (geen
+  `seedWaarden`): het blad rekent met zijn eigen standaardwaarden.
+- **Rustig rekenen** (`invoer/wachtrij.ts`): wat je typt gaat naar het blad als je het veld
+  verlaat, op Enter, of na een pauze van 0,6 s. Bij een blad met een `@fem`- of `@toets`-blok is
+  dat 1,5 s, omdat elke tussenstand daar een berekening van Open FEM Studio kost. Een keuze uit een
+  lijst gaat meteen. De kop meldt of er invoer wacht, of het blad rekent en of FEM Studio rekent;
+  anders staat er de uitkomst van het blad.
+- **Op papier** staat het formulier niet: de afdruk en de uitwerking van een variant vragen alleen
+  `designerKeuze`.
+
+Een beeld boven het formulier krijgt de rekentekst, een functie die zegt wat er voor een veld is
+ingevuld (wat nog wacht gaat voor wat is opgeslagen) en een functie die een waarde meteen zet
+(`BeeldProps`). Het tekent dus zonder op de doorrekening te wachten. De standaardwaarden en de
+eenheden leest het uit de tekst van het blad (`standaardInvoer`), niet uit eigen constanten:
+wijzigt de module een standaardwaarde, dan volgt het beeld. Voor een nieuw beeld: het model en de
+tekening als zuivere functies (zoals `invoer/vloerOpPalen.ts`), het onderdeel met de klikbare
+maten van `designerKit.tsx`, een regel in `schermSoort` (`velden.ts`) en in `invoerScherm.tsx`,
+en de controle erbij. De opmaak gebruikt alleen de tokens van het ontwerp (`--oa-*`).
+
 ## Controleren
 
 ```
+node scripts/check-invoerpaneel.mjs   # het invoerscherm: de velden, typen, rustig rekenen, het scherm in jsdom
 node scripts/check-markdown.mjs       # opslaan en heropenen, html, opschoning, op papier
+node scripts/check-gekoppelde-bestanden.mjs  # RTF-lezer, werkmapbereik, paden, bijwerken, melding, sjabloon
 node scripts/check-paginering.mjs     # de verdeling en de nummers bij de ankers
 node scripts/check-rapport-pdf.mjs    # een echte PDF van een gemengd project, alle soorten
 ```
@@ -200,3 +321,7 @@ browser, leest de PDF met pdf.js en rekent na: evenveel pagina's als vellen, op 
 pagina zijn eigen nummer, en bij elke regel van de inhoudsopgave de kop op die pagina
 en op geen eerdere. Met `--bewaar <map>` blijven de PDF en het project staan om te
 bekijken.
+
+`check-invoerpaneel` loopt met `--blad <module.cpd>` ook een blad van buiten de repository na,
+zoals een module uit de modulebibliotheek: de velden per kop, en of het blad de namen heeft waar
+het beeld van de vloer op palen aan bindt.

@@ -13,6 +13,8 @@
  * tekst scherp. Daarvoor is Python met Pillow nodig. scripts/check-readme.mjs
  * controleert de uitkomst.
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./lib/talen.mjs";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
