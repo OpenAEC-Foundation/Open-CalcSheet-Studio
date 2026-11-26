@@ -5,6 +5,7 @@ import {
 import beelden from "../../i18n/locales/nl/beelden.json" with { type: "json" };
 import type { PoerDefinitie } from "./poerDefinitie.ts";
 import { POER_KLEUREN } from "./poerTekening.ts";
+import { buigStraal, maakStaaflijst, stavenTweepaal } from "./poerStaven.ts";
 
 /*
  * De tweepaalspoer als IFCX (IFC5): de poer als doorzichtig betonvolume, twee palen, de
@@ -15,6 +16,9 @@ import { POER_KLEUREN } from "./poerTekening.ts";
  * (poerDefinitie.ts), dezelfde als de tekening (poerTekening.ts), en de kleuren ook. Een
  * uitkomst van het blad staat er niet in: het document verandert alleen als de poer zelf
  * verandert.
+ *
+ * Elke staaf draagt zijn merk uit de staaflijst (poerStaven.ts) en zijn lengte langs de
+ * hartlijn; de hoeken van beugels en haarspelden buigen om de kleinste doorn, zoals daar.
  *
  * Eén vorm is een eigen knoop; de staven nemen die over met `inherits` en krijgen alleen
  * een eigen plaatsing, zoals de balken in balklaagIfcx.ts. Alle lengtes in de definitie
@@ -45,6 +49,7 @@ const ATTR = {
   mesh: "usd::usdgeom::mesh",
   plaatsing: "usd::xformop",
   diameter: "ocss::calc::diameter",
+  merk: "ocss::calc::merk",
   aantal: "ocss::calc::aantalStaven",
   getoond: "ocss::calc::aantalGetoond",
   opmerking: "ocss::calc::opmerking",
@@ -53,6 +58,7 @@ const ATTR = {
 /** De beschrijving van de eigen attributen in een los document. */
 export const POER_IFCX_SCHEMAS: Record<string, IfcxSchema> = {
   [ATTR.diameter]: { value: { dataType: "Real", quantityKind: "Length" } },
+  [ATTR.merk]: { value: { dataType: "Integer" } },
   [ATTR.aantal]: { value: { dataType: "Integer" } },
   [ATTR.getoond]: BALKLAAG_IFCX_SCHEMAS[ATTR.getoond],
   [ATTR.opmerking]: BALKLAAG_IFCX_SCHEMAS[ATTR.opmerking],
@@ -70,8 +76,6 @@ const ZIJDEN_ROND = 32;
 /** Een ombuiging in zoveel stukken per kwart cirkel; de kleine hoeken van een beugel met minder. */
 const BOOG_STUKKEN = 5;
 const HOEK_STUKKEN = 3;
-/** De straal van de hoeken in een beugel en een haarspeld, in staafdiameters; zoals de doorsnede op de tekening. */
-const HOEK_STRAAL = 2;
 /**
  * Zoveel staven per soort staan hooguit in het beeld. Tijdens het typen komt een hart-op-hart
  * van 1 mm voorbij; zonder grens loopt de app dan vast op duizenden beugels.
@@ -344,9 +348,12 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
 
   // ── De wapeningskorf ─────────────────────────────────────────────────────
   const s = stavenVan(p);
-  /** Een staaf: een vorm uit de korf, met zijn plaatsing, naam en diameter. */
-  const staaf = (kind: string, naam: string, vormPad: string, matPad: string, d: number, x: number, y: number, z: number) => {
+  const lijst = maakStaaflijst(stavenTweepaal(p));
+  const regelVan = (sleutel: string) => lijst.regels.find((r) => r.merk === lijst.merkVan[sleutel]);
+  /** Een staaf: een vorm uit de korf, met zijn plaatsing, naam, diameter, merk en lengte. */
+  const staaf = (kind: string, naam: string, vormPad: string, matPad: string, d: number, x: number, y: number, z: number, sleutel: string) => {
     const q = pad(`staaf/${kind}`);
+    const regel = regelVan(sleutel);
     knopen.push({
       path: q,
       inherits: { vorm: vormPad, materiaal: matPad },
@@ -355,6 +362,7 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
         [ATTR.naam]: naam,
         [ATTR.type]: `Ø${getal(d)}`,
         [ATTR.diameter]: naarM(d),
+        ...(regel ? { [ATTR.merk]: regel.merk, [ATTR.lengte]: naarM(regel.lengte) } : {}),
         [ATTR.plaatsing]: verplaatsing(x, y, z),
       },
     });
@@ -376,7 +384,7 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
         : [[-e, z], [e, z]];
       const v = vorm(`trekband/${i + 1}`, buis(lijn, "xz", tb.d / 2));
       for (const y of rij.y) {
-        staaf(`Trekband_${nummer(teller)}`, `${t.trekband} ${teller + 1}`, v, mat, tb.d, 0, y, 0);
+        staaf(`Trekband_${nummer(teller)}`, `${t.trekband} ${teller + 1}`, v, mat, tb.d, 0, y, 0, `trekband/${i + 1}`);
         teller++;
       }
     });
@@ -385,19 +393,19 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
   const bg = p.beugels;
   if (s.beugelX.length > 0 && (s.lussen.length > 0 || s.been !== null)) {
     const mat = staal("beugel", POER_KLEUREN.beugel);
-    const hoek = HOEK_STRAAL * bg.d;
+    const hoek = buigStraal(bg.d);
     const lusVormen = s.lussen.map(([a, c], i) => vorm(`beugel/${i + 1}`, buis(
       afgerond([[a, bg.zOnder], [c, bg.zOnder], [c, bg.zBoven], [a, bg.zBoven]], hoek, HOEK_STUKKEN, true), "yz", bg.d / 2, true,
     )));
     const beenVorm = s.been !== null ? vorm("beugel/been", buis([[s.been, bg.zOnder], [s.been, bg.zBoven]], "yz", bg.d / 2)) : null;
     let teller = 0;
     for (const x of s.beugelX) {
-      for (const v of lusVormen) {
-        staaf(`Beugel_${nummer(teller)}`, `${t.beugel} ${teller + 1}`, v, mat, bg.d, x, 0, 0);
+      lusVormen.forEach((v, i) => {
+        staaf(`Beugel_${nummer(teller)}`, `${t.beugel} ${teller + 1}`, v, mat, bg.d, x, 0, 0, `beugel/${i + 1}`);
         teller++;
-      }
+      });
       if (beenVorm) {
-        staaf(`Beugel_${nummer(teller)}`, `${t.beugel} ${teller + 1}`, beenVorm, mat, bg.d, x, 0, 0);
+        staaf(`Beugel_${nummer(teller)}`, `${t.beugel} ${teller + 1}`, beenVorm, mat, bg.d, x, 0, 0, "beugel/been");
         teller++;
       }
     }
@@ -410,7 +418,7 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
     let teller = 0;
     for (const z of s.zijZ) {
       for (const y of [-p.zij.y, p.zij.y]) {
-        staaf(`Zijstaaf_${nummer(teller)}`, `${t.zijstaaf} ${teller + 1}`, v, mat, p.zij.d, 0, y, z);
+        staaf(`Zijstaaf_${nummer(teller)}`, `${t.zijstaaf} ${teller + 1}`, v, mat, p.zij.d, 0, y, z, "zijstaaf");
         teller++;
       }
     }
@@ -418,23 +426,23 @@ export function poerIfcxKnopen(p: PoerDefinitie, bladId: string, t: PoerModelTek
   if (s.bovenY.length > 0) {
     const mat = staal("bovenstaaf", POER_KLEUREN.overig);
     const v = vorm("bovenstaaf", buis([[-xStaaf, 0], [xStaaf, 0]], "xz", p.boven.d / 2));
-    s.bovenY.forEach((y, i) => staaf(`Bovenstaaf_${nummer(i)}`, `${t.bovenstaaf} ${i + 1}`, v, mat, p.boven.d, 0, y, p.boven.z));
+    s.bovenY.forEach((y, i) => staaf(`Bovenstaaf_${nummer(i)}`, `${t.bovenstaaf} ${i + 1}`, v, mat, p.boven.d, 0, y, p.boven.z, "bovenstaaf"));
   }
   if (s.haarspeldX.length > 0) {
     const hp = p.haarspelden;
     const mat = staal("haarspeld", POER_KLEUREN.haarspeld);
     // De breedte om de trekband, zoals in de dwarsdoorsnede op de tekening.
-    const yH = Math.max(0, tb.lagen[0]?.y.length ? Math.max(...tb.lagen[0].y) : 0) + tb.d / 2 + hp.d;
+    const yH = hp.y;
     const v = vorm("haarspeld", buis(
-      afgerond([[-yH, hp.zBoven], [-yH, hp.z], [yH, hp.z], [yH, hp.zBoven]], HOEK_STRAAL * hp.d, HOEK_STUKKEN), "yz", hp.d / 2,
+      afgerond([[-yH, hp.zBoven], [-yH, hp.z], [yH, hp.z], [yH, hp.zBoven]], buigStraal(hp.d), HOEK_STUKKEN), "yz", hp.d / 2,
     ));
-    s.haarspeldX.forEach((x, i) => staaf(`Haarspeld_${nummer(i)}`, `${t.haarspeld} ${i + 1}`, v, mat, hp.d, x, 0, 0));
+    s.haarspeldX.forEach((x, i) => staaf(`Haarspeld_${nummer(i)}`, `${t.haarspeld} ${i + 1}`, v, mat, hp.d, x, 0, 0, "haarspeld"));
   }
   if (s.dwarsXZ.length > 0) {
     const dw = p.dwarsstaven;
     const mat = staal("dwarsstaaf", POER_KLEUREN.dwarsstaaf);
     const v = vorm("dwarsstaaf", buis([[-dw.y, 0], [dw.y, 0]], "yz", dw.d / 2));
-    s.dwarsXZ.forEach(([x, z], i) => staaf(`Dwarsstaaf_${nummer(i)}`, `${t.dwarsstaaf} ${i + 1}`, v, mat, dw.d, x, 0, z));
+    s.dwarsXZ.forEach(([x, z], i) => staaf(`Dwarsstaaf_${nummer(i)}`, `${t.dwarsstaaf} ${i + 1}`, v, mat, dw.d, x, 0, z, "dwarsstaaf"));
   }
 
   const telling = poerModelTelling(p);

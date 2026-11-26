@@ -318,7 +318,7 @@ export function tekenPoer(p: PoerDefinitie, t: TekeningTeksten, breedte: number,
   }
   // haarspeld om de trekband
   if (p.haarspelden.n > 0) {
-    const yH = Math.max(0, tb.lagen[0] ? (tb.lagen[0].y.length > 0 ? Math.max(...tb.lagen[0].y) : 0) : 0) + tb.d / 2 + p.haarspelden.d;
+    const yH = p.haarspelden.y;
     const zTop = p.haarspelden.zBoven;
     const zLaag = p.haarspelden.z;
     uit.push(`<path data-staaf="haarspeld-dwars" d="M ${r(XD(-yH))} ${r(Z(zTop))} L ${r(XD(-yH))} ${r(Z(zLaag))} L ${r(XD(yH))} ${r(Z(zLaag))} L ${r(XD(yH))} ${r(Z(zTop))}" fill="none" stroke="${HAARSPELD}" stroke-width="${r(dH)}" stroke-linejoin="round"/>`);

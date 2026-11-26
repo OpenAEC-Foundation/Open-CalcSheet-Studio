@@ -29,6 +29,7 @@
  * invoer meebeweegt, en daarom ook twee talen; zie formuleTekening.ts.
  */
 
+import { isNederlands } from "../../i18n/talen.ts";
 import {
   buisTekening,
   cirkelTekening,
@@ -96,9 +97,9 @@ export interface Formule {
 /** Regels van een fragment, onder elkaar. */
 const c = (...regels: string[]): string => regels.join("\n");
 
-/** Het fragment in de taal van de app; zonder tekstregels is er maar één. */
+/** Het fragment in de taal van de app; zonder tekstregels is er maar één. Buiten het Nederlands: Engels. */
 export const codeVan = (f: Formule, taal: string | undefined): string =>
-  (taal?.startsWith("en") ? f.codeEn : undefined) ?? f.code;
+  (isNederlands(taal) ? undefined : f.codeEn) ?? f.code;
 
 export const FORMULE_GROEPEN: FormuleGroep[] = [
   { id: "mechanica-ligger", naam: { nl: "Mechanica — liggers", en: "Mechanics — beams" } },

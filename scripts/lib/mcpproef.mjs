@@ -9,6 +9,8 @@
  * `dirty` en is ongedaan te maken. `acties` telt mee, zodat te zien is dat elke
  * mutatie via een store-actie loopt.
  */
+// Eerst de vertalingen: het rapport haalt zijn meegeleverde teksten uit het register.
+import "./talen.mjs";
 import { readFileSync } from "node:fs";
 import { modulesPerTemplate } from "../../packages/desktop/src/components/calc/projectTree.ts";
 import { laadTemplate } from "./refcheck.mjs";
@@ -84,6 +86,7 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
   };
   const app = { splitMode: "vu", activeView: "default", voorbeeld: null };
   const afdrukken = [];
+  const rapportPdfs = [];
 
   const omgeving = {
     stand: () => ({ ...s, stappenTerug: verleden.length, stappenVooruit: toekomst.length }),
@@ -266,9 +269,15 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
       pdfViaEngine: async () => {
         throw new McpFout("NOT_AVAILABLE", "This build of the app has no report engine.");
       },
+      // Het rapport naar een bestand: hier alleen onthouden waarheen; `rapportPdfFout` laat het mislukken.
+      rapportPdf: async (pad) => {
+        if (app.rapportPdfFout) throw new McpFout(app.rapportPdfFout.code, app.rapportPdfFout.melding);
+        rapportPdfs.push(pad);
+        return 12345;
+      },
     },
   };
-  return { s, acties, omgeving, schijf, afdrukken, app, sjablonen, geinstalleerd };
+  return { s, acties, omgeving, schijf, afdrukken, rapportPdfs, app, sjablonen, geinstalleerd };
 }
 
 /** Een context zoals brug.ts hem per request bouwt. */

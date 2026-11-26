@@ -1,3 +1,4 @@
+import { isNederlands } from "../../i18n/talen";
 import { useProjectStore } from "../../store/projectStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { metEditor, vraagCode } from "../../store/codeVerzoek";
@@ -21,7 +22,7 @@ export function openRekenblad() {
  * module, en in beeld, ook vanuit het afdrukvoorbeeld of de IFC-weergave.
  */
 export function nieuwBladMetFormule(f: Formule, taal: string | undefined): void {
-  const naam = taal?.startsWith("en") ? f.naam.en : f.naam.nl;
+  const naam = isNederlands(taal) ? f.naam.nl : f.naam.en;
   const code = codeVan(f, taal);
   const tekst = code.startsWith("## ") ? `"${code.slice(3)}` : `"${naam}\n\n${code}`;
   const id = useProjectStore.getState().voegToe(LEEG_BLAD, naam, `${tekst}\n`);

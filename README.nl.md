@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/OpenAEC-Foundation/Open-CalcSheet-Studio?include_prereleases&label=release&color=D97706)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
 [![CI](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml)
 [![Licentie](https://img.shields.io/badge/licentie-LGPL--3.0-blue)](#licentie)
-[![Talen](https://img.shields.io/badge/talen-Engels%20%C2%B7%20Nederlands-informational)](#schermafbeeldingen)
+[![Talen](https://img.shields.io/badge/talen-Engels%20%C2%B7%20Nederlands%20%C2%B7%20Litouws-informational)](#schermafbeeldingen)
 
 ### [Downloaden](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
 
@@ -73,18 +73,18 @@ Een project is een lijst bladen. Elke soort staat beschreven in [de documentatie
 | Blad | Wat het is |
 |-------|------------|
 | **Rekenblad** | Tekst in de [rekentaal](docs/rekentaal.md), met formules, voorwaarden, grafieken en tekeningen |
-| **Spreadsheet** | Een `.xlsx`-werkmap met formules, cellen aanwijzen, doorvullen en paginagrenzen |
+| **Spreadsheet** | Een `.xlsx`-werkmap met formules, cellen aanwijzen, doorvullen en paginagrenzen; een cel kan een invoerveld van een rekenblad vullen |
 | **Canvas** | Formule-eenheden vrij geplaatst, van boven naar beneden gerekend met dezelfde kern |
 | **Graaf** | Nodes voor getallen, logica, lijsten, tekst en geometrie, en codeblokken, met een 3D-voorbeeld. Leest grafbestanden (`.dyn`) |
 | **Tekening** | A4, A3 of A2 met aanzichten op schaal: stramienen, peilen, wanden, staalprofielen, kanaalplaatvloeren en schematiseringen |
 | **Jupyter** | Een [notebook met Python](docs/jupyter-blad.md), numpy, scipy, pandas en matplotlib, zonder iets te installeren. Op verzoek rekent het opnieuw na elke wijziging |
 | **Marimo** | Een reactief Python-notebook: verschuif een schuif en alles wat daarvan afhangt, volgt |
 | **PDF** | Een bestaande PDF als onderdeel van het rapport. Inzoomen, en opmerkingen, markeringen, pijlen, kaders en wijzigingswolken toevoegen, op het scherm en op papier |
-| **Markdown** | Bestaande tekst, als onderdeel van het rapport |
+| **Markdown** | Bestaande tekst, als onderdeel van het rapport. Ook een RTF-bestand of een bereik uit een werkmap, gekoppeld: wordt de bron opgeslagen, dan werkt het blad vanzelf bij |
 
 ## Modules en bibliotheek
 
-Modules zijn kant-en-klare bladen met een invoerscherm: een **houten balklaag** en een **ligger van hout of staal** volgens EN 1995-1-1 en EN 1993-1-1, en een **tweepaalspoer** volgens EN 1992-1-1, met de Nederlandse nationale bijlage. De [online modulebibliotheek](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) kan modules toevoegen zonder nieuwe release; voorlopig staat daar de balklaag. Zie [hoe de toetsing van de balklaag werkt](docs/balklaag-toetsing.md) en [die van de poer](docs/tweepaalspoer-toetsing.md).
+Modules zijn kant-en-klare bladen met een invoerscherm: een **houten balklaag** en een **ligger van hout of staal** volgens EN 1995-1-1 en EN 1993-1-1, een **tweepaalspoer** en een **poer op drie of vier palen** volgens EN 1992-1-1, met de Nederlandse nationale bijlage. De [online modulebibliotheek](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) kan modules toevoegen zonder nieuwe release; voorlopig staat daar de balklaag. Elk ander blad met invoer, ook een module uit die bibliotheek, krijgt naast het uitgewerkte blad een invoerformulier uit zijn eigen velden. Zie [hoe de toetsing van de balklaag werkt](docs/balklaag-toetsing.md), [die van de tweepaalspoer](docs/tweepaalspoer-toetsing.md) en [die van de poer op drie of vier palen](docs/meerpaalspoer-toetsing.md).
 
 De tweepaalspoer heeft naast de tekening een 3D-studiemodel. Dat toont de poer, de palen, de kolom en elke staaf, en volgt elk veld en elke blauwe maat meteen. **Add module** toont bij elke keuze een plaatje, van een leeg tekenblad tot een Marimo-notebook.
 
@@ -108,8 +108,12 @@ De **gewichtenbibliotheek** heeft ruim 2300 eigen gewichten, elk met een bron di
 | **Rekentekst** (`.cpd`) | Ja | Nee, wordt opgeslagen als projectbestand |
 | **Spreadsheet** (`.xlsx`) | Ja | Ja |
 | **Markdown** (`.md`) | Ja | Ja |
+| **RTF** (`.rtf`) | Als gekoppeld blad | Nee |
+| **Werkmapbereik** (`.xlsx`, op bereiknaam of cellen) | Als gekoppelde tabel | Nee |
 | **Notebook** (`.ipynb`, `.py`, databestanden) | Ja | De werkmap als `.zip` |
 | **PDF** | Als blad | Ja, het rapport |
+| **DOCX** | Nee | Ja, het rapport als bewerkbaar document, met formules als vergelijking ([momentopname](docs/rapport-docx-odt.md)) |
+| **ODT** (OpenDocument) | Nee | Ja, het rapport als bewerkbaar document, met formules als formuleobject |
 | **DXF** | Omgezet naar een tekening in een blad | Nee |
 
 Elk blad staat met tekst, invoer en uitkomsten in het IFCX-bestand. Tekeningen die het invoerscherm van een module tekent, staan er niet als figuur in, alleen wat de rekentekst zelf tekent. De tweepaalspoer voegt wel zijn 3D-model toe: in IFC4x3 is elke staaf van de korf een `IfcReinforcingBar`. De meeste bladen weten niet waar hun onderdeel in het gebouw zit, dus elementen zonder geometrie staan op de oorsprong van de bouwlaag. Zie [de IFC-documentatie](docs/ifc-export.md).
@@ -120,7 +124,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **72 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **92 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.
@@ -138,10 +142,10 @@ Bron van de getallen: de genoemde bestanden en `ls scripts/check-*.mjs`. De stat
 - **Lettertypen zitten niet in het project.** Behalve Inter en Space Grotesk moet een lettertype uit je huisstijl op de computer staan die afdrukt.
 - **De bibliotheek heeft de eerste keer internet nodig.** Zonder verbinding blijft hij leeg tot hij een keer is opgehaald. Daarna gebruikt hij de laatste stand.
 - **Een grafbestand komt niet altijd volledig over.** Nodes die deze app niet heeft, scripts en de meeste geometrie blijven met een melding op de graaf staan en rekenen niet.
-- **Waarden uit een spreadsheet komen nog niet in rekenbladen.** Een spreadsheet staat voorlopig op zichzelf.
+- **Een spreadsheetcel gaat maar één kant op, als getal, naar een invoerveld.** Een rekenblad kan een cel overnemen (`#3.Blad1!B4 kN`), maar schrijft niets terug naar de spreadsheet, en een formule in een rekenblad kan een cel niet rechtstreeks gebruiken.
 - **Nog geen voet-en-inch met breuken.** 5'-6 ½" kun je nog niet typen of tonen, en een temperatuur blijft in de eenheid van het blad. Toelichtingen die waarden uit een norm citeren, de gewichtenbibliotheek en de tekeningen die een blad zelf maakt, houden ook hun eigen eenheden.
 - **Het rapport rechtstreeks naar PDF kan alleen op Windows.** Andere platforms gebruiken de printdialoog.
-- **Sommige tekst blijft voorlopig Nederlands.** De app, de bladen, de tab Code en het rapport volgen je taal, maar de namen van de variabelen in de modules en sommige namen in de IFC-boom zijn Nederlands.
+- **Sommige tekst blijft voorlopig Nederlands.** De app, de bladen, de tab Code en het rapport volgen je taal, maar de namen van de variabelen in de modules en sommige namen in de IFC-boom zijn Nederlands. In het Litouws staan de uitgewerkte modules, de formulebibliotheek en de regels van de gewichtenbibliotheek in het Engels. Zie [talen](docs/talen.md) voor het toevoegen van een taal.
 - **Pagina-einden kunnen iets verschillen per schermschaal.** Op 100% en 150% kunnen een paar regels op een ander vel komen.
 - **Geen WebRTC in de app.** Het is overal geblokkeerd, dus een externe pagina in `@iframe` die het nodig heeft, werkt niet.
 - **Open FEM Studio-projecten zijn er nog niet.** Het menu-item is zichtbaar maar staat uit.
