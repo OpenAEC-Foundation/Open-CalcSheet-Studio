@@ -3155,7 +3155,7 @@ dependencies = [
 
 [[package]]
 name = "ocss-fem-brug"
-version = "2026.48.0"
+version = "2026.48.1"
 dependencies = [
  "serde_json",
  "sha2",
@@ -3180,7 +3180,7 @@ dependencies = [
 
 [[package]]
 name = "open-calcsheet-studio"
-version = "2026.48.0"
+version = "2026.48.1"
 dependencies = [
  "gtk",
  "keyring",

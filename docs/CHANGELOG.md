@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+## v2026.48.1 — 2026-11-26
+
 - Een AI-assistent die via MCP verbindt, krijgt de instructie in het geopende project te werken: bladen toevoegen en aanpassen met de tools, geen eigen projectbestanden of scripts eromheen
 - Elk rekenblad kan op het canvas: de tab Canvas zet de tekst in blokken per kop onder elkaar, met dezelfde uitkomsten. Verschuif je een blok of typ je erin, dan bewaart het blad de plekken en komt het zo ook op papier
 - Rapporttemplate: het standaardrapport is nu een template dat je kunt aanpassen. In de nieuwe sectie Rapportopbouw voeg je hoofdstukken, paragrafen en tekstblokken toe, hernoem, verplaats en verwijder je ze, en plaats je de berekende blokken. Bewaar het als eigen bestand (`.reporttemplate`) om je format te delen, of stel het in als standaard voor nieuwe rapporten. Een rapport houdt zijn eigen kopie, en bestaande rapporten veranderen niet
