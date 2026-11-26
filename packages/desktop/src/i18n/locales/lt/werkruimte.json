@@ -1244,5 +1244,53 @@
     "onlineBibliotheek": "Internetinė biblioteka",
     "webpagina": "Tinklalapis lape",
     "script": "Scenarijus lape"
+  },
+  "controle": {
+    "tab": "Patikra",
+    "titel": "Šio lapo patikra (keturių akių principas)",
+    "uitleg": "Antrasis inžinierius užfiksuoja, kas patikrino lapą, kada, kokiu rezultatu ir su kokiomis pastabomis. Kiekviena patikra išsaugo skaičiavimo teksto, įvesties ir rezultato SHA-256 maišos reikšmę. Jei lapas po patvirtinimo pasikeičia, patvirtinimas nebegalioja.",
+    "standGeen": "Dar nepatikrinta.",
+    "standVrijgegeven": "Patvirtino {{naam}} {{datum}}; lapas nuo to laiko nepasikeitė (maiša {{hash}}).",
+    "standVervallen": "Patvirtino {{naam}} {{datum}}, bet patvirtinimas nebegalioja: nuo to laiko pasikeitė: {{delen}}.",
+    "standGecontroleerd": "Patikrino {{naam}} {{datum}}: {{uitkomst}}; nepatvirtinta.",
+    "standGecontroleerdGewijzigd": "Patikrino {{naam}} {{datum}}: {{uitkomst}}; nepatvirtinta, ir nuo to laiko pasikeitė: {{delen}}.",
+    "deel": {
+      "rekentekst": "skaičiavimo tekstas",
+      "invoer": "įvestis",
+      "uitkomst": "rezultatas"
+    },
+    "hashNu": "Dabartinio lapo maiša: {{hash}}",
+    "rekentNiet": "Lapas dabar neapskaičiuojamas, todėl nėra ką užfiksuoti.",
+    "nieuw": "Užfiksuoti patikrą",
+    "controleur": "Tikrintojas",
+    "datum": "Data",
+    "uitkomst": "Rezultatas",
+    "uitkomsten": {
+      "akkoord": "patvirtinta",
+      "opmerkingen": "patvirtinta su pastabomis",
+      "afgekeurd": "atmesta"
+    },
+    "opmerkingen": "Pastabos",
+    "vrijgeven": "Patvirtinti lapą (užfiksuoja dabartinę būseną su jos maiša)",
+    "vastleggen": "Užfiksuoti",
+    "vastgelegd": "Patikra užfiksuota.",
+    "eerder": "Ankstesnės patikros",
+    "geenEerder": "Šiam lapui patikra dar neužfiksuota.",
+    "vrijgave": "Patvirtinta",
+    "hash": "Maiša",
+    "ja": "taip",
+    "nee": "ne",
+    "zelfde": "= dabar",
+    "zelfdeUitleg": "Ši patikra taikoma dabartiniam lapui",
+    "exporteren": "Eksportuoti",
+    "exportUitleg": "Visos visų šio projekto lapų patikros, nurodant, ar patvirtinimas tebegalioja.",
+    "exportCsv": "Eksportuoti kaip CSV",
+    "exportJson": "Eksportuoti kaip JSON",
+    "exportTitel": "Eksportuoti patikras",
+    "geexporteerd": "Eksportuota.",
+    "labelVrijgegeven": "Patvirtinta",
+    "labelVervallen": "Patvirtinimas nebegalioja",
+    "labelGecontroleerd": "Patikrinta",
+    "labelUitleg": "Šio lapo patikra: žr. skirtuką „Patikra“"
   }
 }

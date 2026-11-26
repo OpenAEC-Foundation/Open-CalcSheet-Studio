@@ -35,6 +35,7 @@ import FeedbackDialog from "./components/FeedbackDialog";
 import { IN_WERKPLEK } from "./werkplek/werkplek";
 import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
 import VariantenPaneel from "./components/calc/varianten/VariantenPaneel";
+import ControlePaneel, { ControleLabel } from "./components/calc/ControlePaneel";
 import { isPdfBlad } from "./store/pdfBijlage";
 import { isSpreadsheetBlad } from "./store/spreadsheetBlad";
 import { isMarkdownBlad } from "./store/markdownBlad";
@@ -121,6 +122,8 @@ export default function App() {
   const [canvasCode, setCanvasCode] = useState(false);
   // De tab Varianten van een rekenblad (docs/varianten.md); een ander blad opent weer in zijn gewone weergave.
   const [variantenOpen, setVariantenOpen] = useState(false);
+  // De tab Controle van een blad (toetsregistratie, store/controle.ts); net als Varianten.
+  const [controleOpen, setControleOpen] = useState(false);
 
   useEffect(() => {
     getSetting<string>("theme", "light").then((saved) => {
@@ -290,6 +293,7 @@ export default function App() {
   const toontCanvas = canvasBlad && !canvasCode;
   useEffect(() => setCanvasCode(false), [activeId]);
   useEffect(() => setVariantenOpen(false), [activeId]);
+  useEffect(() => setControleOpen(false), [activeId]);
   // Idem een grafblad: alleen zijn vlak.
   const graafBlad = actief !== null && isGraafBlad(actief);
   // En een tekenblad: alleen zijn vel.
@@ -333,10 +337,12 @@ export default function App() {
     kiesSplitMode(m);
     setCanvasCode(true);
     setVariantenOpen(false);
+    setControleOpen(false);
   };
   // Varianten bij elk blad met rekentekst: een rekenblad, een module of een canvas.
   const kanVarianten = actief !== null && !pdfBlad && !spreadsheetBlad && !markdownBlad && !graafBlad && !tekenBlad && !jupyterBlad && !marimoBlad;
   const toontVarianten = variantenOpen && kanVarianten && !printVoorbeeld;
+  const toontControle = controleOpen && kanVarianten && !printVoorbeeld && !toontVarianten;
   const aantalVarianten = actief?.varianten?.lijst.length ?? 0;
 
   // Het lint (tab Rekentaal) vraagt om de code: weg uit de IFC-weergave en het
@@ -349,6 +355,7 @@ export default function App() {
     setSplitMode((m) => (m === "vu" ? "cv" : m));
     setCanvasCode(true);
     setVariantenOpen(false);
+    setControleOpen(false);
   }, [codeVerzoek, sluitVoorbeeld]);
   const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad || jupyterBlad || marimoBlad) ? (
     <div className="split-tabs">
@@ -360,33 +367,46 @@ export default function App() {
       <div className="split-tabs">
         {canvasBlad && (
           <button
-            className={`split-tab${!printVoorbeeld && !toontVarianten && toontCanvas ? " active" : ""}`}
+            className={`split-tab${!printVoorbeeld && !toontVarianten && !toontControle && toontCanvas ? " active" : ""}`}
             onClick={() => {
               sluitVoorbeeld();
               setCanvasCode(false);
               setVariantenOpen(false);
+              setControleOpen(false);
             }}
           >
             {t("canvas.tab")}
           </button>
         )}
         {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontCanvas && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>{t("weergave.codeVisueel")}</button>
+          <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontControle && !toontCanvas && mode === "cv" ? " active" : ""}`} onClick={() => kiesWeergave("cv")}>{t("weergave.codeVisueel")}</button>
         )}
-        <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontCanvas && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
+        <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontControle && !toontCanvas && mode === "cu" ? " active" : ""}`} onClick={() => kiesWeergave("cu")}>{t("weergave.codeUitwerking")}</button>
         {hasDesigner && (
-          <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontCanvas && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
+          <button className={`split-tab${!printVoorbeeld && !toontVarianten && !toontControle && !toontCanvas && mode === "vu" ? " active" : ""}`} onClick={() => kiesWeergave("vu")}>{t("weergave.visueelUitwerking")}</button>
         )}
         <button
           className={`split-tab${toontVarianten ? " active" : ""}`}
           onClick={() => {
             sluitVoorbeeld();
+            setControleOpen(false);
             setVariantenOpen(true);
           }}
         >
           {aantalVarianten ? t("varianten.tabAantal", { count: aantalVarianten }) : t("varianten.tab")}
         </button>
+        <button
+          className={`split-tab${toontControle ? " active" : ""}`}
+          onClick={() => {
+            sluitVoorbeeld();
+            setVariantenOpen(false);
+            setControleOpen(true);
+          }}
+        >
+          {t("controle.tab")}
+        </button>
         <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
+        <ControleLabel ex={actief} />
         <BladVersieKop ex={actief} />
       </div>
       <BladVersieMelding ex={actief} />
@@ -486,6 +506,13 @@ export default function App() {
                 <Trans t={t} i18nKey="leeg.uitleg" components={{ b: <b /> }} />
               </p>
             </div>
+          ) : toontControle && actief ? (
+            <>
+              {tabBalk}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <ControlePaneel key={actief.id} ex={actief} />
+              </div>
+            </>
           ) : toontVarianten && actief ? (
             <>
               {tabBalk}

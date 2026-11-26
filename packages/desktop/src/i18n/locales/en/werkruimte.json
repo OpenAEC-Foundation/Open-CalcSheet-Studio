@@ -1214,5 +1214,53 @@
     "ontkoppel": "Unlink",
     "ontkoppelUitleg": "Break the link with the source. The text stays and can then be edited as usual.",
     "ontkoppelVraag": "Break the link of \"{{naam}}\"? The sheet will no longer update by itself."
+  },
+  "controle": {
+    "tab": "Check",
+    "titel": "Check of this sheet (four-eyes principle)",
+    "uitleg": "A second engineer records who checked the sheet, when, the result and any remarks. Each check stores a SHA-256 hash of the calculation text, the input and the result. If the sheet changes after release, the release no longer applies.",
+    "standGeen": "Not checked yet.",
+    "standVrijgegeven": "Released by {{naam}} on {{datum}}; the sheet is unchanged since (hash {{hash}}).",
+    "standVervallen": "Released by {{naam}} on {{datum}}, but the release no longer applies: changed since then: {{delen}}.",
+    "standGecontroleerd": "Checked by {{naam}} on {{datum}}: {{uitkomst}}; not released.",
+    "standGecontroleerdGewijzigd": "Checked by {{naam}} on {{datum}}: {{uitkomst}}; not released, and changed since then: {{delen}}.",
+    "deel": {
+      "rekentekst": "calculation text",
+      "invoer": "input",
+      "uitkomst": "result"
+    },
+    "hashNu": "Hash of the sheet as it is now: {{hash}}",
+    "rekentNiet": "The sheet does not calculate now, so it cannot be recorded.",
+    "nieuw": "Record a check",
+    "controleur": "Checked by",
+    "datum": "Date",
+    "uitkomst": "Result",
+    "uitkomsten": {
+      "akkoord": "approved",
+      "opmerkingen": "approved with remarks",
+      "afgekeurd": "rejected"
+    },
+    "opmerkingen": "Remarks",
+    "vrijgeven": "Release the sheet (locks the current state with its hash)",
+    "vastleggen": "Record",
+    "vastgelegd": "Check recorded.",
+    "eerder": "Checks so far",
+    "geenEerder": "No checks recorded for this sheet.",
+    "vrijgave": "Released",
+    "hash": "Hash",
+    "ja": "yes",
+    "nee": "no",
+    "zelfde": "= now",
+    "zelfdeUitleg": "This check covers the sheet as it is now",
+    "exporteren": "Export",
+    "exportUitleg": "All checks of all sheets in this project, with whether each release still applies.",
+    "exportCsv": "Export as CSV",
+    "exportJson": "Export as JSON",
+    "exportTitel": "Export checks",
+    "geexporteerd": "Exported.",
+    "labelVrijgegeven": "Released",
+    "labelVervallen": "Release no longer applies",
+    "labelGecontroleerd": "Checked",
+    "labelUitleg": "Check of this sheet: see the Check tab"
   }
 }

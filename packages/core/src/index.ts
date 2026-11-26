@@ -73,6 +73,7 @@ export {
   type IfcxDocument,
   type GraafGegevens,
   type VariantenGegevens,
+  type ControleGegevens,
 } from './ifc-generator.js';
 export type {
   IfcxBestand,

@@ -28,6 +28,7 @@ import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
 import { isJupyterBlad, leesJupyterWerkmap } from "./jupyterBlad.ts";
 import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
 import { leesVarianten } from "./varianten.ts";
+import { controleVoorBestand, leesControle } from "./controle.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -155,6 +156,7 @@ function eigenDocument(payload: ProjectPayload, bladen: IfcCalcSheet[] | null): 
       // Doorgerekend: zoals het blad ze nog gebruikt, met die van zijn varianten (projectIfcx.ts).
       toetsingen: uitkomsten.has(ex.id) ? uitkomsten.get(ex.id)!.toetsingen : gebruikteToetsingen(ex.toetsingen, undefined),
       ...(ex.varianten ? { varianten: ex.varianten } : {}),
+      ...(ex.controle ? { controle: controleVoorBestand(ex.controle) } : {}),
     })),
   });
 }
@@ -295,6 +297,9 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   // Varianten van het blad (store/varianten.ts); alleen een rekenblad rekent ze door.
   const varianten = leesVarianten(e.varianten);
   if (varianten) ex.varianten = varianten;
+  // De toetsregistratie (store/controle.ts): wat niet klopt, valt weg.
+  const controle = leesControle(e.controle);
+  if (controle) ex.controle = controle;
   return ex;
 }
 

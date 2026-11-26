@@ -113,6 +113,7 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 | Markdown-tekst, met de afbeeldingen die naast het bestand stonden | `ocss::blad::markdown` | bron |
 | Antwoorden van Open FEM Studio op `@toets`-blokken, met verzoek, datum en herkomst | `ocss::blad::toetsing` | bron |
 | Varianten: andere invoer naast die van het blad ([varianten.md](varianten.md)) | `ocss::blad::varianten` | bron |
+| Toetsregistratie (vier ogen): controleur, datum, uitkomst, opmerkingen, vrijgave met sha256 | `ocss::blad::controle` | bron |
 | Uitkomsten, oordeel, unity checks | `ocss::blad::uitkomst` | afgeleid |
 | Tekeningen en 3D-beelden | `ocss::figuur` op een kind van het blad | afgeleid |
 | Elementen in de ruimtelijke boom | `ocss::element` | afgeleid |
@@ -163,6 +164,33 @@ aan je project te veranderen, ook geen standaardwaarden aan te vullen.
 Dat gaat bewust via de browser en niet via de Rust-rapportengine — zie
 `docs/backlog.md`. De engine slaat tekeningen over, en zonder de
 `openaec-reports`-repo is de app niet eens te bouwen.
+
+## Toetsregistratie (vier ogen)
+
+Elk blad met rekentekst heeft een tab **Controle**. Een tweede constructeur legt daar een
+controle vast: controleur, datum, uitkomst (*akkoord*, *akkoord met opmerkingen* of
+*afgekeurd*) en opmerkingen, en of het blad daarmee is **vrijgegeven**. Een afgekeurd blad
+wordt nooit vrijgegeven. Eerdere controles blijven staan; de laatste telt.
+
+- **De hash:** elke controle bewaart de sha256 van de rekentekst (met `\n` als regeleinde),
+  de invoer (op naam gesorteerd), de uitkomst (de UC, het oordeel en elk getal van de
+  uitwerking op 12 significante cijfers) en van die drie samen (`store/controle.ts`). De app
+  rekent het blad daarvoor door zoals de uitwerking, met de projectgegevens, de belastingen
+  van het rapport, de bladen waarnaar het verwijst en de vastgelegde antwoorden van FEM
+  Studio, altijd op de bron (de Nederlandse rekentekst): in elke taal dezelfde hash.
+- **Vergrendelen** gebeurt met die hash, niet door het blad dicht te zetten. Verandert na
+  een vrijgave de rekentekst, de invoer of de uitkomst (ook door een andere gevolgklasse in
+  de projectgegevens), dan zegt de tab Controle, het label in de tabbalk en de kop op
+  papier dat de vrijgave niet meer geldt, en wat er veranderd is. Het label in de tabbalk
+  vergelijkt alleen rekentekst en invoer (snel, bij elke toetsaanslag); de tab en de kop op
+  papier rekenen ook de uitkomst na.
+- **Op papier:** in de kop van het blad wie het controleerde, wanneer, en of de vrijgave
+  nog geldt, met de eerste 12 tekens van de hash. Alleen bij een blad met een controle.
+- **Exporteren:** de tab Controle exporteert alle controles van het project als CSV
+  (puntkomma, UTF-8 met BOM) of JSON, met per blad of de vrijgave nog geldt.
+- **In het bestand:** `ocss::blad::controle`. Een kopie van een blad (dupliceren, een
+  variant als blad) neemt de controle niet mee.
+- **Controle:** `scripts/check-controle.mjs` (ook de sha256 tegen `node:crypto`).
 
 ## Normen en nationale bijlagen
 

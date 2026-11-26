@@ -65,6 +65,7 @@ const INGANG = `
   import { UitdraaiInhoud, useUitdraai } from "./components/calc/PrintDocument";
 
   export { i18next, useProjectStore, useBureauStore, useModuleKiezer };
+  export { bladHashNu } from "./components/calc/controleHash";
 
   /** De losse uitdraai van de bladen (voorblad en bladen), zoals het afdrukvoorbeeld hem toont. */
   function Uitdraai() {

@@ -48,6 +48,7 @@ export const ATTR = {
   marimo: 'ocss::blad::marimo',
   toetsing: 'ocss::blad::toetsing',
   varianten: 'ocss::blad::varianten',
+  controle: 'ocss::blad::controle',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -306,6 +307,23 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
         naam: TEKST,
         invoer: lijst(PAAR),
         gezocht: opt(lijst(TEKST)),
+      })),
+    }),
+  },
+  // De toetsregistratie (vier ogen): per controle wie, wanneer, de uitkomst, de opmerkingen
+  // en de sha256 van de gecontroleerde stand (rekentekst, invoer, uitkomst, geheel).
+  [ATTR.controle]: {
+    value: object({
+      registraties: lijst(object({
+        id: TEKST,
+        controleur: TEKST,
+        datum: TEKST,
+        uitkomst: TEKST,
+        opmerkingen: TEKST,
+        vrijgegeven: JANEE,
+        tijd: TEKST,
+        rekenversie: opt(TEKST),
+        hash: object({ rekentekst: TEKST, invoer: TEKST, uitkomst: TEKST, totaal: TEKST }),
       })),
     }),
   },
