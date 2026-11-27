@@ -123,7 +123,11 @@ console.log("\nHet bestand per platform");
   meld(kiesBestand(met, "linux-x64")?.naam === "openaec-mcp-server-linux-x64", "een platform dat erin staat");
   meld(kiesBestand(met, "macos-universal") === null, "een platform dat er niet in staat");
   meld(kiesBestand({ bestanden: { "linux-x64": { naam: "x", sha256: "kort" } } }, "linux-x64") === null, "een sha256 die geen 64 hextekens is, telt niet");
-  meld(ditPlatform("win32") === "windows-x64" && ditPlatform("darwin") === "macos-universal" && ditPlatform("linux") === "linux-x64", "de platformnamen");
+  meld(
+    ditPlatform("win32") === "windows-x64" && ditPlatform("darwin", "arm64") === "macos-universal" &&
+      ditPlatform("linux", "x64") === "linux-x64" && ditPlatform("linux", "arm64") === "linux-arm64",
+    "de platformnamen (Linux op ARM apart: daar geen x64-server)",
+  );
 }
 
 console.log("\nDe sha256");
