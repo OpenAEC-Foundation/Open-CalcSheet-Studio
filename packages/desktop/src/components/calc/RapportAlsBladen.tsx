@@ -43,7 +43,7 @@ function Omzetten({ klaar }: { klaar: () => void }) {
       window.clearInterval(timer);
       const s = useProjectStore.getState();
       const { wind } = s.rapport.belastingen;
-      const hoofdstukken = hoofdstukkenUitAfdruk(wortel, { gebouwhoogte: wind.gebouwhoogte, coefficienten: wind.coefficienten.map((c) => c.c) });
+      const hoofdstukken = hoofdstukkenUitAfdruk(wortel, { gebouwhoogte: wind.gebouwhoogte, coefficienten: wind.coefficienten.map((c) => c.c), belastingen: s.rapport.belastingen });
       const ids = hoofdstukken.map((h) => {
         if (!h.canvas) return s.voegToe("leeg", h.titel, h.bron);
         const id = useProjectStore.getState().voegCanvasToe(h.titel);

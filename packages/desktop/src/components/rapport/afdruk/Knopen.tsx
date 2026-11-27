@@ -239,10 +239,10 @@ function voegToe(knoop: Rapportknoop, w: RapportWeergave, plaats: Plaats, uit: S
         <Vlak>
           {kop}
           {vloerenDaken.length > 0 && (
-            <Groep titel={w.t("afdruk.belastingen.vloerDaken")} opbouwen={vloerenDaken} direct inspringen={inspringen} w={w} />
+            <Groep titel={w.t("afdruk.belastingen.vloerDaken")} opbouwen={vloerenDaken} direct inspringen={inspringen} groep="v" w={w} />
           )}
           {wanden.length > 0 && !wandenApart && (
-            <Groep titel={w.t("afdruk.belastingen.wanden")} opbouwen={wanden} direct={vloerenDaken.length === 0} inspringen={inspringen} w={w} />
+            <Groep titel={w.t("afdruk.belastingen.wanden")} opbouwen={wanden} direct={vloerenDaken.length === 0} inspringen={inspringen} groep="w" w={w} />
           )}
         </Vlak>
       ),
@@ -253,7 +253,7 @@ function voegToe(knoop: Rapportknoop, w: RapportWeergave, plaats: Plaats, uit: S
         nieuwePagina: true,
         inhoud: (
           <Vlak>
-            <Groep titel={w.t("afdruk.belastingen.wanden")} opbouwen={wanden} direct={false} inspringen={inspringen} w={w} />
+            <Groep titel={w.t("afdruk.belastingen.wanden")} opbouwen={wanden} direct={false} inspringen={inspringen} groep="w" w={w} />
           </Vlak>
         ),
       });

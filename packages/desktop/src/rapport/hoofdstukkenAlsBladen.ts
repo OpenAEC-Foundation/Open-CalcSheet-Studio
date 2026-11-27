@@ -15,6 +15,9 @@
  * de rekentaal invult. De rest van de tekst staat er letterlijk.
  */
 import { schrijfEenheden, stapelOnderElkaar, type Eenheid } from "../store/canvasBlad.ts";
+import type { Belastingen, Opbouw } from "./model.ts";
+import { categorie, klasseWaarden } from "./normwaarden.ts";
+import { leesVulling } from "./opbouw.ts";
 
 /** Het hoofdstuk dat een canvasblad wordt. */
 export const CANVAS_HOOFDSTUK = "belastingen";
@@ -33,6 +36,72 @@ export interface RapportInvoer {
   gebouwhoogte: string;
   /** De windcoëfficiënten c zoals getypt. */
   coefficienten: string[];
+  /** De belastingklassen (5.4) en opbouwen (5.5) van het rapport. */
+  belastingen?: Pick<Belastingen, "klassen" | "vloerenDaken" | "wanden">;
+}
+
+/**
+ * 5.4 en 5.5 als rekentekst: wat in het rapport is ingevuld wordt een invoerveld, wat het
+ * uitrekent een rekenregel, met dezelfde namen als in de opmaak (Belastingen.tsx). De
+ * sommen gaan met `#global` onder hun symbool (g_v1, q_k1) naar elk blad.
+ */
+function belastingRegels(b: NonNullable<RapportInvoer["belastingen"]>): { invoer: string[]; reken: string[]; globaal: string[] } {
+  const invoer: string[] = [];
+  const reken: string[] = [];
+  const globaal: string[] = [];
+  const veld = (naam: string, waarde: string) => {
+    const v = getal(waarde);
+    if (v !== null) invoer.push(`${naam} = ?{${v}}`);
+    return v !== null;
+  };
+  b.klassen.forEach((k, i) => {
+    const nr = i + 1;
+    const cat = categorie(k.categorie);
+    if (!cat) return;
+    if (cat.soort === "dak") {
+      if (!veld(`α${nr}`, k.dakhelling)) return;
+      reken.push(`#if α${nr} < 15`, `qd${nr} = 1`, `#else if α${nr} < 20`, `qd${nr} = 4 - 0.2*α${nr}`, "#else", `qd${nr} = 0`, "#end if");
+      if (k.symbool) globaal.push(`${k.symbool} = qd${nr}`);
+      return;
+    }
+    const kw = klasseWaarden(k);
+    if (!kw || kw.qk === null) return;
+    invoer.push(`qk${nr} = ?{${kw.qk}}`);
+    if (kw.Qk !== null) invoer.push(`Qk${nr} = ?{${kw.Qk}}`);
+    const metLs = k.lichteScheidingswanden.trim() !== "" && veld(`ls${nr}`, k.lichteScheidingswanden);
+    if (metLs) reken.push(`qt${nr} = qk${nr} + ls${nr}`);
+    if (k.symbool) globaal.push(`${k.symbool} = ${metLs ? `qt${nr}` : `qk${nr}`}`);
+  });
+  const opbouw = (o: Opbouw, sleutel: string) => {
+    const termen: string[] = [];
+    o.lagen.forEach((laag, j) => {
+      const l = `${sleutel}_${j + 1}`;
+      if (o.soort === "vlak") {
+        const lg = laag as { d: string; rho: string; p: string };
+        veld(`d${l}`, lg.d);
+        veld(`ρ${l}`, lg.rho);
+        if (lg.p.trim() && veld(`p${l}`, lg.p)) termen.push(`p${l}`);
+        else if (getal(lg.d) !== null && getal(lg.rho) !== null) {
+          reken.push(`p${l} = d${l}*ρ${l}`);
+          termen.push(`p${l}`);
+        }
+      } else {
+        const lg = laag as { p: string; h: string; vulling: string };
+        const heeftP = veld(`pr${l}`, lg.p);
+        const heeftH = veld(`h${l}`, lg.h);
+        if (heeftP && heeftH) {
+          invoer.push(`v${l} = ?{${leesVulling(lg.vulling)}}`);
+          reken.push(`q${l} = pr${l}*h${l}*v${l}`);
+          termen.push(`q${l}`);
+        }
+      }
+    });
+    reken.push(`g${sleutel} = ${termen.length ? termen.join(" + ") : "0"}`);
+    if (o.symbool) globaal.push(`${o.symbool} = g${sleutel}`);
+  };
+  b.vloerenDaken.forEach((o, i) => opbouw(o, `v${i + 1}`));
+  b.wanden.forEach((o, i) => opbouw(o, `w${i + 1}`));
+  return { invoer, reken, globaal };
 }
 
 /** Een getal zoals getypt (met komma of punt) als rekentekst, of null. */
@@ -85,8 +154,12 @@ function rekenregels(anker: string, invoer: RapportInvoer): string[] {
         if (v !== null) regels.push(`P_rep${i + 1} = ${v}*q_p`);
       });
     }
+    // 5.4 en 5.5: invoer bovenaan (alleen op het scherm), de rekenregels en de symbolen verborgen.
+    const lasten = invoer.belastingen ? belastingRegels(invoer.belastingen) : { invoer: [], reken: [], globaal: [] };
+    regels.push(...lasten.reken);
+    if (lasten.globaal.length) regels.push("#global", ...lasten.globaal, "#end global");
     regels.push("#show");
-    return regels;
+    return lasten.invoer.length ? ["#pre", "'Invoer voor 5.4 en 5.5", ...lasten.invoer, "#post", ...regels] : regels;
   }
   return [];
 }
