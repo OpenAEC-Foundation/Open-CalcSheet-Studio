@@ -141,6 +141,8 @@ function UitBladenKeuze() {
 function HoofdstukkenAlsBladen() {
   const { t } = useTranslation("rapport");
   const voegToe = useProjectStore((s) => s.voegToe);
+  const voegCanvasToe = useProjectStore((s) => s.voegCanvasToe);
+  const zetBron = useProjectStore((s) => s.zetBron);
   const selecteer = useProjectStore((s) => s.selecteer);
   const maak = () => {
     const wortel = document.querySelector<HTMLElement>(".av-meet .rpa-wortel");
@@ -149,7 +151,13 @@ function HoofdstukkenAlsBladen() {
       alert(t("alsBladen.geenVoorbeeld"));
       return;
     }
-    const ids = hoofdstukken.map((h) => voegToe("leeg", h.titel, h.bron));
+    // Hoofdstuk Belastingen als canvasblad, de rest als gewoon blad.
+    const ids = hoofdstukken.map((h) => {
+      if (!h.canvas) return voegToe("leeg", h.titel, h.bron);
+      const id = voegCanvasToe(h.titel);
+      zetBron(id, h.bron);
+      return id;
+    });
     selecteer(ids[0]);
   };
   return (
