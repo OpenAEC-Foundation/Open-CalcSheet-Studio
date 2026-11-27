@@ -73,7 +73,7 @@ export default function ProjectModelVenster({ sluit }: { sluit: () => void }) {
       bladen: bladen.map(({ id, ref, source, waarden }) => ({ id, ref, source, waarden })),
       bronnen: alle.filter(isSpreadsheetBlad).map(({ ref, templateId, source, waarden, xlsx }) => ({ ref, templateId, source, waarden, xlsx })),
       scope: projectScope(gegevens), hoekmodus: hoekmodusNu(),
-      opties: metToetsingen({ ...evalOptiesVan(gegevens), project: projectTekstVan(gegevens, belastingen, taal) }, "lezen"),
+      opties: metToetsingen({ ...evalOptiesVan(gegevens), project: projectTekstVan(gegevens, belastingen, taal, alle) }, "lezen"),
     };
     worker.postMessage(invoer);
     return () => worker.terminate();

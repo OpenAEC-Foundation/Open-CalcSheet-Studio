@@ -4,6 +4,7 @@ const { Unit } = math;
 import type { AstNode, ConditionalNode, OpdrachtNode, PlotNode, TextNode } from './types.js';
 import { DRIE_D_START_RE, leesDrieD } from './drieD.js';
 import { vervangVerwijzingen } from './verwijzing.js';
+import { haalGlobaalWeg } from './globaal.js';
 import { PROCENT_IN_NAAM, naamMetProcent } from './naam.js';
 import { voegIncludesIn, type IncludeMelding, type IncludeStaat } from './include.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';
@@ -46,6 +47,9 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
  *
  *   Omrekenen:          `x|kN*m`, `x to kN*m`, `x in kN*m` (`in` is ook de inch;
  *                       zie zetInOmNaarTo)
+ *
+ *   Globaal:            `#global` … `#end global`, of `#global x = 1` → de waarde
+ *                       geldt in het hele project (globaal.ts)
  *
  *   Conditionals:       `#if cond` / `#else if` / `#else` / `#end if`
  *                       HTML-wrapped conditions `#if '<!--cond-->'` are unwrapped.
@@ -938,6 +942,8 @@ function parseBron(source: string, options: ParseOptions): AstNode[] {
   // `x1\$` and substitute them across the body. After expansion we strip \$
   // from any remaining identifiers.
   source = expandMacros(source);
+  // `#global` en `#end global` (globaal.ts): het blad rekent de regels erbinnen gewoon.
+  source = haalGlobaalWeg(source);
   // Een verwijzing naar een ander blad (`#1.R_paal`) wordt een gewone naam, vóór de
   // andere herschrijvingen van namen (verwijzing.ts). Alleen in rekendelen: een kop
   // of tekst met een # blijft staan.

@@ -71,7 +71,7 @@ import type { GeheugenProject, GeheugenStand } from "./geheugen.ts";
  */
 export function activeer(s: Pick<GeheugenStand, "gegevens" | "rapport" | "exemplaren">): void {
   zetProjectEenheden(ruweEigenEenheden(s.gegevens));
-  zetProjectTekst(projectTekstVan(s.gegevens, s.rapport.belastingen, s.rapport.taal) ?? null);
+  zetProjectTekst(projectTekstVan(s.gegevens, s.rapport.belastingen, s.rapport.taal, s.exemplaren) ?? null);
   zetVastgelegd(s.exemplaren.map((e) => e.toetsingen));
 }
 

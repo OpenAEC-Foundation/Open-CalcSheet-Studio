@@ -1205,11 +1205,12 @@ useProjectStore.subscribe((s) => volgProjectEenheden(s.gegevens));
  * ander object is; de worker krijgt de tekst per verzoek mee (rekenen/doorrekening.ts).
  */
 let vorigeProjectBronnen: readonly unknown[] = [];
-function volgProjectTekst(s: Pick<ProjectState, "gegevens" | "rapport">) {
-  const nu = [s.gegevens.projectblad, s.gegevens.projectblad_waarden, s.rapport.belastingen, s.rapport.taal];
+function volgProjectTekst(s: Pick<ProjectState, "gegevens" | "rapport" | "exemplaren">) {
+  // Ook de bladen, voor hun `#global` (rekenen/globalen.ts): die houdt zelf bij of daar iets veranderde.
+  const nu = [s.gegevens, s.rapport.belastingen, s.rapport.taal, s.exemplaren];
   if (nu.every((b, i) => b === vorigeProjectBronnen[i])) return;
   vorigeProjectBronnen = nu;
-  zetProjectTekst(projectTekstVan(s.gegevens, s.rapport.belastingen, s.rapport.taal) ?? null);
+  zetProjectTekst(projectTekstVan(s.gegevens, s.rapport.belastingen, s.rapport.taal, s.exemplaren) ?? null);
 }
 volgProjectTekst(useProjectStore.getState());
 useProjectStore.subscribe(volgProjectTekst);

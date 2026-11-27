@@ -26,7 +26,7 @@ export function rekenBladNu(
   belastingen?: Belastingen,
   rapportTaal?: string,
 ): EvaluatedNode[] {
-  const project = projectTekstVan(gegevens, belastingen, rapportTaal);
+  const project = projectTekstVan(gegevens, belastingen, rapportTaal, alle);
   const evalOpties = metToetsingen({ ...evalOptiesVan(gegevens), ...(project ? { project } : {}) }, "lezen", i18next.language);
   const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls, eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam) };
   const scope = scopeMetVerwijzingen(ex.source, ex.waarden, projectScope(gegevens), verwezenBladen(ex.source, ex.waarden, alle), opties, evalOpties);

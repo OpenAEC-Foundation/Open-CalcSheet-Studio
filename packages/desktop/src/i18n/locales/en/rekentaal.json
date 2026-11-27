@@ -78,6 +78,7 @@
       "lusVerlaten": "exit loop",
       "macroMetParameters": "macro with parameters",
       "tekstconstante": "text constant",
+      "globaal": "applies to the whole project",
       "eigenFunctie": "custom function",
       "anderBestand": "another file",
       "nietTonen": "calculate, don't display",
