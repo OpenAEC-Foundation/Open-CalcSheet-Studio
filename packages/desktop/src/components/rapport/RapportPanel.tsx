@@ -1,7 +1,8 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { opzetVan, titelVan } from "../../rapport/opzet";
 import { useProjectStore } from "../../store/projectStore";
+import { useRapportSprong } from "../../store/rapportSprong";
 import DocumentSectie from "./paneel/DocumentSectie";
 import HoofdstukTeksten, { KnoopInvoer } from "./paneel/HoofdstukTeksten";
 import UitgangspuntenSectie from "./paneel/UitgangspuntenSectie";
@@ -112,6 +113,16 @@ export default function RapportPanel() {
     paneelRef.current
       ?.querySelector(`[data-sectie="${id}"]`)
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  // Een klik op een regel van de inhoud in het zijpaneel: naar die kop. Ook als het paneel
+  // daardoor pas opent: dan is de sprong van vóór het openen.
+  const sprong = useRapportSprong();
+  useEffect(() => {
+    if (!sprong.anker) return;
+    paneelRef.current
+      ?.querySelector(`[data-kop="${CSS.escape(sprong.anker)}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [sprong.anker, sprong.teller]);
 
   return (
     <div className="rapport-panel" ref={paneelRef}>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { usePrintStore } from "../../store/printStore";
+import { usePrintStore, type AfdrukSoort } from "../../store/printStore";
+import { useRapportSprong } from "../../store/rapportSprong";
 import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import { useInhoudPaginas } from "../../store/inhoudPaginas";
@@ -102,11 +103,19 @@ function rapportVoet(nummer: number, voetafbeelding: string, bureaunaam: string,
  * De balk erboven en het nummer onder elk vel volgen de taal van de app, net als wat op
  * een los blad staat. Wat op een vel van het rapport staat, volgt de taal van het rapport.
  */
-export default function AfdrukVoorbeeld() {
+export default function AfdrukVoorbeeld({ ingebed }: {
+  /**
+   * Het voorbeeld staat naast het invulpaneel en toont altijd deze soort, los van wat
+   * er het laatst is afgedrukt. Het heeft dan geen knop Sluiten en begint kleiner.
+   */
+  ingebed?: AfdrukSoort;
+} = {}) {
   const { t } = useTranslation("beelden");
   const uitdraai = useUitdraai();
   const { alleBladen, onderdeel, datum } = uitdraai;
-  const soort = usePrintStore((s) => s.soort);
+  const gekozenSoort = usePrintStore((s) => s.soort);
+  const soort = ingebed ?? gekozenSoort;
+  const sprong = useRapportSprong();
   const sluitVoorbeeld = usePrintStore((s) => s.sluitVoorbeeld);
   const afdrukken = usePrintStore((s) => s.afdrukken);
   const selectie = usePrintStore((s) => s.selectie);
@@ -135,7 +144,7 @@ export default function AfdrukVoorbeeld() {
   const meetRef = useRef<HTMLDivElement>(null);
   const vellenRef = useRef<HTMLDivElement>(null);
   const schuifRef = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState(0.75);
+  const [zoom, setZoom] = useState(ingebed ? 0.5 : 0.75);
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
   // Het punt onder de muis bij Ctrl+scrollen, om na het zoomen terug te zetten.
@@ -180,9 +189,14 @@ export default function AfdrukVoorbeeld() {
   const naarInhoud = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
     const regel = (e.target as Element).closest<HTMLElement>("[data-naar], .rpa-inhoud .rpa-rij");
     const anker = regel?.dataset.naar ?? regel?.querySelector<HTMLElement>("[data-inhoud-doel]")?.dataset.inhoudDoel;
-    const nummer = anker ? opgebouwd.current?.nummers.get(anker) : undefined;
+    if (anker) naarAnker(anker);
+  }, []);
+
+  /** Schuift naar het vel waar dit anker van de inhoud staat; `false` als het (nog) nergens staat. */
+  const naarAnker = useCallback((anker: string): boolean => {
+    const nummer = opgebouwd.current?.nummers.get(anker);
     const vel = nummer ? vellenRef.current?.children[nummer - 1] : undefined;
-    if (!anker || !vel) return;
+    if (!vel) return false;
     vel.scrollIntoView({ block: "start" });
     // Een vel buiten beeld heeft nog geen opmaak (AfdrukVoorbeeld.css); na twee frames wel.
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -190,7 +204,16 @@ export default function AfdrukVoorbeeld() {
       const v = vel.getBoundingClientRect();
       if (kop && kop.getBoundingClientRect().top - v.top > v.height / 4) kop.scrollIntoView({ block: "start" });
     }));
+    return true;
   }, []);
+
+  // Een klik op een regel van de inhoud in het zijpaneel: het voorbeeld volgt, zodra de vellen er zijn.
+  const gesprongen = useRef(sprong.teller);
+  useEffect(() => {
+    if (!rapport || bezig || !sprong.anker || gesprongen.current === sprong.teller) return;
+    gesprongen.current = sprong.teller;
+    naarAnker(sprong.anker);
+  }, [rapport, bezig, sprong.anker, sprong.teller, naarAnker]);
 
   /**
    * Vervangt alleen de blokken die veranderden, als de indeling gelijk bleef. Geeft
@@ -525,8 +548,8 @@ export default function AfdrukVoorbeeld() {
             ))}
           </select>
         </span>
-        <button className="av-primair" onClick={() => afdrukken()}>{t("afdruk.afdrukken")}</button>
-        <button onClick={sluitVoorbeeld}>{t("afdruk.sluiten")}</button>
+        <button className="av-primair" onClick={() => (ingebed ? afdrukken(null, ingebed) : afdrukken())}>{t("afdruk.afdrukken")}</button>
+        {!ingebed && <button onClick={sluitVoorbeeld}>{t("afdruk.sluiten")}</button>}
       </div>
 
       <div className="av-vellen" ref={schuifRef}>

@@ -352,7 +352,7 @@
     "klaar": "Done"
   },
   "blokken": {
-    "uitleg": "Each block is a load with a name and layers. Click a block to edit it, drag it to move it, the plus adds a layer. Under its symbol (such as g_v1) the total exists in every sheet, and a load block in a sheet picks it from a list.",
+    "uitleg": "Each block is a load with a name and layers. Click a block to select it, double-click to edit it, drag it to move it; the plus adds a layer. Right-click or Delete removes a block. Under its symbol (such as g_v1) the total exists in every sheet, and a load block in a sheet picks it from a list.",
     "vloerDak": "Floor or roof",
     "wand": "Wall",
     "gevel": "Facade",
@@ -363,7 +363,8 @@
     "rangschik": "Arrange",
     "rangschikUitleg": "Put all blocks neatly below each other again; their own positions are dropped",
     "leeg": "No loads yet. Add one with the buttons above.",
-    "blokUitleg": "Click to edit, drag to move",
+    "blokUitleg": "Double-click to edit, drag to move, right-click for more",
+    "bewerken": "Edit",
     "inBladen": "In the sheets: {{symbool}}"
   },
   "berekeningen": {

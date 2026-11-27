@@ -115,7 +115,7 @@ export function Sectie({ id, titel, hoofdstuk, intro, children }: {
   const stand = useOpzetStand();
   const nummer = hoofdstuk ? stand.nummer(hoofdstuk) : "";
   return (
-    <section className="rapport-groep" data-sectie={id}>
+    <section className="rapport-groep" data-sectie={id} data-kop={hoofdstuk}>
       <div className="rapport-groep-kop">
         <h2>
           {nummer && <span className="rapport-nummer">{nummer}</span>}
@@ -151,7 +151,7 @@ export function Kop({ id }: { id: string }) {
   const Tag = KOPTAGS[niveau - 1];
   const nummer = stand.nummer(id);
   return (
-    <div className={`rapport-kop-rij rapport-kop-${niveau}`}>
+    <div className={`rapport-kop-rij rapport-kop-${niveau}`} data-kop={id}>
       <Tag className="rapport-kopregel">
         {nummer && <span className="rapport-nummer">{nummer}</span>}
         {knoop ? titelVan(knoop, rapport) : id}
