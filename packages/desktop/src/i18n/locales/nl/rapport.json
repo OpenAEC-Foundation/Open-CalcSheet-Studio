@@ -683,6 +683,7 @@
   "alsBladen": {
     "knop": "Hoofdstukken als bladen",
     "uitleg": "Maakt van elk hoofdstuk van dit rapport een blad, met als code precies wat het rapport nu toont.",
-    "geenVoorbeeld": "Het voorbeeld van het rapport is nog niet opgemaakt. Wacht tot het rechts klaar is en probeer het opnieuw."
+    "geenVoorbeeld": "Het voorbeeld van het rapport is nog niet opgemaakt. Wacht tot het rechts klaar is en probeer het opnieuw.",
+    "blijvendTitel": "Blijvende belastingen"
   }
 }

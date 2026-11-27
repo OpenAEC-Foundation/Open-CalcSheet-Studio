@@ -21,7 +21,7 @@ export default function BlijvendVenster({ bladId, onSluit }: { bladId: string; o
     <Modal
       open
       onClose={klaar}
-      title={t("koppen.blijvend", { defaultValue: "Blijvende belastingen" })}
+      title={t("alsBladen.blijvendTitel")}
       width={980}
       height="80vh"
       footer={<button type="button" className="rapport-knop" onClick={klaar}>{t("opbouw.klaar")}</button>}

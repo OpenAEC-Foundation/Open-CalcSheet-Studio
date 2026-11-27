@@ -468,10 +468,12 @@ kop("7. De afdruk als html");
   await m.i18next.changeLanguage("nl");
   zet(project.rapport, { land: "NL", eurocode_generatie: "1" });
   const goud = lees("fixtures/rapport-oud-v4.html").trimEnd();
-  const nu = perRegel(m.teken());
+  // De markering van een rekenend getal (raster.tsx, R) is geen opmaak: zonder die span vergelijken.
+  const zonderReken = (html) => html.replace(/<span data-reken="[^"]*"(?: data-format="[^"]*")?>([^<]*)<\/span>/g, "$1");
+  const nu = zonderReken(perRegel(m.teken()));
   toets("een Nederlands project met land en generatie: tot op de letter als het oude", nu === goud, nu.split("\n").find((r, i) => r !== goud.split("\n")[i])?.slice(0, 300));
   zet(project.rapport, {});
-  toets("zonder de nieuwe velden: ook", perRegel(m.teken()) === goud);
+  toets("zonder de nieuwe velden: ook", zonderReken(perRegel(m.teken())) === goud);
   gelijk("een oud project is in de store Nederlands", [m.useProjectStore.getState().gegevens.land, m.useProjectStore.getState().gegevens.eurocode_generatie], ["NL", "1"]);
   toets("een oud rapport krijgt in de store geen lokale invoer", m.useProjectStore.getState().rapport.lokaal === undefined);
 

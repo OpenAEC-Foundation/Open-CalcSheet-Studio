@@ -53,8 +53,8 @@ export function Bouwwerk({ w }: { w: RapportWeergave }) {
   return (
     <>
       <Veld label={t("afdruk.bouwwerk.soort")} waarde={w.rapport.uitgangspunten.soortBouwwerk} invoer />
-      <Veld label={t("afdruk.bouwwerk.gevolgklasse")} waarde={<>CC<R naam="CC" format="F0">{cc}</R></>} invoer />
-      <Veld label={t("afdruk.bouwwerk.betrouwbaarheidsklasse")} waarde={<>RC<R naam="RC" format="F0">{rc}</R></>} />
+      <Veld label={t("afdruk.bouwwerk.gevolgklasse")} waarde={<>{"CC"}<R naam="CC" format="F0">{cc}</R></>} invoer />
+      <Veld label={t("afdruk.bouwwerk.betrouwbaarheidsklasse")} waarde={<>{"RC"}<R naam="RC" format="F0">{rc}</R></>} />
       <Veld label={t("afdruk.bouwwerk.levensduurklasse")} waarde={<R naam="L_klasse" format="F0">{String(levensduurklasse(levensduur))}</R>} />
       <Veld label={t("afdruk.bouwwerk.levensduur")} waarde={<R naam="DesignLife" format="F0">{f(levensduur, 0)}</R>} norm={tabel("NB.1–2.1")} />
       <Veld label="β" waarde={<R naam="β" format="F1">{f(beta(rc), 1)}</R>} norm={tabel("B2")} />

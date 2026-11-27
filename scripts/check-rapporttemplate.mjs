@@ -723,7 +723,7 @@ kop("7. De afdruk");
   zetStand(nieuw("en"));
   const paneel0 = m.tekenPaneel();
   gelijk("de sprongbalk", nav(paneel0.plek), ["Document", "Revisions", "Report structure", "Chapters 1–3", "Design basis", "Loads", "Calculations", "Appendices", "Office"]);
-  gelijk("de secties op volgorde", secties(paneel0.plek), ["document", "revisies", "opzet", "teksten-inleiding", "uitgangspunten", "belastingen", "berekeningen", "bijlagen", "bureau"]);
+  gelijk("de secties op volgorde", secties(paneel0.plek), ["uitbladen", "document", "revisies", "opzet", "teksten-inleiding", "uitgangspunten", "belastingen", "berekeningen", "bijlagen", "bureau"]);
   gelijk("de koppen met hun nummer", sectieKoppen(paneel0.plek).filter((k) => /Chapters|Design|Loads|Calculations/.test(k)), ["Chapters 1 to 3", "4Design basis", "5Loads", "6Calculations"]);
   gelijk("elk tekst-id heeft zijn tekstvak", paneel0.plek.querySelectorAll(".rapport-tekstveld").length, TEKST_IDS.length);
   gelijk("de koppen van Uitgangspunten in de volgorde van het rapport", koppenInSectie(paneel0.plek, "uitgangspunten").slice(0, 4), ["4.1Structural design basis", "4.2Structural fire design", "4.3Materials", "4.4Corrosion protection of steelwork"]);
@@ -795,7 +795,7 @@ kop("7. De afdruk");
   let leeg = nieuw("en");
   for (const id of ["inleiding", "projectgegevens", "constructie", "uitgangspunten", "belastingen", "berekeningen"]) leeg = verwijderKnoop(leeg, id);
   zetStand(leeg);
-  gelijk("alles weg: alleen wat los van de opzet staat", secties(paneel0.plek), ["document", "revisies", "opzet", "bijlagen", "bureau"]);
+  gelijk("alles weg: alleen wat los van de opzet staat", secties(paneel0.plek), ["uitbladen", "document", "revisies", "opzet", "bijlagen", "bureau"]);
   gelijk("en de sprongbalk ook", nav(paneel0.plek), ["Document", "Revisions", "Report structure", "Appendices", "Office"]);
   toets("de invulvelden blijven bereikbaar", !!paneel0.plek.querySelector(".rapport-invulvelden"));
 
