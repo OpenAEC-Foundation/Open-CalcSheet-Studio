@@ -1468,6 +1468,10 @@
     "uitleg": "Šio lapo vieta ataskaitoje. Spustelėkite, kad atidarytumėte ataskaitą toje vietoje.",
     "uitlegZonderPaginas": "Šio lapo vieta ataskaitoje. Puslapių numeriai atsiras, kai bent kartą atidarysite ataskaitą. Spustelėkite, kad atidarytumėte ataskaitą toje vietoje.",
     "naarHoofdstuk": "Eiti į {{nummer}} {{titel}} ataskaitoje",
-    "naarBijlage": "Eiti į visą skaičiavimą {{nummer}} {{titel}} A priede"
+    "naarBijlage": "Eiti į visą skaičiavimą {{nummer}} {{titel}} A priede",
+    "rolUitleg": "Kas šis lapas yra ataskaitoje",
+    "rolHoofdstuk": "Skyrius",
+    "rolParagraaf": "Poskyris",
+    "rolBijlage": "A priedas"
   }
 }

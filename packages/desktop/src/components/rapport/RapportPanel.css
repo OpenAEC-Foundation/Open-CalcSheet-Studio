@@ -996,3 +996,16 @@ p.rapport-hint {
 .rapport-alsblad-maak {
   margin-top: 8px;
 }
+
+/* De keuze om het rapport uit de bladen op te bouwen (RapportPanel.tsx). */
+.rapport-uitbladen {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-border);
+  border-left: 3px solid var(--theme-accent, #d97706);
+  border-radius: 4px;
+}
+
+.rapport-uitbladen .rapport-hint {
+  margin-bottom: 0;
+}

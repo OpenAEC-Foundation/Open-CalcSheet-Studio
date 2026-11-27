@@ -683,5 +683,13 @@
     "losUitleg": "Ataskaita čia vėl rodo formą. Lapas lieka ir pereina prie skaičiavimų; reikšmės yra lape, ne formoje.",
     "vloerenDaken": "Perdangos ir stogai",
     "wanden": "Sienos"
+  },
+  "uitBladen": {
+    "keuze": "Sudaryti ataskaitą iš lapų",
+    "uitleg": "Ataskaitos skyriai tada yra projekto medžio lapai ta pačia tvarka, kiekvienas su kodu, įvestimi ir rezultatu. Forma su fiksuotais skyriais išnyksta; jos turinys išsaugomas ir grįžta, jei tai vėl išjungsite.",
+    "uitlegAan_one": "Ataskaitą sudaro projekto medžio lapai: {{count}} lapas yra skyrius arba poskyris, kiti yra A priede. Prie kiekvieno lapo, virš jo rezultato, pasirinkite, kas jis yra ataskaitoje.",
+    "uitlegAan_few": "Ataskaitą sudaro projekto medžio lapai: {{count}} lapai yra skyrius arba poskyris, kiti yra A priede. Prie kiekvieno lapo, virš jo rezultato, pasirinkite, kas jis yra ataskaitoje.",
+    "uitlegAan_many": "Ataskaitą sudaro projekto medžio lapai: {{count}} lapo yra skyrius arba poskyris, kiti yra A priede. Prie kiekvieno lapo, virš jo rezultato, pasirinkite, kas jis yra ataskaitoje.",
+    "uitlegAan_other": "Ataskaitą sudaro projekto medžio lapai: {{count}} lapų yra skyrius arba poskyris, kiti yra A priede. Prie kiekvieno lapo, virš jo rezultato, pasirinkite, kas jis yra ataskaitoje."
   }
 }

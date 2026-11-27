@@ -1432,6 +1432,10 @@
     "uitleg": "Where this sheet is in the report. Click to open the report there.",
     "uitlegZonderPaginas": "Where this sheet is in the report. The page numbers appear once you have opened the report. Click to open the report there.",
     "naarHoofdstuk": "Go to {{nummer}} {{titel}} in the report",
-    "naarBijlage": "Go to the full calculation {{nummer}} {{titel}} in appendix A"
+    "naarBijlage": "Go to the full calculation {{nummer}} {{titel}} in appendix A",
+    "rolUitleg": "What this sheet is in the report",
+    "rolHoofdstuk": "Chapter",
+    "rolParagraaf": "Section",
+    "rolBijlage": "Appendix A"
   }
 }

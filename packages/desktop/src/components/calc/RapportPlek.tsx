@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { inhoudVoorPaneel } from "../../rapport/opzet";
 import { plekVanBlad, type Plekstuk } from "../../rapport/plek";
+import { isBladRol } from "../../rapport/uitBladen";
 import { useInhoudPaginas } from "../../store/inhoudPaginas";
 import { usePrintStore } from "../../store/printStore";
 import { RAPPORT_ID, useProjectStore } from "../../store/projectStore";
@@ -36,10 +37,34 @@ export default function RapportPlek({ blad }: { blad: string }) {
   const selecteer = useProjectStore((s) => s.selecteer);
   const spring = useRapportSprong((s) => s.spring);
   const sluitVoorbeeld = usePrintStore((s) => s.sluitVoorbeeld);
-  if (stukken.length === 0) return null;
+  const uitBladen = useProjectStore((s) => s.rapport.uitBladen === true);
+  const rol = useProjectStore((s) => s.rapport.bladRol?.[blad] ?? "");
+  const werkBij = useProjectStore((s) => s.werkRapportBij);
+  // Uit bladen opgebouwd: hier kies je wat dit blad in het rapport is.
+  const keuze = uitBladen ? (
+    <select
+      className="rapport-plek-rol"
+      value={isBladRol(rol) ? rol : ""}
+      title={t("plek.rolUitleg")}
+      aria-label={t("plek.rolUitleg")}
+      onChange={(e) => {
+        const nieuw = e.target.value;
+        werkBij((r) => {
+          const { [blad]: _weg, ...rest } = r.bladRol ?? {};
+          return { ...r, bladRol: nieuw ? { ...rest, [blad]: nieuw } : rest };
+        });
+      }}
+    >
+      <option value="hoofdstuk">{t("plek.rolHoofdstuk")}</option>
+      <option value="paragraaf">{t("plek.rolParagraaf")}</option>
+      <option value="">{t("plek.rolBijlage")}</option>
+    </select>
+  ) : null;
+  if (stukken.length === 0) return keuze ? <span className="rapport-plek">{keuze}</span> : null;
   const zonderPaginas = stukken.every((s) => s.van === undefined);
   return (
     <span className="rapport-plek" title={zonderPaginas ? t("plek.uitlegZonderPaginas") : t("plek.uitleg")}>
+      {keuze}
       <span className="rapport-plek-rapport">{t("plek.rapport")}</span>
       <span className="rapport-plek-pijl" aria-hidden="true">›</span>
       {stukken.map((s, i) => (

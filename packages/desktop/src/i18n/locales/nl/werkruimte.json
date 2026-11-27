@@ -1432,6 +1432,10 @@
     "uitleg": "De plek van dit blad in het rapport. Klik om het rapport daar te openen.",
     "uitlegZonderPaginas": "De plek van dit blad in het rapport. De pagina's verschijnen zodra je het rapport een keer hebt geopend. Klik om het rapport daar te openen.",
     "naarHoofdstuk": "Naar {{nummer}} {{titel}} in het rapport",
-    "naarBijlage": "Naar de uitwerking {{nummer}} {{titel}} in bijlage A"
+    "naarBijlage": "Naar de uitwerking {{nummer}} {{titel}} in bijlage A",
+    "rolUitleg": "Wat dit blad in het rapport is",
+    "rolHoofdstuk": "Hoofdstuk",
+    "rolParagraaf": "Paragraaf",
+    "rolBijlage": "Bijlage A"
   }
 }

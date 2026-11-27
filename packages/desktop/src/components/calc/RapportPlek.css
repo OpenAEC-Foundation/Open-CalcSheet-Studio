@@ -50,3 +50,15 @@
 .werk-paneel-info .rapport-plek + * {
   margin-left: 10px;
 }
+
+/* Uit bladen opgebouwd: wat dit blad in het rapport is. */
+.rapport-plek-rol {
+  height: 20px;
+  margin-right: 4px;
+  padding: 0 2px;
+  border: 1px solid var(--theme-border);
+  border-radius: 3px;
+  background: var(--oa-field, transparent);
+  color: var(--theme-text);
+  font: inherit;
+}

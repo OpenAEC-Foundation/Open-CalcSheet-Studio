@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Rapportknoop } from "../../../rapport/opzet";
+import { titelUitBron, uitwerkingInRapport } from "../../../rapport/uitBladen";
 import { vulIn, type Invulwaarden } from "../../../rapport/invullen";
 import type { Rapportbeeld } from "../../../rapport/model";
 import { bladNormUit, normAfwijking } from "../../../rapport/normen/keuze";
@@ -129,6 +130,8 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
   const afwijking = b ? normAfwijking(w.normkeuze, bladNormUit(b.ex.source)) : null;
   // Een oordeel volgens een ander stelsel is hier geen oordeel: de veilige kant is "niet getoetst".
   const resultaat = b && afwijking?.soort === "eigen" ? { ...b.resultaat, voldoet: null, nietGetoetst: true } : b?.resultaat;
+  // Een blad dat een hoofdstuk of paragraaf is: zonder zijn titelregel, met zijn koppen genummerd.
+  const html = b && blad.genummerd ? uitwerkingInRapport(b.html, titelUitBron(b.ex.source), blad.genummerd) : b?.html ?? "";
   return (
     <>
       {/* Boven de uitkomst: wat eronder staat, geldt volgens die norm. */}
@@ -146,7 +149,7 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
         <Vlak klasse="print-blad rpa-inline">
           {(isCanvasBlad(b.ex) || heeftEenheden(b.ex.source)) && b.eenheden
             ? <CanvasVellen eenheden={b.eenheden} bladId={b.ex.id} />
-            : <UitwerkingHtml html={b.html} bladId={b.ex.id} />}
+            : <UitwerkingHtml html={html} bladId={b.ex.id} />}
         </Vlak>
       ) : (
         blad.bijlage && <p className="rpa-tekst">{w.t("afdruk.zieBijlage", { nummer: blad.bijlage })}</p>

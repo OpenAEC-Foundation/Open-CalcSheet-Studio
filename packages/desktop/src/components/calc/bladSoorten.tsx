@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { useAfdrukTaal, usePapier } from "./afdrukTaal";
+import { koppenUitBron } from "../../rapport/uitBladen";
 import type { Exemplaar } from "../../store/projectStore";
 import { PDF_BLAD } from "../../store/pdfBijlage";
 import { SPREADSHEET_BLAD } from "../../store/spreadsheetBlad";
@@ -121,7 +122,11 @@ export function bladSoortVan(ex: { templateId?: string }): BladSoort | undefined
 /** Een blad zoals de opzet van het rapport het leest (rapport/opzet.ts). */
 export function bladVoorOpzet(ex: Exemplaar): Blad {
   const soort = bladSoortVan(ex);
-  return { id: ex.id, naam: ex.naam, plek: soort?.plek, koppen: soort?.inhoudsKoppen?.(ex) };
+  return {
+    id: ex.id, naam: ex.naam, plek: soort?.plek, koppen: soort?.inhoudsKoppen?.(ex),
+    // Een rekenblad: zijn koppen, voor een rapport dat uit bladen is opgebouwd (rapport/uitBladen.ts).
+    ...(soort || typeof ex.source !== "string" ? {} : { rapportKoppen: koppenUitBron(ex.source) }),
+  };
 }
 
 /**

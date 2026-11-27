@@ -355,6 +355,14 @@ export interface Rapport {
    * blad staat dan niet meer in Berekeningen of bijlage A.
    */
   bladVoor: Record<string, string>;
+  /**
+   * Het rapport is opgebouwd uit de bladen van het project (rapport/uitBladen.ts): de vaste
+   * hoofdstukindeling vervalt, en elk blad met een rol in `bladRol` is een hoofdstuk of een
+   * paragraaf, in de volgorde van de projectboom.
+   */
+  uitBladen?: boolean;
+  /** Per exemplaar-id: "hoofdstuk" of "paragraaf". Zonder rol staat een blad in bijlage A. */
+  bladRol: Record<string, string>;
   /** Titels van eigen bijlagen (B, C, …); bijlage A is altijd de uitwerking. */
   bijlagen: string[];
   /** Per knoop-id uit opzet.ts: begint op een nieuwe pagina (overschrijft de standaard). */
@@ -611,6 +619,7 @@ export function standaardRapport(vandaag: string, teksten: Record<string, string
     toelichting: {},
     inHoofdstuk: {},
     bladVoor: {},
+    bladRol: {},
     bijlagen: [],
     nieuwePagina: {},
     opmaak: { constructieprincipe: true, subkoppen: true, bladenInInhoud: true },
@@ -975,6 +984,8 @@ export function normaliseerRapport(
     toelichting: tekstRecord(o.toelichting),
     inHoofdstuk: waarheidRecord(o.inHoofdstuk),
     bladVoor: tekstRecord(o.bladVoor),
+    ...(o.uitBladen === true ? { uitBladen: true } : {}),
+    bladRol: tekstRecord(o.bladRol),
     bijlagen: Array.isArray(o.bijlagen) ? o.bijlagen.filter((t): t is string => typeof t === "string") : s.bijlagen,
     nieuwePagina,
     opmaak: {
