@@ -15,6 +15,8 @@ JSON en het constructierapport als PDF.
   `packages/desktop/dist-rekendienst/`, de pagina's voor het rapport als PDF.
 - Image: `ghcr.io/openaec-foundation/open-calcsheet-studio-api:<versie>` en `latest`, bij
   elke release (`docker/rekendienst.Dockerfile`).
+  Hetzelfde Dockerfile bouwt ook voor linux/arm64 (de SuperCloud bouwt zo haar eigen image),
+  dan zonder de server van FEM Studio: daar is nog geen arm64-versie van.
 
 ## Starten
 
