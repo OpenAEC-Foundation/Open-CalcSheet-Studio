@@ -156,6 +156,28 @@ export default function BureauTab({
           breed
           onWaarde={(v) => patch({ voetafbeelding: v })}
         />
+        {/* De kop en de voet van elke pagina als template (rapport/kopVoet.ts). */}
+        <label className="settings-row">
+          <span className="settings-label">{t("bureau.kopTekst")}</span>
+          <input
+            type="text"
+            className="settings-input"
+            value={profiel.kopTekst ?? ""}
+            placeholder={t("bureau.kopVoetVoorbeeldKop")}
+            onChange={(e) => patch({ kopTekst: e.target.value })}
+          />
+        </label>
+        <label className="settings-row">
+          <span className="settings-label">{t("bureau.voetTekst")}</span>
+          <input
+            type="text"
+            className="settings-input"
+            value={profiel.voetTekst ?? ""}
+            placeholder={t("bureau.kopVoetVoorbeeldVoet")}
+            onChange={(e) => patch({ voetTekst: e.target.value })}
+          />
+        </label>
+        <p className="settings-description bureau-hint">{t("bureau.kopVoetHint")}</p>
       </div>
 
       <div className="settings-section">

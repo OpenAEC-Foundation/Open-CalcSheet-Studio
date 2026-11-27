@@ -68,6 +68,10 @@ export interface BureauProfiel {
   logoInKop: boolean;
   /** data-URL of "": over de volle paginabreedte onderaan elke pagina. */
   voetafbeelding: string;
+  /** De kop van elke pagina als template (rapport/kopVoet.ts): links|midden|rechts; leeg: zoals altijd. */
+  kopTekst?: string;
+  /** De voet van elke pagina als template; leeg: zoals altijd. */
+  voetTekst?: string;
   huisstijl: Huisstijl;
   constructeurs: Constructeur[];
 }
@@ -105,6 +109,8 @@ export const OPENAEC_BUREAU: BureauProfiel = {
   logo: "",
   logoInKop: false,
   voetafbeelding: "",
+  kopTekst: "{project}||{blad}",
+  voetTekst: "OpenAEC|{pagina} / {paginas}|{datum}",
   huisstijl: {
     hoofdkleur: "#111111",
     accentkleur: "#d97706",
@@ -824,6 +830,8 @@ export function normaliseerBureau(x: unknown): BureauProfiel {
     logo: tekst(o.logo, ""),
     logoInKop: o.logoInKop !== false,
     voetafbeelding: tekst(o.voetafbeelding, ""),
+    ...(tekst(o.kopTekst, "").trim() ? { kopTekst: tekst(o.kopTekst, "") } : {}),
+    ...(tekst(o.voetTekst, "").trim() ? { voetTekst: tekst(o.voetTekst, "") } : {}),
     huisstijl: {
       hoofdkleur: stijl(h.hoofdkleur, s.huisstijl.hoofdkleur),
       accentkleur: stijl(h.accentkleur, s.huisstijl.accentkleur),

@@ -48,7 +48,10 @@
     "dark": "Tamsi",
     "blueprint": "Brėžinio",
     "font": "Šriftas",
-    "lettertype": { "ui": "Sąsajos šriftas", "code": "Kodo šriftas" },
+    "lettertype": {
+      "ui": "Sąsajos šriftas",
+      "code": "Kodo šriftas"
+    },
     "uiFontSize": "Sąsajos šrifto dydis",
     "highContrastDark": "Didelio kontrasto tamsi",
     "highContrastLight": "Didelio kontrasto šviesi",
@@ -134,7 +137,12 @@
     "constructeurToevoegen": "Pridėti konstruktorių",
     "constructeurVerwijderen": "Pašalinti konstruktorių",
     "geenConstructeurs": "Konstruktorių dar nėra. Ataskaitoje iš šio sąrašo pasirenkate atsakingąjį ir vykdantįjį konstruktorių.",
-    "bestandLezenMislukt": "nepavyko perskaityti"
+    "bestandLezenMislukt": "nepavyko perskaityti",
+    "kopTekst": "Antraštė",
+    "voetTekst": "Poraštė",
+    "kopVoetVoorbeeldKop": "{project}||{blad}",
+    "kopVoetVoorbeeldVoet": "{bureau}|puslapis {pagina} iš {paginas}|{datum}",
+    "kopVoetHint": "Kiekvieno lapų spaudinio puslapio antraštė ir poraštė. Kairė, vidurys ir dešinė atskiriami |. Įrašoma {bureau}, {project}, {blad}, {pagina}, {paginas} ir {datum}. Tuščia: kaip programa visada daro."
   },
   "mcp": {
     "intro": "DI asistentas (pavyzdžiui, Claude Code per MCP) arba kita programa (per REST API) gali dirbti su šia programa: viskas, ką galite atlikti programoje, nuo projekto atidarymo ir išsaugojimo iki lapų pridėjimo, įvesties nustatymo, skaičiavimo ir eksportavimo. Serveris klausosi tik šiame kompiuteryje (127.0.0.1) ir reikalauja prieigos rakto. Šios kortelės pakeitimai įsigalioja iškart.",
