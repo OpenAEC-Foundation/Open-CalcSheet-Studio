@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import BlijvendVenster from "./BlijvendVenster";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
 import {
@@ -160,6 +161,7 @@ export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zet
   const eenhedenRef = useRef(eenheden);
   eenhedenRef.current = eenheden;
   const [open, zetOpen] = useState<OpenEenheid | null>(null);
+  const [blijvend, zetBlijvend] = useState(false);
   const openRef = useRef<OpenEenheid | null>(null);
   openRef.current = open;
   const [gesleept, zetGesleept] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -322,7 +324,9 @@ export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zet
       const y = vellen ? naastDeVouw(gesleept.y, maten[eenheid.id]?.h ?? 0) : gesleept.y;
       if (gesleept.x !== eenheid.x || y !== eenheid.y) zetBron(zetEenheid(huidigeBron(), eenheid.id, { x: gesleept.x, y }));
     } else if (!s.bewogen) {
-      zetOpen(eenheid);
+      // 5.5 Blijvende belastingen (H5): een object met zijn eigen venster.
+      if (eenheid.tekst.includes('data-inhoud="blijvend"')) zetBlijvend(true);
+      else zetOpen(eenheid);
     }
     zetGesleept(null);
   };
@@ -339,6 +343,7 @@ export function CanvasVlak({ bladId, naam, source, waarden, scope, leesBron, zet
   const zichtbaar = eenheden.filter((u) => u.id !== open?.id);
   return (
     <div className="canvas-weergave" ref={schuif}>
+      {blijvend && bladId && <BlijvendVenster bladId={bladId} onSluit={() => zetBlijvend(false)} />}
       {bronnen && (
         <div className="canvas-balk">
           <button type="button" title={t("lastblok.nieuwUitleg")} onClick={nieuweLast}>+ {t("lastblok.nieuw")}</button>

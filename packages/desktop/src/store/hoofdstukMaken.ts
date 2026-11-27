@@ -16,10 +16,13 @@ export const HOOFDSTUK_MODULES: Readonly<Record<string, string>> = {
 export const useHoofdstukMaken = create<{
   /** De ankers van de gevraagde hoofdstukken; leeg: alle. null: niets gevraagd. */
   vraag: string[] | null;
-  maak: (ankers: string[]) => void;
+  /** Dit blad opnieuw maken in plaats van een nieuw blad: na het venster van 5.5 (BlijvendVenster.tsx). */
+  vervang: string | null;
+  maak: (ankers: string[], vervang?: string) => void;
   klaar: () => void;
 }>((set) => ({
   vraag: null,
-  maak: (ankers) => set({ vraag: ankers }),
-  klaar: () => set({ vraag: null }),
+  vervang: null,
+  maak: (ankers, vervang) => set({ vraag: ankers, vervang: vervang ?? null }),
+  klaar: () => set({ vraag: null, vervang: null }),
 }));

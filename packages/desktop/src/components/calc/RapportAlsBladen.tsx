@@ -7,6 +7,7 @@ import { huisstijlVariabelen } from "../../rapport/model";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import { MATEN } from "./paginering";
+import { leesEenheden, schrijfEenheden } from "../../store/canvasBlad";
 import Icoon from "../Icoon";
 
 /**
@@ -52,6 +53,20 @@ function Omzetten({ ankers }: { ankers: string[] }) {
         belastingen: s.rapport.belastingen,
       });
       const gevraagd = ankers.length ? alle.filter((h) => ankers.includes(h.anker)) : alle;
+      // Een bestaand blad opnieuw (na het venster van 5.5): dezelfde plekken, de nieuwe invoer.
+      const vervang = useHoofdstukMaken.getState().vervang;
+      const oud = vervang ? useProjectStore.getState().exemplaren.find((e) => e.id === vervang) : undefined;
+      if (oud && gevraagd[0]) {
+        const plek = new Map(leesEenheden(oud.source).map((e) => [e.id, e]));
+        const nieuw = gevraagd[0].canvas
+          ? schrijfEenheden(leesEenheden(gevraagd[0].bron).map((e) => ({ ...e, x: plek.get(e.id)?.x ?? e.x, y: plek.get(e.id)?.y ?? e.y }))) + "\n"
+          : gevraagd[0].bron;
+        useProjectStore.getState().zetBron(oud.id, nieuw);
+        const invoer = Object.fromEntries([...nieuw.matchAll(/^([\p{L}_][\p{L}\p{N}_]*) = \?\{([^}]*)\}/gmu)].map((m) => [m[1], m[2]]));
+        if (Object.keys(invoer).length) useProjectStore.getState().zetWaarden(oud.id, invoer);
+        useHoofdstukMaken.getState().klaar();
+        return;
+      }
       const ids = gevraagd.map((h) => {
         const naam = `H${h.nummer} ${h.titel}`;
         const st = useProjectStore.getState();
