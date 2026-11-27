@@ -13,6 +13,7 @@ import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
 import { projectTekstVan } from "./projectBlad";
 import { globaleSleutel } from "../rekenen/globalen";
+import { RAPPORT_MODULES } from "../rapport/uitBladen";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
 import i18next, { LANGUAGES } from "../i18n/config";
@@ -517,7 +518,8 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
         ...s.exemplaren,
         {
           id,
-          naam: vrijeNaam(s.exemplaren, basisNaam),
+          // Een hoofdstuk van het rapport heet zoals het hoofdstuk: zonder volgnummer als de naam vrij is.
+          naam: templateId in RAPPORT_MODULES && !s.exemplaren.some((e) => e.naam === basisNaam) ? basisNaam : vrijeNaam(s.exemplaren, basisNaam),
           templateId,
           source,
           // De tekst is die van de module: zijn rekenversie is de bron.
@@ -525,6 +527,11 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
           waarden: {},
         },
       ],
+      // Een module van het rapport (rapport/uitBladen.ts) is meteen een hoofdstuk: het rapport
+      // is vanaf dan uit de bladen opgebouwd.
+      ...(templateId in RAPPORT_MODULES
+        ? { rapport: { ...s.rapport, uitBladen: true, bladRol: { ...s.rapport.bladRol, [id]: RAPPORT_MODULES[templateId] } } }
+        : {}),
       activeId: id,
       dirty: true,
     }));

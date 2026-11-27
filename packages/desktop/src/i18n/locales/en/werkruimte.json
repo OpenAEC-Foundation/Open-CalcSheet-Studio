@@ -111,7 +111,8 @@
       "cat-algemeen": "General",
       "cat-hout": "Timber",
       "cat-beton": "Concrete",
-      "rekentaal-samples": "Examples"
+      "rekentaal-samples": "Examples",
+      "cat-rapport": "Report"
     },
     "modules": {
       "ligger": "Beam (timber or steel)",
@@ -120,7 +121,10 @@
       "tweepaalspoer": "Two-pile cap (reinforced concrete)",
       "meerpaalspoer": "Cap on three or four piles (reinforced concrete)",
       "doorsnede-spanningen": "Section stresses",
-      "rekentaal-demo": "Open CalcSheet Studio demo"
+      "rekentaal-demo": "Open CalcSheet Studio demo",
+      "rapport-inleiding": "Introduction",
+      "rapport-projectgegevens": "Project details",
+      "rapport-constructie": "Structure"
     }
   },
   "kiezer": {

@@ -57,7 +57,7 @@ meld(waardeAlsRekentekst(s.b) === "210000 N/mm^2", "N/mm²", waardeAlsRekentekst
 meld(waardeAlsRekentekst(s.c) === "2 kN/(m*s)", "samengestelde noemer", waardeAlsRekentekst(s.c));
 meld(waardeAlsRekentekst(s.d) === "3", "getal zonder eenheid");
 const r = globaleRegels(s, ["a", "e", "f", "weg"]);
-meld(r.regels.length === 1 && r.overgeslagen.join() === "e,f,weg", "tekst, matrix en een onbekende naam worden overgeslagen", JSON.stringify(r));
+meld(r.regels.join() === 'a = 12.5 kN*m,e = "tekst"' && r.overgeslagen.join() === "f,weg", "een tekst gaat mee; een matrix en een onbekende naam worden overgeslagen", JSON.stringify(r));
 
 console.log("\nIn het project");
 const g = legeGegevens();

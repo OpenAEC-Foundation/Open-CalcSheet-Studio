@@ -68,6 +68,20 @@ export type TreeNode =
  * `status` (zie `ModuleStatus`), niet in de indeling.
  */
 export const moduleCatalogus: TreeNode[] = [
+  // De onderdelen van het rapport als module (templates/rapport-tekst.ts): een blad daarvan
+  // is meteen een hoofdstuk van het rapport (rapport/uitBladen.ts).
+  {
+    kind: "category",
+    id: "cat-rapport",
+    label: "Rapport",
+    defaultExpanded: true,
+    count: 3,
+    children: [
+      { kind: "item", id: "sheet-rapport-inleiding", label: "Inleiding", templateId: "rapport-inleiding", status: "concept" },
+      { kind: "item", id: "sheet-rapport-projectgegevens", label: "Projectgegevens", templateId: "rapport-projectgegevens", status: "concept" },
+      { kind: "item", id: "sheet-rapport-constructie", label: "Constructie", templateId: "rapport-constructie", status: "concept" },
+    ],
+  },
   {
     kind: "category",
     id: "cat-algemeen",

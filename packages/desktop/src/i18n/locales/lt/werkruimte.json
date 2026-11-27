@@ -111,7 +111,8 @@
       "cat-algemeen": "Bendra",
       "cat-hout": "Mediena",
       "cat-beton": "Betonas",
-      "rekentaal-samples": "Pavyzdžiai"
+      "rekentaal-samples": "Pavyzdžiai",
+      "cat-rapport": "Ataskaita"
     },
     "modules": {
       "ligger": "Sija (medinė arba plieninė)",
@@ -120,7 +121,10 @@
       "tweepaalspoer": "Dviejų polių rostverkas (gelžbetoninis)",
       "doorsnede-spanningen": "Įtempiai skerspjūvyje",
       "rekentaal-demo": "Open CalcSheet Studio demonstracija",
-      "meerpaalspoer": "Rostverkas ant trijų ar keturių polių (gelžbetoninis)"
+      "meerpaalspoer": "Rostverkas ant trijų ar keturių polių (gelžbetoninis)",
+      "rapport-inleiding": "Įvadas",
+      "rapport-projectgegevens": "Projekto duomenys",
+      "rapport-constructie": "Konstrukcija"
     }
   },
   "kiezer": {

@@ -14,8 +14,8 @@
  * `g_v1`, net zoals het CC en K_FI uit de projectgegevens kent, en mag het de naam
  * gewoon overschrijven.
  *
- * Alleen getallen en grootheden met een eenheid gaan mee: een functie, een matrix of een
- * tekst heeft geen vorm als losse rekenregel. Die komen in `overgeslagen`, net als een
+ * Getallen, grootheden met een eenheid en teksten gaan mee: een functie of een matrix
+ * heeft geen vorm als losse rekenregel. Die komen in `overgeslagen`, net als een
  * naam die geen waarde kreeg omdat zijn regel een fout gaf.
  */
 
@@ -100,6 +100,8 @@ const voorkeur = VOORKEUR.map((e) => math.unit(e));
 export function waardeAlsRekentekst(waarde: unknown): string | null {
   if (typeof waarde === 'number') return Number.isFinite(waarde) ? getal(waarde) : null;
   if (typeof waarde === 'boolean') return waarde ? '1' : '0';
+  // Een tekst (de naam van het bureau): op één regel, tussen aanhalingstekens.
+  if (typeof waarde === 'string') return JSON.stringify(waarde.replace(/\s+/g, ' '));
   if (math.isUnit(waarde)) {
     const u = waarde as unknown as { units: unknown[]; value: number | null; toNumber(e: string): number; formatUnits(): string; equalBase(o: unknown): boolean };
     // Een eenheid waarin dezelfde grootheid twee keer staat (`m·kN/m³`): in een gewone. Een

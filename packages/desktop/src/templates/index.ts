@@ -5,6 +5,8 @@ import { tweepaalspoer } from "./tweepaalspoer";
 import { meerpaalspoer } from "./meerpaalspoer";
 import { doorsnedeSpanningen } from "./doorsnede-spanningen";
 
+import { rapportConstructie, rapportInleiding, rapportProjectgegevens } from "./rapport-tekst";
+
 import voorgespannenHeipaal from "./voorgespannen-heipaal.cpd?raw";
 
 export const templates: Record<string, string> = {
@@ -15,4 +17,7 @@ export const templates: Record<string, string> = {
   "meerpaalspoer": meerpaalspoer,
   "doorsnede-spanningen": doorsnedeSpanningen,
   "rekentaal-demo": rekentaalDemo,
+  "rapport-inleiding": rapportInleiding,
+  "rapport-projectgegevens": rapportProjectgegevens,
+  "rapport-constructie": rapportConstructie,
 };

@@ -111,7 +111,8 @@
       "cat-algemeen": "Algemeen",
       "cat-hout": "Hout",
       "cat-beton": "Beton",
-      "rekentaal-samples": "Voorbeelden"
+      "rekentaal-samples": "Voorbeelden",
+      "cat-rapport": "Rapport"
     },
     "modules": {
       "ligger": "Ligger (hout of staal)",
@@ -120,7 +121,10 @@
       "tweepaalspoer": "Tweepaalspoer (gewapend beton)",
       "meerpaalspoer": "Poer op drie of vier palen (gewapend beton)",
       "doorsnede-spanningen": "Spanningen in een doorsnede",
-      "rekentaal-demo": "Open CalcSheet Studio demo"
+      "rekentaal-demo": "Open CalcSheet Studio demo",
+      "rapport-inleiding": "Inleiding",
+      "rapport-projectgegevens": "Projectgegevens",
+      "rapport-constructie": "Constructie"
     }
   },
   "kiezer": {

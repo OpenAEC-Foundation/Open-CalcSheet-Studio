@@ -19,6 +19,16 @@ export type BladRol = "hoofdstuk" | "paragraaf";
 
 export const BLAD_ROLLEN: readonly BladRol[] = ["hoofdstuk", "paragraaf"];
 
+/**
+ * De modules die een onderdeel van het rapport zijn (templates/rapport-tekst.ts), met de rol
+ * die een blad daarvan krijgt als je het toevoegt. Het rapport is dan uit bladen opgebouwd.
+ */
+export const RAPPORT_MODULES: Readonly<Record<string, BladRol>> = {
+  "rapport-inleiding": "hoofdstuk",
+  "rapport-projectgegevens": "hoofdstuk",
+  "rapport-constructie": "hoofdstuk",
+};
+
 export function isBladRol(x: unknown): x is BladRol {
   return x === "hoofdstuk" || x === "paragraaf";
 }
