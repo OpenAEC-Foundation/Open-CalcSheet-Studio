@@ -81,6 +81,41 @@ export const STANDAARD_HUISSTIJL: Huisstijl = {
 };
 
 /**
+ * De huisstijl van een rapport: wat bij een bureau hoort en niet bij de berekening. Dat is
+ * het bureauprofiel (naam, adres, logo, logo in de kop, voetafbeelding, kleuren en
+ * lettertype); de kop en de voet van elke pagina en het voorblad worden daaruit opgemaakt.
+ *
+ *   "bureau"   het bureauprofiel uit de instellingen of vastgelegd in het project (standaard)
+ *   "openaec"  de standaard die in de app zit: OpenAEC, zonder logo of voetafbeelding
+ *
+ * De keuze staat in het rapport (Rapport.huisstijlBron) en gaat zo mee in de IFCX.
+ */
+export type HuisstijlBron = "bureau" | "openaec";
+
+export const HUISSTIJL_BRONNEN: readonly HuisstijlBron[] = ["bureau", "openaec"];
+
+/** De huisstijl die in de app zit: wit papier, zwarte koppen, amber als accent, Space Grotesk. */
+export const OPENAEC_BUREAU: BureauProfiel = {
+  naam: "OpenAEC",
+  adres: "",
+  postcode: "",
+  plaats: "",
+  telefoon: "",
+  email: "",
+  logo: "",
+  logoInKop: false,
+  voetafbeelding: "",
+  huisstijl: {
+    hoofdkleur: "#111111",
+    accentkleur: "#d97706",
+    tabeltekst: "#1f2937",
+    invoerkleur: "#b45309",
+    lettertype: '"Space Grotesk", Inter, system-ui, sans-serif',
+  },
+  constructeurs: [],
+};
+
+/**
  * De lettertypen in de keuzelijst. Inter en Space Grotesk levert de app zelf mee; de rest
  * staat op vrijwel elke Windows-computer en valt anders terug op wat erachter staat.
  */
@@ -363,6 +398,8 @@ export interface Rapport {
   uitBladen?: boolean;
   /** Per exemplaar-id: "hoofdstuk" of "paragraaf". Zonder rol staat een blad in bijlage A. */
   bladRol: Record<string, string>;
+  /** Welke huisstijl de kop, de voet en het voorblad opmaakt (HuisstijlBron); zonder: het bureau. */
+  huisstijlBron?: HuisstijlBron;
   /** Titels van eigen bijlagen (B, C, …); bijlage A is altijd de uitwerking. */
   bijlagen: string[];
   /** Per knoop-id uit opzet.ts: begint op een nieuwe pagina (overschrijft de standaard). */
@@ -986,6 +1023,7 @@ export function normaliseerRapport(
     bladVoor: tekstRecord(o.bladVoor),
     ...(o.uitBladen === true ? { uitBladen: true } : {}),
     bladRol: tekstRecord(o.bladRol),
+    ...(o.huisstijlBron === "openaec" ? { huisstijlBron: "openaec" as const } : {}),
     bijlagen: Array.isArray(o.bijlagen) ? o.bijlagen.filter((t): t is string => typeof t === "string") : s.bijlagen,
     nieuwePagina,
     opmaak: {

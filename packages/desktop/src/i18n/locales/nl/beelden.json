@@ -664,6 +664,12 @@
     "weergave": "Weergave",
     "losBlad": "Los blad",
     "inRapport": "In het rapport",
-    "plekVanBlad": "dit blad: {{nummers}}"
+    "plekVanBlad": "dit blad: {{nummers}}",
+    "huisstijl": "Huisstijl",
+    "huisstijlUitleg": "Welke huisstijl de kop, de voet en het voorblad opmaakt: het bureauprofiel uit de instellingen, of de OpenAEC-standaard die in de app zit. De keuze gaat mee in het projectbestand (IFCX).",
+    "huisstijlBron": {
+      "bureau": "Bureau",
+      "openaec": "OpenAEC"
+    }
   }
 }

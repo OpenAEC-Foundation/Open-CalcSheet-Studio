@@ -180,6 +180,7 @@ const RAPPORT = object({
   bladVoor: opt(VRIJ),
   uitBladen: opt(VRIJ),
   bladRol: opt(VRIJ),
+  huisstijlBron: opt(VRIJ),
   bijlagen: opt(lijst(TEKST)),
   nieuwePagina: opt(VRIJ),
   opmaak: opt(object(velden(['constructieprincipe', 'subkoppen', 'bladenInInhoud', 'bijlageParagrafen'], JANEE))),

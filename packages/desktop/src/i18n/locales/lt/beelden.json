@@ -555,7 +555,13 @@
     "weergave": "Rodinys",
     "losBlad": "Tik lapas",
     "inRapport": "Ataskaitoje",
-    "plekVanBlad": "šis lapas: {{nummers}}"
+    "plekVanBlad": "šis lapas: {{nummers}}",
+    "huisstijl": "Firminis stilius",
+    "huisstijlUitleg": "Kuris firminis stilius formuoja antraštę, poraštę ir titulinį puslapį: biuro profilis iš nustatymų arba programoje įdiegtas OpenAEC standartas. Pasirinkimas išsaugomas projekto faile (IFCX).",
+    "huisstijlBron": {
+      "bureau": "Biuras",
+      "openaec": "OpenAEC"
+    }
   },
   "poerDetail": {
     "titel": "Strypų žiniaraštis ir armavimo detalė",

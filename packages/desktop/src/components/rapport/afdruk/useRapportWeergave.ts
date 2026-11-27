@@ -8,7 +8,7 @@ import { projectBladVan } from "../../../store/projectBlad";
 import { gebruikteSymbolen } from "../../../rapport/belastingBronnen";
 import type { BeeldEenheden } from "../../calc/beeldEenheden";
 import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
-import type { BureauProfiel, LokaleInvoer, Rapport } from "../../../rapport/model";
+import { OPENAEC_BUREAU, type BureauProfiel, type LokaleInvoer, type Rapport } from "../../../rapport/model";
 import { lokaalVan, normkeuzeVan, type Normkeuze } from "../../../rapport/normen/keuze";
 import { fmt, notatie } from "../../../rapport/normwaarden";
 import {
@@ -102,12 +102,17 @@ export interface RapportWeergave {
  * op papier komen.
  */
 export function useRapportBureau(): BureauProfiel {
+  const bron = useProjectStore((s) => s.rapport.huisstijlBron);
   const vastgelegd = useProjectStore((s) => s.rapport.bureau);
   const profiel = useBureauStore((s) => s.profiel);
   // Een huisstijl uit het template gaat voor, ook bij een rapport zonder vastgelegd bureau.
   const huisstijl = useProjectStore((s) => s.rapport.huisstijl);
   const bureau = vastgelegd.naam ? vastgelegd : profiel;
-  return useMemo(() => (huisstijl ? { ...bureau, huisstijl } : bureau), [bureau, huisstijl]);
+  return useMemo(() => {
+    // De huisstijl uit de app: kop, voet, voorblad en kleuren van OpenAEC; de constructeurs blijven die van het bureau.
+    if (bron === "openaec") return { ...OPENAEC_BUREAU, constructeurs: bureau.constructeurs };
+    return huisstijl ? { ...bureau, huisstijl } : bureau;
+  }, [bron, bureau, huisstijl]);
 }
 
 export function useRapportWeergave(): RapportWeergave {
