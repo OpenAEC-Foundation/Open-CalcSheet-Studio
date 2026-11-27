@@ -30,8 +30,9 @@ RUN npm run build --workspace=@ifc-calc/core \
  && cp -r packages/headless/dist/rekendienst.mjs LICENSE /uit/ \
  && cp -r packages/desktop/dist-rekendienst/. /uit/paginas/
 # De server van FEM Studio voor linux-x64 uit de openbare release van deze repository,
-# met zijn sha256 gecontroleerd, en zijn bronarchief. Geen server in versie.json: de dienst
-# rekent dan zonder (een @toets-blok staat als niet gerekend).
+# met zijn sha256 gecontroleerd, en zijn bronarchief. Geen server in versie.json voor dit
+# platform (zoals linux-arm64, de SuperCloud op Graviton): de dienst rekent dan zonder (een
+# @toets-blok staat als niet gerekend, /v1/health zegt fem: not_included).
 RUN node scripts/haal-fem-server.mjs \
  && mkdir -p /uit/fem-studio \
  && cp -r packages/desktop/src-tauri/fem-studio/. /uit/fem-studio/ \

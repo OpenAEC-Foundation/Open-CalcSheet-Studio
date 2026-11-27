@@ -64,11 +64,15 @@ export const LICENTIE = "LICENSE-AGPL-3.0.txt";
 export const VERMELDINGEN = "THIRD-PARTY-NOTICES.txt";
 export const BRONWIJZER = "SOURCE.txt";
 
-/** De naam van dit platform in `bestanden`. */
-export function ditPlatform(platform = process.platform) {
+/**
+ * De naam van dit platform in `bestanden`. Linux op ARM (de rekendienst op een Graviton-server
+ * van de SuperCloud) heet linux-arm64: zolang daar geen server voor is, bouwt het zonder in
+ * plaats van met een x64-binary die daar niet start.
+ */
+export function ditPlatform(platform = process.platform, arch = process.arch) {
   if (platform === "win32") return "windows-x64";
   if (platform === "darwin") return "macos-universal";
-  return "linux-x64";
+  return arch === "arm64" ? "linux-arm64" : "linux-x64";
 }
 
 /** De naam van de losse server in een release van FEM Studio. */
