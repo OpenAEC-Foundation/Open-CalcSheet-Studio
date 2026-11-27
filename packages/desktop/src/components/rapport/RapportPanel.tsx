@@ -15,6 +15,7 @@ import RevisieSectie from "./paneel/RevisieSectie";
 import { paneelGroepen, type PaneelGroep } from "./paneel/hulp";
 import { Invulvelden } from "./paneel/TekstVeld";
 import { OpzetBron, useOpzetStand, useRapport } from "./paneel/velden";
+import { hoofdstukkenUitAfdruk } from "../../rapport/hoofdstukkenAlsBladen";
 import "./RapportPanel.css";
 
 /**
@@ -132,6 +133,34 @@ function UitBladenKeuze() {
   );
 }
 
+/**
+ * Zet de hoofdstukken van dit rapport om in bladen: elk hoofdstuk een blad waarvan de code
+ * precies de opmaak van dat hoofdstuk is (rapport/hoofdstukkenAlsBladen.ts). Leest het
+ * voorbeeld ernaast, dus dat moet opgemaakt zijn.
+ */
+function HoofdstukkenAlsBladen() {
+  const { t } = useTranslation("rapport");
+  const voegToe = useProjectStore((s) => s.voegToe);
+  const selecteer = useProjectStore((s) => s.selecteer);
+  const maak = () => {
+    const wortel = document.querySelector<HTMLElement>(".av-meet .rpa-wortel");
+    const hoofdstukken = wortel ? hoofdstukkenUitAfdruk(wortel) : [];
+    if (hoofdstukken.length === 0) {
+      alert(t("alsBladen.geenVoorbeeld"));
+      return;
+    }
+    const ids = hoofdstukken.map((h) => voegToe("leeg", h.titel, h.bron));
+    selecteer(ids[0]);
+  };
+  return (
+    <div className="rapport-knoppen rapport-alsbladen">
+      <button type="button" className="rapport-knop" title={t("alsBladen.uitleg")} onClick={maak}>
+        {t("alsBladen.knop")}
+      </button>
+    </div>
+  );
+}
+
 export default function RapportPanel() {
   const { t } = useTranslation("rapport");
   const paneelRef = useRef<HTMLDivElement>(null);
@@ -164,6 +193,7 @@ export default function RapportPanel() {
       <OpzetBron>
         <Sprongbalk groepen={uitBladen ? [] : groepen} naarSectie={naarSectie} metOpzet={!uitBladen} />
         <UitBladenKeuze />
+        <HoofdstukkenAlsBladen />
         <DocumentSectie />
         <RevisieSectie />
         {/* Uit bladen opgebouwd: de hoofdstukken zijn bladen in de projectboom, niet dit formulier. */}

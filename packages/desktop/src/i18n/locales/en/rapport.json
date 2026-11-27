@@ -679,5 +679,10 @@
     "uitleg": "The chapters of the report are then the sheets in the project tree, in that order, each with code, inputs and output. The form with the fixed chapters goes away; what is in it is kept and comes back if you turn this off again.",
     "uitlegAan_one": "The report consists of the sheets in the project tree: {{count}} sheet is a chapter or section, the others are in appendix A. For each sheet, choose above its output what it is in the report.",
     "uitlegAan_other": "The report consists of the sheets in the project tree: {{count}} sheets are a chapter or section, the others are in appendix A. For each sheet, choose above its output what it is in the report."
+  },
+  "alsBladen": {
+    "knop": "Chapters as sheets",
+    "uitleg": "Turns each chapter of this report into a sheet whose code is exactly what the report shows now.",
+    "geenVoorbeeld": "The report preview is not ready yet. Wait until it is done on the right and try again."
   }
 }

@@ -691,5 +691,10 @@
     "uitlegAan_few": "Ataskaitą sudaro projekto medžio lapai: {{count}} lapai yra skyrius arba poskyris, kiti yra A priede. Prie kiekvieno lapo, virš jo rezultato, pasirinkite, kas jis yra ataskaitoje.",
     "uitlegAan_many": "Ataskaitą sudaro projekto medžio lapai: {{count}} lapo yra skyrius arba poskyris, kiti yra A priede. Prie kiekvieno lapo, virš jo rezultato, pasirinkite, kas jis yra ataskaitoje.",
     "uitlegAan_other": "Ataskaitą sudaro projekto medžio lapai: {{count}} lapų yra skyrius arba poskyris, kiti yra A priede. Prie kiekvieno lapo, virš jo rezultato, pasirinkite, kas jis yra ataskaitoje."
+  },
+  "alsBladen": {
+    "knop": "Skyriai kaip lapai",
+    "uitleg": "Kiekvieną šios ataskaitos skyrių paverčia lapu, kurio kodas yra tiksliai tai, ką ataskaita rodo dabar.",
+    "geenVoorbeeld": "Ataskaitos peržiūra dar neparengta. Palaukite, kol ji bus paruošta dešinėje, ir bandykite dar kartą."
   }
 }

@@ -679,5 +679,10 @@
     "uitleg": "De hoofdstukken van het rapport zijn dan de bladen in de projectboom, in die volgorde, elk met code, invoer en uitdraai. Het formulier met de vaste hoofdstukken vervalt; wat erin staat blijft bewaard en komt terug als je dit weer uitzet.",
     "uitlegAan_one": "Het rapport bestaat uit de bladen in de projectboom: {{count}} blad is een hoofdstuk of paragraaf, de andere staan in bijlage A. Kies bij elk blad, boven zijn uitdraai, wat het in het rapport is.",
     "uitlegAan_other": "Het rapport bestaat uit de bladen in de projectboom: {{count}} bladen zijn een hoofdstuk of paragraaf, de andere staan in bijlage A. Kies bij elk blad, boven zijn uitdraai, wat het in het rapport is."
+  },
+  "alsBladen": {
+    "knop": "Hoofdstukken als bladen",
+    "uitleg": "Maakt van elk hoofdstuk van dit rapport een blad, met als code precies wat het rapport nu toont.",
+    "geenVoorbeeld": "Het voorbeeld van het rapport is nog niet opgemaakt. Wacht tot het rechts klaar is en probeer het opnieuw."
   }
 }

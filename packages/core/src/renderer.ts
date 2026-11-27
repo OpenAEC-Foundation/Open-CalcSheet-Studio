@@ -292,6 +292,13 @@ function maakHtml(nodes: EvaluatedNode[]): string {
     const scherm = alleenScherm(node);
     // Een prozaregel die binnen een doorlopende alinea valt: de nog openstaande
     // opmaak van de vorige regel ervoor zetten en aan het eind weer sluiten.
+    // Een tekstregel die zelf een blok is (`'<div …>`, `'<section …>`, `'</div>`): letterlijk,
+    // zonder alinea eromheen. Zo kan een blad de opmaak van het rapport precies overnemen.
+    if (node.type === 'text' && node.html && !node.inline && BLOKREGEL_RE.test(node.text)) {
+      open = [];
+      parts.push(node.text);
+      continue;
+    }
     if (node.type === 'text' && node.html && !node.inline) {
       const voor = open.map((t) => t.open).join('');
       open = openOpmaakNa(open, node.text);
@@ -333,6 +340,9 @@ function maakHtml(nodes: EvaluatedNode[]): string {
  * De tekst van een regel met elk ingevuld getal in een `calc-waarde`: zo krijgt het op
  * papier het decimaalteken van de taal. Niet binnen een tag en niet in een tekening.
  */
+/** Een tekstregel die met een blok-element begint: die staat letterlijk in de uitwerking. */
+const BLOKREGEL_RE = /^\s*<\/?(div|section|h[1-6]|table|figure|ul|ol)\b/i;
+
 function metWaarden(node: { text: string; waarden?: Array<[number, number]> }): string {
   const { text, waarden } = node;
   if (!waarden?.length || /<svg\b/i.test(text)) return text;
@@ -357,6 +367,7 @@ function renderNode(node: EvaluatedNode): string {
       }
       // prose lines (`'…`) come through with `html: true` and may contain
       // inline tags like <i>, <b>, <hr/>, <sub>. Pass them through unescaped.
+      if (node.html && BLOKREGEL_RE.test(node.text)) return node.text;
       return node.html
         ? `<p class="calc-text">${metWaarden(node)}</p>`
         : `<p class="calc-text">${escapeHtml(node.text)}</p>`;
