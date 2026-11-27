@@ -282,3 +282,47 @@
   line-height: normal;
   color: #000;
 }
+
+/* ─── Eén blad op zijn plek in het rapport ────────────────────────── */
+
+/* Los blad of in het rapport. */
+.av-schakel {
+  display: inline-flex;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--oa-radius-small);
+  overflow: hidden;
+}
+
+.av-schakel button {
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  background: var(--oa-field);
+  color: var(--theme-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.av-schakel button + button {
+  border-left: 1px solid var(--theme-border);
+}
+
+.av-schakel button.actief {
+  background: var(--theme-accent-soft, var(--theme-hover));
+  color: var(--theme-accent-tint);
+  font-weight: 600;
+}
+
+.av-balk .av-plek {
+  color: var(--theme-text-secondary);
+}
+
+/* De vellen van het blad: een rand in de accentkleur; de rest van het rapport iets lichter. */
+.av-vel.av-gemarkeerd .av-pagina {
+  outline: 3px solid var(--theme-accent, #d97706);
+  outline-offset: 2px;
+}
+
+.av-vellen-binnen:has(.av-gemarkeerd) .av-vel:not(.av-gemarkeerd) .av-pagina {
+  opacity: 0.55;
+}

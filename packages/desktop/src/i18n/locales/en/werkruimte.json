@@ -1424,5 +1424,14 @@
     "rekentNiet": "does not calculate",
     "voldoet": "OK",
     "voldoetNiet": "not OK"
+  },
+  "plek": {
+    "rapport": "Report",
+    "pagina": "p. {{van}}",
+    "paginas": "pp. {{van}}–{{tot}}",
+    "uitleg": "Where this sheet is in the report. Click to open the report there.",
+    "uitlegZonderPaginas": "Where this sheet is in the report. The page numbers appear once you have opened the report. Click to open the report there.",
+    "naarHoofdstuk": "Go to {{nummer}} {{titel}} in the report",
+    "naarBijlage": "Go to the full calculation {{nummer}} {{titel}} in appendix A"
   }
 }

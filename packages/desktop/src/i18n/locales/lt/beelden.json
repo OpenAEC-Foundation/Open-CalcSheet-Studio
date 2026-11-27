@@ -551,7 +551,11 @@
     "bronLabel": "Šaltinis:",
     "bronBlad": "lapas {{ref}} {{naam}}",
     "bronBladOnbekend": "lapas {{ref}}, šiame projekte nėra",
-    "bronPagina": "p. {{n}}"
+    "bronPagina": "p. {{n}}",
+    "weergave": "Rodinys",
+    "losBlad": "Tik lapas",
+    "inRapport": "Ataskaitoje",
+    "plekVanBlad": "šis lapas: {{nummers}}"
   },
   "poerDetail": {
     "titel": "Strypų žiniaraštis ir armavimo detalė",
