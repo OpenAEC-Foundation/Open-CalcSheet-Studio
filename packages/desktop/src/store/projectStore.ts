@@ -12,6 +12,7 @@ import {
 import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
 import { projectTekstVan } from "./projectBlad";
+import { globaleSleutel } from "../rekenen/globalen";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
 import i18next, { LANGUAGES } from "../i18n/config";
@@ -1206,8 +1207,9 @@ useProjectStore.subscribe((s) => volgProjectEenheden(s.gegevens));
  */
 let vorigeProjectBronnen: readonly unknown[] = [];
 function volgProjectTekst(s: Pick<ProjectState, "gegevens" | "rapport" | "exemplaren">) {
-  // Ook de bladen, voor hun `#global` (rekenen/globalen.ts): die houdt zelf bij of daar iets veranderde.
-  const nu = [s.gegevens, s.rapport.belastingen, s.rapport.taal, s.exemplaren];
+  // Van de bladen alleen wat hun `#global` bepaalt (rekenen/globalen.ts): typen in een
+  // ander blad rekent niets opnieuw.
+  const nu = [s.gegevens, s.rapport.belastingen, s.rapport.taal, globaleSleutel(s.exemplaren)];
   if (nu.every((b, i) => b === vorigeProjectBronnen[i])) return;
   vorigeProjectBronnen = nu;
   zetProjectTekst(projectTekstVan(s.gegevens, s.rapport.belastingen, s.rapport.taal, s.exemplaren) ?? null);

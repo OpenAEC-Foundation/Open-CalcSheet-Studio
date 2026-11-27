@@ -48,18 +48,26 @@ export interface GlobaalBasis {
 
 const LEEG: Globalen = { bron: "", herkomst: {}, dubbel: [], overgeslagen: [], fouten: [] };
 
+/**
+ * Wat van de bladen de globale variabelen bepaalt, als tekst: de bladen met `#global`
+ * en de bladen waarnaar die verwijzen. Leeg als geen blad `#global` heeft. Zo hoeft
+ * wie de projecttekst volgt niet bij elke toetsaanslag in een ander blad opnieuw te rekenen.
+ */
+export function globaleSleutel(bladen: readonly GlobaalBlad[]): string {
+  const metGlobaal = bladen.filter((b) => typeof b.source === "string" && heeftGlobaal(b.source));
+  if (metGlobaal.length === 0) return "";
+  return JSON.stringify(metGlobaal.map((b) => [b.ref, b.naam, b.source, b.waarden, verwezenBladen(b.source, b.waarden, bladen)]));
+}
+
 /** Alleen de laatste uitkomst: bij elke toetsaanslag in een ander blad hoeft er niets opnieuw. */
 let vorige: { sleutel: string; uit: Globalen } | null = null;
 
 export function globalenVan(bladen: readonly GlobaalBlad[], basis: GlobaalBasis): Globalen {
+  const bladenSleutel = globaleSleutel(bladen);
+  if (!bladenSleutel) return LEEG;
   const metGlobaal = bladen.filter((b) => typeof b.source === "string" && heeftGlobaal(b.source));
-  if (metGlobaal.length === 0) return LEEG;
   // De bladen waarnaar ze verwijzen horen ook in de sleutel: die rekenen mee.
-  const sleutel = JSON.stringify([
-    metGlobaal.map((b) => [b.ref, b.naam, b.source, b.waarden, verwezenBladen(b.source, b.waarden, bladen)]),
-    basis.scope,
-    basis.evalOpties,
-  ]);
+  const sleutel = JSON.stringify([bladenSleutel, basis.scope, basis.evalOpties]);
   if (vorige?.sleutel === sleutel) return vorige.uit;
 
   const regels = new Map<string, string>();
