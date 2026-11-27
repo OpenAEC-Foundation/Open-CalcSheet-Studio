@@ -209,6 +209,7 @@ export const REKENTAAL_LINT: LintGroep[] = [
             k("#while", "zolangAls", "#while ⟨voorwaarde⟩\n\t\n#loop", { regel: true }),
             k("#continue", "volgendeRonde", "#continue", { regel: true }),
             k("#def =", "tekstconstante", "#def ⟨naam$⟩ = \"waarde\"", { regel: true }),
+            k("#global", "globaal", "#global\n⟨naam⟩ = \n#end global", { regel: true }),
           ],
         },
         {

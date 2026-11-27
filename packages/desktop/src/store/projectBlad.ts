@@ -13,8 +13,10 @@
  *
  * Puur en zonder React: de rekenworker en de controlescripts laden dit bestand.
  */
-import type { ProjectGegevens } from "./projectGegevens";
+import { projectScope, type ProjectGegevens } from "./projectGegevens.ts";
+import { evalOptiesVan } from "./projectEenheden.ts";
 import { belastingProject } from "../rapport/belastingBronnen.ts";
+import { globalenVan, type GlobaalBlad } from "../rekenen/globalen.ts";
 import type { Belastingen } from "../rapport/model.ts";
 
 export const PROJECTBLAD = "projectblad";
@@ -53,11 +55,25 @@ export interface ProjectTekst {
 /**
  * De hele projecttekst: eerst de belastingen uit hoofdstuk 5 van het rapport
  * (rapport/belastingBronnen.ts), dan de eigen elementen van de projectgegevens, die de
- * belastingen dus mogen gebruiken. Niets te rekenen: undefined.
+ * belastingen dus mogen gebruiken, en tot slot de globale variabelen van de bladen
+ * (`#global`, rekenen/globalen.ts), die beide mogen gebruiken. Niets te rekenen: undefined.
  */
-export function projectTekstVan(g: ProjectGegevens, belastingen?: Belastingen, taal?: string): ProjectTekst | undefined {
+export function projectTekstVan(
+  g: ProjectGegevens,
+  belastingen?: Belastingen,
+  taal?: string,
+  /** De bladen van het project, in de volgorde van de boom: voor hun `#global`. */
+  bladen: readonly GlobaalBlad[] = [],
+): ProjectTekst | undefined {
   const lasten = belastingen ? belastingProject(belastingen, taal) : { bron: "", namen: {} };
   const eigen = projectOpties(g);
-  const bron = [lasten.bron, eigen?.bron ?? ""].filter((s) => s.trim()).join("\n");
-  return bron ? { bron, waarden: eigen?.waarden ?? {}, namen: lasten.namen } : undefined;
+  const basis = [lasten.bron, eigen?.bron ?? ""].filter((s) => s.trim()).join("\n");
+  const waarden = eigen?.waarden ?? {};
+  const opties = evalOptiesVan(g);
+  const globaal = globalenVan(bladen, {
+    scope: projectScope(g),
+    evalOpties: basis ? { ...opties, project: { bron: basis, waarden } } : opties,
+  }).bron;
+  const bron = [basis, globaal].filter((s) => s.trim()).join("\n");
+  return bron ? { bron, waarden, namen: lasten.namen } : undefined;
 }

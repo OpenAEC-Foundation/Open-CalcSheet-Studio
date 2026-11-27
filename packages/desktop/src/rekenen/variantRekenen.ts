@@ -170,7 +170,7 @@ interface Omgeving {
  * nieuw antwoord alleen de kolom opnieuw die het gebruikt.
  */
 function verzoekVoor(ex: Exemplaar, waarden: Record<string, string>, omg: Omgeving, toets: string): VariantVerzoek {
-  const project = projectTekstVan(omg.gegevens, omg.belastingen, omg.rapportTaal);
+  const project = projectTekstVan(omg.gegevens, omg.belastingen, omg.rapportTaal, omg.exemplaren);
   const basis = { ...evalOptiesVan(omg.gegevens), ...(project ? { project } : {}) };
   const scope = projectScope(omg.gegevens);
   const verwijzingen = verwezenBladen(ex.source, waarden, omg.exemplaren);

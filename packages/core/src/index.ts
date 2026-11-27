@@ -1,6 +1,7 @@
 export { parse, type ParseOptions } from './parser.js';
 export { evaluate, evaluateMetScope, extractScope, setAngleMode, zetProjectEenheden, projectEenheidFouten, zetProjectTekst, type EvalOpties } from './evaluator.js';
 export { geldigeEenheidNaam } from './eenheden.js';
+export { haalGlobaalWeg, heeftGlobaal, globaleNamen, globaleRegels, waardeAlsRekentekst } from './globaal.js';
 export { verwijzingNaam, vervangVerwijzingen, leesVerwijzing, verwijzingenIn, verwijzingVanNaam, verwijzingenInMelding, leesCelVerwijzing, celVerwijzingTekst, celNaam, celVerwijzingenIn, isVerwijzingInvoer } from './verwijzing.js';
 export { PROCENT_IN_NAAM, naamInScope, naamMetProcent } from './naam.js';
 export { includeSleutel, includeNamen, includeNaam, includeMeldingTekst, isAbsoluutPad, leesmoment, type IncludeMelding, type IncludeSoort, type IncludeStaat } from './include.js';

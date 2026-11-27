@@ -12,6 +12,7 @@ import {
 import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
 import { projectTekstVan } from "./projectBlad";
+import { globaleSleutel } from "../rekenen/globalen";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
 import i18next, { LANGUAGES } from "../i18n/config";
@@ -1205,11 +1206,13 @@ useProjectStore.subscribe((s) => volgProjectEenheden(s.gegevens));
  * ander object is; de worker krijgt de tekst per verzoek mee (rekenen/doorrekening.ts).
  */
 let vorigeProjectBronnen: readonly unknown[] = [];
-function volgProjectTekst(s: Pick<ProjectState, "gegevens" | "rapport">) {
-  const nu = [s.gegevens.projectblad, s.gegevens.projectblad_waarden, s.rapport.belastingen, s.rapport.taal];
+function volgProjectTekst(s: Pick<ProjectState, "gegevens" | "rapport" | "exemplaren">) {
+  // Van de bladen alleen wat hun `#global` bepaalt (rekenen/globalen.ts): typen in een
+  // ander blad rekent niets opnieuw.
+  const nu = [s.gegevens, s.rapport.belastingen, s.rapport.taal, globaleSleutel(s.exemplaren)];
   if (nu.every((b, i) => b === vorigeProjectBronnen[i])) return;
   vorigeProjectBronnen = nu;
-  zetProjectTekst(projectTekstVan(s.gegevens, s.rapport.belastingen, s.rapport.taal) ?? null);
+  zetProjectTekst(projectTekstVan(s.gegevens, s.rapport.belastingen, s.rapport.taal, s.exemplaren) ?? null);
 }
 volgProjectTekst(useProjectStore.getState());
 useProjectStore.subscribe(volgProjectTekst);

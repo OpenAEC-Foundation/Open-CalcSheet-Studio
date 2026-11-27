@@ -23,6 +23,7 @@ import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
 import type { BladInvoer } from "../components/calc/invoer/velden";
 import { abonneerOpIncludes, rekentaalIncludes, rekentaalIncludeStaat, rekentaalIncludeVersie, rekentaalImageUrls } from "../templates/rekentaal-includes";
 import { verwezenBladen, type VerwijsBlad } from "./verwijzingen";
+import { globaleSleutel } from "./globalen";
 import { metToetsingen } from "./toetsCache";
 import { kenFemStudio, legToetsingenVast, useToetsVersie, vraagToetsingen } from "./femToetsing";
 
@@ -176,10 +177,14 @@ export function useDoorrekening(
   // het blad; de worker kent het project niet en krijgt die tekst dus mee.
   const belastingen = useProjectStore((s) => s.rapport.belastingen);
   const rapportTaal = useProjectStore((s) => s.rapport.taal);
+  // De bladen voor hun `#global`: een wijziging in zo'n blad geeft de andere bladen een
+  // nieuwe projecttekst. Alleen dat deel telt (globaleSleutel), niet elke toetsaanslag.
+  const exemplaren = useProjectStore((s) => s.exemplaren);
+  const globaal = useMemo(() => globaleSleutel(exemplaren), [exemplaren]);
   const basisOpties = useMemo(() => {
-    const project = projectTekstVan(gegevens, belastingen, rapportTaal);
+    const project = projectTekstVan(gegevens, belastingen, rapportTaal, useProjectStore.getState().exemplaren);
     return { ...evalOptiesVan(gegevens), ...(project ? { project } : {}) };
-  }, [gegevens, belastingen, rapportTaal]);
+  }, [gegevens, belastingen, rapportTaal, globaal]);
   // Een nieuw antwoord van FEM Studio maakt elke doorrekening verouderd; de antwoorden
   // zelf staan niet in de sleutel (ze zijn groot), hun versie wel.
   const toetsV = useToetsVersie();
@@ -187,7 +192,6 @@ export function useDoorrekening(
   const optiesSleutel = JSON.stringify(basisOpties) + "|t" + toetsV;
   // De bladen waarnaar dit blad verwijst gaan mee, en horen in de sleutel: verandert
   // de invoer van blad 1, dan rekent een blad met #1.R_paal opnieuw.
-  const exemplaren = useProjectStore((s) => s.exemplaren);
   const verwijzingen = useMemo(() => verwezenBladen(source, waarden, exemplaren), [source, waarden, exemplaren]);
   const verwijsSleutel = verwijzingen.length ? JSON.stringify(verwijzingen) : "";
   // De `#include`-bestanden van het project (templates/rekentaal-includes.ts): een nieuwe
