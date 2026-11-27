@@ -660,6 +660,10 @@
     "bronLabel": "Source:",
     "bronBlad": "sheet {{ref}} {{naam}}",
     "bronBladOnbekend": "sheet {{ref}}, not in this project",
-    "bronPagina": "p. {{n}}"
+    "bronPagina": "p. {{n}}",
+    "weergave": "View",
+    "losBlad": "Sheet only",
+    "inRapport": "In the report",
+    "plekVanBlad": "this sheet: {{nummers}}"
   }
 }

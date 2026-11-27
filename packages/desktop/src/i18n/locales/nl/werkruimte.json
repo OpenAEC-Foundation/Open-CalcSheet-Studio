@@ -1424,5 +1424,14 @@
     "rekentNiet": "rekent niet door",
     "voldoet": "voldoet",
     "voldoetNiet": "voldoet niet"
+  },
+  "plek": {
+    "rapport": "Rapport",
+    "pagina": "p. {{van}}",
+    "paginas": "p. {{van}}–{{tot}}",
+    "uitleg": "De plek van dit blad in het rapport. Klik om het rapport daar te openen.",
+    "uitlegZonderPaginas": "De plek van dit blad in het rapport. De pagina's verschijnen zodra je het rapport een keer hebt geopend. Klik om het rapport daar te openen.",
+    "naarHoofdstuk": "Naar {{nummer}} {{titel}} in het rapport",
+    "naarBijlage": "Naar de uitwerking {{nummer}} {{titel}} in bijlage A"
   }
 }

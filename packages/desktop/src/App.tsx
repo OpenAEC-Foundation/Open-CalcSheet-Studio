@@ -18,6 +18,7 @@ import { designerVoor } from "./components/calc/designerKeuze";
 import { invoerSchermVoor } from "./components/calc/invoer/invoerScherm";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
+import RapportPlek from "./components/calc/RapportPlek";
 import { klaargezetteKoppen, vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
 import { maakRapportDocument } from "./tauri/rapportDocument";
 import { schrijfRapportPdf } from "./tauri/rapportPdf";
@@ -329,7 +330,7 @@ export default function App() {
     <WerkPaneel titel={invoerScherm && !invoerScherm.metBeeld ? t("paneel.invoer") : t("paneel.visueel")} papier>{designerPane}</WerkPaneel>
   );
   const uitwerkingPaneel = (
-    <WerkPaneel titel={t("paneel.uitwerking")} info={actief ? <UcInfo blad={actief.id} /> : null} papier>
+    <WerkPaneel titel={t("paneel.uitwerking")} info={actief ? <><RapportPlek blad={actief.id} /><UcInfo blad={actief.id} /></> : null} papier>
       <Preview />
     </WerkPaneel>
   );
@@ -553,7 +554,7 @@ export default function App() {
               <div style={{ flex: 1, minHeight: 0 }}>
                 <SplitPane
                   left={<WerkPaneel titel={t("markdown.bron")} info={<MarkdownBladInfo ex={actief} />}><MarkdownBron key={actief.id} ex={actief} /></WerkPaneel>}
-                  right={<WerkPaneel titel={t("markdown.weergave")} papier><MarkdownWeergave ex={actief} /></WerkPaneel>}
+                  right={<WerkPaneel titel={t("markdown.weergave")} info={<RapportPlek blad={actief.id} />} papier><MarkdownWeergave ex={actief} /></WerkPaneel>}
                 />
               </div>
             </>
@@ -561,7 +562,7 @@ export default function App() {
             <>
               {tabBalk}
               <div style={{ flex: 1, minHeight: 0 }}>
-                <WerkPaneel titel={t("canvas.paneel")} info={<UcInfo blad={actief.id} />}>
+                <WerkPaneel titel={t("canvas.paneel")} info={<><RapportPlek blad={actief.id} /><UcInfo blad={actief.id} /></>}>
                   <CanvasBladWeergave key={actief.id} ex={actief} />
                 </WerkPaneel>
               </div>

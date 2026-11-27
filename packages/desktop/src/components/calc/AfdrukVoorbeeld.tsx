@@ -5,6 +5,8 @@ import { useRapportSprong } from "../../store/rapportSprong";
 import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import { useInhoudPaginas } from "../../store/inhoudPaginas";
+import { paginasVan } from "../../rapport/plek";
+import { useRapportPlek } from "./RapportPlek";
 import { huisstijlVariabelen } from "../../rapport/model";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import {
@@ -114,7 +116,14 @@ export default function AfdrukVoorbeeld({ ingebed }: {
   const uitdraai = useUitdraai();
   const { alleBladen, onderdeel, datum } = uitdraai;
   const gekozenSoort = usePrintStore((s) => s.soort);
-  const soort = ingebed ?? gekozenSoort;
+  const selectieNu = usePrintStore((s) => s.selectie);
+  const bladInRapport = usePrintStore((s) => s.bladInRapport);
+  const zetBladInRapport = usePrintStore((s) => s.zetBladInRapport);
+  // Het voorbeeld van één blad kan het hele rapport tonen, met dat blad gemarkeerd.
+  const eenBlad = !ingebed && gekozenSoort === "bladen" && selectieNu?.length === 1 ? selectieNu[0] : null;
+  const markeerBlad = eenBlad && bladInRapport ? eenBlad : null;
+  const soort = ingebed ?? (markeerBlad ? "rapport" : gekozenSoort);
+  const plek = useRapportPlek(markeerBlad ?? undefined);
   const sprong = useRapportSprong();
   const sluitVoorbeeld = usePrintStore((s) => s.sluitVoorbeeld);
   const afdrukken = usePrintStore((s) => s.afdrukken);
@@ -151,6 +160,8 @@ export default function AfdrukVoorbeeld({ ingebed }: {
   const anker = useRef<{ cx: number; cy: number; x: number; y: number; van: number } | null>(null);
   const [aantal, setAantal] = useState(0);
   const [bezig, setBezig] = useState(true);
+  /** Telt elke keer dat de vellen opnieuw zijn opgebouwd: dan opnieuw markeren. */
+  const [opgebouwdTeller, setOpgebouwdTeller] = useState(0);
 
   // Kopregels per vel: dezelfde als de loopkop van de echte afdruk.
   const linksBoven = loopkopLinks(uitdraai);
@@ -270,7 +281,7 @@ export default function AfdrukVoorbeeld({ ingebed }: {
     // De paginanummers van de inhoudsopgave, uit dezelfde verdeling als de vellen.
     const nummers = paginaVanAnkers(paginas);
     // Ook voor het zijpaneel, zodat de inhoud daar de pagina's kent (InhoudLijst.tsx).
-    if (rapport) useInhoudPaginas.setState({ paginas: Object.fromEntries(nummers) });
+    if (rapport) useInhoudPaginas.setState({ paginas: Object.fromEntries(nummers), totaal: paginas.length });
 
     iframesWeg.current?.();
     scriptsWeg.current?.();
@@ -394,6 +405,7 @@ export default function AfdrukVoorbeeld({ ingebed }: {
 
     setAantal(paginas.length);
     setBezig(false);
+    setOpgebouwdTeller((n) => n + 1);
   }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, kopLogo, huisstijl, t, kopieVan, vervangLos]);
 
   /*
@@ -512,13 +524,47 @@ export default function AfdrukVoorbeeld({ ingebed }: {
     el.scrollTop = (a.y + a.cy - boven) * f + boven - a.cy;
   }, [zoom]);
 
+  /*
+   * Het rapport met één blad gemarkeerd: de vellen van dat blad krijgen een rand, en het
+   * voorbeeld springt naar de uitwerking (of anders de paragraaf) zodra de vellen er zijn,
+   * en opnieuw bij een ander blad.
+   */
+  const gemarkeerd = useMemo(() => paginasVan(plek), [plek]);
+  const gesprongenNaar = useRef<string | null>(null);
+  useEffect(() => {
+    const vellen = vellenRef.current?.children;
+    if (!vellen) return;
+    [...vellen].forEach((vel, i) => vel.classList.toggle("av-gemarkeerd", !!markeerBlad && gemarkeerd.has(i + 1)));
+    if (!markeerBlad) {
+      gesprongenNaar.current = null;
+      return;
+    }
+    if (bezig || gesprongenNaar.current === markeerBlad) return;
+    const doel = plek.find((s) => s.bijlage && s.van !== undefined) ?? plek.find((s) => s.van !== undefined);
+    if (doel && naarAnker(doel.anker)) gesprongenNaar.current = markeerBlad;
+  }, [markeerBlad, gemarkeerd, plek, bezig, opgebouwdTeller, naarAnker]);
+
   return (
     <div className="av-paneel">
       <div className="av-balk">
         <span className="av-titel">{rapport ? t("afdruk.titelRapport") : t("afdruk.titel")}</span>
+        {markeerBlad && plek.length > 0 && (
+          <span className="av-plek">{t("afdruk.plekVanBlad", { nummers: plek.map((s) => s.nummer).join(" · ") })}</span>
+        )}
         <span className="av-tel">
           {bezig ? t("afdruk.opmaken") : t("afdruk.paginas", { count: aantal })}
         </span>
+        {/* Eén blad: los, of op zijn plek in het rapport. */}
+        {eenBlad && (
+          <span className="av-schakel" role="group" aria-label={t("afdruk.weergave")}>
+            <button type="button" className={bladInRapport ? "" : "actief"} aria-pressed={!bladInRapport} onClick={() => zetBladInRapport(false)}>
+              {t("afdruk.losBlad")}
+            </button>
+            <button type="button" className={bladInRapport ? "actief" : ""} aria-pressed={bladInRapport} onClick={() => zetBladInRapport(true)}>
+              {t("afdruk.inRapport")}
+            </button>
+          </span>
+        )}
         {/* Het rapport kent geen bereik: het bevat altijd alle bladen. */}
         {!rapport && (
           <span className="av-bereik">
@@ -548,7 +594,7 @@ export default function AfdrukVoorbeeld({ ingebed }: {
             ))}
           </select>
         </span>
-        <button className="av-primair" onClick={() => (ingebed ? afdrukken(null, ingebed) : afdrukken())}>{t("afdruk.afdrukken")}</button>
+        <button className="av-primair" onClick={() => (ingebed ? afdrukken(null, ingebed) : markeerBlad ? afdrukken(null, "rapport") : afdrukken())}>{t("afdruk.afdrukken")}</button>
         {!ingebed && <button onClick={sluitVoorbeeld}>{t("afdruk.sluiten")}</button>}
       </div>
 

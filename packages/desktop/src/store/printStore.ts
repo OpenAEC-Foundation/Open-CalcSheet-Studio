@@ -73,6 +73,12 @@ interface PrintState {
   toonVoorbeeld: (selectie?: string[] | null, soort?: AfdrukSoort) => void;
   sluitVoorbeeld: () => void;
   kiesSelectie: (selectie: string[] | null) => void;
+  /**
+   * Het voorbeeld van één blad toont het hele rapport, met de pagina's van dat blad
+   * gemarkeerd (AfdrukVoorbeeld.tsx). Blijft staan bij een ander blad.
+   */
+  bladInRapport: boolean;
+  zetBladInRapport: (aan: boolean) => void;
 }
 
 /** Alleen wat is opgegeven: een weggelaten argument laat de huidige keuze staan. */
@@ -103,6 +109,8 @@ export const usePrintStore = create<PrintState>((set) => ({
   toonVoorbeeld: (selectie, soort) => set({ voorbeeld: true, ...opgegeven(selectie, soort) }),
   sluitVoorbeeld: () => set({ voorbeeld: false }),
   kiesSelectie: (selectie) => set({ selectie }),
+  bladInRapport: false,
+  zetBladInRapport: (aan) => set({ bladInRapport: aan }),
 }));
 
 /**
