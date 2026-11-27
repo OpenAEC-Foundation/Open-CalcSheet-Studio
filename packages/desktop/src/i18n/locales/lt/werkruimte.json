@@ -1460,5 +1460,14 @@
     "rekentNiet": "neapskaičiuojama",
     "voldoet": "tenkina",
     "voldoetNiet": "netenkina"
+  },
+  "plek": {
+    "rapport": "Ataskaita",
+    "pagina": "p. {{van}}",
+    "paginas": "p. {{van}}–{{tot}}",
+    "uitleg": "Šio lapo vieta ataskaitoje. Spustelėkite, kad atidarytumėte ataskaitą toje vietoje.",
+    "uitlegZonderPaginas": "Šio lapo vieta ataskaitoje. Puslapių numeriai atsiras, kai bent kartą atidarysite ataskaitą. Spustelėkite, kad atidarytumėte ataskaitą toje vietoje.",
+    "naarHoofdstuk": "Eiti į {{nummer}} {{titel}} ataskaitoje",
+    "naarBijlage": "Eiti į visą skaičiavimą {{nummer}} {{titel}} A priede"
   }
 }

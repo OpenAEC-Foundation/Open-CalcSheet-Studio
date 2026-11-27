@@ -660,6 +660,10 @@
     "bronLabel": "Bron:",
     "bronBlad": "blad {{ref}} {{naam}}",
     "bronBladOnbekend": "blad {{ref}}, niet in dit project",
-    "bronPagina": "p. {{n}}"
+    "bronPagina": "p. {{n}}",
+    "weergave": "Weergave",
+    "losBlad": "Los blad",
+    "inRapport": "In het rapport",
+    "plekVanBlad": "dit blad: {{nummers}}"
   }
 }

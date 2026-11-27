@@ -1,0 +1,52 @@
+/* Waar een blad in het rapport komt, in de kop van de uitdraai (RapportPlek.tsx). */
+.rapport-plek {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.rapport-plek-rapport {
+  color: var(--theme-text-secondary);
+}
+
+.rapport-plek-pijl,
+.rapport-plek-scheiding {
+  color: var(--theme-text-muted, var(--theme-text-secondary));
+}
+
+.rapport-plek-scheiding {
+  margin: 0 2px;
+}
+
+.rapport-plek button {
+  padding: 1px 4px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--theme-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rapport-plek button:hover,
+.rapport-plek button:focus-visible {
+  background: var(--theme-accent-soft, var(--theme-hover));
+  color: var(--theme-accent-tint);
+  outline: none;
+}
+
+.rapport-plek b {
+  font-weight: 600;
+}
+
+.rapport-plek-pagina {
+  color: var(--theme-text-secondary);
+}
+
+/* Naast de UC in dezelfde kop: een streepje ertussen. */
+.werk-paneel-info .rapport-plek + .werk-uc,
+.werk-paneel-info .rapport-plek + * {
+  margin-left: 10px;
+}
