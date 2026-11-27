@@ -226,6 +226,12 @@ interface ProjectState {
    */
   zetVerborgen: (onderdeel: keyof Verborgen, verborgen: boolean) => void;
   voegToe: (templateId: string, basisNaam: string, source: string) => string;
+  /**
+   * Een nieuw blad dat een onderdeel van het rapport invult (Rapport.bladVoor), met de
+   * wijziging van het rapport die erbij hoort (de gegevens gaan van het formulier naar het
+   * blad). Eén stap ongedaan maken. Geeft het id van het blad.
+   */
+  vulOnderdeelMetBlad: (knoopId: string, basisNaam: string, source: string, rapport: (r: Rapport) => Rapport) => string;
   /** Een PDF-blad achteraan; de naam krijgt alleen een nummer als hij al bestaat. */
   voegPdfToe: (naam: string, pdf: PdfBijlage) => string;
   /** Een ander PDF-bestand voor een PDF-blad; naam en plaats blijven. */
@@ -522,6 +528,24 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       activeId: id,
       dirty: true,
     }));
+    return id;
+  },
+
+  vulOnderdeelMetBlad: (knoopId, basisNaam, source, rapport) => {
+    const id = nieuweId();
+    set((s) => {
+      const nieuw = rapport(s.rapport);
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: [
+          ...s.exemplaren,
+          { id, naam: vrijeNaam(s.exemplaren, basisNaam), templateId: "leeg", source, bronVersie: rekenversie(source), waarden: {} },
+        ],
+        rapport: { ...nieuw, bladVoor: { ...nieuw.bladVoor, [knoopId]: id } },
+        activeId: id,
+        dirty: true,
+      };
+    });
     return id;
   },
 

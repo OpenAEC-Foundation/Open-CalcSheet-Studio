@@ -663,5 +663,15 @@
       "geenRtf": "het bestand is geen RTF-bestand",
       "geenWerkmap": "het bestand is geen werkmap (.xlsx)"
     }
+  },
+  "alsBlad": {
+    "maak": "Als blad met rekentekst",
+    "maakUitleg": "Maakt van dit onderdeel een blad met rekentekst, invoer en uitdraai, net als een module. De symbolen staan daarna in een #global-blok en blijven in elk blad bestaan. Het rapport toont hier de uitdraai van dat blad. Ongedaan maken zet alles terug.",
+    "uitBlad": "Dit onderdeel komt uit het blad {{naam}}: rekentekst die je zelf aanpast, met de symbolen in een #global-blok. Het rapport toont hier de uitdraai van dat blad.",
+    "open": "Blad openen",
+    "los": "Weer het formulier",
+    "losUitleg": "Het rapport toont hier weer het formulier. Het blad blijft staan en komt bij de berekeningen; de waarden staan in het blad, niet in het formulier.",
+    "vloerenDaken": "Vloeren en daken",
+    "wanden": "Wanden"
   }
 }

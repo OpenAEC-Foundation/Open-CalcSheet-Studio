@@ -24,6 +24,7 @@ import { useNormkeuze } from "../../../store/actiefBlad";
 import { getalTekst, verplaatst } from "./hulp";
 import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
 import BelastingCanvas from "./BelastingCanvas";
+import OnderdeelAlsBlad from "./OnderdeelAlsBlad";
 import { LokaleKlassenInvoer, LokaleSneeuwInvoer, LokaleWindInvoer } from "./LokaalVelden";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
@@ -231,6 +232,7 @@ function VeranderlijkInvoer() {
   return (
     <>
       <Kop id="veranderlijk" />
+      <OnderdeelAlsBlad knoopId="veranderlijk" onderdeel="veranderlijk">
       {klassen.length === 0 && <p className="rapport-hint">{t("belastingen.geenKlassen")}</p>}
       {klassen.map((k, i) => (
         <KlasseKaart key={i} regel={k} index={i} aantal={klassen.length} wijzig={wijzigKlassen} />
@@ -242,6 +244,7 @@ function VeranderlijkInvoer() {
       >
         + {t("belastingen.klasseToevoegen")}
       </button>
+      </OnderdeelAlsBlad>
     </>
   );
 }
@@ -250,7 +253,9 @@ function BlijvendInvoer() {
   return (
     <>
       <Kop id="blijvend" />
-      <BelastingCanvas />
+      <OnderdeelAlsBlad knoopId="blijvend" onderdeel="blijvend">
+        <BelastingCanvas />
+      </OnderdeelAlsBlad>
     </>
   );
 }

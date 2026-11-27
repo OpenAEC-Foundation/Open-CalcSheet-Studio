@@ -177,6 +177,7 @@ const RAPPORT = object({
   beelden: opt(VRIJ),
   toelichting: opt(VRIJ),
   inHoofdstuk: opt(VRIJ),
+  bladVoor: opt(VRIJ),
   bijlagen: opt(lijst(TEKST)),
   nieuwePagina: opt(VRIJ),
   opmaak: opt(object(velden(['constructieprincipe', 'subkoppen', 'bladenInInhoud', 'bijlageParagrafen'], JANEE))),

@@ -7,7 +7,7 @@ import { projectScope } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
 import { bladNormUit, normAfwijking } from "../../../rapport/normen/keuze";
 import { metToetsingen } from "../../../rekenen/toetsCache";
-import { staatInHoofdstuk, type Knoop } from "../../../rapport/opzet";
+import { staatInHoofdstuk, type Knoop, losseBladen } from "../../../rapport/opzet";
 import { useNormkeuze } from "../../../store/actiefBlad";
 import { bladNormTekst } from "../../calc/BladNorm";
 import { leesResultaat, samenvatting, type Resultaat } from "../../calc/bladResultaat";
@@ -87,7 +87,8 @@ export default function BerekeningenSectie({ knoop, titel }: { knoop: Knoop; tit
           hint={t("berekeningen.bijlageParagrafenUitleg")}
         />
       )}
-      {exemplaren.map((ex) => {
+      {/* Een blad dat een onderdeel van het rapport invult, staat daar en niet hier. */}
+      {losseBladen(rapport, exemplaren.map(bladVoorOpzet)).map(({ id }) => exemplaren.find((e) => e.id === id)!).map((ex) => {
         const uitkomst = uitkomsten.get(ex.id);
         const afwijking = normAfwijking(k, bladNormUit(ex.source));
         // Een oordeel volgens een ander stelsel dan dat van dit land: dan staat er niet getoetst, net als op papier.
