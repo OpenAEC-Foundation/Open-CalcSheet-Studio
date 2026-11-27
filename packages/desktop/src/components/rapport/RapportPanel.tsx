@@ -146,7 +146,10 @@ function HoofdstukkenAlsBladen() {
   const selecteer = useProjectStore((s) => s.selecteer);
   const maak = () => {
     const wortel = document.querySelector<HTMLElement>(".av-meet .rpa-wortel");
-    const hoofdstukken = wortel ? hoofdstukkenUitAfdruk(wortel) : [];
+    const { wind } = useProjectStore.getState().rapport.belastingen;
+    const hoofdstukken = wortel
+      ? hoofdstukkenUitAfdruk(wortel, { gebouwhoogte: wind.gebouwhoogte, coefficienten: wind.coefficienten.map((c) => c.c) })
+      : [];
     if (hoofdstukken.length === 0) {
       alert(t("alsBladen.geenVoorbeeld"));
       return;

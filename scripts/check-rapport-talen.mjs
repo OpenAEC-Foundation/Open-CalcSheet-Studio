@@ -392,7 +392,8 @@ kop("5. De afdruk als html");
   const naastGoud = async (naam, bestand, rapport, appTaal) => {
     await taal(appTaal);
     zet(rapport);
-    const html = perRegel(m.teken());
+    // De markering van een rekenend getal (raster.tsx, R) is geen opmaak: zonder die span vergelijken.
+    const html = perRegel(m.teken()).replace(/<span data-reken="[^"]*"(?: data-format="[^"]*")?>([^<]*)<\/span>/g, "$1");
     if (BEWAAR && appTaal === "nl") writeFileSync(join(hier, bestand), `${html}\n`);
     const goud = lees(bestand).trimEnd();
     const a = html.split("\n");

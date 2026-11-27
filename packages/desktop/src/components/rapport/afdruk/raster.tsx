@@ -13,6 +13,15 @@ import { tekstRegels, vulIn, type Invulwaarden } from "../../../rapport/invullen
  */
 
 /** Groepeert regels. Het afdrukvoorbeeld pelt deze wikkel af en zet zijn klasse per vel terug. */
+/**
+ * Een getal dat het rapport uitrekent. Op papier is het gewoon het getal; een blad dat uit
+ * dit hoofdstuk is gemaakt (rapport/hoofdstukkenAlsBladen.ts) rekent het weer uit onder
+ * `naam`, met de opmaak `format` (F2: twee decimalen; zonder: zo kort mogelijk).
+ */
+export function R({ naam, format, children }: { naam: string; format?: string; children: ReactNode }) {
+  return <span data-reken={naam} data-format={format}>{children}</span>;
+}
+
 export function Vlak({ klasse, children }: { klasse?: string; children?: ReactNode }) {
   return <div className={klasse ? `rpa-vlak ${klasse}` : "rpa-vlak"}>{children}</div>;
 }

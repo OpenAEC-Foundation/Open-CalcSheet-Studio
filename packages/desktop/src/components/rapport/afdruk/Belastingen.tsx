@@ -15,7 +15,7 @@ import {
 import { gevelOpbouw, vlakOpbouw, vullingTekst } from "../../../rapport/opbouw";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { LokaleKlassen, LokaleSneeuw, LokaleWind } from "./Lokaal";
-import { Cel, Eenheid, Leeg, Rij, Tekst, Vlak } from "./raster";
+import { Cel, Eenheid, Leeg, R, Rij, Tekst, Vlak } from "./raster";
 
 /*
  * Hoofdstuk 5, Belastingen. Kolom 1 is kolom 2 van het vel (de inhoud springt
@@ -31,7 +31,7 @@ export function Sneeuw({ w }: { w: RapportWeergave }) {
     <>
       <Rij>
         <Cel k={1} o>{w.t("afdruk.belastingen.platDak")}</Cel>
-        <Cel k={2} o>{w.fe(sneeuwPlatDak(), "kN/m2", 2)}</Cel>
+        <Cel k={2} o><R naam="s" format="F2">{w.fe(sneeuwPlatDak(), "kN/m2", 2)}</R></Cel>
         <Cel k={3} o><Eenheid e="kN/m2" /></Cel>
       </Rij>
       {tekst.trim() && (
@@ -69,18 +69,18 @@ export function Wind({ w }: { w: RapportWeergave }) {
     </>,
     <>
       <Cel k={1} n={2} o>{t("afdruk.belastingen.gebouwhoogte")}</Cel>
-      <Cel k={3} o>{ne(wind.gebouwhoogte, "m")}</Cel>
+      <Cel k={3} o><R naam="z">{ne(wind.gebouwhoogte, "m")}</R></Cel>
       <Cel k={4} o><Eenheid e="m" /></Cel>
     </>,
     <>
       <Cel k={2} o>z<sub>0</sub></Cel>
-      <Cel k={3} o>{fe(u.z0, "m", 3, true)}</Cel>
+      <Cel k={3} o><R naam="z_0">{fe(u.z0, "m", 3, true)}</R></Cel>
       {/* Zonder eenheid zoals de referentie; omgerekend wel, anders is ft niet van m te onderscheiden. */}
       <Cel k={4} o>{w.eenheden.doel("m") && <Eenheid e="m" />}</Cel>
     </>,
     <>
       <Cel k={2} o>z<sub>min</sub></Cel>
-      <Cel k={3} o>{fe(u.zmin, "m", 0)}</Cel>
+      <Cel k={3} o><R naam="z_min" format="F0">{fe(u.zmin, "m", 0)}</R></Cel>
       <Cel k={4} o>{w.eenheden.doel("m") && <Eenheid e="m" />}</Cel>
     </>,
     <>
@@ -90,12 +90,12 @@ export function Wind({ w }: { w: RapportWeergave }) {
     </>,
     <>
       <Cel k={2} o>q<sub>p</sub></Cel>
-      <Cel k={3} o>{fe(qp, "kN/m2", 2)}</Cel>
+      <Cel k={3} o><R naam="q_p" format="F2">{fe(qp, "kN/m2", 2)}</R></Cel>
       <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
     </>,
     <>
       <Cel k={2} o>v<sub>b,0</sub></Cel>
-      <Cel k={3} o>{f(u.vb0, 1)}</Cel>
+      <Cel k={3} o><R naam="v_b0" format="F1">{f(u.vb0, 1)}</R></Cel>
     </>,
   ];
 
@@ -110,7 +110,7 @@ export function Wind({ w }: { w: RapportWeergave }) {
     rechts[1 + i] = (
       <>
         <Cel k={6} o>{n(c.c)}</Cel>
-        <Cel k={7} o>{fe(getal(c.c) * qp, "kN/m2", 2)}</Cel>
+        <Cel k={7} o><R naam={`P_rep${i + 1}`} format="F2">{fe(getal(c.c) * qp, "kN/m2", 2)}</R></Cel>
         <Cel k={8} o><Eenheid e="kN/m2" /></Cel>
         {c.omschrijving && <Cel k={9}>{c.omschrijving}</Cel>}
       </>

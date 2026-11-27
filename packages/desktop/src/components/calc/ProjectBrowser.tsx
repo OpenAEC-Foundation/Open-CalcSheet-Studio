@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { modulesPerTemplate } from "./projectTree";
-import { useProjectStore, PROJECT_ID, RAPPORT_ID, type Exemplaar } from "../../store/projectStore";
+import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { useBladBijwerken } from "../../store/bladBijwerken";
 import { useBladResultaat } from "../../rekenen/doorrekening";
@@ -19,7 +19,7 @@ import Icoon from "../Icoon";
 import BladToevoegen from "./BladToevoegen";
 import LibrarySectie from "./LibrarySectie";
 import GewichtenSectie from "../rapport/gewichten/GewichtenSectie";
-import InhoudLijst from "./InhoudLijst";
+import RapportAlsBladen from "./RapportAlsBladen";
 import "./ProjectBrowser.css";
 import "./BladVersie.css";
 
@@ -216,32 +216,6 @@ function ExemplaarRij({
   );
 }
 
-/** Projectgegevens of rapport: openen, en bij hover een knopje om hem uit de boom te halen. */
-function KnoopRij({ id, icoon, naam, uitleg, gekozen, onKies, onVerwijder }: {
-  id: string;
-  icoon: string;
-  naam: string;
-  uitleg: string;
-  gekozen: boolean;
-  onKies: () => void;
-  onVerwijder: () => void;
-}) {
-  const { t: tw } = useTranslation("werkruimte");
-  return (
-    <div className={`pb-rij pb-blad pb-knoop${gekozen ? " gekozen" : ""}`} data-knoop={id}>
-      <button className="pb-open" onClick={onKies} title={uitleg}>
-        <Icoon id={icoon} />
-        <span className="pb-naam">{naam}</span>
-      </button>
-      <span className="pb-acties">
-        <button title={tw("browser.uitProjectHalen", { naam })} onClick={onVerwijder}>
-          <Icoon id="edit.delete" uit="calculations" />
-        </button>
-      </span>
-    </div>
-  );
-}
-
 /**
  * Het zijpaneel links: het project met zijn gegevens en rapport, en de bladen
  * die erin zitten. Opbouw en opmaak volgen het linkerpaneel van de
@@ -256,15 +230,7 @@ export default function ProjectBrowser() {
 
   const exemplaren = useProjectStore((s) => s.exemplaren);
   const activeId = useProjectStore((s) => s.activeId);
-  const selecteer = useProjectStore((s) => s.selecteer);
   const projectNaam = useProjectStore((s) => s.projectNaam);
-  const verborgen = useProjectStore((s) => s.verborgen);
-  const zetVerborgen = useProjectStore((s) => s.zetVerborgen);
-  /** Een verborgen onderdeel terugzetten en openen. */
-  const terug = (onderdeel: "gegevens" | "rapport") => {
-    zetVerborgen(onderdeel, false);
-    selecteer(onderdeel === "gegevens" ? PROJECT_ID : RAPPORT_ID);
-  };
   const { t } = useTranslation();
   const { t: tw } = useTranslation("werkruimte");
   const openBijwerken = useBladBijwerken((s) => s.openen);
@@ -291,47 +257,9 @@ export default function ProjectBrowser() {
       </div>
 
       <div className="left-panel-body">
-        {/* Wat bij het hele project hoort en niet bij één blad. */}
-        {/* Projectgegevens en rapport kun je uit de boom halen; de inhoud blijft
-            bewaard en komt terug met "… toevoegen". */}
-        <Sectie titel={projectNaam || tw("algemeen.project")}>
-          {!verborgen.gegevens && (
-            <KnoopRij
-              id={PROJECT_ID}
-              icoon="project.properties"
-              naam={tw("algemeen.projectgegevens")}
-              uitleg={tw("browser.projectgegevensUitleg")}
-              gekozen={activeId === PROJECT_ID}
-              onKies={() => selecteer(PROJECT_ID)}
-              onVerwijder={() => zetVerborgen("gegevens", true)}
-            />
-          )}
-          {!verborgen.rapport && (
-            <KnoopRij
-              id={RAPPORT_ID}
-              icoon="report.generate"
-              naam={tw("algemeen.rapport")}
-              uitleg={tw("browser.rapportUitleg")}
-              gekozen={activeId === RAPPORT_ID}
-              onKies={() => selecteer(RAPPORT_ID)}
-              onVerwijder={() => zetVerborgen("rapport", true)}
-            />
-          )}
-          {verborgen.gegevens && (
-            <button className="pb-rij pb-toevoegen" onClick={() => terug("gegevens")}>
-              <Icoon id="project.properties" />
-              <span className="pb-naam">{tw("browser.gegevensToevoegen")}</span>
-            </button>
-          )}
-          {verborgen.rapport && (
-            <button className="pb-rij pb-toevoegen" onClick={() => terug("rapport")}>
-              <Icoon id="report.generate" />
-              <span className="pb-naam">{tw("browser.rapportToevoegen")}</span>
-            </button>
-          )}
-        </Sectie>
-
-        <Sectie titel={tw("browser.bladen")} teller={exemplaren.length}>
+        {/* Projectgegevens, het rapport en de inhoud staan niet meer in de boom: het rapport
+            bestaat uit bladen. Hun gegevens blijven bewaard in het projectbestand. */}
+        <Sectie titel={projectNaam || tw("browser.bladen")} teller={exemplaren.length}>
           {exemplaren.length === 0 && (
             <p className="pb-leeg">
               <Trans t={tw} i18nKey="browser.geenBladen" components={{ b: <b /> }} />
@@ -349,6 +277,7 @@ export default function ProjectBrowser() {
           ))}
 
           <BladToevoegen />
+          <RapportAlsBladen />
 
           {/* Alleen als er iets bij te werken is; bijwerken gaat altijd via de vergelijking. */}
           {verouderd.length > 0 && (
@@ -362,11 +291,6 @@ export default function ProjectBrowser() {
           )}
         </Sectie>
 
-        {!verborgen.rapport && (
-          <Sectie titel={tw("browser.inhoud")}>
-            <InhoudLijst />
-          </Sectie>
-        )}
       </div>
 
       <GewichtenSectie />
