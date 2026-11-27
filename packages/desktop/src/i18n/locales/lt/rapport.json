@@ -356,7 +356,7 @@
     "klaar": "Atlikta"
   },
   "blokken": {
-    "uitleg": "Kiekvienas blokas yra apkrova su pavadinimu ir sluoksniais. Spustelėkite bloką, kad jį redaguotumėte, vilkite, kad perkeltumėte; pliusas prideda sluoksnį. Bloko simboliu (pvz., g_v1) jo suma pasiekiama kiekviename lape, o lapo apkrovos blokas ją parenka iš sąrašo.",
+    "uitleg": "Kiekvienas blokas yra apkrova su pavadinimu ir sluoksniais. Spustelėkite bloką, kad jį pasirinktumėte, dukart spustelėkite, kad redaguotumėte, vilkite, kad perkeltumėte; pliusas prideda sluoksnį. Dešiniuoju pelės mygtuku arba klavišu Delete blokas pašalinamas. Bloko simboliu (pvz., g_v1) jo suma pasiekiama kiekviename lape, o lapo apkrovos blokas ją parenka iš sąrašo.",
     "vloerDak": "Perdanga arba stogas",
     "wand": "Siena",
     "gevel": "Fasadas",
@@ -367,7 +367,8 @@
     "rangschik": "Išdėstyti",
     "rangschikUitleg": "Vėl tvarkingai išdėstyti visus blokus vieną po kito; jų savos padėtys atmetamos",
     "leeg": "Apkrovų dar nėra. Pridėkite jas aukščiau esančiais mygtukais.",
-    "blokUitleg": "Spustelėkite redaguoti, vilkite perkelti",
+    "blokUitleg": "Dukart spustelėkite redaguoti, vilkite perkelti, dešiniuoju mygtuku – daugiau",
+    "bewerken": "Redaguoti",
     "inBladen": "Lapuose: {{symbool}}"
   },
   "berekeningen": {

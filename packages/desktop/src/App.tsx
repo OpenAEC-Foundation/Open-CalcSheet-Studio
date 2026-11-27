@@ -511,8 +511,9 @@ export default function App() {
               {rapportVoorbeeld ? (
                 <AfdrukVoorbeeld />
               ) : (
+                // Het invulpaneel links, het rapport zoals het op papier komt rechts: net als bij een rekenblad.
                 <div style={{ flex: 1, minHeight: 0 }}>
-                  <RapportPanel />
+                  <SplitPane left={<RapportPanel />} right={<div style={{ display: "flex", height: "100%" }}><AfdrukVoorbeeld ingebed="rapport" /></div>} />
                 </div>
               )}
             </>

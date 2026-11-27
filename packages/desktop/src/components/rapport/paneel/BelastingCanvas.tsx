@@ -60,6 +60,10 @@ export default function BelastingCanvas() {
   const [breedte, zetBreedte] = useState(880);
   const [hoogtes, zetHoogtes] = useState<Record<string, number>>({});
   const [open, zetOpen] = useState<string | null>(null);
+  /** Het blok dat is aangeklikt: één klik kiest, een dubbelklik opent. */
+  const [gekozen, zetGekozen] = useState<string | null>(null);
+  /** Het rechtsklikmenu van een blok, op de plek van de muis. */
+  const [menu, zetMenu] = useState<{ sleutel: string; x: number; y: number } | null>(null);
   const [venster, zetVenster] = useState<Opbouwgroep | null>(null);
   const [gesleept, zetGesleept] = useState<({ sleutel: string } & Plek) | null>(null);
   const sleep = useRef<{ sleutel: string; px: number; py: number; x: number; y: number; bewogen: boolean } | null>(null);
@@ -101,6 +105,34 @@ export default function BelastingCanvas() {
     wijzig(groep)((l) => [...l, opbouw]);
     zetOpen(`${groep}:${index}`);
   };
+
+  /** Haalt een blok weg, na de vraag of dat de bedoeling is. De sleutels erna schuiven op: niets blijft gekozen of open. */
+  const verwijder = (b: Blok) => {
+    const naam = b.opbouw.naam.trim() || t("opbouw.zonderNaam");
+    if (!confirm(t("opbouw.verwijderVraag", { naam }))) return;
+    zetOpen(null);
+    zetGekozen(null);
+    wijzig(b.groep)((l) => l.filter((_, j) => j !== b.index));
+  };
+
+  // Het rechtsklikmenu gaat dicht bij een klik ernaast, bij Escape en bij schuiven.
+  useEffect(() => {
+    if (!menu) return;
+    const dicht = () => zetMenu(null);
+    const toets = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") dicht();
+    };
+    window.addEventListener("pointerdown", dicht);
+    window.addEventListener("keydown", toets);
+    window.addEventListener("scroll", dicht, true);
+    window.addEventListener("blur", dicht);
+    return () => {
+      window.removeEventListener("pointerdown", dicht);
+      window.removeEventListener("keydown", toets);
+      window.removeEventListener("scroll", dicht, true);
+      window.removeEventListener("blur", dicht);
+    };
+  }, [menu]);
 
   /** Zet plekken in het rapport: alle blokken tegelijk, zodat er daarna niets meer verspringt. */
   const bewaarPlekken = (nieuw: Record<string, Plek>) =>
@@ -213,7 +245,10 @@ export default function BelastingCanvas() {
         className="bc-vlak"
         style={{ height: onderkant + 60 }}
         onPointerDown={(ev) => {
-          if (ev.target === ev.currentTarget) zetOpen(null);
+          if (ev.target === ev.currentTarget) {
+            zetOpen(null);
+            zetGekozen(null);
+          }
         }}
       >
         {blokken.length === 0 && <p className="bc-leeg">{t("blokken.leeg")}</p>}
@@ -224,9 +259,10 @@ export default function BelastingCanvas() {
             <div
               key={b.sleutel}
               data-blok={b.sleutel}
-              className={`bc-blok${gesleept?.sleutel === b.sleutel ? " sleept" : ""}`}
+              className={`bc-blok${gesleept?.sleutel === b.sleutel ? " sleept" : ""}${gekozen === b.sleutel ? " gekozen" : ""}`}
               style={{ left: p.x, top: p.y, width: BLOK_B }}
               role="button"
+              aria-pressed={gekozen === b.sleutel}
               tabIndex={0}
               title={t("blokken.blokUitleg")}
               onPointerDown={(ev) => beginSlepen(ev, b)}
@@ -241,10 +277,26 @@ export default function BelastingCanvas() {
                   netGesleept.current = false;
                   return;
                 }
+                if (!(ev.target as HTMLElement).closest("button")) zetGekozen(b.sleutel);
+              }}
+              onDoubleClick={(ev) => {
                 if (!(ev.target as HTMLElement).closest("button")) zetOpen(b.sleutel);
               }}
+              onContextMenu={(ev) => {
+                ev.preventDefault();
+                zetGekozen(b.sleutel);
+                zetMenu({ sleutel: b.sleutel, x: ev.clientX, y: ev.clientY });
+              }}
+              onFocus={(ev) => {
+                if (ev.target === ev.currentTarget) zetGekozen(b.sleutel);
+              }}
               onKeyDown={(ev) => {
-                if (ev.key === "Enter" && ev.target === ev.currentTarget) zetOpen(b.sleutel);
+                if (ev.target !== ev.currentTarget) return;
+                if (ev.key === "Enter" || ev.key === "F2") zetOpen(b.sleutel);
+                else if (ev.key === "Delete" || ev.key === "Backspace") {
+                  ev.preventDefault();
+                  verwijder(b);
+                }
               }}
             >
               <BlokInhoud
@@ -289,6 +341,41 @@ export default function BelastingCanvas() {
           </div>
         )}
       </div>
+      {menu && (() => {
+        const b = blokken.find((x) => x.sleutel === menu.sleutel);
+        if (!b) return null;
+        return (
+          <div
+            className="bc-menu"
+            role="menu"
+            style={{ left: Math.min(menu.x, window.innerWidth - 180), top: Math.min(menu.y, window.innerHeight - 80) }}
+            onPointerDown={(ev) => ev.stopPropagation()}
+            onContextMenu={(ev) => ev.preventDefault()}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                zetMenu(null);
+                zetOpen(b.sleutel);
+              }}
+            >
+              {t("blokken.bewerken")}
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="gevaar"
+              onClick={() => {
+                zetMenu(null);
+                verwijder(b);
+              }}
+            >
+              {t("opbouw.verwijderen")}
+            </button>
+          </div>
+        );
+      })()}
       {venster && (
         <GewichtenVenster
           open

@@ -352,7 +352,7 @@
     "klaar": "Klaar"
   },
   "blokken": {
-    "uitleg": "Elk blok is een belasting met een naam en lagen. Klik op een blok om het te bewerken, sleep het om het te verplaatsen, het plusje zet er een laag bij. Onder zijn symbool (zoals g_v1) bestaat de som in elk rekenblad, en een lastblok in een blad kiest het uit een lijst.",
+    "uitleg": "Elk blok is een belasting met een naam en lagen. Klik op een blok om het te kiezen, dubbelklik om het te bewerken, sleep het om het te verplaatsen; het plusje zet er een laag bij. Rechtsklik of Delete haalt een blok weg. Onder zijn symbool (zoals g_v1) bestaat de som in elk rekenblad, en een lastblok in een blad kiest het uit een lijst.",
     "vloerDak": "Vloer of dak",
     "wand": "Wand",
     "gevel": "Gevel",
@@ -363,7 +363,8 @@
     "rangschik": "Rangschikken",
     "rangschikUitleg": "Zet alle blokken weer netjes onder elkaar; de eigen plekken vervallen",
     "leeg": "Nog geen belastingen. Voeg er een toe met de knoppen hierboven.",
-    "blokUitleg": "Klik om te bewerken, sleep om te verplaatsen",
+    "blokUitleg": "Dubbelklik om te bewerken, sleep om te verplaatsen, rechtsklik voor meer",
+    "bewerken": "Bewerken",
     "inBladen": "In de rekenbladen: {{symbool}}"
   },
   "berekeningen": {
