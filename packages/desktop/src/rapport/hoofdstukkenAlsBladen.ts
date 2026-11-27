@@ -25,6 +25,8 @@ export const CANVAS_HOOFDSTUK = "belastingen";
 /** Een hoofdstuk: zijn anker, zijn titel zonder nummer, en de rekentekst; `canvas` voor een canvasblad. */
 export interface HoofdstukBlad {
   anker: string;
+  /** Het nummer van het hoofdstuk in het rapport. */
+  nummer: string;
   titel: string;
   bron: string;
   canvas: boolean;
@@ -212,7 +214,7 @@ export function hoofdstukkenUitAfdruk(wortel: HTMLElement, invoer: RapportInvoer
   const stijl = wortel.getAttribute("style") ?? "";
   const open = regel(`<div class="rpa-wortel rpa-in-blad" style="${stijl.replace(/"/g, "&quot;")}">`);
   const sluit = regel("</div>");
-  const hoofdstukken: { anker: string; titel: string; stukken: Stuk[] }[] = [];
+  const hoofdstukken: { anker: string; nummer: string; titel: string; stukken: Stuk[] }[] = [];
   for (const sectie of Array.from(wortel.children)) {
     if (sectie.tagName !== "SECTION") continue;
     if (sectie.classList.contains("rpa-bijlagekop")) break;
@@ -220,8 +222,9 @@ export function hoofdstukkenUitAfdruk(wortel: HTMLElement, invoer: RapportInvoer
     for (const stuk of Array.from(sectie.children)) {
       const kop = hoofdstukKop(stuk);
       if (kop) {
-        const titel = (kop.textContent ?? "").trim().replace(/^\d+\s+/, "");
-        hoofdstukken.push({ anker: kop.dataset.inhoud ?? "", titel, stukken: [] });
+        const tekst = (kop.textContent ?? "").trim();
+        const nummer = tekst.match(/^(\d+)\s/)?.[1] ?? String(hoofdstukken.length + 1);
+        hoofdstukken.push({ anker: kop.dataset.inhoud ?? "", nummer, titel: tekst.replace(/^\d+\s+/, ""), stukken: [] });
         eerste = true;
       }
       const h = hoofdstukken[hoofdstukken.length - 1];
@@ -230,7 +233,7 @@ export function hoofdstukkenUitAfdruk(wortel: HTMLElement, invoer: RapportInvoer
       eerste = false;
     }
   }
-  return hoofdstukken.map(({ anker, titel, stukken }) => {
+  return hoofdstukken.map(({ anker, nummer, titel, stukken }) => {
     const reken = rekenregels(anker, invoer);
     const bekend = namenVan(reken);
     if (anker === CANVAS_HOOFDSTUK) {
@@ -238,10 +241,19 @@ export function hoofdstukkenUitAfdruk(wortel: HTMLElement, invoer: RapportInvoer
       // rekenregels staan in de eerste: die rekent als eerste, en de rest ziet ze.
       const eenheden: Eenheid[] = stukken.map((s, i) => ({
         id: `h${i + 1}`, x: 0, y: 0,
-        tekst: [...(i === 0 ? reken : []), open, regel('<section class="rpa-sectie">'), regel(s.html, bekend), regel("</section>"), sluit].join("\n"),
+        tekst: [open, regel('<section class="rpa-sectie">'), regel(s.html, bekend), regel("</section>"), sluit].join("\n"),
       }));
       const hoogte = new Map(eenheden.map((e, i) => [e.id, stukken[i].hoogte]));
-      return { anker, titel, canvas: true, bron: schrijfEenheden(stapelOnderElkaar(eenheden, (e) => hoogte.get(e.id))) + "\n" };
+      const gestapeld = stapelOnderElkaar(eenheden, (e) => hoogte.get(e.id));
+      // De invoer en de rekenregels in een eigen blok bovenaan: dat rekent als eerste. De
+      // invoer staat alleen op het scherm; de rest schuift eronder, zodat niets overlapt.
+      if (reken.length) {
+        const velden = reken.filter((r) => r.includes("?{") || r.startsWith("'")).length;
+        const ruimte = Math.ceil((velden * 6 + 6) / 5) * 5;
+        for (const e of gestapeld) e.y += ruimte;
+        gestapeld.unshift({ id: "invoer", x: 0, y: 0, tekst: reken.join("\n") });
+      }
+      return { anker, nummer, titel, canvas: true, bron: schrijfEenheden(gestapeld) + "\n" };
     }
     const regels = [...reken, open];
     const begin = regels.length;
@@ -251,6 +263,6 @@ export function hoofdstukkenUitAfdruk(wortel: HTMLElement, invoer: RapportInvoer
       regels.push(regel(s.html, bekend));
     }
     regels.push(regel("</section>"), sluit);
-    return { anker, titel, canvas: false, bron: regels.join("\n") + "\n" };
+    return { anker, nummer, titel, canvas: false, bron: regels.join("\n") + "\n" };
   });
 }

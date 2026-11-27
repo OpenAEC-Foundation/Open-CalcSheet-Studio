@@ -68,6 +68,22 @@ export type TreeNode =
  * `status` (zie `ModuleStatus`), niet in de indeling.
  */
 export const moduleCatalogus: TreeNode[] = [
+  // De hoofdstukken van het rapport (store/hoofdstukMaken.ts): een blad met dezelfde uitdraai
+  // als dat hoofdstuk. H5 is een canvasblad.
+  {
+    kind: "category",
+    id: "cat-rapport",
+    label: "Rapport",
+    defaultExpanded: true,
+    count: 5,
+    children: [
+      { kind: "item", id: "sheet-rapport-h1", label: "H1 Inleiding", templateId: "rapport-h1", status: "concept" },
+      { kind: "item", id: "sheet-rapport-h2", label: "H2 Projectgegevens", templateId: "rapport-h2", status: "concept" },
+      { kind: "item", id: "sheet-rapport-h3", label: "H3 Constructie", templateId: "rapport-h3", status: "concept" },
+      { kind: "item", id: "sheet-rapport-h4", label: "H4 Uitgangspunten", templateId: "rapport-h4", status: "concept" },
+      { kind: "item", id: "sheet-rapport-h5", label: "H5 Belastingen", templateId: "rapport-h5", status: "concept" },
+    ],
+  },
   {
     kind: "category",
     id: "cat-algemeen",

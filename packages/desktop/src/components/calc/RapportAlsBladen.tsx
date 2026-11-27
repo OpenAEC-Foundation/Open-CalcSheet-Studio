@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
+import { useHoofdstukMaken } from "../../store/hoofdstukMaken";
 import { hoofdstukkenUitAfdruk } from "../../rapport/hoofdstukkenAlsBladen";
 import { huisstijlVariabelen } from "../../rapport/model";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
@@ -9,26 +10,28 @@ import { MATEN } from "./paginering";
 import Icoon from "../Icoon";
 
 /**
- * "Rapport als bladen" in de projectboom: maakt van de hoofdstukken van het rapport
- * bladen met code (rapport/hoofdstukkenAlsBladen.ts). Het rapport wordt daarvoor even
- * buiten beeld opgemaakt, op de breedte van het papier, en daaruit gelezen.
+ * "Hoofdstukken als bladen" in de projectboom, en de modules H1 tot en met H5: maakt van
+ * de hoofdstukken van het rapport bladen met code (rapport/hoofdstukkenAlsBladen.ts), met
+ * dezelfde uitdraai. Het rapport wordt daarvoor even buiten beeld opgemaakt, op de breedte
+ * van het papier, en daaruit gelezen. Hoofdstuk 5 wordt een canvasblad.
  */
 export default function RapportAlsBladen() {
   const { t } = useTranslation("rapport");
-  const [bezig, zetBezig] = useState(false);
+  const vraag = useHoofdstukMaken((s) => s.vraag);
+  const maak = useHoofdstukMaken((s) => s.maak);
   return (
     <>
-      <button className="pb-rij pb-toevoegen" title={t("alsBladen.uitleg")} disabled={bezig} onClick={() => zetBezig(true)}>
+      <button className="pb-rij pb-toevoegen" title={t("alsBladen.uitleg")} disabled={vraag !== null} onClick={() => maak([])}>
         <Icoon id="report.generate" />
         <span className="pb-naam">{t("alsBladen.knop")}</span>
       </button>
-      {bezig && <Omzetten klaar={() => zetBezig(false)} />}
+      {vraag !== null && <Omzetten ankers={vraag} />}
     </>
   );
 }
 
-/** Het rapport buiten beeld; zodra het stil staat, worden de hoofdstukken bladen. */
-function Omzetten({ klaar }: { klaar: () => void }) {
+/** Het rapport buiten beeld; zodra het stil staat, worden de gevraagde hoofdstukken bladen. */
+function Omzetten({ ankers }: { ankers: string[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const bureau = useRapportBureau();
   useEffect(() => {
@@ -43,18 +46,26 @@ function Omzetten({ klaar }: { klaar: () => void }) {
       window.clearInterval(timer);
       const s = useProjectStore.getState();
       const { wind } = s.rapport.belastingen;
-      const hoofdstukken = hoofdstukkenUitAfdruk(wortel, { gebouwhoogte: wind.gebouwhoogte, coefficienten: wind.coefficienten.map((c) => c.c), belastingen: s.rapport.belastingen });
-      const ids = hoofdstukken.map((h) => {
-        if (!h.canvas) return s.voegToe("leeg", h.titel, h.bron);
-        const id = useProjectStore.getState().voegCanvasToe(h.titel);
-        useProjectStore.getState().zetBron(id, h.bron);
+      const alle = hoofdstukkenUitAfdruk(wortel, {
+        gebouwhoogte: wind.gebouwhoogte,
+        coefficienten: wind.coefficienten.map((c) => c.c),
+        belastingen: s.rapport.belastingen,
+      });
+      const gevraagd = ankers.length ? alle.filter((h) => ankers.includes(h.anker)) : alle;
+      const ids = gevraagd.map((h) => {
+        const naam = `H${h.nummer} ${h.titel}`;
+        const st = useProjectStore.getState();
+        const id = h.canvas ? st.voegCanvasToe(naam) : st.voegToe("leeg", naam, h.bron);
+        if (h.canvas) useProjectStore.getState().zetBron(id, h.bron);
+        // Precies "H1 Inleiding", zonder volgnummer erachter.
+        useProjectStore.getState().hernoem(id, naam);
         return id;
       });
       if (ids[0]) useProjectStore.getState().selecteer(ids[0]);
-      klaar();
+      useHoofdstukMaken.getState().klaar();
     }, 300);
     return () => window.clearInterval(timer);
-  }, [klaar]);
+  }, [ankers]);
   return (
     <div
       ref={ref}
