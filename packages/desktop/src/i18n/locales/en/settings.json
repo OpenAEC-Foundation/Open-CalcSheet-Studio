@@ -48,7 +48,10 @@
     "dark": "Dark",
     "blueprint": "Blueprint",
     "font": "Font",
-    "lettertype": { "ui": "Interface font", "code": "Code font" },
+    "lettertype": {
+      "ui": "Interface font",
+      "code": "Code font"
+    },
     "uiFontSize": "UI Font Size",
     "highContrastDark": "High contrast dark",
     "highContrastLight": "High contrast light",
@@ -134,7 +137,12 @@
     "constructeurToevoegen": "Add engineer",
     "constructeurVerwijderen": "Remove engineer",
     "geenConstructeurs": "No engineers yet. In the report you pick the responsible and the executing engineer from this list.",
-    "bestandLezenMislukt": "reading failed"
+    "bestandLezenMislukt": "reading failed",
+    "kopTekst": "Header",
+    "voetTekst": "Footer",
+    "kopVoetVoorbeeldKop": "{project}||{blad}",
+    "kopVoetVoorbeeldVoet": "{bureau}|page {pagina} of {paginas}|{datum}",
+    "kopVoetHint": "The header and the footer of every page of a printout of sheets. Left, centre and right separated by |. {bureau}, {project}, {blad}, {pagina}, {paginas} and {datum} are filled in. Empty: as the app always makes them."
   },
   "mcp": {
     "intro": "An AI assistant (such as Claude Code, through MCP) or another program (through the REST API) can work with this app: everything you can do in the app, from opening and saving a project to adding sheets, setting inputs, computing and exporting. The server only listens on this computer (127.0.0.1) and requires a token. Changes on this tab apply immediately.",

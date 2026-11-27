@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { vulKopVoet } from "../../rapport/kopVoet";
 import { HUISSTIJL_BRONNEN } from "../../rapport/model";
 import { useProjectStore } from "../../store/projectStore";
 import { usePrintStore, type AfdrukSoort } from "../../store/printStore";
@@ -150,6 +151,8 @@ export default function AfdrukVoorbeeld({ ingebed }: {
   const voetafbeelding = bureau.voetafbeelding;
   const bureaunaam = bureau.naam;
   const kopLogo = bureau.logoInKop ? bureau.logo : "";
+  const kopTekst = bureau.kopTekst;
+  const voetTekst = bureau.voetTekst;
   const huisstijl = useMemo(() => huisstijlVariabelen(bureau.huisstijl), [bureau.huisstijl]);
   // Een bevestigde externe pagina (iframeBlok.ts) en een uitgevoerd `@js`-blok
   // (jsBlok.ts) vullen de vellen zelf in; de meetopstelling verandert daarbij niet.
@@ -373,9 +376,11 @@ export default function AfdrukVoorbeeld({ ingebed }: {
       } else {
         const kop = document.createElement("div");
         kop.className = "av-loopkop";
-        kop.innerHTML = "<span></span><span></span>";
-        (kop.firstChild as HTMLElement).textContent = linksBoven;
-        (kop.lastChild as HTMLElement).textContent = onderdeel ?? "";
+        // Het template van de huisstijl (rapport/kopVoet.ts), of de kop zoals altijd.
+        const waarden = { bureau: bureaunaam, project: linksBoven, blad: onderdeel ?? "", pagina: i + paginaVan.current.eerste, paginas: paginaVan.current.totaal ?? paginas.length, datum };
+        const kopDelen = vulKopVoet(kopTekst, waarden) ?? [linksBoven, "", onderdeel ?? ""];
+        kop.innerHTML = "<span></span><span></span><span></span>";
+        kopDelen.forEach((d, j) => ((kop.children[j] as HTMLElement).textContent = d));
         if (kopLogo) {
           const logo = document.createElement("img");
           logo.className = "print-kop-logo";
@@ -387,9 +392,9 @@ export default function AfdrukVoorbeeld({ ingebed }: {
         const voet = document.createElement("div");
         voet.className = "av-loopvoet";
         voet.innerHTML = "<span></span><span></span><span></span>";
-        (voet.children[0] as HTMLElement).textContent = "Open CalcSheet Studio";
-        (voet.children[1] as HTMLElement).textContent = t("afdruk.paginaVan", { nummer: i + paginaVan.current.eerste, totaal: paginaVan.current.totaal ?? paginas.length });
-        (voet.children[2] as HTMLElement).textContent = datum;
+        const voetDelen = vulKopVoet(voetTekst, waarden)
+          ?? ["Open CalcSheet Studio", t("afdruk.paginaVan", { nummer: i + paginaVan.current.eerste, totaal: paginaVan.current.totaal ?? paginas.length }), datum];
+        voetDelen.forEach((d, j) => ((voet.children[j] as HTMLElement).textContent = d));
 
         vel.append(kop, inhoud, voet);
       }
@@ -419,7 +424,7 @@ export default function AfdrukVoorbeeld({ ingebed }: {
     setOpgebouwdTeller((n) => n + 1);
     // paginaSleutel: de doorlopende paginanummers van een los blad (paginaVan).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, kopLogo, huisstijl, t, kopieVan, vervangLos, paginaSleutel]);
+  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, kopLogo, kopTekst, voetTekst, huisstijl, t, kopieVan, vervangLos, paginaSleutel]);
 
   /*
    * Opnieuw verdelen zodra de opmaak verandert.

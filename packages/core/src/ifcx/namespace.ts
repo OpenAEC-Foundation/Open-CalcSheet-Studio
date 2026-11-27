@@ -185,7 +185,7 @@ const RAPPORT = object({
   nieuwePagina: opt(VRIJ),
   opmaak: opt(object(velden(['constructieprincipe', 'subkoppen', 'bladenInInhoud', 'bijlageParagrafen'], JANEE))),
   bureau: opt(object({
-    ...velden(['naam', 'adres', 'postcode', 'plaats', 'telefoon', 'email', 'logo', 'voetafbeelding']),
+    ...velden(['naam', 'adres', 'postcode', 'plaats', 'telefoon', 'email', 'logo', 'voetafbeelding', 'kopTekst', 'voetTekst']),
     logoInKop: opt(JANEE),
     huisstijl: opt(object(velden(['hoofdkleur', 'accentkleur', 'tabeltekst', 'invoerkleur', 'lettertype']))),
     constructeurs: opt(lijst(object(velden(['naam', 'telefoon', 'email'])))),
