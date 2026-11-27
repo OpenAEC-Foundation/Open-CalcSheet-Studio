@@ -663,5 +663,15 @@
       "geenRtf": "the file is not an RTF file",
       "geenWerkmap": "the file is not a workbook (.xlsx)"
     }
+  },
+  "alsBlad": {
+    "maak": "As a sheet with calculation text",
+    "maakUitleg": "Turns this part into a sheet with calculation text, inputs and output, just like a module. The symbols then sit in a #global block and stay available in every sheet. The report shows the output of that sheet here. Undo puts everything back.",
+    "uitBlad": "This part comes from the sheet {{naam}}: calculation text you can change yourself, with the symbols in a #global block. The report shows the output of that sheet here.",
+    "open": "Open sheet",
+    "los": "Back to the form",
+    "losUitleg": "The report shows the form here again. The sheet stays and moves to the calculations; the values are in the sheet, not in the form.",
+    "vloerenDaken": "Floors and roofs",
+    "wanden": "Walls"
   }
 }

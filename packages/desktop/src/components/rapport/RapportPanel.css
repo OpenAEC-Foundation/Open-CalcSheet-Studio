@@ -982,3 +982,17 @@ p.rapport-hint {
 .rapport-beeld-breedte {
   width: 84px;
 }
+
+/* Een onderdeel van hoofdstuk 5 dat uit een blad komt (OnderdeelAlsBlad.tsx). */
+.rapport-alsblad {
+  padding: 10px 12px;
+  border-left: 3px solid var(--theme-accent, #d97706);
+}
+
+.rapport-alsblad .rapport-hint {
+  margin-top: 0;
+}
+
+.rapport-alsblad-maak {
+  margin-top: 8px;
+}

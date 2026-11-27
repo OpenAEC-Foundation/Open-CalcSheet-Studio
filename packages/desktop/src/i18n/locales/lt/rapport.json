@@ -673,5 +673,15 @@
       "geenRtf": "failas nėra RTF failas",
       "geenWerkmap": "failas nėra darbaknygė (.xlsx)"
     }
+  },
+  "alsBlad": {
+    "maak": "Kaip lapas su skaičiavimo tekstu",
+    "maakUitleg": "Šią dalį paverčia lapu su skaičiavimo tekstu, įvestimi ir rezultatu, kaip modulį. Simboliai tada yra #global bloke ir lieka pasiekiami kiekviename lape. Ataskaita čia rodo to lapo rezultatą. Atšaukimas viską grąžina.",
+    "uitBlad": "Ši dalis paimta iš lapo {{naam}}: skaičiavimo tekstas, kurį galite keisti patys, su simboliais #global bloke. Ataskaita čia rodo to lapo rezultatą.",
+    "open": "Atidaryti lapą",
+    "los": "Grįžti į formą",
+    "losUitleg": "Ataskaita čia vėl rodo formą. Lapas lieka ir pereina prie skaičiavimų; reikšmės yra lape, ne formoje.",
+    "vloerenDaken": "Perdangos ir stogai",
+    "wanden": "Sienos"
   }
 }

@@ -349,6 +349,12 @@ export interface Rapport {
   toelichting: Record<string, string>;
   /** Per exemplaar-id: uitwerking in het hoofdstuk zelf in plaats van in bijlage A. */
   inHoofdstuk: Record<string, boolean>;
+  /**
+   * Per knoop-id uit opzet.ts: het blad (exemplaar-id) dat dit onderdeel invult. Het rapport
+   * toont daar de uitwerking van het blad, onder de kop en het nummer van het onderdeel; het
+   * blad staat dan niet meer in Berekeningen of bijlage A.
+   */
+  bladVoor: Record<string, string>;
   /** Titels van eigen bijlagen (B, C, …); bijlage A is altijd de uitwerking. */
   bijlagen: string[];
   /** Per knoop-id uit opzet.ts: begint op een nieuwe pagina (overschrijft de standaard). */
@@ -604,6 +610,7 @@ export function standaardRapport(vandaag: string, teksten: Record<string, string
     beelden: {},
     toelichting: {},
     inHoofdstuk: {},
+    bladVoor: {},
     bijlagen: [],
     nieuwePagina: {},
     opmaak: { constructieprincipe: true, subkoppen: true, bladenInInhoud: true },
@@ -967,6 +974,7 @@ export function normaliseerRapport(
     beelden: beeldenRecord(o.beelden),
     toelichting: tekstRecord(o.toelichting),
     inHoofdstuk: waarheidRecord(o.inHoofdstuk),
+    bladVoor: tekstRecord(o.bladVoor),
     bijlagen: Array.isArray(o.bijlagen) ? o.bijlagen.filter((t): t is string => typeof t === "string") : s.bijlagen,
     nieuwePagina,
     opmaak: {

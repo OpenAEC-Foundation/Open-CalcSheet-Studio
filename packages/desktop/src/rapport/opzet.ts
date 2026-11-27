@@ -419,7 +419,11 @@ export interface Rapportknoop extends Omit<Knoop, "titel" | "titelNieuwbouw" | "
    * `zonderParagraaf`: het blad staat alleen in bijlage A (opmaak.bijlageParagrafen uit).
    * De knoop blijft bestaan, zodat de bijlage hem vindt, maar het hoofdstuk toont hem niet.
    */
-  blad?: { id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[]; zonderParagraaf?: true };
+  blad?: {
+    id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[]; zonderParagraaf?: true;
+    /** Het blad vult een onderdeel van het rapport (Rapport.bladVoor): de kop is die van het onderdeel. */
+    vult?: true;
+  };
 }
 
 /** Waar de uitwerking van een blad staat. */
@@ -453,9 +457,35 @@ export function staatInHoofdstuk(r: Rapport, b: Pick<Blad, "id" | "plek">): bool
   return heeftBerekeningen(r) && (r.inHoofdstuk[b.id] ?? b.plek === "hoofdstuk");
 }
 
+/**
+ * Het blad dat een onderdeel van het rapport invult (Rapport.bladVoor), als het er is en het
+ * onderdeel in de opzet van dit rapport staat.
+ */
+export function bladVoorKnoop(r: Rapport, knoopId: string, bladen: readonly Blad[]): Blad | undefined {
+  const id = r.bladVoor?.[knoopId];
+  return id ? bladen.find((b) => b.id === id) : undefined;
+}
+
+/** De ids van de bladen die een onderdeel van het rapport invullen. */
+export function invullendeBladen(r: Rapport, bladen: readonly Blad[]): Set<string> {
+  const uit = new Set<string>();
+  const ids = new Set(bladen.map((b) => b.id));
+  for (const k of knopenVan(opzetVan(r))) {
+    const id = r.bladVoor?.[k.id];
+    if (id && ids.has(id)) uit.add(id);
+  }
+  return uit;
+}
+
+/** De bladen die niet een onderdeel van het rapport invullen: die komen in Berekeningen en bijlage A. */
+export function losseBladen<B extends Blad>(r: Rapport, bladen: readonly B[]): B[] {
+  const vullen = invullendeBladen(r, bladen);
+  return vullen.size ? bladen.filter((b) => !vullen.has(b.id)) : [...bladen];
+}
+
 /** De bladen in bijlage A met hun nummer (A.1, A.2, …), in de volgorde van het project. */
 export function bladenInBijlage(r: Rapport, bladen: readonly Blad[]): { blad: Blad; nummer: string }[] {
-  return bladen.filter((b) => !staatInHoofdstuk(r, b)).map((blad, i) => ({ blad, nummer: `A.${i + 1}` }));
+  return losseBladen(r, bladen).filter((b) => !staatInHoofdstuk(r, b)).map((blad, i) => ({ blad, nummer: `A.${i + 1}` }));
 }
 
 /**
@@ -472,7 +502,7 @@ function isLeeg(k: Knoop, r: Rapport, bladen: readonly Blad[]): boolean {
     case "blijvend":
       return r.belastingen.vloerenDaken.length === 0 && r.belastingen.wanden.length === 0;
     case "berekeningen":
-      return bladen.length === 0;
+      return losseBladen(r, bladen).length === 0;
     case undefined:
       return (k.kinderen ?? []).every((c) => isLeeg(c, r, bladen));
     default:
@@ -480,9 +510,9 @@ function isLeeg(k: Knoop, r: Rapport, bladen: readonly Blad[]): boolean {
   }
 }
 
-/** Niet-optionele knopen blijven altijd staan, ook als ze leeg zijn. */
+/** Niet-optionele knopen blijven altijd staan, ook als ze leeg zijn; een onderdeel dat een blad invult ook. */
 function valtWeg(k: Knoop, r: Rapport, bladen: readonly Blad[]): boolean {
-  return k.optioneel === true && isLeeg(k, r, bladen);
+  return k.optioneel === true && !bladVoorKnoop(r, k.id, bladen) && isLeeg(k, r, bladen);
 }
 
 /** Een knoop op id, diepte eerst. */
@@ -554,8 +584,19 @@ function bladKnopen(nummer: string, r: Rapport, bladen: Blad[]): Rapportknoop[] 
 }
 
 function bouwKnoop(k: Knoop, nummer: string, r: Rapport, bladen: Blad[]): Rapportknoop {
+  // Een onderdeel dat een blad invult: de kop en het nummer van het onderdeel, de uitwerking
+  // van het blad, en niet meer wat het rapport er zelf zou zetten (ook geen kinderen).
+  const vuller = bladVoorKnoop(r, k.id, bladen);
+  if (vuller) {
+    return {
+      id: k.id, niveau: k.niveau, titel: titelVan(k, r), nummer,
+      nieuwePagina: nieuwePaginaVoor(k.id, k.nieuwePagina, r), kinderen: [],
+      ...(k.inspringen !== undefined ? { inspringen: k.inspringen } : {}),
+      blad: { id: vuller.id, naam: vuller.naam, bijlage: "", vult: true },
+    };
+  }
   const kinderen = k.inhoud === "berekeningen"
-    ? bladKnopen(nummer, r, bladen)
+    ? bladKnopen(nummer, r, losseBladen(r, bladen))
     : (k.kinderen ?? [])
         .filter((c) => !valtWeg(c, r, bladen))
         .map((c, j) => bouwKnoop(c, c.niveau === 2 ? `${nummer}.${j + 1}` : "", r, bladen));
@@ -647,6 +688,11 @@ export function inhoudVoorPaneel(r: Rapport, bladen: Blad[]): PaneelRegel[] {
     bladVan.set(b.id, b.id);
     bladVan.set(bijlageBladAnker(b.id), b.id);
   }
+  // Een onderdeel dat een blad invult, opent dat blad.
+  for (const k of knopenVan(opzetVan(r))) {
+    const b = bladVoorKnoop(r, k.id, bladen);
+    if (b) bladVan.set(k.id, b.id);
+  }
   const regel = (i: Inhoudsregel): PaneelRegel => {
     const bladId = bladVan.get(i.anker);
     return bladId ? { ...i, bladId } : i;
@@ -685,7 +731,7 @@ function bijlageLetter(index: number): string {
  */
 export function bijlagen(r: Rapport, bladen: Blad[]): Bijlage[] {
   const uit: Bijlage[] = [];
-  if (bladen.some((b) => !staatInHoofdstuk(r, b))) uit.push({ letter: "A", titel: inTaal(BIJLAGE_A, r.taal) });
+  if (losseBladen(r, bladen).some((b) => !staatInHoofdstuk(r, b))) uit.push({ letter: "A", titel: inTaal(BIJLAGE_A, r.taal) });
   r.bijlagen
     .map((t) => t.trim())
     .filter((t) => t !== "")

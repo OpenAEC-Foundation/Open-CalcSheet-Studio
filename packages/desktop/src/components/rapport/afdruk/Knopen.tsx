@@ -55,7 +55,8 @@ function Kop({ knoop, plaats }: { knoop: Rapportknoop; plaats: Plaats }) {
   const tekst = knoop.nummer ? `${knoop.nummer} ${knoop.titel}` : knoop.titel;
   const direct = plaats.direct ? " rpa-direct" : "";
   // `data-inhoud`: de plek voor de inhoudsopgave (paginaVanAnkers in paginering.ts).
-  if (knoop.blad) return <h2 className="rpa-hb" data-inhoud={knoop.id}>{tekst}</h2>;
+  // Een blad dat een onderdeel invult, heeft de kop van dat onderdeel.
+  if (knoop.blad && !knoop.blad.vult) return <h2 className="rpa-hb" data-inhoud={knoop.id}>{tekst}</h2>;
   // Een hoofdstuk dat binnen een sectie doorloopt krijgt een extra lege regel
   // boven zich; bovenaan een vel begint het blok van drie regels meteen.
   if (knoop.niveau === 1) return <h1 className={plaats.begin ? "rpa-h1" : "rpa-h1 rpa-vervolg"} data-inhoud={knoop.id}>{tekst}</h1>;

@@ -89,12 +89,28 @@ function getal(v: number): string {
   return String(Number(v.toPrecision(14)));
 }
 
+/**
+ * Eenheden die een constructeur verwacht, in deze volgorde geprobeerd: een som van lagen in
+ * `m·kN/m³` wordt zo `kN/m^2`, en niet een stapel eenheden die niemand zo schrijft.
+ */
+const VOORKEUR = ['kN/m^2', 'kN/m', 'kN', 'kN*m', 'kN/m^3', 'N/mm^2', 'm', 'mm^2', 'mm^4', 'm^2', 'm^3', 'kg/m^3', 'kg', 's', 'rad'];
+const voorkeur = VOORKEUR.map((e) => math.unit(e));
+
 /** Een waarde uit de scope als rekentekst, of null als hij geen losse regel kan zijn. */
 export function waardeAlsRekentekst(waarde: unknown): string | null {
   if (typeof waarde === 'number') return Number.isFinite(waarde) ? getal(waarde) : null;
   if (typeof waarde === 'boolean') return waarde ? '1' : '0';
   if (math.isUnit(waarde)) {
-    const u = waarde as unknown as { units: unknown[]; value: number | null; toNumber(e: string): number; formatUnits(): string };
+    const u = waarde as unknown as { units: unknown[]; value: number | null; toNumber(e: string): number; formatUnits(): string; equalBase(o: unknown): boolean };
+    // Een eenheid waarin dezelfde grootheid twee keer staat (`m·kN/m³`): in een gewone. Een
+    // eenheid die al zo geschreven is (`N/mm^2`, `kN/m`), blijft zoals hij is.
+    const soorten = u.units.map((d) => (d as { unit?: { base?: { key?: string } } }).unit?.base?.key ?? '');
+    const dubbel = soorten.some((s, i) => soorten.indexOf(s) !== i);
+    const gewoon = dubbel ? VOORKEUR[voorkeur.findIndex((v) => u.equalBase(v))] : undefined;
+    if (gewoon && u.value !== null) {
+      const v = u.toNumber(gewoon);
+      if (Number.isFinite(v)) return `${getal(v)} ${gewoon}`;
+    }
     const eenheid = u.formatUnits();
     if (u.value === null || !eenheid) return null;
     const v = u.toNumber(eenheid);
