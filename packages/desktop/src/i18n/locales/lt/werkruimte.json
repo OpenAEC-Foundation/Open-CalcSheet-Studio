@@ -111,7 +111,8 @@
       "cat-algemeen": "Bendra",
       "cat-hout": "Mediena",
       "cat-beton": "Betonas",
-      "rekentaal-samples": "Pavyzdžiai"
+      "rekentaal-samples": "Pavyzdžiai",
+      "cat-rapport": "Ataskaita"
     },
     "modules": {
       "ligger": "Sija (medinė arba plieninė)",
@@ -120,7 +121,12 @@
       "tweepaalspoer": "Dviejų polių rostverkas (gelžbetoninis)",
       "doorsnede-spanningen": "Įtempiai skerspjūvyje",
       "rekentaal-demo": "Open CalcSheet Studio demonstracija",
-      "meerpaalspoer": "Rostverkas ant trijų ar keturių polių (gelžbetoninis)"
+      "meerpaalspoer": "Rostverkas ant trijų ar keturių polių (gelžbetoninis)",
+      "rapport-h1": "H1 Įvadas",
+      "rapport-h2": "H2 Projekto duomenys",
+      "rapport-h3": "H3 Konstrukcija",
+      "rapport-h4": "H4 Projektavimo prielaidos",
+      "rapport-h5": "H5 Apkrovos"
     }
   },
   "kiezer": {
@@ -1468,6 +1474,10 @@
     "uitleg": "Šio lapo vieta ataskaitoje. Spustelėkite, kad atidarytumėte ataskaitą toje vietoje.",
     "uitlegZonderPaginas": "Šio lapo vieta ataskaitoje. Puslapių numeriai atsiras, kai bent kartą atidarysite ataskaitą. Spustelėkite, kad atidarytumėte ataskaitą toje vietoje.",
     "naarHoofdstuk": "Eiti į {{nummer}} {{titel}} ataskaitoje",
-    "naarBijlage": "Eiti į visą skaičiavimą {{nummer}} {{titel}} A priede"
+    "naarBijlage": "Eiti į visą skaičiavimą {{nummer}} {{titel}} A priede",
+    "rolUitleg": "Kas šis lapas yra ataskaitoje",
+    "rolHoofdstuk": "Skyrius",
+    "rolParagraaf": "Poskyris",
+    "rolBijlage": "A priedas"
   }
 }

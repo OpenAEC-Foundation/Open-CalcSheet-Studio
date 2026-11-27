@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import i18next from "../i18n/config";
+import { HOOFDSTUK_MODULES, useHoofdstukMaken } from "./hoofdstukMaken";
 import { templates } from "../templates";
 import { useProjectStore } from "./projectStore";
 import { moduleNaam } from "../components/calc/moduleNaam";
@@ -45,6 +46,13 @@ export const useModuleKiezer = create<ModuleKiezerState>((set) => ({
   sluiten: () => set({ open: false }),
   naamKlaar: () => set({ nieuwId: null }),
   voegToe: (templateId) => {
+    // Een hoofdstuk van het rapport (H1 tot en met H5): uit het rapport, met dezelfde uitdraai.
+    const anker = HOOFDSTUK_MODULES[templateId];
+    if (anker) {
+      useHoofdstukMaken.getState().maak([anker]);
+      set({ open: false });
+      return;
+    }
     const bron = templates[templateId];
     if (!bron) return;
     // De naam in de taal van de app. De catalogus draagt een toelichting in de naam

@@ -14,6 +14,7 @@
  */
 import { inTaal, leesMeertalig, mt, type Meertalig } from "./meertalig.ts";
 import type { Rapport } from "./model.ts";
+import { isBladRol, kopAnker, type BladRol, type GenummerdeKop } from "./uitBladen.ts";
 
 export type Inhoud =
   | "tekst" | "rol"
@@ -423,6 +424,8 @@ export interface Rapportknoop extends Omit<Knoop, "titel" | "titelNieuwbouw" | "
     id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[]; zonderParagraaf?: true;
     /** Het blad vult een onderdeel van het rapport (Rapport.bladVoor): de kop is die van het onderdeel. */
     vult?: true;
+    /** De koppen uit de rekentekst zoals het rapport ze zet (rapport/uitBladen.ts). */
+    genummerd?: readonly GenummerdeKop[];
   };
 }
 
@@ -442,11 +445,19 @@ export interface Blad {
   /** Waar de uitwerking staat zolang de gebruiker niets koos; zonder: in de bijlage. */
   plek?: BladPlek;
   koppen?: readonly Inhoudskop[];
+  /** De koppen van het eerste niveau in de rekentekst (uitBladen.ts, koppenUitBron). */
+  rapportKoppen?: readonly string[];
+}
+
+/** De rol van een blad in een rapport dat uit bladen is opgebouwd; anders geen. */
+export function rolVan(r: Pick<Rapport, "uitBladen" | "bladRol">, bladId: string): BladRol | undefined {
+  const rol = r.uitBladen ? r.bladRol?.[bladId] : undefined;
+  return isBladRol(rol) ? rol : undefined;
 }
 
 /** Heeft dit rapport een hoofdstuk Berekeningen? Zo niet, dan staan alle bladen in bijlage A. */
-export function heeftBerekeningen(r: Pick<Rapport, "opzet">): boolean {
-  return opzetVan(r).some((k) => k.inhoud === "berekeningen");
+export function heeftBerekeningen(r: Pick<Rapport, "opzet" | "uitBladen">): boolean {
+  return !r.uitBladen && opzetVan(r).some((k) => k.inhoud === "berekeningen");
 }
 
 /**
@@ -469,6 +480,11 @@ export function bladVoorKnoop(r: Rapport, knoopId: string, bladen: readonly Blad
 /** De ids van de bladen die een onderdeel van het rapport invullen. */
 export function invullendeBladen(r: Rapport, bladen: readonly Blad[]): Set<string> {
   const uit = new Set<string>();
+  // Uit bladen opgebouwd: elk blad met een rol is een hoofdstuk of paragraaf.
+  if (r.uitBladen) {
+    for (const b of bladen) if (rolVan(r, b.id)) uit.add(b.id);
+    return uit;
+  }
   const ids = new Set(bladen.map((b) => b.id));
   for (const k of knopenVan(opzetVan(r))) {
     const id = r.bladVoor?.[k.id];
@@ -605,11 +621,51 @@ function bouwKnoop(k: Knoop, nummer: string, r: Rapport, bladen: Blad[]): Rappor
 }
 
 /**
+ * De indeling van een rapport dat uit bladen is opgebouwd (rapport/uitBladen.ts): elk blad
+ * met de rol hoofdstuk krijgt het volgende nummer, een paragraaf hoort bij het hoofdstuk
+ * erboven. De koppen in de rekentekst van een hoofdstuk zijn zijn eerste paragrafen. Een
+ * paragraaf zonder hoofdstuk erboven is zelf een hoofdstuk.
+ */
+function bouwUitBladen(r: Rapport, bladen: readonly Blad[]): Rapportknoop[] {
+  const uit: Rapportknoop[] = [];
+  let paragraaf = 0;
+  for (const b of bladen) {
+    const rol = rolVan(r, b.id);
+    if (!rol) continue;
+    const hoofdstuk = rol === "paragraaf" ? uit[uit.length - 1] : undefined;
+    const koppen = b.rapportKoppen ?? [];
+    if (hoofdstuk) {
+      hoofdstuk.kinderen.push({
+        id: b.id, niveau: 2, titel: b.naam, nummer: `${hoofdstuk.nummer}.${++paragraaf}`,
+        nieuwePagina: nieuwePaginaVoor(b.id, false, r), kinderen: [],
+        blad: {
+          id: b.id, naam: b.naam, bijlage: "", vult: true,
+          genummerd: koppen.map((titel, i) => ({ nummer: "", titel, anker: kopAnker(b.id, i) })),
+        },
+      });
+      continue;
+    }
+    const nummer = String(uit.length + 1);
+    paragraaf = koppen.length;
+    uit.push({
+      id: b.id, niveau: 1, titel: b.naam, nummer,
+      nieuwePagina: nieuwePaginaVoor(b.id, true, r), kinderen: [],
+      blad: {
+        id: b.id, naam: b.naam, bijlage: "", vult: true,
+        genummerd: koppen.map((titel, i) => ({ nummer: `${nummer}.${i + 1}`, titel, anker: kopAnker(b.id, i) })),
+      },
+    });
+  }
+  return uit;
+}
+
+/**
  * Nummert, laat lege optionele knopen weg, voegt per blad een paragraaf toe aan
  * "berekeningen" (bijlage "A.1", "A.2", …). Zonder bladen valt "berekeningen"
  * weg; de bijlageletters (bijlagen()) houden dan hun plek: B blijft B.
  */
 export function bouwOpzet(r: Rapport, bladen: Blad[]): Rapportknoop[] {
+  if (r.uitBladen) return bouwUitBladen(r, bladen);
   return opzetVan(r)
     .filter((k) => !valtWeg(k, r, bladen))
     .map((k, i) => bouwKnoop(k, String(i + 1), r, bladen));
@@ -648,6 +704,10 @@ export function inhoudsopgave(knopen: Rapportknoop[], metBladen = false): Inhoud
         if (p.blad && !p.blad.bijlage) regels.push(...bladRegels(p.nummer, p.titel, p.id, p.blad.koppen));
       }
       continue;
+    }
+    // De genummerde koppen uit de rekentekst van een hoofdstukblad zijn zijn eerste paragrafen.
+    for (const k of h.blad?.genummerd ?? []) {
+      if (k.nummer) regels.push({ nummer: k.nummer, titel: k.titel, niveau: 2, anker: k.anker });
     }
     for (const p of h.kinderen) {
       if (p.niveau === 2) regels.push({ nummer: p.nummer, titel: p.titel, niveau: 2, anker: p.id });

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { HUISSTIJL_BRONNEN } from "../../rapport/model";
+import { useProjectStore } from "../../store/projectStore";
 import { usePrintStore, type AfdrukSoort } from "../../store/printStore";
 import { useRapportSprong } from "../../store/rapportSprong";
 import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
@@ -124,6 +126,15 @@ export default function AfdrukVoorbeeld({ ingebed }: {
   const markeerBlad = eenBlad && bladInRapport ? eenBlad : null;
   const soort = ingebed ?? (markeerBlad ? "rapport" : gekozenSoort);
   const plek = useRapportPlek(markeerBlad ?? undefined);
+  const huisstijlBron = useProjectStore((s) => s.rapport.huisstijlBron ?? "bureau");
+  // Eén blad los: de paginanummers lopen door zoals in het rapport, als het blad daarin staat
+  // en het rapport al eens is opgemaakt.
+  const losPlek = useRapportPlek(eenBlad && !bladInRapport ? eenBlad : undefined);
+  const rapportTotaal = useInhoudPaginas((s) => s.totaal);
+  const losBegin = (losPlek.find((s) => s.bijlage && s.van !== undefined) ?? losPlek.find((s) => s.van !== undefined))?.van;
+  const paginaVan = useRef<{ eerste: number; totaal?: number }>({ eerste: 1 });
+  paginaVan.current = losBegin !== undefined ? { eerste: losBegin, totaal: rapportTotaal } : { eerste: 1 };
+  const paginaSleutel = `${paginaVan.current.eerste}/${paginaVan.current.totaal ?? ""}`;
   const sprong = useRapportSprong();
   const sluitVoorbeeld = usePrintStore((s) => s.sluitVoorbeeld);
   const afdrukken = usePrintStore((s) => s.afdrukken);
@@ -377,7 +388,7 @@ export default function AfdrukVoorbeeld({ ingebed }: {
         voet.className = "av-loopvoet";
         voet.innerHTML = "<span></span><span></span><span></span>";
         (voet.children[0] as HTMLElement).textContent = "Open CalcSheet Studio";
-        (voet.children[1] as HTMLElement).textContent = t("afdruk.paginaVan", { nummer: i + 1, totaal: paginas.length });
+        (voet.children[1] as HTMLElement).textContent = t("afdruk.paginaVan", { nummer: i + paginaVan.current.eerste, totaal: paginaVan.current.totaal ?? paginas.length });
         (voet.children[2] as HTMLElement).textContent = datum;
 
         vel.append(kop, inhoud, voet);
@@ -387,7 +398,7 @@ export default function AfdrukVoorbeeld({ ingebed }: {
       // een bijschrift binnen die rand zou daar in meegaan.
       const nummer = document.createElement("div");
       nummer.className = "av-nummer";
-      nummer.textContent = t("afdruk.paginaVan", { nummer: i + 1, totaal: paginas.length });
+      nummer.textContent = t("afdruk.paginaVan", { nummer: i + paginaVan.current.eerste, totaal: paginaVan.current.totaal ?? paginas.length });
 
       const omhulsel = document.createElement("div");
       omhulsel.className = "av-vel";
@@ -406,7 +417,9 @@ export default function AfdrukVoorbeeld({ ingebed }: {
     setAantal(paginas.length);
     setBezig(false);
     setOpgebouwdTeller((n) => n + 1);
-  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, kopLogo, huisstijl, t, kopieVan, vervangLos]);
+    // paginaSleutel: de doorlopende paginanummers van een los blad (paginaVan).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, kopLogo, huisstijl, t, kopieVan, vervangLos, paginaSleutel]);
 
   /*
    * Opnieuw verdelen zodra de opmaak verandert.
@@ -581,6 +594,23 @@ export default function AfdrukVoorbeeld({ ingebed }: {
             </select>
           </span>
         )}
+        <span className="av-bereik">
+          <label htmlFor="av-huisstijl">{t("afdruk.huisstijl")}</label>
+          <select
+            id="av-huisstijl"
+            value={huisstijlBron}
+            title={t("afdruk.huisstijlUitleg")}
+            onChange={(e) => {
+              const bron = e.target.value;
+              useProjectStore.getState().werkRapportBij((r) => {
+                const { huisstijlBron: _oud, ...rest } = r;
+                return bron === "openaec" ? { ...rest, huisstijlBron: "openaec" } : rest;
+              });
+            }}
+          >
+            {HUISSTIJL_BRONNEN.map((b) => <option key={b} value={b}>{t(`afdruk.huisstijlBron.${b}`)}</option>)}
+          </select>
+        </span>
         <span className="av-rek" />
         <span className="av-zoom">
           <label htmlFor="av-zoom">{t("afdruk.zoom")}</label>

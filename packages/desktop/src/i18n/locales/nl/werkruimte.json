@@ -111,7 +111,8 @@
       "cat-algemeen": "Algemeen",
       "cat-hout": "Hout",
       "cat-beton": "Beton",
-      "rekentaal-samples": "Voorbeelden"
+      "rekentaal-samples": "Voorbeelden",
+      "cat-rapport": "Rapport"
     },
     "modules": {
       "ligger": "Ligger (hout of staal)",
@@ -120,7 +121,12 @@
       "tweepaalspoer": "Tweepaalspoer (gewapend beton)",
       "meerpaalspoer": "Poer op drie of vier palen (gewapend beton)",
       "doorsnede-spanningen": "Spanningen in een doorsnede",
-      "rekentaal-demo": "Open CalcSheet Studio demo"
+      "rekentaal-demo": "Open CalcSheet Studio demo",
+      "rapport-h1": "H1 Inleiding",
+      "rapport-h2": "H2 Projectgegevens",
+      "rapport-h3": "H3 Constructie",
+      "rapport-h4": "H4 Uitgangspunten",
+      "rapport-h5": "H5 Belastingen"
     }
   },
   "kiezer": {
@@ -1432,6 +1438,10 @@
     "uitleg": "De plek van dit blad in het rapport. Klik om het rapport daar te openen.",
     "uitlegZonderPaginas": "De plek van dit blad in het rapport. De pagina's verschijnen zodra je het rapport een keer hebt geopend. Klik om het rapport daar te openen.",
     "naarHoofdstuk": "Naar {{nummer}} {{titel}} in het rapport",
-    "naarBijlage": "Naar de uitwerking {{nummer}} {{titel}} in bijlage A"
+    "naarBijlage": "Naar de uitwerking {{nummer}} {{titel}} in bijlage A",
+    "rolUitleg": "Wat dit blad in het rapport is",
+    "rolHoofdstuk": "Hoofdstuk",
+    "rolParagraaf": "Paragraaf",
+    "rolBijlage": "Bijlage A"
   }
 }

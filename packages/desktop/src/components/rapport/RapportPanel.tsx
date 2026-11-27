@@ -15,6 +15,7 @@ import RevisieSectie from "./paneel/RevisieSectie";
 import { paneelGroepen, type PaneelGroep } from "./paneel/hulp";
 import { Invulvelden } from "./paneel/TekstVeld";
 import { OpzetBron, useOpzetStand, useRapport } from "./paneel/velden";
+import { hoofdstukkenUitAfdruk } from "../../rapport/hoofdstukkenAlsBladen";
 import "./RapportPanel.css";
 
 /**
@@ -49,7 +50,7 @@ function useGroepTitel() {
   };
 }
 
-function Sprongbalk({ groepen, naarSectie }: { groepen: readonly PaneelGroep[]; naarSectie: (id: string) => void }) {
+function Sprongbalk({ groepen, naarSectie, metOpzet = true }: { groepen: readonly PaneelGroep[]; naarSectie: (id: string) => void; metOpzet?: boolean }) {
   const { t } = useTranslation("rapport");
   const groepTitel = useGroepTitel();
   const knop = (id: string, label: string) => (
@@ -61,7 +62,7 @@ function Sprongbalk({ groepen, naarSectie }: { groepen: readonly PaneelGroep[]; 
     <nav className="rapport-nav" aria-label={t("paneel.navLabel")}>
       {knop("document", t("secties.document"))}
       {knop("revisies", t("secties.revisies"))}
-      {knop("opzet", t("secties.opzet"))}
+      {metOpzet && knop("opzet", t("secties.opzet"))}
       {groepen.map((g) => knop(groepId(g), groepTitel(g, true)))}
       {knop("bijlagen", t("secties.bijlagen"))}
       {knop("bureau", t("secties.bureau"))}
@@ -103,11 +104,80 @@ function Hoofdstukken({ groepen }: { groepen: readonly PaneelGroep[] }) {
   );
 }
 
+/**
+ * De keuze om het rapport uit de bladen van het project op te bouwen (rapport/uitBladen.ts):
+ * de vaste hoofdstukken vervallen dan, en elk blad is een hoofdstuk, een paragraaf of een
+ * blad in bijlage A. Wat in het formulier stond, blijft bewaard en komt terug als de keuze
+ * weer uit gaat.
+ */
+function UitBladenKeuze() {
+  const { t } = useTranslation("rapport");
+  const aan = useProjectStore((s) => s.rapport.uitBladen === true);
+  const aantal = useProjectStore((s) => s.exemplaren.filter((e) => s.rapport.bladRol?.[e.id]).length);
+  const werkBij = useProjectStore((s) => s.werkRapportBij);
+  return (
+    <section className="rapport-groep rapport-uitbladen" data-sectie="uitbladen">
+      <label className="rapport-vink">
+        <input
+          type="checkbox"
+          checked={aan}
+          onChange={(e) => werkBij((r) => {
+            const { uitBladen: _oud, ...rest } = r;
+            return e.target.checked ? { ...rest, uitBladen: true } : rest;
+          })}
+        />
+        <span>{t("uitBladen.keuze")}</span>
+      </label>
+      <p className="rapport-hint">{t(aan ? "uitBladen.uitlegAan" : "uitBladen.uitleg", { count: aantal })}</p>
+    </section>
+  );
+}
+
+/**
+ * Zet de hoofdstukken van dit rapport om in bladen: elk hoofdstuk een blad waarvan de code
+ * precies de opmaak van dat hoofdstuk is (rapport/hoofdstukkenAlsBladen.ts). Leest het
+ * voorbeeld ernaast, dus dat moet opgemaakt zijn.
+ */
+function HoofdstukkenAlsBladen() {
+  const { t } = useTranslation("rapport");
+  const voegToe = useProjectStore((s) => s.voegToe);
+  const voegCanvasToe = useProjectStore((s) => s.voegCanvasToe);
+  const zetBron = useProjectStore((s) => s.zetBron);
+  const selecteer = useProjectStore((s) => s.selecteer);
+  const maak = () => {
+    const wortel = document.querySelector<HTMLElement>(".av-meet .rpa-wortel");
+    const { wind } = useProjectStore.getState().rapport.belastingen;
+    const hoofdstukken = wortel
+      ? hoofdstukkenUitAfdruk(wortel, { gebouwhoogte: wind.gebouwhoogte, coefficienten: wind.coefficienten.map((c) => c.c) })
+      : [];
+    if (hoofdstukken.length === 0) {
+      alert(t("alsBladen.geenVoorbeeld"));
+      return;
+    }
+    // Hoofdstuk Belastingen als canvasblad, de rest als gewoon blad.
+    const ids = hoofdstukken.map((h) => {
+      if (!h.canvas) return voegToe("leeg", h.titel, h.bron);
+      const id = voegCanvasToe(h.titel);
+      zetBron(id, h.bron);
+      return id;
+    });
+    selecteer(ids[0]);
+  };
+  return (
+    <div className="rapport-knoppen rapport-alsbladen">
+      <button type="button" className="rapport-knop" title={t("alsBladen.uitleg")} onClick={maak}>
+        {t("alsBladen.knop")}
+      </button>
+    </div>
+  );
+}
+
 export default function RapportPanel() {
   const { t } = useTranslation("rapport");
   const paneelRef = useRef<HTMLDivElement>(null);
   const opzet = useProjectStore((s) => opzetVan(s.rapport));
   const groepen = useMemo(() => paneelGroepen(opzet), [opzet]);
+  const uitBladen = useProjectStore((s) => s.rapport.uitBladen === true);
 
   const naarSectie = (id: string) =>
     paneelRef.current
@@ -132,11 +202,14 @@ export default function RapportPanel() {
       </div>
 
       <OpzetBron>
-        <Sprongbalk groepen={groepen} naarSectie={naarSectie} />
+        <Sprongbalk groepen={uitBladen ? [] : groepen} naarSectie={naarSectie} metOpzet={!uitBladen} />
+        <UitBladenKeuze />
+        <HoofdstukkenAlsBladen />
         <DocumentSectie />
         <RevisieSectie />
-        <OpzetSectie />
-        <Hoofdstukken groepen={groepen} />
+        {/* Uit bladen opgebouwd: de hoofdstukken zijn bladen in de projectboom, niet dit formulier. */}
+        {!uitBladen && <OpzetSectie />}
+        {!uitBladen && <Hoofdstukken groepen={groepen} />}
         <BijlagenSectie />
         <BureauSectie />
       </OpzetBron>

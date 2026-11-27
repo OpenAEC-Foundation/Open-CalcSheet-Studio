@@ -664,6 +664,12 @@
     "weergave": "View",
     "losBlad": "Sheet only",
     "inRapport": "In the report",
-    "plekVanBlad": "this sheet: {{nummers}}"
+    "plekVanBlad": "this sheet: {{nummers}}",
+    "huisstijl": "House style",
+    "huisstijlUitleg": "Which house style lays out the header, the footer and the cover page: the office profile from the settings, or the OpenAEC standard built into the app. The choice is saved in the project file (IFCX).",
+    "huisstijlBron": {
+      "bureau": "Office",
+      "openaec": "OpenAEC"
+    }
   }
 }

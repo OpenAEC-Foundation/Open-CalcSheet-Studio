@@ -14,7 +14,7 @@ import { KOLOMMEN, materialenRijen } from "../../../rapport/materialen";
 import { kFiVoor, projectWaarde } from "../../../store/projectGegevens";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { EigenCombinaties, FactorenSlot, LokaalBouwwerk } from "./Lokaal";
-import { Cel, Eenheid, Index, Leeg, Rij, Tekst } from "./raster";
+import { Cel, Eenheid, Index, Leeg, R, Rij, Tekst } from "./raster";
 
 /*
  * Hoofdstuk 4, Uitgangspunten.
@@ -53,14 +53,14 @@ export function Bouwwerk({ w }: { w: RapportWeergave }) {
   return (
     <>
       <Veld label={t("afdruk.bouwwerk.soort")} waarde={w.rapport.uitgangspunten.soortBouwwerk} invoer />
-      <Veld label={t("afdruk.bouwwerk.gevolgklasse")} waarde={`CC${cc}`} invoer />
-      <Veld label={t("afdruk.bouwwerk.betrouwbaarheidsklasse")} waarde={`RC${rc}`} />
-      <Veld label={t("afdruk.bouwwerk.levensduurklasse")} waarde={String(levensduurklasse(levensduur))} />
-      <Veld label={t("afdruk.bouwwerk.levensduur")} waarde={f(levensduur, 0)} norm={tabel("NB.1–2.1")} />
-      <Veld label="β" waarde={f(beta(rc), 1)} norm={tabel("B2")} />
-      <Veld label={<>K<sub>FI</sub></>} waarde={f(kFiVoor(cc), 2)} norm={tabel("B3")} />
-      <Veld label={t("afdruk.bouwwerk.supervisie")} waarde={ontwerpSupervisie(rc)} norm={tabel("B4")} />
-      <Veld label={t("afdruk.bouwwerk.inspectie")} waarde={inspectieniveau(rc)} norm={tabel("B5")} />
+      <Veld label={t("afdruk.bouwwerk.gevolgklasse")} waarde={<>{"CC"}<R naam="CC" format="F0">{cc}</R></>} invoer />
+      <Veld label={t("afdruk.bouwwerk.betrouwbaarheidsklasse")} waarde={<>{"RC"}<R naam="RC" format="F0">{rc}</R></>} />
+      <Veld label={t("afdruk.bouwwerk.levensduurklasse")} waarde={<R naam="L_klasse" format="F0">{String(levensduurklasse(levensduur))}</R>} />
+      <Veld label={t("afdruk.bouwwerk.levensduur")} waarde={<R naam="DesignLife" format="F0">{f(levensduur, 0)}</R>} norm={tabel("NB.1–2.1")} />
+      <Veld label="β" waarde={<R naam="β" format="F1">{f(beta(rc), 1)}</R>} norm={tabel("B2")} />
+      <Veld label={<>K<sub>FI</sub></>} waarde={<R naam="K_FI" format="F2">{f(kFiVoor(cc), 2)}</R>} norm={tabel("B3")} />
+      <Veld label={t("afdruk.bouwwerk.supervisie")} waarde={<>{ontwerpSupervisie(rc).replace(/\d+$/, "")}<R naam="RC" format="F0">{rc}</R></>} norm={tabel("B4")} />
+      <Veld label={t("afdruk.bouwwerk.inspectie")} waarde={<>{inspectieniveau(rc).replace(/\d+$/, "")}<R naam="RC" format="F0">{rc}</R></>} norm={tabel("B5")} />
     </>
   );
 }
@@ -192,7 +192,7 @@ export function Factoren({ w }: { w: RapportWeergave }) {
             <Cel k={2} n={2} o l klasse="rpa-tt">{r.naam}</Cel>
             {r.cellen ? (
               r.cellen.map((c, j) => (
-                <Cel key={j} k={4 + j} o l r={j === 3} klasse="rpa-midden"><Index t={c} /></Cel>
+                <Cel key={j} k={4 + j} o l r={j === 3} klasse="rpa-midden">{factorCel(k.nlTabellen ? r.naam : "", j, c)}</Cel>
               ))
             ) : (
               <Cel k={4} n={4} o={!volgendeNvt} l r>{t("afdruk.factoren.nietVanToepassing")}</Cel>
@@ -204,6 +204,19 @@ export function Factoren({ w }: { w: RapportWeergave }) {
       {!k.nlTabellen && <FactorenSlot w={w} />}
     </>
   );
+}
+
+/**
+ * Een cel van de factorentabel. In de Nederlandse tabel rekenen de factoren van STR mee
+ * (raster.tsx, R): γ_G,a en γ_G met twee decimalen, γ_Q zo kort mogelijk, eventueel met ψ0.
+ */
+function factorCel(rij: string, j: number, c: string): ReactNode {
+  const naam = rij.startsWith("STR(6.10a)") ? (j === 1 ? "γ_Ga" : j >= 2 ? "γ_Q" : "")
+    : rij.startsWith("STR(6.10b)") ? (j === 1 ? "γ_G" : j >= 2 ? "γ_Q" : "")
+    : "";
+  const m = naam ? c.match(/^([\d.,]+)(.*)$/) : null;
+  if (!m) return <Index t={c} />;
+  return <><R naam={naam} format={j === 1 ? "F2" : undefined}>{m[1]}</R><Index t={m[2]} /></>;
 }
 
 /** 4.6 Bestaande situatie: bouwjaar en bron, de norm die bij dat bouwjaar hoort, en wat er beschikbaar is. */
