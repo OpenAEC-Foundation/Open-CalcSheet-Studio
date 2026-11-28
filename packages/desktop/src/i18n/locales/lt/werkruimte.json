@@ -30,7 +30,8 @@
     "project": "Projektas",
     "projectgegevens": "Projekto duomenys",
     "rapport": "Ataskaita",
-    "afdrukvoorbeeld": "Spausdinio peržiūra"
+    "afdrukvoorbeeld": "Spausdinio peržiūra",
+    "rapportvoorbeeld": "Ataskaitos peržiūra"
   },
   "weergave": {
     "codeVisueel": "Kodas + vaizdas",
@@ -128,7 +129,8 @@
       "rapport-h4": "H4 Projektavimo prielaidos",
       "rapport-h5": "H5 Apkrovos",
       "rapport-h6": "H6 Skaičiavimai",
-      "rapport-voorblad": "Titulinis puslapis"
+      "rapport-voorblad": "Titulinis puslapis",
+      "vloer-op-palen": "Pramoninės grindys ant polių (FEM)"
     }
   },
   "kiezer": {

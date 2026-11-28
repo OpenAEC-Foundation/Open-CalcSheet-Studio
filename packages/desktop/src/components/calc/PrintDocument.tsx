@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import i18next from "i18next";
+import { INHOUD_PLEK } from "../../rapport/inhoudVanBladen";
 import { landcode } from "../../i18n/talen";
 import { useProjectStore, type Exemplaar } from "../../store/projectStore";
 import { projectScope, projectWaarde } from "../../store/projectGegevens";
@@ -8,7 +9,6 @@ import { vastgelegdeNormen, type ProjectNorm } from "../../store/projectNormen";
 import { usePrintStore } from "../../store/printStore";
 import { ucTekst } from "./bladResultaat";
 import { rekenBladDoor, zorgVoorKernstijlen, type DoorgerekendBlad } from "./bladDoorrekenen";
-import { rekenversie } from "./bladVersie";
 import { Oordeel, PrintBlad } from "./PrintBlad";
 import "./PrintDocument.css";
 import { metToetsingen } from "../../rekenen/toetsCache";
@@ -241,16 +241,19 @@ export function PrintProjectregel({ uitdraai, rekenversie }: { uitdraai: Uitdraa
   );
 }
 
-/** Voorblad plus bladen, of bij één blad het blad met een projectregel. */
+/**
+ * Voorblad plus bladen. Heeft het project een eigen Voorblad-blad (rapport/inhoudVanBladen.ts),
+ * dan is dat het voorblad. Elk blad krijgt zijn anker voor de inhoudsopgave, ook een los blad.
+ */
 export function UitdraaiInhoud({ uitdraai }: { uitdraai: Uitdraai }) {
   const { bladen, enkel } = uitdraai;
+  const eigenVoorblad = uitdraai.alleBladen.some((ex) => ex.source.includes(INHOUD_PLEK));
   return (
     <>
-      {!enkel && <PrintVoorblad uitdraai={uitdraai} />}
+      {!enkel && !eigenVoorblad && <PrintVoorblad uitdraai={uitdraai} />}
       {bladen.map(({ ex, html, resultaat, eenheden }, i) => (
         <PrintBlad key={ex.id} ex={ex} html={html} nummer={i + 1} resultaat={resultaat} titelInKop eenheden={eenheden}
-          anker={enkel ? undefined : bladAnker(ex.id)}
-          projectregel={enkel ? <PrintProjectregel uitdraai={uitdraai} rekenversie={rekenversie(ex.source)} /> : undefined} />
+          anker={bladAnker(ex.id)} />
       ))}
     </>
   );

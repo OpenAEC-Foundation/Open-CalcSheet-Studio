@@ -4,6 +4,7 @@ import { INHOUD_PLEK, inhoudHtml, inhoudVanBladen } from "../../rapport/inhoudVa
 import { BIJLAGE_A } from "../../rapport/opzet";
 import { inTaal } from "../../rapport/meertalig";
 import { useProjectStore } from "../../store/projectStore";
+import { koppenUitBron } from "../../rapport/uitBladen";
 
 /**
  * De uitwerking van een blad met de inhoudsopgave erin, als het blad de plek ervoor heeft
@@ -18,6 +19,8 @@ export function useInhoudsopgave(html: string): string {
   return useMemo(() => {
     if (!exemplaren) return html;
     const t = i18next.getFixedT(taal, "rapport");
-    return html.replace(INHOUD_PLEK, inhoudHtml(inhoudVanBladen(exemplaren, inTaal(BIJLAGE_A, taal)), t("afdruk.inhoud.titel")));
+    // De ankers van de bladen zoals de afdruk van het project ze zet (PrintDocument.tsx).
+    const regels = inhoudVanBladen(exemplaren, inTaal(BIJLAGE_A, taal), (id) => `blad-${id}`, koppenUitBron);
+    return html.replace(INHOUD_PLEK, inhoudHtml(regels, t("afdruk.inhoud.titel")));
   }, [html, exemplaren, taal]);
 }

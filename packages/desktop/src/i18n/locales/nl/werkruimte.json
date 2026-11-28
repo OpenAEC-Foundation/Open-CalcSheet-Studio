@@ -30,7 +30,8 @@
     "project": "Project",
     "projectgegevens": "Projectgegevens",
     "rapport": "Rapport",
-    "afdrukvoorbeeld": "Afdrukvoorbeeld"
+    "afdrukvoorbeeld": "Afdrukvoorbeeld",
+    "rapportvoorbeeld": "Rapportvoorbeeld"
   },
   "weergave": {
     "codeVisueel": "Code + Visueel",
@@ -128,7 +129,8 @@
       "rapport-h4": "H4 Uitgangspunten",
       "rapport-h5": "H5 Belastingen",
       "rapport-h6": "H6 Berekeningen",
-      "rapport-voorblad": "Voorblad"
+      "rapport-voorblad": "Voorblad",
+      "vloer-op-palen": "Bedrijfsvloer op palen (FEM)"
     }
   },
   "kiezer": {
