@@ -271,6 +271,12 @@
   page-break-before: always;
 }
 
+.print-opmaak .rpa-blad {
+  break-before: page;
+  page-break-before: always;
+}
+
+.print-opmaak .rpa-blad:first-child,
 .print-opmaak .print-blad:first-of-type {
   break-before: auto;
   page-break-before: auto;
@@ -398,7 +404,8 @@
    tekening — en de binnenmarge komt bovenop een marge die er al is.
    Het afdrukvoorbeeld bouwt deze wikkel per pagina opnieuw op; met binnenmarge
    zou elke pagina er twee keer 28px bij krijgen en overlopen. */
-.print-opmaak .print-blad .ifc-calc {
+.print-opmaak .print-blad .ifc-calc,
+.print-opmaak .rpa-blad .ifc-calc {
   max-width: none !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
