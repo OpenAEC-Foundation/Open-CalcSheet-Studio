@@ -1,0 +1,1502 @@
+"Bedrijfsvloer op palen — FEM, wapening en krimp
+
+'Een betonvloer op palen in een regelmatig raster, gerekend door Open FEM Studio.<span class="alleen-scherm"></span>
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: wat dit blad rekent</summary><i>Een betonvloer op palen in een regelmatig raster. Open FEM Studio rekent een stuk vloer met de vloerrand als plaatmodel: een vlakke plaat, met een ponskop boven elke paal, met versterkte stroken over de paalrijen, of een combinatie daarvan. Het blad toont de krachtsverdeling (m<sub>x</sub>, m<sub>y</sub>, m<sub>xy</sub> en de doorbuiging), rekent op negen of tien punten de wapening met het drielagenmodel en de scheurwijdte, en beschrijft het rekenmodel. Daarnaast de momenten per zone, de complete wapening rond een paal in 3D, de paalreacties voor de pons en de krimp van een lange vloer zonder voeg.</i></details><span class="alleen-scherm"></span>
+'<div class="alleen-scherm" style="margin:4px 0 10px; padding:8px 12px; border:1px solid #e5e7eb; border-radius:6px; background:#f8fafc; font-size:0.92em; line-height:1.7"><b>Naar</b> &nbsp;<a href="#vop-invoer" style="color:#b45309; text-decoration:none">invoer</a> · <a href="#vop-model" style="color:#b45309; text-decoration:none">rekenmodel</a> · <a href="#vop-kracht" style="color:#b45309; text-decoration:none">krachtsverdeling</a> · <a href="#vop-wapening" style="color:#b45309; text-decoration:none">wapening</a> · <a href="#vop-punt" style="color:#b45309; text-decoration:none">per punt</a> · <a href="#vop-scheur" style="color:#b45309; text-decoration:none">scheurwijdte</a> · <a href="#vop-bijleg" style="color:#b45309; text-decoration:none">bijleg in 3D</a> · <a href="#vop-paal" style="color:#b45309; text-decoration:none">paalreactie en pons</a> · <a href="#vop-fnl" style="color:#b45309; text-decoration:none">FNL</a> · <a href="#vop-krimp" style="color:#b45309; text-decoration:none">krimp</a> &nbsp;→ <a href="#vop-samenvatting" style="color:#b45309; font-weight:700; text-decoration:none">samenvatting en eindoordeel</a></div><span class="alleen-scherm"></span>
+'<a id="vop-invoer"></a><span class="alleen-scherm"></span>
+# Raster en vloer
+
+L_x = ?{3.6}*(m)', paalafstand x<span class="kolom-3"></span>'
+L_y = ?{3.6}*(m)', paalafstand y<span class="kolom-3"></span>'
+n_v = ?{4}', velden per richting in het model (3 tot 5)<span class="kolom-3"></span>'
+a_r = ?{0.3}*(m)', buitenste paalrij tot de vloerrand<span class="kolom-3"></span>'
+h = ?{250}*(mm)', vloerdikte<span class="kolom-3"></span>'
+c_nom = ?{30}*(mm)', dekking<span class="kolom-3"></span>'
+d_kop = ?{400}*(mm)', paalkop (diameter)<span class="kolom-3"></span>'
+k_paal = ?{150}*(MN/m)', veer per paal<span class="kolom-3"></span>'
+@select betonklasse "Betonsterkteklasse"
+  C30/37 = 30
+  C25/30 = 25
+  C28/35 = 28
+  C35/45 = 35
+@end
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: het model en de veer per paal</summary><i>Het model is een vloer van n × n velden met de vloerrand rondom: hoekvelden, randvelden en binnenvelden. Voor een grotere vloer gelden de binnenvelden voor het binnengebied. De veer per paal is de stijfheid van paal en grond samen, uit het funderingsadvies: een stijve paal geeft grotere steunmomenten, een slappe paal grotere veldmomenten.</i></details><span class="alleen-scherm"></span>
+
+@select ponskop "Ponskop boven elke paal"
+  nee = 0
+  ja = 1
+@end
+#if ponskop ≡ 1
+b_k = ?{1000}*(mm)', ponskop, breedte<span class="kolom-4"></span>'
+t_k = ?{400}*(mm)', ponskop, dikte<span class="kolom-4"></span>'
+#else
+#hide
+b_k = 1000 mm
+t_k = 400 mm
+#show
+#end if
+@select stroken "Versterkte stroken over de paalrijen"
+  geen = 0
+  in x = 1
+  in y = 2
+  in x en y = 3
+@end
+#if stroken > 0
+b_s = ?{800}*(mm)', strook, breedte<span class="kolom-4"></span>'
+t_s = ?{350}*(mm)', strook, dikte<span class="kolom-4"></span>'
+#else
+#hide
+b_s = 800 mm
+t_s = 350 mm
+#show
+#end if
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: ponskop en stroken</summary><i>Een ponskop is een vierkante verdikking onder de vloer, op de paal; een strook is een verdikking onder een hele paalrij. De bovenkant van de vloer blijft vlak. Ponskop en stroken zijn te combineren; waar een kop over een strook ligt, telt de dikste.</i></details><span class="alleen-scherm"></span>
+
+#hide
+f_ck = betonklasse*N/mm^2
+f_cm = f_ck + 8 N/mm^2
+f_ctm = 0.30*(f_ck/MPa)^(2/3)*MPa to N/mm^2
+E_cm = 22000*((f_cm/MPa)/10)^0.3*N/mm^2
+γ_c = 1.5
+f_yd = 500 N/mm^2/1.15
+ν = 0.2
+'Voor het drielagenmodel: f_cd met α_cc = 1,0 (nationale bijlage), en ν′ = 1 − f_ck/250 voor een gescheurde buitenlaag (bijlage F).
+f_cd = f_ck/γ_c
+ν_1 = 1 - f_ck/(250 N/mm^2)
+E_s = 200000 N/mm^2
+α_e = E_s/E_cm
+c_1k = "#b91c1c"
+c_2k = "#b45309"
+c_3k = "#047857"
+kleur(u) = if(u > 1; c_1k; if(u > 0.9; c_2k; c_3k))
+oordeel(u) = if(u ≤ 1; "voldoet"; "voldoet niet")
+b_s1 = 1000 mm
+'Het model: n_r velden per richting, de rand a_r buiten de buitenste paalrij.
+n_r = round(min(max(n_v; 3); 5))
+B_x = n_r*L_x + 2*a_r
+B_y = n_r*L_y + 2*a_r
+kop = bool(ponskop ≡ 1)
+st_x = bool(Or(stroken ≡ 1; stroken ≡ 3))
+st_y = bool(Or(stroken ≡ 2; stroken ≡ 3))
+t_sd = max(t_s; h)
+t_kd = max(t_k; h; if(st_x + st_y > 0; t_sd; h))
+t_p = if(kop ≡ 1; t_kd; if(st_x + st_y > 0; t_sd; h))
+'De maas: L/12, en grover als het raster anders meer dan 8000 knopen krijgt (de randen
+'van koppen, stroken en paalkoppen zijn extra rasterlijnen).
+a_m = max(min(L_x; L_y)/12; max(B_x; B_y)/(84 - 6*(n_r + 1)))
+#show
+#if a_m > min(L_x; L_y)/8
+'<b style="color:#b91c1c">Let op:</b> de maas ('round(a_m/mm)' mm) is grover dan L/8; kies minder velden in het model.
+#end if
+f_ck'<span class="kolom-4"></span><span class="alleen-afdruk"></span>'
+f_ctm'<span class="kolom-4"></span><span class="alleen-afdruk"></span>'
+E_cm'<span class="kolom-4"></span><span class="alleen-afdruk"></span>'
+f_yd'<span class="kolom-4"></span><span class="alleen-afdruk"></span>'
+'<span style="color:#475569">f<sub>ck</sub> = 'f_ck/(N/mm^2)' · f<sub>ctm</sub> = 'round(f_ctm/(N/mm^2); 2)' · E<sub>cm</sub> = 'round(E_cm/(N/mm^2))' · f<sub>yd</sub> = 'round(f_yd/(N/mm^2); 1)' N/mm²</span><span class="alleen-scherm"></span>
+
+# Belastingen
+
+g_afw = ?{0.5}*(kN/m^2)', afwerking en installaties<span class="kolom-3"></span>'
+q_k = ?{20}*(kN/m^2)', veranderlijk (opslag, cat. E)<span class="kolom-3"></span>'
+ψ_1 = ?{0.9}', frequente waarde ψ<sub>1</sub> (opslag 0,9)<span class="kolom-3"></span>'
+#hide
+γ_G = if(CC ≡ 1; 1.1; if(CC ≡ 3; 1.3; 1.2))
+γ_Ga = if(CC ≡ 1; 1.2; if(CC ≡ 3; 1.5; 1.35))
+γ_Q = if(CC ≡ 1; 1.35; if(CC ≡ 3; 1.65; 1.5))
+f_afw = g_afw/(kN/m^2)
+f_q = q_k/(kN/m^2)
+#show
+γ_Gd = max(γ_Ga; γ_G)', permanent (6.10a, opslag ψ<sub>0</sub> = 1,0)<span class="kolom-3"></span>'
+γ_Q', veranderlijk<span class="kolom-3"></span>'
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: de belastinggevallen en combinaties</summary><i>Vier belastinggevallen: eigen gewicht (met de koppen en stroken), afwerking, en het veranderlijke deel op de velden van schaakbord 1 en van schaakbord 2. Afwerking en schaakbord rekent FEM Studio met 1 kN/m²; de combinaties vermenigvuldigen dat met g<sub>afw</sub> en q<sub>k</sub>, zodat een andere last niet opnieuw gerekend hoeft te worden. Volle belasting is schaakbord 1 plus 2. De frequente waarde ψ<sub>1</sub> geldt voor de scheurwijdte: de nationale bijlage toetst die onder de frequente combinatie.</i></details><span class="alleen-scherm"></span>
+
+#hide
+'Plattegrond: 1 m is p_s px; p_X en p_Y geven de plek in het beeld.
+p_s = 300/(max(B_x; B_y)/(1 m))
+p_x0 = 60
+p_y0 = 24 + B_y/(1 m)*p_s
+p_X(x) = p_x0 + x/(1 m)*p_s
+p_Y(y) = p_y0 - y/(1 m)*p_s
+p_b = floor(n_r/2)
+'Langs richting r (1 = x, 2 = y): de overspanning L_a, de breedte dwars L_b.
+L_a(r) = if(r ≡ 1; L_x; L_y)
+L_b(r) = if(r ≡ 1; L_y; L_x)
+'De halve breedte van een strook langs r (over de paalrij, draagt m_r) en van een strook dwars door de paal.
+e_sa(r) = if(r ≡ 1; st_x; st_y)*b_s/2
+e_sc(r) = if(r ≡ 1; st_y; st_x)*b_s/2
+e_k = kop*b_k/2
+'De paal-as langs r van paal i, en de paalrij dwars daarop.
+a_p(r; i) = a_r + i*L_a(r)
+b_p(r; j) = a_r + j*L_b(r)
+'Binnenpaal p_b en eerste binnenpaal 1, beide in paalrij p_b; veldmidden, rand van de verdikking rond de paal.
+s_0(r) = a_p(r; p_b)
+s_1(r) = a_p(r; 1)
+s_m(r) = s_0(r) + L_a(r)/2
+b_0(r) = b_p(r; p_b)
+c_v(r) = max(e_k; e_sc(r))
+t_as(r) = if(e_sc(r) > 0 m; t_sd; h)
+'De punten van de wapeningsberekening, in de richting met de grootste paalafstand (r_m): de plek langs r (S) en dwars (T).
+'1 binnenveld midden, 2 binnenveld op de paallijn, 3 binnenpaal naast de paalkop, 4 randveld midden, 5 randveld op de paallijn,
+'6 randstrook langs de vrije rand, 7 hoekveld midden, 8 hoekveld op de diagonaal bij de eerste binnenpaal, 9 randpaal naast de
+'paalkop, 10 naast de ponskop of de dwarse strook bij de binnenpaal (alleen als die er is). Een punt naast een paalkop ligt 1 mm
+'binnen de kop en punt 10 ligt 1 mm buiten de verdikking: zo ligt geen punt op een rand tussen twee dikten.
+r_m = if(L_x ≥ L_y; 1; 2)
+e_1 = 1 mm
+e_dg = max(L_a(r_m)/8; e_k + a_m; e_sc(r_m) + a_m)
+e_dt = max(L_b(r_m)/8; e_k + a_m; e_sa(r_m) + a_m)
+n_pt = if(c_v(r_m) > 0 m; 10; 9)
+S_pt = [s_m(r_m); s_m(r_m); s_0(r_m) + d_kop/2 - e_1; a_r + 0.4*L_a(r_m); a_r + 0.4*L_a(r_m); a_r + 0.4*L_a(r_m); a_r + 0.4*L_a(r_m); a_p(r_m; 1) - e_dg; a_r + d_kop/2 - e_1; s_0(r_m) + c_v(r_m) + e_1]
+T_pt = [b_0(r_m) + L_b(r_m)/2; b_0(r_m); b_0(r_m); b_0(r_m) + L_b(r_m)/2; b_0(r_m); a_r/2; a_r + 0.4*L_b(r_m); b_p(r_m; 1) - e_dt; b_0(r_m); b_0(r_m)]
+#if r_m ≡ 1
+X_V = S_pt
+Y_V = T_pt
+#else
+X_V = T_pt
+Y_V = S_pt
+#end if
+X_pt(p) = take(p; X_V)
+Y_pt(p) = take(p; Y_V)
+N_pt = ["Binnenveld midden"; "Binnenveld paallijn"; "Binnenpaal naast kop"; "Randveld midden"; "Randveld paallijn"; "Randstrook vrije rand"; "Hoekveld midden"; "Hoekveld diagonaal"; "Randpaal naast kop"; "Naast de verdikking"]
+'De dikte op een plek: de afstand tot de dichtstbijzijnde paallijn in x (u) en in y (v) zegt of er een ponskop of strook ligt.
+u_x(x) = x - a_r - round((x - a_r)/L_x)*L_x
+v_y(y) = y - a_r - round((y - a_r)/L_y)*L_y
+i_k(x; y) = if(And(kop ≡ 1; abs(u_x(x)) < b_k/2; abs(v_y(y)) < b_k/2); 1; 0)
+i_sx(x; y) = if(And(st_x ≡ 1; abs(v_y(y)) < b_s/2); 1; 0)
+i_sy(x; y) = if(And(st_y ≡ 1; abs(u_x(x)) < b_s/2); 1; 0)
+t_xy(x; y) = if(i_k(x; y) ≡ 1; t_kd; if(i_sx(x; y) + i_sy(x; y) > 0; t_sd; h))
+'Per punt één keer: de dikte, en of het in een ponskop (K), in een strook langs x (SX) of langs y (SY) ligt.
+T_V = []
+K_V = []
+SX_V = []
+SY_V = []
+#for p = 1 : 10
+T_V = concat(T_V; [t_xy(X_pt(p); Y_pt(p))])
+K_V = concat(K_V; [i_k(X_pt(p); Y_pt(p))])
+SX_V = concat(SX_V; [i_sx(X_pt(p); Y_pt(p))])
+SY_V = concat(SY_V; [i_sy(X_pt(p); Y_pt(p))])
+#loop
+t_pt(p) = take(p; T_V)
+K_pt(p) = take(p; K_V)
+SX_pt(p) = take(p; SX_V)
+SY_pt(p) = take(p; SY_V)
+'SS: in een strook, buiten de ponskop.
+SS_pt(p) =if(K_pt(p) ≡ 1; 0; if(SX_pt(p) + SY_pt(p) > 0; 1; 0))
+w_pt(p) = if(K_pt(p) ≡ 1; " ponskop"; if(SS_pt(p) ≡ 1; " strook"; ""))
+#pre
+'<svg class="dxf" viewbox="0 0 480 'p_y0 + 44'" xmlns="http://www.w3.org/2000/svg" style="font-size:10px; width:64%; max-height:440px;">
+'  <text x="8" y="12" style="fill:#64748b">Plattegrond van het rekenmodel</text>
+'  <rect x="'p_X(0 m)'" y="'p_Y(B_y)'" width="'B_x/(1 m)*p_s'" height="'B_y/(1 m)*p_s'" style="fill:#f8fafc; stroke:none"/>
+'  <rect x="'p_X(a_r + p_b*L_x)'" y="'p_Y(a_r + (p_b + 1)*L_y)'" width="'L_x/(1 m)*p_s'" height="'L_y/(1 m)*p_s'" style="fill:#dbeafe"/>
+'  <rect x="'p_X(0 m)'" y="'p_Y(a_r + (p_b + 1)*L_y)'" width="'(a_r + L_x)/(1 m)*p_s'" height="'L_y/(1 m)*p_s'" style="fill:#fef3c7"/>
+'  <rect x="'p_X(0 m)'" y="'p_Y(a_r + L_y)'" width="'(a_r + L_x)/(1 m)*p_s'" height="'(a_r + L_y)/(1 m)*p_s'" style="fill:#fee2e2"/>
+#if st_x ≡ 1
+#for j = 0 : n_r
+'  <rect x="'p_X(0 m)'" y="'p_Y(min(a_r + j*L_y + b_s/2; B_y))'" width="'B_x/(1 m)*p_s'" height="'(min(a_r + j*L_y + b_s/2; B_y) - max(a_r + j*L_y - b_s/2; 0 m))/(1 m)*p_s'" style="fill:#94a3b8; fill-opacity:0.45"/>
+#loop
+#end if
+#if st_y ≡ 1
+#for i = 0 : n_r
+'  <rect x="'p_X(max(a_r + i*L_x - b_s/2; 0 m))'" y="'p_Y(B_y)'" width="'(min(a_r + i*L_x + b_s/2; B_x) - max(a_r + i*L_x - b_s/2; 0 m))/(1 m)*p_s'" height="'B_y/(1 m)*p_s'" style="fill:#94a3b8; fill-opacity:0.45"/>
+#loop
+#end if
+#if kop ≡ 1
+#for j = 0 : n_r
+#for i = 0 : n_r
+'  <rect x="'p_X(max(a_r + i*L_x - b_k/2; 0 m))'" y="'p_Y(min(a_r + j*L_y + b_k/2; B_y))'" width="'(min(a_r + i*L_x + b_k/2; B_x) - max(a_r + i*L_x - b_k/2; 0 m))/(1 m)*p_s'" height="'(min(a_r + j*L_y + b_k/2; B_y) - max(a_r + j*L_y - b_k/2; 0 m))/(1 m)*p_s'" style="fill:#475569; fill-opacity:0.55"/>
+#loop
+#loop
+#end if
+'  <rect x="'p_X(a_r + p_b*L_x - L_x/2)'" y="'p_Y(a_r + p_b*L_y + L_y/2)'" width="'L_x/(1 m)*p_s'" height="'L_y/(1 m)*p_s'" style="fill:none; stroke:#b45309; stroke-width:1; stroke-dasharray:4 2"/>
+#for j = 0 : n_r
+#for i = 0 : n_r
+'  <circle cx="'p_X(a_r + i*L_x)'" cy="'p_Y(a_r + j*L_y)'" r="'max(2.5; d_kop/(1 m)*p_s/2)'" style="fill:#1e293b"/>
+#loop
+#loop
+'  <rect x="'p_X(0 m)'" y="'p_Y(B_y)'" width="'B_x/(1 m)*p_s'" height="'B_y/(1 m)*p_s'" style="fill:none; stroke:#334155; stroke-width:1.4"/>
+'  <text x="'p_X(a_r + (p_b + 0.5)*L_x)'" y="'p_Y(a_r + (p_b + 0.8)*L_y) + 3'" text-anchor="middle" style="fill:#1E40AF">binnenveld</text>
+'  <text x="'p_X((a_r + L_x)/2)'" y="'p_Y(a_r + (p_b + 0.82)*L_y) + 3'" text-anchor="middle" style="fill:#92400e">randveld</text>
+'  <text x="'p_X((a_r + L_x)/2)'" y="'p_Y(a_r + 0.82*L_y) + 3'" text-anchor="middle" style="fill:#991b1b">hoekveld</text>
+'  <line x1="'p_X(a_r)'" y1="'p_y0 + 14'" x2="'p_X(a_r + L_x)'" y2="'p_y0 + 14'" style="stroke:#1E40AF; stroke-width:0.8"/>
+'  <text x="'p_X(a_r + L_x/2)'" y="'p_y0 + 26'" text-anchor="middle" style="fill:#1E40AF; font-weight:700">L<tspan dy="2.5" font-size="8">x</tspan><tspan dy="-2.5"> = 'L_x/m' m</tspan></text>
+'  <line x1="'p_x0 - 14'" y1="'p_Y(a_r)'" x2="'p_x0 - 14'" y2="'p_Y(a_r + L_y)'" style="stroke:#1E40AF; stroke-width:0.8"/>
+'  <text x="'p_x0 - 18'" y="'p_Y(a_r + L_y/2) + 3'" text-anchor="end" style="fill:#1E40AF; font-weight:700">L<tspan dy="2.5" font-size="8">y</tspan><tspan dy="-2.5"> = 'L_y/m' m</tspan></text>
+'  <text x="'p_X(B_x) + 8'" y="'p_Y(B_y) + 10'" style="fill:#334155">'n_r' × 'n_r' velden</text>
+'  <text x="'p_X(B_x) + 8'" y="'p_Y(B_y) + 24'" style="fill:#334155">rand a<tspan dy="2.5" font-size="8">r</tspan><tspan dy="-2.5"> = 'a_r/m' m</tspan></text>
+'  <circle cx="'p_X(B_x) + 13'" cy="'p_Y(B_y) + 38'" r="3" style="fill:#1e293b"/><text x="'p_X(B_x) + 22'" y="'p_Y(B_y) + 42'" style="fill:#334155">paal Ø'd_kop/mm'</text>
+#if kop ≡ 1
+'  <rect x="'p_X(B_x) + 8'" y="'p_Y(B_y) + 50'" width="10" height="10" style="fill:#475569; fill-opacity:0.55"/><text x="'p_X(B_x) + 22'" y="'p_Y(B_y) + 59'" style="fill:#334155">ponskop 'b_k/mm' × 't_kd/mm'</text>
+#end if
+#if st_x + st_y > 0
+'  <rect x="'p_X(B_x) + 8'" y="'p_Y(B_y) + 66'" width="10" height="10" style="fill:#94a3b8; fill-opacity:0.45"/><text x="'p_X(B_x) + 22'" y="'p_Y(B_y) + 75'" style="fill:#334155">strook 'b_s/mm' × 't_sd/mm'</text>
+#end if
+'  <rect x="'p_X(B_x) + 8'" y="'p_Y(B_y) + 82'" width="10" height="10" style="fill:none; stroke:#b45309; stroke-dasharray:3 2"/><text x="'p_X(B_x) + 22'" y="'p_Y(B_y) + 91'" style="fill:#334155">wapening in 3D</text>
+#for p = 1 : n_pt
+'  <circle cx="'p_X(X_pt(p))'" cy="'p_Y(Y_pt(p))'" r="6" style="fill:#fff; fill-opacity:0.9; stroke:#b91c1c; stroke-width:1.1"/><text x="'p_X(X_pt(p))'" y="'p_Y(Y_pt(p)) + 3'" text-anchor="middle" style="fill:#b91c1c; font-size:8px; font-weight:700">'p'</text>
+#loop
+'  <circle cx="'p_X(B_x) + 13'" cy="'p_Y(B_y) + 104'" r="6" style="fill:#fff; stroke:#b91c1c; stroke-width:1.1"/><text x="'p_X(B_x) + 13'" y="'p_Y(B_y) + 107'" text-anchor="middle" style="fill:#b91c1c; font-size:8px; font-weight:700">1</text><text x="'p_X(B_x) + 22'" y="'p_Y(B_y) + 107'" style="fill:#334155">punt van de wapening</text>
+'</svg>'
+#show
+
+'<a id="vop-model"></a><span class="alleen-scherm"></span>
+# Rekenmodel (Open FEM Studio)
+
+@select krachtsverdeling "Krachtsverdeling in het rekenmodel"
+  lineair-elastisch = 0
+  lineair, met een controle fysisch niet-lineair (GL+FNL) = 1
+@end
+'<b>Rekenmodel.</b> De krachtsverdeling komt uit een <b>lineair-elastische</b> plaatberekening door Open FEM Studio (<code>solve_open_fem_3d</code>): vierhoekige schaalelementen (MITC4, Mindlin-Reissner), maas 'round(a_m/mm)' mm, ongescheurde stijfheid met E<sub>cm</sub> en ν = 'ν'. Geometrisch en fysisch lineair: scheurvorming en de herverdeling daardoor zitten er niet in. Een paal is een lineaire veer k, verdeeld over de paalkop (ook op trek); ponskoppen en stroken zijn platen met hun eigen dikte in hetzelfde middenvlak; de vloerrand is vrij.
+'Belastinggevallen: eigen gewicht, afwerking en twee schaakborden. De combinaties zijn sommen daarvan: UGT (6.10a, opslag ψ<sub>0</sub> = 1,0) bij volle belasting en per schaakbord, frequent (ψ<sub>1</sub> = 'ψ_1') voor de scheurwijdte en karakteristiek voor de doorbuiging.
+'De wapening volgt per punt uit m<sub>x</sub>, m<sub>y</sub> en m<sub>xy</sub> met het drielagenmodel (<code>solve_native_fem</code>, <code>threeLayer</code>: de momenten als krachten in twee buitenlagen, per laag NEN-EN 1992-1-1 bijlage F); de scheurwijdte volgens 7.3.4 (<code>crackWidth</code>) met de staalspanning uit hetzelfde model onder de frequente combinatie (nationale bijlage bij 7.3.1(5)).
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: de controle fysisch niet-lineair (FNL)</summary><i>Fysisch niet-lineair (FNL): kies je dat hierboven, dan rekent Open FEM Studio dezelfde vloer ook met <code>compute_plate_analysis</code> (geometrisch lineair, fysisch niet-lineair): beton volgens NEN-EN 1992-1-1 3.1.5, B500B, trekverstijving per richting volgens 7.4.3 (β = 0,5 bij langdurende en 1,0 bij kortdurende belasting, dezelfde keuze als voor de scheurwijdte), de netten en de bijleg boven de palen als wapeningslagen en de last in stappen. Elke combinatie rekent vanaf de onbelaste vloer. Zo blijkt of de gekozen wapening het draagvermogen haalt, met de staalspanning en de doorbuiging van de gescheurde vloer: zie Controle fysisch niet-lineair. De wapening per zone en per punt blijft op de lineaire krachtsverdeling, want de niet-lineaire berekening geeft de uiterste waarden en geen verdeling over de vloer. Ponskoppen en stroken zijn zones met hun eigen dikte en hun eigen gewicht, in hetzelfde middenvlak: de excentriciteit door de vlakke bovenkant is verwaarloosd, en de netten liggen op hun dekking tot de onder- en bovenkant van de zone.</i></details><span class="alleen-scherm"></span>
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: wat lineair-elastisch betekent</summary><i>Wat lineair-elastisch betekent voor de uitkomst: de wapening op de elastische momenten is een evenwichtsstelsel en daarmee een veilige verdeling, maar de pieken boven de palen zijn hoger en de veldmomenten lager dan in een gescheurde vloer; de doorbuiging is die van de ongescheurde plaat zonder kruip, een ondergrens. Het drielagenmodel is een deeltoets: dwarskracht en pons (module Pons), verankering en detaillering horen er niet bij.</i></details><span class="alleen-scherm"></span>
+#pre
+'Het model in Open FEM Studio. Momenten in kNm/m, positief is trek onder.
+@fem vloer
+  materiaal E_cm; ν
+  maas a_m
+  // de krachtsverdeling voor de wapening: altijd lineair; de controle fysisch
+  // niet-lineair staat verderop (compute_plate_analysis)
+  analyse lineair
+  plaat 0; 0; B_x; B_y; h
+  // de stroken over de paalrijen, binnen de vloer gehouden
+  #if st_x
+  #for j = 0 : n_r
+  plaat 0; max(a_r + j*L_y - b_s/2; 0 m); B_x; min(a_r + j*L_y + b_s/2; B_y) - max(a_r + j*L_y - b_s/2; 0 m); t_sd
+  #loop
+  #end if
+  #if st_y
+  #for i = 0 : n_r
+  plaat max(a_r + i*L_x - b_s/2; 0 m); 0; min(a_r + i*L_x + b_s/2; B_x) - max(a_r + i*L_x - b_s/2; 0 m); B_y; t_sd
+  #loop
+  #end if
+  // een ponskop boven elke paal; de laatste plaat wint
+  #if kop
+  #for i = 0 : n_r
+  #for j = 0 : n_r
+  plaat max(a_r + i*L_x - b_k/2; 0 m); max(a_r + j*L_y - b_k/2; 0 m); min(a_r + i*L_x + b_k/2; B_x) - max(a_r + i*L_x - b_k/2; 0 m); min(a_r + j*L_y + b_k/2; B_y) - max(a_r + j*L_y - b_k/2; 0 m); t_kd
+  #loop
+  #loop
+  #end if
+  veren a_r; a_r; n_r + 1; n_r + 1; L_x; L_y; k_paal; d_kop
+  geval EG
+    eigengewicht 25 kN/m^3
+  geval AFW
+    vlaklast 1 kN/m^2
+  // schaakbord: veld (i, j) met i + j even in Q1, oneven in Q2; de rand hoort bij het randveld
+  geval Q1
+    #for i = 0 : n_r - 1
+    #for j = 0 : n_r - 1
+    #if mod(i + j; 2) ≡ 0
+    vlaklast 1 kN/m^2; if(i ≡ 0; 0 m; a_r + i*L_x); if(j ≡ 0; 0 m; a_r + j*L_y); if(i ≡ n_r - 1; B_x; a_r + (i + 1)*L_x) - if(i ≡ 0; 0 m; a_r + i*L_x); if(j ≡ n_r - 1; B_y; a_r + (j + 1)*L_y) - if(j ≡ 0; 0 m; a_r + j*L_y)
+    #end if
+    #loop
+    #loop
+  geval Q2
+    #for i = 0 : n_r - 1
+    #for j = 0 : n_r - 1
+    #if mod(i + j; 2) ≡ 1
+    vlaklast 1 kN/m^2; if(i ≡ 0; 0 m; a_r + i*L_x); if(j ≡ 0; 0 m; a_r + j*L_y); if(i ≡ n_r - 1; B_x; a_r + (i + 1)*L_x) - if(i ≡ 0; 0 m; a_r + i*L_x); if(j ≡ n_r - 1; B_y; a_r + (j + 1)*L_y) - if(j ≡ 0; 0 m; a_r + j*L_y)
+    #end if
+    #loop
+    #loop
+  combinatie UGT_vol = γ_Gd*EG + γ_Gd*f_afw*AFW + γ_Q*f_q*Q1 + γ_Q*f_q*Q2
+  combinatie UGT_sb1 = γ_Gd*EG + γ_Gd*f_afw*AFW + γ_Q*f_q*Q1
+  combinatie UGT_sb2 = γ_Gd*EG + γ_Gd*f_afw*AFW + γ_Q*f_q*Q2
+  combinatie BGT = EG + f_afw*AFW + f_q*Q1 + f_q*Q2
+  // frequent (voor de scheurwijdte): volle belasting en elk schaakbord
+  combinatie BGT_fr = EG + f_afw*AFW + ψ_1*f_q*Q1 + ψ_1*f_q*Q2
+  combinatie BGT_f1 = EG + f_afw*AFW + ψ_1*f_q*Q1
+  combinatie BGT_f2 = EG + f_afw*AFW + ψ_1*f_q*Q2
+@end
+#hide
+'Is er gerekend? Zonder antwoord van FEM Studio bestaat vloer_UGT_vol_R_max niet:
+'dan mislukt deze regel en is gerekend geen 1 (NaN), en volgt hieronder niets uit het model.
+gerekend = bool(vloer_UGT_vol_R_max > 0 kN)
+#show
+#if gerekend ≡ 1
+#hide
+'Het gemiddelde moment m_r over een lijn dwars op r: op afstand s langs r, van t1 tot t2 dwars.
+m_l(c; r; s; t1; t2) = fem_strook(vloer; c; if(r ≡ 1; "mx"; "my"); if(r ≡ 1; s; t1); if(r ≡ 1; t1; s); if(r ≡ 1; s; t2); if(r ≡ 1; t2; s))
+'Hetzelfde over twee gelijke stukken aan weerszijden van de paalrij b: van b + e1 tot b + e2 en gespiegeld.
+m_2(c; r; s; b; e1; e2) = (m_l(c; r; s; b + e1; b + e2) + m_l(c; r; s; b - e2; b - e1))/2
+'De omhullende over de drie UGT-combinaties: M het grootste veldmoment (trek onder), N het grootste steunmoment (trek boven, positief).
+M_1(r; s; t1; t2) = max(m_l("UGT_vol"; r; s; t1; t2); m_l("UGT_sb1"; r; s; t1; t2); m_l("UGT_sb2"; r; s; t1; t2))
+N_1(r; s; t1; t2) = -min(m_l("UGT_vol"; r; s; t1; t2); m_l("UGT_sb1"; r; s; t1; t2); m_l("UGT_sb2"; r; s; t1; t2))
+M_2(r; s; b; e1; e2) = max(m_2("UGT_vol"; r; s; b; e1; e2); m_2("UGT_sb1"; r; s; b; e1; e2); m_2("UGT_sb2"; r; s; b; e1; e2))
+N_2(r; s; b; e1; e2) = -min(m_2("UGT_vol"; r; s; b; e1; e2); m_2("UGT_sb1"; r; s; b; e1; e2); m_2("UGT_sb2"; r; s; b; e1; e2))
+'Veld (trek onder): middenstrook, kolomstrook buiten de strook, de strook zelf.
+Z_1(r) = M_1(r; s_m(r); b_0(r) + L_b(r)/4; b_0(r) + 3*L_b(r)/4)
+Z_2(r) = if(e_sa(r) < L_b(r)/4; M_2(r; s_m(r); b_0(r); e_sa(r); L_b(r)/4); 0 kN)
+Z_3(r) = if(e_sa(r) > 0 m; M_1(r; s_m(r); b_0(r) - e_sa(r); b_0(r) + e_sa(r)); 0 kN)
+'Boven de paal s (trek boven): kolomstrook op de paal-as buiten kop en strook, aan de rand van de verdikking, de strook, de kop, en de middenstrook.
+Z_4(r; s) = N_2(r; s; b_0(r); max(e_k; e_sa(r)); L_b(r)/4)
+'Aan de rand van een verdikking middelt FEM Studio de momenten per plaat, van één kant: daar telt ook
+'de waarde die vanuit de dunne vloer (op 1, 2 en 3 mazen) naar de rand is doorgetrokken.
+N_r(r; s) = N_2(r; s; b_0(r); e_sa(r); L_b(r)/4)
+Z_5(r; s) = if(c_v(r) > 0 m; max(N_r(r; s + c_v(r)); 3*N_r(r; s + c_v(r) + a_m) - 3*N_r(r; s + c_v(r) + 2*a_m) + N_r(r; s + c_v(r) + 3*a_m)); 0 kN)
+'De strook bij de paal: naast de kop op de paal-as, en met een kop ook aan de rand van de kop (doorgetrokken als hierboven).
+N_s(r; s) = N_2(r; s; b_0(r); 0 m; e_sa(r))
+Z_6(r; s) = if(e_sa(r) > 0 m; max(if(e_sa(r) > e_k; N_2(r; s; b_0(r); e_k; e_sa(r)); 0 kN); if(e_k > 0 m; max(N_s(r; s + e_k); 3*N_s(r; s + e_k + a_m) - 3*N_s(r; s + e_k + 2*a_m) + N_s(r; s + e_k + 3*a_m)); 0 kN)); 0 kN)
+Z_7(r; s) = if(e_k > 0 m; N_1(r; s; b_0(r) - e_k; b_0(r) + e_k); 0 kN)
+Z_8(r; s) = N_1(r; s; b_0(r) + L_b(r)/4; b_0(r) + 3*L_b(r)/4)
+'Randveld: het eindveld langs r, op 0,3, 0,4 en 0,5·L van de buitenste paalrij.
+R_f(r; f) = max(M_1(r; a_r + f*L_a(r); b_0(r) + L_b(r)/4; b_0(r) + 3*L_b(r)/4); if(e_sa(r) < L_b(r)/4; M_2(r; a_r + f*L_a(r); b_0(r); e_sa(r); L_b(r)/4); 0 kN))
+R_s(r; f) = if(e_sa(r) > 0 m; M_1(r; a_r + f*L_a(r); b_0(r) - e_sa(r); b_0(r) + e_sa(r)); 0 kN)
+'Randstrook langs de vrije rand: van de rand tot een kwart veld voorbij de buitenste paalrij;
+'met een strook over de buitenste paalrij het dunne deel (R_r) en de strook zelf (R_e) apart.
+R_r(r; s) = M_1(r; s; if(e_sa(r) > 0 m; a_r + e_sa(r); 0 m); a_r + L_b(r)/4)
+R_e(r; s) = if(e_sa(r) > 0 m; M_1(r; s; max(a_r - e_sa(r); 0 m); a_r + e_sa(r)); 0 kN)
+R_n(r; s) = N_1(r; s; a_r + max(e_k; e_sa(r)); a_r + L_b(r)/4)
+#show
+#end if
+
+'<a id="vop-kracht"></a><span class="alleen-scherm"></span>
+# Krachtsverdeling
+
+#pre
+@select beeld_groot "Grootheid in het 3D-beeld"
+  m_x (wapening in x) = 1
+  m_y (wapening in y) = 2
+  m_xy (wringend moment) = 3
+  doorbuiging w = 4
+@end
+@select beeld_comb "Combinatie in het 3D-beeld"
+  UGT, volle belasting = 1
+  UGT, schaakbord 1 = 2
+  UGT, schaakbord 2 = 3
+  BGT frequent, volle belasting = 4
+@end
+#show
+#if gerekend ≡ 1
+#hide
+'De twee kleurbeelden naast elkaar, met de punten erin: k_X en k_Y zijn de plek in een beeld van k_W breed (zoals fem_svg hem tekent).
+k_W = 250
+k_sc = min((k_W - 28)/(B_x/(1 m)); 420/(B_y/(1 m)))
+k_H = 26 + B_y/(1 m)*k_sc + 58
+k_X(x) = (k_W - B_x/(1 m)*k_sc)/2 + x/(1 m)*k_sc
+k_Y(y) = 26 + (B_y - y)/(1 m)*k_sc
+k_mx = fem_svg(vloer; "UGT_vol"; "mx"; k_W)
+k_my = fem_svg(vloer; "UGT_vol"; "my"; k_W)
+#show
+'<svg class="dxf" viewbox="0 0 '2*k_W + 20' 'k_H'" xmlns="http://www.w3.org/2000/svg" style="font-size:8px; width:100%; max-width:'2*k_W + 20'px;">
+'  <svg x="0" y="0" width="'k_W'" height="'k_H'">'k_mx'</svg>
+'  <svg x="'k_W + 20'" y="0" width="'k_W'" height="'k_H'">'k_my'</svg>
+#for p = 1 : n_pt
+'  <circle cx="'k_X(X_pt(p))'" cy="'k_Y(Y_pt(p))'" r="5" style="fill:#fff; fill-opacity:0.85; stroke:#111827; stroke-width:0.8"/><text x="'k_X(X_pt(p))'" y="'k_Y(Y_pt(p)) + 2.7'" text-anchor="middle" style="fill:#111827; font-size:7px; font-weight:700">'p'</text>
+#loop
+'</svg>'
+'<i class="ook-afdruk">m<sub>x</sub> en m<sub>y</sub> bij volle belasting (UGT), met het grootste en kleinste moment op hun plek: rood is trek boven, blauw trek onder. De cijfers in het linker beeld zijn de punten van de wapeningsberekening.</i>
+#hide
+ev_R = vloer_AFW_R_som/(1 kN/m^2*B_x*B_y)
+R_min = min(vloer_UGT_vol_R_min; vloer_UGT_sb1_R_min; vloer_UGT_sb2_R_min; vloer_BGT_R_min)
+#show
+'<i class="ook-afdruk">Evenwicht van het model: Σ R / Σ last = 'round(ev_R; 4)' (belastinggeval afwerking).</i>
+#if R_min < 0 kN
+'<b style="color:#b91c1c">Let op:</b> een paal trekt (R<sub>min</sub> = 'round(R_min/kN; 1)' kN). De veer in het model houdt de vloer daar vast; kan de paal geen trek opnemen, dan klopt de krachtsverdeling niet.
+#end if
+#pre
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: het 3D-beeld</summary><i>De krachtsverdeling in 3D, met de grootheid en de combinatie die hierboven gekozen zijn: elk punt op de hoogte van zijn waarde, trek onder en doorbuiging omlaag. Het wringend moment m<sub>xy</sub> is het grootst rond de palen aan de rand en in de hoekvelden; de doorbuiging is die van de ongescheurde plaat. Draai het beeld met de muis.</i></details>
+@3d
+eenheid m
+camera iso
+hoogte 360
+raster uit
+assen uit
+#if 10*beeld_groot + beeld_comb ≡ 11
+fem vloer UGT_vol mx
+#else if 10*beeld_groot + beeld_comb ≡ 12
+fem vloer UGT_sb1 mx
+#else if 10*beeld_groot + beeld_comb ≡ 13
+fem vloer UGT_sb2 mx
+#else if 10*beeld_groot + beeld_comb ≡ 14
+fem vloer BGT_fr mx
+#else if 10*beeld_groot + beeld_comb ≡ 21
+fem vloer UGT_vol my
+#else if 10*beeld_groot + beeld_comb ≡ 22
+fem vloer UGT_sb1 my
+#else if 10*beeld_groot + beeld_comb ≡ 23
+fem vloer UGT_sb2 my
+#else if 10*beeld_groot + beeld_comb ≡ 24
+fem vloer BGT_fr my
+#else if 10*beeld_groot + beeld_comb ≡ 31
+fem vloer UGT_vol mxy
+#else if 10*beeld_groot + beeld_comb ≡ 32
+fem vloer UGT_sb1 mxy
+#else if 10*beeld_groot + beeld_comb ≡ 33
+fem vloer UGT_sb2 mxy
+#else if 10*beeld_groot + beeld_comb ≡ 34
+fem vloer BGT_fr mxy
+#else if 10*beeld_groot + beeld_comb ≡ 41
+fem vloer UGT_vol w
+#else if 10*beeld_groot + beeld_comb ≡ 42
+fem vloer UGT_sb1 w
+#else if 10*beeld_groot + beeld_comb ≡ 43
+fem vloer UGT_sb2 w
+#else if 10*beeld_groot + beeld_comb ≡ 44
+fem vloer BGT_fr w
+#end if
+@end
+#hide
+'Statica van het binnenveld in x tussen paalrij 1 en 2 bij volle belasting: m_veld − (m_l + m_r)/2 = w·l_n²/8,
+'met de doorsneden één maas buiten de paalkop, de ponskop en de dwarse strook (c_st): op de rand zelf
+'middelt FEM Studio van één kant. Over de breedte L_y van één veld en over de hele vloer.
+c_st = max(d_kop/2; e_k; e_sc(1)) + a_m
+x_l = a_r + L_x + c_st
+x_r = a_r + 2*L_x - c_st
+x_m = (x_l + x_r)/2
+l_n = x_r - x_l
+y_0 = a_r + p_b*L_y
+q_d = γ_Gd*(25 kN/m^3*h + g_afw) + γ_Q*q_k
+q_s = γ_Gd*25 kN/m^3*(t_sd - h)
+W_s = 0 m
+#for j = 0 : n_r
+W_s = W_s + st_x*(min(a_r + j*L_y + b_s/2; B_y) - max(a_r + j*L_y - b_s/2; 0 m))
+#loop
+M_vb = fem_strook(vloer; "UGT_vol"; "mx"; x_m; y_0 - L_y/2; x_m; y_0 + L_y/2)*L_y
+M_lb = fem_strook(vloer; "UGT_vol"; "mx"; x_l; y_0 - L_y/2; x_l; y_0 + L_y/2)*L_y
+M_rb = fem_strook(vloer; "UGT_vol"; "mx"; x_r; y_0 - L_y/2; x_r; y_0 + L_y/2)*L_y
+M_vv = fem_strook(vloer; "UGT_vol"; "mx"; x_m; 0 m; x_m; B_y)*B_y
+M_lv = fem_strook(vloer; "UGT_vol"; "mx"; x_l; 0 m; x_l; B_y)*B_y
+M_rv = fem_strook(vloer; "UGT_vol"; "mx"; x_r; 0 m; x_r; B_y)*B_y
+stat_b = (M_vb - (M_lb + M_rb)/2)/((q_d*L_y + q_s*st_x*b_s)*l_n^2/8)
+stat_v = (M_vv - (M_lv + M_rv)/2)/((q_d*B_y + q_s*W_s)*l_n^2/8)
+#pre
+'Evenwicht van het binnenveld (statica, hoort 1 te zijn): <b>'round(stat_v; 3)'</b> over de hele vloerbreedte, 'round(stat_b; 3)' over één veldbreedte.
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: de statica</summary><i>De statica van het binnenveld: het veldmoment min het gemiddelde steunmoment, over de breedte, gedeeld door w·l<sub>n</sub><sup>2</sup>/8, met l<sub>n</sub> = 'round(l_n/mm)' mm tussen de doorsneden één maas buiten de paalkop of de verdikking. Over de hele vloerbreedte is dit het evenwicht en hoort het 1 te zijn; over één veldbreedte gaat er ook wat dwarskracht over de lengtelijnen. Vlak naast de paal komt het lager uit, omdat FEM Studio de momenten op een knoop middelt.</i></details>
+#show
+#else
+'<b style="color:#b91c1c">Nog niet gerekend.</b> De krachtsverdeling volgt uit Open FEM Studio.
+#end if
+
+'<a id="vop-wapening"></a><span class="alleen-scherm"></span>
+# Wapening
+
+ø_o = ?{12}*(mm)', net onder, Ø<span class="kolom-4"></span>'
+s_o = ?{150}*(mm)', h.o.h.<span class="kolom-4"></span>'
+ø_b = ?{10}*(mm)', net boven, Ø<span class="kolom-4"></span>'
+s_b = ?{150}*(mm)', h.o.h.<span class="kolom-4"></span>'
+ø_bb = ?{12}*(mm)', bijleg boven de palen, Ø<span class="kolom-4"></span>'
+s_bb = ?{150}*(mm)', h.o.h.<span class="kolom-4"></span>'
+#if stroken > 0
+ø_bs = ?{16}*(mm)', bijleg onder in de stroken, Ø<span class="kolom-4"></span>'
+s_bs = ?{150}*(mm)', h.o.h.<span class="kolom-4"></span>'
+#else
+#hide
+ø_bs = 16 mm
+s_bs = 150 mm
+#show
+#end if
+w_lim = ?{0.3}*(mm)', toelaatbare scheurwijdte w<sub>max</sub><span class="kolom-4"></span>'
+@select duur "Belastingsduur (scheurwijdte en FNL)"
+  langdurend (k_t = 0,4) = 0
+  kortdurend (k_t = 0,6) = 1
+@end
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: toelaatbare scheurwijdte (tabel 7.1N)</summary><i>De toelaatbare scheurwijdte volgens de nationale bijlage bij 7.3.1(5) (tabel 7.1N), onder de frequente combinatie: 0,4 mm in X0 en XC1, 0,3 mm in XC2 tot en met XC4, 0,2 mm in XD en XS. Dezelfde waarde geldt verderop voor de scheurwijdte door krimp.</i></details><span class="alleen-scherm"></span>
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: ligging van netten en bijleg</summary><i>De netten liggen over de hele vloer, de x-staven buiten. De bijleg boven ligt in beide richtingen over de kolomstrook (een half veld breed) boven elke paal; de bijleg onder ligt onder in de stroken. Hoeveel ponswapening nodig is, rekent de module Pons; hier staat ze alleen in beeld.</i></details><span class="alleen-scherm"></span>
+
+#hide
+'Per meter breedte (mm²/mm), en d van de binnenste laag bij dikte t.
+a_o = π*ø_o^2/4/s_o
+a_b = π*ø_b^2/4/s_b
+a_bb = π*ø_bb^2/4/s_bb
+a_bs = π*ø_bs^2/4/s_bs
+d_o(t) = t - c_nom - ø_o - ø_o/2
+d_b(t) = t - c_nom - ø_b - max(ø_b; ø_bb)/2
+d_s = t_sd - c_nom - ø_bs/2 - if(st_x + st_y > 1; ø_bs; 0 mm)
+'Het opneembaar moment per meter, z = 0,9·d, B500.
+m_Ro(t) = a_o*f_yd*0.9*d_o(t) to kN
+m_Rb(t) = a_b*f_yd*0.9*d_b(t) to kN
+m_Rbb(t) = (a_b + a_bb)*f_yd*0.9*d_b(t) to kN
+m_Rs = (a_o*d_o(h) + a_bs*d_s)*f_yd*0.9 to kN
+k_t = if(duur ≡ 1; 0.6; 0.4)
+n_s0 = concat("Ø"; string(ø_o/(1 mm)); "-"; string(s_o/(1 mm)))
+n_s1 = concat("Ø"; string(ø_bs/(1 mm)); "-"; string(s_bs/(1 mm)))
+n_s2 = concat("Ø"; string(ø_b/(1 mm)); "-"; string(s_b/(1 mm)))
+n_s3 = concat(n_s2; " + Ø"; string(ø_bb/(1 mm)); "-"; string(s_bb/(1 mm)))
+#show
+
+#if gerekend ≡ 1
+#hide
+'De zones, in beide richtingen. Een zone met meerdere gevallen (richting, paal, doorsnede) neemt het maatgevende: de grootste m/m_Rd.
+o_1 = max(Z_1(1); Z_1(2))
+o_2 = max(Z_2(1); Z_2(2))
+o_3 = max(R_f(1; 0.3); R_f(1; 0.4); R_f(1; 0.5); R_f(2; 0.3); R_f(2; 0.4); R_f(2; 0.5))
+o_4 = max(R_r(1; s_m(1)); R_r(2; s_m(2)); R_r(1; a_r + 0.3*L_x); R_r(1; a_r + 0.4*L_x); R_r(1; a_r + 0.5*L_x); R_r(2; a_r + 0.3*L_y); R_r(2; a_r + 0.4*L_y); R_r(2; a_r + 0.5*L_y))
+o_5 = max(Z_3(1); Z_3(2); R_s(1; 0.3); R_s(1; 0.4); R_s(1; 0.5); R_s(2; 0.3); R_s(2; 0.4); R_s(2; 0.5); R_e(1; s_m(1)); R_e(2; s_m(2)); R_e(1; a_r + 0.4*L_x); R_e(2; a_r + 0.4*L_y))
+'Middenstrook boven de paallijn: dikte t_as (in een dwarse strook dikker).
+u_6x = max(Z_8(1; s_0(1)); Z_8(1; s_1(1)))/m_Rb(t_as(1))
+u_6y = max(Z_8(2; s_0(2)); Z_8(2; s_1(2)))/m_Rb(t_as(2))
+b_6 = max(Z_8(1; s_0(1)); Z_8(1; s_1(1)); Z_8(2; s_0(2)); Z_8(2; s_1(2)))
+t_6 = if(u_6x ≥ u_6y; t_as(1); t_as(2))
+'Kolomstrook boven de binnenpaal: op de paal-as (dikte t_as) en aan de rand van de verdikking (dikte h).
+v_7 = [Z_4(1; s_0(1))/m_Rbb(t_as(1)); Z_5(1; s_0(1))/m_Rbb(h); Z_4(2; s_0(2))/m_Rbb(t_as(2)); Z_5(2; s_0(2))/m_Rbb(h)]
+w_7 = [Z_4(1; s_0(1)); Z_5(1; s_0(1)); Z_4(2; s_0(2)); Z_5(2; s_0(2))]
+q_7 = [t_as(1); h; t_as(2); h]
+k_7 = take(1; order(-v_7))
+b_7 = take(k_7; w_7)
+t_7 = take(k_7; q_7)
+'Kolomstrook boven de randpalen: de eerste binnenpaal (twee kanten) en de paal in de rand (één kant, naar binnen).
+v_8 = [Z_4(1; s_1(1))/m_Rbb(t_as(1)); Z_5(1; s_1(1))/m_Rbb(h); Z_4(2; s_1(2))/m_Rbb(t_as(2)); Z_5(2; s_1(2))/m_Rbb(h); max(R_n(1; s_0(1)); R_n(1; s_1(1)))/m_Rbb(t_as(1)); max(R_n(2; s_0(2)); R_n(2; s_1(2)))/m_Rbb(t_as(2))]
+w_8 = [Z_4(1; s_1(1)); Z_5(1; s_1(1)); Z_4(2; s_1(2)); Z_5(2; s_1(2)); max(R_n(1; s_0(1)); R_n(1; s_1(1))); max(R_n(2; s_0(2)); R_n(2; s_1(2)))]
+q_8 = [t_as(1); h; t_as(2); h; t_as(1); t_as(2)]
+k_8 = take(1; order(-v_8))
+b_8 = take(k_8; w_8)
+t_8 = take(k_8; q_8)
+'Ponskop en strook boven de paal: de binnenpaal en de eerste binnenpaal.
+b_9 = max(Z_7(1; s_0(1)); Z_7(1; s_1(1)); Z_7(2; s_0(2)); Z_7(2; s_1(2)))
+b_10 = max(Z_6(1; s_0(1)); Z_6(1; s_1(1)); Z_6(2; s_0(2)); Z_6(2; s_1(2)))
+'De piek op de paal, ter informatie.
+m_pk(c) = -min(fem_waarde(vloer; c; "mx"; s_0(1); b_0(1)); fem_waarde(vloer; c; "mx"; s_1(1); b_0(1)); fem_waarde(vloer; c; "my"; b_0(2); s_0(2)); fem_waarde(vloer; c; "my"; b_0(2); s_1(2)))
+m_piek = max(m_pk("UGT_vol"); m_pk("UGT_sb1"); m_pk("UGT_sb2"))
+'Toetsing per zone.
+UC_1 = o_1/m_Ro(h)
+UC_2 = o_2/m_Ro(h)
+UC_3 = o_3/m_Ro(h)
+UC_4 = o_4/m_Ro(h)
+UC_5 = if(st_x + st_y > 0; o_5/m_Rs; 0)
+UC_6 = b_6/m_Rb(t_6)
+UC_7 = b_7/m_Rbb(t_7)
+UC_8 = b_8/m_Rbb(t_8)
+UC_9 = if(kop ≡ 1; b_9/m_Rbb(t_kd); 0)
+UC_10 = if(st_x + st_y > 0; b_10/m_Rbb(t_sd); 0)
+UC_o = max(UC_1; UC_2; UC_3; UC_4)
+UC_b = max(UC_6; UC_7; UC_8; UC_9; UC_10; UC_5)
+#show
+#hide
+'Bijleg boven: zo ver als de kolomstrook meer vraagt dan het net boven, plus d en de verankeringslengte (8.4.3, matige hechting boven).
+f_bd = 2.25*0.7*0.7*f_ctm/γ_c
+l_bd = ø_bb/4*f_yd/f_bd to mm
+z_x = 0 m
+z_y = 0 m
+#for k = 1 : 10
+z_x = if(max(N_2(1; s_0(1) + k*L_x/20; b_0(1); 0 m; L_y/4); N_2(1; s_0(1) - k*L_x/20; b_0(1); 0 m; L_y/4); N_2(1; s_1(1) + k*L_x/20; b_0(1); 0 m; L_y/4); N_2(1; s_1(1) - k*L_x/20; b_0(1); 0 m; L_y/4)) > m_Rb(h); k*L_x/20; z_x)
+z_y = if(max(N_2(2; s_0(2) + k*L_y/20; b_0(2); 0 m; L_x/4); N_2(2; s_0(2) - k*L_y/20; b_0(2); 0 m; L_x/4); N_2(2; s_1(2) + k*L_y/20; b_0(2); 0 m; L_x/4); N_2(2; s_1(2) - k*L_y/20; b_0(2); 0 m; L_x/4)) > m_Rb(h); k*L_y/20; z_y)
+#loop
+l_bx = min(2*ceil((z_x + d_b(h) + l_bd)/(50 mm))*50 mm; L_x) to m
+l_by = min(2*ceil((z_y + d_b(h) + l_bd)/(50 mm))*50 mm; L_y) to m
+'Stoelen tussen de netten: van de bovenkant van het net onder tot de onderkant van het net boven.
+h_st = h - 2*c_nom - 2*ø_o - 2*ø_b
+#show
+
+'<a id="vop-punt"></a><span class="alleen-scherm"></span>
+# Wapening per punt (drielagenmodel)
+
+#pre
+@select punt_uit "Punt van de wapening dat op het scherm is uitgeschreven"
+  het maatgevende punt = 0
+  1 binnenveld midden = 1
+  2 binnenveld paallijn = 2
+  3 binnenpaal naast de paalkop = 3
+  4 randveld midden = 4
+  5 randveld paallijn = 5
+  6 randstrook vrije rand = 6
+  7 hoekveld midden = 7
+  8 hoekveld diagonaal bij de paal = 8
+  9 randpaal naast de paalkop = 9
+  10 naast de verdikking bij de paal (als die er is) = 10
+@end
+#show
+#hide
+'De buitenlagen van het drielagenmodel liggen om het hart van de twee staaflagen van een net: a is de afstand van dat hart tot
+'het vlak, de laag is 2·a dik en de arm tussen de lagen z = t − a_onder − a_boven. In een strook ligt de bijleg onderin.
+a_lb = c_nom + ø_b
+a_st = c_nom + if(st_x + st_y > 1; ø_bs; ø_bs/2)
+'Per punt één keer: a onder (AO), of de bijleg boven er ligt (BX voor de x-staven: l_bx lang en een half veld breed; BY voor de
+'y-staven), en de aanwezige wapening per meter in de vier lagen: 1 onder x, 2 onder y, 3 boven x, 4 boven y. In een strook ligt
+'het net hoger dan de bijleg: het telt mee naar zijn arm (f_n0).
+AO_V = []
+BX_V = []
+BY_V = []
+A1_V = []
+A2_V = []
+A3_V = []
+A4_V = []
+#for p = 1 : n_pt
+a_l0 = if(SS_pt(p) ≡ 1; a_st; c_nom + ø_o)
+f_n0 = if(SS_pt(p) ≡ 1; (h - c_nom - ø_o - a_lb)/(t_pt(p) - a_l0 - a_lb); 1)
+b_x0 = if(And(abs(u_x(X_pt(p))) ≤ l_bx/2; abs(v_y(Y_pt(p))) ≤ L_y/4); 1; 0)
+b_y0 = if(And(abs(v_y(Y_pt(p))) ≤ l_by/2; abs(u_x(X_pt(p))) ≤ L_x/4); 1; 0)
+AO_V = concat(AO_V; [a_l0])
+BX_V = concat(BX_V; [b_x0])
+BY_V = concat(BY_V; [b_y0])
+A1_V = concat(A1_V; [(a_o*f_n0 + SS_pt(p)*SX_pt(p)*a_bs)*b_s1])
+A2_V = concat(A2_V; [(a_o*f_n0 + SS_pt(p)*SY_pt(p)*a_bs)*b_s1])
+A3_V = concat(A3_V; [(a_b + b_x0*a_bb)*b_s1])
+A4_V = concat(A4_V; [(a_b + b_y0*a_bb)*b_s1])
+#loop
+a_lo(p) = take(p; AO_V)
+z_pt(p) = t_pt(p) - a_lo(p) - a_lb
+A_3(p; j) = if(j ≡ 1; take(p; A1_V); if(j ≡ 2; take(p; A2_V); if(j ≡ 3; take(p; A3_V); take(p; A4_V)))) to mm^2
+'De momenten in een punt bij combinatie c: 1 UGT vol, 2 en 3 UGT schaakbord, 4 frequent vol, 5 en 6 frequent schaakbord.
+c_n(c) = if(c ≡ 1; "UGT_vol"; if(c ≡ 2; "UGT_sb1"; if(c ≡ 3; "UGT_sb2"; if(c ≡ 4; "BGT_fr"; if(c ≡ 5; "BGT_f1"; "BGT_f2")))))
+N_c = ["vol"; "sb 1"; "sb 2"]
+N_j = ["onder x"; "onder y"; "boven x"; "boven y"]
+m_0(c; q; p) = fem_waarde(vloer; c; q; X_pt(p); Y_pt(p))
+'Punt 10 ligt aan de rand van een verdikking: daar middelt FEM Studio de momenten per plaat, van één kant. Daar telt de grootste
+'van de waarde op de rand en de waarde die vanuit de dunnere plaat (op 1, 2 en 3 mazen) naar de rand is doorgetrokken.
+m_k(c; q; p; k) = fem_waarde(vloer; c; q; X_pt(p) + if(r_m ≡ 1; k*a_m; 0 m); Y_pt(p) + if(r_m ≡ 1; 0 m; k*a_m))
+m_e(c; q; p) = 3*m_k(c; q; p; 1) - 3*m_k(c; q; p; 2) + m_k(c; q; p; 3)
+m_r(c; q; p) = if(abs(m_e(c; q; p)) > abs(m_0(c; q; p)); m_e(c; q; p); m_0(c; q; p))
+'Alle momenten één keer: per punt zes combinaties achter elkaar, zodat aanroep k = 6·(p − 1) + c bij punt p en combinatie c hoort.
+MX_V = []
+MY_V = []
+MXY_V = []
+#for p = 1 : n_pt
+#for c = 1 : 6
+#if p ≡ 10
+MX_V = concat(MX_V; [m_r(c_n(c); "mx"; p)])
+MY_V = concat(MY_V; [m_r(c_n(c); "my"; p)])
+MXY_V = concat(MXY_V; [m_r(c_n(c); "mxy"; p)])
+#else
+MX_V = concat(MX_V; [m_0(c_n(c); "mx"; p)])
+MY_V = concat(MY_V; [m_0(c_n(c); "my"; p)])
+MXY_V = concat(MXY_V; [m_0(c_n(c); "mxy"; p)])
+#end if
+#loop
+#loop
+mx_pt(p; c) = take(6*(p - 1) + c; MX_V)
+my_pt(p; c) = take(6*(p - 1) + c; MY_V)
+mxy_pt(p; c) = take(6*(p - 1) + c; MXY_V)
+#show
+#if 2*a_lb + 2*(c_nom + ø_o) ≥ h
+'<b style="color:#b91c1c">Let op:</b> de twee buitenlagen van het drielagenmodel (samen 'round((2*a_lb + 2*(c_nom + ø_o))/mm)' mm) passen niet in de vloerdikte. Met deze dekking en staven rekent het model niet.
+#end if
+@kern drie = solve_native_fem
+  // per punt zes aanroepen: de drie UGT-combinaties en de drie frequente
+  per k = 1 : 6*n_pt
+  inputs.kind = "threeLayer"
+  // alleen buiging: geen krachten in het vlak, en de dwarskracht hoort bij de pons
+  inputs.input.forces.nx = 0
+  inputs.input.forces.ny = 0
+  inputs.input.forces.nxy = 0
+  inputs.input.forces.mx = round(take(k; MX_V)/(1 kN); 3)
+  inputs.input.forces.my = round(take(k; MY_V)/(1 kN); 3)
+  inputs.input.forces.mxy = round(take(k; MXY_V)/(1 kN); 3)
+  inputs.input.forces.vx = 0
+  inputs.input.forces.vy = 0
+  inputs.input.thicknessMm = t_pt(ceil(k/6))
+  inputs.input.topSkinMm = 2*a_lb
+  inputs.input.bottomSkinMm = 2*a_lo(ceil(k/6))
+  inputs.input.topReinforcement.asX = take(ceil(k/6); A3_V)/(1 mm^2)
+  inputs.input.topReinforcement.asY = take(ceil(k/6); A4_V)/(1 mm^2)
+  inputs.input.bottomReinforcement.asX = take(ceil(k/6); A1_V)/(1 mm^2)
+  inputs.input.bottomReinforcement.asY = take(ceil(k/6); A2_V)/(1 mm^2)
+  inputs.input.fcdMpa = f_cd
+  inputs.input.fydMpa = f_yd
+  inputs.input.nuPrime = ν_1
+  inputs.input.compressionModel = "ec2AnnexF"
+@end
+#hide
+'Is het drielagenmodel gerekend? Zonder antwoord bestaat drie.aantal niet en is ger_3 geen 1.
+ger_3 = bool(drie.aantal > 0)
+#show
+#if ger_3 ≡ 1
+#hide
+'De uitkomsten per aanroep: de benutting van de wapening in de vier lagen (1 onder x, 2 onder y, 3 boven x, 4 boven y) en van het
+'beton in de buitenlagen (5 onder, 6 boven), en de benodigde wapening in mm²/m.
+U_1 = drie.result.bottom.utilizationAsX
+U_2 = drie.result.bottom.utilizationAsY
+U_3 = drie.result.top.utilizationAsX
+U_4 = drie.result.top.utilizationAsY
+U_5 = drie.result.bottom.utilizationCompression
+U_6 = drie.result.top.utilizationCompression
+G_1 = drie.result.bottom.requiredAsXmm2PerM
+G_2 = drie.result.bottom.requiredAsYmm2PerM
+G_3 = drie.result.top.requiredAsXmm2PerM
+G_4 = drie.result.top.requiredAsYmm2PerM
+'Per punt één keer: de benutting van het staal per UGT-combinatie (u_a vol, u_b en u_d de schaakborden), het grootste daarvan
+'(US), de maatgevende combinatie (CG), de benutting van het beton (UB), de benodigde wapening per laag (het grootste over de
+'drie combinaties), en de staalspanning per laag onder de frequente combinatie (SG): de benutting maal f_yd is n/A_s.
+US_V = []
+UB_V = []
+CG_V = []
+G1_V = []
+G2_V = []
+G3_V = []
+G4_V = []
+SG_V = []
+UC_pt = 0
+UC_bt = 0
+p_max = 1
+u_mx = 0
+#for p = 1 : n_pt
+k_p = 6*(p - 1)
+u_a = max(take(k_p + 1; U_1); take(k_p + 1; U_2); take(k_p + 1; U_3); take(k_p + 1; U_4))
+u_b = max(take(k_p + 2; U_1); take(k_p + 2; U_2); take(k_p + 2; U_3); take(k_p + 2; U_4))
+u_d = max(take(k_p + 3; U_1); take(k_p + 3; U_2); take(k_p + 3; U_3); take(k_p + 3; U_4))
+u_s = max(u_a; u_b; u_d)
+u_bt = max(take(k_p + 1; U_5); take(k_p + 2; U_5); take(k_p + 3; U_5); take(k_p + 1; U_6); take(k_p + 2; U_6); take(k_p + 3; U_6))
+US_V = concat(US_V; [u_s])
+UB_V = concat(UB_V; [u_bt])
+CG_V = concat(CG_V; [if(u_a ≥ max(u_b; u_d); 1; if(u_b ≥ u_d; 2; 3))])
+G1_V = concat(G1_V; [max(take(k_p + 1; G_1); take(k_p + 2; G_1); take(k_p + 3; G_1))])
+G2_V = concat(G2_V; [max(take(k_p + 1; G_2); take(k_p + 2; G_2); take(k_p + 3; G_2))])
+G3_V = concat(G3_V; [max(take(k_p + 1; G_3); take(k_p + 2; G_3); take(k_p + 3; G_3))])
+G4_V = concat(G4_V; [max(take(k_p + 1; G_4); take(k_p + 2; G_4); take(k_p + 3; G_4))])
+SG_V = concat(SG_V; [f_yd*max(take(k_p + 4; U_1); take(k_p + 5; U_1); take(k_p + 6; U_1)); f_yd*max(take(k_p + 4; U_2); take(k_p + 5; U_2); take(k_p + 6; U_2)); f_yd*max(take(k_p + 4; U_3); take(k_p + 5; U_3); take(k_p + 6; U_3)); f_yd*max(take(k_p + 4; U_4); take(k_p + 5; U_4); take(k_p + 6; U_4))])
+p_max = if(max(u_s; u_bt) > u_mx; p; p_max)
+u_mx = max(u_mx; u_s; u_bt)
+UC_pt = max(UC_pt; u_s)
+UC_bt = max(UC_bt; u_bt)
+#loop
+US_pt(p) = take(p; US_V)
+UB_pt(p) = take(p; UB_V)
+c_g(p) = take(p; CG_V)
+g_pt(p; j) = if(j ≡ 1; take(p; G1_V); if(j ≡ 2; take(p; G2_V); if(j ≡ 3; take(p; G3_V); take(p; G4_V))))
+σ_L(p; j) = take(4*(p - 1) + j; SG_V)
+#show
+'<table style="width:100%; border-collapse:collapse; font-size:0.8em;">
+'<tr><th style="text-align:left; padding:1px 3px;">Punt</th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">t</th><th style="text-align:left; padding:1px 3px;">comb.</th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">m<sub>x</sub></th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">m<sub>y</sub></th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">m<sub>xy</sub></th><th colspan="4" style="text-align:center; padding:1px 3px;">A<sub>s</sub> nodig/aanwezig [mm²/m]</th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">UC</th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">UC</th></tr>
+'<tr style="border-bottom:1.5px solid #374151; color:#6b7280;"><td></td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">[mm]</td><td></td><td colspan="3" style="text-align:center; padding:0 3px;">[kNm/m]</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">onder x</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">onder y</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">boven x</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">boven y</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">staal</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">beton</td></tr>
+#for p = 1 : n_pt
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="text-align:left; padding:1px 3px;">'p' 'take(p; N_pt)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'t_pt(p)/mm''w_pt(p)'</td><td style="text-align:left; padding:1px 3px;">'take(c_g(p); N_c)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(mx_pt(p; c_g(p))/kN; 1)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(my_pt(p; c_g(p))/kN; 1)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(mxy_pt(p; c_g(p))/kN; 1)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(g_pt(p; 1))'/'round(A_3(p; 1)/mm^2)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(g_pt(p; 2))'/'round(A_3(p; 2)/mm^2)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(g_pt(p; 3))'/'round(A_3(p; 3)/mm^2)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(g_pt(p; 4))'/'round(A_3(p; 4)/mm^2)'</td><td style="text-align:right; padding:1px 3px; font-weight:700; color:'kleur(US_pt(p))'">'round(US_pt(p); 2)'</td><td style="text-align:right; padding:1px 3px; color:'kleur(UB_pt(p))'">'round(UB_pt(p); 2)'</td></tr>
+#loop
+'</table>
+'<i class="ook-afdruk">Momenten van de maatgevende UGT-combinatie per punt (vol, schaakbord 1 of 2); A<sub>s</sub> nodig is het grootste over de drie. Buitenlagen van 2·a om het hart van de netten, arm z = t − a<sub>onder</sub> − a<sub>boven</sub>, per laag bijlage F met m<sub>xy</sub>; beton tegen f<sub>cd</sub> of, gescheurd, 0,6·ν′·f<sub>cd</sub>. Deeltoets: zonder dwarskracht, pons, verankering en detaillering.</i>
+#hide
+p_u = if(punt_uit ≡ 0; p_max; min(punt_uit; n_pt))
+k_u = 6*(p_u - 1) + c_g(p_u)
+'De maatgevende buitenlaag in dit punt: onder (1) of boven (−1).
+s_u = if(max(take(k_u; G_1); take(k_u; G_2)) ≥ max(take(k_u; G_3); take(k_u; G_4)); 1; -1)
+'Bijlage F met de hand, voor een laag met de krachten nx, ny en nxy (trek positief): de trekkracht in de x-wapening. Is geen van
+'beide richtingen sterker gedrukt dan |nxy|, dan nx + |nxy| (F.2 tot en met F.4); is de andere richting dat wel, dan
+'nx + nxy²/|ny| (F.5 tot en met F.7); anders is er geen wapening nodig.
+n_F(nx; ny; nxy) = max(0 kN/m; if(max(-nx; -ny) ≤ abs(nxy); nx + abs(nxy); if(-ny > -nx; nx + nxy^2/(-ny); 0 kN/m)))
+#pre
+'<b>Punt 'p_u': 'take(p_u; N_pt)'</b>, op x = 'round(X_pt(p_u)/m; 3)' m en y = 'round(Y_pt(p_u)/m; 3)' m, dikte 't_pt(p_u)/mm' mm; de maatgevende UGT-combinatie is 'take(c_g(p_u); N_c)'.
+m_xu = mx_pt(p_u; c_g(p_u))', m<sub>x</sub> uit het FEM-model (trek onder is positief)'
+m_yu = my_pt(p_u; c_g(p_u))', m<sub>y</sub>'
+m_xyu = mxy_pt(p_u; c_g(p_u))', m<sub>xy</sub>'
+t_lo = 2*a_lo(p_u)', buitenlaag onder: twee keer de afstand van het hart van de wapening tot de onderkant'
+t_lb = 2*a_lb', buitenlaag boven'
+z_u = z_pt(p_u)', arm tussen de middens van de buitenlagen'
+'De momenten als krachten in de buitenlagen: onder n = m/z, boven n = −m/z (trek positief).
+n_xu = m_xu/z_u to kN/m', n<sub>x</sub> in de onderste laag'
+n_yu = m_yu/z_u to kN/m', n<sub>y</sub>'
+n_xyu = m_xyu/z_u to kN/m', n<sub>xy</sub>'
+'Open FEM Studio geeft voor deze combinatie (nodig, in mm²/m): onder x 'round(take(k_u; G_1); 1)', onder y 'round(take(k_u; G_2); 1)', boven x 'round(take(k_u; G_3); 1)', boven y 'round(take(k_u; G_4); 1)'; betonspanning in de buitenlaag onder 'round(take(k_u; drie.result.bottom.concreteCompressionMpa); 2)' N/mm² (grens 'round(take(k_u; drie.result.bottom.compressionLimitMpa); 2)'), boven 'round(take(k_u; drie.result.top.concreteCompressionMpa); 2)' N/mm² (grens 'round(take(k_u; drie.result.top.compressionLimitMpa); 2)').
+#if s_u ≡ 1
+'Met de hand, voor de onderste laag (de maatgevende), volgens bijlage F:
+#else
+'Met de hand, voor de bovenste laag (de maatgevende), volgens bijlage F:
+#end if
+A_hx = n_F(s_u*n_xu; s_u*n_yu; n_xyu)*b_s1/f_yd to mm^2', per meter, x-richting: (n<sub>x</sub> + |n<sub>xy</sub>|)/f<sub>yd</sub> zolang geen richting sterker gedrukt is dan |n<sub>xy</sub>|'
+A_hy = n_F(s_u*n_yu; s_u*n_xu; n_xyu)*b_s1/f_yd to mm^2', per meter, y-richting'
+#hide
+A_fx = if(s_u ≡ 1; take(k_u; G_1); take(k_u; G_3))
+A_fy = if(s_u ≡ 1; take(k_u; G_2); take(k_u; G_4))
+d_u = if(s_u ≡ 1; t_pt(p_u) - a_lo(p_u) - if(SS_pt(p_u) ≡ 1; 0 mm; ø_o/2); d_b(t_pt(p_u)))
+#pre
+ctl_3 = (A_hx + A_hy)/((A_fx + A_fy)*(1 mm^2))', met de hand gedeeld door Open FEM Studio: hoort 1 te zijn'
+A_09 = max(s_u*m_xu + abs(m_xyu); 0 kN)*b_s1/(0.9*d_u*f_yd) to mm^2', per meter, ter vergelijking de oude aanpak z = 0,9·d in x, met m<sub>x</sub> + |m<sub>xy</sub>| en d = 'round(d_u/mm)' mm'
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: arm van het drielagenmodel</summary><i>Het drielagenmodel rekent met de arm tussen de twee netten ('round(z_u/mm)' mm), kleiner dan 0,9·d ('round(0.9*d_u/mm)' mm): het vraagt daardoor meer wapening dan de oude aanpak, en het telt het wringend moment mee.</i></details>
+#show
+#else
+'<b style="color:#b91c1c">Nog niet gerekend.</b> De wapening per punt volgt uit het drielagenmodel van Open FEM Studio en staat hier zodra het antwoord er is. Zonder antwoord staat er geen uitkomst.
+#end if
+
+'<a id="vop-scheur"></a><span class="alleen-scherm"></span>
+# Scheurwijdte (belasting, frequent)
+
+#if ger_3 ≡ 1
+#hide
+'Per punt en per laag j (1 onder x, 2 onder y, 3 boven x, 4 boven y) één keer de staven in die laag: bijleg onderin een strook
+'(bs_0) of het net, boven het net met of zonder bijleg (bb_0); de diameter (met bijleg de gelijkwaardige, (7.12)), de
+'hart-op-hartafstand, de doorsnede, de dekking op de laag (de x-staven liggen buiten), de nuttige hoogte, en de drukzone van de
+'gescheurde doorsnede in de BGT, lineair-elastisch met α_e = E_s/E_cm. Aanroep k = 4·(p − 1) + j hoort bij punt p en laag j.
+ø_e = (ø_b^2/s_b + ø_bb^2/s_bb)/(ø_b/s_b + ø_bb/s_bb)
+s_e = 1/(1/s_b + 1/s_bb)
+FL_V = []
+OL_V = []
+SL_V = []
+AL_V = []
+CL_V = []
+DL_V = []
+XL_V = []
+#for p = 1 : n_pt
+#for j = 1 : 4
+bs_0 = if(j ≡ 1; SS_pt(p)*SX_pt(p); if(j ≡ 2; SS_pt(p)*SY_pt(p); 0))
+bb_0 = if(j ≡ 3; take(p; BX_V); if(j ≡ 4; take(p; BY_V); 0))
+ø_l0 = if(j ≤ 2; if(bs_0 ≡ 1; ø_bs; ø_o); if(bb_0 ≡ 1; ø_e; ø_b))
+s_l0 = if(j ≤ 2; if(bs_0 ≡ 1; s_bs; s_o); if(bb_0 ≡ 1; s_e; s_b))
+A_l0 = if(j ≤ 2; if(bs_0 ≡ 1; a_bs; a_o); a_b + bb_0*a_bb)*b_s1 to mm^2
+c_l0 = if(j ≤ 2; if(bs_0 ≡ 1; c_nom + if(j ≡ 2; st_x*ø_bs; 0 mm); SS_pt(p)*(t_sd - h) + c_nom + if(j ≡ 2; ø_o; 0 mm)); c_nom + if(j ≡ 4; ø_b; 0 mm))
+d_l0 = t_pt(p) - c_l0 - ø_l0/2
+ρ_l0 = A_l0/(b_s1*d_l0)
+x_l0 = d_l0*(sqrt((α_e*ρ_l0)^2 + 2*α_e*ρ_l0) - α_e*ρ_l0)
+FL_V = concat(FL_V; [if(j ≤ 2; bs_0; 2 + bb_0)])
+OL_V = concat(OL_V; [ø_l0])
+SL_V = concat(SL_V; [s_l0])
+AL_V = concat(AL_V; [A_l0])
+CL_V = concat(CL_V; [c_l0])
+DL_V = concat(DL_V; [d_l0])
+XL_V = concat(XL_V; [x_l0])
+#loop
+#loop
+ø_L(p; j) = take(4*(p - 1) + j; OL_V)
+s_L(p; j) = take(4*(p - 1) + j; SL_V)
+A_L(p; j) = take(4*(p - 1) + j; AL_V)
+c_L(p; j) = take(4*(p - 1) + j; CL_V)
+d_L(p; j) = take(4*(p - 1) + j; DL_V)
+x_L(p; j) = take(4*(p - 1) + j; XL_V)
+#show
+@kern scheur = solve_native_fem
+  // per punt vier lagen; een laag zonder trek onder de frequente combinatie wordt overgeslagen
+  per k = 1 : 4*n_pt
+  #if take(k; SG_V) > 1 N/mm^2
+  inputs.kind = "crackWidth"
+  inputs.input.sigmaSMpa = round(take(k; SG_V)/(1 N/mm^2); 2)
+  inputs.input.widthMm = b_s1
+  inputs.input.heightMm = t_pt(ceil(k/4))
+  inputs.input.effectiveDepthMm = take(k; DL_V)
+  inputs.input.neutralAxisMm = round(take(k; XL_V)/(1 mm); 2)
+  inputs.input.bondedReinforcementAreaMm2 = take(k; AL_V)
+  inputs.input.coverToLongitudinalSteelMm = take(k; CL_V)
+  inputs.input.barOrTendonDiameterMm = take(k; OL_V)
+  inputs.input.spacingMm = take(k; SL_V)
+  inputs.input.fCkMpa = f_ck
+  inputs.input.fCtEffMpa = f_ctm
+  inputs.input.eCmMpa = E_cm
+  inputs.input.kT = k_t
+  inputs.input.k1 = 0.8
+  inputs.input.k2 = 0.5
+  inputs.input.wMaxMm = w_lim
+  #end if
+@end
+#hide
+ger_w = bool(scheur.aantal > 0)
+#show
+#if ger_w ≡ 1
+#hide
+V_g = scheur.gerekend
+V_w = scheur.result.crackWidthMm
+V_u = scheur.result.utilization
+V_sr = scheur.result.maximumCrackSpacingMm
+V_e = scheur.result.strainDifference
+'Per punt één keer: de benutting per laag (0 als de laag is overgeslagen), de grootste (UW) en de maatgevende laag (JG).
+UW_V = []
+JG_V = []
+UC_w = 0
+#for p = 1 : n_pt
+k_p = 4*(p - 1)
+w_1 = if(take(k_p + 1; V_g) ≡ 1; take(k_p + 1; V_u); 0)
+w_2 = if(take(k_p + 2; V_g) ≡ 1; take(k_p + 2; V_u); 0)
+w_3 = if(take(k_p + 3; V_g) ≡ 1; take(k_p + 3; V_u); 0)
+w_4 = if(take(k_p + 4; V_g) ≡ 1; take(k_p + 4; V_u); 0)
+UW_V = concat(UW_V; [max(w_1; w_2; w_3; w_4)])
+JG_V = concat(JG_V; [if(w_1 ≥ max(w_2; w_3; w_4); 1; if(w_2 ≥ max(w_3; w_4); 2; if(w_3 ≥ w_4; 3; 4)))])
+UC_w = max(UC_w; w_1; w_2; w_3; w_4)
+#loop
+UW_pt(p) = take(p; UW_V)
+j_g(p) = take(p; JG_V)
+k_w(p) = 4*(p - 1) + j_g(p)
+m_cr = f_ctm*h^2/6 to kN
+'De staven van een laag in woorden, voor de tabel: het net onder, de bijleg in de strook, het net boven, het net boven met de bijleg.
+N_st = [n_s0; n_s1; n_s2; n_s3]
+#show
+'<table style="width:100%; border-collapse:collapse; font-size:0.8em;">
+'<tr><th style="text-align:left; padding:1px 3px;">Punt</th><th style="text-align:left; padding:1px 3px;">laag</th><th style="text-align:left; padding:1px 3px;">staven</th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">σ<sub>s</sub></th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">s<sub>r,max</sub></th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">ε<sub>sm</sub> − ε<sub>cm</sub></th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">w<sub>k</sub></th><th style="text-align:right; padding:1px 3px; white-space:nowrap;">UC</th></tr>
+'<tr style="border-bottom:1.5px solid #374151; color:#6b7280;"><td></td><td></td><td></td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">[N/mm²]</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">[mm]</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">[‰]</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">[mm]</td><td></td></tr>
+#for p = 1 : n_pt
+#if UW_pt(p) > 0
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="text-align:left; padding:1px 3px;">'p' 'take(p; N_pt)'</td><td style="text-align:left; padding:1px 3px;">'take(j_g(p); N_j)'</td><td style="text-align:left; padding:1px 3px;">'take(take(k_w(p); FL_V) + 1; N_st)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(σ_L(p; j_g(p))/(N/mm^2))'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(take(k_w(p); V_sr))'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(take(k_w(p); V_e)*1000; 3)'</td><td style="text-align:right; padding:1px 3px; white-space:nowrap;">'round(take(k_w(p); V_w); 3)'</td><td style="text-align:right; padding:1px 3px; font-weight:700; color:'kleur(UW_pt(p))'">'round(UW_pt(p); 2)'</td></tr>
+#else
+'<tr style="border-bottom:1px solid #e5e7eb; color:#6b7280;"><td style="text-align:left; padding:1px 3px;">'p' 'take(p; N_pt)'</td><td colspan="7" style="text-align:left; padding:1px 3px;">geen laag op trek</td></tr>
+#end if
+#loop
+'</table>
+'<i class="ook-afdruk">Per punt de laag met de grootste scheurwijdte (7.3.4), tegen w<sub>max</sub> = 'w_lim/mm' mm onder de frequente combinatie G + ψ<sub>1</sub>·Q (nationale bijlage bij 7.3.1(5)), vol en beide schaakborden. σ<sub>s</sub> uit het drielagenmodel, met m<sub>xy</sub>; gerekend als gescheurd, ook onder het scheurmoment ('round(m_cr/kN; 1)' kNm/m): krimp kan de eerste scheur maken. k<sub>t</sub> = 'k_t', k<sub>1</sub> = 0,8, k<sub>2</sub> = 0,5, f<sub>ct,eff</sub> = f<sub>ctm</sub>, α<sub>e</sub> = E<sub>s</sub>/E<sub>cm</sub>.</i>
+#hide
+j_u = j_g(p_u)
+k_wu = k_w(p_u)
+#pre
+#if UW_pt(p_u) > 0
+'<b>Punt 'p_u', laag 'take(j_u; N_j)'</b>: de scheurwijdte uitgeschreven (7.3.4).
+σ_su = σ_L(p_u; j_u)', staalspanning onder de frequente combinatie: de kracht in de buitenlaag gedeeld door de wapening'
+t_wu = t_pt(p_u)', dikte'
+d_wu = d_L(p_u; j_u)', nuttige hoogte van de laag'
+A_wu = A_L(p_u; j_u)', wapening in de laag per meter'
+ø_wu = ø_L(p_u; j_u)', staafdiameter (met bijleg de gelijkwaardige, (7.12))'
+s_au = s_L(p_u; j_u)', hart-op-hartafstand van de staven'
+c_wu = c_L(p_u; j_u)', dekking op de laag'
+x_wu = x_L(p_u; j_u)', drukzone van de gescheurde doorsnede (lineair-elastisch, α<sub>e</sub> = E<sub>s</sub>/E<sub>cm</sub>)'
+h_cef = min(2.5*(t_wu - d_wu); (t_wu - x_wu)/3; t_wu/2)', h<sub>c,ef</sub> (7.3.2(3))'
+ρ_pef = A_wu/(b_s1*h_cef)', ρ<sub>p,eff</sub> (7.10)'
+ε_w1 = (σ_su - k_t*f_ctm/ρ_pef*(1 + α_e*ρ_pef))/E_s*1000', ‰, (7.9)'
+ε_w2 = 0.6*σ_su/E_s*1000', ‰, de ondergrens van (7.9)'
+ε_wu = max(ε_w1; ε_w2)', ‰, ε<sub>sm</sub> − ε<sub>cm</sub>'
+s_w1 = min(3.4*c_wu + 0.8*0.5*0.425*ø_wu/ρ_pef; max((50 - 0.8*f_ck/(1 N/mm^2))*ø_wu; 15*ø_wu))', (7.11), met de bovengrens van de nationale bijlage'
+s_w2 = 1.3*(t_wu - x_wu)', (7.14), als de staven verder uit elkaar liggen dan 5·(c + Ø/2)'
+s_wu = if(s_au ≤ 5*(c_wu + ø_wu/2); s_w1; s_w2)', s<sub>r,max</sub>'
+w_hu = s_wu*ε_wu/1000 to mm', w<sub>k</sub> met de hand (7.8)'
+ctl_w = w_hu/(take(k_wu; V_w)*(1 mm))', met de hand gedeeld door Open FEM Studio ('round(take(k_wu; V_w); 4)' mm): hoort 1 te zijn'
+#else
+'<i>In punt 'p_u' staat onder de frequente combinatie geen laag op trek.</i>
+#end if
+#show
+#else
+'<b style="color:#b91c1c">Nog niet gerekend.</b> De scheurwijdte volgt uit Open FEM Studio en staat hier zodra het antwoord er is.
+#end if
+#else
+'<b style="color:#b91c1c">Nog niet gerekend.</b> De scheurwijdte rekent met de staalspanning uit het drielagenmodel.
+#end if
+'<a id="vop-bijleg"></a><span class="alleen-scherm"></span>
+# Bijleg en wapening rond een paal
+
+#pre
+@select ponswap "Ponswapening rond de paal (in beeld)"
+  geen = 0
+  deuvelrails = 1
+@end
+#if ponswap ≡ 1
+ø_pw = ?{12}*(mm)', ponswapening, Ø'
+n_pw = ?{3}', aantal omtrekken'
+#else
+#hide
+ø_pw = 12 mm
+n_pw = 3
+#pre
+#end if
+#show
+l_bx', bijleg boven, lengte in x (over de paal)<span class="kolom-2"></span>'
+l_by', lengte in y<span class="kolom-2"></span>'
+h_st', stoelen tussen de netten (h.o.h. 1 m)<span class="kolom-2"></span>'
+l_bd', verankeringslengte bijleg<span class="kolom-2"></span>'
+
+#hide
+'3D: de wapening rond de binnenpaal, een veld groot (u, v vanuit de paal). Beton als omtrek.
+u_1 = L_x/2
+v_1 = L_y/2
+z_o1 = -h + c_nom + ø_o/2
+z_o2 = -h + c_nom + 1.5*ø_o
+z_b1 = -c_nom - ø_b/2
+z_b2 = -c_nom - 1.5*ø_b
+n_ox = floor(v_1/s_o)
+n_oy = floor(u_1/s_o)
+n_bx = floor(v_1/s_b)
+n_by = floor(u_1/s_b)
+n_jx = floor((L_y/4)/s_bb - 0.5)
+n_jy = floor((L_x/4)/s_bb - 0.5)
+n_kx = floor((b_k/2 - c_nom)/s_o)
+n_sx = floor((b_s/2 - c_nom - ø_bs)/s_bs)
+z_s = -t_sd + c_nom + ø_bs/2
+z_k = -t_kd + c_nom + ø_o/2
+s_st = 1 m
+n_st = floor(v_1/s_st + 0.5)
+n_zz = floor(L_x/(0.3 m))
+p_zz = L_x/n_zz
+z_st1 = z_b2 - ø_b/2 - 3 mm
+z_st0 = z_o2 + ø_o/2 + 3 mm
+t_loc(u; v) = max(h; if(And(kop ≡ 1; abs(u) ≤ b_k/2; abs(v) ≤ b_k/2); t_kd; h); if(And(st_x ≡ 1; abs(v) ≤ b_s/2); t_sd; h); if(And(st_y ≡ 1; abs(u) ≤ b_s/2); t_sd; h))
+d_pw = d_b(t_p)
+r_pw(i_w) = d_kop/2 + 0.5*d_pw + i_w*0.75*d_pw
+n_p = round(max(n_pw; 1))
+#pre
+@3d
+eenheid m
+camera iso
+hoogte 320
+raster uit
+assen uit
+// beton: de vloer als omtrek
+buis {{-u_1}} {{-v_1}} 0 {{u_1}} {{-v_1}} 0 0.005 grijs
+buis {{-u_1}} {{v_1}} 0 {{u_1}} {{v_1}} 0 0.005 grijs
+buis {{-u_1}} {{-v_1}} 0 {{-u_1}} {{v_1}} 0 0.005 grijs
+buis {{u_1}} {{-v_1}} 0 {{u_1}} {{v_1}} 0 0.005 grijs
+buis {{-u_1}} {{-v_1}} {{-h}} {{u_1}} {{-v_1}} {{-h}} 0.005 grijs
+buis {{-u_1}} {{v_1}} {{-h}} {{u_1}} {{v_1}} {{-h}} 0.005 grijs
+buis {{-u_1}} {{-v_1}} {{-h}} {{-u_1}} {{v_1}} {{-h}} 0.005 grijs
+buis {{u_1}} {{-v_1}} {{-h}} {{u_1}} {{v_1}} {{-h}} 0.005 grijs
+buis {{-u_1}} {{-v_1}} 0 {{-u_1}} {{-v_1}} {{-h}} 0.005 grijs
+buis {{u_1}} {{-v_1}} 0 {{u_1}} {{-v_1}} {{-h}} 0.005 grijs
+buis {{-u_1}} {{v_1}} 0 {{-u_1}} {{v_1}} {{-h}} 0.005 grijs
+buis {{u_1}} {{v_1}} 0 {{u_1}} {{v_1}} {{-h}} 0.005 grijs
+// de ponskop en de stroken onder de vloer
+#if kop ≡ 1
+buis {{-b_k/2}} {{-b_k/2}} {{-t_kd}} {{b_k/2}} {{-b_k/2}} {{-t_kd}} 0.005 grijs
+buis {{-b_k/2}} {{b_k/2}} {{-t_kd}} {{b_k/2}} {{b_k/2}} {{-t_kd}} 0.005 grijs
+buis {{-b_k/2}} {{-b_k/2}} {{-t_kd}} {{-b_k/2}} {{b_k/2}} {{-t_kd}} 0.005 grijs
+buis {{b_k/2}} {{-b_k/2}} {{-t_kd}} {{b_k/2}} {{b_k/2}} {{-t_kd}} 0.005 grijs
+buis {{-b_k/2}} {{-b_k/2}} {{-h}} {{-b_k/2}} {{-b_k/2}} {{-t_kd}} 0.005 grijs
+buis {{b_k/2}} {{-b_k/2}} {{-h}} {{b_k/2}} {{-b_k/2}} {{-t_kd}} 0.005 grijs
+buis {{-b_k/2}} {{b_k/2}} {{-h}} {{-b_k/2}} {{b_k/2}} {{-t_kd}} 0.005 grijs
+buis {{b_k/2}} {{b_k/2}} {{-h}} {{b_k/2}} {{b_k/2}} {{-t_kd}} 0.005 grijs
+#end if
+#if st_x ≡ 1
+buis {{-u_1}} {{-b_s/2}} {{-t_sd}} {{u_1}} {{-b_s/2}} {{-t_sd}} 0.005 grijs
+buis {{-u_1}} {{b_s/2}} {{-t_sd}} {{u_1}} {{b_s/2}} {{-t_sd}} 0.005 grijs
+buis {{-u_1}} {{-b_s/2}} {{-h}} {{-u_1}} {{-b_s/2}} {{-t_sd}} 0.005 grijs
+buis {{-u_1}} {{b_s/2}} {{-h}} {{-u_1}} {{b_s/2}} {{-t_sd}} 0.005 grijs
+buis {{u_1}} {{-b_s/2}} {{-h}} {{u_1}} {{-b_s/2}} {{-t_sd}} 0.005 grijs
+buis {{u_1}} {{b_s/2}} {{-h}} {{u_1}} {{b_s/2}} {{-t_sd}} 0.005 grijs
+#end if
+#if st_y ≡ 1
+buis {{-b_s/2}} {{-v_1}} {{-t_sd}} {{-b_s/2}} {{v_1}} {{-t_sd}} 0.005 grijs
+buis {{b_s/2}} {{-v_1}} {{-t_sd}} {{b_s/2}} {{v_1}} {{-t_sd}} 0.005 grijs
+buis {{-b_s/2}} {{-v_1}} {{-h}} {{-b_s/2}} {{-v_1}} {{-t_sd}} 0.005 grijs
+buis {{b_s/2}} {{-v_1}} {{-h}} {{b_s/2}} {{-v_1}} {{-t_sd}} 0.005 grijs
+buis {{-b_s/2}} {{v_1}} {{-h}} {{-b_s/2}} {{v_1}} {{-t_sd}} 0.005 grijs
+buis {{b_s/2}} {{v_1}} {{-h}} {{b_s/2}} {{v_1}} {{-t_sd}} 0.005 grijs
+#end if
+// de paal
+buis 0 0 {{-t_p - 0.9 m}} 0 0 {{-t_p}} {{d_kop}} beton
+// net onder: x-staven onder, y-staven erop
+#for k = -n_ox : n_ox
+buis {{-u_1}} {{k*s_o}} {{z_o1}} {{u_1}} {{k*s_o}} {{z_o1}} {{ø_o}} #2563eb
+#loop
+#for k = -n_oy : n_oy
+buis {{k*s_o}} {{-v_1}} {{z_o2}} {{k*s_o}} {{v_1}} {{z_o2}} {{ø_o}} #2563eb
+#loop
+// net boven: x-staven boven, y-staven eronder
+#for k = -n_bx : n_bx
+buis {{-u_1}} {{k*s_b}} {{z_b1}} {{u_1}} {{k*s_b}} {{z_b1}} {{ø_b}} #dc2626
+#loop
+#for k = -n_by : n_by
+buis {{k*s_b}} {{-v_1}} {{z_b2}} {{k*s_b}} {{v_1}} {{z_b2}} {{ø_b}} #dc2626
+#loop
+// bijleg boven de paal, over de kolomstrook, tussen de staven van het net
+#for k = -n_jx - 1 : n_jx
+buis {{-l_bx/2}} {{(k + 0.5)*s_bb}} {{z_b1}} {{l_bx/2}} {{(k + 0.5)*s_bb}} {{z_b1}} {{ø_bb}} #d97706
+#loop
+#for k = -n_jy - 1 : n_jy
+buis {{(k + 0.5)*s_bb}} {{-l_by/2}} {{z_b2}} {{(k + 0.5)*s_bb}} {{l_by/2}} {{z_b2}} {{ø_bb}} #d97706
+#loop
+// onder in de ponskop een net, onder in de stroken de bijleg
+#if kop ≡ 1
+#for k = -n_kx : n_kx
+buis {{-b_k/2 + c_nom}} {{k*s_o}} {{z_k}} {{b_k/2 - c_nom}} {{k*s_o}} {{z_k}} {{ø_o}} #2563eb
+buis {{k*s_o}} {{-b_k/2 + c_nom}} {{z_k + ø_o}} {{k*s_o}} {{b_k/2 - c_nom}} {{z_k + ø_o}} {{ø_o}} #2563eb
+#loop
+#end if
+#if st_x ≡ 1
+#for k = -n_sx : n_sx
+buis {{-u_1}} {{k*s_bs}} {{z_s}} {{u_1}} {{k*s_bs}} {{z_s}} {{ø_bs}} #7c3aed
+#loop
+#end if
+#if st_y ≡ 1
+#for k = -n_sx : n_sx
+buis {{k*s_bs}} {{-v_1}} {{z_s + st_x*ø_bs}} {{k*s_bs}} {{v_1}} {{z_s + st_x*ø_bs}} {{ø_bs}} #7c3aed
+#loop
+#end if
+// stoelen: lintstoelen in x, om de meter, tussen de netten
+#for k = -n_st : n_st - 1
+buis {{-u_1}} {{(k + 0.5)*s_st}} {{z_st1}} {{u_1}} {{(k + 0.5)*s_st}} {{z_st1}} 0.006 #16a34a
+buis {{-u_1}} {{(k + 0.5)*s_st - 0.04 m}} {{z_st0}} {{u_1}} {{(k + 0.5)*s_st - 0.04 m}} {{z_st0}} 0.005 #16a34a
+buis {{-u_1}} {{(k + 0.5)*s_st + 0.04 m}} {{z_st0}} {{u_1}} {{(k + 0.5)*s_st + 0.04 m}} {{z_st0}} 0.005 #16a34a
+#for zz = 0 : n_zz - 1
+buis {{-u_1 + zz*p_zz}} {{(k + 0.5)*s_st - 0.04 m}} {{z_st0}} {{-u_1 + (zz + 0.5)*p_zz}} {{(k + 0.5)*s_st}} {{z_st1}} 0.005 #16a34a
+buis {{-u_1 + (zz + 0.5)*p_zz}} {{(k + 0.5)*s_st}} {{z_st1}} {{-u_1 + (zz + 1)*p_zz}} {{(k + 0.5)*s_st - 0.04 m}} {{z_st0}} 0.005 #16a34a
+buis {{-u_1 + zz*p_zz}} {{(k + 0.5)*s_st + 0.04 m}} {{z_st0}} {{-u_1 + (zz + 0.5)*p_zz}} {{(k + 0.5)*s_st}} {{z_st1}} 0.005 #16a34a
+buis {{-u_1 + (zz + 0.5)*p_zz}} {{(k + 0.5)*s_st}} {{z_st1}} {{-u_1 + (zz + 1)*p_zz}} {{(k + 0.5)*s_st + 0.04 m}} {{z_st0}} 0.005 #16a34a
+#loop
+#loop
+// ponswapening: deuvelrails in acht richtingen, de eerste deuvel op 0,5·d, dan om de 0,75·d
+#if ponswap ≡ 1
+#for k = 0 : 7
+buis {{r_pw(0)*cos(k*π/4)}} {{r_pw(0)*sin(k*π/4)}} {{-t_loc(r_pw(0)*cos(k*π/4); r_pw(0)*sin(k*π/4)) + c_nom}} {{r_pw(n_p - 1)*cos(k*π/4)}} {{r_pw(n_p - 1)*sin(k*π/4)}} {{-t_loc(r_pw(0)*cos(k*π/4); r_pw(0)*sin(k*π/4)) + c_nom}} {{ø_pw/2}} #0f766e
+#for jj = 0 : n_p - 1
+buis {{r_pw(jj)*cos(k*π/4)}} {{r_pw(jj)*sin(k*π/4)}} {{-t_loc(r_pw(jj)*cos(k*π/4); r_pw(jj)*sin(k*π/4)) + c_nom}} {{r_pw(jj)*cos(k*π/4)}} {{r_pw(jj)*sin(k*π/4)}} {{-c_nom}} {{ø_pw}} #0f766e
+buis {{r_pw(jj)*cos(k*π/4)}} {{r_pw(jj)*sin(k*π/4)}} {{-c_nom - 0.6*ø_pw}} {{r_pw(jj)*cos(k*π/4)}} {{r_pw(jj)*sin(k*π/4)}} {{-c_nom}} {{3*ø_pw}} #0f766e
+#loop
+#loop
+#end if
+@end
+#show
+'<span style="color:#2563eb">■</span> net onder Ø'ø_o/mm'-'s_o/mm' &nbsp; <span style="color:#dc2626">■</span> net boven Ø'ø_b/mm'-'s_b/mm' &nbsp; <span style="color:#d97706">■</span> bijleg boven Ø'ø_bb/mm'-'s_bb/mm' &nbsp; <span style="color:#16a34a">■</span> stoelen h = 'h_st/mm' mm
+#if st_x + st_y > 0
+'<span style="color:#7c3aed">■</span> bijleg onder in de strook Ø'ø_bs/mm'-'s_bs/mm'
+#end if
+#if ponswap ≡ 1
+'<span style="color:#0f766e">■</span> ponswapening: 8 deuvelrails Ø'ø_pw/mm' met 'n_p' deuvels, de eerste op 0,5·d van de paalkop, dan om de 0,75·d (d = 'round(d_pw/mm)' mm)
+#end if
+'<i>De wapening rond een binnenpaal, een veld groot, met de beton als omtrek; de netten lopen door over de hele vloer. Draai het beeld met de muis.</i><span class="alleen-scherm"></span>
+#pre
+'<a id="vop-zones"></a><span class="alleen-scherm"></span>
+# Momenten per zone (ter vergelijking)
+'<i>De momenten gemiddeld over de zones van NEN-EN 1992-1-1 bijlage I, met z = 0,9·d: de aanpak van voor het drielagenmodel, ter vergelijking en als tweede toets in de samenvatting.</i>
+'<table class="alleen-scherm" style="width:100%; border-collapse:collapse; font-size:0.9em;">
+'<tr style="border-bottom:1.5px solid #374151;"><th style="text-align:left; padding:1px 6px;">Zone</th><th style="text-align:right; padding:1px 6px;">m<sub>Ed</sub> [kNm/m]</th><th style="text-align:right; padding:1px 6px;">t [mm]</th><th style="text-align:left; padding:1px 6px;">wapening</th><th style="text-align:right; padding:1px 6px;">m<sub>Rd</sub> [kNm/m]</th><th style="text-align:right; padding:1px 6px;">UC</th></tr>
+'<tr><td colspan="6" style="padding:3px 6px 1px; font-weight:700;">Trek onder</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Binnenveld, middenstrook</td><td style="text-align:right; padding:1px 6px;">'round(o_1/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'h/mm'</td><td style="padding:1px 6px;">net Ø'ø_o/mm'-'s_o/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Ro(h)/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_1; 2)'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Binnenveld, kolomstrook</td><td style="text-align:right; padding:1px 6px;">'round(o_2/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'h/mm'</td><td style="padding:1px 6px;">net Ø'ø_o/mm'-'s_o/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Ro(h)/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_2; 2)'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Randveld</td><td style="text-align:right; padding:1px 6px;">'round(o_3/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'h/mm'</td><td style="padding:1px 6px;">net Ø'ø_o/mm'-'s_o/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Ro(h)/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_3; 2)'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Hoekveld en randstrook</td><td style="text-align:right; padding:1px 6px;">'round(o_4/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'h/mm'</td><td style="padding:1px 6px;">net Ø'ø_o/mm'-'s_o/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Ro(h)/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_4; 2)'</td></tr>
+#if st_x + st_y > 0
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Strook, veld</td><td style="text-align:right; padding:1px 6px;">'round(o_5/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'t_sd/mm'</td><td style="padding:1px 6px;">net + Ø'ø_bs/mm'-'s_bs/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Rs/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_5; 2)'</td></tr>
+#end if
+'<tr><td colspan="6" style="padding:3px 6px 1px; font-weight:700;">Trek boven</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Middenstrook, op de paallijn</td><td style="text-align:right; padding:1px 6px;">'round(b_6/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'t_6/mm'</td><td style="padding:1px 6px;">net Ø'ø_b/mm'-'s_b/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Rb(t_6)/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_6; 2)'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Kolomstrook, binnenpaal</td><td style="text-align:right; padding:1px 6px;">'round(b_7/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'t_7/mm'</td><td style="padding:1px 6px;">net + Ø'ø_bb/mm'-'s_bb/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Rbb(t_7)/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_7; 2)'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Kolomstrook, randpalen</td><td style="text-align:right; padding:1px 6px;">'round(b_8/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'t_8/mm'</td><td style="padding:1px 6px;">net + Ø'ø_bb/mm'-'s_bb/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Rbb(t_8)/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_8; 2)'</td></tr>
+#if kop ≡ 1
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Ponskop</td><td style="text-align:right; padding:1px 6px;">'round(b_9/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'t_kd/mm'</td><td style="padding:1px 6px;">net + Ø'ø_bb/mm'-'s_bb/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Rbb(t_kd)/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_9; 2)'</td></tr>
+#end if
+#if st_x + st_y > 0
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">Strook, bij de paal</td><td style="text-align:right; padding:1px 6px;">'round(b_10/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'t_sd/mm'</td><td style="padding:1px 6px;">net + Ø'ø_bb/mm'-'s_bb/mm'</td><td style="text-align:right; padding:1px 6px;">'round(m_Rbb(t_sd)/kN; 1)'</td><td style="text-align:right; padding:1px 6px;">'round(UC_10; 2)'</td></tr>
+#end if
+'<tr style="border-bottom:1px solid #e5e7eb; color:#6b7280;"><td style="padding:1px 6px;">Piek op de paal</td><td style="text-align:right; padding:1px 6px;">'round(m_piek/kN; 1)'</td><td colspan="4" style="padding:1px 6px;">begrensd op R<sub>binnen</sub>/5 en getoetst bij de paalreactie</td></tr>
+'</table>
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: hoe m<sub>Ed</sub> per zone is bepaald</summary><i>m<sub>Ed</sub> is de omhullende over volle belasting en beide schaakborden, gemiddeld over de zone (kolomstrook een half veld breed op de paallijn, NEN-EN 1992-1-1 bijlage I), in de maatgevende richting; d van de binnenste laag bij de werkelijke dikte t, z = 0,9·d. Het wringend moment telt hier niet mee; in de punten hierboven wel.</i></details>
+#show
+#else
+'<b style="color:#b91c1c">Nog niet gerekend.</b> De momenten, de wapening per zone, de bijleg en de paalreacties volgen uit Open FEM Studio en staan hier zodra het antwoord er is. Zonder antwoord staan ze er niet: er is geen terugval op een andere rekenkern.
+#end if
+
+'<a id="vop-paal"></a><span class="alleen-scherm"></span>
+# Paalreactie en pons
+
+#if gerekend ≡ 1
+#hide
+'De reactie per paal (rij voor rij, de onderste eerst), de grootste over de UGT-combinaties, per soort paal.
+R_hoek = 0 kN
+R_rand = 0 kN
+R_binnen = 0 kN
+#for j = 0 : n_r
+#for i = 0 : n_r
+R_ij = max(take(j*(n_r + 1) + i + 1; vloer_UGT_vol_R); take(j*(n_r + 1) + i + 1; vloer_UGT_sb1_R); take(j*(n_r + 1) + i + 1; vloer_UGT_sb2_R))
+r_ij = bool(i ≡ 0) + bool(i ≡ n_r) + bool(j ≡ 0) + bool(j ≡ n_r)
+R_hoek = if(r_ij ≥ 2; max(R_hoek; R_ij); R_hoek)
+R_rand = if(r_ij ≡ 1; max(R_rand; R_ij); R_rand)
+R_binnen = if(r_ij ≡ 0; max(R_binnen; R_ij); R_binnen)
+#loop
+#loop
+w_BGT = vloer_BGT_w_max
+#show
+R_binnen', binnenpaal<span class="kolom-3"></span>'
+R_rand', randpaal<span class="kolom-3"></span>'
+R_hoek', hoekpaal<span class="kolom-3"></span>'
+R_paal = max(R_binnen; R_rand; R_hoek)', grootste paalreactie (rekenwaarde)<span class="kolom-2"></span>'
+#hide
+'Het piekmoment boven de binnenpaal telt mee, begrensd op een vijfde van de paalreactie
+'(per meter); dikte bij de paal: ponskop, strook of vloer.
+t_pk = if(kop ≡ 1; t_kd; if(st_x + st_y > 0; t_sd; h))
+#show
+m_pk,d = min(m_piek; R_binnen/5)', piekmoment boven de binnenpaal, hooguit R<sub>binnen</sub>/5 (uit FEM 'round(m_piek/kN; 1)' kNm/m)<span class="kolom-2"></span>'
+UC_pk = m_pk,d/m_Rbb(t_pk)', net boven met bijleg, t = 't_pk/mm' mm, m<sub>Rd</sub> = 'round(m_Rbb(t_pk)/kN; 1)' kNm/m<span class="kolom-2"></span>'
+w_BGT', grootste doorbuiging, karakteristiek (ongescheurd en zonder kruip: een ondergrens)<span class="kolom-2"></span>'
+'Pons boven de paal met de module Pons: V<sub>Ed</sub> = R<sub>binnen</sub>, R<sub>rand</sub> of R<sub>hoek</sub> met de ligging binnen, rand of hoek, en de plaatdikte bij de paal t = 't_p/mm' mm.
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: pons rekenen met de module Pons</summary><i>Voeg de module Pons toe en typ in het veld V<sub>Ed</sub> de verwijzing naar dit blad, met het kenmerk uit de projectboom: #1.R_binnen als dit blad #1 is (of #1.R_rand, #1.R_hoek, #1.R_paal).</i></details><span class="alleen-scherm"></span>
+#else
+'<b style="color:#b91c1c">Nog niet gerekend.</b> De paalreacties volgen uit Open FEM Studio.
+#end if
+
+'<a id="vop-fnl"></a><span class="alleen-scherm"></span>
+# Controle fysisch niet-lineair (GL+FNL)
+
+#hide
+'Standaard niet gerekend: zo bestaan deze namen ook als de controle niet gekozen is.
+ger_fnl = 0
+fnl_aan = bool(krachtsverdeling ≡ 1)
+UC_fnl = 0
+UC_σs = 0
+#show
+#if krachtsverdeling ≡ 0
+'Niet gekozen: de krachtsverdeling is lineair-elastisch (zie het rekenmodel). Kies daar de controle fysisch niet-lineair om het draagvermogen van de gescheurde vloer met de gekozen wapening aan te tonen.
+#else
+#hide
+'De betonklasse als tekst, en de paalkop als vierkant met dezelfde oppervlakte.
+n_bk = if(betonklasse ≡ 25; "C25/30"; if(betonklasse ≡ 28; "C28/35"; if(betonklasse ≡ 35; "C35/45"; "C30/37")))
+b_pk = sqrt(π)/2*d_kop
+'De bijleg boven: in beide richtingen over de kolomstrook boven elke paal, een half veld breed, binnen de vloer.
+x_z0(i) = max(a_r + i*L_x - L_x/4; 0 m)
+x_z1(i) = min(a_r + i*L_x + L_x/4; B_x)
+y_z0(j) = max(a_r + j*L_y - L_y/4; 0 m)
+y_z1(j) = min(a_r + j*L_y + L_y/4; B_y)
+'Een veld (i, j) van het schaakbord; de rand hoort bij het randveld, zoals in het lineaire model.
+x_v0(i) = if(i ≡ 0; 0 m; a_r + i*L_x)
+x_v1(i) = if(i ≡ n_r - 1; B_x; a_r + (i + 1)*L_x)
+y_v0(j) = if(j ≡ 0; 0 m; a_r + j*L_y)
+y_v1(j) = if(j ≡ n_r - 1; B_y; a_r + (j + 1)*L_y)
+'Ponskoppen en stroken als zones met hun eigen dikte. Per richting de randen rond elke paal, op volgorde: de
+'breedste en de smalste verdikking over de paal (ponskop, of de strook dwars). Elk vak van dat raster krijgt de
+'dikte in zijn midden (t_xy); alleen de vakken die dikker zijn dan de vloer worden een zone. Zo overlappen ze nooit.
+wx_hi = max(kop*b_k/2; st_y*b_s/2)
+wx_lo = if(min(kop*b_k/2; st_y*b_s/2) > 0 mm; min(kop*b_k/2; st_y*b_s/2); wx_hi)
+wy_hi = max(kop*b_k/2; st_x*b_s/2)
+wy_lo = if(min(kop*b_k/2; st_x*b_s/2) > 0 mm; min(kop*b_k/2; st_x*b_s/2); wy_hi)
+bx_V = [0]
+by_V = [0]
+#for i = 0 : n_r
+bx_V = concat(bx_V; [max(min((a_r + i*L_x - wx_hi)/mm; B_x/mm); 0); max(min((a_r + i*L_x - wx_lo)/mm; B_x/mm); 0); max(min((a_r + i*L_x + wx_lo)/mm; B_x/mm); 0); max(min((a_r + i*L_x + wx_hi)/mm; B_x/mm); 0)])
+by_V = concat(by_V; [max(min((a_r + i*L_y - wy_hi)/mm; B_y/mm); 0); max(min((a_r + i*L_y - wy_lo)/mm; B_y/mm); 0); max(min((a_r + i*L_y + wy_lo)/mm; B_y/mm); 0); max(min((a_r + i*L_y + wy_hi)/mm; B_y/mm); 0)])
+#loop
+bx_V = concat(bx_V; [B_x/mm])
+by_V = concat(by_V; [B_y/mm])
+n_b = 4*(n_r + 1) + 2
+zx_V = []
+zy_V = []
+zb_V = []
+zh_V = []
+zt_V = []
+n_z = 0
+#for i = 1 : n_b - 1
+#for j = 1 : n_b - 1
+z_x0 = take(i; bx_V)
+z_x1 = take(i + 1; bx_V)
+z_y0 = take(j; by_V)
+z_y1 = take(j + 1; by_V)
+z_t = t_xy((z_x0 + z_x1)/2*mm; (z_y0 + z_y1)/2*mm)
+#if And(z_x1 - z_x0 > 0.5; z_y1 - z_y0 > 0.5; z_t > h + 0.5 mm)
+zx_V = concat(zx_V; [z_x0])
+zy_V = concat(zy_V; [z_y0])
+zb_V = concat(zb_V; [z_x1 - z_x0])
+zh_V = concat(zh_V; [z_y1 - z_y0])
+zt_V = concat(zt_V; [z_t/mm])
+n_z = n_z + 1
+#end if
+#loop
+#loop
+#show
+'Dezelfde vloer, dezelfde palen en dezelfde belastinggevallen als het lineaire model, nu met gescheurd beton en de wapening als lagen: net boven 'n_s2', net onder 'n_s0' en de bijleg Ø'ø_bb/mm'-'s_bb/mm' in beide richtingen over de kolomstrook boven elke paal. De paalkop is een steunvlak van 'round(b_pk/mm)' × 'round(b_pk/mm)' mm (dezelfde oppervlakte), de veer k = 'k_paal'. Ponskoppen en stroken zijn zones met hun eigen dikte en eigen gewicht; de bijleg onder in de stroken ligt langs de strook. Vijf combinaties: de drie UGT-combinaties, en de karakteristieke en de frequente bij volle belasting.
+#pre
+@kern fnl = compute_plate_analysis
+  variant = "GL+FNL"
+  width_mm = B_x
+  length_mm = B_y
+  thickness_mm = h
+  concrete_class = n_bk
+  steel_class = "B500B"
+  cover_top_mm = c_nom
+  cover_bottom_mm = c_nom
+  // de netten: buitenste laag Ø en h.o.h., binnenste laag Ø en h.o.h.; de x-staven buiten
+  mesh_top_mm[1] = ø_b
+  mesh_top_mm[2] = s_b
+  mesh_top_mm[3] = ø_b
+  mesh_top_mm[4] = s_b
+  mesh_bottom_mm[1] = ø_o
+  mesh_bottom_mm[2] = s_o
+  mesh_bottom_mm[3] = ø_o
+  mesh_bottom_mm[4] = s_o
+  max_cell_size_mm = a_m
+  // trekverstijving (EC2 7.19) volgens de belastingsduur, dezelfde keuze als voor de scheurwijdte:
+  // langdurend 0,5, kortdurend 1,0
+  tension_stiffening_beta = if(duur ≡ 1; 1; 0.5)
+  // de palen: een veer per paal met de paalkop als steunvlak; de bijleg boven elke paal in x en in y
+  #for j = 0 : n_r
+  #for i = 0 : n_r
+  point_supports_mm[j*(n_r + 1) + i + 1] = [a_r + i*L_x; a_r + j*L_y]
+  point_support_k_kn_per_m[j*(n_r + 1) + i + 1] = k_paal
+  extra_bars_mm[2*(j*(n_r + 1) + i) + 1] = [x_z0(i); y_z0(j); x_z1(i) - x_z0(i); y_z1(j) - y_z0(j); ø_bb; s_bb]
+  extra_bars_face[2*(j*(n_r + 1) + i) + 1] = 1
+  extra_bars_angle_deg[2*(j*(n_r + 1) + i) + 1] = 0
+  extra_bars_mm[2*(j*(n_r + 1) + i) + 2] = [x_z0(i); y_z0(j); x_z1(i) - x_z0(i); y_z1(j) - y_z0(j); ø_bb; s_bb]
+  extra_bars_face[2*(j*(n_r + 1) + i) + 2] = 1
+  extra_bars_angle_deg[2*(j*(n_r + 1) + i) + 2] = 90
+  #loop
+  #loop
+  point_support_size_mm[1] = [b_pk; b_pk]
+  // de bijleg onder in de stroken, langs de strook
+  #if st_x ≡ 1
+  #for j = 0 : n_r
+  extra_bars_mm[2*(n_r + 1)^2 + j + 1] = [0 m; max(a_r + j*L_y - b_s/2; 0 m); B_x; min(a_r + j*L_y + b_s/2; B_y) - max(a_r + j*L_y - b_s/2; 0 m); ø_bs; s_bs]
+  extra_bars_face[2*(n_r + 1)^2 + j + 1] = -1
+  extra_bars_angle_deg[2*(n_r + 1)^2 + j + 1] = 0
+  #loop
+  #end if
+  #if st_y ≡ 1
+  #for i = 0 : n_r
+  extra_bars_mm[2*(n_r + 1)^2 + st_x*(n_r + 1) + i + 1] = [max(a_r + i*L_x - b_s/2; 0 m); 0 m; min(a_r + i*L_x + b_s/2; B_x) - max(a_r + i*L_x - b_s/2; 0 m); B_y; ø_bs; s_bs]
+  extra_bars_face[2*(n_r + 1)^2 + st_x*(n_r + 1) + i + 1] = -1
+  extra_bars_angle_deg[2*(n_r + 1)^2 + st_x*(n_r + 1) + i + 1] = 90
+  #loop
+  #end if
+  // ponskoppen en stroken: zones met hun eigen dikte in hetzelfde middenvlak
+  #if n_z > 0
+  #for k = 1 : n_z
+  thickness_zones_mm[k] = [take(k; zx_V); take(k; zy_V); take(k; zb_V); take(k; zh_V); take(k; zt_V)]
+  #loop
+  #end if
+  // de gevallen: 1 eigen gewicht (25 kN/m³, in elke zone met haar eigen dikte), 2 afwerking (1 kN/m²),
+  // 3 en 4 de schaakborden (1 kN/m² per veld)
+  self_weight_kn_per_m3 = 25
+  self_weight_case = 1
+  uniform_load_kn_per_m2[1] = 0
+  uniform_load_kn_per_m2[2] = 1
+  uniform_load_kn_per_m2[3] = 0
+  uniform_load_kn_per_m2[4] = 0
+  #for j = 0 : n_r - 1
+  #for i = 0 : n_r - 1
+  patch_loads_mm[j*n_r + i + 1] = [x_v0(i); y_v0(j); x_v1(i) - x_v0(i); y_v1(j) - y_v0(j)]
+  patch_load_kn_per_m2[j*n_r + i + 1] = 1
+  patch_load_case[j*n_r + i + 1] = 3 + mod(i + j; 2)
+  #loop
+  #loop
+  // de combinaties, factoren op de vier gevallen: UGT vol en per schaakbord, karakteristiek en frequent vol
+  combinations[1] = [γ_Gd; γ_Gd*f_afw; γ_Q*f_q; γ_Q*f_q]
+  combinations[2] = [γ_Gd; γ_Gd*f_afw; γ_Q*f_q; 0]
+  combinations[3] = [γ_Gd; γ_Gd*f_afw; 0; γ_Q*f_q]
+  combinations[4] = [1; f_afw; f_q; f_q]
+  combinations[5] = [1; f_afw; ψ_1*f_q; ψ_1*f_q]
+@end
+#hide
+'Is er gerekend? Zonder antwoord bestaat fnl.element_count niet en is ger_fnl geen 1.
+ger_fnl = bool(fnl.element_count > 0)
+#show
+#if ger_fnl ≡ 1
+#hide
+'Per combinatie: de laatst bereikte lastfactor (1 is geconvergeerd), de benutting van de doorsnede (vloeicriterium),
+'de grootste staalspanning boven en onder, de doorbuiging en het gescheurde deel van de vloer (NaN bij bezwijken).
+λ_V = fnl.combinations.completed_load_factor
+u_V = fnl.combinations.capacity_utilisation_max
+sb_V = fnl.combinations.sigma_s_top_max_mpa
+so_V = fnl.combinations.sigma_s_bottom_max_mpa
+w_V = fnl.combinations.w_max_mm
+cr_V = fnl.combinations.cracked_fraction
+'UGT: de benutting, of bij bezwijken 1/λ, met λ de laatst bereikte lastfactor.
+u_f(c) = if(take(c; λ_V) ≥ 1; take(c; u_V); 1/take(c; λ_V))
+'Karakteristiek (combinatie 4): EC2 7.2(5), de staalspanning hooguit 0,8·f_yk.
+σ_s,kar = max(take(4; sb_V); take(4; so_V))*N/mm^2
+w_fnl = take(4; w_V)*mm
+#show
+'<table style="border-collapse:collapse; font-size:0.9em;">
+'<tr style="border-bottom:1.5px solid #374151;"><th style="text-align:left; padding:1px 6px;">Combinatie</th><th style="text-align:right; padding:1px 6px;">λ</th><th style="text-align:right; padding:1px 6px;">benutting</th><th style="text-align:right; padding:1px 6px;">σ<sub>s</sub> boven</th><th style="text-align:right; padding:1px 6px;">σ<sub>s</sub> onder</th><th style="text-align:right; padding:1px 6px;">w</th><th style="text-align:right; padding:1px 6px;">gescheurd</th></tr>
+#for c = 1 : 5
+#if take(c; λ_V) ≥ 1
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">'take(c; ["UGT vol"; "UGT schaakbord 1"; "UGT schaakbord 2"; "karakteristiek vol"; "frequent vol"])'</td><td style="text-align:right; padding:1px 6px;">1,00</td><td style="text-align:right; padding:1px 6px;">'round(take(c; u_V); 2)'</td><td style="text-align:right; padding:1px 6px;">'round(take(c; sb_V))' N/mm²</td><td style="text-align:right; padding:1px 6px;">'round(take(c; so_V))' N/mm²</td><td style="text-align:right; padding:1px 6px;">'round(take(c; w_V); 1)' mm</td><td style="text-align:right; padding:1px 6px;">'round(100*take(c; cr_V))' %</td></tr>
+#else
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:1px 6px;">'take(c; ["UGT vol"; "UGT schaakbord 1"; "UGT schaakbord 2"; "karakteristiek vol"; "frequent vol"])'</td><td style="text-align:right; padding:1px 6px; color:#b91c1c; font-weight:700;">'round(take(c; λ_V); 2)'</td><td colspan="5" style="padding:1px 6px; color:#b91c1c;">haalt de volle last niet: een doorsnede bereikt eerder haar grens</td></tr>
+#end if
+#loop
+'</table>
+UC_fnl = max(u_f(1); u_f(2); u_f(3))', draagvermogen (UGT): de grootste benutting, of 1/λ als een combinatie bezwijkt<span class="kolom-2"></span>'
+'De grootste benutting over de combinaties die de volle last halen ligt bij x = 'round(take(1; fnl.capacity_utilisation_max_xy_mm)/1000; 2)' m, y = 'round(take(2; fnl.capacity_utilisation_max_xy_mm)/1000; 2)' m; de grootste staalspanning boven bij x = 'round(take(1; fnl.sigma_s_top_max_xy_mm)/1000; 2)' m, y = 'round(take(2; fnl.sigma_s_top_max_xy_mm)/1000; 2)' m.<span class="alleen-scherm"></span>
+σ_s,kar', grootste staalspanning, karakteristiek<span class="kolom-2"></span>'
+UC_σs = σ_s,kar/(0.8*500 N/mm^2)', EC2 7.2(5): σ<sub>s</sub> ≤ 0,8·f<sub>yk</sub><span class="kolom-2"></span>'
+w_fnl', grootste doorbuiging, karakteristiek, gescheurd (zonder kruip); lineair 'round(w_BGT/mm; 1)' mm<span class="kolom-2"></span>'
+#if min(take(1; λ_V); take(2; λ_V); take(3; λ_V)) ≥ 1
+R_fnl = fnl.reaction_max_kn*kN', grootste paalreactie (UGT), gescheurd; lineair R<sub>paal</sub> = 'round(R_paal/kN)' kN<span class="kolom-2"></span>'
+'<i>De gescheurde vloer verdeelt de last anders over de palen. Neem voor de pons de grootste van R<sub>fnl</sub> en de lineaire reactie van die paal.</i>
+#end if
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: wat de benutting betekent</summary><i>De benutting is die van het vloeicriterium per element (Johansen): 1 is de rand van het draagvermogen van de doorsnede. Een combinatie die bezwijkt, haalt de volle last niet; dan is de benutting 1/λ. FEM Studio stopt bij het eerste punt dat het criterium haalt, zonder plastische herverdeling. Naast de paal is dat een lokale piek die met een fijnere maas hoger uitvalt: de benutting is een veilige ondergrens van het draagvermogen bij deze maas (die van het lineaire model), geen oordeel dat los van de maas geldt. De getoonde benutting is het grootste over de integratiepunten; aan de rand van een element naast het steunvlak kan hij al hoger zijn. Bezwijken naast de paal betekent hier dat de eerste doorsnede haar grens bereikt, niet dat de vloer bezwijkt. De staalspanning frequent (vol) is ter vergelijking met de scheurwijdte hierboven, die met het drielagenmodel op de lineaire momenten rekent. In een ponskop of strook ligt het ondernet op de dekking van de verdiepte onderkant; loopt het net in werkelijkheid recht door, dan is de nuttige hoogte voor trek onder daar overschat. Niet in deze berekening: pons, dwarskracht en de scheurwijdte zelf.</i></details><span class="alleen-scherm"></span>
+#else
+'<b style="color:#b91c1c">Nog niet gerekend.</b> De niet-lineaire berekening volgt uit Open FEM Studio en staat hier zodra het antwoord er is.
+#end if
+#end if
+
+'<a id="vop-krimp"></a><span class="alleen-scherm"></span>
+# Krimp
+
+L_vloer = ?{40}*(m)', lengte van de vloer zonder voeg<span class="kolom-3"></span>'
+c_cem = ?{320}*(kg/m^3)', cementgehalte<span class="kolom-3"></span>'
+RH = ?{60}', relatieve vochtigheid (%)<span class="kolom-3"></span>'
+@select cement "Cementsoort (Eurocode, bijlage B)"
+  Klasse N (CEM I 42,5 N, CEM II) = 2
+  Klasse S (CEM III, langzaam) = 1
+  Klasse R (CEM I 42,5 R, 52,5) = 3
+@end
+@select krimp_verh "Krimp van de vloer"
+  Vrij: de palen verhinderen de krimp niet = 1
+  Verhinderd, met een verhinderingsgraad = 2
+@end
+#if krimp_verh ≡ 2
+    R_ax = ?{0.5}', verhinderingsgraad (0 vrij, 1 volledig)<span class="kolom-3"></span>'
+#else
+    #hide
+    R_ax = 0
+    #show
+#end if
+'<details class="alleen-scherm" style="margin:2px 0 8px"><summary style="cursor:pointer; color:#64748b; font-size:0.9em">Toelichting: vrije of verhinderde krimp</summary><i>Een vloer op palen ligt op grond die te slap is om op te funderen; de palen buigen mee en houden de vloer niet vast. Hij krimpt dan vrij: er ontstaat geen trek en geen krimpscheur, en alleen de verkorting telt, voor de voegen en de aansluitingen aan de randen. Kies verhinderd als de vloer aan wanden, poeren of een bestaande vloer vastzit. De vloer droogt aan de bovenkant uit. Minder cement (en minder water) geeft minder cementlijm en minder krimp. De Eurocode kent het cementgehalte niet; ACI 209R-92 wel, met de factor 0,75 + 0,00061·c.</i></details><span class="alleen-scherm"></span>
+
+#hide
+'NEN-EN 1992-1-1 bijlage B: uitdrogingskrimp en autogene krimp, eindwaarde.
+α_ds1 = if(cement ≡ 1; 3; if(cement ≡ 3; 6; 4))
+α_ds2 = if(cement ≡ 1; 0.13; if(cement ≡ 3; 0.11; 0.12))
+β_RH = 1.55*(1 - (RH/100)^3)
+ε_cd0 = 0.85*((220 + 110*α_ds1)*exp(-α_ds2*(f_cm/MPa)/10))*1e-6*β_RH
+h_0 = 2*h/(1 mm)
+k_h = if(h_0 ≤ 100; 1; if(h_0 ≤ 200; 1 - 0.15*(h_0 - 100)/100; if(h_0 ≤ 300; 0.85 - 0.10*(h_0 - 200)/100; if(h_0 ≤ 500; 0.75 - 0.05*(h_0 - 300)/200; 0.70))))
+ε_ca = 2.5*(f_ck/MPa - 10)*1e-6
+'ACI 209R-92: 780·10⁻⁶ maal de factoren voor cementgehalte, vochtigheid en
+'volume/oppervlak (bovenkant: V/S = h); de andere factoren 1.
+γ_c,ACI = 0.75 + 0.00061*c_cem/(kg/m^3)
+γ_RH,ACI = if(RH ≤ 80; 1.40 - 1.02*RH/100; 3.00 - 3.0*RH/100)
+γ_vs,ACI = 1.2*exp(-0.00472*h/(1 mm))
+#show
+ε_cs,EC = (k_h*ε_cd0 + ε_ca)*1000', ‰, bijlage B (B.11) en (3.12)<span class="kolom-2"></span>'
+ε_cs,ACI = 780e-6*γ_c,ACI*γ_RH,ACI*γ_vs,ACI*1000', ‰, ACI 209R-92 met c = 'c_cem/(kg/m^3)' kg/m³<span class="kolom-2"></span>'
+#hide
+ε_cs = max(ε_cs,EC; ε_cs,ACI)/1000
+#show
+ΔL = ε_cs*L_vloer to mm', vrije verkorting over de vloer (de grootste van beide)<span class="kolom-2"></span>'
+Δ_voeg = ΔL/2', beweging aan elk eind<span class="kolom-2"></span>'
+
+#hide
+'Minimumwapening bij een opgelegde vervorming (7.3.2, (7.1)): trek over de hele
+'doorsnede, k_c = 1, k voor h ≤ 300 mm 1,0 en vanaf 800 mm 0,65; per laag de helft.
+k_Amin = if(h ≤ 300 mm; 1; if(h ≥ 800 mm; 0.65; 1 - 0.35*(h - 300 mm)/(500 mm)))
+A_ct = b_s1*h
+'Staalspanning bij w_lim en de dikste staaf van de netten, uit tabel 7.2N zonder correctie (7.6N).
+ø_max = max(ø_o; ø_b)
+σ_03 = if(ø_max ≤ 10 mm; 320; if(ø_max ≤ 12 mm; 280; if(ø_max ≤ 16 mm; 240; 200)))
+σ_02 = if(ø_max ≤ 8 mm; 280; if(ø_max ≤ 12 mm; 240; if(ø_max ≤ 16 mm; 200; 160)))
+σ_04 = if(ø_max ≤ 12 mm; 320; if(ø_max ≤ 16 mm; 280; if(ø_max ≤ 20 mm; 240; 200)))
+σ_s = if(w_lim ≤ 0.2 mm; σ_02; if(w_lim ≤ 0.3 mm; σ_03; σ_04))*N/mm^2
+A_s,min = k_Amin*f_ctm*A_ct/σ_s to mm^2
+A_o = a_o*b_s1 to mm^2
+A_b = a_b*b_s1 to mm^2
+'Scheurwijdte bij verhinderde krimp (NEN-EN 1992-3 bijlage M): (ε_sm − ε_cm) = R_ax·ε_cs,
+'met s_r,max uit (7.11) voor de onderste laag.
+ρ_eff = A_o/(b_s1*min(2.5*(h - d_o(h)); h/2))
+s_rmax = 3.4*c_nom + 0.425*0.8*1.0*ø_o/ρ_eff
+w_k = s_rmax*R_ax*ε_cs to mm
+UC_krimp = if(krimp_verh ≡ 2; w_k/w_lim; 0)
+UC_Amin = if(krimp_verh ≡ 2; A_s,min/(A_o + A_b); 0)
+#show
+#if krimp_verh ≡ 2
+    A_s,min', (7.1) voor de hele doorsnede, tegen de netten onder en boven, k = 'k_Amin', σ<sub>s</sub> = 'σ_s/(N/mm^2)' N/mm²<span class="kolom-2"></span>'
+    w_k', geschatte scheurwijdte, s<sub>r,max</sub> = 'round(s_rmax/(1 mm))' mm, R<sub>ax</sub> = 'R_ax'<span class="kolom-2"></span>'
+#else
+    'Vrije krimp: de vloer wordt niet vastgehouden, dus er ontstaat geen trek door krimp. Geen minimumwapening volgens (7.1) en geen krimpscheur; de verkorting ΔL hierboven bepaalt de voegen en de aansluitingen aan de randen.
+#end if
+
+'<a id="vop-samenvatting"></a><span class="alleen-scherm"></span>
+# Samenvatting
+
+#hide
+'Alles gerekend? Dan pas een maatgevende UC en een oordeel.
+alles = bool(gerekend*ger_3*ger_w*if(fnl_aan ≡ 1; ger_fnl; 1) ≡ 1)
+#show
+'<table style="width:100%; border-collapse:collapse; font-size:0.95em;">
+'<tr style="border-bottom:2px solid #374151;"><th style="text-align:left; padding:2px 8px;">Toets</th><th style="text-align:right; padding:2px 8px;">UC</th><th style="text-align:left; padding:2px 8px;"></th></tr>
+#if alles ≡ 1
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Wapening per punt, drielagenmodel (UGT)</td><td style="text-align:right; padding:2px 8px; font-weight:700; color:'kleur(UC_pt)'">'round(UC_pt; 2)'</td><td style="padding:2px 8px; color:'kleur(UC_pt)'">'oordeel(UC_pt)'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Beton in de buitenlagen, drielagenmodel (UGT)</td><td style="text-align:right; padding:2px 8px; font-weight:700; color:'kleur(UC_bt)'">'round(UC_bt; 2)'</td><td style="padding:2px 8px; color:'kleur(UC_bt)'">'oordeel(UC_bt)'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Scheurwijdte door belasting, frequent (7.3.4)</td><td style="text-align:right; padding:2px 8px; font-weight:700; color:'kleur(UC_w)'">'round(UC_w; 2)'</td><td style="padding:2px 8px; color:'kleur(UC_w)'">'oordeel(UC_w)'</td></tr>
+#else
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Wapening per punt en scheurwijdte door belasting</td><td style="text-align:right; padding:2px 8px;">–</td><td style="padding:2px 8px; color:#b91c1c; font-weight:700;">nog niet gerekend</td></tr>
+#end if
+#if gerekend ≡ 1
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Momenten per zone, netten en bijleg (bijlage I, z = 0,9·d)</td><td style="text-align:right; padding:2px 8px; font-weight:700; color:'kleur(max(UC_o; UC_b))'">'round(max(UC_o; UC_b); 2)'</td><td style="padding:2px 8px; color:'kleur(max(UC_o; UC_b))'">'oordeel(max(UC_o; UC_b))'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Piekmoment boven de paal, hooguit R/5</td><td style="text-align:right; padding:2px 8px; font-weight:700; color:'kleur(UC_pk)'">'round(UC_pk; 2)'</td><td style="padding:2px 8px; color:'kleur(UC_pk)'">'oordeel(UC_pk)'</td></tr>
+#else
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Momenten per zone</td><td style="text-align:right; padding:2px 8px;">–</td><td style="padding:2px 8px; color:#b91c1c; font-weight:700;">nog niet gerekend</td></tr>
+#end if
+#if fnl_aan ≡ 1
+#if ger_fnl ≡ 1
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Draagvermogen, fysisch niet-lineair (GL+FNL)</td><td style="text-align:right; padding:2px 8px; font-weight:700; color:'kleur(UC_fnl)'">'round(UC_fnl; 2)'</td><td style="padding:2px 8px; color:'kleur(UC_fnl)'">'oordeel(UC_fnl)'</td></tr>
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Staalspanning karakteristiek, GL+FNL (7.2(5))</td><td style="text-align:right; padding:2px 8px; font-weight:700; color:'kleur(UC_σs)'">'round(UC_σs; 2)'</td><td style="padding:2px 8px; color:'kleur(UC_σs)'">'oordeel(UC_σs)'</td></tr>
+#else
+'<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Fysisch niet-lineair (GL+FNL)</td><td style="text-align:right; padding:2px 8px;">–</td><td style="padding:2px 8px; color:#b91c1c; font-weight:700;">nog niet gerekend</td></tr>
+#end if
+#end if
+#if krimp_verh ≡ 2
+    '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Minimumwapening krimp (7.1)</td><td style="text-align:right; padding:2px 8px; font-weight:700; color:'kleur(UC_Amin)'">'round(UC_Amin; 2)'</td><td style="padding:2px 8px; color:'kleur(UC_Amin)'">'oordeel(UC_Amin)'</td></tr>
+    '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Scheurwijdte door krimp</td><td style="text-align:right; padding:2px 8px; font-weight:700; color:'kleur(UC_krimp)'">'round(UC_krimp; 2)'</td><td style="padding:2px 8px; color:'kleur(UC_krimp)'">'oordeel(UC_krimp)'</td></tr>
+#else
+    '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">Krimp</td><td style="text-align:right; padding:2px 8px;">–</td><td style="padding:2px 8px;">vrij, niet verhinderd: geen trek</td></tr>
+#end if
+'</table>
+#if alles ≡ 1
+#hide
+UC_max = max(UC_pt; UC_bt; UC_w; UC_o; UC_b; UC_pk; UC_Amin; UC_krimp; UC_fnl; UC_σs)
+#show
+UC_max', de grootste van de toetsen hierboven'
+#if UC_max ≤ 1
+'<span class="alleen-scherm"><b>Maatgevende UC = 'UC_max'</b></span><span class="oordeel" style="color: green"> ≤ 1.0 → <b>De getoetste onderdelen voldoen</b></span>
+#else
+'<span class="alleen-scherm"><b>Maatgevende UC = 'UC_max'</b></span><span class="oordeel" style="color: red"> > 1.0 → <b>De vloer voldoet niet</b></span>
+#end if
+#else
+'<span class="oordeel" style="color: red"><b>Eindoordeel: niet getoetst</b></span>: de berekening door Open FEM Studio ontbreekt of is niet af.
+#end if
+'Pons boven de paal: met de module Pons. De wapening volgt uit de lineaire krachtsverdeling; met de controle fysisch niet-lineair ook het draagvermogen van de gescheurde vloer (zie het rekenmodel). Buiten dit blad: puntlasten (wielen, stellingpoten), vermoeiing, temperatuur, de paal zelf en de voegen.

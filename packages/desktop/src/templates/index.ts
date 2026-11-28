@@ -6,10 +6,12 @@ import { meerpaalspoer } from "./meerpaalspoer";
 import { doorsnedeSpanningen } from "./doorsnede-spanningen";
 
 import voorgespannenHeipaal from "./voorgespannen-heipaal.cpd?raw";
+import vloerOpPalen from "./vloer-op-palen.cpd?raw";
 
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
   "voorgespannen-heipaal": voorgespannenHeipaal,
+  "vloer-op-palen": vloerOpPalen,
   "ligger": ligger,
   "tweepaalspoer": tweepaalspoer,
   "meerpaalspoer": meerpaalspoer,

@@ -112,9 +112,11 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-beton",
     label: "Beton",
     defaultExpanded: true,
-    count: 2,
+    count: 3,
     children: [
       { kind: "item", id: "sheet-voorgespannen-heipaal", label: "Voorgespannen prefab betonpaal", templateId: "voorgespannen-heipaal", status: "concept" },
+      // Gerekend door Open FEM Studio (@fem): de kern die de app meelevert.
+      { kind: "item", id: "sheet-vloer-op-palen", label: "Bedrijfsvloer op palen (FEM)", templateId: "vloer-op-palen", status: "concept" },
       { kind: "item", id: "sheet-tweepaalspoer", label: "Tweepaalspoer (gewapend beton)", templateId: "tweepaalspoer", status: "controleren" },
       { kind: "item", id: "sheet-meerpaalspoer", label: "Poer op drie of vier palen (gewapend beton)", templateId: "meerpaalspoer", status: "controleren" },
     ],

@@ -30,7 +30,8 @@
     "project": "Project",
     "projectgegevens": "Project data",
     "rapport": "Report",
-    "afdrukvoorbeeld": "Print preview"
+    "afdrukvoorbeeld": "Print preview",
+    "rapportvoorbeeld": "Report preview"
   },
   "weergave": {
     "codeVisueel": "Code + visual",
@@ -128,7 +129,8 @@
       "rapport-h4": "H4 Design basis",
       "rapport-h5": "H5 Loads",
       "rapport-h6": "H6 Calculations",
-      "rapport-voorblad": "Cover page"
+      "rapport-voorblad": "Cover page",
+      "vloer-op-palen": "Pile-supported industrial floor (FEM)"
     }
   },
   "kiezer": {

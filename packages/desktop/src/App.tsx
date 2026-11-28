@@ -371,7 +371,9 @@ export default function App() {
   const tabBalk = actief && !toontProjectGegevens && (pdfBlad || spreadsheetBlad || markdownBlad || graafBlad || tekenBlad || jupyterBlad || marimoBlad) ? (
     <div className="split-tabs">
       <button className={`split-tab${printVoorbeeld ? "" : " active"}`} onClick={() => sluitVoorbeeld()}>{t(pdfBlad ? "pdf.tab" : jupyterBlad ? "jupyter.tab" : marimoBlad ? "marimo.tab" : tekenBlad ? "tekenblad.tab" : graafBlad ? "graaf.tab" : spreadsheetBlad ? "spreadsheet.tab" : "markdown.tab")}</button>
-      <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
+      <button className={`split-tab${printVoorbeeld && printSelectie !== null ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
+      {/* Het hele rapport: alle bladen van het project, van boven naar beneden. */}
+      <button className={`split-tab${printVoorbeeld && printSelectie === null ? " active" : ""}`} onClick={() => toonVoorbeeld(null, "bladen")}>{t("algemeen.rapportvoorbeeld")}</button>
     </div>
   ) : actief && !toontProjectGegevens ? (
     <>
@@ -431,7 +433,9 @@ export default function App() {
         >
           {t("controle.tab")}
         </button>
-        <button className={`split-tab${printVoorbeeld ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
+        <button className={`split-tab${printVoorbeeld && printSelectie !== null ? " active" : ""}`} onClick={() => toonVoorbeeld([actief.id], "bladen")}>{t("algemeen.afdrukvoorbeeld")}</button>
+      {/* Het hele rapport: alle bladen van het project, van boven naar beneden. */}
+      <button className={`split-tab${printVoorbeeld && printSelectie === null ? " active" : ""}`} onClick={() => toonVoorbeeld(null, "bladen")}>{t("algemeen.rapportvoorbeeld")}</button>
         <ControleLabel ex={actief} />
         <BladVersieKop ex={actief} />
       </div>

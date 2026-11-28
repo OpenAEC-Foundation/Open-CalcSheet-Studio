@@ -140,7 +140,9 @@ export function useRapportWeergave(): RapportWeergave {
   }, [exemplaren, gegevens, taal, toetsV]);
 
   const opzet = useMemo(() => {
-    const lijst = exemplaren.map(bladVoorOpzet);
+    // Een blad in de opmaak van het rapport (Voorblad, H1 … H6) is zelf een stuk van het rapport,
+    // geen berekening: niet in hoofdstuk Berekeningen en niet in bijlage A.
+    const lijst = exemplaren.filter((ex) => !ex.source?.includes("rpa-in-blad")).map(bladVoorOpzet);
     const knopen = bouwOpzet(rapport, lijst);
     const metBladen = rapport.opmaak.bladenInInhoud;
     return {

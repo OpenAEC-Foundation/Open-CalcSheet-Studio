@@ -396,7 +396,9 @@ export default function AfdrukVoorbeeld({ ingebed }: {
           ?? ["Open CalcSheet Studio", t("afdruk.paginaVan", { nummer: i + paginaVan.current.eerste, totaal: paginaVan.current.totaal ?? paginas.length }), datum];
         voetDelen.forEach((d, j) => ((voet.children[j] as HTMLElement).textContent = d));
 
-        vel.append(kop, inhoud, voet);
+        // Het voorblad heeft geen koptekst.
+        if (inhoud.querySelector(".rpa-voorblad, .rpa-vb-titel")) vel.append(inhoud, voet);
+        else vel.append(kop, inhoud, voet);
       }
 
       // Het nummer buiten het vel: het papier klemt af wat er niet op past, en

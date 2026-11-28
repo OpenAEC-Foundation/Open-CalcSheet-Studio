@@ -140,6 +140,16 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
       </section>
     );
   }
+  // Een blad in de opmaak van het rapport (Voorblad, H1 … H6: rapport/hoofdstukkenAlsBladen.ts)
+  // heeft zijn eigen kop: geen bladkop met nummer, naam en projectregel erboven.
+  const canvas = (isCanvasBlad(ex) || heeftEenheden(ex.source)) && !!eenheden;
+  if (canvas ? eenheden!.some((e) => e.html.includes("rpa-in-blad")) : html.includes("rpa-in-blad")) {
+    return (
+      <section className="print-blad rpa-blad" data-inhoud={anker}>
+        {canvas ? <CanvasVellen eenheden={eenheden!} bladId={ex.id} /> : <UitwerkingHtml html={html} bladId={ex.id} />}
+      </section>
+    );
+  }
   // Het beeld tekent zichzelf uit de waarden van dít exemplaar, niet uit het
   // blad dat toevallig openstaat. `alleenLezen` houdt tegen dat het afdrukken
   // standaardwaarden aanvult of iets anders aan het project verandert.
