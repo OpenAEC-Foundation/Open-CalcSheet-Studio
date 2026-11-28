@@ -126,7 +126,9 @@
       "rapport-h2": "H2 Project details",
       "rapport-h3": "H3 Structure",
       "rapport-h4": "H4 Design basis",
-      "rapport-h5": "H5 Loads"
+      "rapport-h5": "H5 Loads",
+      "rapport-h6": "H6 Calculations",
+      "rapport-voorblad": "Cover page"
     }
   },
   "kiezer": {

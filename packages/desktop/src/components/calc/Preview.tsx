@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useInhoudsopgave } from "./useInhoudsopgave";
 import { defaultStyles, invoerNaarBron, isVerwijzingInvoer, toonInvoer } from "@ifc-calc/core";
 import {
   useActiefExemplaar,
@@ -90,9 +91,11 @@ export default function Preview() {
   // Als tekst, zodat het object alleen verandert als een kenmerk of naam verandert: een nieuw
   // object zet de uitwerking opnieuw neer, en dan verliest een invoerveld zijn cursor.
   const bladNamen = useProjectStore((s) => bladNamenSleutel(s.exemplaren));
+  // Een blad met de plek voor de inhoudsopgave (het Voorblad): gemaakt uit de bladen.
+  const metOpgave = useInhoudsopgave(html);
   const inhoud = useMemo(
-    () => ({ __html: bronnenInvullen(schoonUitwerking(html), bronTeksten(tb), bladenUitSleutel(bladNamen)) }),
-    [html, tb, bladNamen],
+    () => ({ __html: bronnenInvullen(schoonUitwerking(metOpgave), bronTeksten(tb), bladenUitSleutel(bladNamen)) }),
+    [metOpgave, tb, bladNamen],
   );
 
   // Een `@3d`-blok krijgt een draaibaar beeld (drieDBlok.ts). De beelden

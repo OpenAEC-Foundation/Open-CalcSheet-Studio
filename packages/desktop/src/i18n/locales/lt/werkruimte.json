@@ -126,7 +126,9 @@
       "rapport-h2": "H2 Projekto duomenys",
       "rapport-h3": "H3 Konstrukcija",
       "rapport-h4": "H4 Projektavimo prielaidos",
-      "rapport-h5": "H5 Apkrovos"
+      "rapport-h5": "H5 Apkrovos",
+      "rapport-h6": "H6 Skaičiavimai",
+      "rapport-voorblad": "Titulinis puslapis"
     }
   },
   "kiezer": {

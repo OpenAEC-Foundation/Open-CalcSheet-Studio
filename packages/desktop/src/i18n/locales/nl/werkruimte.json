@@ -126,7 +126,9 @@
       "rapport-h2": "H2 Projectgegevens",
       "rapport-h3": "H3 Constructie",
       "rapport-h4": "H4 Uitgangspunten",
-      "rapport-h5": "H5 Belastingen"
+      "rapport-h5": "H5 Belastingen",
+      "rapport-h6": "H6 Berekeningen",
+      "rapport-voorblad": "Voorblad"
     }
   },
   "kiezer": {
