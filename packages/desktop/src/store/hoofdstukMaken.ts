@@ -6,11 +6,13 @@ import { create } from "zustand";
  * rapport, met dezelfde uitdraai. H5 wordt een canvasblad.
  */
 export const HOOFDSTUK_MODULES: Readonly<Record<string, string>> = {
+  "rapport-voorblad": "voorblad",
   "rapport-h1": "inleiding",
   "rapport-h2": "projectgegevens",
   "rapport-h3": "constructie",
   "rapport-h4": "uitgangspunten",
   "rapport-h5": "belastingen",
+  "rapport-h6": "berekeningen",
 };
 
 export const useHoofdstukMaken = create<{

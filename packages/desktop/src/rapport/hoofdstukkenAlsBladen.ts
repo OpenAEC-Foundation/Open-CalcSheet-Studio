@@ -15,12 +15,16 @@
  * de rekentaal invult. De rest van de tekst staat er letterlijk.
  */
 import { schrijfEenheden, stapelOnderElkaar, type Eenheid } from "../store/canvasBlad.ts";
+import { INHOUD_PLEK } from "./inhoudVanBladen.ts";
 import type { Belastingen, Opbouw } from "./model.ts";
 import { categorie, klasseWaarden } from "./normwaarden.ts";
 import { leesVulling } from "./opbouw.ts";
 
 /** Het hoofdstuk dat een canvasblad wordt. */
 export const CANVAS_HOOFDSTUK = "belastingen";
+
+/** Het voorblad, de situatie en de inhoudsopgave samen: het blad Voorblad. */
+export const VOORBLAD = "voorblad";
 
 /** Een hoofdstuk: zijn anker, zijn titel zonder nummer, en de rekentekst; `canvas` voor een canvasblad. */
 export interface HoofdstukBlad {
@@ -201,6 +205,8 @@ interface Stuk {
   html: string;
   hoogte: number;
   nieuweSectie: boolean;
+  /** De klasse van de sectie waar het stuk in stond (het voorblad heeft een eigen opmaak). */
+  klasse?: string;
 }
 
 /** px naar mm, bij 96 px per inch. */
@@ -218,6 +224,22 @@ export function hoofdstukkenUitAfdruk(wortel: HTMLElement, invoer: RapportInvoer
   for (const sectie of Array.from(wortel.children)) {
     if (sectie.tagName !== "SECTION") continue;
     if (sectie.classList.contains("rpa-bijlagekop")) break;
+    // Voorblad, situatie en inhoudsopgave: samen het blad Voorblad, elk op een eigen vel.
+    if (["rpa-voorblad", "rpa-situatie", "rpa-inhoud"].some((k) => sectie.classList.contains(k))) {
+      let v = hoofdstukken.find((h) => h.anker === VOORBLAD);
+      if (!v) {
+        v = { anker: VOORBLAD, nummer: "", titel: "", stukken: [] };
+        hoofdstukken.push(v);
+      }
+      // De inhoudsopgave wordt niet overgenomen maar gemaakt uit de bladen (inhoudVanBladen.ts).
+      if (sectie.classList.contains("rpa-inhoud")) {
+        v.stukken.push({ html: INHOUD_PLEK, hoogte: 0, nieuweSectie: true, klasse: sectie.className });
+        continue;
+      }
+      Array.from(sectie.children).forEach((stuk, i) =>
+        v!.stukken.push({ html: stuk.outerHTML, hoogte: (stuk as HTMLElement).offsetHeight * MM, nieuweSectie: i === 0, klasse: sectie.className }));
+      continue;
+    }
     let eerste = true;
     for (const stuk of Array.from(sectie.children)) {
       const kop = hoofdstukKop(stuk);
@@ -259,7 +281,7 @@ export function hoofdstukkenUitAfdruk(wortel: HTMLElement, invoer: RapportInvoer
     const begin = regels.length;
     for (const s of stukken) {
       if (s.nieuweSectie && regels.length > begin) regels.push(regel("</section>"));
-      if (s.nieuweSectie) regels.push(regel('<section class="rpa-sectie">'));
+      if (s.nieuweSectie) regels.push(regel(`<section class="${s.klasse ?? "rpa-sectie"}">`));
       regels.push(regel(s.html, bekend));
     }
     regels.push(regel("</section>"), sluit);

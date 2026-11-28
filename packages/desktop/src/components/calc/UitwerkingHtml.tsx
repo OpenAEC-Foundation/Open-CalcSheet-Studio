@@ -1,5 +1,6 @@
 import { useMemo, useRef } from "react";
 import { useDrieDAfdruk } from "./drieDBlok";
+import { useInhoudsopgave } from "./useInhoudsopgave";
 import { useIfcxAfdruk } from "./ifcxBlok";
 import { useIframeAfdruk } from "./iframeBlok";
 import { useJsAfdruk } from "./jsBlok";
@@ -31,9 +32,11 @@ export function UitwerkingHtml({ html, bladId }: { html: string; bladId?: string
   // Een verwijzing met `@bron` krijgt op papier de bron erbij: het PDF-blad of het bestand en de pagina (bronnen.ts).
   const { t } = useTranslation("beelden");
   const bladNamen = useProjectStore((s) => bladNamenSleutel(s.exemplaren));
+  // Een blad met de plek voor de inhoudsopgave (het Voorblad): die wordt gemaakt uit de bladen.
+  const metOpgave = useInhoudsopgave(html);
   const inhoud = useMemo(() => {
-    const schoon = bronnenInvullen(schoonUitwerking(html), bronTeksten(t), bladenUitSleutel(bladNamen));
+    const schoon = bronnenInvullen(schoonUitwerking(metOpgave), bronTeksten(t), bladenUitSleutel(bladNamen));
     return { __html: komma ? metDecimaalKomma(schoon) : schoon };
-  }, [html, komma, t, bladNamen]);
+  }, [metOpgave, komma, t, bladNamen]);
   return <div ref={ref} className="ifc-calc" dangerouslySetInnerHTML={inhoud} />;
 }

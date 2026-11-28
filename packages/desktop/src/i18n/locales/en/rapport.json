@@ -684,6 +684,7 @@
     "knop": "Chapters as sheets",
     "uitleg": "Turns each chapter of this report into a sheet whose code is exactly what the report shows now.",
     "geenVoorbeeld": "The report preview is not ready yet. Wait until it is done on the right and try again.",
-    "blijvendTitel": "Permanent loads"
+    "blijvendTitel": "Permanent loads",
+    "voorblad": "Cover page"
   }
 }

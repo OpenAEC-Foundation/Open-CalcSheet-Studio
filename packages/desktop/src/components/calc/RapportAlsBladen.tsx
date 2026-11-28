@@ -1,8 +1,9 @@
 import { useEffect, useRef, type CSSProperties } from "react";
+import i18next from "i18next";
 import { useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
 import { useHoofdstukMaken } from "../../store/hoofdstukMaken";
-import { hoofdstukkenUitAfdruk } from "../../rapport/hoofdstukkenAlsBladen";
+import { hoofdstukkenUitAfdruk, VOORBLAD } from "../../rapport/hoofdstukkenAlsBladen";
 import { huisstijlVariabelen } from "../../rapport/model";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
@@ -33,6 +34,7 @@ export default function RapportAlsBladen() {
 
 /** Het rapport buiten beeld; zodra het stil staat, worden de gevraagde hoofdstukken bladen. */
 function Omzetten({ ankers }: { ankers: string[] }) {
+  const { t } = useTranslation("rapport");
   const ref = useRef<HTMLDivElement>(null);
   const bureau = useRapportBureau();
   useEffect(() => {
@@ -68,7 +70,8 @@ function Omzetten({ ankers }: { ankers: string[] }) {
         return;
       }
       const ids = gevraagd.map((h) => {
-        const naam = `H${h.nummer} ${h.titel}`;
+        // De naam in de taal van het rapport, zoals de titels van de hoofdstukken.
+        const naam = h.anker === VOORBLAD ? i18next.getFixedT(s.rapport.taal, "rapport")("alsBladen.voorblad") : `H${h.nummer} ${h.titel}`;
         const st = useProjectStore.getState();
         const id = h.canvas ? st.voegCanvasToe(naam) : st.voegToe("leeg", naam, h.bron);
         if (h.canvas) useProjectStore.getState().zetBron(id, h.bron);
@@ -80,7 +83,7 @@ function Omzetten({ ankers }: { ankers: string[] }) {
       useHoofdstukMaken.getState().klaar();
     }, 300);
     return () => window.clearInterval(timer);
-  }, [ankers]);
+  }, [ankers, t]);
   return (
     <div
       ref={ref}
