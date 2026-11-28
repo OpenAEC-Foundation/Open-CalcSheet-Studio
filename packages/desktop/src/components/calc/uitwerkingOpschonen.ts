@@ -7,7 +7,29 @@ import DOMPurify from "dompurify";
 import { linkNaarBuiten, maakOpschoner } from "./uitwerkingRegels";
 import { openBuiten } from "../../werkplek/werkplek";
 
-export const schoonUitwerking = maakOpschoner(DOMPurify);
+const opschoner = maakOpschoner(DOMPurify);
+
+/**
+ * De laatst opgeschoonde uitwerkingen. Opschonen kost bij een groot blad een halve seconde,
+ * en dezelfde html komt telkens terug: op het scherm, in het afdrukvoorbeeld en het rapport,
+ * en bij elke nieuwe opbouw daarvan. De uitkomst hangt alleen af van de html.
+ */
+const opgeschoond = new Map<string, string>();
+const BEWAREN = 64;
+
+export function schoonUitwerking(html: string): string {
+  const bekend = opgeschoond.get(html);
+  if (bekend !== undefined) {
+    // Achteraan: wat net nog nodig was, blijft het langst bewaard.
+    opgeschoond.delete(html);
+    opgeschoond.set(html, bekend);
+    return bekend;
+  }
+  const schoon = opschoner(html);
+  opgeschoond.set(html, schoon);
+  if (opgeschoond.size > BEWAREN) opgeschoond.delete(opgeschoond.keys().next().value as string);
+  return schoon;
+}
 
 /**
  * Een link in de uitwerking laat de app niet verdwijnen: hij opent in de systeembrowser,

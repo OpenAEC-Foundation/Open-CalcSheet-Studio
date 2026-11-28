@@ -150,10 +150,17 @@ const WIKKELS = ["ifc-calc", "rpa-vlak", "md-citaat", "print-canvas", "print-inh
  * tabel in een paragraaf in een hoofdstuk; ook dat mag geen blok van een halve
  * pagina worden.
  */
-function vlakUit(el: HTMLElement, wikkels: string[] = []): { el: HTMLElement; wikkels: string[] }[] {
-  if (!WIKKELS.some((k) => el.classList.contains(k))) return [{ el, wikkels }];
+function vlakUit(el: HTMLElement, wikkels: string[] = []): { el: HTMLElement; wikkels: string[]; nieuw: boolean }[] {
+  // Een blad in de opmaak van het rapport (Voorblad, H1 … H6): zijn secties worden net als in
+  // het rapport los verdeeld, en elke sectie begint op een nieuw vel.
+  const sectie = el.tagName === "SECTION" && el.classList.contains("rpa-sectie");
+  if (!sectie && !el.classList.contains("rpa-in-blad") && !WIKKELS.some((k) => el.classList.contains(k))) {
+    return [{ el, wikkels, nieuw: false }];
+  }
   const dieper = [...wikkels, el.className];
-  return (Array.from(el.children) as HTMLElement[]).flatMap((k) => vlakUit(k, dieper));
+  const uit = (Array.from(el.children) as HTMLElement[]).flatMap((k) => vlakUit(k, dieper));
+  if (sectie && uit[0]) uit[0] = { ...uit[0], nieuw: true };
+  return uit;
 }
 
 /** De plekken voor de inhoudsopgave op dit blok of erin. */
@@ -189,7 +196,7 @@ export function meetBlokken(bron: HTMLElement): Blok[] {
         // geen plaats in en hoort niet op een vel; gemeten zou het als bovenkant
         // de rand van het venster krijgen en een hoogte van een halve uitdraai.
         if (item.el.getClientRects().length === 0) continue;
-        const nieuwVel = eerste || naVolVel || item.el.classList.contains(NIEUW_VEL);
+        const nieuwVel = eerste || naVolVel || item.nieuw || item.el.classList.contains(NIEUW_VEL);
         rijen.push({ el: item.el, nieuwePagina: nieuwVel, sectie: sectie.className, wikkels: item.wikkels });
         eerste = false;
         naVolVel = item.el.classList.contains(VEL_AF);

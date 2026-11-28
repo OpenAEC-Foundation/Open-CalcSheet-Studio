@@ -142,10 +142,12 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
   }
   // Een blad in de opmaak van het rapport (Voorblad, H1 … H6: rapport/hoofdstukkenAlsBladen.ts)
   // heeft zijn eigen kop: geen bladkop met nummer, naam en projectregel erboven.
+  // Zonder `print-blad`: de compacte opmaak van een rekenblad (kleinere letter, eigen
+  // kopmarges) zou de opmaak van het rapport overschrijven.
   const canvas = (isCanvasBlad(ex) || heeftEenheden(ex.source)) && !!eenheden;
   if (canvas ? eenheden!.some((e) => e.html.includes("rpa-in-blad")) : html.includes("rpa-in-blad")) {
     return (
-      <section className="print-blad rpa-blad" data-inhoud={anker}>
+      <section className="rpa-blad" data-inhoud={anker}>
         {canvas ? <CanvasVellen eenheden={eenheden!} bladId={ex.id} /> : <UitwerkingHtml html={html} bladId={ex.id} />}
       </section>
     );

@@ -35,6 +35,9 @@ export interface Uitdraai {
   normen: ProjectNorm[];
 }
 
+/** De laatst doorgerekende uitwerking per blad, met waarmee hij is doorgerekend. */
+const doorgerekend = new WeakMap<Exemplaar, { alle: readonly Exemplaar[]; gegevens: unknown; taal: string; toetsV: unknown; blad: DoorgerekendBlad }>();
+
 /**
  * Bouwt de gekozen bladen één keer door en levert alles wat een uitdraai nodig heeft, voor
  * het afdrukvoorbeeld. Ook wat er naar de printer gaat, komt daarvandaan (drukvellen.ts).
@@ -60,7 +63,18 @@ export function useUitdraai(): Uitdraai {
     // In het eenhedenstelsel van het project, net als op het scherm.
     // Lezen: een @toets-blok zonder antwoord staat op papier als niet getoetst.
     const evalOpties = metToetsingen(evalOptiesVan(gegevens), "lezen", i18next.language);
-    return (gekozen.length ? gekozen : exemplaren).map((ex) => ({ ex, ...rekenBladDoor(ex, scope, i18next.language, evalOpties, exemplaren) }));
+    // Per blad onthouden: een blad dat niet veranderde, in een project dat niet veranderde,
+    // rekent bij een volgende keer openen niet opnieuw.
+    const taal = i18next.language;
+    return (gekozen.length ? gekozen : exemplaren).map((ex) => {
+      const vorig = doorgerekend.get(ex);
+      if (vorig && vorig.alle === exemplaren && vorig.gegevens === gegevens && vorig.taal === taal && vorig.toetsV === toetsV) {
+        return { ex, ...vorig.blad };
+      }
+      const blad = rekenBladDoor(ex, scope, taal, evalOpties, exemplaren);
+      doorgerekend.set(ex, { alle: exemplaren, gegevens, taal, toetsV, blad });
+      return { ex, ...blad };
+    });
     // De taal hoort erbij: de uitvoer volgt de taal van de app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exemplaren, gegevens, selectie, soort, i18next.language, toetsV]);

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { useTranslation } from "react-i18next";
 import { vulKopVoet } from "../../rapport/kopVoet";
 import { HUISSTIJL_BRONNEN } from "../../rapport/model";
+import { INHOUD_PLEK } from "../../rapport/inhoudVanBladen";
 import { useProjectStore } from "../../store/projectStore";
 import { usePrintStore, type AfdrukSoort } from "../../store/printStore";
 import { useRapportSprong } from "../../store/rapportSprong";
@@ -145,7 +146,11 @@ export default function AfdrukVoorbeeld({ ingebed }: {
   const bereik = selectie && selectie.length === 1 ? selectie[0] : "project";
 
   const rapport = soort === "rapport";
-  const maten: Maten = MATEN[soort];
+  // Heeft het project een eigen Voorblad-blad (met de inhoudsopgave), dan is het project zelf
+  // het rapport: dezelfde bladspiegel, de voet van het bureau en het logo, geen loopkop.
+  const eigenRapport = !rapport && alleBladen.some((ex) => ex.source.includes(INHOUD_PLEK));
+  const rapportOpmaak = rapport || eigenRapport;
+  const maten: Maten = MATEN[rapportOpmaak ? "rapport" : soort];
   // Het bureau voor de voet en het logo van de vellen.
   const bureau = useRapportBureau();
   const voetafbeelding = bureau.voetafbeelding;
@@ -304,7 +309,7 @@ export default function AfdrukVoorbeeld({ ingebed }: {
     const eersten = new Set<HTMLElement>();
     paginas.forEach((pagina, i) => {
       const vel = document.createElement("div");
-      vel.className = rapport ? "av-pagina print-opmaak rpa-wortel" : "av-pagina print-opmaak";
+      vel.className = rapportOpmaak ? "av-pagina print-opmaak rpa-wortel" : "av-pagina print-opmaak";
       // De huisstijl staat als CSS-variabelen op de wortel in de meetopstelling. Een vel
       // staat daar los van, dus krijgt hij ze mee.
       for (const [naam, waarde] of Object.entries(huisstijl)) vel.style.setProperty(naam, waarde);
@@ -361,11 +366,12 @@ export default function AfdrukVoorbeeld({ ingebed }: {
           nr.style.height = "8mm";
           vel.append(nr);
         }
-      } else if (rapport) {
+      } else if (rapportOpmaak) {
         // Geen loopkop: het rapport heeft alleen een voet, en op elk vel na het voorblad
         // het logo. Het voorblad draagt het al groter.
-        vel.append(inhoud, ...rapportVoet(i + 1, voetafbeelding, bureaunaam, maten));
-        if (kopLogo && i > 0) {
+        vel.append(inhoud, ...rapportVoet(i + paginaVan.current.eerste, voetafbeelding, bureaunaam, maten));
+        const voorblad = rapport ? i === 0 : !!inhoud.querySelector(".rpa-voorblad, .rpa-vb-titel");
+        if (kopLogo && !voorblad) {
           const logo = document.createElement("img");
           logo.className = "av-rapport-logo";
           logo.alt = "";
@@ -426,7 +432,7 @@ export default function AfdrukVoorbeeld({ ingebed }: {
     setOpgebouwdTeller((n) => n + 1);
     // paginaSleutel: de doorlopende paginanummers van een los blad (paginaVan).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linksBoven, onderdeel, datum, rapport, maten, voetafbeelding, bureaunaam, kopLogo, kopTekst, voetTekst, huisstijl, t, kopieVan, vervangLos, paginaSleutel]);
+  }, [linksBoven, onderdeel, datum, rapport, rapportOpmaak, maten, voetafbeelding, bureaunaam, kopLogo, kopTekst, voetTekst, huisstijl, t, kopieVan, vervangLos, paginaSleutel]);
 
   /*
    * Opnieuw verdelen zodra de opmaak verandert.

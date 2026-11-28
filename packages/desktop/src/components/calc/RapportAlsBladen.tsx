@@ -77,6 +77,16 @@ function Omzetten({ ankers }: { ankers: string[] }) {
         if (h.canvas) useProjectStore.getState().zetBron(id, h.bron);
         // Precies "H1 Inleiding", zonder volgnummer erachter.
         useProjectStore.getState().hernoem(id, naam);
+        // Vooraan in de boom, na de hoofdstukbladen die er al staan: het rapport begint met het
+        // voorblad en de hoofdstukken, de andere bladen volgen als bijlage.
+        for (;;) {
+          const lijst = useProjectStore.getState().exemplaren;
+          const i = lijst.findIndex((e) => e.id === id);
+          const doel = lijst.findIndex((e) => e.id !== id && !e.source.includes("rpa-in-blad"));
+          if (doel < 0 || i <= doel) break;
+          useProjectStore.getState().verplaats(id, -1);
+          if (useProjectStore.getState().exemplaren.findIndex((e) => e.id === id) === i) break;
+        }
         return id;
       });
       if (ids[0]) useProjectStore.getState().selecteer(ids[0]);
